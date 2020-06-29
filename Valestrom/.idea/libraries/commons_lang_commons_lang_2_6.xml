@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="commons-lang:commons-lang:2.6" type="repository">
+    <properties maven-id="commons-lang:commons-lang:2.6" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/commons-lang-2.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,6 +1,12 @@
 ; ModuleID = 'while'
 source_filename = "while"
 
+define i1 @"F(\22__lessThanInt\22,[],[R(*,i),R(*,i)])"(i64, i64) {
+block1:
+  %2 = icmp slt i64 %0, %1
+  ret i1 %2
+}
+
 define i64 @"F(\22+\22,[],[R(*,i),R(*,i)])"(i64, i64) {
 block1:
   %2 = alloca i64
@@ -16,29 +22,6 @@ block1:
   %7 = load i64, i64* %2
   %8 = load i64, i64* %5
   ret i64 %8
-}
-
-define i1 @"F(\22__lessThanInt\22,[],[R(*,i),R(*,i)])"(i64, i64) {
-block1:
-  %2 = icmp slt i64 %0, %1
-  ret i1 %2
-}
-
-define i1 @"F(\22<\22,[],[R(*,i),R(*,i)])"(i64, i64) {
-block1:
-  %2 = alloca i64
-  store i64 %0, i64* %2
-  %3 = alloca i64
-  store i64 %1, i64* %3
-  %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22left\22)" = load i64, i64* %2
-  %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22right\22)" = load i64, i64* %3
-  %4 = call i1 @"F(\22__lessThanInt\22,[],[R(*,i),R(*,i)])"(i64 %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22left\22)", i64 %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22right\22)")
-  %5 = alloca i1
-  store i1 %4, i1* %5
-  %6 = load i64, i64* %3
-  %7 = load i64, i64* %2
-  %8 = load i1, i1* %5
-  ret i1 %8
 }
 
 define i64 @"F(\22main\22)"() {
@@ -88,6 +71,23 @@ block5:                                           ; preds = %block2
 block6:                                           ; preds = %block5, %block4
   %16 = phi i1 [ %13, %block4 ], [ %15, %block5 ]
   br i1 %16, label %block2, label %block3
+}
+
+define i1 @"F(\22<\22,[],[R(*,i),R(*,i)])"(i64, i64) {
+block1:
+  %2 = alloca i64
+  store i64 %0, i64* %2
+  %3 = alloca i64
+  store i64 %1, i64* %3
+  %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22left\22)" = load i64, i64* %2
+  %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22right\22)" = load i64, i64* %3
+  %4 = call i1 @"F(\22__lessThanInt\22,[],[R(*,i),R(*,i)])"(i64 %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22left\22)", i64 %"F(\22<\22,[],[R(*,i),R(*,i)]):CodeVarName(\22right\22)")
+  %5 = alloca i1
+  store i1 %4, i1* %5
+  %6 = load i64, i64* %3
+  %7 = load i64, i64* %2
+  %8 = load i1, i1* %5
+  ret i1 %8
 }
 
 define i64 @"F(\22__addIntInt\22,[],[R(*,i),R(*,i)])"(i64, i64) {

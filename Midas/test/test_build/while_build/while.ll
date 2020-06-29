@@ -1,22 +1,16 @@
 ; ModuleID = 'while'
 source_filename = "while"
 
-define i64 @"F(\22+\22,[],[R(*,i),R(*,i)])"(i64, i64) {
-block1:
-  %add.i = add i64 %1, %0
-  ret i64 %add.i
-}
-
 define i1 @"F(\22__lessThanInt\22,[],[R(*,i),R(*,i)])"(i64, i64) {
 block1:
   %2 = icmp slt i64 %0, %1
   ret i1 %2
 }
 
-define i1 @"F(\22<\22,[],[R(*,i),R(*,i)])"(i64, i64) {
+define i64 @"F(\22+\22,[],[R(*,i),R(*,i)])"(i64, i64) {
 block1:
-  %2 = icmp slt i64 %0, %1
-  ret i1 %2
+  %add.i = add i64 %1, %0
+  ret i64 %add.i
 }
 
 define i64 @"F(\22main\22)"() {
@@ -39,6 +33,12 @@ block6:                                           ; preds = %block2, %block4
   %.1 = phi i64 [ %add.i.i, %block4 ], [ %.0, %block2 ]
   %1 = phi i1 [ true, %block4 ], [ false, %block2 ]
   br i1 %1, label %block2, label %block3
+}
+
+define i1 @"F(\22<\22,[],[R(*,i),R(*,i)])"(i64, i64) {
+block1:
+  %2 = icmp slt i64 %0, %1
+  ret i1 %2
 }
 
 define i64 @"F(\22__addIntInt\22,[],[R(*,i),R(*,i)])"(i64, i64) {

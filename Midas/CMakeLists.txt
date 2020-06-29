@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(valec)
 cmake_policy(VERSION 3.11)
 
-find_package(LLVM 7.1 REQUIRED CONFIG)
+find_package(LLVM 7 REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")

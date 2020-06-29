@@ -109,6 +109,9 @@ class ValeTest(unittest.TestCase):
     def test_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
 
+    # def test_mutstruct(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
+
 
 if __name__ == '__main__':
     unittest.main()

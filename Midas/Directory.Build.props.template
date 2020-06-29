@@ -1,0 +1,15 @@
+<Project>
+ <PropertyGroup>
+   <!-- LLVM's directory. -->
+   <LLVMProjectDir>D:\llvm-project</LLVMProjectDir>
+   <!-- LLVM's generated visual studio project's build directory. -->
+   <LLVMBuiltDir>D:\llvm-project\vsbuild\Release</LLVMBuiltDir>
+   <!-- LLVM's generated visual studio project's directory. -->
+   <LLVMVSProjDir>D:\llvm-project\vsbuild</LLVMVSProjDir>
+   
+   <!-- Debugging command line arguments, so we dont have to go to that annoying
+   property page (right click project -> Properties -> Configuration Properties ->
+   Debugging -> Command Arguments) all the time. -->
+   <ValeDebugArgs>D:\addret.vale --cpu=x86-64 -o D:\</ValeDebugArgs>
+ </PropertyGroup>
+</Project>

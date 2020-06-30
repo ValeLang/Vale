@@ -203,12 +203,8 @@ void genSetup(GenState *gen, ConeOptions *opt) {
     gen->datalayout = LLVMCreateTargetDataLayout(machine);
     opt->ptrsize = LLVMPointerSize(gen->datalayout) << 3u;
 
-    gen->context = LLVMGetGlobalContext(); // LLVM inlining bugs prevent use of LLVMContextCreate();
-//    gen->fn = NULL;
-//    gen->allocaPoint = NULL;
-//    gen->block = NULL;
-//    gen->loopstack = memAllocBlk(sizeof(GenLoopState)*GenLoopMax);
-//    gen->loopstackcnt = 0;
+    // LLVM inlining bugs prevent use of LLVMContextCreate();
+    gen->context = LLVMGetGlobalContext();
 }
 
 void genClose(GenState *gen) {

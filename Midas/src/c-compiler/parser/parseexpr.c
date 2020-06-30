@@ -11,7 +11,7 @@
 #include "../ir/ir.h"
 #include "../ir/nametbl.h"
 #include "../shared/memory.h"
-#include "../shared/error.h"
+//#include "error.h"
 #include "lexer.h"
 
 #include <stdio.h>

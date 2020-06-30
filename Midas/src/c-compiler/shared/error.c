@@ -5,7 +5,7 @@
  * See Copyright Notice in conec.h
 */
 
-#include "error.h"
+//#include "error.h"
 #include "timer.h"
 
 #include <stdio.h>

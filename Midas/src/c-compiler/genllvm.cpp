@@ -5,15 +5,11 @@
  * See Copyright Notice in conec.h
 */
 
-#include "../ir/ir.h"
-#include "../parser/lexer.h"
-#include "../shared/error.h"
-#include "../shared/timer.h"
-#include "../coneopts.h"
-#include "../ir/nametbl.h"
-#include "../shared/fileio.h"
+#include "coneopts.h"
+#include "utils/fileio.h"
 #include "genllvm.h"
-#include "../vale.h"
+#include "vale.h"
+#include "error.h"
 
 #include "llvm-c/ExecutionEngine.h"
 #include <llvm-c/Target.h>
@@ -25,9 +21,10 @@
 #include "llvm-c/Transforms/Utils.h"
 #endif
 
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cassert>
+#include <string>
+#include <cstring>
+#include <iostream>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -37,23 +34,8 @@
 #define objext "o"
 #endif
 
-// Insert every alloca before the allocaPoint in the function's entry block.
-// Why? To improve LLVM optimization of SRoA and mem2reg, all allocas
-// should be located in the function's entry block before the first call.
-LLVMValueRef genlAlloca(GenState *gen, LLVMTypeRef type, const char *name) {
-    LLVMBasicBlockRef current_block = LLVMGetInsertBlock(gen->builder);
-    LLVMPositionBuilderBefore(gen->builder, gen->allocaPoint);
-    LLVMValueRef alloca = LLVMBuildAlloca(gen->builder, type, name);
-    LLVMPositionBuilderAtEnd(gen->builder, current_block);
-    return alloca;
-}
-
-void genlPackage(GenState *gen, ModuleNode *mod) {
-
-    if (mod) {
-      assert(mod->tag == ModuleTag);
-    }
-    gen->module = LLVMModuleCreateWithNameInContext(gen->opt->srcname, gen->context);
+void genlPackage(GenState *gen) {
+    gen->module = LLVMModuleCreateWithNameInContext(gen->opt->srcDirAndNameNoExt.c_str(), gen->context);
     if (!gen->opt->release) {
         gen->dibuilder = LLVMCreateDIBuilder(gen->module);
         gen->difile = LLVMDIBuilderCreateFile(gen->dibuilder, "main.cone", 9, ".", 1);
@@ -91,7 +73,7 @@ LLVMTargetMachineRef genlCreateMachine(ConeOptions *opt) {
     if (!opt->triple)
         opt->triple = LLVMGetDefaultTargetTriple();
     if (LLVMGetTargetFromTriple(opt->triple, &target, &err) != 0) {
-        errorMsg(ErrorGenErr, "Could not create target: %s", err);
+        errorExit(ExitCode::LlvmSetupFailed, "Could not create target: ", err);
         LLVMDisposeMessage(err);
         return NULL;
     }
@@ -104,7 +86,7 @@ LLVMTargetMachineRef genlCreateMachine(ConeOptions *opt) {
     if (!opt->features)
         opt->features = "";
     if (!(machine = LLVMCreateTargetMachine(target, opt->triple, opt->cpu, opt->features, opt_level, reloc, LLVMCodeModelDefault))) {
-        errorMsg(ErrorGenErr, "Could not create target machine");
+      errorExit(ExitCode::LlvmSetupFailed, "Could not create target machine");
         return NULL;
     }
 
@@ -112,7 +94,7 @@ LLVMTargetMachineRef genlCreateMachine(ConeOptions *opt) {
 }
 
 // Generate requested object file
-void genlOut(char *objpath, char *asmpath, LLVMModuleRef mod, char *triple, LLVMTargetMachineRef machine) {
+void genlOut(const char *objpath, const char *asmpath, LLVMModuleRef mod, const char *triple, LLVMTargetMachineRef machine) {
     char *err;
     LLVMTargetDataRef dataref;
     char *layout;
@@ -123,46 +105,53 @@ void genlOut(char *objpath, char *asmpath, LLVMModuleRef mod, char *triple, LLVM
     LLVMSetDataLayout(mod, layout);
     LLVMDisposeMessage(layout);
 
-    // Generate assembly file if requested
-    if (asmpath && LLVMTargetMachineEmitToFile(machine, mod, asmpath, LLVMAssemblyFile, &err) != 0) {
-        errorMsg(ErrorGenErr, "Could not emit asm file: %s", err);
+    if (asmpath) {
+      char asmpathCStr[1024] = {0};
+      strncpy(asmpathCStr, asmpath, 1024);
+
+      // Generate assembly file if requested
+      if (LLVMTargetMachineEmitToFile(machine, mod, asmpathCStr,
+          LLVMAssemblyFile, &err) != 0) {
+        std::cerr << "Could not emit asm file: " << asmpathCStr << std::endl;
         LLVMDisposeMessage(err);
+      }
     }
 
+    char objpathCStr[1024] = { 0 };
+    strncpy(objpathCStr, objpath, 1024);
+
     // Generate .o or .obj file
-    if (LLVMTargetMachineEmitToFile(machine, mod, objpath, LLVMObjectFile, &err) != 0) {
-        errorMsg(ErrorGenErr, "Could not emit obj file to path %s: %s", objpath, err);
+    if (LLVMTargetMachineEmitToFile(machine, mod, objpathCStr, LLVMObjectFile, &err) != 0) {
+      std::cerr << "Could not emit obj file to path " << objpathCStr << " " << err << std::endl;
         LLVMDisposeMessage(err);
     }
 }
 
 // Generate IR nodes into LLVM IR using LLVM
-void genMod(GenState *gen, ModuleNode *mod) {
+void genMod(GenState *gen) {
     char *err;
 
     // Generate IR to LLVM IR
-    genlPackage(gen, mod);
+    genlPackage(gen);
 
     // Serialize the LLVM IR, if requested
-    if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, fileMakePath(gen->opt->output, gen->opt->srcname, "pre.ll"), &err) != 0) {
-      errorMsg(ErrorGenErr, "Could not emit pre-ir file: %s", err);
+    if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(), "pre.ll").c_str(), &err) != 0) {
+      std::cerr << "Could not emit pre-ir file: " << err << std::endl;
       LLVMDisposeMessage(err);
     }
 
     // Verify generated IR
     if (gen->opt->verify) {
-        timerBegin(VerifyTimer);
         char *error = NULL;
         LLVMVerifyModule(gen->module, LLVMAbortProcessAction, &error);
         if (error) {
             if (*error)
-                errorMsg(ErrorGenErr, "Module verification failed:\n%s", error);
+                errorExit(ExitCode::VerifyFailed, "Module verification failed:\n%s", error);
             LLVMDisposeMessage(error);
         }
     }
 
     // Optimize the generated LLVM IR
-    timerBegin(OptTimer);
     LLVMPassManagerRef passmgr = LLVMCreatePassManager();
     LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
     LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
@@ -175,17 +164,26 @@ void genMod(GenState *gen, ModuleNode *mod) {
     LLVMDisposePassManager(passmgr);
 
   // Serialize the LLVM IR, if requested
-  if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, fileMakePath(gen->opt->output, gen->opt->srcname, "ll"), &err) != 0) {
-    errorMsg(ErrorGenErr, "Could not emit ir file: %s", err);
+  auto outputFilePath = fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(), "ll");
+  std::cout << "Printing file " << outputFilePath << std::endl;
+  if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, outputFilePath.c_str(), &err) != 0) {
+    std::cerr << "Could not emit ir file: " << err << std::endl;
     LLVMDisposeMessage(err);
   }
 
     // Transform IR to target's ASM and OBJ
-    timerBegin(CodeGenTimer);
-    if (gen->machine)
-        genlOut(fileMakePath(gen->opt->output, gen->opt->srcname, gen->opt->wasm? "wasm" : objext),
-            gen->opt->print_asm? fileMakePath(gen->opt->output, gen->opt->srcname, gen->opt->wasm? "wat" : asmext) : NULL,
-            gen->module, gen->opt->triple, gen->machine);
+    if (gen->machine) {
+      auto objpath =
+          fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(),
+          gen->opt->wasm ? "wasm" : objext);
+      auto asmpath =
+          fileMakePath(gen->opt->output,
+              gen->opt->srcNameNoExt.c_str(),
+              gen->opt->wasm ? "wat" : asmext);
+      genlOut(
+          objpath.c_str(),gen->opt->print_asm ? asmpath.c_str() : NULL,
+          gen->module, gen->opt->triple, gen->machine);
+    }
 
 
   LLVMDisposeModule(gen->module);
@@ -198,7 +196,7 @@ void genSetup(GenState *gen, ConeOptions *opt) {
 
     LLVMTargetMachineRef machine = genlCreateMachine(opt);
     if (!machine)
-        exit(ExitOpts);
+        exit((int)(ExitCode::BadOpts));
 
     // Obtain data layout info, particularly pointer sizes
     gen->machine = machine;
@@ -206,11 +204,11 @@ void genSetup(GenState *gen, ConeOptions *opt) {
     opt->ptrsize = LLVMPointerSize(gen->datalayout) << 3u;
 
     gen->context = LLVMGetGlobalContext(); // LLVM inlining bugs prevent use of LLVMContextCreate();
-    gen->fn = NULL;
-    gen->allocaPoint = NULL;
-    gen->block = NULL;
-    gen->loopstack = memAllocBlk(sizeof(GenLoopState)*GenLoopMax);
-    gen->loopstackcnt = 0;
+//    gen->fn = NULL;
+//    gen->allocaPoint = NULL;
+//    gen->block = NULL;
+//    gen->loopstack = memAllocBlk(sizeof(GenLoopState)*GenLoopMax);
+//    gen->loopstackcnt = 0;
 }
 
 void genClose(GenState *gen) {

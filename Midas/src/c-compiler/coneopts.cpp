@@ -5,9 +5,9 @@
  * See Copyright Notice in conec.h
 */
 
-#include "conec.h"
+#include "main.h"
 #include "coneopts.h"
-#include "shared/options.h"
+#include "utils/options.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -180,9 +180,6 @@ int coneOptSet(ConeOptions *opt, int *argc, char **argv) {
     // options->check.errors = errors_alloc();
 
     optInit(args, &s, argc, argv);
-#if CONE_DEFAULT_PIC
-    opt.pic = 1;
-#endif
     opt->release = 1;
 
     while ((id = optNext(&s)) != -1) {

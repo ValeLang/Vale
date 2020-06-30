@@ -42,7 +42,7 @@ static int optEndReached(opt_arg_t* arg) {
 // Return NULL if none found, 1 if duplicate matches
 static opt_arg_t* optFindMatch(opt_state_t* s)
 {
-    char* match_name;
+    const char* match_name;
     size_t match_length;
     int is_long_opt;
     opt_arg_t *argp;

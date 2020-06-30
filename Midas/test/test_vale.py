@@ -69,11 +69,15 @@ class ValeTest(unittest.TestCase):
 
         vir_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}.vir"
         proc = self.valestrom(vale_file, vir_file)
+        # print(proc.stdout)
+        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"valestrom couldn't compile {vale_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
 
         proc = self.valec(vir_file, build_dir)
+        # print(proc.stdout)
+        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"valec couldn't compile {vir_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
@@ -81,6 +85,8 @@ class ValeTest(unittest.TestCase):
         exe_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}"
         o_files = glob.glob(f"{build_dir}/*.o")
         proc = self.clang(o_files, exe_file)
+        # print(proc.stdout)
+        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
                          proc.stdout + "\n" + proc.stderr)

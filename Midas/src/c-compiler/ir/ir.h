@@ -48,7 +48,7 @@ typedef struct TypeCheckState TypeCheckState;
 
 // These includes are needed by all node handling
 #include "../parser/lexer.h"
-#include "../shared/error.h"
+//#include "error.h"
 #include "nametbl.h"
 #include "../shared/memory.h"
 

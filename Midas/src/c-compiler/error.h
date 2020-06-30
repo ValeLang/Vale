@@ -12,14 +12,10 @@
 
 // Exit error codes
 enum class ExitCode : int {
-    // Terminating errors
     Success = 0,
-//    ExitError,    // Program fails to compile due to caught errors
-//    ExitNF,        // Could not find specified source files
-//    ExitMem,    // Out of memory
-    BadOpts,    // Invalid compiler options
-    LlvmSetupFailed,    // Failure to set up LLVM
-    VerifyFailed,    // LLVM didn't like the AST we gave it.
+    BadOpts = 1,    // Invalid compiler options
+    LlvmSetupFailed = 2,    // Failure to set up LLVM
+    VerifyFailed = 3,    // LLVM didn't like the AST we gave it.
 };
 
 

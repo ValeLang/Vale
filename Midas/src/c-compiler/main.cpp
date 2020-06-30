@@ -28,10 +28,6 @@ int main(int argc, char **argv) {
     new (&coneopt.srcNameNoExt) std::string(fileName(coneopt.srcpath));
     new (&coneopt.srcDirAndNameNoExt) std::string(coneopt.srcDir + coneopt.srcNameNoExt);
 
-  std::cout << "srcDir: " << coneopt.srcDir << std::endl;
-  std::cout << "srcNameNoExt: " << coneopt.srcNameNoExt << std::endl;
-  std::cout << "srcDirAndNameNoExt: " << coneopt.srcDirAndNameNoExt << std::endl;
-
     // We set up generation early because we need target info, e.g.: pointer size
     GenState gen;
     genSetup(&gen, &coneopt);

@@ -6,7 +6,6 @@
 */
 
 #include "fileio.h"
-#include "shared/memory.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -8,6 +8,7 @@
 #ifndef coneopts_h
 #define coneopts_h
 
+#include <string>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -19,15 +20,17 @@ typedef struct ConeOptions {
     // magic_package_t* magic_packages;
 
     char* srcpath;    // Full path
-    char* srcname;    // Just the filename
+    std::string srcDir;    // Just the directory
+    std::string srcNameNoExt;    // Just the name of the file, without extension
+    std::string srcDirAndNameNoExt;    // Just the name of the file, without extension
 
     char* output;
     char* link_arch;
     char* linker;
 
     char* triple;
-    char* cpu;
-    char* features;
+    const char* cpu;
+    const char* features;
 
     //typecheck_t check;
 

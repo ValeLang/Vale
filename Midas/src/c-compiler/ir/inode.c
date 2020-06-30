@@ -7,8 +7,8 @@
 
 #include "ir.h"
 #include "../parser/lexer.h"
-#include "../shared/fileio.h"
-#include "../shared/error.h"
+#include "utils/fileio.h"
+//#include "error.h"
 
 #include <stdio.h>
 #include <string.h>

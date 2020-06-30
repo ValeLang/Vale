@@ -10,7 +10,7 @@
 #include "parser.h"
 #include "../ir/ir.h"
 #include "../shared/memory.h"
-#include "../shared/error.h"
+//#include "error.h"
 #include "../ir/nametbl.h"
 #include "lexer.h"
 

@@ -5,9 +5,12 @@
  * See Copyright Notice in conec.h
 */
 
+#include <cstdlib>
+#include "error.h"
+
 #include "coneopts.h"
-#include "shared/fileio.h"
-#include "genllvm/genllvm.h"
+#include "utils/fileio.h"
+#include "genllvm.h"
 
 
 int main(int argc, char **argv) {
@@ -15,22 +18,25 @@ int main(int argc, char **argv) {
 
     // Get compiler's options from passed arguments
     int ok = coneOptSet(&coneopt, &argc, argv);
-    if (ok <= 0)
-        exit(ok == 0 ? 0 : ExitOpts);
+    if (ok <= 0) {
+      exit((int)(ok == 0 ? ExitCode::Success : ExitCode::BadOpts));
+    }
     if (argc < 2)
-        errorExit(ExitOpts, "Specify a Cone program to compile.");
+        errorExit(ExitCode::BadOpts, "Specify a Cone program to compile.");
     coneopt.srcpath = argv[1];
-    coneopt.srcname = fileName(coneopt.srcpath);
+    new (&coneopt.srcDir) std::string(fileDirectory(coneopt.srcpath));
+    new (&coneopt.srcNameNoExt) std::string(fileName(coneopt.srcpath));
+    new (&coneopt.srcDirAndNameNoExt) std::string(coneopt.srcDir + coneopt.srcNameNoExt);
 
     // We set up generation early because we need target info, e.g.: pointer size
     GenState gen;
     genSetup(&gen, &coneopt);
 
     // Parse source file, do semantic analysis, and generate code
-    ModuleNode *modnode = NULL;
-    if (!errors)
-        genMod(&gen, modnode);
+//    ModuleNode *modnode = NULL;
+//    if (!errors)
+    genMod(&gen);
 
     genClose(&gen);
-    errorSummary();
+//    errorSummary();
 }

@@ -18,8 +18,8 @@
 // Structure for a describing an option argument
 typedef struct opt_arg_t
 {
-    char *long_opt;
-    char short_opt;
+    const char *long_opt;
+    const char short_opt;
     uint32_t flag;
     uint32_t id;
 } opt_arg_t;

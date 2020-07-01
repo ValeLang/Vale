@@ -44,7 +44,7 @@ void genlPackage(GenState *gen) {
             gen->difile, "Cone compiler", 13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0/*, "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere")*/);
     }
   //    genlModule(gen, mod);
-  compileValeCode(gen->module, gen->opt->srcpath);
+  compileValeCode(gen->module, gen->datalayout, gen->opt->srcpath);
     if (!gen->opt->release)
         LLVMDIBuilderFinalize(gen->dibuilder);
 }

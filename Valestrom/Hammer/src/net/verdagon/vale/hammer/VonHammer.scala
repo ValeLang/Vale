@@ -375,6 +375,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("structExpr", vonifyNode(structExpr)),
+            VonMember("structType", vonifyCoord(structExpr.resultType)),
             VonMember(
               "localTypes",
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
@@ -437,6 +438,7 @@ object VonHammer {
           Vector(
             VonMember("structExpr", vonifyNode(structExpr)),
             VonMember("structId", vonifyStructRef(structExpr.resultType.kind)),
+            VonMember("structType", vonifyCoord(structExpr.resultType)),
             VonMember("memberIndex", VonInt(memberIndex)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
             VonMember("expectedMemberType", vonifyCoord(expectedMemberType)),

@@ -1,0 +1,5 @@
+fn main() {
+  x! Int = 73;
+  mut x = 42;
+  = x;
+}

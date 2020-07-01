@@ -1,8 +1,0 @@
-struct Carrier {
-  hp Int;
-  interceptors Int;
-}
-
-fn main() {
-  = Carrier(400, 8).interceptors;
-}

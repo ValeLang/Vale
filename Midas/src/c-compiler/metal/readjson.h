@@ -3,8 +3,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "types.h"
-#include "ast.h"
+#include "metal/types.h"
+#include "metal/ast.h"
 
 Program* readProgram(const nlohmann::json& program);
 

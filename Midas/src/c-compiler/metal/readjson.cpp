@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include "readjson.h"
-#include "instructions.h"
-#include "ast.h"
+#include "metal/instructions.h"
+#include "metal/ast.h"
 
 // for convenience
 using json = nlohmann::json;
@@ -198,10 +198,17 @@ Expression* readExpression(const json& expression) {
     return new NewStruct(
         readArray(expression["sourceExprs"], readExpression),
         readReference(expression["resultType"]));
+  } else if (type == "Destructure") {
+    return new Destructure(
+        readExpression(expression["structExpr"]),
+        readReference(expression["structType"]),
+        readArray(expression["localTypes"], readReference),
+        readArray(expression["localIndices"], readLocal));
   } else if (type == "MemberLoad") {
     return new MemberLoad(
         readExpression(expression["structExpr"]),
         readStructReferend(expression["structId"]),
+        readReference(expression["structType"]),
         expression["memberIndex"],
         readOwnership(expression["targetOwnership"]),
         readReference(expression["expectedMemberType"]),

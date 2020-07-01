@@ -20,7 +20,7 @@ object TemplexScout {
         }
       }
       case MutabilityPT(mutability) => MutabilityST(mutability)
-      case CallPT(template, args) => CallST(translateTemplex(declaredRunes, template), args.map(arg => translateTemplex(declaredRunes, arg)))
+      case CallPT(_,template, args) => CallST(translateTemplex(declaredRunes, template), args.map(arg => translateTemplex(declaredRunes, arg)))
       case NullablePT(inner) => NullableST(translateTemplex(declaredRunes, inner))
       case OwnershippedPT(_,ownership,inner) => OwnershippedST(ownership, translateTemplex(declaredRunes, inner))
       case RepeaterSequencePT(_,mutability, size, element) => RepeaterSequenceST(translateTemplex(declaredRunes, mutability), translateTemplex(declaredRunes, size), translateTemplex(declaredRunes, element))

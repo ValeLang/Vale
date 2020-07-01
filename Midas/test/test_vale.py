@@ -18,7 +18,7 @@ class ValeTest(unittest.TestCase):
 
     def valestrom(self, vale_file: str,
                   vir_file: str) -> subprocess.CompletedProcess:
-        driver = "Driver20200628.jar"
+        driver = "Driver20200630.jar"
         driver_class = "net.verdagon.vale.driver.Driver"
         return procrun(
             [
@@ -68,7 +68,7 @@ class ValeTest(unittest.TestCase):
         os.makedirs(build_dir)
 
         vir_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}.vir"
-        proc = self.valestrom(vale_file, vir_file)
+        proc = self.valestrom(f"tests/{vale_file}", vir_file)
         # print(proc.stdout)
         # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
@@ -83,7 +83,7 @@ class ValeTest(unittest.TestCase):
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}"
-        o_files = glob.glob(f"{build_dir}/*.o")
+        o_files = glob.glob(f"{build_dir}/*.o") + ["../src/valestd/assert.c"]
         proc = self.clang(o_files, exe_file)
         # print(proc.stdout)
         # print(proc.stderr)
@@ -115,8 +115,11 @@ class ValeTest(unittest.TestCase):
     def test_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
 
-    # def test_mutstruct(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
+    def test_mutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
+
+    def test_constraintref(self) -> None:
+        self.compile_and_execute_and_expect_return_code("constraintref.vale", 8)
 
 
 if __name__ == '__main__':

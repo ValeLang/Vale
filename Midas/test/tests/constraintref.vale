@@ -1,0 +1,10 @@
+struct Carrier {
+  hp Int;
+  interceptors Int;
+}
+
+fn main() {
+  carrier = Carrier(400, 8);
+  ref = &carrier;
+  = ref.interceptors;
+}

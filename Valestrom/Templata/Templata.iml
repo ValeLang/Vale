@@ -7,11 +7,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="Astronomer" />
+    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
     <orderEntry type="module" module-name="Utils" />
+    <orderEntry type="module" module-name="Astronomer" />
     <orderEntry type="module" module-name="Scout" />
     <orderEntry type="module" module-name="Parser" />
-    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
-    <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
   </component>
 </module>

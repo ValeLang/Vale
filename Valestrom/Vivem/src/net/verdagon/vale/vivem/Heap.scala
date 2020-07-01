@@ -2,7 +2,6 @@ package net.verdagon.vale.vivem
 
 import java.io.PrintStream
 
-import net.verdagon.vale.hammer.NameHammer
 import net.verdagon.vale.metal._
 import net.verdagon.vale.vassertSome
 import net.verdagon.vale.vivem.ExpressionVivem

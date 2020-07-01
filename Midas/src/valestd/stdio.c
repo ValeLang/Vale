@@ -11,6 +11,7 @@
 
 void printStr(char *p, size_t len) {
 	fwrite(p, len, 1, stdout);
+	assert(false);
 }
 
 void printInt(int64_t nbr) {

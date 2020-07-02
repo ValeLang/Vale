@@ -14,16 +14,22 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
   } else if (auto structReferend =
       dynamic_cast<StructReferend*>(referenceM->referend)) {
 
-    bool inliine = true;//referenceM->location == INLINE; TODO
+    auto structM = globalState->program->getStruct(structReferend->fullName);
 
     auto structL = globalState->getStruct(structReferend->fullName);
 
-    if (inliine) {
-      return structL;
+    if (structM->mutability == Mutability::MUTABLE) {
+      return LLVMPointerType(structL, 0);
     } else {
-      // TODO return a pointer to it perhaps?
-      assert(false);
-      return nullptr;
+      bool inliine = true;//referenceM->location == INLINE; TODO
+
+      if (inliine) {
+        return structL;
+      } else {
+        // TODO return a pointer to it perhaps?
+        assert(false);
+        return nullptr;
+      }
     }
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
@@ -38,4 +44,16 @@ std::vector<LLVMTypeRef> translateTypes(GlobalState* globalState, std::vector<Re
     result.push_back(translateType(globalState, referenceM));
   }
   return result;
+}
+
+Mutability ownershipToMutability(Ownership ownership) {
+  switch (ownership) {
+    case Ownership::SHARE:
+      return Mutability::IMMUTABLE;
+    case Ownership::BORROW:
+    case Ownership::OWN:
+      return Mutability::MUTABLE;
+  }
+  assert(false);
+  return Mutability::MUTABLE;
 }

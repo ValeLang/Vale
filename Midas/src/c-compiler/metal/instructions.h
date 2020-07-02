@@ -134,8 +134,19 @@ public:
 class Destructure : public Expression {
 public:
   Expression* structExpr;
+  Reference* structType;
   std::vector<Reference*> localTypes;
   std::vector<Local*> localIndices;
+
+  Destructure(
+      Expression* structExpr_,
+      Reference* structType_,
+      std::vector<Reference*> localTypes_,
+      std::vector<Local*> localIndices_) :
+      structExpr(structExpr_),
+      structType(structType_),
+      localTypes(localTypes_),
+      localIndices(localIndices_) {}
 };
 
 
@@ -200,6 +211,7 @@ class MemberLoad : public Expression {
 public:
   Expression* structExpr;
   StructReferend* structId;
+  Reference* structType;
   int memberIndex;
   Ownership targetOwnership;
   Reference* expectedMemberType;
@@ -209,6 +221,7 @@ public:
   MemberLoad(
       Expression* structExpr_,
       StructReferend* structId_,
+      Reference* structType_,
       int memberIndex_,
       Ownership targetOwnership_,
       Reference* expectedMemberType_,
@@ -216,6 +229,7 @@ public:
       std::string memberName_) :
     structExpr(structExpr_),
     structId(structId_),
+    structType(structType_),
     memberIndex(memberIndex_),
     targetOwnership(targetOwnership_),
     expectedMemberType(expectedMemberType_),

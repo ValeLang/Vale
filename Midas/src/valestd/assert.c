@@ -9,11 +9,20 @@
 #include <stdio.h>
 #include <stdint.h>
 
+int64_t __liveHeapObjCounter;
+
 void __vassert(char value) {
   printf("Running assertion!\n");
   if (!value) {
     printf("Assertion failed!\n");
-    exit(1);
+    exit(255);
+  }
+}
+
+void __vassertI64Eq(int64_t expected, int64_t actual) {
+  if (expected != actual) {
+    printf("Assertion failed! Expected %d but was %d.", expected, actual);
+    exit(255);
   }
 }
 

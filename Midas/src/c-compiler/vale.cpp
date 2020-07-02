@@ -40,6 +40,11 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   globalState.dataLayout = dataLayout;
   globalState.program = program;
 
+  globalState.liveHeapObjCounter =
+      LLVMAddGlobal(mod, LLVMInt64Type(), "__liveHeapObjCounter");
+  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
+//  LLVMSetVisibility(globalState.liveHeapObjCounter, LLVMHiddenVisibility);
+
   {
     LLVMTypeRef rettype = LLVMPointerType(LLVMInt8Type(), 0);
     LLVMTypeRef parmtype = LLVMInt64Type();
@@ -59,6 +64,13 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
     LLVMTypeRef parmtype = LLVMInt1Type();
     LLVMTypeRef fnsig = LLVMFunctionType(rettype, &parmtype, 1, 0);
     globalState.assert = LLVMAddFunction(mod, "__vassert", fnsig);
+  }
+
+  {
+    LLVMTypeRef rettype = LLVMVoidType();
+    LLVMTypeRef parmtypes[2] = { LLVMInt64Type(), LLVMInt64Type() };
+    LLVMTypeRef fnsig = LLVMFunctionType(rettype, parmtypes, 2, 0);
+    globalState.assertI64Eq = LLVMAddFunction(mod, "__vassertI64Eq", fnsig);
   }
 
   {
@@ -131,9 +143,16 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlock(entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(builder, blockL);
+
   LLVMValueRef emptyValues[1] = {};
-  LLVMBuildRet(
-      builder,
-//      LLVMConstInt(LLVMInt64Type(), 42, false));
-      LLVMBuildCall(builder, mainL, emptyValues, 0, "valeMainCall"));
+  LLVMValueRef mainResult =
+      LLVMBuildCall(builder, mainL, emptyValues, 0, "valeMainCall");
+
+  LLVMValueRef args[2] = {
+      LLVMBuildLoad(builder, globalState.liveHeapObjCounter, "numLiveObjs"),
+      LLVMConstInt(LLVMInt64Type(), 0, false)
+  };
+  LLVMBuildCall(builder, globalState.assertI64Eq, args, 2, "");
+
+  LLVMBuildRet(builder, mainResult);
 }

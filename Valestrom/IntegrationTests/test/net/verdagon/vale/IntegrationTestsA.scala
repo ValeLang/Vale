@@ -172,15 +172,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = new Compilation(
-      """
-        |interface MyInterface { }
-        |struct MyStruct { value *Int; }
-        |impl MyStruct for MyInterface;
-        |fn main() {
-        |  x MyInterface = MyStruct(9);
-        |}
-      """.stripMargin)
+    val compile = new Compilation(InheritanceSamples.upcasting)
     compile.run(Vector())
   }
 

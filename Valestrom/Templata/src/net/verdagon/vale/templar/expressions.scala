@@ -299,7 +299,7 @@ case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceE
 case class ArraySequenceE2(
     elements: List[ReferenceExpression2],
     resultReference: Coord,
-    arrayType: ArraySequenceT2) extends ReferenceExpression2 {
+    arrayType: KnownSizeArrayT2) extends ReferenceExpression2 {
   override def resultRegister = ReferenceRegister2(resultReference)
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ arrayType.all(func)
@@ -394,7 +394,7 @@ case class ArgLookup2(
 
 case class ArraySequenceLookup2(
     arrayExpr: ReferenceExpression2,
-    arrayType: ArraySequenceT2,
+    arrayType: KnownSizeArrayT2,
     indexExpr: ReferenceExpression2) extends AddressExpression2 {
   vassert(arrayExpr.resultRegister.reference.referend == arrayType)
 
@@ -589,7 +589,7 @@ case class ConstructArray2(
 // sequence of results from the call.
 case class DestroyArraySequence2(
     arrayExpr: ReferenceExpression2,
-    arrayType: ArraySequenceT2,
+    arrayType: KnownSizeArrayT2,
     consumer: ReferenceExpression2) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
 
@@ -611,8 +611,8 @@ case class DestroyUnknownSizeArray2(
 
 case class DrainArraySequence2(
     arrayExpr: ReferenceExpression2,
-    arrayType: ArraySequenceT2,
-    resultArraySeqType: ArraySequenceT2,
+    arrayType: KnownSizeArrayT2,
+    resultArraySeqType: KnownSizeArrayT2,
     resultArraySeqRefType: Coord,
     consumer: ReferenceExpression2) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(resultArraySeqRefType)
@@ -707,7 +707,7 @@ case class Destructure2(
 // in the destination variables, which is why it's a list of ReferenceLocalVariable2.
 case class DestructureArraySequence2(
   expr: ReferenceExpression2,
-  arraySeq: ArraySequenceT2,
+  arraySeq: KnownSizeArrayT2,
   destinationReferenceVariables: List[ReferenceLocalVariable2]
 ) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))

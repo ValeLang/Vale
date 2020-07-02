@@ -184,18 +184,20 @@ object VonHammer {
       case FloatH() => VonObject("Float", None, Vector())
       case ir @ InterfaceRefH(_) => vonifyInterfaceRef(ir)
       case sr @ StructRefH(_) => vonifyStructRef(sr)
-      case UnknownSizeArrayTH(rawArray) => {
+      case UnknownSizeArrayTH(name, rawArray) => {
         VonObject(
           "UnknownSizeArray",
           None,
           Vector(
+            VonMember("name", VonStr(name.toString())),
             VonMember("array", vonifyRawArray(rawArray))))
       }
-      case KnownSizeArrayTH(size, rawArray) => {
+      case KnownSizeArrayTH(name, size, rawArray) => {
         VonObject(
-          "UnknownSizeArray",
+          "KnownSizeArray",
           None,
           Vector(
+            VonMember("name", VonStr(name.toString())),
             VonMember("size", VonInt(size)),
             VonMember("array", vonifyRawArray(rawArray))))
       }
@@ -203,12 +205,13 @@ object VonHammer {
   }
 
   def vonifyRawArray(t: RawArrayTH): IVonData = {
-    val RawArrayTH(elementType) = t
+    val RawArrayTH(mutability, elementType) = t
 
     VonObject(
       "Array",
       None,
       Vector(
+        VonMember("mutability", vonifyMutability(mutability)),
         VonMember("elementType", vonifyCoord(elementType))))
   }
 
@@ -488,6 +491,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("indexExpr", vonifyNode(indexExpr)),
             VonMember("resultType", vonifyCoord(resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
@@ -762,6 +766,29 @@ object VonHammer {
           None,
           Vector(
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
+      }
+      case KnownSizeArrayName2(size, arr) => {
+        VonObject(
+          "KnownSizeArrayName",
+          None,
+          Vector(
+            VonMember("size", VonInt(size)),
+            VonMember("arr", translateName(hinputs, hamuts, arr))))
+      }
+      case UnknownSizeArrayName2(arr) => {
+        VonObject(
+          "UnknownSizeArrayName",
+          None,
+          Vector(
+            VonMember("arr", translateName(hinputs, hamuts, arr))))
+      }
+      case RawArrayName2(mutability, elementType) => {
+        VonObject(
+          "RawArrayName",
+          None,
+          Vector(
+            VonMember("mutability", vonifyMutability(Conversions.evaluateMutability(mutability))),
+            VonMember("elementType", vonifyCoord(TypeHammer.translateReference(hinputs, hamuts, elementType)))))
       }
       case TemplarBlockResultVarName2(num) => {
         VonObject(

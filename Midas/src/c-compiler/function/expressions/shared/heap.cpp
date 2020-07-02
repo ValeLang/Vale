@@ -6,11 +6,8 @@ LLVMValueRef mallocStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMTypeRef structL) {
-  LLVMValueRef sizeLE =
-      LLVMConstInt(
-          LLVMInt64Type(),
-          LLVMABISizeOfType(globalState->dataLayout, structL),
-          false);
+  size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, structL);
+  LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
   auto newStructLE =
       LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
 

@@ -213,7 +213,7 @@ object PatternTemplar {
                 temputs, fate, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
             (lets0 ++ innerLets)
           }
-          case ArraySequenceT2(size, RawArrayT2(memberType, mutability)) => {
+          case KnownSizeArrayT2(size, RawArrayT2(memberType, mutability)) => {
             if (size != listOfMaybeDestructureMemberPatterns.size) {
               vfail("Wrong num exprs!")
             }
@@ -355,7 +355,7 @@ object PatternTemplar {
     // for each member, unlet its local and pass it to the subpattern.
 
     val arrSeqRef2 = inputArraySeqExpr.resultRegister.reference
-    val Coord(arrSeqRefOwnership, arraySeqT @ ArraySequenceT2(numElements, RawArrayT2(elementType, arrayMutability))) = arrSeqRef2
+    val Coord(arrSeqRefOwnership, arraySeqT @ KnownSizeArrayT2(numElements, RawArrayT2(elementType, arrayMutability))) = arrSeqRef2
 
     val memberTypes = (0 until numElements).toList.map(_ => elementType)
 

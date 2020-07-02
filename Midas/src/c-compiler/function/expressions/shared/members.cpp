@@ -12,7 +12,7 @@ LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE) {
       CONTROL_BLOCK_STRUCT_NAME "_memberPtr");
 }
 
-LLVMValueRef getInnerStructPtr(LLVMBuilderRef builder, LLVMValueRef structLE) {
+LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE) {
   return LLVMBuildStructGEP(
       builder,
       structLE,
@@ -47,12 +47,12 @@ LLVMValueRef loadMember(
       return LLVMBuildExtractValue(
           builder, structExpr, memberIndex, memberName.c_str());
     } else {
-      LLVMValueRef innerStructPtrLE = getInnerStructPtr(builder, structExpr);
+      LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
       return loadInnerStructMember(
           builder, innerStructPtrLE, memberIndex, memberName);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    LLVMValueRef innerStructPtrLE = getInnerStructPtr(builder, structExpr);
+    LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
     return loadInnerStructMember(
         builder, innerStructPtrLE, memberIndex, memberName);
   } else {
@@ -64,9 +64,9 @@ LLVMValueRef loadMember(
 // See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef getRcPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef structExpr) {
+    LLVMValueRef structPtrLE) {
   // Control block is always the 0th element of every struct.
-  auto controlPtrLE = LLVMBuildStructGEP(builder, structExpr, 0, "__control_ptr");
+  auto controlPtrLE = LLVMBuildStructGEP(builder, structPtrLE, 0, "__control_ptr");
   // RC is the 0th member of the RC struct.
   auto rcPtrLE = LLVMBuildStructGEP(builder, controlPtrLE, 0, "__rc_ptr");
   return rcPtrLE;
@@ -91,10 +91,10 @@ void setRC(
 
 void adjustRC(
     LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
+    LLVMValueRef structPtrLE,
     // 1 or -1
     int adjustAmount) {
-  adjustCounter(builder, getRcPtr(builder, structExpr), adjustAmount);
+  adjustCounter(builder, getRcPtr(builder, structPtrLE), adjustAmount);
 }
 
 LLVMValueRef rcEquals(
@@ -112,4 +112,25 @@ void flareRc(
     LLVMValueRef structExpr) {
   auto rcLE = getRC(builder, structExpr);
   flare(globalState, builder, color, rcLE);
+}
+
+void fillControlBlock(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockPtrLE) {
+  // TODO: maybe make a const global we can load from, instead of running these
+  //  instructions every time.
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->controlBlockStructL);
+  newControlBlockLE =
+      LLVMBuildInsertValue(
+          builder,
+          newControlBlockLE,
+          // Start at 1, 0 would mean it's dead.
+          LLVMConstInt(LLVMInt64Type(), 1, false),
+          0,
+          "__crc");
+  LLVMBuildStore(
+      builder,
+      newControlBlockLE,
+      controlBlockPtrLE);
 }

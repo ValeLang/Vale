@@ -55,8 +55,13 @@ void flareRc(
     int color,
     LLVMValueRef structExpr);
 
+void fillControlBlock(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef newStructLE);
+
 LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
 
-LLVMValueRef getInnerStructPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
+LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE);
 
 #endif

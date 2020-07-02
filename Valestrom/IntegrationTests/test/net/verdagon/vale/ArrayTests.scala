@@ -24,7 +24,7 @@ class ArrayTests extends FunSuite with Matchers {
     main.only({
       case LetNormal2(ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), _, _), expr) => {
         expr.resultRegister.reference.referend match {
-          case ArraySequenceT2(5, RawArrayT2(Coord(Share, Int2()), Immutable)) =>
+          case KnownSizeArrayT2(5, RawArrayT2(Coord(Share, Int2()), Immutable)) =>
         }
       }
     })

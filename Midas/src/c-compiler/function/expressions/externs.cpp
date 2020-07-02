@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/shared.h>
 
 #include "translatetype.h"
 
@@ -44,7 +45,7 @@ LLVMValueRef translateExternCall(
     assert(false);
   } else if (name == "F(\"__lessThanInt\",[],[R(*,i),R(*,i)])") {
     assert(call->argExprs.size() == 2);
-    return LLVMBuildICmp(
+    auto result = LLVMBuildICmp(
         builder,
         LLVMIntSLT,
         translateExpression(
@@ -52,6 +53,7 @@ LLVMValueRef translateExternCall(
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]),
         "");
+    return result;
   } else if (name == "F(\"__greaterThanOrEqInt\",[],[R(*,i),R(*,i)])") {
     // VivemExterns.greaterThanOrEqInt
     assert(false);

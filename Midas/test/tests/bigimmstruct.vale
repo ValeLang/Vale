@@ -1,0 +1,12 @@
+struct UnitSnapshot imm {
+  hp Int;
+  mp Int;
+  armor Int;
+  strength Int;
+  agility Int;
+  intelligence Int;
+}
+
+fn main() {
+  = UnitSnapshot(4, 5, 6, 7, 42, 9).agility;
+}

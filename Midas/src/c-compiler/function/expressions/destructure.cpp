@@ -1,4 +1,6 @@
 #include <iostream>
+#include <function/expressions/shared/members.h>
+#include <function/expressions/shared/heap.h>
 
 #include "translatetype.h"
 
@@ -26,7 +28,13 @@ LLVMValueRef translateDestructure(
       auto memberName = structM->members[i]->name;
       auto memberLE =
           loadMember(
-              builder, structLE, mutability, i, memberName + "_local");
+              globalState,
+              builder,
+              structM->members[i]->type,
+              structLE,
+              mutability,
+              i,
+              memberName + "_local");
       makeLocal(
           globalState,
           functionState,
@@ -36,21 +44,8 @@ LLVMValueRef translateDestructure(
     }
 
     if (destructureM->structType->ownership == Ownership::OWN) {
-      flareRc(globalState, builder, 13370009, structLE);
-
-      LLVMValueRef rcIsZero =
-          rcEquals(builder, structLE, LLVMConstInt(LLVMInt64Type(), 1, false));
-      LLVMBuildCall(
-          builder, globalState->assert, &rcIsZero, 1, "");
-
-      auto structAsCharPtrLE =
-          LLVMBuildBitCast(
-              builder,
-              structLE,
-              LLVMPointerType(LLVMInt8Type(), 0),
-              "charptrstruct");
-      LLVMBuildCall(
-          builder, globalState->free, &structAsCharPtrLE, 1, "");
+      // We dont check rc=1 here, that's done in freeStruct.
+      freeStruct(globalState, builder, structLE);
     }
 
     return makeNever();

@@ -52,7 +52,7 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
     mutability: Mutability,
     size: Int,
     element: Coord):
-  (ArraySequenceT2)
+  (KnownSizeArrayT2)
 
   def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType
   def getStructTemplataType(st: StructTemplata): ITemplataType
@@ -113,14 +113,13 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         coerce(state, thing, resultType)
       }
       case RepeaterSequenceAT(mutabilityTemplexS, sizeTemplexS, elementTemplexS, tyype) => {
-
         val (MutabilityTemplata(mutability)) = evaluateTemplex(env, state, mutabilityTemplexS)
 
         val (IntegerTemplata(size)) = evaluateTemplex(env, state, sizeTemplexS)
 
         val (CoordTemplata(elementType2)) = evaluateTemplex(env, state, elementTemplexS)
 
-        val kind = KindTemplata(ArraySequenceT2(size, RawArrayT2(elementType2, mutability)))
+        val kind = KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementType2, mutability)))
         coerce(state, kind, tyype)
       }
       case OwnershippedAT(ownershipS, innerType1) => {
@@ -330,7 +329,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         val ownership = if (array.mutability == Mutable) ownershipIfMutable else Share
         Coord(ownership, a)
       }
-      case a @ ArraySequenceT2(_, RawArrayT2(_, mutability)) => {
+      case a @ KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => {
         val ownership = if (mutability == Mutable) ownershipIfMutable else Share
         Coord(ownership, a)
       }

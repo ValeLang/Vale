@@ -197,14 +197,18 @@ case class TupleT2(members: List[Coord], underlyingStruct: StructRef2) extends K
   }
 }
 
-case class RawArrayT2(memberType: Coord, mutability: Mutability) extends Queriable2 {
+case class RawArrayT2(
+  memberType: Coord,
+  mutability: Mutability) extends Queriable2 {
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ memberType.all(func)
   }
 }
 
-case class ArraySequenceT2(size: Int, array: RawArrayT2) extends Kind {
+case class KnownSizeArrayT2(size: Int, array: RawArrayT2) extends Kind {
   override def order: Int = 12;
+
+  def name: FullName2[KnownSizeArrayName2] = FullName2(List(), KnownSizeArrayName2(size, RawArrayName2(array.mutability, array.memberType)))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
@@ -213,6 +217,8 @@ case class ArraySequenceT2(size: Int, array: RawArrayT2) extends Kind {
 
 case class UnknownSizeArrayT2(array: RawArrayT2) extends Kind {
   override def order: Int = 19;
+
+  def name: FullName2[UnknownSizeArrayName2] = FullName2(List(), UnknownSizeArrayName2(RawArrayName2(array.mutability, array.memberType)))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)

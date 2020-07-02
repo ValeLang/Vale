@@ -461,7 +461,7 @@ object ExpressionTemplar {
             case at @ UnknownSizeArrayT2(_) => {
               UnknownSizeArrayLookup2(containerExpr2, at, indexExpr2)
             }
-            case at @ ArraySequenceT2(_, _) => {
+            case at @ KnownSizeArrayT2(_, _) => {
               ArraySequenceLookup2(
                 containerExpr2,
                 at,
@@ -514,7 +514,7 @@ object ExpressionTemplar {
                 }
               }
             }
-            case as @ ArraySequenceT2(_, _) => {
+            case as @ KnownSizeArrayT2(_, _) => {
               if (memberNameStr.forall(Character.isDigit)) {
                 ArraySequenceLookup2(
                   containerExpr2,
@@ -932,7 +932,7 @@ object ExpressionTemplar {
         val mutability = Templar.getMutability(temputs, understruct2)
         if (mutability == Mutable) Borrow else Share
       }
-      case ArraySequenceT2(_, RawArrayT2(_, mutability)) => {
+      case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => {
         if (mutability == Mutable) Borrow else Share
       }
       case UnknownSizeArrayT2(array) => {

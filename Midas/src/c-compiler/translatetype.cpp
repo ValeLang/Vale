@@ -2,6 +2,30 @@
 
 #include "translatetype.h"
 
+LLVMTypeRef makeInnerArrayLT(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
+  auto elementLT = translateType(globalState, knownSizeArrayMT->rawArray->elementType);
+  return LLVMArrayType(elementLT, knownSizeArrayMT->size);
+}
+
+// This gives the actual struct, *not* a pointer to a struct, which you sometimes
+// might need instead. For that, use translateType.
+LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
+  auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
+
+  auto iter = globalState->knownSizeArrayCountedStructs.find(knownSizeArrayMT->name);
+  if (iter == globalState->knownSizeArrayCountedStructs.end()) {
+    auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), knownSizeArrayMT->name->name.c_str());
+    std::vector<LLVMTypeRef> elementsL;
+    elementsL.push_back(globalState->controlBlockStructL);
+    elementsL.push_back(innerArrayLT);
+    LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
+
+    iter = globalState->knownSizeArrayCountedStructs.emplace(knownSizeArrayMT->name, countedStruct).first;
+  }
+
+  return iter->second;
+}
+
 LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
   if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
     assert(referenceM->ownership == Ownership::SHARE);
@@ -27,6 +51,25 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       } else {
         auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
         return LLVMPointerType(countedStructL, 0);
+      }
+    }
+  } else if (auto knownSizeArrayMT =
+      dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
+    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+      assert(false);
+      return nullptr;
+    } else {
+      auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
+      size_t innerArraySizeBytes = LLVMABISizeOfType(globalState->dataLayout, innerArrayLT);
+      bool inliine = innerArraySizeBytes <= MAX_INLINE_SIZE_BYTES;
+      if (inliine) {
+        return innerArrayLT;
+      } else {
+        auto knownSizeArrayCountedStructLT =
+            translateKnownSizeArrayToCountedStruct(
+                globalState, knownSizeArrayMT);
+
+        return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
       }
     }
   } else {
@@ -70,6 +113,20 @@ bool isInlImm(GlobalState* globalState, Reference* referenceM) {
       auto innerStructL = globalState->getInnerStruct(structRnd->fullName);
       size_t innerStructSizeBytes =
           LLVMABISizeOfType(globalState->dataLayout, innerStructL);
+      bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
+      return inliine;
+    } else {
+      assert(false);
+      return false;
+    }
+  } else if (
+      auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
+    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+      return false;
+    } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
+      auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
+      size_t innerStructSizeBytes =
+          LLVMABISizeOfType(globalState->dataLayout, innerArrayLT);
       bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
       return inliine;
     } else {

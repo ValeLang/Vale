@@ -51,6 +51,7 @@ enum class Variability {
     VARYING
 };
 
+// Interned
 class Reference {
 public:
     Ownership ownership;
@@ -95,6 +96,7 @@ public:
     Name* fullName;
 };
 
+// Interned
 class StructReferend : public Referend {
 public:
     Name* fullName;
@@ -103,18 +105,48 @@ public:
         fullName(fullName_) {}
 };
 
+// Interned
 class RawArrayT {
-    Reference* elementType;
-};
-
-class KnownSizeArrayT : Referend {
 public:
-    int size;
-    RawArrayT* rawArray;
+  Mutability mutability;
+  Reference* elementType;
+
+  RawArrayT(
+      Mutability mutability_,
+      Reference* elementType_) :
+      mutability(mutability_),
+      elementType(elementType_) {}
 };
 
+// Interned
+class KnownSizeArrayT : public Referend {
+public:
+  Name* name;
+  int size;
+  RawArrayT* rawArray;
+
+  KnownSizeArrayT(
+      Name* name_,
+      int size_,
+      RawArrayT* rawArray_) :
+      name(name_),
+      size(size_),
+      rawArray(rawArray_) {}
+};
+
+
+
+// Interned
 class UnknownSizeArrayT : public Referend {
-    RawArrayT* rawArray;
+public:
+  Name* name;
+  RawArrayT* rawArray;
+
+  UnknownSizeArrayT(
+      Name* name_,
+      RawArrayT* rawArray_) :
+      name(name_),
+      rawArray(rawArray_) {}
 };
 
 

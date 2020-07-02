@@ -21,9 +21,8 @@ void dropReference(
       dynamic_cast<Bool*>(sourceRnd) ||
       dynamic_cast<Float*>(sourceRnd)) {
     // Do nothing for these, they're always inlined and copied.
-  } else if (auto structRnd = dynamic_cast<StructReferend*>(sourceRnd)) {
-    auto structM = globalState->program->getStruct(structRnd->fullName);
-
+  } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
+      dynamic_cast<KnownSizeArrayT*>(sourceRnd)) {
     if (sourceRef->ownership == Ownership::OWN) {
       // We can't discard owns, they must be destructured.
       assert(false);

@@ -85,7 +85,7 @@ object TypeHammer {
       // to the Templar.
       case p @ PackT2(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
       case p @ TupleT2(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
-      case a @ ArraySequenceT2(_, _) => translateKnownSizeArray(hinputs, hamuts, a)
+      case a @ KnownSizeArrayT2(_, _) => translateKnownSizeArray(hinputs, hamuts, a)
       case a @ UnknownSizeArrayT2(_) => translateUnknownSizeArray(hinputs, hamuts, a)
     }
   }
@@ -128,13 +128,17 @@ object TypeHammer {
     }
   }
 
-  def translateKnownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: ArraySequenceT2) = {
-    val (memberReferenceH) = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
-    (KnownSizeArrayTH(type2.size, RawArrayTH(memberReferenceH)))
+  def translateKnownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: KnownSizeArrayT2): KnownSizeArrayTH = {
+    val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
+    val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
+    val mutability = Conversions.evaluateMutability(type2.array.mutability)
+    KnownSizeArrayTH(name, type2.size, RawArrayTH(mutability, memberReferenceH))
   }
 
-  def translateUnknownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: UnknownSizeArrayT2) = {
+  def translateUnknownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: UnknownSizeArrayT2): UnknownSizeArrayTH = {
+    val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
     val (memberReferenceH) = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
-    (UnknownSizeArrayTH(RawArrayTH(memberReferenceH)))
+    val mutability = Conversions.evaluateMutability(type2.array.mutability)
+    (UnknownSizeArrayTH(nameH, RawArrayTH(mutability, memberReferenceH)))
   }
 }

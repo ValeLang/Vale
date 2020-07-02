@@ -55,7 +55,7 @@ object DestructorTemplar {
     temputs: TemputsBox,
     type2: Coord):
   (Prototype2) = {
-    type2.referend match { case ArraySequenceT2(_, _) | UnknownSizeArrayT2(_) => }
+    type2.referend match { case KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_) => }
     OverloadTemplar.scoutExpectedFunctionForPrototype(
       env,
       temputs,
@@ -131,7 +131,7 @@ object DestructorTemplar {
               case StructRef2(_) | InterfaceRef2(_) => {
                 getCitizenDestructor(fate.snapshot, temputs, r)
               }
-              case ArraySequenceT2(_, _) | UnknownSizeArrayT2(_) => {
+              case KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_) => {
                 getArrayDestructor(fate.snapshot, temputs, r)
               }
             }
@@ -165,7 +165,7 @@ object DestructorTemplar {
               case Int2() | Str2() | Bool2() | Float2() | Void2() => {
                 Discard2(undestructedExpr2)
               }
-              case as @ ArraySequenceT2(_, _) => {
+              case as @ KnownSizeArrayT2(_, _) => {
                 val underarrayReference2 = Coord(undestructedExpr2.resultRegister.reference.ownership, as)
                 destroySharedArray(temputs, underarrayReference2)
               }
@@ -263,7 +263,7 @@ object DestructorTemplar {
     temputs: TemputsBox,
     maybeOriginFunction1: Option[FunctionA],
     sequenceRefType2: Coord,
-    sequence: ArraySequenceT2):
+    sequence: KnownSizeArrayT2):
   (FunctionHeader2) = {
     println("turn this into just a regular destructor template function? dont see why its special.")
 

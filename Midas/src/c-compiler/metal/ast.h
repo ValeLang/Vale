@@ -134,6 +134,7 @@ public:
         block(block_) {}
 };
 
+// Interned
 class Prototype {
 public:
     Name* name;

@@ -36,7 +36,7 @@ void dropReference(
 
 LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
 
-LLVMValueRef getInnerStructPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
+LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE);
 
 void adjustCounter(
     LLVMBuilderRef builder,

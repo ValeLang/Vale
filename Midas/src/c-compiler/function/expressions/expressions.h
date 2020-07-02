@@ -53,4 +53,10 @@ LLVMValueRef translateDiscard(
     LLVMBuilderRef builder,
     Discard* discardM);
 
+LLVMValueRef translateNewArrayFromValues(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    NewArrayFromValues* newArrayFromValues);
+
 #endif

@@ -43,7 +43,7 @@ trait IInfererDelegate[Env, State] {
 
   def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability)
 
-  def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (ArraySequenceT2)
+  def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2)
 
   def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2): (Option[Int])
 
@@ -129,7 +129,7 @@ object Inferer {
         delegate.evaluateStructTemplata(state, templata, templateArgs)
       }
 
-      override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (ArraySequenceT2) = {
+      override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
         delegate.getArraySequenceKind(env, state, mutability, size, element)
       }
 

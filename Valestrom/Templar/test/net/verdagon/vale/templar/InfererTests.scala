@@ -27,7 +27,7 @@ object InfererTestUtils {
       case StructRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
       case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
       case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
-      case ArraySequenceT2(_, RawArrayT2(_, mutability)) => mutability
+      case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
       case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
     }
   }
@@ -131,7 +131,7 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
     vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
   }
 
-  override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (ArraySequenceT2) = {
+  override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
     vfail()
   }
 
@@ -229,7 +229,7 @@ class InfererTests extends FunSuite with Matchers {
       TemplataEnvEntry(CoordTemplata(Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     val mutArraySequenceOf4IntName = CitizenName2("MutArraySequenceOf4Int", List())
     entries = entries ++ Map(mutArraySequenceOf4IntName ->
-      TemplataEnvEntry(KindTemplata(ArraySequenceT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
+      TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
     val voidName = PrimitiveName2("Void")
     entries = entries ++ Map(voidName -> TemplataEnvEntry(KindTemplata(Void2())))
     val intName = PrimitiveName2("Int")
@@ -252,7 +252,7 @@ class InfererTests extends FunSuite with Matchers {
             case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
             case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
             case Int2() | Void2() | Bool2() => Immutable
-            case ArraySequenceT2(_, RawArrayT2(_, mutability)) => mutability
+            case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
             case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
             case _ => vfail()
           }
@@ -294,8 +294,8 @@ class InfererTests extends FunSuite with Matchers {
             case StructTemplata(_,structName(TopLevelCitizenDeclarationNameA("MutTStruct", _))) => TemplateTemplataType(List(CoordTemplataType), KindTemplataType)
           }
         }
-        override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (ArraySequenceT2) = {
-          (ArraySequenceT2(size, RawArrayT2(element, mutability)))
+        override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+          (KnownSizeArrayT2(size, RawArrayT2(element, mutability)))
         }
       }
     val delegate =
@@ -886,7 +886,7 @@ class InfererTests extends FunSuite with Matchers {
         None,
         true)
     inferencesD.templatasByRune(CodeRune2("Z")) shouldEqual
-      CoordTemplata(Coord(Share,ArraySequenceT2(5,RawArrayT2(Coord(Share,Int2()),Immutable))))
+      CoordTemplata(Coord(Share,KnownSizeArrayT2(5,RawArrayT2(Coord(Share,Int2()),Immutable))))
   }
 
   test("Test matching array sequence as coord") {

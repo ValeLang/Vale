@@ -25,6 +25,8 @@ class SpannerTests extends FunSuite with Matchers {
     Spanner.forFunction(main) shouldEqual
       Span(Fn,Range(Pos(1,1),Pos(1,16)),List(
         Span(FnName,Range(Pos(1,4),Pos(1,8)),List()),
-        Span(Params,Range(Pos(1,8),Pos(1,10)),List())))
+        Span(Params,Range(Pos(1,8),Pos(1,10)),List()),
+        Span(Block,Range(Pos(1,11),Pos(1,16)),List(
+          Span(Num,Range(Pos(1,13),Pos(1,14)),List())))))
   }
 }

@@ -5,12 +5,20 @@
 
 #include <unordered_map>
 
-#include "ast.h"
-#include "instructions.h"
+#include "metal/ast.h"
+#include "metal/instructions.h"
+
+#define CONTROL_BLOCK_STRUCT_NAME "__ControlBlock"
 
 class GlobalState {
 public:
+  LLVMTargetDataRef dataLayout;
+
   Program* program;
+  LLVMValueRef malloc, free, assert, flareI64;
+
+  LLVMTypeRef controlBlockStructL;
+
   std::unordered_map<std::string, LLVMTypeRef> structs;
   std::unordered_map<std::string, LLVMValueRef> functions;
 
@@ -26,4 +34,5 @@ public:
     return structIter->second;
   }
 };
+
 #endif

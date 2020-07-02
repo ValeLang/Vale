@@ -123,7 +123,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
       case FunctionCallPE(_,None,LookupPE(StringP(_, "MyNone"), Some(TemplateArgsP(_, List(NameOrRunePT(StringP(_, "Int")))))),List(), true) =>
     }
     compile("MySome<MyNone<Int>>()") shouldHave {
-      case FunctionCallPE(_,None,LookupPE(StringP(_, "MySome"), Some(TemplateArgsP(_, List(CallPT(NameOrRunePT(StringP(_, "MyNone")),List(NameOrRunePT(StringP(_, "Int")))))))),List(), true) =>
+      case FunctionCallPE(_,None,LookupPE(StringP(_, "MySome"), Some(TemplateArgsP(_, List(CallPT(_,NameOrRunePT(StringP(_, "MyNone")),List(NameOrRunePT(StringP(_, "Int")))))))),List(), true) =>
     }
   }
 
@@ -144,7 +144,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
 
   test("Identity lambda") {
     compile(VParser.expression, "{_}") shouldHave {
-      case LambdaPE(FunctionP(_,None,None,None,None,None,None,None,Some(BlockPE(_,List(MagicParamLookupPE(_)))))) =>
+      case LambdaPE(_,FunctionP(_,None,None,None,None,None,None,None,Some(BlockPE(_,List(MagicParamLookupPE(_)))))) =>
     }
   }
 

@@ -10,16 +10,26 @@
 
 #define CONTROL_BLOCK_STRUCT_NAME "__ControlBlock"
 
+#define MAX_INLINE_SIZE_BYTES 32
+
 class GlobalState {
 public:
   LLVMTargetDataRef dataLayout;
 
   Program* program;
-  LLVMValueRef malloc, free, assert, flareI64;
+  LLVMValueRef liveHeapObjCounter;
+  LLVMValueRef malloc, free, assert, assertI64Eq, flareI64;
 
   LLVMTypeRef controlBlockStructL;
 
-  std::unordered_map<std::string, LLVMTypeRef> structs;
+  // These don't have a ref count.
+  // They're used directly for inl imm references, and
+  // also used inside the below countedStructs.
+  std::unordered_map<std::string, LLVMTypeRef> innerStructs;
+  // These contain a ref count and the above val struct. Yon references
+  // point to these, since they're yon.
+  std::unordered_map<std::string, LLVMTypeRef> countedStructs;
+
   std::unordered_map<std::string, LLVMValueRef> functions;
 
   LLVMValueRef getFunction(Function* functionM) {
@@ -28,9 +38,14 @@ public:
     return functionIter->second;
   }
 
-  LLVMTypeRef getStruct(Name* name) {
-    auto structIter = structs.find(name->name);
-    assert(structIter != structs.end());
+  LLVMTypeRef getInnerStruct(Name* name) {
+    auto structIter = innerStructs.find(name->name);
+    assert(structIter != innerStructs.end());
+    return structIter->second;
+  }
+  LLVMTypeRef getCountedStruct(Name* name) {
+    auto structIter = countedStructs.find(name->name);
+    assert(structIter != countedStructs.end());
     return structIter->second;
   }
 };

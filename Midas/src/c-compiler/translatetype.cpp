@@ -15,20 +15,18 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       dynamic_cast<StructReferend*>(referenceM->referend)) {
 
     auto structM = globalState->program->getStruct(structReferend->fullName);
-
-    auto structL = globalState->getStruct(structReferend->fullName);
-
     if (structM->mutability == Mutability::MUTABLE) {
-      return LLVMPointerType(structL, 0);
+      auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+      return LLVMPointerType(countedStructL, 0);
     } else {
-      bool inliine = true;//referenceM->location == INLINE; TODO
-
+      auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
+      size_t innerStructSizeBytes = LLVMABISizeOfType(globalState->dataLayout, innerStructL);
+      bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
       if (inliine) {
-        return structL;
+        return globalState->getInnerStruct(structReferend->fullName);
       } else {
-        // TODO return a pointer to it perhaps?
-        assert(false);
-        return nullptr;
+        auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+        return LLVMPointerType(countedStructL, 0);
       }
     }
   } else {
@@ -56,4 +54,30 @@ Mutability ownershipToMutability(Ownership ownership) {
   }
   assert(false);
   return Mutability::MUTABLE;
+}
+
+bool isInlImm(GlobalState* globalState, Reference* referenceM) {
+  if (dynamic_cast<Int*>(referenceM->referend) ||
+      dynamic_cast<Bool*>(referenceM->referend) ||
+      dynamic_cast<Float*>(referenceM->referend)) {
+    return true;
+  } else if (
+      auto structRnd = dynamic_cast<StructReferend*>(referenceM->referend)) {
+    auto structM = globalState->program->getStruct(structRnd->fullName);
+    if (structM->mutability == Mutability::MUTABLE) {
+      return false;
+    } else if (structM->mutability == Mutability::IMMUTABLE) {
+      auto innerStructL = globalState->getInnerStruct(structRnd->fullName);
+      size_t innerStructSizeBytes =
+          LLVMABISizeOfType(globalState->dataLayout, innerStructL);
+      bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
+      return inliine;
+    } else {
+      assert(false);
+      return false;
+    }
+  } else {
+    assert(false); // impl
+    return false;
+  }
 }

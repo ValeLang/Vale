@@ -9,7 +9,7 @@ object InheritanceSamples {
       |fn main() {
       |  x MyInterface = MyStruct(9);
       |}
-    """.stripMargin
+      |""".stripMargin
 
   val calling =
     """

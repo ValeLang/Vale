@@ -2,7 +2,7 @@
 #define EXPRESSIONS_H_
 
 #include <llvm-c/Core.h>
-
+#include <functional>
 #include <unordered_map>
 
 #include "metal/ast.h"
@@ -20,8 +20,8 @@ LLVMValueRef translateDestructure(
 LLVMValueRef translateConstruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    StructReferend* structReferend,
-    std::vector<LLVMValueRef> membersLE);
+    Reference* desiredReference,
+    const std::vector<LLVMValueRef>& membersLE);
 
 LLVMValueRef translateCall(
     GlobalState* globalState,

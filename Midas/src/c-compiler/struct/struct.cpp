@@ -22,10 +22,16 @@ void translateStruct(
   LLVMTypeRef structL = globalState->getStruct(structM->name);
 
   std::vector<LLVMTypeRef> memberTypesL;
-  memberTypesL.reserve(structM->members.size());
+  if (structM->mutability == Mutability::MUTABLE) {
+    // First member is a ref counts struct. We don't include the int directly
+    // because we want fat pointers to point to this struct, so they can reach
+    // into it and increment without doing any casting.
+    memberTypesL.push_back(globalState->controlBlockStructL);
+  }
   for (int i = 0; i < structM->members.size(); i++) {
-    memberTypesL.push_back(translateType(globalState, structM->members[i]->type));
+    memberTypesL.push_back(
+        translateType(globalState, structM->members[i]->type));
   }
   LLVMStructSetBody(
-      structL, &memberTypesL[0], memberTypesL.size(), false);
+      structL, memberTypesL.data(), memberTypesL.size(), false);
 }

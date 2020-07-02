@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(valec)
 cmake_policy(VERSION 3.11)
 
-find_package(LLVM 7.1 REQUIRED CONFIG)
+find_package(LLVM 7 REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -59,12 +59,26 @@ llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 
 add_executable(valec
 		src/c-compiler/vale.cpp
-		src/c-compiler/function.cpp
-		src/c-compiler/struct.cpp
-		src/c-compiler/readjson.cpp
+		src/c-compiler/struct/struct.cpp
+		src/c-compiler/metal/readjson.cpp
 		src/c-compiler/translatetype.cpp
 		src/c-compiler/main.cpp
 		src/c-compiler/coneopts.cpp
+
+		src/c-compiler/function/function.cpp
+		src/c-compiler/function/expression.cpp
+
+		src/c-compiler/function/expressions/call.cpp
+		src/c-compiler/function/expressions/construct.cpp
+		src/c-compiler/function/expressions/destructure.cpp
+		src/c-compiler/function/expressions/discard.cpp
+		src/c-compiler/function/expressions/externs.cpp
+		src/c-compiler/function/expressions/if.cpp
+		src/c-compiler/function/expressions/while.cpp
+
+		src/c-compiler/function/expressions/shared/loadmember.cpp
+		src/c-compiler/function/expressions/shared/shared.cpp
+		src/c-compiler/function/expressions/shared/dropreference.cpp
 
 		src/c-compiler/utils/fileio.cpp
 		src/c-compiler/utils/options.cpp

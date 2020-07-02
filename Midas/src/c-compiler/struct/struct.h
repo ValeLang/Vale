@@ -5,8 +5,8 @@
 
 #include <unordered_map>
 
-#include "ast.h"
-#include "instructions.h"
+#include "metal/ast.h"
+#include "metal/instructions.h"
 #include "globalstate.h"
 
 void declareStruct(

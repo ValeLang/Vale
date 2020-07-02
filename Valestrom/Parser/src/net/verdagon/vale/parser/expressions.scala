@@ -2,8 +2,6 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.vassert
 
-import scala.util.parsing.input.{Position, Positional}
-
 trait IExpressionPE
 
 case class VoidPE(range: Range) extends IExpressionPE {}

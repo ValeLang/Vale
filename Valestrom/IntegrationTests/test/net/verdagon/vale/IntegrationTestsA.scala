@@ -41,6 +41,23 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
+  test("Test constraint ref") {
+    val compile = new Compilation(
+      """
+        |struct Carrier {
+        |  hp Int;
+        |  interceptors Int;
+        |}
+        |
+        |fn main() {
+        |  carrier = Carrier(400, 8);
+        |  ref = &carrier;
+        |  = ref.interceptors;
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(8)
+  }
+
   test("Tests inline adding more") {
     val compile = new Compilation("fn main(){ 2 + 3 + 4 + 5 + 6 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(20)

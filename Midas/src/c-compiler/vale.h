@@ -12,7 +12,7 @@
 #define EXTERNC
 #endif
 
-EXTERNC void compileValeCode(LLVMModuleRef mod, const char* filename);
+EXTERNC void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char* filename);
 
 #undef EXTERNC
 

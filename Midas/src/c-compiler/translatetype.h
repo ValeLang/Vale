@@ -21,4 +21,6 @@ std::vector<LLVMTypeRef> translateTypes(
 // See usages of this int to see where we make those zero-len arrays of these.
 constexpr int NEVER_INT_BITS = 57;
 
+Mutability ownershipToMutability(Ownership ownership);
+
 #endif

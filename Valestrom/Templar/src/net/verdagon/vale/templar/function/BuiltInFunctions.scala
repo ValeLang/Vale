@@ -98,7 +98,7 @@ object BuiltInFunctions {
                   DestructorTemplar.generateStructDestructor(
                     env, temputs, maybeOriginFunction1.get, paramCoords, sr)
                 }
-                case List(r @ Coord(_, as @ ArraySequenceT2(_, _))) => {
+                case List(r @ Coord(_, as @ KnownSizeArrayT2(_, _))) => {
                   DestructorTemplar.generateArraySequenceDestructor(
                     env, temputs, maybeOriginFunction1, r, as)
                 }

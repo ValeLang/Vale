@@ -242,6 +242,12 @@ class NewArrayFromValues : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
   Reference* arrayRefType;
+
+  NewArrayFromValues(
+      std::vector<Expression*> sourceExprs_,
+      Reference* arrayRefType_) :
+      sourceExprs(sourceExprs_),
+      arrayRefType(arrayRefType_) {}
 };
 
 
@@ -273,9 +279,22 @@ public:
 class KnownSizeArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
+  Reference* arrayType;
   Expression* indexExpr;
   Reference* resultType;
   Ownership targetOwnership;
+
+  KnownSizeArrayLoad(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      Expression* indexExpr_,
+      Reference* resultType_,
+      Ownership targetOwnership_) :
+    arrayExpr(arrayExpr_),
+    arrayType(arrayType_),
+    indexExpr(indexExpr_),
+    resultType(resultType_),
+    targetOwnership(targetOwnership_) {}
 };
 
 
@@ -412,6 +431,7 @@ public:
       sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
 };
 
+// Interned
 class Local {
 public:
     VariableId* id;
@@ -424,6 +444,7 @@ public:
     type(type_) {}
 };
 
+// Interned
 class VariableId {
 public:
     int number;

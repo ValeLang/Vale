@@ -18,7 +18,7 @@ class ValeTest(unittest.TestCase):
 
     def valestrom(self, vale_file: str,
                   vir_file: str) -> subprocess.CompletedProcess:
-        driver = "test/Driver20200630.jar"
+        driver = "test/Driver20200701.jar"
         driver_class = "net.verdagon.vale.driver.Driver"
         return procrun(
             [
@@ -94,32 +94,35 @@ class ValeTest(unittest.TestCase):
         self.assertEqual(proc.returncode, expected_return_code,
                          f"Unexpected result: {proc.returncode}")
 
-    # def test_addret(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("addret.vale", 7)
-    #
-    # def test_immstruct(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
-    #
-    # def test_bigimmstruct(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("bigimmstruct.vale", 42)
+    def test_addret(self) -> None:
+        self.compile_and_execute_and_expect_return_code("addret.vale", 7)
 
-    # def test_mutstruct(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
-    #
-    # def test_lambda(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("lambda.vale", 42)
-    #
-    # def test_if(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("if.vale", 42)
-    #
-    # def test_mutlocal(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("mutlocal.vale", 42)
+    def test_immstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
+
+    def test_bigimmstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code("bigimmstruct.vale", 42)
+
+    def test_mutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
+
+    def test_lambda(self) -> None:
+        self.compile_and_execute_and_expect_return_code("lambda.vale", 42)
+
+    def test_if(self) -> None:
+        self.compile_and_execute_and_expect_return_code("if.vale", 42)
+
+    def test_mutlocal(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutlocal.vale", 42)
 
     def test_while(self) -> None:
         self.compile_and_execute_and_expect_return_code("while.vale", 42)
 
-    # def test_constraintref(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("constraintref.vale", 8)
+    def test_constraintref(self) -> None:
+        self.compile_and_execute_and_expect_return_code("constraintref.vale", 8)
+
+    def test_knownsizeimmarray(self) -> None:
+        self.compile_and_execute_and_expect_return_code("knownsizeimmarray.vale", 42)
 
 
 if __name__ == '__main__':

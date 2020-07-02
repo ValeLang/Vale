@@ -264,7 +264,7 @@ object Templar {
       case Str2() => Immutable
       case Void2() => Immutable
       case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
-      case ArraySequenceT2(_, RawArrayT2(_, mutability)) => mutability
+      case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
       case sr @ StructRef2(_) => temputs.lookupMutability(sr)
       case ir @ InterfaceRef2(_) => temputs.lookupMutability(ir)
       case PackT2(_, sr) => temputs.lookupMutability(sr)

@@ -4,38 +4,57 @@
 
 #include "shared.h"
 
-LLVMValueRef loadMember(
+LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE) {
+  return LLVMBuildStructGEP(
+      builder,
+      structLE,
+      0, // Control block is always the 0th member.
+      CONTROL_BLOCK_STRUCT_NAME "_memberPtr");
+}
+
+LLVMValueRef getInnerStructPtr(LLVMBuilderRef builder, LLVMValueRef structLE) {
+  return LLVMBuildStructGEP(
+      builder,
+      structLE,
+      1, // Inner struct is after the control block.
+      "innerStructPtr");
+}
+
+LLVMValueRef loadInnerStructMember(
     LLVMBuilderRef builder,
+    LLVMValueRef innerStructPtrLE,
+    int memberIndex,
+    const std::string& memberName) {
+  assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
+  return LLVMBuildLoad(
+      builder,
+      LLVMBuildStructGEP(
+          builder, innerStructPtrLE, memberIndex, memberName.c_str()),
+      memberName.c_str());
+}
+
+LLVMValueRef loadMember(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structRefM,
     LLVMValueRef structExpr,
     Mutability mutability,
-    int memberMIndex,
+    int memberIndex,
     const std::string& memberName) {
 
   if (mutability == Mutability::IMMUTABLE) {
-    int memberLIndex = memberMIndex;
-
-    bool inliine = true;//memberLoad->structType->location == INLINE; TODO
-    if (inliine) {
+    if (isInlImm(globalState, structRefM)) {
       return LLVMBuildExtractValue(
-          builder,
-          structExpr,
-          memberLIndex,
-          memberName.c_str());
+          builder, structExpr, memberIndex, memberName.c_str());
     } else {
-      // TODO: make MemberLoad work for non-inlined structs.
-      assert(false);
-      return nullptr;
+      LLVMValueRef innerStructPtrLE = getInnerStructPtr(builder, structExpr);
+      return loadInnerStructMember(
+          builder, innerStructPtrLE, memberIndex, memberName);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    // The +1 is because mutables' first member is the refcounts.
-    int memberLIndex = memberMIndex + 1;
-
-    assert(LLVMGetTypeKind(LLVMTypeOf(structExpr)) == LLVMPointerTypeKind);
-    return LLVMBuildLoad(
-        builder,
-        LLVMBuildStructGEP(builder, structExpr, memberLIndex,
-            memberName.c_str()),
-        memberName.c_str());
+    LLVMValueRef innerStructPtrLE = getInnerStructPtr(builder, structExpr);
+    return loadInnerStructMember(
+        builder, innerStructPtrLE, memberIndex, memberName);
   } else {
     assert(false);
     return nullptr;
@@ -53,7 +72,6 @@ LLVMValueRef getRcPtr(
   return rcPtrLE;
 }
 
-// See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef getRC(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr) {
@@ -62,7 +80,6 @@ LLVMValueRef getRC(
   return rcLE;
 }
 
-// See CRCISFAORC for why we don't take in a mutability.
 void setRC(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr,
@@ -72,20 +89,14 @@ void setRC(
 }
 
 
-// See CRCISFAORC for why we don't take in a mutability.
 void adjustRC(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr,
     // 1 or -1
     int adjustAmount) {
-  auto rcLE = getRC(builder, structExpr);
-  auto rcPlus1LE =
-      LLVMBuildAdd(
-          builder, rcLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "__rc_updated");
-  setRC(builder, structExpr, rcPlus1LE);
+  adjustCounter(builder, getRcPtr(builder, structExpr), adjustAmount);
 }
 
-// See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef rcEquals(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr,

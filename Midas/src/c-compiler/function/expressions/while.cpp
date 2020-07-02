@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/shared.h>
 
 #include "translatetype.h"
 
@@ -43,6 +44,7 @@ LLVMValueRef translateWhile(
   auto bodyExpr =
       translateExpression(
           globalState, functionState, bodyBlockBuilder, whiile->bodyExpr);
+
   // Add a conditional branch to go to either itself, or the afterward block.
   LLVMBuildCondBr(bodyBlockBuilder, bodyExpr, bodyBlockL, afterwardBlockL);
 

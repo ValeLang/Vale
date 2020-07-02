@@ -41,3 +41,15 @@ void flare(
   };
   LLVMBuildCall(builder, globalState->flareI64, args, 2, "");
 }
+
+void adjustCounter(
+    LLVMBuilderRef builder,
+    LLVMValueRef counterPtrLE,
+    int adjustAmount) {
+  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+  auto newValLE =
+      LLVMBuildAdd(
+          builder, prevValLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "counterNewVal");
+  LLVMBuildStore(builder, newValLE, counterPtrLE);
+}
+

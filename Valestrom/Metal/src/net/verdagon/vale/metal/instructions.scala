@@ -23,14 +23,14 @@ sealed trait ExpressionH[+T <: ReferendH] {
   }
   def expectUnknownSizeArrayAccess(): ExpressionH[UnknownSizeArrayTH] = {
     resultType match {
-      case ReferenceH(ownership, x @ UnknownSizeArrayTH(_)) => {
+      case ReferenceH(ownership, x @ UnknownSizeArrayTH(_, _)) => {
         this.asInstanceOf[ExpressionH[UnknownSizeArrayTH]]
       }
     }
   }
   def expectKnownSizeArrayAccess(): ExpressionH[KnownSizeArrayTH] = {
     resultType match {
-      case ReferenceH(ownership, x @ KnownSizeArrayTH(_, _)) => {
+      case ReferenceH(ownership, x @ KnownSizeArrayTH(_, _, _)) => {
         this.asInstanceOf[ExpressionH[KnownSizeArrayTH]]
       }
     }
@@ -353,18 +353,18 @@ case class UnknownSizeArrayLoadH(
 // doesn't need to carry around a size. For the corresponding instruction for the
 // known-size-at-compile-time array, see KnownSizeArrayStoreH.
 case class KnownSizeArrayLoadH(
-                                // Register containing the array whose element we'll read.
-                                // As with any read from a register, this will invalidate the register.
-                                arrayRegister: ExpressionH[KnownSizeArrayTH],
-                                // Register containing the index of the element we'll read.
-                                // As with any read from a register, this will invalidate the register.
-                                indexRegister: ExpressionH[IntH],
-                                // Resulting reference's type.
-                                // TODO: Remove this, it's redundant with targetOwnership and the array's element type.
-                                resultType: ReferenceH[ReferendH],
-                                // The ownership to load as. For example, we might load a constraint reference from a
-                                // owning Car reference element.
-                                targetOwnership: OwnershipH
+  // Register containing the array whose element we'll read.
+  // As with any read from a register, this will invalidate the register.
+  arrayRegister: ExpressionH[KnownSizeArrayTH],
+  // Register containing the index of the element we'll read.
+  // As with any read from a register, this will invalidate the register.
+  indexRegister: ExpressionH[IntH],
+  // Resulting reference's type.
+  // TODO: Remove this, it's redundant with targetOwnership and the array's element type.
+  resultType: ReferenceH[ReferendH],
+  // The ownership to load as. For example, we might load a constraint reference from a
+  // owning Car reference element.
+  targetOwnership: OwnershipH
 ) extends ExpressionH[ReferendH]
 
 // Calls a function.

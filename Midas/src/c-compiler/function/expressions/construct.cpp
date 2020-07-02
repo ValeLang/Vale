@@ -2,38 +2,16 @@
 
 #include "translatetype.h"
 
+#include "function/expressions/shared/members.h"
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
 #include "function/expressions/shared/heap.h"
-
-void fillControlBlock(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef newStructLE) {
-  // TODO: maybe make a const global we can load from, instead of running these
-  //  instructions every time.
-  auto controlBlockPtrLE = getControlBlockPtr(builder, newStructLE);
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->controlBlockStructL);
-  newControlBlockLE =
-      LLVMBuildInsertValue(
-          builder,
-          newControlBlockLE,
-          // Start at 1, 0 would mean it's dead.
-          LLVMConstInt(LLVMInt64Type(), 1, false),
-          0,
-          "__crc");
-  LLVMBuildStore(
-      builder,
-      newControlBlockLE,
-      controlBlockPtrLE);
-}
 
 void fillInnerStruct(
     LLVMBuilderRef builder,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE,
-    LLVMValueRef structPtrLE) {
-  auto innerStructPtrLE = getInnerStructPtr(builder, structPtrLE);
+    LLVMValueRef innerStructPtrLE) {
   for (int i = 0; i < membersLE.size(); i++) {
     auto memberName = structM->members[i]->name;
     auto ptrLE =
@@ -49,8 +27,10 @@ LLVMValueRef constructCountedStruct(
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
   auto newStructLE = mallocStruct(globalState, builder, structL);
-  fillControlBlock(globalState, builder, newStructLE);
-  fillInnerStruct(builder, structM, membersLE, newStructLE);
+  fillControlBlock(
+      globalState, builder, getControlBlockPtr(builder, newStructLE));
+  fillInnerStruct(
+      builder, structM, membersLE, getCountedContents(builder, newStructLE));
   return newStructLE;
 }
 

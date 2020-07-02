@@ -109,7 +109,7 @@ object CallHammer {
   ExpressionH[ReferendH] = {
     val DestroyArraySequence2(arrayExpr2, arraySequenceType, consumerExpr2) = das2;
 
-    val ArraySequenceT2(size, rawArrayType2 @ RawArrayT2(memberType2, mutability)) = arraySequenceType
+    val KnownSizeArrayT2(size, rawArrayType2 @ RawArrayT2(memberType2, mutability)) = arraySequenceType
 
     val (arrayTypeH) =
       TypeHammer.translateKnownSizeArray(hinputs, hamuts, arraySequenceType)

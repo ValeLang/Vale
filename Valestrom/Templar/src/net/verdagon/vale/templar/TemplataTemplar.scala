@@ -187,7 +187,7 @@ object TemplataTemplar {
           ImplTemplar.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
-        override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (ArraySequenceT2) = {
+        override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
           ArrayTemplar.makeArraySequenceType(env, state, mutability, size, element)
         }
 

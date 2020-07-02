@@ -75,7 +75,9 @@ add_executable(valec
 		src/c-compiler/function/expressions/externs.cpp
 		src/c-compiler/function/expressions/if.cpp
 		src/c-compiler/function/expressions/while.cpp
+		src/c-compiler/function/expressions/newarrayfromvalues.cpp
 
+		src/c-compiler/function/expressions/shared/elements.cpp
 		src/c-compiler/function/expressions/shared/members.cpp
 		src/c-compiler/function/expressions/shared/shared.cpp
 		src/c-compiler/function/expressions/shared/dropreference.cpp

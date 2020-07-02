@@ -3,10 +3,14 @@
 #include "translatetype.h"
 
 #include "shared.h"
+#include "members.h"
+#include "branch.h"
+#include "heap.h"
 
 
 void dropReference(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
     LLVMValueRef expr) {
@@ -25,12 +29,21 @@ void dropReference(
       assert(false);
     } else if (sourceRef->ownership == Ownership::BORROW) {
       adjustRC(builder, expr, -1);
-    } else {
-      bool inliine = true;//sourceRef->location == INLINE; TODO
-      if (inliine) {
+    } else if (sourceRef->ownership == Ownership::SHARE) {
+      if (isInlImm(globalState, sourceRef)) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        assert(false); // TODO implement
+        auto rcIsOne =
+            rcEquals(
+                builder, expr, LLVMConstInt(LLVMInt64Type(), 1, false));
+        buildIf(
+            functionState,
+            builder,
+            rcIsOne,
+            [globalState, expr](LLVMBuilderRef thenBuilder) {
+              freeStruct(globalState, thenBuilder, expr);
+            });
+        adjustRC(builder, expr, -1);
       }
     }
   } else {

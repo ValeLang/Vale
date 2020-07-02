@@ -1,0 +1,8 @@
+
+fn do(callable) {
+  callable()
+}
+
+fn main() {
+  do({ 42 })
+}

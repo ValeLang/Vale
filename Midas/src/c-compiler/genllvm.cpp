@@ -135,7 +135,7 @@ void genMod(GenState *gen) {
     genlPackage(gen);
 
     // Serialize the LLVM IR, if requested
-    if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(), "pre.ll").c_str(), &err) != 0) {
+    if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(), "ll").c_str(), &err) != 0) {
       std::cerr << "Could not emit pre-ir file: " << err << std::endl;
       LLVMDisposeMessage(err);
     }
@@ -164,7 +164,7 @@ void genMod(GenState *gen) {
     LLVMDisposePassManager(passmgr);
 
   // Serialize the LLVM IR, if requested
-  auto outputFilePath = fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(), "ll");
+  auto outputFilePath = fileMakePath(gen->opt->output, gen->opt->srcNameNoExt.c_str(), "opt.ll");
   std::cout << "Printing file " << outputFilePath << std::endl;
   if (gen->opt->print_llvmir && LLVMPrintModuleToFile(gen->module, outputFilePath.c_str(), &err) != 0) {
     std::cerr << "Could not emit ir file: " << err << std::endl;

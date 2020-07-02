@@ -18,7 +18,7 @@ class ValeTest(unittest.TestCase):
 
     def valestrom(self, vale_file: str,
                   vir_file: str) -> subprocess.CompletedProcess:
-        driver = "Driver20200630.jar"
+        driver = "test/Driver20200630.jar"
         driver_class = "net.verdagon.vale.driver.Driver"
         return procrun(
             [
@@ -38,7 +38,7 @@ class ValeTest(unittest.TestCase):
               o_files_dir: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
         return procrun(
-            [f"../{self.GENPATH}/valec", "--verify", "--llvmir", "--output-dir",
+            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--output-dir",
              o_files_dir, vir_file])
 
     def clang(self, o_files: List[str],
@@ -61,32 +61,26 @@ class ValeTest(unittest.TestCase):
 
     def compile_and_execute(
             self, vale_file: str) -> subprocess.CompletedProcess:
-        build_dir = f"test_build/{os.path.splitext(vale_file)[0]}_build"
+        build_dir = f"test/test_build/{os.path.splitext(vale_file)[0]}_build"
 
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
         os.makedirs(build_dir)
 
         vir_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}.vir"
-        proc = self.valestrom(f"tests/{vale_file}", vir_file)
-        # print(proc.stdout)
-        # print(proc.stderr)
+        proc = self.valestrom(f"test/tests/{vale_file}", vir_file)
         self.assertEqual(proc.returncode, 0,
                          f"valestrom couldn't compile {vale_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
 
         proc = self.valec(vir_file, build_dir)
-        # print(proc.stdout)
-        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"valec couldn't compile {vir_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}"
-        o_files = glob.glob(f"{build_dir}/*.o") + ["../src/valestd/assert.c"]
+        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c"]
         proc = self.clang(o_files, exe_file)
-        # print(proc.stdout)
-        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
                          proc.stdout + "\n" + proc.stderr)
@@ -100,26 +94,32 @@ class ValeTest(unittest.TestCase):
         self.assertEqual(proc.returncode, expected_return_code,
                          f"Unexpected result: {proc.returncode}")
 
-    def test_addret(self) -> None:
-        self.compile_and_execute_and_expect_return_code("addret.vale", 7)
+    # def test_addret(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("addret.vale", 7)
+    #
+    # def test_immstruct(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
+    #
+    # def test_bigimmstruct(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("bigimmstruct.vale", 42)
 
-    def test_if(self) -> None:
-        self.compile_and_execute_and_expect_return_code("if.vale", 42)
-
-    def test_mutlocal(self) -> None:
-        self.compile_and_execute_and_expect_return_code("mutlocal.vale", 42)
+    # def test_mutstruct(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
+    #
+    # def test_lambda(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("lambda.vale", 42)
+    #
+    # def test_if(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("if.vale", 42)
+    #
+    # def test_mutlocal(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("mutlocal.vale", 42)
 
     def test_while(self) -> None:
         self.compile_and_execute_and_expect_return_code("while.vale", 42)
 
-    def test_immstruct(self) -> None:
-        self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
-
-    def test_mutstruct(self) -> None:
-        self.compile_and_execute_and_expect_return_code("mutstruct.vale", 8)
-
-    def test_constraintref(self) -> None:
-        self.compile_and_execute_and_expect_return_code("constraintref.vale", 8)
+    # def test_constraintref(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("constraintref.vale", 8)
 
 
 if __name__ == '__main__':

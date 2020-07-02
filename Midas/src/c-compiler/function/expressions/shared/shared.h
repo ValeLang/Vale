@@ -1,9 +1,10 @@
-#ifndef FUNCTION_EXPRESSIONS_SHARED_H_
-#define FUNCTION_EXPRESSIONS_SHARED_H_
+#ifndef FUNCTION_EXPRESSIONS_SHARED_SHARED_H_
+#define FUNCTION_EXPRESSIONS_SHARED_SHARED_H_
 
 #include <llvm-c/Core.h>
 
 #include <unordered_map>
+#include <functional>
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
@@ -12,54 +13,12 @@
 
 LLVMValueRef makeNever();
 
-LLVMValueRef loadMember(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    Mutability mutability,
-    int memberMIndex,
-    const std::string& memberName);
-
 void makeLocal(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Local* local,
     LLVMValueRef valueToStore);
-
-// See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef getRcPtr(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr);
-
-// See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef getRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr);
-
-// See CRCISFAORC for why we don't take in a mutability.
-void setRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    LLVMValueRef newRcLE);
-
-// See CRCISFAORC for why we don't take in a mutability.
-void adjustRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    // 1 or -1
-    int adjustAmount);
-
-// See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef rcEquals(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    LLVMValueRef equalTo);
-
-void flareRc(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    int color,
-    LLVMValueRef structExpr);
 
 void flare(
     GlobalState* globalState,
@@ -69,8 +28,20 @@ void flare(
 
 void dropReference(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
     LLVMValueRef expr);
+
+
+LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
+
+LLVMValueRef getInnerStructPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
+
+void adjustCounter(
+    LLVMBuilderRef builder,
+    LLVMValueRef counterPtrLE,
+    // Amount to add
+    int adjustAmount);
 
 #endif

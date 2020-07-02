@@ -4,6 +4,7 @@
 
 #include "expressions/expressions.h"
 #include "expressions/shared/shared.h"
+#include "expressions/shared/members.h"
 #include "expression.h"
 
 std::vector<LLVMValueRef> translateExpressions(
@@ -67,28 +68,15 @@ LLVMValueRef translateExpression(
     LLVMBuildStore(builder, valueToStore, localAddr);
     return oldValue;
   } else if (auto localLoad = dynamic_cast<LocalLoad*>(expr)) {
-    if (localLoad->targetOwnership == Ownership::BORROW) {
+    if (isInlImm(globalState, localLoad->local->type)) {
+      auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
+      return LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
+    } else {
       auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
       auto ptrLE =
           LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
-
-      flareRc(globalState, builder, 13370003, ptrLE);
       adjustRC(builder, ptrLE, 1);
-      flareRc(globalState, builder, 13370004, ptrLE);
       return ptrLE;
-    } else if (localLoad->targetOwnership == Ownership::SHARE) {
-      bool inliine = true;//memberLoad->structType->location == INLINE; TODO
-      if (inliine) {
-        auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
-        return LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
-      } else {
-        assert(false);
-        return nullptr;
-      }
-    } else {
-      // I dont think we can even load an owning ptr, it has to be as an own.
-      assert(false);
-      return nullptr;
     }
   } else if (auto unstackify = dynamic_cast<Unstackify*>(expr)) {
     // The purpose of Unstackify is to destroy the local and give what was in
@@ -103,13 +91,11 @@ LLVMValueRef translateExpression(
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     return LLVMGetParam(functionState->containingFunc, argument->argumentIndex);
   } else if (auto newStruct = dynamic_cast<NewStruct*>(expr)) {
-    auto structReferend =
-        dynamic_cast<StructReferend*>(newStruct->resultType->referend);
-    assert(structReferend);
     auto memberExprs =
         translateExpressions(
             globalState, functionState, builder, newStruct->sourceExprs);
-    return translateConstruct(globalState, builder, structReferend, memberExprs);
+    return translateConstruct(
+        globalState, builder, newStruct->resultType, memberExprs);
   } else if (auto block = dynamic_cast<Block*>(expr)) {
     auto exprs =
         translateExpressions(globalState, functionState, builder, block->exprs);
@@ -128,8 +114,16 @@ LLVMValueRef translateExpression(
     auto mutability = ownershipToMutability(memberLoad->structType->ownership);
     auto memberIndex = memberLoad->memberIndex;
     auto memberName = memberLoad->memberName;
-    dropReference(globalState, builder, memberLoad->structType, structExpr);
-    return loadMember(builder, structExpr, mutability, memberIndex, memberName);
+    dropReference(
+        globalState, functionState, builder, memberLoad->structType, structExpr);
+    return loadMember(
+        globalState,
+        builder,
+        memberLoad->structType,
+        structExpr,
+        mutability,
+        memberIndex,
+        memberName);
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;

@@ -76,9 +76,11 @@ add_executable(valec
 		src/c-compiler/function/expressions/if.cpp
 		src/c-compiler/function/expressions/while.cpp
 
-		src/c-compiler/function/expressions/shared/loadmember.cpp
+		src/c-compiler/function/expressions/shared/members.cpp
 		src/c-compiler/function/expressions/shared/shared.cpp
 		src/c-compiler/function/expressions/shared/dropreference.cpp
+		src/c-compiler/function/expressions/shared/branch.cpp
+		src/c-compiler/function/expressions/shared/heap.cpp
 
 		src/c-compiler/utils/fileio.cpp
 		src/c-compiler/utils/options.cpp

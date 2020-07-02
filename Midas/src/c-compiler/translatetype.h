@@ -25,4 +25,6 @@ Mutability ownershipToMutability(Ownership ownership);
 
 bool isInlImm(GlobalState* globalState, Reference* referenceM);
 
+LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT);
+
 #endif

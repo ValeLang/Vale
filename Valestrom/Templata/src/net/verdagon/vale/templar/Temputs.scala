@@ -64,7 +64,7 @@ case class Temputs(
   // Only PackTemplar can make a PackT2.
     packTypes: Map[List[Coord], StructRef2],
     // Only ArrayTemplar can make an RawArrayT2.
-    arraySequenceTypes: Map[(Int, RawArrayT2), ArraySequenceT2],
+    arraySequenceTypes: Map[(Int, RawArrayT2), KnownSizeArrayT2],
     // Only ArrayTemplar can make an RawArrayT2.
     unknownSizeArrayTypes: Map[RawArrayT2, UnknownSizeArrayT2]
 
@@ -384,7 +384,7 @@ case class Temputs(
       unknownSizeArrayTypes)
   }
 
-  def addArraySequence(size: Int, array2: ArraySequenceT2): Temputs = {
+  def addArraySequence(size: Int, array2: KnownSizeArrayT2): Temputs = {
     Temputs(
       functionGeneratorByName,
       declaredSignatures,
@@ -602,7 +602,7 @@ case class TemputsBox(var temputs: Temputs) {
   def envByInterfaceRef: Map[InterfaceRef2, NamespaceEnvironment[IName2]] = temputs.envByInterfaceRef
   def impls: List[Impl2] = temputs.impls
   def packTypes: Map[List[Coord], StructRef2] = temputs.packTypes
-  def arraySequenceTypes: Map[(Int, RawArrayT2), ArraySequenceT2] = temputs.arraySequenceTypes
+  def arraySequenceTypes: Map[(Int, RawArrayT2), KnownSizeArrayT2] = temputs.arraySequenceTypes
   def unknownSizeArrayTypes: Map[RawArrayT2, UnknownSizeArrayT2] = temputs.unknownSizeArrayTypes
 
   def lookupFunction(signature2: Signature2): Option[Function2] = temputs.lookupFunction(signature2)
@@ -657,7 +657,7 @@ case class TemputsBox(var temputs: Temputs) {
     temputs = temputs.add(interfaceDef)
   }
 
-  def addArraySequence(size: Int, array2: ArraySequenceT2): Unit = {
+  def addArraySequence(size: Int, array2: KnownSizeArrayT2): Unit = {
     temputs = temputs.addArraySequence(size, array2)
   }
 

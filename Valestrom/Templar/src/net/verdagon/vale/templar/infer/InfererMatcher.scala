@@ -451,10 +451,10 @@ class InfererMatcher[Env, State](
         matchArrayAgainstCallTT(
           env, state, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
       }
-      case (CallTT(_, _, _), KindTemplata(ArraySequenceT2(_, RawArrayT2(_, _)))) => {
+      case (CallTT(_, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _)))) => {
         return (InferMatchConflict(inferences.inferences, "Can't match array sequence against anything, no such rule exists", List()))
       }
-      case (CallTT(_, _, _), CoordTemplata(Coord(_, ArraySequenceT2(_, _)))) => {
+      case (CallTT(_, _, _), CoordTemplata(Coord(_, KnownSizeArrayT2(_, _)))) => {
         return (InferMatchConflict(inferences.inferences, "Can't match array sequence against anything, no such rule exists", List()))
       }
       case (CallTT(expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(instanceOwnership, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
@@ -477,7 +477,7 @@ class InfererMatcher[Env, State](
 //          })
 //        (InferMatchSuccess(membersDeeplySatisfied))
 //      }
-      case (RepeaterSequenceTT(mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, ArraySequenceT2(size, RawArrayT2(elementCoord, mutability))))) => {
+      case (RepeaterSequenceTT(mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
         vassert(resultType == CoordTemplataType)
         vcurious(ownership == Share || ownership == Own)
 
@@ -502,7 +502,7 @@ class InfererMatcher[Env, State](
         val deeplySatisfied = mutabilityDeeplySatisfied && sizeDeeplySatisfied && elementDeeplySatisfied
         (InferMatchSuccess(deeplySatisfied))
       }
-      case (RepeaterSequenceTT(mutabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(ArraySequenceT2(size, RawArrayT2(elementCoord, mutability)))) => {
+      case (RepeaterSequenceTT(mutabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability)))) => {
         vassert(resultType == KindTemplataType)
 
         val mutabilityDeeplySatisfied =
@@ -642,7 +642,7 @@ class InfererMatcher[Env, State](
       case "passThroughIfConcrete" => {
         val List(kindRule) = args
         instance match {
-          case KindTemplata(StructRef2(_) | PackT2(_, _) | TupleT2(_, _) | ArraySequenceT2(_, _) | UnknownSizeArrayT2(_)) => {
+          case KindTemplata(StructRef2(_) | PackT2(_, _) | TupleT2(_, _) | KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_)) => {
             matchTemplataAgainstRulexTR(env, state, localRunes, inferences, instance, kindRule)
           }
           case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to passThroughIfConcrete: " + args, List()))

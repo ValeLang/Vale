@@ -1,4 +1,6 @@
 #include <iostream>
+#include <function/expressions/shared/elements.h>
+#include <function/expressions/shared/members.h>
 
 #include "translatetype.h"
 
@@ -124,6 +126,25 @@ LLVMValueRef translateExpression(
         mutability,
         memberIndex,
         memberName);
+  } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
+    auto arrayLE =
+        translateExpression(
+            globalState, functionState, builder, knownSizeArrayLoad->arrayExpr);
+    auto indexLE =
+        translateExpression(
+            globalState, functionState, builder, knownSizeArrayLoad->indexExpr);
+    auto mutability = ownershipToMutability(knownSizeArrayLoad->arrayType->ownership);
+    dropReference(
+        globalState, functionState, builder, knownSizeArrayLoad->arrayType, arrayLE);
+    return loadElement(
+        globalState,
+        builder,
+        knownSizeArrayLoad->arrayType,
+        arrayLE,
+        mutability,
+        indexLE);
+  } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
+    return translateNewArrayFromValues(globalState, functionState, builder, newArrayFromValues);
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;

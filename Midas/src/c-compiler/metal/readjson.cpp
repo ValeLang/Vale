@@ -7,64 +7,181 @@
 // for convenience
 using json = nlohmann::json;
 
+struct HashRefVec {
+  size_t operator()(const std::vector<Reference *> &refs) const {
+    size_t result = 1337;
+    for (auto el : refs) {
+      result += (size_t) el;
+    }
+    return result;
+  }
+};
+struct RefVecEquals {
+  bool operator()(
+      const std::vector<Reference *> &a,
+      const std::vector<Reference *> &b) const {
+    if (a.size() != b.size())
+      return false;
+    for (size_t i = 0; i < a.size(); i++) {
+      if (a[i] != b[i])
+        return false;
+    }
+    return true;
+  }
+};
+
+class Cache {
+public:
+  Int* innt = new Int();
+  Bool* boool = new Bool();
+  Str* str = new Str();
+  Void* vooid = new Void();
+  Never* never = new Never();
+
+  std::unordered_map<Name*, StructReferend*> structReferends;
+  std::unordered_map<std::string, Name*> names;
+
+  // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
+  std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
+  std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
+  std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
+  std::unordered_map<Referend*, std::unordered_map<Ownership, Reference*>> references;
+  std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
+  std::unordered_map<int, VariableId*> variableIds;
+  std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
+};
+
+Reference* readReference(Cache* cache, const json& reference);
+Ownership readOwnership(Cache* cache, const json& ownership);
+Mutability readMutability(const json& mutability);
+
 //template<typename T>
 //concept ReturnsVec = requires(T a) {
 //  { std::hash<T>{}(a) } -> std::convertible_to<std::size_t>;
 //};
 template<
     typename F,
-    typename T = decltype((*(const F*)nullptr)(*(const json*)nullptr))>
-std::vector<T> readArray(const json& j, const F& f) {
+    typename T = decltype((*(const F*)nullptr)(nullptr, *(const json*)nullptr))>
+std::vector<T> readArray(Cache* cache, const json& j, const F& f) {
   assert(j.is_array());
   auto vec = std::vector<T>{};
   for (const auto& element : j) {
-    vec.push_back(f(element));
+    vec.push_back(f(cache, element));
   }
   return vec;
 }
 // F should return pair<key, value>
 template<typename K, typename V, typename F>
-std::unordered_map<K, V> readArrayIntoMap(const json& j, const F& f) {
+std::unordered_map<K, V> readArrayIntoMap(Cache* cache, const json& j, const F& f) {
   assert(j.is_array());
   auto map = std::unordered_map<K, V>{};
   map.reserve(j.size());
   for (const auto& element : j) {
-    std::pair<K, V> p = f(element);
+    std::pair<K, V> p = f(cache, element);
     map.emplace(move(p.first), move(p.second));
   }
   return map;
 }
 
-Name* readName(const json& name) {
+template<typename K, typename V, typename H, typename E, typename F>
+V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeElement) {
+  auto iter = map->find(key);
+  if (iter == map->end()) {
+    auto p = map->emplace(key, makeElement());
+    iter = p.first;
+  }
+  return iter->second;
+}
+
+Name* readName(Cache* cache, const json& name) {
   assert(name.is_string());
-  return new Name(
-      name.get<std::string>());
+  auto nameStr = name.get<std::string>();
+
+  return makeIfNotPresent(
+      &cache->names,
+      nameStr,
+      [&](){ return new Name(nameStr); });
 }
 
-StructReferend* readStructReferend(const json& referend) {
+StructReferend* readStructReferend(Cache* cache, const json& referend) {
   assert(referend[""] == "StructId");
-  return new StructReferend(
-      readName(referend["name"]));
+
+  auto structName = readName(cache, referend["name"]);
+
+  return makeIfNotPresent(
+      &cache->structReferends,
+      structName,
+      [&](){ return new StructReferend(structName); });
 }
 
-Referend* readReferend(const json& referend) {
+RawArrayT* readRawArray(Cache* cache, const json& rawArray) {
+  assert(rawArray[""] == "Array");
+
+  auto mutability = readMutability(rawArray["mutability"]);
+  auto elementType = readReference(cache, rawArray["elementType"]);
+
+  return makeIfNotPresent(
+      &cache->rawArrays[elementType],
+      mutability,
+      [&](){ return new RawArrayT(mutability, elementType); });
+}
+
+UnknownSizeArrayT* readUnknownSizeArray(Cache* cache, const json& referend) {
+  auto name = readName(cache, referend["name"]);
+  auto rawArray = readRawArray(cache, referend["array"]);
+
+  return makeIfNotPresent(
+      &cache->unknownSizeArrays,
+      name,
+      [&](){ return new UnknownSizeArrayT(name, rawArray); });
+}
+
+KnownSizeArrayT* readKnownSizeArray(Cache* cache, const json& referend) {
+  auto name = readName(cache, referend["name"]);
+  auto rawArray = readRawArray(cache, referend["array"]);
+  auto size = referend["size"].get<int>();
+
+  return makeIfNotPresent(
+      &cache->knownSizeArrays,
+      name,
+      [&](){ return new KnownSizeArrayT(name, size, rawArray); });
+}
+
+Referend* readReferend(Cache* cache, const json& referend) {
   assert(referend.is_object());
   if (referend[""] == "Int") {
-    return new Int();
+    return cache->innt;
   } else if (referend[""] == "Bool") {
-    return new Bool();
+    return cache->boool;
   } else if (referend[""] == "Str") {
-    return new Str();
+    return cache->str;
   } else if (referend[""] == "Void") {
-    return new Void();
+    return cache->vooid;
   } else if (referend[""] == "StructId") {
-    return readStructReferend(referend);
+    return readStructReferend(cache, referend);
   } else if (referend[""] == "Never") {
-    return new Never();
+    return cache->never;
+  } else if (referend[""] == "UnknownSizeArray") {
+    return readUnknownSizeArray(cache, referend);
+  } else if (referend[""] == "KnownSizeArray") {
+    return readKnownSizeArray(cache, referend);
   } else {
     std::cerr << "Unrecognized referend: " << referend[""] << std::endl;
     assert(false);
   }
+}
+
+Reference* readReference(Cache* cache, const json& reference) {
+  assert(reference.is_object());
+  assert(reference[""] == "Ref");
+
+  auto ownership =readOwnership(cache, reference["ownership"]);
+  auto referend = readReferend(cache, reference["referend"]);
+
+  return makeIfNotPresent(
+      &cache->references[referend],
+      ownership,
+      [&](){ return new Reference(ownership, referend); });
 }
 
 Mutability readMutability(const json& mutability) {
@@ -89,7 +206,7 @@ Variability readVariability(const json& variability) {
   }
 }
 
-Ownership readOwnership(const json& ownership) {
+Ownership readOwnership(Cache* cache, const json& ownership) {
   assert(ownership.is_object());
 //  std::cout << ownership.type() << std::endl;
   if (ownership[""].get<std::string>() == "Own") {
@@ -103,40 +220,45 @@ Ownership readOwnership(const json& ownership) {
   }
 }
 
-Reference* readReference(const json& reference) {
-  assert(reference.is_object());
-  assert(reference[""] == "Ref");
-  return new Reference(
-      readOwnership(reference["ownership"]),
-      readReferend(reference["referend"]));
-}
-
-Prototype* readPrototype(const json& prototype) {
+Prototype* readPrototype(Cache* cache, const json& prototype) {
   assert(prototype.is_object());
   assert(prototype[""] == "Prototype");
-  return new Prototype(
-      readName(prototype["name"]),
-      readArray(prototype["params"], readReference),
-      readReference(prototype["return"]));
+
+  auto name = readName(cache, prototype["name"]);
+  auto params = readArray(cache, prototype["params"], readReference);
+  auto retuurn = readReference(cache, prototype["return"]);
+
+  return makeIfNotPresent(
+      &cache->prototypes[name][retuurn],
+      params,
+      [&](){ return new Prototype(name, params, retuurn); });
 }
 
-VariableId* readVariableId(const json& local) {
-  assert(local.is_object());
-  assert(local[""] == "VariableId");
-  return new VariableId(
-      local["number"],
-      "");
+VariableId* readVariableId(Cache* cache, const json& variable) {
+  assert(variable.is_object());
+  assert(variable[""] == "VariableId");
+
+  int number = variable["number"];
+
+  return makeIfNotPresent(
+      &cache->variableIds,
+      number,
+      [&](){ return new VariableId(number, ""); });
 }
 
-Local* readLocal(const json& local) {
+Local* readLocal(Cache* cache, const json& local) {
   assert(local.is_object());
   assert(local[""] == "Local");
-  return new Local(
-      readVariableId(local["id"]),
-      readReference(local["type"]));
+  auto varId = readVariableId(cache, local["id"]);
+  auto ref = readReference(cache, local["type"]);
+
+  return makeIfNotPresent(
+      &cache->locals[varId],
+      ref,
+      [&](){ return new Local(varId, ref); });
 }
 
-Expression* readExpression(const json& expression) {
+Expression* readExpression(Cache* cache, const json& expression) {
   assert(expression.is_object());
   std::string type = expression[""];
   if (type == "ConstantI64") {
@@ -147,129 +269,137 @@ Expression* readExpression(const json& expression) {
         expression["value"]);
   } else if (type == "Return") {
     return new Return(
-        readExpression(expression["sourceExpr"]));
+        readExpression(cache, expression["sourceExpr"]));
   } else if (type == "Stackify") {
     return new Stackify(
-        readExpression(expression["sourceExpr"]),
-        readLocal(expression["local"]),
+        readExpression(cache, expression["sourceExpr"]),
+        readLocal(cache, expression["local"]),
         "");
   } else if (type == "LocalStore") {
     return new LocalStore(
-        readLocal(expression["local"]),
-        readExpression(expression["sourceExpr"]),
+        readLocal(cache, expression["local"]),
+        readExpression(cache, expression["sourceExpr"]),
         expression["localName"]);
   } else if (type == "Discard") {
     return new Discard(
-        readExpression(expression["sourceExpr"]),
-        readReference(expression["sourceResultType"]));
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceResultType"]));
   } else if (type == "Argument") {
     return new Argument(
-        readReference(expression["resultType"]),
+        readReference(cache, expression["resultType"]),
         expression["argumentIndex"]);
   } else if (type == "Unstackify") {
     return new Unstackify(
-        readLocal(expression["local"]));
+        readLocal(cache, expression["local"]));
   } else if (type == "LocalLoad") {
     return new LocalLoad(
-        readLocal(expression["local"]),
-        readOwnership(expression["targetOwnership"]),
+        readLocal(cache, expression["local"]),
+        readOwnership(cache, expression["targetOwnership"]),
         expression["localName"]);
   } else if (type == "Call") {
     return new Call(
-        readPrototype(expression["function"]),
-        readArray(expression["argExprs"], readExpression));
+        readPrototype(cache, expression["function"]),
+        readArray(cache, expression["argExprs"], readExpression));
   } else if (type == "ExternCall") {
     return new ExternCall(
-        readPrototype(expression["function"]),
-        readArray(expression["argExprs"], readExpression));
+        readPrototype(cache, expression["function"]),
+        readArray(cache, expression["argExprs"], readExpression));
   } else if (type == "Block") {
     return new Block(
-        readArray(expression["exprs"], readExpression));
+        readArray(cache, expression["exprs"], readExpression));
   } else if (type == "If") {
     return new If(
-        readExpression(expression["conditionBlock"]),
-        readExpression(expression["thenBlock"]),
-        readExpression(expression["elseBlock"]),
-        readReference(expression["commonSupertype"]));
+        readExpression(cache, expression["conditionBlock"]),
+        readExpression(cache, expression["thenBlock"]),
+        readExpression(cache, expression["elseBlock"]),
+        readReference(cache, expression["commonSupertype"]));
   } else if (type == "While") {
     return new While(
-        readExpression(expression["bodyBlock"]));
+        readExpression(cache, expression["bodyBlock"]));
   } else if (type == "NewStruct") {
     return new NewStruct(
-        readArray(expression["sourceExprs"], readExpression),
-        readReference(expression["resultType"]));
+        readArray(cache, expression["sourceExprs"], readExpression),
+        readReference(cache, expression["resultType"]));
   } else if (type == "Destructure") {
     return new Destructure(
-        readExpression(expression["structExpr"]),
-        readReference(expression["structType"]),
-        readArray(expression["localTypes"], readReference),
-        readArray(expression["localIndices"], readLocal));
+        readExpression(cache, expression["structExpr"]),
+        readReference(cache, expression["structType"]),
+        readArray(cache, expression["localTypes"], readReference),
+        readArray(cache, expression["localIndices"], readLocal));
   } else if (type == "MemberLoad") {
     return new MemberLoad(
-        readExpression(expression["structExpr"]),
-        readStructReferend(expression["structId"]),
-        readReference(expression["structType"]),
+        readExpression(cache, expression["structExpr"]),
+        readStructReferend(cache, expression["structId"]),
+        readReference(cache, expression["structType"]),
         expression["memberIndex"],
-        readOwnership(expression["targetOwnership"]),
-        readReference(expression["expectedMemberType"]),
-        readReference(expression["expectedResultType"]),
+        readOwnership(cache, expression["targetOwnership"]),
+        readReference(cache, expression["expectedMemberType"]),
+        readReference(cache, expression["expectedResultType"]),
         expression["memberName"]);
+  } else if (type == "NewArrayFromValuesH") {
+    return new NewArrayFromValues(
+        readArray(cache, expression["sourceExprs"], readExpression),
+        readReference(cache, expression["resultType"]));
+  } else if (type == "KnownSizeArrayLoadH") {
+    return new KnownSizeArrayLoad(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readExpression(cache, expression["indexExpr"]),
+        readReference(cache, expression["resultType"]),
+        readOwnership(cache, expression["targetOwnership"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);
   }
 }
 
-Block* readBlock(const json& block) {
-  assert(block.is_object());
-  return new Block(
-      readArray(block["exprs"], readExpression));
-}
-
-StructMember* readStructMember(const json& struuct) {
+StructMember* readStructMember(Cache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "StructMember");
   return new StructMember(
       struuct["name"],
       readVariability(struuct["variability"]),
-      readReference(struuct["type"]));
+      readReference(cache, struuct["type"]));
 }
 
-StructDefinition* readStruct(const json& struuct) {
+StructDefinition* readStruct(Cache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "Struct");
   return new StructDefinition(
-      readName(struuct["name"]),
+      readName(cache, struuct["name"]),
       readMutability(struuct["mutability"]),
       {},
-      readArray(struuct["members"], readStructMember));
+      readArray(cache, struuct["members"], readStructMember));
 }
 
-Function* readFunction(const json& function) {
+Function* readFunction(Cache* cache, const json& function) {
   assert(function.is_object());
   assert(function[""] == "Function");
   return new Function(
-      readPrototype(function["prototype"]),
-      readExpression(function["block"]));
+      readPrototype(cache, function["prototype"]),
+      readExpression(cache, function["block"]));
 }
 
 Program* readProgram(const json& program) {
   assert(program.is_object());
   assert(program[""] == "Program");
+  Cache cache;
   return new Program(
       {},//readArray<readInterface>(program["interfaces"]),
       readArrayIntoMap<std::string, StructDefinition*>(
+          &cache,
           program["structs"],
-          [](json j){
-            auto s = readStruct(j);
+          [](Cache* cache, json j){
+            auto s = readStruct(cache, j);
             return std::make_pair(s->name->name, s);
           }),
       nullptr,//readStructName(program["emptyPackStructRef"]),
       {},//readArray<readExtern>(program["externs"]),
       readArrayIntoMap<std::string, Function*>(
+          &cache,
           program["functions"],
-          [](json j){
-              auto f = readFunction(j);
+          [](Cache* cache, json j){
+              auto f = readFunction(cache, j);
               return std::make_pair(f->prototype->name->name, f);
           }));
 }

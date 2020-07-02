@@ -27,8 +27,13 @@ public:
   // also used inside the below countedStructs.
   std::unordered_map<std::string, LLVMTypeRef> innerStructs;
   // These contain a ref count and the above val struct. Yon references
-  // point to these, since they're yon.
+  // point to these.
   std::unordered_map<std::string, LLVMTypeRef> countedStructs;
+
+  // These contain a ref count and an array type. Yon references
+  // point to these.
+  std::unordered_map<Name*, LLVMTypeRef> knownSizeArrayCountedStructs;
+  std::unordered_map<Name*, LLVMTypeRef> unknownSizeArrayCountedStructs;
 
   std::unordered_map<std::string, LLVMValueRef> functions;
 

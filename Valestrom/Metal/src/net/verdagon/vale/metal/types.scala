@@ -40,14 +40,14 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, kind: T) {
   // points at a known size array.
   def expectKnownSizeArrayReference() = {
     kind match {
-      case atH @ KnownSizeArrayTH(_, _) => ReferenceH[KnownSizeArrayTH](ownership, atH)
+      case atH @ KnownSizeArrayTH(_, _, _) => ReferenceH[KnownSizeArrayTH](ownership, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unknown size array.
   def expectUnknownSizeArrayReference() = {
     kind match {
-      case atH @ UnknownSizeArrayTH(_) => ReferenceH[UnknownSizeArrayTH](ownership, atH)
+      case atH @ UnknownSizeArrayTH(_, _) => ReferenceH[UnknownSizeArrayTH](ownership, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
@@ -87,6 +87,8 @@ case class StructRefH(
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
 case class KnownSizeArrayTH(
+  // This is useful for naming the Midas struct that wraps this array and its ref count.
+  name: FullNameH,
   // The size of the array.
   size: Int,
   // The underlying array.
@@ -94,13 +96,17 @@ case class KnownSizeArrayTH(
 ) extends ReferendH
 
 case class UnknownSizeArrayTH(
+  // This is useful for naming the Midas struct that wraps this array and its ref count.
+  name: FullNameH,
   // The underlying array.
   rawArray: RawArrayTH
 ) extends ReferendH
 
 // This is not a referend, but instead has the common fields of UnknownSizeArrayTH/KnownSizeArrayTH,
 // and lets us handle their code similarly.
-case class RawArrayTH(elementType: ReferenceH[ReferendH])
+case class RawArrayTH(
+  mutability: Mutability,
+  elementType: ReferenceH[ReferendH])
 
 
 // These are a lowered form of template arguments, they're only preserved by the hammer so that

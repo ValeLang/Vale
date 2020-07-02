@@ -538,7 +538,7 @@ class InfererEvaluator[Env, State](
           }
         val List(templata) = argTemplatas
         templata match {
-          case k @ KindTemplata(StructRef2(_) | PackT2(_, _) | TupleT2(_, _) | ArraySequenceT2(_, _) | UnknownSizeArrayT2(_)) => {
+          case k @ KindTemplata(StructRef2(_) | PackT2(_, _) | TupleT2(_, _) | KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_)) => {
             (InferEvaluateSuccess(k, deeplySatisfied))
           }
           case _ => return (InferEvaluateConflict(inferences.inferences, "passThroughIfConcrete expected concrete kind, but got " + templata, List()))
@@ -1255,7 +1255,7 @@ class InfererEvaluator[Env, State](
         }
         InferEvaluateSuccess(members, true)
       }
-      case ArraySequenceT2(size, RawArrayT2(memberType, _)) => {
+      case KnownSizeArrayT2(size, RawArrayT2(memberType, _)) => {
         // We need to do this check right here because right after this we're making an array of size `size`
         // which we just received as an integer from the user.
         if (size != expectedNumMembers) {

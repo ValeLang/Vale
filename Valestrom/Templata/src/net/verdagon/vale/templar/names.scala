@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata.{CodeLocation2, CoordTemplata, ITemplata, Queriable2}
-import net.verdagon.vale.templar.types.Coord
+import net.verdagon.vale.templar.types.{Coord, KnownSizeArrayT2, Mutability, UnknownSizeArrayT2}
 import net.verdagon.vale.vassert
 
 // Scout's/Astronomer's name parts correspond to where they are in the source code,
@@ -53,6 +53,9 @@ sealed trait ICitizenName2 extends IName2 {
 case class ImplDeclareName2(codeLocation: CodeLocation2) extends IName2 { def order = 1; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ codeLocation.all(func) } }
 case class LetName2(codeLocation: CodeLocation2) extends IName2 { def order = 2; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ codeLocation.all(func) } }
 
+case class RawArrayName2(mutability: Mutability, elementType: Coord) extends IName2 { def order = 40; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ elementType.all(func) } }
+case class KnownSizeArrayName2(size: Int, arr: RawArrayName2) extends IName2 { def order = 42; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ arr.all(func) } }
+case class UnknownSizeArrayName2(arr: RawArrayName2) extends IName2 { def order = 47; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ arr.all(func) } }
 sealed trait IVarName2 extends IName2
 case class TemplarBlockResultVarName2(num: Int) extends IVarName2 { def order = 18; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class TemplarFunctionResultVarName2() extends IVarName2 { def order = 19; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }

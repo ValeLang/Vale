@@ -71,7 +71,7 @@ case class FloatH() extends ReferendH
 // panic() is a NeverH.
 // TODO: This feels weird being a referend in metal. Figure out a way to not
 // have this? Perhaps replace all referends with Optional[Optional[ReferendH]],
-// where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.[
+// where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
 case class NeverH() extends ReferendH
 
 case class InterfaceRefH(
@@ -220,3 +220,7 @@ case object Mutable extends Mutability
 sealed trait Variability
 case object Final extends Variability
 case object Varying extends Variability
+
+sealed trait Virtuality
+case object Normal extends Virtuality
+case object Abstract extends Virtuality

@@ -12,7 +12,7 @@
 #include <stddef.h>
 
 /** Extract a filename only (no extension) from a path */
-std::string fileName(std::string fn) {
+std::string getFileName(std::string fn) {
     char *dotp;
     char *fnp = &fn[fn.length()-1];
 

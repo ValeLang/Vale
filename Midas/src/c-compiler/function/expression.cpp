@@ -29,7 +29,7 @@ LLVMValueRef translateExpression(
     LLVMBuilderRef builder,
     Expression* expr) {
   if (auto constantI64 = dynamic_cast<ConstantI64*>(expr)) {
-    // See AZTMCIE for why we load and store here.
+    // See ULTMCIE for why we load and store here.
     auto localAddr = LLVMBuildAlloca(builder, LLVMInt64Type(), "");
     LLVMBuildStore(
         builder,
@@ -37,7 +37,7 @@ LLVMValueRef translateExpression(
         localAddr);
     return LLVMBuildLoad(builder, localAddr, "");
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
-    // See AZTMCIE for why this is an add.
+    // See ULTMCIE for why this is an add.
     auto localAddr = LLVMBuildAlloca(builder, LLVMInt1Type(), "");
     LLVMBuildStore(
         builder,
@@ -45,6 +45,10 @@ LLVMValueRef translateExpression(
         localAddr);
     return LLVMBuildLoad(builder, localAddr, "");
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
+//    std::string x = "Discard ";
+//    auto s = LLVMConstString(x.data(), x.length(), false);
+    auto s = LLVMBuildGlobalStringPtr(builder, "Discard ", "");
+    LLVMBuildCall(builder, globalState->printStr, &s, 1, "");
     return translateDiscard(globalState, functionState, builder, discardM);
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
     return LLVMBuildRet(
@@ -124,6 +128,7 @@ LLVMValueRef translateExpression(
         memberLoad->structType,
         structExpr,
         mutability,
+        memberLoad->expectedResultType,
         memberIndex,
         memberName);
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
@@ -145,6 +150,61 @@ LLVMValueRef translateExpression(
         indexLE);
   } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
     return translateNewArrayFromValues(globalState, functionState, builder, newArrayFromValues);
+  } else if (auto interfaceCall = dynamic_cast<InterfaceCall*>(expr)) {
+    return translateInterfaceCall(
+        globalState, functionState, builder, interfaceCall);
+  } else if (auto memberStore = dynamic_cast<MemberStore*>(expr)) {
+    auto sourceExpr =
+        translateExpression(
+            globalState, functionState, builder, memberStore->sourceExpr);
+    auto structExpr =
+        translateExpression(
+            globalState, functionState, builder, memberStore->structExpr);
+    auto structReferend =
+        dynamic_cast<StructReferend*>(memberStore->structType->referend);
+    auto structDefM = globalState->program->getStruct(structReferend->fullName);
+    auto memberIndex = memberStore->memberIndex;
+    auto memberName = memberStore->memberName;
+    dropReference(
+        globalState, functionState, builder, memberStore->structType, structExpr);
+    return storeMember(
+        globalState,
+        builder,
+        structDefM,
+        structExpr,
+        memberStore->resultType,
+        memberIndex,
+        memberName,
+        sourceExpr);
+  } else if (auto structToInterfaceUpcast =
+      dynamic_cast<StructToInterfaceUpcast*>(expr)) {
+    auto sourceExpr =
+        translateExpression(
+            globalState, functionState, builder, structToInterfaceUpcast->sourceExpr);
+
+    auto interfaceRefLT =
+        globalState->getInterfaceRefStruct(
+            structToInterfaceUpcast->targetInterfaceRef->fullName);
+
+    auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
+    interfaceRefLE =
+        LLVMBuildInsertValue(
+            builder,
+            interfaceRefLE,
+            sourceExpr,
+            0,
+            "interfaceRefWithOnlyObj");
+    interfaceRefLE =
+        LLVMBuildInsertValue(
+            builder,
+            interfaceRefLE,
+            globalState->getInterfaceTablePtr(
+                globalState->program->getStruct(
+                    structToInterfaceUpcast->sourceStructId->fullName)
+                    ->getEdgeForInterface(structToInterfaceUpcast->targetInterfaceRef->fullName)),
+            1,
+            "interfaceRef");
+    return interfaceRefLE;
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;

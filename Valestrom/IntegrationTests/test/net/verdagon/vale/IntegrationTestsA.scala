@@ -150,6 +150,38 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
+  test("Tests weird crash") {
+    val compile = new Compilation(
+      """
+        |struct Thing {
+        |  v Vec3i;
+        |}
+        |
+        |struct Vec3i imm {
+        |  x Int;
+        |  y Int;
+        |  z Int;
+        |}
+        |
+        |fn bork(thing &Thing, v Vec3i) Void {
+        |  mut thing.v = v;
+        |}
+        |
+        |fn makeThing() Thing {
+        |  thing = Thing(Vec3i(7, 8, 9));
+        |  bork(&thing, Vec3i(4, 5, 6));
+        |  = thing;
+        |}
+        |
+        |fn main() {
+        |  = makeThing().v.y;
+        |}
+        |
+        |
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+  }
+
   test("Tests single expression and single statement functions' returns") {
     val compile = new Compilation(
       """

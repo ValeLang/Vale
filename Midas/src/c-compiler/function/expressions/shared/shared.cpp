@@ -53,3 +53,15 @@ void adjustCounter(
   LLVMBuildStore(builder, newValLE, counterPtrLE);
 }
 
+
+LLVMValueRef getTablePtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE) {
+  return LLVMBuildExtractValue(builder, interfaceRefLE, 1, "itablePtr");
+}
+
+LLVMValueRef getControlBlockPtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE) {
+  return LLVMBuildExtractValue(builder, interfaceRefLE, 0, "objPtr");
+}

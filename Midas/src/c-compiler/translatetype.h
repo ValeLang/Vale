@@ -27,4 +27,8 @@ bool isInlImm(GlobalState* globalState, Reference* referenceM);
 
 LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT);
 
+LLVMTypeRef translatePrototypeToFunctionType(
+    GlobalState* globalState,
+    Prototype* prototype);
+
 #endif

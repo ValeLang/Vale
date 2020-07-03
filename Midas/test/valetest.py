@@ -79,7 +79,7 @@ class ValeTest(unittest.TestCase):
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}"
-        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c"]
+        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c"]
         proc = self.clang(o_files, exe_file)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
@@ -91,6 +91,8 @@ class ValeTest(unittest.TestCase):
     def compile_and_execute_and_expect_return_code(self, vale_file: str,
                                                    expected_return_code) -> None:
         proc = self.compile_and_execute(vale_file)
+        print(proc.stdout)
+        print(proc.stderr)
         self.assertEqual(proc.returncode, expected_return_code,
                          f"Unexpected result: {proc.returncode}")
 
@@ -99,6 +101,9 @@ class ValeTest(unittest.TestCase):
 
     def test_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code("immstruct.vale", 5)
+
+    def test_memberrefcount(self) -> None:
+        self.compile_and_execute_and_expect_return_code("memberrefcount.vale", 5)
 
     def test_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code("bigimmstruct.vale", 42)
@@ -123,6 +128,15 @@ class ValeTest(unittest.TestCase):
 
     def test_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code("knownsizeimmarray.vale", 42)
+
+    # def test_imminterface(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("imminterface.vale", 42)
+
+    def test_mutinterface(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutinterface.vale", 42)
+
+    def test_mutstructstore(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutstructstore.vale", 42)
 
 
 if __name__ == '__main__':

@@ -66,6 +66,40 @@ public:
     assert(structIter != structs.end());
     return structIter->second;
   }
+  InterfaceDefinition* getInterface(Name* name) {
+    auto interfaceIter = interfaces.find(name->name);
+    assert(interfaceIter != interfaces.end());
+    return interfaceIter->second;
+  }
+};
+
+class InterfaceMethod {
+public:
+  Prototype* prototype;
+  int virtualParamIndex;
+
+  InterfaceMethod(
+      Prototype* prototype_,
+      int virtualParamIndex_) :
+      prototype(prototype_),
+      virtualParamIndex(virtualParamIndex_) {}
+};
+
+// Represents how a struct implements an interface.
+// Each edge has a vtable.
+class Edge {
+public:
+  StructReferend* structName;
+  InterfaceReferend* interfaceName;
+  std::vector<std::pair<InterfaceMethod*, Prototype*>> structPrototypesByInterfaceMethod;
+
+  Edge(
+      StructReferend* structName_,
+      InterfaceReferend* interfaceName_,
+      std::vector<std::pair<InterfaceMethod*, Prototype*>> structPrototypesByInterfaceMethod_) :
+      structName(structName_),
+      interfaceName(interfaceName_),
+      structPrototypesByInterfaceMethod(structPrototypesByInterfaceMethod_) {}
 };
 
 class StructDefinition {
@@ -84,6 +118,15 @@ public:
         mutability(mutability_),
         edges(edges_),
         members(members_) {}
+
+    Edge* getEdgeForInterface(Name* interfaceName) {
+      for (auto e : edges) {
+        if (e->interfaceName->fullName == interfaceName)
+          return e;
+      }
+      assert(false);
+      return nullptr;
+    }
 };
 
 class StructMember {
@@ -105,19 +148,19 @@ public:
 class InterfaceDefinition {
 public:
     Name* name;
-    Mutability* mutability;
+    Mutability mutability;
     std::vector<Name*> superInterfaces;
-    std::vector<Prototype*> prototypes;
-};
+    std::vector<InterfaceMethod*> methods;
 
-// Represents how a struct implements an interface.
-// Each edge has a vtable.
-class Edge {
-public:
-    Name* structName;
-    Name* interfaceName;
-    std::vector<std::pair<Prototype*, Prototype*>>
-        structPrototypesByInterfacePrototype;
+    InterfaceDefinition(
+        Name* name_,
+        Mutability mutability_,
+        std::vector<Name*> superInterfaces_,
+        std::vector<InterfaceMethod*> methods_) :
+      name(name_),
+      mutability(mutability_),
+      superInterfaces(superInterfaces_),
+      methods(methods_) {}
 };
 
 class Function {
@@ -143,12 +186,11 @@ public:
 
     Prototype(
         Name* name_,
-    std::vector<Reference*> params_,
-    Reference* returnType_
-        ) :
-        name(name_),
-        params(std::move(params_)),
-        returnType(returnType_) {}
+        std::vector<Reference*> params_,
+        Reference* returnType_) :
+      name(name_),
+      params(std::move(params_)),
+      returnType(returnType_) {}
 };
 
 #endif

@@ -17,6 +17,7 @@ LLVMValueRef loadMember(
     Reference* structRefM,
     LLVMValueRef structExpr,
     Mutability mutability,
+    Reference* memberType,
     int memberIndex,
     const std::string& memberName);
 
@@ -25,25 +26,27 @@ LLVMValueRef getRcPtr(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr);
 
-// See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef getRC(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr);
 
-// See CRCISFAORC for why we don't take in a mutability.
 void setRC(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr,
     LLVMValueRef newRcLE);
 
-// See CRCISFAORC for why we don't take in a mutability.
 void adjustRC(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr,
     // 1 or -1
     int adjustAmount);
 
-// See CRCISFAORC for why we don't take in a mutability.
+void adjustInterfaceRC(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE,
+    // 1 or -1
+    int adjustAmount);
+
 LLVMValueRef rcEquals(
     LLVMBuilderRef builder,
     LLVMValueRef structExpr,
@@ -63,5 +66,15 @@ void fillControlBlock(
 LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
 
 LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE);
+
+LLVMValueRef storeMember(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    StructDefinition* structDefM,
+    LLVMValueRef structExpr,
+    Reference* memberType,
+    int memberIndex,
+    const std::string& memberName,
+    LLVMValueRef newValueLE);
 
 #endif

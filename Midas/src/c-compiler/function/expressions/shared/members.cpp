@@ -21,16 +21,36 @@ LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE) {
 }
 
 LLVMValueRef loadInnerStructMember(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef innerStructPtrLE,
+    Reference* memberType,
     int memberIndex,
     const std::string& memberName) {
   assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
-  return LLVMBuildLoad(
+
+  auto result =
+      LLVMBuildLoad(
+          builder,
+          LLVMBuildStructGEP(
+              builder, innerStructPtrLE, memberIndex, memberName.c_str()),
+          memberName.c_str());
+  acquireReference(globalState, builder, memberType, result);
+  return result;
+}
+
+void storeInnerStructMember(
+    LLVMBuilderRef builder,
+    LLVMValueRef innerStructPtrLE,
+    int memberIndex,
+    const std::string& memberName,
+    LLVMValueRef newValueLE) {
+  assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
+  LLVMBuildStore(
       builder,
+      newValueLE,
       LLVMBuildStructGEP(
-          builder, innerStructPtrLE, memberIndex, memberName.c_str()),
-      memberName.c_str());
+          builder, innerStructPtrLE, memberIndex, memberName.c_str()));
 }
 
 LLVMValueRef loadMember(
@@ -39,6 +59,7 @@ LLVMValueRef loadMember(
     Reference* structRefM,
     LLVMValueRef structExpr,
     Mutability mutability,
+    Reference* memberType,
     int memberIndex,
     const std::string& memberName) {
 
@@ -49,16 +70,35 @@ LLVMValueRef loadMember(
     } else {
       LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
       return loadInnerStructMember(
-          builder, innerStructPtrLE, memberIndex, memberName);
+          globalState, builder, innerStructPtrLE, memberType, memberIndex, memberName);
     }
   } else if (mutability == Mutability::MUTABLE) {
     LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
     return loadInnerStructMember(
-        builder, innerStructPtrLE, memberIndex, memberName);
+        globalState, builder, innerStructPtrLE, memberType, memberIndex, memberName);
   } else {
     assert(false);
     return nullptr;
   }
+}
+
+LLVMValueRef storeMember(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    StructDefinition* structDefM,
+    LLVMValueRef structExpr,
+    Reference* memberType,
+    int memberIndex,
+    const std::string& memberName,
+    LLVMValueRef newValueLE) {
+  assert(structDefM->mutability == Mutability::MUTABLE);
+  LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
+  LLVMValueRef oldMember =
+      loadInnerStructMember(
+          globalState, builder, innerStructPtrLE, memberType, memberIndex, memberName);
+  storeInnerStructMember(
+      builder, innerStructPtrLE, memberIndex, memberName, newValueLE);
+  return oldMember;
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
@@ -67,6 +107,18 @@ LLVMValueRef getRcPtr(
     LLVMValueRef structPtrLE) {
   // Control block is always the 0th element of every struct.
   auto controlPtrLE = LLVMBuildStructGEP(builder, structPtrLE, 0, "__control_ptr");
+  // RC is the 0th member of the RC struct.
+  auto rcPtrLE = LLVMBuildStructGEP(builder, controlPtrLE, 0, "__rc_ptr");
+  return rcPtrLE;
+}
+
+// See CRCISFAORC for why we don't take in a mutability.
+LLVMValueRef getInterfaceRcPtr(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE) {
+  // Interfaces point at an object's control block.
+  // It should be at the top of the object, so it's really still zero.
+  auto controlPtrLE = getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
   // RC is the 0th member of the RC struct.
   auto rcPtrLE = LLVMBuildStructGEP(builder, controlPtrLE, 0, "__rc_ptr");
   return rcPtrLE;
@@ -95,6 +147,14 @@ void adjustRC(
     // 1 or -1
     int adjustAmount) {
   adjustCounter(builder, getRcPtr(builder, structPtrLE), adjustAmount);
+}
+
+void adjustInterfaceRC(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE,
+    // 1 or -1
+    int adjustAmount) {
+  adjustCounter(builder, getInterfaceRcPtr(builder, interfaceRefLE), adjustAmount);
 }
 
 LLVMValueRef rcEquals(

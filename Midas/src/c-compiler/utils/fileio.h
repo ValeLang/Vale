@@ -14,7 +14,7 @@
 std::string fileDirectory(std::string fn);
 
 // Extract a filename only (no extension) from a path
-std::string fileName(std::string fn);
+std::string getFileName(std::string fn);
 
 // Concatenate folder, filename and extension into a path
 std::string fileMakePath(const char *dir, const char *srcfn, const char *ext);

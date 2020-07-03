@@ -153,13 +153,22 @@ public:
 class StructToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  InterfaceRef* targetInterfaceRef;
+  StructReferend* sourceStructId;
+  InterfaceReferend* targetInterfaceRef;
+
+  StructToInterfaceUpcast(
+      Expression* sourceExpr_,
+      StructReferend* sourceStructId_,
+      InterfaceReferend* targetInterfaceRef_) :
+      sourceExpr(sourceExpr_),
+      sourceStructId(sourceStructId_),
+      targetInterfaceRef(targetInterfaceRef_) {}
 };
 
 class InterfaceToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  InterfaceRef* targetInterfaceRef;
+  InterfaceReferend* targetInterfaceRef;
 };
 
 class Unreachable : public Expression {
@@ -201,9 +210,25 @@ public:
 class MemberStore : public Expression {
 public:
   Expression* structExpr;
+  Reference* structType;
   int memberIndex;
   Expression* sourceExpr;
+  Reference* resultType;
   std::string memberName;
+
+  MemberStore(
+      Expression* structExpr_,
+      Reference* structType_,
+      int memberIndex_,
+      Expression* sourceExpr_,
+      Reference* resultType_,
+      std::string memberName_) :
+    structExpr(structExpr_),
+    structType(structType_),
+    memberIndex(memberIndex_),
+    sourceExpr(sourceExpr_),
+    resultType(resultType_),
+    memberName(memberName_) {}
 };
 
 
@@ -327,9 +352,21 @@ class InterfaceCall : public Expression {
 public:
   std::vector<Expression*> argExprs;
   int virtualParamIndex;
-  InterfaceRef* interfaceRef;
+  InterfaceReferend* interfaceRef;
   int indexInEdge;
   Prototype* functionType;
+
+  InterfaceCall(
+      std::vector<Expression*> argExprs_,
+      int virtualParamIndex_,
+      InterfaceReferend* interfaceRef_,
+      int indexInEdge_,
+      Prototype* functionType_) :
+    argExprs(argExprs_),
+    virtualParamIndex(virtualParamIndex_),
+    interfaceRef(interfaceRef_),
+    indexInEdge(indexInEdge_),
+    functionType(functionType_) {}
 };
 
 

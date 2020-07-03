@@ -1,5 +1,5 @@
-#ifndef STRUCT_H_
-#define STRUCT_H_
+#ifndef STRUCT_STRUCT_H_
+#define STRUCT_STRUCT_H_
 
 #include <llvm-c/Core.h>
 
@@ -16,5 +16,13 @@ void declareStruct(
 void translateStruct(
     GlobalState* globalState,
     StructDefinition* structM);
+
+void declareEdge(
+    GlobalState* globalState,
+    Edge* edge);
+
+void translateEdge(
+    GlobalState* globalState,
+    Edge* edge);
 
 #endif

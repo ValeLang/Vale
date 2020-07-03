@@ -72,6 +72,11 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
         return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
       }
     }
+  } else if (auto interfaceReferend =
+      dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
+    auto interfaceRefStructL =
+        globalState->getInterfaceRefStruct(interfaceReferend->fullName);
+    return interfaceRefStructL;
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
     assert(false);
@@ -137,4 +142,12 @@ bool isInlImm(GlobalState* globalState, Reference* referenceM) {
     assert(false); // impl
     return false;
   }
+}
+
+LLVMTypeRef translatePrototypeToFunctionType(
+    GlobalState* globalState,
+    Prototype* prototype) {
+  auto returnLT = translateType(globalState, prototype->returnType);
+  auto paramsLT = translateTypes(globalState, prototype->params);
+  return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }

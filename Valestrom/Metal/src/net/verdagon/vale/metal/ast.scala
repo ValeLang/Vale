@@ -81,12 +81,18 @@ case class StructMemberH(
   variability: Variability,
   tyype: ReferenceH[ReferendH])
 
+case class InterfaceMethodH(
+    prototypeH: PrototypeH,
+    virtualParamIndex: Int) {
+  assert(virtualParamIndex >= 0)
+}
+
 case class InterfaceDefinitionH(
   fullName: FullNameH,
   mutability: Mutability,
   // TODO: Change this to edges, since interfaces impl other interfaces.
   superInterfaces: List[InterfaceRefH],
-  prototypes: List[PrototypeH]) {
+  methods: List[InterfaceMethodH]) {
   def getRef = InterfaceRefH(fullName)
 }
 
@@ -95,7 +101,7 @@ case class InterfaceDefinitionH(
 case class EdgeH(
   struct: StructRefH,
   interface: InterfaceRefH,
-  structPrototypesByInterfacePrototype: ListMap[PrototypeH, PrototypeH])
+  structPrototypesByInterfaceMethod: ListMap[InterfaceMethodH, PrototypeH])
 
 case class FunctionH(
   prototype: PrototypeH,

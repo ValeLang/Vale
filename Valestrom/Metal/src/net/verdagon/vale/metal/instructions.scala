@@ -132,14 +132,14 @@ case class UnstackifyH(
 // This creates those local variables, much as a StackifyH would, and puts into them
 // the values from the dying struct instance.
 case class DestructureH(
-                         // The register to take the struct from.
-                         // As with any read from a register, this will invalidate the register.
-                         structRegister: ExpressionH[StructRefH],
-                         // A list of types, one for each local variable we'll make.
-                         // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-                         localTypes: List[ReferenceH[ReferendH]],
-                         // The locals to put the struct's members into.
-                         localIndices: Vector[Local],
+  // The register to take the struct from.
+  // As with any read from a register, this will invalidate the register.
+  structRegister: ExpressionH[StructRefH],
+  // A list of types, one for each local variable we'll make.
+  // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
+  localTypes: List[ReferenceH[ReferendH]],
+  // The locals to put the struct's members into.
+localIndices: Vector[Local],
 ) extends ExpressionH[StructRefH] {
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toList)
@@ -153,14 +153,14 @@ case class DestructureH(
 // This creates those local variables, much as a StackifyH would, and puts into them
 // the values from the dying struct instance.
 case class DestructureArraySequenceH(
-                                      // The register to take the struct from.
-                                      // As with any read from a register, this will invalidate the register.
-                                      structRegister: ExpressionH[KnownSizeArrayTH],
-                                      // A list of types, one for each local variable we'll make.
-                                      // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-                                      localTypes: List[ReferenceH[ReferendH]],
-                                      // The locals to put the struct's members into.
-                                      localIndices: Vector[Local]
+  // The register to take the struct from.
+  // As with any read from a register, this will invalidate the register.
+  structRegister: ExpressionH[KnownSizeArrayTH],
+  // A list of types, one for each local variable we'll make.
+  // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
+  localTypes: List[ReferenceH[ReferendH]],
+  // The locals to put the struct's members into.
+  localIndices: Vector[Local]
 ) extends ExpressionH[StructRefH] {
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toList)

@@ -7,7 +7,7 @@
 #include "function/expressions/shared/shared.h"
 #include "function/expressions/shared/heap.h"
 
-LLVMValueRef fillKnownSizeArray(
+void fillKnownSizeArray(
     LLVMBuilderRef builder,
     LLVMValueRef arrayLE,
     const std::vector<LLVMValueRef>& elementsLE) {

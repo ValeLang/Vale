@@ -647,7 +647,7 @@ object ExpressionVivem {
 
           val interfaceDefH =
             programH.interfaces.find(_.getRef == generatorInterfaceExpr.resultType.kind).get
-          val interfaceMethodPrototype = interfaceDefH.prototypes.head
+          val interfaceMethodPrototype = interfaceDefH.methods.head
 
           heap.vivemDout.println()
 
@@ -664,7 +664,7 @@ object ExpressionVivem {
               virtualParamIndex,
               generatorInterfaceExpr.resultType.kind,
               indexInEdge,
-              interfaceMethodPrototype)
+              interfaceMethodPrototype.prototypeH)
 
           heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
 
@@ -709,7 +709,7 @@ object ExpressionVivem {
 
         val consumerInterfaceDefH =
           programH.interfaces.find(_.getRef == consumerInterfaceExpr.resultType.kind).get
-        val consumerInterfaceMethodPrototype = consumerInterfaceDefH.prototypes.head
+        val consumerInterfaceMethodPrototype = consumerInterfaceDefH.methods.head
 
         val size = arrayExpr.resultType.kind.size
         (0 until size).foreach(ascendingI => {
@@ -743,7 +743,7 @@ object ExpressionVivem {
               virtualParamIndex,
               consumerInterfaceExpr.resultType.kind,
               indexInEdge,
-              consumerInterfaceMethodPrototype)
+              consumerInterfaceMethodPrototype.prototypeH)
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
           dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, returnRef)
@@ -781,7 +781,7 @@ object ExpressionVivem {
 
         val consumerInterfaceDefH =
           programH.interfaces.find(_.getRef == consumerInterfaceExpr.resultType.kind).get
-        val consumerInterfaceMethodPrototype = consumerInterfaceDefH.prototypes.head
+        val consumerInterfaceMethodPrototype = consumerInterfaceDefH.methods.head
 
         val size =
           heap.dereference(arrayReference) match {
@@ -818,7 +818,7 @@ object ExpressionVivem {
               virtualParamIndex,
               consumerInterfaceExpr.resultType.kind,
               indexInEdge,
-              consumerInterfaceMethodPrototype)
+              consumerInterfaceMethodPrototype.prototypeH)
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
           dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, returnRef)
@@ -859,7 +859,7 @@ object ExpressionVivem {
     vassert(actualInterfaceKind.hamut == interfaceRefH)
     val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, allocNum)
 
-    val prototypeH = edge.structPrototypesByInterfacePrototype.values.toList(indexInEdge)
+    val prototypeH = edge.structPrototypesByInterfaceMethod.values.toList(indexInEdge)
     val functionH = programH.functions.find(_.prototype == prototypeH).get;
 
     val actualPrototype = functionH.prototype
@@ -934,13 +934,13 @@ object ExpressionVivem {
               val references = heap.destructure(reference, true)
               references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
             }
-            case UnknownSizeArrayTH(_) => {
+            case UnknownSizeArrayTH(_, _) => {
               val ArrayInstanceV(_, _, _, elements) = heap.dereference(reference)
               val references = elements.indices.map(i => heap.deinitializeArrayElement(reference, elements.size - 1 - i))
               heap.deallocate(reference)
               references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
             }
-            case KnownSizeArrayTH(_, _) => {
+            case KnownSizeArrayTH(_, _, _) => {
               val ArrayInstanceV(_, _, _, elements) = heap.dereference(reference)
               val references = elements.indices.map(i => heap.deinitializeArrayElement(reference, elements.size - 1 - i))
               heap.deallocate(reference)

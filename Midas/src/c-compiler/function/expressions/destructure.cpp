@@ -30,9 +30,10 @@ LLVMValueRef translateDestructure(
           loadMember(
               globalState,
               builder,
-              structM->members[i]->type,
+              destructureM->structType,
               structLE,
               mutability,
+              structM->members[i]->type,
               i,
               memberName + "_local");
       makeLocal(

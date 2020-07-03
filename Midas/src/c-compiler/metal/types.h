@@ -18,7 +18,7 @@ class Str;
 class Void;
 class Float;
 class Never;
-class InterfaceRef;
+class InterfaceReferend;
 class StructReferend;
 class RawArrayT;
 class KnownSizeArrayT;
@@ -44,6 +44,11 @@ enum class Location {
 enum class Mutability {
     IMMUTABLE,
     MUTABLE
+};
+
+enum class Virtuality {
+  NORMAL,
+  ABSTRACT
 };
 
 enum class Variability {
@@ -94,6 +99,9 @@ public:
 class InterfaceReferend : public Referend {
 public:
     Name* fullName;
+
+  InterfaceReferend(Name* fullName_) :
+      fullName(fullName_) {}
 };
 
 // Interned

@@ -43,3 +43,42 @@ void translateStruct(
   LLVMStructSetBody(
       countedStructL, countedStructMemberTypesL.data(), countedStructMemberTypesL.size(), false);
 }
+
+void declareEdge(
+    GlobalState* globalState,
+    Edge* edge) {
+
+  auto interfaceTableStructL =
+      globalState->getInterfaceTableStruct(edge->interfaceName->fullName);
+
+  auto edgeName =
+      edge->structName->fullName->name + edge->structName->fullName->name;
+  auto itablePtr =
+      LLVMAddGlobal(globalState->mod, interfaceTableStructL, edgeName.c_str());
+  LLVMSetLinkage(itablePtr, LLVMExternalLinkage);
+
+  globalState->interfaceTablePtrs.emplace(edge, itablePtr);
+}
+
+void translateEdge(
+    GlobalState* globalState,
+    Edge* edge) {
+
+  auto interfaceTableStructL =
+      globalState->getInterfaceTableStruct(edge->interfaceName->fullName);
+
+  auto builder = LLVMCreateBuilder();
+  auto itableLE = LLVMGetUndef(interfaceTableStructL);
+  for (int i = 0; i < edge->structPrototypesByInterfaceMethod.size(); i++) {
+    auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
+    itableLE = LLVMBuildInsertValue(
+        builder,
+        itableLE,
+        globalState->getFunction(funcName),
+        i,
+        std::to_string(i).c_str());
+  }
+
+  auto itablePtr = globalState->getInterfaceTablePtr(edge);
+  LLVMSetInitializer(itablePtr,  itableLE);
+}

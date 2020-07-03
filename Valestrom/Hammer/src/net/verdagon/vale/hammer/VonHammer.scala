@@ -44,6 +44,17 @@ object VonHammer {
         VonMember("name", VonStr(fullName.toString()))))
   }
 
+  def vonifyInterfaceMethod(interfaceMethodH: InterfaceMethodH): IVonData = {
+    val InterfaceMethodH(prototype, virtualParamIndex) = interfaceMethodH
+
+    VonObject(
+      "InterfaceMethod",
+      None,
+      Vector(
+        VonMember("prototype", vonifyPrototype(prototype)),
+        VonMember("virtualParamIndex", VonInt(virtualParamIndex))))
+  }
+
   def vonifyInterface(interface: InterfaceDefinitionH): IVonData = {
     val InterfaceDefinitionH(fullName, mutability, superInterfaces, prototypes) = interface
 
@@ -54,7 +65,7 @@ object VonHammer {
         VonMember("name", VonStr(fullName.toString())),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterfaceRef).toVector)),
-        VonMember("methods", VonArray(None, prototypes.map(vonifyPrototype).toVector))))
+        VonMember("methods", VonArray(None, prototypes.map(vonifyInterfaceMethod).toVector))))
   }
 
   def vonfiyStruct(struct: StructDefinitionH): IVonData = {
@@ -130,18 +141,18 @@ object VonHammer {
       "Edge",
       None,
       Vector(
-        VonMember("struct", vonifyStructRef(struct)),
-        VonMember("interface", vonifyInterfaceRef(interface)),
+        VonMember("structName", vonifyStructRef(struct)),
+        VonMember("interfaceName", vonifyInterfaceRef(interface)),
         VonMember(
           "methods",
           VonArray(
             None,
-            structPrototypesByInterfacePrototype.toVector.map({ case (interfacePrototype, structPrototype) =>
+            structPrototypesByInterfacePrototype.toVector.map({ case (interfaceMethod, structPrototype) =>
               VonObject(
                 "Entry",
                 None,
                 Vector(
-                  VonMember("key", vonifyPrototype(interfacePrototype)),
+                  VonMember("key", vonifyInterfaceMethod(interfaceMethod)),
                   VonMember("value", vonifyPrototype(structPrototype))))
             })))))
   }
@@ -400,7 +411,8 @@ object VonHammer {
           None,
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
-            VonMember("targetInterfaceRef", vonifyKind(targetInterfaceRef))))
+            VonMember("sourceStructName", vonifyStructRef(sourceExpr.resultType.kind)),
+            VonMember("targetInterfaceName", vonifyInterfaceRef(targetInterfaceRef))))
       }
       case InterfaceToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         vimpl()
@@ -430,6 +442,7 @@ object VonHammer {
           Vector(
             VonMember("resultType", vonifyCoord(resultType)),
             VonMember("structExpr", vonifyNode(structExpr)),
+            VonMember("structType", vonifyCoord(structExpr.resultType)),
             VonMember("memberIndex", VonInt(memberIndex)),
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("memberName", VonStr(memberName.toString()))))
@@ -519,7 +532,7 @@ object VonHammer {
           Vector(
             VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyNode))),
             VonMember("virtualParamIndex", VonInt(virtualParamIndex)),
-            VonMember("interfaceRefH", vonifyInterfaceRef(interfaceRefH)),
+            VonMember("interfaceRef", vonifyInterfaceRef(interfaceRefH)),
             VonMember("indexInEdge", VonInt(indexInEdge)),
             VonMember("functionType", vonifyPrototype(functionType))))
       }

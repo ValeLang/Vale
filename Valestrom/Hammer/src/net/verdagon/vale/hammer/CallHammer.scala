@@ -127,9 +127,9 @@ object CallHammer {
 
     val consumerInterfaceRef = consumerCallableResultLine.expectInterfaceAccess().resultType.kind;
     val consumerInterfaceDef = vassertSome(hamuts.interfaceDefs.values.find(_.getRef == consumerInterfaceRef))
-    vassert(consumerInterfaceDef.prototypes.head.params.size == 2)
-    vassert(consumerInterfaceDef.prototypes.head.params(0).kind == consumerInterfaceRef)
-    vassert(consumerInterfaceDef.prototypes.head.params(1) == arrayTypeH.rawArray.elementType)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params.size == 2)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == arrayTypeH.rawArray.elementType)
 
     val destroyArraySequenceCallNode =
         DestroyKnownSizeArrayH(

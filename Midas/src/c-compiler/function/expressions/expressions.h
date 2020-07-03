@@ -29,6 +29,12 @@ LLVMValueRef translateCall(
     LLVMBuilderRef builder,
     Call* call);
 
+LLVMValueRef translateInterfaceCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    InterfaceCall* call);
+
 LLVMValueRef translateExternCall(
     GlobalState* globalState,
     FunctionState* functionState,

@@ -29,7 +29,7 @@ void translateFunction(
     GlobalState* globalState,
     Function* functionM) {
 
-  auto functionL = globalState->getFunction(functionM);
+  auto functionL = globalState->getFunction(functionM->prototype->name);
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 

@@ -24,15 +24,6 @@ std::vector<LLVMValueRef> translateExpressions(
 
 LLVMValueRef makeNever();
 
-LLVMValueRef loadMember(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structRefM,
-    LLVMValueRef structExpr,
-    Mutability mutability,
-    int memberIndex,
-    const std::string& memberName);
-
 void makeLocal(
     GlobalState* globalState,
     FunctionState* functionState,

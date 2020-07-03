@@ -26,6 +26,12 @@ void flare(
     int color,
     LLVMValueRef numExpr);
 
+void acquireReference(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* sourceRef,
+    LLVMValueRef expr);
+
 void dropReference(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -43,5 +49,13 @@ void adjustCounter(
     LLVMValueRef counterPtrLE,
     // Amount to add
     int adjustAmount);
+
+LLVMValueRef getTablePtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE);
+
+LLVMValueRef getControlBlockPtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef interfaceRefLE);
 
 #endif

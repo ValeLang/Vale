@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include <nlohmann/json.hpp>
+#include "struct/interface.h"
 
 #include "metal/types.h"
 #include "metal/ast.h"
@@ -38,6 +39,7 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
   GlobalState globalState;
   globalState.dataLayout = dataLayout;
+  globalState.mod = mod;
   globalState.program = program;
 
   globalState.liveHeapObjCounter =
@@ -46,38 +48,65 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 //  LLVMSetVisibility(globalState.liveHeapObjCounter, LLVMHiddenVisibility);
 
   {
-    LLVMTypeRef rettype = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef parmtype = LLVMInt64Type();
-    LLVMTypeRef fnsig = LLVMFunctionType(rettype, &parmtype, 1, 0);
-    globalState.malloc = LLVMAddFunction(mod, "malloc", fnsig);
+    LLVMTypeRef retType = LLVMPointerType(LLVMInt8Type(), 0);
+    LLVMTypeRef paramType = LLVMInt64Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState.malloc = LLVMAddFunction(mod, "malloc", funcType);
   }
 
   {
-    LLVMTypeRef rettype = LLVMVoidType();
-    LLVMTypeRef parmtype = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef fnsig = LLVMFunctionType(rettype, &parmtype, 1, 0);
-    globalState.free = LLVMAddFunction(mod, "free", fnsig);
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramType = LLVMPointerType(LLVMInt8Type(), 0);
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState.free = LLVMAddFunction(mod, "free", funcType);
   }
 
   {
-    LLVMTypeRef rettype = LLVMVoidType();
-    LLVMTypeRef parmtype = LLVMInt1Type();
-    LLVMTypeRef fnsig = LLVMFunctionType(rettype, &parmtype, 1, 0);
-    globalState.assert = LLVMAddFunction(mod, "__vassert", fnsig);
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramType = LLVMInt1Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState.assert = LLVMAddFunction(mod, "__vassert", funcType);
   }
 
   {
-    LLVMTypeRef rettype = LLVMVoidType();
-    LLVMTypeRef parmtypes[2] = { LLVMInt64Type(), LLVMInt64Type() };
-    LLVMTypeRef fnsig = LLVMFunctionType(rettype, parmtypes, 2, 0);
-    globalState.assertI64Eq = LLVMAddFunction(mod, "__vassertI64Eq", fnsig);
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramTypes[2] = { LLVMInt64Type(), LLVMInt64Type() };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
+    globalState.assertI64Eq = LLVMAddFunction(mod, "__vassertI64Eq", funcType);
   }
 
   {
-    LLVMTypeRef rettype = LLVMVoidType();
-    LLVMTypeRef parmtypes[] = { LLVMInt64Type(), LLVMInt64Type() };
-    LLVMTypeRef fnsig = LLVMFunctionType(rettype, parmtypes, 2, 0);
-    globalState.flareI64 = LLVMAddFunction(mod, "__vflare_i64", fnsig);
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramTypes[] = { LLVMInt64Type(), LLVMInt64Type() };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
+    globalState.flareI64 = LLVMAddFunction(mod, "__vflare_i64", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMInt8Type(), 0)
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState.printStr = LLVMAddFunction(mod, "__vprintCStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMInt64Type()
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState.printInt = LLVMAddFunction(mod, "__vprintI64", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMInt1Type()
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState.printBool = LLVMAddFunction(mod, "__vprintBool", funcType);
   }
 
 
@@ -94,19 +123,35 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
   for (auto p : program->structs) {
     auto name = p.first;
-    auto structL = p.second;
-    declareStruct(&globalState, structL);
+    auto structM = p.second;
+    declareStruct(&globalState, structM);
   }
 
-  // eventually, would declare interfaces here
+  for (auto p : program->interfaces) {
+    auto name = p.first;
+    auto interfaceM = p.second;
+    declareInterface(&globalState, interfaceM);
+  }
 
   for (auto p : program->structs) {
     auto name = p.first;
-    auto structL = p.second;
-    translateStruct(&globalState, structL);
+    auto structM = p.second;
+    translateStruct(&globalState, structM);
   }
 
+  for (auto p : program->interfaces) {
+    auto name = p.first;
+    auto interfaceM = p.second;
+    translateInterface(&globalState, interfaceM);
+  }
 
+  for (auto p : program->structs) {
+    auto name = p.first;
+    auto structM = p.second;
+    for (auto e : structM->edges) {
+      declareEdge(&globalState, e);
+    }
+  }
 
   LLVMValueRef mainL = nullptr;
   for (auto p : program->functions) {
@@ -118,14 +163,24 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
     }
   }
   assert(mainL != nullptr);
-//  mainL = testMainL;
 
+  // We translate the edges after the functions are declared because the
+  // functions have to exist for the itables to point to them.
+  for (auto p : program->structs) {
+    auto name = p.first;
+    auto structM = p.second;
+    for (auto e : structM->edges) {
+      translateEdge(&globalState, e);
+    }
+  }
 
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
     translateFunction(&globalState, function);
   }
+
+
 
   auto paramTypesL = std::vector<LLVMTypeRef>{
       LLVMInt64Type(),

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/controlblock.h>
 
 #include "translatetype.h"
 
@@ -32,13 +33,17 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMTypeRef structLT,
-    const std::vector<LLVMValueRef>& membersLE) {
+    const std::vector<LLVMValueRef>& membersLE,
+    const std::string& typeName) {
   auto newStructLE = mallocStruct(globalState, builder, structLT);
   fillControlBlock(
-      globalState, builder, getControlBlockPtr(builder, newStructLE));
+      globalState,
+      builder,
+      getStructControlBlockPtr(builder, newStructLE),
+      typeName);
   fillKnownSizeArray(
       builder,
-      getCountedContents(builder, newStructLE),
+      getCountedContentsPtr(builder, newStructLE),
       membersLE);
   return newStructLE;
 }
@@ -62,7 +67,7 @@ LLVMValueRef translateNewArrayFromValues(
 //          globalState, builder, countedStructL, structM, membersLE);
 //    }
     case Mutability::IMMUTABLE: {
-      if (isInlImm(globalState, newArrayFromValues->arrayRefType)) {
+      if (newArrayFromValues->arrayRefType->location == Location::INLINE) {
 //        auto valStructL =
 //            globalState->getInnerStruct(structReferend->fullName);
 //        return constructInnerStruct(
@@ -75,7 +80,7 @@ LLVMValueRef translateNewArrayFromValues(
             translateKnownSizeArrayToCountedStruct(
                 globalState, knownSizeArrayMT);
         return constructKnownSizeArrayCountedStruct(
-            globalState, builder, knownSizeArrayCountedStructLT, elementsLE);
+            globalState, builder, knownSizeArrayCountedStructLT, elementsLE, knownSizeArrayMT->name->name);
       }
     }
     default:

@@ -52,6 +52,7 @@ object TemplataNamer {
       case LambdaCitizenName2(codeLocation) => "ᛊ" + codeLocation
       case AnonymousSubstructName2(thing) =>
       case TupleName2(members) => "tup#"
+      case ImmDropName2(kind) => "drop*" + getReferendIdentifierName(kind)
       case x => vimpl(x.toString)
     }).mkString(".")
   }

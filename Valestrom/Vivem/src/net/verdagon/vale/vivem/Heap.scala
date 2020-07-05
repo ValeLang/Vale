@@ -25,8 +25,8 @@ class AdapterForExterns(
     heap.dereference(reference)
   }
 
-  def addAllocationForReturn(ownership: OwnershipH, referend: ReferendV): ReferenceV = {
-    val ref = heap.add(ownership, referend)
+  def addAllocationForReturn(ownership: OwnershipH, location: LocationH, referend: ReferendV): ReferenceV = {
+    val ref = heap.add(ownership, location, referend)
 //    heap.incrementReferenceRefCount(ResultToObjectReferrer(callId), ref) // incrementing because putting it in a return
 //    ReturnV(callId, ref)
     ref
@@ -35,7 +35,7 @@ class AdapterForExterns(
   def makeVoid(): ReferenceV = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = vassertSome(programH.structs.find(_.getRef == emptyPackStructRefH))
-    heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, emptyPackStructRefH), List())
+    heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, emptyPackStructRefH), List())
   }
 }
 
@@ -82,7 +82,7 @@ class AllocationMap(vivemDout: PrintStream) {
     }
   }
 
-  def add(ownership: OwnershipH, referend: ReferendV) = {
+  def add(ownership: OwnershipH, location: LocationH, referend: ReferendV) = {
     val shouldIntern =
       referend match {
         case StructInstanceV(structH, members) if structH.mutability == Immutable && members.isEmpty => true
@@ -103,6 +103,7 @@ class AllocationMap(vivemDout: PrintStream) {
         actualKind = referend.tyype,
         seenAsKind = referend.tyype,
         ownership,
+        location,
         newId())
     val allocation = new Allocation(reference, referend)
     objectsById.put(reference.allocId, allocation)
@@ -173,14 +174,14 @@ class Heap(in_vivemDout: PrintStream) {
   def getReferenceFromLocal(
       varAddr: VariableAddressV,
       expectedType: ReferenceH[ReferendH],
-      targetOwnership: OwnershipH
+      targetType: ReferenceH[ReferendH]
   ): ReferenceV = {
     val variable = getLocal(varAddr)
     if (variable.expectedType != expectedType) {
       vfail("blort")
     }
     checkReference(expectedType, variable.reference)
-    alias(variable.reference, expectedType, targetOwnership)
+    alias(variable.reference, expectedType, targetType)
   }
 
   private def getLocal(varAddr: VariableAddressV): VariableV = {
@@ -245,28 +246,28 @@ class Heap(in_vivemDout: PrintStream) {
   def getReferenceFromStruct(
     address: MemberAddressV,
     expectedType: ReferenceH[ReferendH],
-    targetOwnership: OwnershipH
+    targetType: ReferenceH[ReferendH]
   ): ReferenceV = {
     val MemberAddressV(objectId, fieldIndex) = address
     objectsById.get(objectId).referend match {
       case StructInstanceV(_, members) => {
         val actualReference = members(fieldIndex)
         checkReference(expectedType, actualReference)
-        alias(actualReference, expectedType, targetOwnership)
+        alias(actualReference, expectedType, targetType)
       }
     }
   }
   def getReferenceFromArray(
     address: ElementAddressV,
     expectedType: ReferenceH[ReferendH],
-    targetOwnership: OwnershipH
+    targetType: ReferenceH[ReferendH]
   ): ReferenceV = {
     val ElementAddressV(objectId, elementIndex) = address
     objectsById.get(objectId).referend match {
       case ai @ ArrayInstanceV(_, _, _, _) => {
         val ref = ai.getElement(elementIndex)
         checkReference(expectedType, ref)
-        alias(ref, expectedType, targetOwnership)
+        alias(ref, expectedType, targetType)
       }
     }
   }
@@ -387,17 +388,21 @@ class Heap(in_vivemDout: PrintStream) {
     allocation.ensureTotalRefCount(expectedNum)
   }
 
-  def add(ownership: OwnershipH, referend: ReferendV): ReferenceV = {
-    objectsById.add(ownership, referend)
+  def add(ownership: OwnershipH, location: LocationH, referend: ReferendV): ReferenceV = {
+    objectsById.add(ownership, location, referend)
   }
 
-  def alias(reference: ReferenceV, expectedType: ReferenceH[ReferendH], targetOwnership: OwnershipH): ReferenceV = {
-    if (expectedType.ownership == targetOwnership) {
+  def alias(
+      reference: ReferenceV,
+      expectedType: ReferenceH[ReferendH],
+      targetType: ReferenceH[ReferendH]):
+  ReferenceV = {
+    if (expectedType.ownership == targetType.ownership) {
       return reference
     }
 
-    val ReferenceV(actualKind, oldSeenAsType, oldOwnership, objectId) = reference
-    vassert((oldOwnership == ShareH) == (targetOwnership == ShareH))
+    val ReferenceV(actualKind, oldSeenAsType, oldOwnership, oldLocation, objectId) = reference
+    vassert((oldOwnership == ShareH) == (targetType.ownership == ShareH))
     if (oldSeenAsType.hamut != expectedType.kind) {
       // not sure if the above .actualType is right
 
@@ -406,7 +411,8 @@ class Heap(in_vivemDout: PrintStream) {
     ReferenceV(
       actualKind,
       RRReferend(expectedType.kind),
-      targetOwnership,
+      targetType.ownership,
+      targetType.location,
       objectId)
   }
 
@@ -488,8 +494,8 @@ class Heap(in_vivemDout: PrintStream) {
 //  }
 
   // For example, for the integer we pass into the array generator
-  def allocateTransient(ownership: OwnershipH, referend: ReferendV) = {
-    val ref = add(ownership, referend)
+  def allocateTransient(ownership: OwnershipH, location: LocationH, referend: ReferendV) = {
+    val ref = add(ownership, location, referend)
     vivemDout.print(" o" + ref.allocId.num + "=")
     printReferend(referend)
     ref
@@ -559,7 +565,7 @@ class Heap(in_vivemDout: PrintStream) {
       memberReferences: List[ReferenceV]):
   ReferenceV = {
     val instance = StructInstanceV(structDefH, memberReferences.toVector)
-    val reference = add(structRefH.ownership, instance)
+    val reference = add(structRefH.ownership, structRefH.location, instance)
 
     memberReferences.zipWithIndex.foreach({ case (memberReference, index) =>
       incrementReferenceRefCount(
@@ -632,7 +638,7 @@ class Heap(in_vivemDout: PrintStream) {
       size: Int):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayRefType.kind.rawArray.elementType, size, Vector())
-    val reference = add(arrayRefType.ownership, instance)
+    val reference = add(arrayRefType.ownership, arrayRefType.location, instance)
     (reference, instance)
   }
 
@@ -641,7 +647,7 @@ class Heap(in_vivemDout: PrintStream) {
     memberRefs: List[ReferenceV]):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayRefType.kind.rawArray.elementType, memberRefs.size, memberRefs.toVector)
-    val reference = add(arrayRefType.ownership, instance)
+    val reference = add(arrayRefType.ownership, arrayRefType.location, instance)
     memberRefs.zipWithIndex.foreach({ case (memberRef, index) =>
       incrementReferenceRefCount(ElementToObjectReferrer(ElementAddressV(reference.allocId, index)), memberRef)
     })
@@ -676,12 +682,12 @@ class Heap(in_vivemDout: PrintStream) {
           vfail("Expected " + structRefH + " but was " + structDefH)
         }
       }
-      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ UnknownSizeArrayTH(_)) => {
+      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ UnknownSizeArrayTH(_, _)) => {
         if (typeH.kind != arrayH) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }
       }
-      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ KnownSizeArrayTH(_, _)) => {
+      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ KnownSizeArrayTH(_, _, _)) => {
         if (typeH.kind != arrayH) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }

@@ -3,7 +3,9 @@
 
 #include <llvm-c/Core.h>
 
+#include "function/function.h"
 #include "globalstate.h"
+#include "shared.h"
 
 LLVMValueRef mallocStruct(
     GlobalState* globalState,
@@ -11,8 +13,11 @@ LLVMValueRef mallocStruct(
     LLVMTypeRef structL);
 
 void freeStruct(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef structLE);
+    LLVMValueRef structLE,
+    Reference* structRefM);
 
 #endif

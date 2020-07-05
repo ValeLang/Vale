@@ -210,6 +210,9 @@ object EnvironmentUtils {
       case CodeTypeNameA(_) =>
       case GlobalFunctionFamilyNameA(_) =>
       case ImplImpreciseNameA() =>
+      case ImmConcreteDestructorImpreciseNameA() =>
+      case ImmInterfaceDestructorImpreciseNameA() =>
+      case ImmDropImpreciseNameA() =>
       case _ => vimpl()
     }
     name2 match {
@@ -230,6 +233,9 @@ object EnvironmentUtils {
       case MemberRune2(_) =>
       case CitizenName2(_, _) =>
       case MagicImplicitRune2(_) =>
+      case ImmConcreteDestructorTemplateName2() =>
+      case ImmInterfaceDestructorTemplateName2() =>
+      case ImmDropTemplateName2() =>
       case _ => vimpl()
     }
     (nameA, name2) match {
@@ -241,6 +247,9 @@ object EnvironmentUtils {
       case (GlobalFunctionFamilyNameA(humanNameA), FunctionTemplateName2(humanNameT, _)) => humanNameA == humanNameT
       case (GlobalFunctionFamilyNameA(humanNameA), FunctionName2(humanNameT, _, _)) => humanNameA == humanNameT
       case (ImplImpreciseNameA(), ImplDeclareName2(_)) => true
+      case (ImmDropImpreciseNameA(), ImmDropTemplateName2()) => true
+      case (ImmConcreteDestructorImpreciseNameA(), ImmConcreteDestructorTemplateName2()) => true
+      case (ImmInterfaceDestructorImpreciseNameA(), ImmInterfaceDestructorTemplateName2()) => true
 //      case (ImplImpreciseNameA(), AnonymousSubstructImplName2()) => true // not really needed if we use ImplDeclareName?
       case _ => false
     }

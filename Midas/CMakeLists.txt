@@ -90,7 +90,7 @@ add_executable(valec
 		src/c-compiler/utils/options.cpp
 
 		src/c-compiler/genllvm.cpp
-)
+        src/c-compiler/function/expressions/shared/controlblock.cpp src/c-compiler/function/expressions/shared/controlblock.h)
 
 target_link_libraries(valec ${llvm_libs} nlohmann_json::nlohmann_json)
 

@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{vassert, vfail}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -25,13 +25,33 @@ import net.verdagon.vale.vfail
 //   isn't actually a pointer, it's just the value itself, like C's Car vs Car*.
 // In previous stages, this is referred to as a "coord", because these four things can be
 // thought of as dimensions of a coordinate.
-case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, kind: T) {
+case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: LocationH, kind: T) {
+  (ownership, location) match {
+    case (OwnH, _) =>
+    case (ShareH, _) =>
+    case (BorrowH, YonderH) =>
+    case _ => vfail()
+  }
+
   kind match {
     case IntH() | BoolH() | StrH() | FloatH() => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
-      if (ownership != ShareH) {
-        vfail("wot")
+      vassert(ownership == ShareH)
+      vassert(location == InlineH)
+    }
+    case StructRefH(name) => {
+      val isBox = name.toString.startsWith("C(\"__Box\"")
+      val isTup = name.toString.startsWith("Tup")
+
+      if (isBox) {
+        vassert(ownership == OwnH || ownership == BorrowH)
       }
+
+      // This will have false positives eventually, take it out then.
+      val shouldBeInlined =
+        (ownership == ShareH && isTup) ||
+        (ownership == OwnH && isBox)
+      vassert(shouldBeInlined == (location == InlineH));
     }
     case _ =>
   }
@@ -40,21 +60,21 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, kind: T) {
   // points at a known size array.
   def expectKnownSizeArrayReference() = {
     kind match {
-      case atH @ KnownSizeArrayTH(_, _, _) => ReferenceH[KnownSizeArrayTH](ownership, atH)
+      case atH @ KnownSizeArrayTH(_, _, _) => ReferenceH[KnownSizeArrayTH](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unknown size array.
   def expectUnknownSizeArrayReference() = {
     kind match {
-      case atH @ UnknownSizeArrayTH(_, _) => ReferenceH[UnknownSizeArrayTH](ownership, atH)
+      case atH @ UnknownSizeArrayTH(_, _) => ReferenceH[UnknownSizeArrayTH](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at struct.
   def expectStructReference() = {
     kind match {
-      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, atH)
+      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, atH)
     }
   }
 }
@@ -172,11 +192,11 @@ case object ExclusiveReadwrite extends Permission
 //     C++:  class Car { Engine engine; Reactor reactor; }
 // Note that the compiler will often automatically add an `inl` onto whatever
 // local variables it can, to speed up the program.
-sealed trait Location
+sealed trait LocationH
 // Means that the referend will be in the containing stack frame or struct.
-case object Inline extends Location
+case object InlineH extends LocationH
 // Means that the referend will be allocated separately, in the heap.
-case object Yonder extends Location
+case object YonderH extends LocationH
 
 // Used to say whether an object can be modified or not.
 // Structs and interfaces specify whether theyre immutable or mutable, but all

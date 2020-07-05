@@ -75,4 +75,6 @@ void translateFunction(
   // Never, because Valestrom guarantees we end function bodies in a ret.
   translateExpression(
       globalState, &functionState, bodyTopLevelBuilder, functionM->block);
+
+  LLVMDisposeBuilder(bodyTopLevelBuilder);
 }

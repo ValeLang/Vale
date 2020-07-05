@@ -16,8 +16,8 @@ void declareStruct(
 
   auto countedStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), structM->name->name.c_str());
-  assert(globalState->countedStructs.count(structM->name->name + "rc") == 0);
+          LLVMGetGlobalContext(), (structM->name->name + "rc").c_str());
+  assert(globalState->countedStructs.count(structM->name->name) == 0);
   globalState->countedStructs.emplace(structM->name->name, countedStructL);
 }
 
@@ -52,7 +52,7 @@ void declareEdge(
       globalState->getInterfaceTableStruct(edge->interfaceName->fullName);
 
   auto edgeName =
-      edge->structName->fullName->name + edge->structName->fullName->name;
+      edge->structName->fullName->name + edge->interfaceName->fullName->name;
   auto itablePtr =
       LLVMAddGlobal(globalState->mod, interfaceTableStructL, edgeName.c_str());
   LLVMSetLinkage(itablePtr, LLVMExternalLinkage);
@@ -78,6 +78,7 @@ void translateEdge(
         i,
         std::to_string(i).c_str());
   }
+  LLVMDisposeBuilder(builder);
 
   auto itablePtr = globalState->getInterfaceTablePtr(edge);
   LLVMSetInitializer(itablePtr,  itableLE);

@@ -2,8 +2,8 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata.{CodeLocation2, CoordTemplata, ITemplata, Queriable2}
-import net.verdagon.vale.templar.types.{Coord, KnownSizeArrayT2, Mutability, UnknownSizeArrayT2}
-import net.verdagon.vale.vassert
+import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Share, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.{vassert, vwat}
 
 // Scout's/Astronomer's name parts correspond to where they are in the source code,
 // but Templar's correspond more to what namespaces and stamped functions / structs
@@ -98,6 +98,42 @@ case class BuildingFunctionNameWithClosuredsAndTemplateArgs2(
   }
 }
 
+// We dont just use "destructor" as the name because we don't want the user to override it.
+case class ImmConcreteDestructorName2(kind: Kind) extends IFunctionName2 {
+  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, kind)))
+  override def parameters: List[Coord] = List(Coord(Share, kind))
+
+  kind match {
+    case InterfaceRef2(_) => vwat()
+    case _ =>
+  }
+
+  def order = 38;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ templateArgs.flatMap(_.all(func)) ++ parameters.flatMap(_.all(func))
+  }
+}
+// We dont just use "idestructor" as the name because we don't want the user to override it.
+case class ImmInterfaceDestructorName2(
+    templateArgs: List[ITemplata],
+    parameters: List[Coord]
+) extends IFunctionName2 {
+  def order = 38;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ templateArgs.flatMap(_.all(func)) ++ parameters.flatMap(_.all(func))
+  }
+}
+// We dont just use "drop" as the name because we don't want the user to override it.
+case class ImmDropName2(kind: Kind) extends IFunctionName2 {
+  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, kind)))
+  override def parameters: List[Coord] = List(Coord(Share, kind))
+
+  def order = 39;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ templateArgs.flatMap(_.all(func)) ++ parameters.flatMap(_.all(func))
+  }
+}
+
 case class FunctionName2(
   humanName: String,
   templateArgs: List[ITemplata],
@@ -134,6 +170,24 @@ case class ConstructorTemplateName2(
   def order = 35;
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ codeLocation.all(func)
+  }
+}
+case class ImmConcreteDestructorTemplateName2() extends IName2 with IFunctionTemplateName2 {
+  def order = 43;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func)
+  }
+}
+case class ImmInterfaceDestructorTemplateName2() extends IName2 with IFunctionTemplateName2 {
+  def order = 44;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func)
+  }
+}
+case class ImmDropTemplateName2() extends IName2 with IFunctionTemplateName2 {
+  def order = 45;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func)
   }
 }
 case class ConstructorName2(

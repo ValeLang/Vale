@@ -206,12 +206,14 @@ case class ReferenceV(
 
   ownership: OwnershipH,
 
+  location: LocationH,
+
   // Negative number means it's an empty struct (like void).
   num: Int
 ) {
   def allocId = AllocationId(RRReferend(actualKind.hamut), num)
-  def actualCoord: RRReference = RRReference(ReferenceH(ownership, actualKind.hamut))
-  def seenAsCoord: RRReference = RRReference(ReferenceH(ownership, seenAsKind.hamut))
+  val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, actualKind.hamut))
+  val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, seenAsKind.hamut))
 }
 
 sealed trait IObjectReferrer

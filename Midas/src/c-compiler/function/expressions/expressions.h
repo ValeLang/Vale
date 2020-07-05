@@ -10,6 +10,7 @@
 #include "globalstate.h"
 #include "function/function.h"
 #include "function/expression.h"
+#include "function/expressions/shared/shared.h"
 
 LLVMValueRef translateDestructure(
     GlobalState* globalState,
@@ -18,6 +19,7 @@ LLVMValueRef translateDestructure(
     Destructure* destructureM);
 
 LLVMValueRef translateConstruct(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* desiredReference,

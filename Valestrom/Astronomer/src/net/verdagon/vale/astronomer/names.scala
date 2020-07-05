@@ -39,8 +39,11 @@ case class ConstructingMemberNameA(name: String) extends IVarNameA
 case class AnonymousSubstructMemberNameA(index: Int) extends IVarNameA
 case class MagicParamNameA(codeLocation: CodeLocationS) extends IVarNameA
 case class CodeVarNameA(name: String) extends IVarNameA
-// Only made by templar, see if we can take this out
+// Only made by templar, see if we can take these out
 case class ConstructorNameA(tlcd: TopLevelCitizenDeclarationNameA) extends IFunctionDeclarationNameA
+case class ImmConcreteDestructorNameA() extends IFunctionDeclarationNameA
+case class ImmInterfaceDestructorNameA() extends IFunctionDeclarationNameA
+case class ImmDropNameA() extends IFunctionDeclarationNameA
 
 sealed trait IRuneA extends INameA
 case class CodeRuneA(name: String) extends IRuneA {
@@ -62,3 +65,6 @@ case class CodeTypeNameA(name: String) extends IImpreciseNameStepA
 case class GlobalFunctionFamilyNameA(name: String) extends IImpreciseNameStepA
 case class ImpreciseCodeVarNameA(name: String) extends IImpreciseNameStepA
 case class ImplImpreciseNameA() extends IImpreciseNameStepA
+case class ImmConcreteDestructorImpreciseNameA() extends IImpreciseNameStepA
+case class ImmInterfaceDestructorImpreciseNameA() extends IImpreciseNameStepA
+case class ImmDropImpreciseNameA() extends IImpreciseNameStepA

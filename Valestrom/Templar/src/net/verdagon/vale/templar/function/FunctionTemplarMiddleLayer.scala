@@ -308,6 +308,17 @@ object FunctionTemplarMiddleLayer {
         case ConstructorTemplateName2(_) => vimpl() // no idea
         case FunctionTemplateName2(humanName, _) => FunctionName2(humanName, templateArgs, params)
         case LambdaTemplateName2(_) => FunctionName2(CallTemplar.CALL_FUNCTION_NAME, templateArgs, params)
+        case ImmConcreteDestructorTemplateName2() => {
+          val List(Coord(Share, immRef)) = params
+          ImmConcreteDestructorName2(immRef)
+        }
+        case ImmInterfaceDestructorTemplateName2() => {
+          ImmInterfaceDestructorName2(templateArgs, params)
+        }
+        case ImmDropTemplateName2() => {
+          val List(Coord(Share, kind)) = params
+          ImmDropName2(kind)
+        }
       }
     FullName2(name.initSteps, newLastStep)
   }

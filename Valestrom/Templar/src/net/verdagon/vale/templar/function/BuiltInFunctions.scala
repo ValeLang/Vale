@@ -19,28 +19,35 @@ object BuiltInFunctions {
     currentlyConstructingEnv0: NamespaceEnvironment[IName2],
     functionGeneratorByName0: Map[String, IFunctionGenerator]):
   (NamespaceEnvironment[IName2], Map[String, IFunctionGenerator]) = {
-    val (currentlyConstructingEnv1, functionGeneratorByName1) = addConcreteDestructor(currentlyConstructingEnv0, functionGeneratorByName0)
-    val (currentlyConstructingEnv2, functionGeneratorByName2) = addInterfaceDestructor(currentlyConstructingEnv1, functionGeneratorByName1)
-    val (currentlyConstructingEnvH, functionGeneratorByNameH) = addImplDestructor(currentlyConstructingEnv2, functionGeneratorByName2)
-    val (currentlyConstructingEnv4, functionGeneratorByName4) = addDrop(currentlyConstructingEnvH, functionGeneratorByNameH)
-    val currentlyConstructingEnv5 = addArrayLen(currentlyConstructingEnv4)
-    val currentlyConstructingEnv6 = addPanic(currentlyConstructingEnv5)
-    (currentlyConstructingEnv6, functionGeneratorByName4)
+    val (currentlyConstructingEnv1, functionGeneratorByName1) = addConcreteDestructor(currentlyConstructingEnv0, functionGeneratorByName0, Mutable)
+    val (currentlyConstructingEnv2, functionGeneratorByName2) = addConcreteDestructor(currentlyConstructingEnv1, functionGeneratorByName1, Immutable)
+    val (currentlyConstructingEnv3, functionGeneratorByName3) = addInterfaceDestructor(currentlyConstructingEnv2, functionGeneratorByName2, Mutable)
+    val (currentlyConstructingEnv4, functionGeneratorByName4) = addInterfaceDestructor(currentlyConstructingEnv3, functionGeneratorByName3, Immutable)
+    val (currentlyConstructingEnv5, functionGeneratorByName5) = addImplDestructor(currentlyConstructingEnv4, functionGeneratorByName4, Mutable)
+    val (currentlyConstructingEnv6, functionGeneratorByName6) = addImplDestructor(currentlyConstructingEnv5, functionGeneratorByName5, Immutable)
+    val (currentlyConstructingEnv7, functionGeneratorByName7) = addDrop(currentlyConstructingEnv6, functionGeneratorByName6, Mutable)
+    val (currentlyConstructingEnv8, functionGeneratorByName8) = addDrop(currentlyConstructingEnv7, functionGeneratorByName7, Immutable)
+    val currentlyConstructingEnv9 = addArrayLen(currentlyConstructingEnv8)
+    val currentlyConstructingEnv10 = addPanic(currentlyConstructingEnv9)
+    (currentlyConstructingEnv10, functionGeneratorByName8)
   }
 
   private def addConcreteDestructor(
     currentlyConstructingEnv: NamespaceEnvironment[IName2],
-    functionGeneratorByName: Map[String, IFunctionGenerator]
+    functionGeneratorByName: Map[String, IFunctionGenerator],
+    mutability: Mutability
   ): (NamespaceEnvironment[IName2], Map[String, IFunctionGenerator]) = {
     // Note the virtuality None in the header, and how we filter so this only applies
     // to structs and not interfaces. We use a different template for interface destructors.
     (
     currentlyConstructingEnv
-      .addEntry(
-        FunctionTemplateName2(CallTemplar.DESTRUCTOR_NAME, CodeLocation2(0, 0)),
-        FunctionEnvEntry(
+      .addUnevaluatedFunction(
           FunctionA(
-            FunctionNameA(CallTemplar.DESTRUCTOR_NAME, s.CodeLocationS(1, 1)),
+            if (mutability == Mutable) {
+              FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, s.CodeLocationS(1, 1))
+            } else {
+              ImmConcreteDestructorNameA()
+            },
             true,
             TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
             Set(CodeRuneA("V")),
@@ -55,6 +62,9 @@ object BuiltInFunctions {
             Some(CodeRuneA("V")),
             List(
               EqualsAR(
+                TemplexAR(RuneAT(CodeRuneA("XX"), KindTemplataType)),
+                ComponentsAR(KindTemplataType, List(TemplexAR(MutabilityAT(Conversions.unevaluateMutability(mutability)))))),
+              EqualsAR(
                 TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
                 ComponentsAR(
                   CoordTemplataType,
@@ -67,7 +77,7 @@ object BuiltInFunctions {
               EqualsAR(
                 TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)),
                 TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
-            GeneratedBodyA("concreteDestructorGenerator")))),
+            GeneratedBodyA("concreteDestructorGenerator"))),
       functionGeneratorByName +
         (
         "concreteDestructorGenerator" ->
@@ -86,14 +96,6 @@ object BuiltInFunctions {
                   DestructorTemplar.generateStructDestructor(
                     env, temputs, maybeOriginFunction1.get, paramCoords, structRef)
                 }
-  //              case List(Coord(_, OrdinaryClosure2(_, structRef2, _))) => {
-  //                DestructorTemplar.generateStructDestructor(
-  //                  env, temputs, maybeOriginFunction1, templateArgTemplatas, paramCoords, structRef2)
-  //              }
-  //              case List(Coord(_, TemplatedClosure2(_, structRef2, _))) => {
-  //                DestructorTemplar.generateStructDestructor(
-  //                  env, temputs, maybeOriginFunction1, templateArgTemplatas, paramCoords, structRef2)
-  //              }
                 case List(Coord(_, sr @ StructRef2(_))) => {
                   DestructorTemplar.generateStructDestructor(
                     env, temputs, maybeOriginFunction1.get, paramCoords, sr)
@@ -116,14 +118,19 @@ object BuiltInFunctions {
 
   private def addInterfaceDestructor(
     currentlyConstructingEnv: NamespaceEnvironment[IName2],
-    functionGeneratorByName: Map[String, IFunctionGenerator]
+    functionGeneratorByName: Map[String, IFunctionGenerator],
+    mutability: Mutability
   ): (NamespaceEnvironment[IName2], Map[String, IFunctionGenerator]) = {
 
     (
     currentlyConstructingEnv
       .addUnevaluatedFunction(
         FunctionA(
-          FunctionNameA(CallTemplar.INTERFACE_DESTRUCTOR_NAME, CodeLocationS(1, 1)),
+          if (mutability == Mutable) {
+            FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(1, 1))
+          } else {
+            ImmInterfaceDestructorNameA()
+          },
           true,
           TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
           Set(CodeRuneA("V")),
@@ -137,6 +144,9 @@ object BuiltInFunctions {
             ParameterA(AtomAP(CaptureA(CodeVarNameA("this"), FinalP), Some(AbstractAP), CodeRuneA("T"), None))),
           Some(CodeRuneA("V")),
           List(
+            EqualsAR(
+              TemplexAR(RuneAT(CodeRuneA("XX"), KindTemplataType)),
+              ComponentsAR(KindTemplataType, List(TemplexAR(MutabilityAT(Conversions.unevaluateMutability(mutability)))))),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
               ComponentsAR(
@@ -183,13 +193,18 @@ object BuiltInFunctions {
 
   private def addImplDestructor(
     currentlyConstructingEnv: NamespaceEnvironment[IName2],
-    functionGeneratorByName: Map[String, IFunctionGenerator]
+    functionGeneratorByName: Map[String, IFunctionGenerator],
+    mutability: Mutability
   ): (NamespaceEnvironment[IName2], Map[String, IFunctionGenerator]) = {
     (
     currentlyConstructingEnv
       .addUnevaluatedFunction(
         FunctionA(
-          FunctionNameA(CallTemplar.INTERFACE_DESTRUCTOR_NAME, CodeLocationS(1, 1)),
+          if (mutability == Mutable) {
+            FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(1, 1))
+          } else {
+            ImmInterfaceDestructorNameA()
+          },
           true,
           TemplateTemplataType(List(CoordTemplataType, KindTemplataType), FunctionTemplataType),
           Set(CodeRuneA("V")),
@@ -204,6 +219,9 @@ object BuiltInFunctions {
             ParameterA(AtomAP(CaptureA(CodeVarNameA("this"), FinalP), Some(OverrideAP(CodeRuneA("I"))), CodeRuneA("T"), None))),
           Some(CodeRuneA("V")),
           List(
+            EqualsAR(
+              TemplexAR(RuneAT(CodeRuneA("XX"), KindTemplataType)),
+              ComponentsAR(KindTemplataType, List(TemplexAR(MutabilityAT(Conversions.unevaluateMutability(mutability)))))),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
               ComponentsAR(
@@ -245,7 +263,7 @@ object BuiltInFunctions {
                   vassert(overridingStructRef2FromTemplateArg == structRef2)
                   val structDef2 = temputs.lookupStruct(structRef2)
                   FunctionTemplarCore.makeImplDestructor(
-                    namedEnv.globalEnv, temputs, maybeOriginFunction1, structDef2, implementedInterfaceRef2)
+                    namedEnv, temputs, maybeOriginFunction1, structDef2, implementedInterfaceRef2)
                 }
                 case _ => {
                   vfail("wot")
@@ -257,7 +275,8 @@ object BuiltInFunctions {
 
   private def addDrop(
     currentlyConstructingEnv: NamespaceEnvironment[IName2],
-    functionGeneratorByName: Map[String, IFunctionGenerator]
+    functionGeneratorByName: Map[String, IFunctionGenerator],
+    mutability: Mutability
   ): (NamespaceEnvironment[IName2], Map[String, IFunctionGenerator]) = {
     // Drop is a function that:
     // - If received an owning pointer, will call the destructor
@@ -268,19 +287,33 @@ object BuiltInFunctions {
       currentlyConstructingEnv
         .addUnevaluatedFunction(
           FunctionA(
-            FunctionNameA(CallTemplar.DROP_FUNCTION_NAME, CodeLocationS(1, 1)),
+            if (mutability == Mutable) {
+              FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS(1, 1))
+            } else {
+              ImmDropNameA()
+            },
             true,
             TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
-            Set(CodeRuneA("V")),
+            Set(CodeRuneA("V"), CodeRuneA("O")),
             List(CodeRuneA("T")),
-            Set(CodeRuneA("T"), CodeRuneA("V")),
+            Set(CodeRuneA("T"), CodeRuneA("V"), CodeRuneA("O")),
             Map(
               CodeRuneA("T") -> CoordTemplataType,
-              CodeRuneA("V") -> CoordTemplataType),
+              CodeRuneA("V") -> CoordTemplataType,
+              CodeRuneA("O") -> OwnershipTemplataType),
             List(
               ParameterA(AtomAP(CaptureA(CodeVarNameA("x"), FinalP), None, CodeRuneA("T"), None))),
             Some(CodeRuneA("V")),
             List(
+              EqualsAR(
+                TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
+                ComponentsAR(
+                  CoordTemplataType,
+                  List(
+                    TemplexAR(RuneAT(CodeRuneA("O"), OwnershipTemplataType)),
+                    ComponentsAR(
+                      KindTemplataType,
+                      List(TemplexAR(MutabilityAT(Conversions.unevaluateMutability(mutability)))))))),
               TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
               EqualsAR(
                 TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)),

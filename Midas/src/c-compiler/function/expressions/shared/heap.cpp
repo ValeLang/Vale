@@ -31,9 +31,9 @@ void freeStruct(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef structPtrLE,
-    Reference* structRefM) {
+    Reference* concreteRefM) {
 
-  auto rcIsZeroLE = rcIsZero(globalState, builder, structPtrLE, structRefM);
+  auto rcIsZeroLE = rcIsZero(globalState, builder, structPtrLE, concreteRefM);
   buildAssert(from, globalState, functionState, builder, rcIsZeroLE, "Tried to free struct that had nonzero RC!");
 
   adjustCounter(builder, globalState->liveHeapObjCounter, -1);

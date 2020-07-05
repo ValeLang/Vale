@@ -16,7 +16,7 @@ LLVMValueRef translateDestructure(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Destructure* destructureM);
+    Destroy* destructureM);
 
 LLVMValueRef translateConstruct(
     AreaAndFileAndLine from,

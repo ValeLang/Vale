@@ -253,7 +253,7 @@ object LetHammer {
         .unzip
 
     val stackNode =
-        DestructureArraySequenceH(
+        DestroyKnownSizeArrayIntoLocalsH(
           sourceExprResultLine.expectKnownSizeArrayAccess(),
           localTypes,
           localIndices.toVector)

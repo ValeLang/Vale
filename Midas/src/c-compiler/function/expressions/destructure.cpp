@@ -11,7 +11,7 @@ LLVMValueRef translateDestructure(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Destructure* destructureM) {
+    Destroy* destructureM) {
   auto mutability = ownershipToMutability(destructureM->structType->ownership);
 
   auto structLE =
@@ -24,61 +24,29 @@ LLVMValueRef translateDestructure(
 
   auto structM = globalState->program->getStruct(structReferend->fullName);
 
-  if (destructureM->structType->ownership == Ownership::OWN) {
-    for (int i = 0; i < structM->members.size(); i++) {
-      auto memberName = structM->members[i]->name;
-      LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structLE);
-      auto memberLE =
-          loadInnerStructMember(
-              builder, innerStructPtrLE, i, memberName);
-      makeLocal(
-          globalState,
-          functionState,
-          builder,
-          destructureM->localIndices[i],
-          memberLE);
-    }
-
-    adjustRc(AFL("Destructure decrementing before freeing"), globalState, builder, structLE, destructureM->structType, -1);
-    // We dont check rc=0 here, that's done in freeStruct.
-    freeStruct(AFL("Destructure decrementing before freeing"), globalState, functionState, builder, structLE, destructureM->structType);
-
-    return makeNever();
-  } else if (destructureM->structType->ownership == Ownership::SHARE) {
-
-    for (int i = 0; i < structM->members.size(); i++) {
-      auto memberName = structM->members[i]->name;
-      auto memberLE =
-          loadMember(
-              AFL("Destructure load"),
-              globalState,
-              builder,
-              destructureM->structType,
-              structLE,
-              mutability,
-              structM->members[i]->type,
-              i,
-              memberName + "_local");
-      makeLocal(
-          globalState,
-          functionState,
-          builder,
-          destructureM->localIndices[i],
-          memberLE);
-    }
-
-    dropReference(
-        AFL("destructure"),
+  for (int i = 0; i < structM->members.size(); i++) {
+    auto memberName = structM->members[i]->name;
+    LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structLE);
+    auto memberLE =
+        loadInnerStructMember(
+            builder, innerStructPtrLE, i, memberName);
+    makeLocal(
         globalState,
         functionState,
         builder,
-        destructureM->structType,
-        structLE);
-
-    return makeNever();
-  } else {
-    // TODO implement
-    assert(false);
-    return nullptr;
+        destructureM->localIndices[i],
+        memberLE);
   }
+
+  if (destructureM->structType->ownership == Ownership::OWN) {
+    adjustRc(AFL("Destroy decrementing the owning ref"), globalState, builder, structLE, destructureM->structType, -1);
+  } else if (destructureM->structType->ownership == Ownership::SHARE) {
+    // We dont decrement anything here, we're only here because we already hit zero.
+  } else {
+    assert(false);
+  }
+
+  freeStruct(AFL("Destroy freeing"), globalState, functionState, builder, structLE, destructureM->structType);
+
+  return makeNever();
 }

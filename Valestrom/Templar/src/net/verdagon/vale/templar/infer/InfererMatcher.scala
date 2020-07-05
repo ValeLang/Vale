@@ -663,7 +663,7 @@ class InfererMatcher[Env, State](
           case KindTemplata(StructRef2(_)) => {
             matchTemplataAgainstRulexTR(env, state, localRunes, inferences, instance, kindRule)
           }
-          case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to passThroughIfStruct: " + args, List()))
+          case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to passThroughIfStruct: " + instance, List()))
         }
       }
     }

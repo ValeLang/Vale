@@ -138,14 +138,21 @@ object Hammer {
       hinputs.functions.filter(function => {
         function.header.fullName match {
           case FullName2(List(), ImmConcreteDestructorName2(_)) => true
-          case FullName2(List(), ImmInterfaceDestructorName2(_)) => true
+          case FullName2(List(), ImmInterfaceDestructorName2(_, _)) => true
           case _ => false
         }
       })
+
     val immDestructorPrototypesH =
-      TypeHammer.translateReferences(hinputs, hamuts, immDestructors2.map(_.header.params.head.tyype)).map(_.kind)
-      .zip(FunctionHammer.translateFunctions(hinputs, hamuts, immDestructors2).map(_.prototype))
-      .toMap
+      immDestructors2.map(immDestructor2 => {
+        val kindH = TypeHammer.translateReference(hinputs, hamuts, immDestructor2.header.params.head.tyype).kind
+        val immDestructorPrototypeH = FunctionHammer.translateFunction(hinputs, hamuts, immDestructor2).prototype
+        (kindH -> immDestructorPrototypeH)
+      }).toMap
+
+    immDestructorPrototypesH.foreach({ case (kindH, immDestructorPrototypeH) => {
+      vassert(immDestructorPrototypeH.params.head.kind == kindH)
+    }})
 
     ProgramH(
       hamuts.interfaceDefs.values.toList,

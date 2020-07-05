@@ -46,7 +46,7 @@ public:
   std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
   std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
   std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
-  std::unordered_map<Referend*, std::unordered_map<Ownership, Reference*>> references;
+  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> references;
   std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
   std::unordered_map<int, VariableId*> variableIds;
   std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
@@ -54,6 +54,7 @@ public:
 
 Reference* readReference(Cache* cache, const json& reference);
 Ownership readOwnership(Cache* cache, const json& ownership);
+Location readLocation(Cache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 
 //template<typename T>
@@ -189,13 +190,14 @@ Reference* readReference(Cache* cache, const json& reference) {
   assert(reference.is_object());
   assert(reference[""] == "Ref");
 
-  auto ownership =readOwnership(cache, reference["ownership"]);
+  auto ownership = readOwnership(cache, reference["ownership"]);
+  auto location = readLocation(cache, reference["location"]);
   auto referend = readReferend(cache, reference["referend"]);
 
   return makeIfNotPresent(
-      &cache->references[referend],
-      ownership,
-      [&](){ return new Reference(ownership, referend); });
+      &cache->references[referend][ownership],
+      location,
+      [&](){ return new Reference(ownership, location, referend); });
 }
 
 Mutability readMutability(const json& mutability) {
@@ -229,6 +231,18 @@ Ownership readOwnership(Cache* cache, const json& ownership) {
     return Ownership::BORROW;
   } else if (ownership[""].get<std::string>() == "Share") {
     return Ownership::SHARE;
+  } else {
+    assert(false);
+  }
+}
+
+Location readLocation(Cache* cache, const json& location) {
+  assert(location.is_object());
+//  std::cout << location.type() << std::endl;
+  if (location[""].get<std::string>() == "Inline") {
+    return Location::INLINE;
+  } else if (location[""].get<std::string>() == "Yonder") {
+    return Location::YONDER;
   } else {
     assert(false);
   }
@@ -372,6 +386,7 @@ Expression* readExpression(Cache* cache, const json& expression) {
   } else if (type == "StructToInterfaceUpcast") {
     return new StructToInterfaceUpcast(
         readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceStructType"]),
         readStructReferend(cache, expression["sourceStructName"]),
         readInterfaceReferend(cache, expression["targetInterfaceName"]));
   } else if (type == "InterfaceCall") {

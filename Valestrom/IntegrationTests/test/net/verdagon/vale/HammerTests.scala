@@ -1,7 +1,7 @@
 package net.verdagon.vale
 
 import net.verdagon.vale.hammer._
-import net.verdagon.vale.metal.{IntH, ReferenceH}
+import net.verdagon.vale.metal.{InlineH, IntH, ReferenceH}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.Share
 import org.scalatest.{FunSuite, Matchers}
@@ -45,16 +45,17 @@ class HammerTests extends FunSuite with Matchers {
         |fn main(a *MySome<*Int>, b *MyNone<*Int>) {}
       """.stripMargin)
     val hamuts = compile.getHamuts()
-    hamuts.interfaces.find(_.fullName.toString == """C("MyOption",[TR(R(*,i))])""").get;
+    hamuts.interfaces.find(_.fullName.toString == """C("MyOption",[TR(R(*,<,i))])""").get;
 
-    val mySome = hamuts.structs.find(_.fullName.toString == """C("MySome",[TR(R(*,i))])""").get;
+    val mySome = hamuts.structs.find(_.fullName.toString == """C("MySome",[TR(R(*,<,i))])""").get;
     vassert(mySome.members.size == 1);
-    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, IntH()))
+    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, IntH()))
 
-    val myNone = hamuts.structs.find(_.fullName.toString == """C("MyNone",[TR(R(*,i))])""").get;
+    val myNone = hamuts.structs.find(_.fullName.toString == """C("MyNone",[TR(R(*,<,i))])""").get;
     vassert(myNone.members.isEmpty);
   }
 
+  // Known failure 2020-07-03
   test("Virtual and override functions make it into hamuts") {
     val compile = new Compilation(
       """

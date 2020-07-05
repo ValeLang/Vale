@@ -29,18 +29,18 @@ LLVMValueRef loadElement(
     LLVMValueRef indexLE) {
 
   if (mutability == Mutability::IMMUTABLE) {
-    if (isInlImm(globalState, structRefM)) {
+    if (structRefM->location == Location::INLINE) {
       assert(false);
 //      return LLVMBuildExtractValue(
 //          builder, structExpr, indexLE, "index");
       return nullptr;
     } else {
-      LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
+      LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
       return loadInnerArrayMember(
           builder, innerStructPtrLE, indexLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
+    LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
     return loadInnerArrayMember(
         builder, innerStructPtrLE, indexLE);
   } else {

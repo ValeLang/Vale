@@ -5,10 +5,12 @@
 #include "shared.h"
 #include "members.h"
 #include "branch.h"
+#include "controlblock.h"
 #include "heap.h"
 
 // Increments the RC, if needed
 void acquireReference(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
@@ -25,12 +27,12 @@ void acquireReference(
       // We might be loading a member as an own if we're destructuring.
       // Don't adjust the RC, since we're only moving it.
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustInterfaceRC(builder, expr, 1);
+      adjustRc(from, globalState, builder, expr, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
-      if (isInlImm(globalState, sourceRef)) {
+      if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
       } else {
-        assert(false); // impl
+        adjustRc(from, globalState, builder, expr, sourceRef, 1);
       }
     }
   } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
@@ -39,12 +41,12 @@ void acquireReference(
       // We might be loading a member as an own if we're destructuring.
       // Don't adjust the RC, since we're only moving it.
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustRC(builder, expr, 1);
+      adjustRc(from, globalState, builder, expr, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
-      if (isInlImm(globalState, sourceRef)) {
+      if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        adjustRC(builder, expr, 1);
+        adjustRc(from, globalState, builder, expr, sourceRef, 1);
       }
     }
   } else {
@@ -55,6 +57,7 @@ void acquireReference(
 }
 
 void dropReference(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -72,12 +75,19 @@ void dropReference(
       // We can't discard owns, they must be destructured.
       assert(false); // impl
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustInterfaceRC(builder, expr, -1);
+      adjustRc(from, globalState, builder, expr, sourceRef, -1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
-      if (isInlImm(globalState, sourceRef)) {
+      if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
       } else {
-        assert(false); // impl
+        auto rcLE = adjustRc(from, globalState, builder, expr, sourceRef, -1);
+        buildIf(
+            functionState,
+            builder,
+            isZeroLE(builder, rcLE),
+            [globalState, expr](LLVMBuilderRef thenBuilder) {
+              buildFlare(FL(), globalState, thenBuilder, "Should free this imm interface!");
+            });
       }
     }
   } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
@@ -86,22 +96,20 @@ void dropReference(
       // We can't discard owns, they must be destructured.
       assert(false);
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustRC(builder, expr, -1);
+      adjustRc(from, globalState, builder, expr, sourceRef, -1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
-      if (isInlImm(globalState, sourceRef)) {
+      if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        auto rcIsOne =
-            rcEquals(
-                builder, expr, LLVMConstInt(LLVMInt64Type(), 1, false));
+        auto rcLE = adjustRc(from, globalState, builder, expr, sourceRef, -1);
         buildIf(
             functionState,
             builder,
-            rcIsOne,
-            [globalState, expr](LLVMBuilderRef thenBuilder) {
-              freeStruct(globalState, thenBuilder, expr);
+            isZeroLE(builder, rcLE),
+            [from, globalState, functionState, expr, sourceRef](LLVMBuilderRef thenBuilder) {
+
+              freeStruct(from, globalState, functionState, thenBuilder, expr, sourceRef);
             });
-        adjustRC(builder, expr, -1);
       }
     }
   } else {

@@ -126,8 +126,7 @@ object MutateHammer {
       StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // Remember, structs can never own boxes, they only borrow them
-    val expectedStructBoxMemberType = ReferenceH(m.BorrowH, boxStructRefH)
-    val expectedBorrowBoxResultType = ReferenceH(m.BorrowH, boxStructRefH)
+    val expectedStructBoxMemberType = ReferenceH(m.BorrowH, YonderH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
@@ -138,7 +137,6 @@ object MutateHammer {
           memberIndex,
           m.BorrowH,
           expectedStructBoxMemberType,
-          expectedBorrowBoxResultType,
           nameH)
     val storeNode =
         MemberStoreH(
@@ -185,20 +183,18 @@ object MutateHammer {
   }
 
   private def translateAddressibleLocalMutate(
-                                               hinputs: Hinputs,
-                                               hamuts: HamutsBox,
-                                               locals: LocalsBox,
-                                               sourceExprResultLine: ExpressionH[ReferendH],
-                                               sourceResultPointerTypeH: ReferenceH[ReferendH],
-                                               varId: FullName2[IVarName2],
-                                               variability: Variability,
-                                               reference: Coord
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    locals: LocalsBox,
+    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    varId: FullName2[IVarName2],
+    variability: Variability,
+    reference: Coord
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val local = locals.get(varId).get
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
-    val expectedLocalBoxType = ReferenceH(m.OwnH, boxStructRefH)
-    val expectedBorrowBoxResultType = ReferenceH(m.BorrowH, boxStructRefH)
 
     val structDefH = hamuts.structDefs.find(_.getRef == boxStructRefH).get
 

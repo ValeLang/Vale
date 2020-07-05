@@ -207,7 +207,7 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.getTemputs().lookupFunction("main")
-    main.only({ case FunctionCall2(functionName(CallTemplar.DESTRUCTOR_NAME), _) => })
+    main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
     main.all({ case FunctionCall2(_, _) => }).size shouldEqual 2
   }
 
@@ -305,6 +305,7 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
+  // Known failure 2020-07-03
   test("Tests stamping a struct and its implemented interface from a function param") {
     val compile = new Compilation(
       """
@@ -419,6 +420,35 @@ class TemplarTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
+  }
+
+  // See DSDCTD
+  test("Tests destructuring shared doesnt compile to destroy") {
+    val compile = new Compilation(
+      """
+        |struct Vec3i imm {
+        |  x Int;
+        |  y Int;
+        |  z Int;
+        |}
+        |
+        |fn main() {
+        |	 Vec3i(x, y, z) = Vec3i(3, 4, 5);
+        |  = y;
+        |}
+      """.stripMargin)
+    val temputs = compile.getTemputs()
+
+    temputs.lookupFunction("main").all({
+      case Destroy2(_, _, _) =>
+    }).size shouldEqual 0
+
+    // Make sure there's a destroy in its destructor though.
+    val destructor =
+        temputs.getAllFunctions().find(_.header.fullName.last.isInstanceOf[ImmConcreteDestructorName2]).get
+    destructor.only({
+      case Destroy2(_, StructRef2(FullName2(_, CitizenName2("Vec3i", _))), _) =>
+    })
   }
 
   test("Tests making a variable with a pattern") {

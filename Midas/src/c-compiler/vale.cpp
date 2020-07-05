@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include <nlohmann/json.hpp>
+#include <function/expressions/shared/shared.h>
 #include "struct/interface.h"
 
 #include "metal/types.h"
@@ -37,15 +38,48 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   auto program = readProgram(programJ);
 
 
+
+  // Start making the entry function. We make it up here because we want its
+  // builder for creating string constants. In a perfect world we wouldn't need
+  // a builder for making string constants, but LLVM wants one, and it wants one
+  // that's attached to a function.
+  auto paramTypesL = std::vector<LLVMTypeRef>{
+      LLVMInt64Type(),
+      LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0)
+  };
+  LLVMTypeRef functionTypeL =
+      LLVMFunctionType(
+          LLVMInt64Type(), paramTypesL.data(), paramTypesL.size(), 0);
+  LLVMValueRef entryFunctionL =
+      LLVMAddFunction(mod, "main", functionTypeL);
+  LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
+  LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
+  LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
+  LLVMBuilderRef entryBuilder = LLVMCreateBuilder();
+  LLVMBasicBlockRef blockL =
+      LLVMAppendBasicBlock(entryFunctionL, "thebestblock");
+  LLVMPositionBuilderAtEnd(entryBuilder, blockL);
+
+
+
+
+
   GlobalState globalState;
   globalState.dataLayout = dataLayout;
   globalState.mod = mod;
   globalState.program = program;
 
+  globalState.stringConstantBuilder = entryBuilder;
+
   globalState.liveHeapObjCounter =
       LLVMAddGlobal(mod, LLVMInt64Type(), "__liveHeapObjCounter");
-  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
-//  LLVMSetVisibility(globalState.liveHeapObjCounter, LLVMHiddenVisibility);
+//  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState.liveHeapObjCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+
+  globalState.objIdCounter =
+      LLVMAddGlobal(mod, LLVMInt64Type(), "__objIdCounter");
+//  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState.objIdCounter, LLVMConstInt(LLVMInt64Type(), 501, false));
 
   {
     LLVMTypeRef retType = LLVMPointerType(LLVMInt8Type(), 0);
@@ -59,6 +93,13 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
     LLVMTypeRef paramType = LLVMPointerType(LLVMInt8Type(), 0);
     LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
     globalState.free = LLVMAddFunction(mod, "free", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramType = LLVMInt8Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState.exit = LLVMAddFunction(mod, "exit", funcType);
   }
 
   {
@@ -115,7 +156,16 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
         LLVMStructCreateNamed(
             LLVMGetGlobalContext(), CONTROL_BLOCK_STRUCT_NAME);
     std::vector<LLVMTypeRef> memberTypesL;
+
+    globalState.controlBlockTypeStrIndex = memberTypesL.size();
+    memberTypesL.push_back(LLVMPointerType(LLVMInt8Type(), 0));
+
+    globalState.controlBlockObjIdIndex = memberTypesL.size();
     memberTypesL.push_back(LLVMInt64Type());
+
+    globalState.controlBlockRcMemberIndex = memberTypesL.size();
+    memberTypesL.push_back(LLVMInt64Type());
+
     LLVMStructSetBody(
         controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
     globalState.controlBlockStructL = controlBlockStructL;
@@ -182,32 +232,16 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
 
 
-  auto paramTypesL = std::vector<LLVMTypeRef>{
-      LLVMInt64Type(),
-      LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0)
-  };
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(
-          LLVMInt64Type(), paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef entryFunctionL =
-      LLVMAddFunction(mod, "main", functionTypeL);
-  LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
-  LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
-  LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
-  LLVMBuilderRef builder = LLVMCreateBuilder();
-  LLVMBasicBlockRef blockL =
-      LLVMAppendBasicBlock(entryFunctionL, "thebestblock");
-  LLVMPositionBuilderAtEnd(builder, blockL);
-
   LLVMValueRef emptyValues[1] = {};
   LLVMValueRef mainResult =
-      LLVMBuildCall(builder, mainL, emptyValues, 0, "valeMainCall");
+      LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "valeMainCall");
 
   LLVMValueRef args[2] = {
-      LLVMBuildLoad(builder, globalState.liveHeapObjCounter, "numLiveObjs"),
-      LLVMConstInt(LLVMInt64Type(), 0, false)
+      LLVMConstInt(LLVMInt64Type(), 0, false),
+      LLVMBuildLoad(entryBuilder, globalState.liveHeapObjCounter, "numLiveObjs")
   };
-  LLVMBuildCall(builder, globalState.assertI64Eq, args, 2, "");
+  LLVMBuildCall(entryBuilder, globalState.assertI64Eq, args, 2, "");
 
-  LLVMBuildRet(builder, mainResult);
+  LLVMBuildRet(entryBuilder, mainResult);
+  LLVMDisposeBuilder(entryBuilder);
 }

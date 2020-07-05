@@ -15,9 +15,12 @@ import scala.collection.immutable.List
 
 object CallTemplar {
   val CALL_FUNCTION_NAME = "__call"
-  val DROP_FUNCTION_NAME = "drop"
-  val INTERFACE_DESTRUCTOR_NAME = "idestructor"
-  val DESTRUCTOR_NAME = "destructor"
+
+  // Don't use these for imm structs and interfaces, use Imm[Struct|Interface]DestructorName2 instead.
+  val MUT_INTERFACE_DESTRUCTOR_NAME = "idestructor"
+  val MUT_DESTRUCTOR_NAME = "destructor"
+
+  val MUT_DROP_FUNCTION_NAME = "drop"
 
   private def evaluateCall(
       temputs: TemputsBox,

@@ -1,12 +1,11 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
-import net.verdagon.vale.metal.{Mutable => _, Variability => _, Varying => _, _}
-import net.verdagon.vale.{metal => m}
+import net.verdagon.vale.metal.{Mutable => _, Immutable => _, Variability => _, Varying => _, _}
+import net.verdagon.vale.{vassert, vassertSome, metal => m}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.vassert
 
 import scala.collection.immutable.ListMap
 
@@ -78,7 +77,7 @@ object StructHammer {
 
   def translateStructRef(
       hinputs: Hinputs,
-    hamuts: HamutsBox,
+      hamuts: HamutsBox,
       structRef2: StructRef2):
   (StructRefH) = {
     hamuts.structRefsByRef2.get(structRef2) match {
@@ -93,6 +92,19 @@ object StructHammer {
           TypeHammer.translateMembers(hinputs, hamuts, structDef2.fullName, structDef2.members)
 
         val (edgesH) = translateEdgesForStruct(hinputs, hamuts, temporaryStructRefH, structRef2)
+
+        // Make sure there's a destructor for this shared struct.
+        structDef2.mutability match {
+          case Mutable => None
+          case Immutable => {
+            if (structRef2 != Program2.emptyTupleStructRef) {
+              vassertSome(
+                hinputs.functions.find(function => {
+                  function.header.fullName == FullName2(List(), ImmConcreteDestructorName2(structRef2))
+                }))
+            }
+          }
+        }
 
         val structDefH =
           StructDefinitionH(

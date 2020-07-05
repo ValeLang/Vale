@@ -28,10 +28,10 @@ object Conversions {
     }
   }
 
-  def evaluateLocation(location: t.Location): Location = {
+  def evaluateLocation(location: t.Location): LocationH = {
     location match {
-      case t.Inline => Inline
-      case t.Yonder => Yonder
+      case t.Inline => InlineH
+      case t.Yonder => YonderH
     }
   }
 

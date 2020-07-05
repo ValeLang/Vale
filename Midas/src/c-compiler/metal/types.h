@@ -60,11 +60,16 @@ enum class Variability {
 class Reference {
 public:
     Ownership ownership;
+    Location location;
     Referend* referend;
 
     Reference(
         Ownership ownership_,
-    Referend* referend_) : ownership(ownership_), referend(referend_) {}
+        Location location_,
+        Referend* referend_) :
+      ownership(ownership_),
+      location(location_),
+      referend(referend_) {}
 };
 
 class Referend {

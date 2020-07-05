@@ -6,6 +6,7 @@ import net.verdagon.vale.vivem.{Heap, IntV, StructInstanceV}
 import net.verdagon.von.{VonBool, VonFloat, VonInt}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.metal.YonderH
 import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Share, Str2}
 
@@ -135,7 +136,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
     val heap = new Heap(System.out)
     val ref =
-      heap.add(m.OwnH, StructInstanceV(
+      heap.add(m.OwnH, YonderH, StructInstanceV(
         hamuts.lookupStruct("SomeStruct"),
         Vector()))
     compile.run(heap, Vector(ref))

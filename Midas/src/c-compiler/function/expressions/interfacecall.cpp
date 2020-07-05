@@ -1,5 +1,6 @@
 #include <iostream>
 #include "function/expressions/shared/shared.h"
+#include "function/expressions/shared/controlblock.h"
 
 #include "translatetype.h"
 
@@ -10,17 +11,13 @@ LLVMValueRef translateInterfaceCall(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     InterfaceCall* call) {
-//  auto funcIter = globalState->functions.find(call->function->name->name);
-//  assert(funcIter != globalState->functions.end());
-//  auto funcL = funcIter->second;
-//
   auto argExprsLE =
       translateExpressions(globalState, functionState, builder, call->argExprs);
   auto virtualArgLE = argExprsLE[call->virtualParamIndex];
   auto objPtrLE =
       LLVMBuildPointerCast(
           builder,
-          getControlBlockPtrFromInterfaceRef(builder, virtualArgLE),
+          getInterfaceControlBlockPtr(builder, virtualArgLE),
           LLVMPointerType(LLVMVoidType(), 0),
           "objAsVoidPtr");
   auto itablePtrLE = getTablePtrFromInterfaceRef(builder, virtualArgLE);

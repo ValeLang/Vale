@@ -331,6 +331,7 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(30)
   }
 
+  // Known failure 2020-07-03
   test("Array foreach") {
     val compile = new Compilation(
       ArrayUtils.code +

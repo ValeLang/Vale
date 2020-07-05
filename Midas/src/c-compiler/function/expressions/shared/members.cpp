@@ -4,18 +4,10 @@
 
 #include "shared.h"
 
-LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE) {
+LLVMValueRef getCountedContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      structLE,
-      0, // Control block is always the 0th member.
-      CONTROL_BLOCK_STRUCT_NAME "_memberPtr");
-}
-
-LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE) {
-  return LLVMBuildStructGEP(
-      builder,
-      structLE,
+      structPtrLE,
       1, // Inner struct is after the control block.
       "innerStructPtr");
 }
@@ -26,111 +18,86 @@ LLVMValueRef loadInnerStructMember(
     int memberIndex,
     const std::string& memberName) {
   assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
-  return LLVMBuildLoad(
+
+  auto result =
+      LLVMBuildLoad(
+          builder,
+          LLVMBuildStructGEP(
+              builder, innerStructPtrLE, memberIndex, memberName.c_str()),
+          memberName.c_str());
+  return result;
+}
+
+void storeInnerStructMember(
+    LLVMBuilderRef builder,
+    LLVMValueRef innerStructPtrLE,
+    int memberIndex,
+    const std::string& memberName,
+    LLVMValueRef newValueLE) {
+  assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
+  LLVMBuildStore(
       builder,
+      newValueLE,
       LLVMBuildStructGEP(
-          builder, innerStructPtrLE, memberIndex, memberName.c_str()),
-      memberName.c_str());
+          builder, innerStructPtrLE, memberIndex, memberName.c_str()));
 }
 
 LLVMValueRef loadMember(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* structRefM,
     LLVMValueRef structExpr,
     Mutability mutability,
+    Reference* memberType,
     int memberIndex,
     const std::string& memberName) {
 
   if (mutability == Mutability::IMMUTABLE) {
-    if (isInlImm(globalState, structRefM)) {
+    if (structRefM->location == Location::INLINE) {
       return LLVMBuildExtractValue(
           builder, structExpr, memberIndex, memberName.c_str());
     } else {
-      LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
-      return loadInnerStructMember(
-          builder, innerStructPtrLE, memberIndex, memberName);
+      LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
+      auto resultLE =
+          loadInnerStructMember(
+              builder, innerStructPtrLE, memberIndex, memberName);
+      acquireReference(from, globalState, builder, memberType, resultLE);
+      return resultLE;
     }
   } else if (mutability == Mutability::MUTABLE) {
-    LLVMValueRef innerStructPtrLE = getCountedContents(builder, structExpr);
-    return loadInnerStructMember(
-        builder, innerStructPtrLE, memberIndex, memberName);
+    LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
+    auto resultLE =
+        loadInnerStructMember(
+            builder, innerStructPtrLE, memberIndex, memberName);
+    acquireReference(from, globalState, builder, memberType, resultLE);
+    return resultLE;
   } else {
     assert(false);
     return nullptr;
   }
 }
 
-// See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef getRcPtr(
+LLVMValueRef swapMember(
     LLVMBuilderRef builder,
-    LLVMValueRef structPtrLE) {
-  // Control block is always the 0th element of every struct.
-  auto controlPtrLE = LLVMBuildStructGEP(builder, structPtrLE, 0, "__control_ptr");
-  // RC is the 0th member of the RC struct.
-  auto rcPtrLE = LLVMBuildStructGEP(builder, controlPtrLE, 0, "__rc_ptr");
-  return rcPtrLE;
-}
-
-LLVMValueRef getRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr) {
-  auto rcPtrLE = getRcPtr(builder, structExpr);
-  auto rcLE = LLVMBuildLoad(builder, rcPtrLE, "__rc");
-  return rcLE;
-}
-
-void setRC(
-    LLVMBuilderRef builder,
+    StructDefinition* structDefM,
     LLVMValueRef structExpr,
-    LLVMValueRef newRcLE) {
-  auto rcPtrLE = getRcPtr(builder, structExpr);
-  LLVMBuildStore(builder, newRcLE, rcPtrLE);
-}
+    int memberIndex,
+    const std::string& memberName,
+    LLVMValueRef newMemberLE) {
+  assert(structDefM->mutability == Mutability::MUTABLE);
+  LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
 
+  LLVMValueRef oldMember =
+      loadInnerStructMember(
+          builder, innerStructPtrLE, memberIndex, memberName);
+  // We don't adjust the oldMember's RC here because even though we're acquiring
+  // a reference to it, the struct is losing its reference, so it cancels out.
 
-void adjustRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structPtrLE,
-    // 1 or -1
-    int adjustAmount) {
-  adjustCounter(builder, getRcPtr(builder, structPtrLE), adjustAmount);
-}
+  storeInnerStructMember(
+      builder, innerStructPtrLE, memberIndex, memberName, newMemberLE);
+  // We don't adjust the newMember's RC here because even though the struct is
+  // acquiring a reference to it, we're losing ours, so it cancels out.
 
-LLVMValueRef rcEquals(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    LLVMValueRef equalTo) {
-  auto rcLE = getRC(builder, structExpr);
-  return LLVMBuildICmp(builder, LLVMIntEQ, rcLE, equalTo, "__rcEqual");
-}
-
-void flareRc(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    int color,
-    LLVMValueRef structExpr) {
-  auto rcLE = getRC(builder, structExpr);
-  flare(globalState, builder, color, rcLE);
-}
-
-void fillControlBlock(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef controlBlockPtrLE) {
-  // TODO: maybe make a const global we can load from, instead of running these
-  //  instructions every time.
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->controlBlockStructL);
-  newControlBlockLE =
-      LLVMBuildInsertValue(
-          builder,
-          newControlBlockLE,
-          // Start at 1, 0 would mean it's dead.
-          LLVMConstInt(LLVMInt64Type(), 1, false),
-          0,
-          "__crc");
-  LLVMBuildStore(
-      builder,
-      newControlBlockLE,
-      controlBlockPtrLE);
+  return oldMember;
 }

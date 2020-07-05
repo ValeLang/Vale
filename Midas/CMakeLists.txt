@@ -60,6 +60,7 @@ llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 add_executable(valec
 		src/c-compiler/vale.cpp
 		src/c-compiler/struct/struct.cpp
+		src/c-compiler/struct/interface.cpp
 		src/c-compiler/metal/readjson.cpp
 		src/c-compiler/translatetype.cpp
 		src/c-compiler/main.cpp
@@ -69,6 +70,7 @@ add_executable(valec
 		src/c-compiler/function/expression.cpp
 
 		src/c-compiler/function/expressions/call.cpp
+		src/c-compiler/function/expressions/interfacecall.cpp
 		src/c-compiler/function/expressions/construct.cpp
 		src/c-compiler/function/expressions/destructure.cpp
 		src/c-compiler/function/expressions/discard.cpp
@@ -80,7 +82,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/elements.cpp
 		src/c-compiler/function/expressions/shared/members.cpp
 		src/c-compiler/function/expressions/shared/shared.cpp
-		src/c-compiler/function/expressions/shared/dropreference.cpp
+		src/c-compiler/function/expressions/shared/alias.cpp
 		src/c-compiler/function/expressions/shared/branch.cpp
 		src/c-compiler/function/expressions/shared/heap.cpp
 
@@ -88,7 +90,7 @@ add_executable(valec
 		src/c-compiler/utils/options.cpp
 
 		src/c-compiler/genllvm.cpp
-)
+        src/c-compiler/function/expressions/shared/controlblock.cpp src/c-compiler/function/expressions/shared/controlblock.h)
 
 target_link_libraries(valec ${llvm_libs} nlohmann_json::nlohmann_json)
 

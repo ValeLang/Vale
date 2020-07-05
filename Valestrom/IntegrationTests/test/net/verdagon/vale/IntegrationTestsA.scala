@@ -6,6 +6,7 @@ import net.verdagon.vale.vivem.{Heap, IntV, StructInstanceV}
 import net.verdagon.von.{VonBool, VonFloat, VonInt}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.metal.YonderH
 import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Share, Str2}
 
@@ -135,7 +136,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
     val heap = new Heap(System.out)
     val ref =
-      heap.add(m.OwnH, StructInstanceV(
+      heap.add(m.OwnH, YonderH, StructInstanceV(
         hamuts.lookupStruct("SomeStruct"),
         Vector()))
     compile.run(heap, Vector(ref))
@@ -148,6 +149,46 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn main() { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+  }
+
+  // Known failure 2020-07-05
+  test("Tests virtual doesn't get called if theres a better override") {
+    val compile = new Compilation(
+      """
+        |interface MyOption { }
+        |
+        |struct MySome {
+        |  value MyList;
+        |}
+        |impl MySome for MyOption;
+        |
+        |struct MyNone { }
+        |impl MyNone for MyOption;
+        |
+        |
+        |struct MyList {
+        |  value Int;
+        |  next MyOption;
+        |}
+        |
+        |fn sum(list &MyList) Int {
+        |  list.value + sum(list.next)
+        |}
+        |
+        |virtual fn sum(virtual opt &MyOption) Int { 0 }
+        |fn sum(opt &MyNone impl MyOption) Int { 0 }
+        |fn sum(opt &MySome impl MyOption) Int {
+        |   sum(opt.value)
+        |}
+        |
+        |
+        |fn main() Int {
+        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+        |  = sum(&list);
+        |}
+        |
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(60)
   }
 
   test("Tests single expression and single statement functions' returns") {

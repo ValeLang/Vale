@@ -11,21 +11,12 @@
 #include <string.h>
 #include <stddef.h>
 
-/** Extract a filename only (no extension) from a path */
-std::string fileName(std::string fn) {
-    char *dotp;
+/** Extract a filename only from a path */
+std::string getFileName(std::string fn) {
     char *fnp = &fn[fn.length()-1];
-
-    // Look backwards for '.' If not found, we are done
-    while (fnp != fn && *fnp != '.' && *fnp != '/' && *fnp != '\\')
-        --fnp;
-    if (fnp == fn)
-        return fn;
-    if (*fnp == '/' || *fnp == '\\')
-        return fnp + 1;
+    char *dotp = &fn[0] + fn.length();
 
     // Look backwards for slash
-    dotp = fnp;
     while (fnp != fn && *fnp != '/' && *fnp != '\\')
         --fnp;
     if (fnp != fn)
@@ -36,6 +27,29 @@ std::string fileName(std::string fn) {
 }
 
 /** Extract a filename only (no extension) from a path */
+std::string getFileNameNoExt(std::string fn) {
+  char *dotp;
+  char *fnp = &fn[fn.length()-1];
+
+  // Look backwards for '.' If not found, we are done
+  while (fnp != fn && *fnp != '.' && *fnp != '/' && *fnp != '\\')
+    --fnp;
+  if (fnp == fn)
+    return fn;
+  if (*fnp == '/' || *fnp == '\\')
+    return fnp + 1;
+
+  // Look backwards for slash
+  dotp = fnp;
+  while (fnp != fn && *fnp != '/' && *fnp != '\\')
+    --fnp;
+  if (fnp != fn)
+    ++fnp;
+
+  // Create string to hold filename and return
+  return std::string(fnp, dotp-fnp);
+}
+
 std::string fileDirectory(std::string fn) {
   char *fnp = &fn[fn.length()-1];
 

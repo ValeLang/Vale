@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.templar.{FullName2, IVarName2}
+import net.verdagon.vale.templar.{FullName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
 import net.verdagon.vale.{vassert, vfail}
 
 case class FunctionRefH(prototype: PrototypeH) {
@@ -134,10 +134,31 @@ object Hammer {
     FunctionHammer.translateFunctions(hinputs, hamuts, userFunctions)
     FunctionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
+    val immDestructors2 =
+      hinputs.functions.filter(function => {
+        function.header.fullName match {
+          case FullName2(List(), ImmConcreteDestructorName2(_)) => true
+          case FullName2(List(), ImmInterfaceDestructorName2(_, _)) => true
+          case _ => false
+        }
+      })
+
+    val immDestructorPrototypesH =
+      immDestructors2.map(immDestructor2 => {
+        val kindH = TypeHammer.translateReference(hinputs, hamuts, immDestructor2.header.params.head.tyype).kind
+        val immDestructorPrototypeH = FunctionHammer.translateFunction(hinputs, hamuts, immDestructor2).prototype
+        (kindH -> immDestructorPrototypeH)
+      }).toMap
+
+    immDestructorPrototypesH.foreach({ case (kindH, immDestructorPrototypeH) => {
+      vassert(immDestructorPrototypeH.params.head.kind == kindH)
+    }})
+
     ProgramH(
       hamuts.interfaceDefs.values.toList,
       hamuts.structDefs,
       List() /* externs */,
-      hamuts.functionDefs.values.toList)
+      hamuts.functionDefs.values.toList,
+      immDestructorPrototypesH)
   }
 }

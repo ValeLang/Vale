@@ -751,11 +751,11 @@ object ExpressionTemplar {
         // should just ignore others, TODO impl
         vcheck(innerExpr2.resultRegister.reference.ownership == Own, "can only destruct own")
 
-        val destructure2 =
+        val destroy2 =
           innerExpr2.referend match {
             case structRef @ StructRef2(_) => {
               val structDef = temputs.lookupStruct(structRef)
-              Destructure2(
+              Destroy2(
                 innerExpr2,
                 structRef,
                 structDef.members.map(_.tyype).map({ case ReferenceMemberType2(reference) =>
@@ -766,7 +766,7 @@ object ExpressionTemplar {
             }
             case _ => vfail()
           }
-        (destructure2, returnsFromArrayExpr)
+        (destroy2, returnsFromArrayExpr)
       }
       case ReturnAE(innerExprA) => {
         val (uncastedInnerExpr2, returnsFromInnerExpr) =
@@ -819,9 +819,9 @@ object ExpressionTemplar {
         val varNameCounter = fate.nextVarCounter()
         val varId = fate.fullName.addStep(TemplarTemporaryVarName2(varNameCounter))
         val localVar = ReferenceLocalVariable2(varId, Final, onlyMember)
-        val destructure = Destructure2(refExpr, understruct, List(localVar))
+        val destroy2 = Destroy2(refExpr, understruct, List(localVar))
         val unletExpr = unletLocal(fate, localVar)
-        (Consecutor2(List(destructure, unletExpr)))
+        (Consecutor2(List(destroy2, unletExpr)))
       }
       case _ => (refExpr)
     }

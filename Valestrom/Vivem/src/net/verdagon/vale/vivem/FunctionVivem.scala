@@ -50,20 +50,20 @@ object FunctionVivem {
 
   def getExternFunction(programH: ProgramH, ref: PrototypeH): (AdapterForExterns, Vector[ReferenceV]) => ReferenceV = {
     ref.fullName.toString match {
-      case """F("__addIntInt",[],[R(*,i),R(*,i)])""" => VivemExterns.addIntInt
-      case """F("__addFloatFloat",[],[R(*,f),R(*,f)])""" => VivemExterns.addFloatFloat
+      case """F("__addIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.addIntInt
+      case """F("__addFloatFloat",[],[R(*,<,f),R(*,<,f)])""" => VivemExterns.addFloatFloat
       case """F("panic")""" => VivemExterns.panic
-      case """F("__multiplyIntInt",[],[R(*,i),R(*,i)])""" => VivemExterns.multiplyIntInt
+      case """F("__multiplyIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.multiplyIntInt
 //      case PrototypeH(FullNameH(List(NamePartH("__multiplyFloatFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.multiplyFloatFloat
-      case """F("__subtractIntInt",[],[R(*,i),R(*,i)])""" => VivemExterns.subtractIntInt
+      case """F("__subtractIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.subtractIntInt
 //      case PrototypeH(FullNameH(List(NamePartH("__subtractFloatFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.subtractFloatFloat
-      case """F("__addStrStr",[],[R(*,s),R(*,s)])""" => VivemExterns.addStrStr
+      case """F("__addStrStr",[],[R(*,<,s),R(*,<,s)])""" => VivemExterns.addStrStr
       case """F("__getch")""" => VivemExterns.getch
 //      case PrototypeH(FullNameH(List(NamePartH("__sqrt", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.sqrt
-      case """F("__lessThanInt",[],[R(*,i),R(*,i)])""" => VivemExterns.lessThanInt
+      case """F("__lessThanInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.lessThanInt
 //      case PrototypeH(FullNameH(List(NamePartH("__lessThanFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,BoolH())) =>
 //        VivemExterns.lessThanFloat
 //      case PrototypeH(FullNameH(List(NamePartH("__greaterThanFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,BoolH())) =>
@@ -72,19 +72,19 @@ object FunctionVivem {
 //        VivemExterns.lessThanOrEqInt
 //      case PrototypeH(FullNameH(List(NamePartH("__greaterThanInt", Some(List()), Some(List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH()))), None))), List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH())), ReferenceH(m.Share,BoolH())) =>
 //        VivemExterns.greaterThanInt
-      case """F("__eqStrStr",[],[R(*,s),R(*,s)])""" => VivemExterns.eqStrStr
-      case """F("__greaterThanOrEqInt",[],[R(*,i),R(*,i)])""" => VivemExterns.greaterThanOrEqInt
-      case """F("__eqIntInt",[],[R(*,i),R(*,i)])""" => VivemExterns.eqIntInt
-      case """F("__eqBoolBool",[],[R(*,b),R(*,b)])""" => VivemExterns.eqBoolBool
-      case """F("__print",[],[R(*,s)])""" => VivemExterns.print
-      case """F("__not",[],[R(*,b)])""" => VivemExterns.not
-      case """F("__castIntStr",[],[R(*,i)])""" => VivemExterns.castIntStr
+      case """F("__eqStrStr",[],[R(*,<,s),R(*,<,s)])""" => VivemExterns.eqStrStr
+      case """F("__greaterThanOrEqInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.greaterThanOrEqInt
+      case """F("__eqIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.eqIntInt
+      case """F("__eqBoolBool",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.eqBoolBool
+      case """F("__print",[],[R(*,<,s)])""" => VivemExterns.print
+      case """F("__not",[],[R(*,<,b)])""" => VivemExterns.not
+      case """F("__castIntStr",[],[R(*,<,i)])""" => VivemExterns.castIntStr
 //      case PrototypeH(FullNameH(List(NamePartH("__castFloatStr", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,StrH())) =>
 //        VivemExterns.castFloatStr
 //      case PrototypeH(FullNameH(List(NamePartH("__castIntFloat", Some(List()), Some(List(ReferenceH(m.Share,IntH()))), None))),List(ReferenceH(m.Share,IntH())),ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.castIntFloat
-      case """F("__and",[],[R(*,b),R(*,b)])""" => VivemExterns.and
-      case """F("__mod",[],[R(*,i),R(*,i)])""" => VivemExterns.mod
+      case """F("__and",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.and
+      case """F("__mod",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.mod
       case _ => vimpl(ref.fullName.toString)
     }
   }

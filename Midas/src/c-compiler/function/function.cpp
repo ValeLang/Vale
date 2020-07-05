@@ -29,7 +29,7 @@ void translateFunction(
     GlobalState* globalState,
     Function* functionM) {
 
-  auto functionL = globalState->getFunction(functionM);
+  auto functionL = globalState->getFunction(functionM->prototype->name);
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 
@@ -75,4 +75,6 @@ void translateFunction(
   // Never, because Valestrom guarantees we end function bodies in a ret.
   translateExpression(
       globalState, &functionState, bodyTopLevelBuilder, functionM->block);
+
+  LLVMDisposeBuilder(bodyTopLevelBuilder);
 }

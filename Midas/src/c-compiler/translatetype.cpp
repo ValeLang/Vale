@@ -44,9 +44,7 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       return LLVMPointerType(countedStructL, 0);
     } else {
       auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
-      size_t innerStructSizeBytes = LLVMABISizeOfType(globalState->dataLayout, innerStructL);
-      bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
-      if (inliine) {
+      if (referenceM->location == Location::INLINE) {
         return globalState->getInnerStruct(structReferend->fullName);
       } else {
         auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
@@ -60,9 +58,7 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       return nullptr;
     } else {
       auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
-      size_t innerArraySizeBytes = LLVMABISizeOfType(globalState->dataLayout, innerArrayLT);
-      bool inliine = innerArraySizeBytes <= MAX_INLINE_SIZE_BYTES;
-      if (inliine) {
+      if (referenceM->location == Location::INLINE) {
         return innerArrayLT;
       } else {
         auto knownSizeArrayCountedStructLT =
@@ -72,6 +68,11 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
         return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
       }
     }
+  } else if (auto interfaceReferend =
+      dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
+    auto interfaceRefStructL =
+        globalState->getInterfaceRefStruct(interfaceReferend->fullName);
+    return interfaceRefStructL;
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
     assert(false);
@@ -99,42 +100,33 @@ Mutability ownershipToMutability(Ownership ownership) {
   return Mutability::MUTABLE;
 }
 
-bool isInlImm(GlobalState* globalState, Reference* referenceM) {
+Mutability getMutability(GlobalState* globalState, Reference* referenceM) {
   if (dynamic_cast<Int*>(referenceM->referend) ||
       dynamic_cast<Bool*>(referenceM->referend) ||
       dynamic_cast<Float*>(referenceM->referend)) {
-    return true;
+    return Mutability::IMMUTABLE;
   } else if (
       auto structRnd = dynamic_cast<StructReferend*>(referenceM->referend)) {
     auto structM = globalState->program->getStruct(structRnd->fullName);
-    if (structM->mutability == Mutability::MUTABLE) {
-      return false;
-    } else if (structM->mutability == Mutability::IMMUTABLE) {
-      auto innerStructL = globalState->getInnerStruct(structRnd->fullName);
-      size_t innerStructSizeBytes =
-          LLVMABISizeOfType(globalState->dataLayout, innerStructL);
-      bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
-      return inliine;
-    } else {
-      assert(false);
-      return false;
-    }
+    return structM->mutability;
+  } else if (
+      auto interfaceRnd = dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
+    auto interfaceM = globalState->program->getInterface(interfaceRnd->fullName);
+    return interfaceM->mutability;
   } else if (
       auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
-    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      return false;
-    } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
-      auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
-      size_t innerStructSizeBytes =
-          LLVMABISizeOfType(globalState->dataLayout, innerArrayLT);
-      bool inliine = innerStructSizeBytes <= MAX_INLINE_SIZE_BYTES;
-      return inliine;
-    } else {
-      assert(false);
-      return false;
-    }
+    return knownSizeArrayMT->rawArray->mutability;
   } else {
-    assert(false); // impl
-    return false;
+    std::cerr << typeid(*referenceM->referend).name() << std::endl;
+    assert(false);
+    return Mutability::MUTABLE;
   }
+}
+
+LLVMTypeRef translatePrototypeToFunctionType(
+    GlobalState* globalState,
+    Prototype* prototype) {
+  auto returnLT = translateType(globalState, prototype->returnType);
+  auto paramsLT = translateTypes(globalState, prototype->params);
+  return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }

@@ -30,7 +30,7 @@ object FunctionTemplarCore {
       params2.nonEmpty &&
       params2.head.tyype.ownership == Own &&
       (startingFullEnv.fullName.last match {
-        case FunctionName2(humanName, _, _) if humanName == CallTemplar.DESTRUCTOR_NAME => true
+        case FunctionName2(humanName, _, _) if humanName == CallTemplar.MUT_DESTRUCTOR_NAME => true
         case _ => false
       })
 
@@ -215,7 +215,7 @@ object FunctionTemplarCore {
   }
 
   def makeImplDestructor(
-    env: IEnvironment,
+    env: FunctionEnvironment,
     temputs: TemputsBox,
     maybeOriginFunction1: Option[FunctionA],
     structDef2: StructDefinition2,
@@ -231,12 +231,7 @@ object FunctionTemplarCore {
     val destructor2 =
       Function2(
         FunctionHeader2(
-          FullName2(
-            List(),
-            FunctionName2(
-              CallTemplar.INTERFACE_DESTRUCTOR_NAME,
-              List(CoordTemplata(structType2), KindTemplata(interfaceRef2)),
-              List(structType2))),
+          env.fullName,
           false, false,
           List(Parameter2(CodeVarName2("this"), Some(Override2(interfaceRef2)), structType2)),
           Coord(Share, Void2()),

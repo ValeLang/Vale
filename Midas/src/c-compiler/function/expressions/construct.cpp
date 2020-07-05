@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/controlblock.h>
 
 #include "translatetype.h"
 
@@ -21,17 +22,20 @@ void fillInnerStruct(
 }
 
 LLVMValueRef constructCountedStruct(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMTypeRef structL,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
-  auto newStructLE = mallocStruct(globalState, builder, structL);
-  fillControlBlock(
-      globalState, builder, getControlBlockPtr(builder, newStructLE));
+  auto newStructPtrLE = mallocStruct(globalState, builder, structL);
+  auto objIdLE =
+      fillControlBlock(
+          globalState, builder, getStructControlBlockPtr(builder, newStructPtrLE), structM->name->name);
   fillInnerStruct(
-      builder, structM, membersLE, getCountedContents(builder, newStructLE));
-  return newStructLE;
+      builder, structM, membersLE, getCountedContentsPtr(builder, newStructPtrLE));
+  buildFlare(from, globalState, builder, "Allocating ", structM->name->name, objIdLE);
+  return newStructPtrLE;
 }
 
 LLVMValueRef constructInnerStruct(
@@ -60,6 +64,7 @@ LLVMValueRef constructInnerStruct(
 }
 
 LLVMValueRef translateConstruct(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
@@ -75,10 +80,10 @@ LLVMValueRef translateConstruct(
     case Mutability::MUTABLE: {
       auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
       return constructCountedStruct(
-          globalState, builder, countedStructL, structM, membersLE);
+          from, globalState, builder, countedStructL, structM, membersLE);
     }
     case Mutability::IMMUTABLE: {
-      if (isInlImm(globalState, desiredReference)) {
+      if (desiredReference->location == Location::INLINE) {
         auto valStructL =
             globalState->getInnerStruct(structReferend->fullName);
         return constructInnerStruct(
@@ -87,7 +92,7 @@ LLVMValueRef translateConstruct(
         auto countedStructL =
             globalState->getCountedStruct(structReferend->fullName);
         return constructCountedStruct(
-            globalState, builder, countedStructL, structM, membersLE);
+            from, globalState, builder, countedStructL, structM, membersLE);
       }
     }
     default:

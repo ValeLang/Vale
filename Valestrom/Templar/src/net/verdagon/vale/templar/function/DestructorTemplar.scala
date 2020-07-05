@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.{FunctionA, GlobalFunctionFamilyNameA}
+import net.verdagon.vale.astronomer.{FunctionA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmDropImpreciseNameA, ImmInterfaceDestructorImpreciseNameA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
@@ -8,6 +8,8 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.{vassert, vfail, vimpl}
+
+import scala.collection.immutable.List
 
 object DestructorTemplar {
 
@@ -21,7 +23,11 @@ object DestructorTemplar {
         OverloadTemplar.scoutExpectedFunctionForPrototype(
             env,
             temputs,
-            GlobalFunctionFamilyNameA(CallTemplar.DESTRUCTOR_NAME),
+            if (type2.ownership == Share) {
+              ImmConcreteDestructorImpreciseNameA()
+            } else {
+              GlobalFunctionFamilyNameA(CallTemplar.MUT_DESTRUCTOR_NAME)
+            },
             List(),
             List(ParamFilter(type2, None)),
             List(),
@@ -36,7 +42,11 @@ object DestructorTemplar {
         OverloadTemplar.scoutExpectedFunctionForPrototype(
           env,
           temputs,
-          GlobalFunctionFamilyNameA(CallTemplar.INTERFACE_DESTRUCTOR_NAME),
+          if (type2.ownership == Share) {
+            ImmInterfaceDestructorImpreciseNameA()
+          } else {
+            GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME)
+          },
           List(),
           List(ParamFilter(type2, None)),
           List(),
@@ -59,7 +69,11 @@ object DestructorTemplar {
     OverloadTemplar.scoutExpectedFunctionForPrototype(
       env,
       temputs,
-      GlobalFunctionFamilyNameA(CallTemplar.DESTRUCTOR_NAME),
+      if (type2.ownership == Share) {
+        ImmConcreteDestructorImpreciseNameA()
+      } else {
+        GlobalFunctionFamilyNameA(CallTemplar.MUT_DESTRUCTOR_NAME)
+      },
       List(),
       List(ParamFilter(type2, None)),
       List(),
@@ -76,11 +90,16 @@ object DestructorTemplar {
   // - Unshare. This means we take a shared reference, and if it's the last one, unshare anything
   //   it's pointing at and deallocate.
   // - Unborrow. This is a no op.
+  // This is quite useful for handing into array consumers.
   private def getDropFunction(env: IEnvironment, temputs: TemputsBox, type2: Coord): Prototype2 = {
     OverloadTemplar.scoutExpectedFunctionForPrototype(
       env,
       temputs,
-      GlobalFunctionFamilyNameA(CallTemplar.DROP_FUNCTION_NAME),
+      if (type2.ownership == Share) {
+        ImmDropImpreciseNameA()
+      } else {
+        GlobalFunctionFamilyNameA(CallTemplar.MUT_DROP_FUNCTION_NAME)
+      },
       List(),
       List(ParamFilter(type2, None)),
       List(),
@@ -238,7 +257,7 @@ object DestructorTemplar {
         }
       })
 
-    val destroyedUnletStruct = Destructure2(structArgument, structRef, memberLocalVariables)
+    val destroyedUnletStruct = Destroy2(structArgument, structRef, memberLocalVariables)
     val destructMemberExprs =
       memberLocalVariables.map({
         case (variable) => {
@@ -292,7 +311,7 @@ object DestructorTemplar {
         List(),
         Block2(
           List(
-            DestroyArraySequence2(
+            DestroyArraySequenceIntoFunction2(
               ArgLookup2(0, arrayRefType),
               sequence,
               ifunctionExpression),
@@ -343,5 +362,77 @@ object DestructorTemplar {
       temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)
       temputs.addFunction(function2)
     (function2.header)
+  }
+
+  def getImmConcreteDestructor(
+    temputs: TemputsBox,
+    env: IEnvironment,
+    structRef2: StructRef2):
+  Prototype2 = {
+    vassert(Templar.getMutability(temputs, structRef2) == Immutable)
+
+    OverloadTemplar.scoutExpectedFunctionForPrototype(
+      env,
+      temputs,
+      ImmConcreteDestructorImpreciseNameA(),
+      List(),
+      List(ParamFilter(Coord(Share, structRef2), None)),
+      List(),
+      true) match {
+      case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+        vfail("Couldn't find function to call!\n" + seff.toString)
+      }
+      case (ScoutExpectedFunctionSuccess(p)) => (p)
+    }
+  }
+
+  def getImmInterfaceDestructor(
+    temputs: TemputsBox,
+    env: IEnvironment,
+    interfaceRef2: InterfaceRef2):
+  Prototype2 = {
+    vassert(Templar.getMutability(temputs, interfaceRef2) == Immutable)
+
+    val prototype =
+      OverloadTemplar.scoutExpectedFunctionForPrototype(
+        env,
+        temputs,
+        ImmInterfaceDestructorImpreciseNameA(),
+        List(),
+        List(ParamFilter(Coord(Share, interfaceRef2), None)),
+        List(),
+        true) match {
+        case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+          vfail("Couldn't find function to call!\n" + seff.toString)
+        }
+        case (ScoutExpectedFunctionSuccess(p)) => (p)
+      }
+    prototype
+  }
+
+  def getImmInterfaceDestructorOverride(
+    temputs: TemputsBox,
+    env: IEnvironment,
+    structRef2: StructRef2,
+    implementedInterfaceRefT: InterfaceRef2):
+  Prototype2 = {
+    vassert(Templar.getMutability(temputs, structRef2) == Immutable)
+    vassert(Templar.getMutability(temputs, implementedInterfaceRefT) == Immutable)
+
+    val sefResult =
+      OverloadTemplar.scoutExpectedFunctionForPrototype(
+        env,
+        temputs,
+        ImmInterfaceDestructorImpreciseNameA(),
+        List(),
+        List(ParamFilter(Coord(Share, structRef2), Some(Override2(implementedInterfaceRefT)))),
+        List(),
+        true)
+    sefResult match {
+      case ScoutExpectedFunctionSuccess(prototype) => prototype
+      case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+        vfail(sefResult.toString)
+      }
+    }
   }
 }

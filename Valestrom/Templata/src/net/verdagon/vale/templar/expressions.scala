@@ -100,12 +100,17 @@ case class Unlet2(variable: ILocalVariable2) extends ReferenceExpression2 {
 // references must eventually hit a Destructure2.
 // Depending on the backend, it will either be a no-op (like for GC'd backends)
 // or a decrement+maybedestruct (like for RC'd backends)
+// See DINSIE for why this isnt three instructions, and why we dont have the
+// destructor in here for shareds.
 case class Discard2(
   expr: ReferenceExpression2
 ) extends ReferenceExpression2 {
   override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
 
-  vassert(expr.referend != Void2())
+  expr.resultRegister.reference.ownership match {
+    case Borrow =>
+    case Share =>
+  }
 
   expr match {
     case Consecutor2(exprs) => {
@@ -587,7 +592,7 @@ case class ConstructArray2(
 // it's up to later stages to replace that with an actual index
 // This returns nothing, as opposed to DrainArraySequence2 which returns a
 // sequence of results from the call.
-case class DestroyArraySequence2(
+case class DestroyArraySequenceIntoFunction2(
     arrayExpr: ReferenceExpression2,
     arrayType: KnownSizeArrayT2,
     consumer: ReferenceExpression2) extends ReferenceExpression2 {
@@ -595,6 +600,26 @@ case class DestroyArraySequence2(
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
+  }
+}
+
+// We destroy both Share and Own things
+// If the struct contains any addressibles, those die immediately and aren't stored
+// in the destination variables, which is why it's a list of ReferenceLocalVariable2.
+case class DestroyArraySequenceIntoLocals2(
+  expr: ReferenceExpression2,
+  arraySeq: KnownSizeArrayT2,
+  destinationReferenceVariables: List[ReferenceLocalVariable2]
+) extends ReferenceExpression2 {
+  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
+
+  vassert(expr.referend == arraySeq)
+  if (expr.resultRegister.reference.ownership == Borrow) {
+    vfail("wot")
+  }
+
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ expr.all(func)
   }
 }
 
@@ -606,34 +631,6 @@ case class DestroyUnknownSizeArray2(
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
-  }
-}
-
-case class DrainArraySequence2(
-    arrayExpr: ReferenceExpression2,
-    arrayType: KnownSizeArrayT2,
-    resultArraySeqType: KnownSizeArrayT2,
-    resultArraySeqRefType: Coord,
-    consumer: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(resultArraySeqRefType)
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
-  }
-}
-
-// Note: the functionpointercall's last argument is a Placeholder2,
-// it's up to later stages to replace that with an actual index
-case class DrainUnknownSizeArray2(
-    arrayExpr: ReferenceExpression2,
-    arrayType: UnknownSizeArrayT2,
-    resultArraySeqType: UnknownSizeArrayT2,
-    resultArraySeqRefType: Coord,
-    call: FunctionCall2) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(resultArraySeqRefType)
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ call.all(func)
   }
 }
 
@@ -683,36 +680,18 @@ case class SoftLoad2(expr: AddressExpression2, targetOwnership: Ownership) exten
   }
 }
 
-// We destroy both Share and Own things
+// Destroy an object.
 // If the struct contains any addressibles, those die immediately and aren't stored
 // in the destination variables, which is why it's a list of ReferenceLocalVariable2.
-case class Destructure2(
+//
+// We also destroy shared things with this, see DDSOT.
+case class Destroy2(
     expr: ReferenceExpression2,
     structRef2: StructRef2,
     destinationReferenceVariables: List[ReferenceLocalVariable2]
 ) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
 
-  if (expr.resultRegister.reference.ownership == Borrow) {
-    vfail("wot")
-  }
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ expr.all(func)
-  }
-}
-
-// We destroy both Share and Own things
-// If the struct contains any addressibles, those die immediately and aren't stored
-// in the destination variables, which is why it's a list of ReferenceLocalVariable2.
-case class DestructureArraySequence2(
-  expr: ReferenceExpression2,
-  arraySeq: KnownSizeArrayT2,
-  destinationReferenceVariables: List[ReferenceLocalVariable2]
-) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
-
-  vassert(expr.referend == arraySeq)
   if (expr.resultRegister.reference.ownership == Borrow) {
     vfail("wot")
   }

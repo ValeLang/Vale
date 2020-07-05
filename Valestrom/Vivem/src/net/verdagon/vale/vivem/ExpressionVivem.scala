@@ -15,13 +15,13 @@ object ExpressionVivem {
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = vassertSome(programH.structs.find(_.getRef == emptyPackStructRefH))
-    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, emptyPackStructRefH), List())
+    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, emptyPackStructRefH), List())
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), void)
     void
   }
 
-  def makeInstance(heap: Heap, callId: CallId, referend: ReferendV) = {
-    val ref = heap.allocateTransient(ShareH, referend)
+  def makePrimitive(heap: Heap, callId: CallId, referend: ReferendV) = {
+    val ref = heap.allocateTransient(ShareH, InlineH, referend)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), ref)
     ref
   }
@@ -50,15 +50,26 @@ object ExpressionVivem {
     node match {
       case DiscardH(sourceExpr) => {
         sourceExpr.resultType.ownership match {
-          case BorrowH | ShareH =>
+          case ShareH =>
+          case BorrowH =>
         }
         val sourceRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
             case r @ NodeReturn(_) => return r
             case NodeContinue(r) => r
           }
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, sourceRef)
+        // Lots of instructions do this, not just Discard, see DINSIE.
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceRef)
+        NodeContinue(makeVoid(programH, heap, callId))
+      }
+      case DiscardSharedReferenceH(sourceExpr, destructorPrototype) => {
+        vassert(sourceExpr.resultType.ownership == ShareH)
 
+        val sourceRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
         NodeContinue(makeVoid(programH, heap, callId))
       }
       case ReinterpretH(sourceExpr, resultType) => {
@@ -71,19 +82,19 @@ object ExpressionVivem {
         vfail()
       }
       case ConstantI64H(value) => {
-        val ref = makeInstance(heap, callId, IntV(value))
+        val ref = makePrimitive(heap, callId, IntV(value))
         NodeContinue(ref)
       }
       case ConstantF64H(value) => {
-        val ref = makeInstance(heap, callId, FloatV(value))
+        val ref = makePrimitive(heap, callId, FloatV(value))
         NodeContinue(ref)
       }
       case ConstantStrH(value) => {
-        val ref = makeInstance(heap, callId, StrV(value))
+        val ref = makePrimitive(heap, callId, StrV(value))
         NodeContinue(ref)
       }
       case ConstantBoolH(value) => {
-        val ref = makeInstance(heap, callId, BoolV(value))
+        val ref = makePrimitive(heap, callId, BoolV(value))
         NodeContinue(ref)
       }
       case ArgumentH(resultType, argumentIndex) => {
@@ -121,8 +132,8 @@ object ExpressionVivem {
           }
         heap.ensureRefCount(objRef, category, num)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, objRef)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, numRef)
+        discard(programH, heap, stdout, stdin, callId, objExpr.resultType, objRef)
+        discard(programH, heap, stdout, stdin, callId, numExpr.resultType, numRef)
         NodeContinue(makeVoid(programH, heap, callId))
       }
 //      case SoftLoadH(_, sourceExpr, targetOwnership) => {
@@ -161,7 +172,7 @@ object ExpressionVivem {
 
         NodeContinue(vassertSome(lastInnerExprResultRef))
       }
-      case DestructureH(structExpr, localTypes, locals) => {
+      case DestroyH(structExpr, localTypes, locals) => {
         val structReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), structExpr) match {
             case r @ NodeReturn(_) => return r
@@ -170,13 +181,8 @@ object ExpressionVivem {
 
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId), structReference)
 
-        if (structExpr.resultType.ownership == OwnH) {
-          heap.ensureTotalRefCount(structReference, 0)
-        } else {
-          // Not doing
-          //   heap.ensureTotalRefCount(structReference, 0)
-          // for share because we might be taking in a shared reference and not be destroying it.
-        }
+        // DDSOT
+        heap.ensureTotalRefCount(structReference, 0)
 
         val oldMemberReferences = heap.destructure(structReference, structReference.ownership == OwnH)
 
@@ -224,9 +230,9 @@ object ExpressionVivem {
 
         val arr @ ArrayInstanceV(_, _, _, _) = heap.dereference(arrayReference)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, arrayReference)
+        discard(programH, heap, stdout, stdin, callId, arrExpr.resultType, arrayReference)
 
-        val lenRef = makeInstance(heap, callId, IntV(arr.getSize()))
+        val lenRef = makePrimitive(heap, callId, IntV(arr.getSize()))
         NodeContinue(lenRef)
       }
       case StackifyH(sourceExpr, localIndex, name) => {
@@ -240,7 +246,7 @@ object ExpressionVivem {
         heap.addLocal(varAddr, reference, sourceExpr.resultType)
         heap.vivemDout.print(" v" + varAddr + "<-o" + reference.num)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, reference)
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, reference)
 
         NodeContinue(makeVoid(programH, heap, callId))
       }
@@ -263,7 +269,7 @@ object ExpressionVivem {
         heap.vivemDout.print("<-" + reference.num)
         val oldRef = heap.mutateVariable(varAddress, reference, sourceExpr.resultType)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, reference)
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, reference)
 
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), oldRef)
         NodeContinue(oldRef)
@@ -287,8 +293,8 @@ object ExpressionVivem {
         val oldMemberReference = heap.mutateStruct(address, sourceReference, sourceExpr.resultType)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), oldMemberReference)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, structReference)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, sourceReference)
+        discard(programH, heap, stdout, stdin, callId, structExpr.resultType, structReference)
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceReference)
 
         NodeContinue(oldMemberReference)
       }
@@ -317,9 +323,9 @@ object ExpressionVivem {
         val oldMemberReference = heap.mutateArray(address, sourceReference, sourceExpr.resultType)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), oldMemberReference)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, sourceReference)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, indexReference)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, arrayReference)
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceReference)
+        discard(programH, heap, stdout, stdin, callId, indexExpr.resultType, indexReference)
+        discard(programH, heap, stdout, stdin, callId, arrayExpr.resultType, arrayReference)
         NodeContinue(oldMemberReference)
       }
 
@@ -338,10 +344,10 @@ object ExpressionVivem {
 //        NodeContinue(exprId))
       }
 
-      case LocalLoadH(local, targetOwnership, name) => {
+      case ll @ LocalLoadH(local, targetOwnership, name) => {
         vassert(targetOwnership != OwnH) // should have been Unstackified instead
         val varAddress = heap.getVarAddress(expressionId.callId, local)
-        val reference = heap.getReferenceFromLocal(varAddress, local.typeH, targetOwnership)
+        val reference = heap.getReferenceFromLocal(varAddress, local.typeH, ll.resultType)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), reference)
         heap.vivemDout.print(" *" + varAddress)
         NodeContinue(reference)
@@ -349,7 +355,7 @@ object ExpressionVivem {
 
       case UnstackifyH(local) => {
         val varAddress = heap.getVarAddress(expressionId.callId, local)
-        val reference = heap.getReferenceFromLocal(varAddress, local.typeH, local.typeH.ownership)
+        val reference = heap.getReferenceFromLocal(varAddress, local.typeH, local.typeH)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), reference)
         heap.vivemDout.print(" ^" + varAddress)
         heap.removeLocal(varAddress, local.typeH)
@@ -384,7 +390,8 @@ object ExpressionVivem {
 
           // Special case for externs; externs arent allowed to change ref counts at all.
           // So, we just drop these normally.
-          argRefs.foreach(r => dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, r))
+          argRefs.zip(argsExprs.map(_.resultType))
+            .foreach({ case (r, expectedType) => discard(programH, heap, stdout, stdin, callId, expectedType, r) })
 
           NodeContinue(resultRef)
         } else {
@@ -480,7 +487,7 @@ object ExpressionVivem {
         NodeContinue(arrayReference)
       }
 
-      case MemberLoadH(structExpr, memberIndex, targetOwnership, expectedMemberType, expectedResultType, memberName) => {
+      case ml @ MemberLoadH(structExpr, memberIndex, targetOwnership, expectedMemberType, memberName) => {
         val structReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), structExpr) match {
             case r @ NodeReturn(_) => return r
@@ -490,15 +497,15 @@ object ExpressionVivem {
         val address = MemberAddressV(structReference.allocId, memberIndex)
 
         heap.vivemDout.print(" *" + address)
-        val memberReference = heap.getReferenceFromStruct(address, expectedMemberType, targetOwnership)
+        val memberReference = heap.getReferenceFromStruct(address, expectedMemberType, ml.resultType)
         vassert(targetOwnership != OwnH)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), memberReference)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, structReference)
+        discard(programH, heap, stdout, stdin, callId, structExpr.resultType, structReference)
         NodeContinue(memberReference)
       }
 
-      case UnknownSizeArrayLoadH(arrayExpr, indexExpr, resultType, targetOwnership) => {
+      case usal @ UnknownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -518,19 +525,19 @@ object ExpressionVivem {
         val address = ElementAddressV(arrayReference.allocId, index)
 
         heap.vivemDout.print(" *" + address)
-        val source = heap.getReferenceFromArray(address, arrayExpr.resultType.kind.rawArray.elementType, targetOwnership)
+        val source = heap.getReferenceFromArray(address, arrayExpr.resultType.kind.rawArray.elementType, usal.resultType)
         if (targetOwnership == OwnH) {
           vfail("impl me?")
         } else {
         }
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), source)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, indexIntReference)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, arrayReference)
+        discard(programH, heap, stdout, stdin, callId, indexExpr.resultType, indexIntReference)
+        discard(programH, heap, stdout, stdin, callId, arrayExpr.resultType, arrayReference)
         NodeContinue(source)
       }
 
-      case KnownSizeArrayLoadH(arrayExpr, indexExpr, resultType, targetOwnership) => {
+      case ksal @ KnownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -549,15 +556,15 @@ object ExpressionVivem {
         val address = ElementAddressV(arrayReference.allocId, index)
 
         heap.vivemDout.print(" *" + address)
-        val source = heap.getReferenceFromArray(address, arrayExpr.resultType.kind.rawArray.elementType, targetOwnership)
+        val source = heap.getReferenceFromArray(address, arrayExpr.resultType.kind.rawArray.elementType, ksal.resultType)
         if (targetOwnership == OwnH) {
           vfail("impl me?")
         } else {
         }
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), source)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, indexReference)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, arrayReference)
+        discard(programH, heap, stdout, stdin, callId, indexExpr.resultType, indexReference)
+        discard(programH, heap, stdout, stdin, callId, arrayExpr.resultType, arrayReference)
         NodeContinue(source)
       }
       case siu @ StructToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
@@ -573,6 +580,7 @@ object ExpressionVivem {
             sourceReference.actualKind,
             RRReferend(targetInterfaceRef),
             sourceReference.ownership,
+            sourceReference.location,
             sourceReference.num)
         NodeContinue(targetReference)
       }
@@ -585,7 +593,7 @@ object ExpressionVivem {
         val conditionReferend = heap.dereference(conditionReference)
         val BoolV(conditionValue) = conditionReferend;
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, conditionReference)
+        discard(programH, heap, stdout, stdin, callId, conditionBlock.resultType, conditionReference)
 
         val blockResult =
           if (conditionValue == true) {
@@ -611,7 +619,7 @@ object ExpressionVivem {
             }
           val conditionReferend = heap.dereference(conditionReference)
           val BoolV(conditionValue) = conditionReferend;
-          dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, conditionReference)
+          discard(programH, heap, stdout, stdin, callId, bodyBlock.resultType, conditionReference)
           continue = conditionValue
         }
         NodeContinue(makeVoid(programH, heap, callId))
@@ -638,7 +646,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (generator)")
 
-          val indexReference = heap.allocateTransient(ShareH, IntV(i))
+          val indexReference = heap.allocateTransient(ShareH, InlineH, IntV(i))
 
           // We're assuming here that theres only 1 method in the interface.
           val indexInEdge = 0
@@ -673,11 +681,11 @@ object ExpressionVivem {
           // No need to increment or decrement, we're conceptually moving the return value
           // from the return slot to the array slot
           heap.initializeArrayElement(arrayReference, i, returnRef)
-          dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, returnRef)
+          discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
         });
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, generatorInterfaceRef)
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, sizeReference)
+        discard(programH, heap, stdout, stdin, callId, generatorInterfaceExpr.resultType, generatorInterfaceRef)
+        discard(programH, heap, stdout, stdin, callId, sizeExpr.resultType, sizeReference)
 
         heap.vivemDout.print(" o" + arrayReference.num + "=")
         heap.printReferend(arrayInstance)
@@ -731,7 +739,7 @@ object ExpressionVivem {
           val elementReference = heap.deinitializeArrayElement(arrayReference, i)
 
           val consumerInterfaceRefAlias =
-            heap.alias(consumerInterfaceRef, consumerInterfaceExpr.resultType, consumerInterfaceExpr.resultType.ownership)
+            heap.alias(consumerInterfaceRef, consumerInterfaceExpr.resultType, consumerInterfaceExpr.resultType)
 
           val (functionH, (calleeCallId, retuurn)) =
             executeInterfaceFunction(
@@ -746,13 +754,13 @@ object ExpressionVivem {
               consumerInterfaceMethodPrototype.prototypeH)
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-          dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, returnRef)
+          discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
         });
 
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId), arrayReference)
         heap.deallocate(arrayReference)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, consumerInterfaceRef)
+        discard(programH, heap, stdout, stdin, callId, consumerInterfaceExpr.resultType, consumerInterfaceRef)
 
         NodeContinue(makeVoid(programH, heap, callId))
       }
@@ -806,7 +814,7 @@ object ExpressionVivem {
           val elementReference = heap.deinitializeArrayElement(arrayReference, i)
 
           val consumerInterfaceRefAlias =
-            heap.alias(consumerInterfaceRef, consumerInterfaceExpr.resultType, consumerInterfaceExpr.resultType.ownership)
+            heap.alias(consumerInterfaceRef, consumerInterfaceExpr.resultType, consumerInterfaceExpr.resultType)
 
           val (functionH, (calleeCallId, retuurn)) =
             executeInterfaceFunction(
@@ -821,13 +829,13 @@ object ExpressionVivem {
               consumerInterfaceMethodPrototype.prototypeH)
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-          dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, returnRef)
+          discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
         });
 
         heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId), arrayReference)
         heap.deallocate(arrayReference)
 
-        dropReferenceIfNonOwning(programH, heap, stdout, stdin, callId, consumerInterfaceRef)
+        discard(programH, heap, stdout, stdin, callId, consumerInterfaceExpr.resultType, consumerInterfaceRef)
 
         NodeContinue(makeVoid(programH, heap, callId))
       }
@@ -855,9 +863,9 @@ object ExpressionVivem {
 
     val edge = structH.edges.find(_.interface == interfaceRefH).get
 
-    val ReferenceV(actualStruct, actualInterfaceKind, actualOwnership, allocNum) = interfaceReference
+    val ReferenceV(actualStruct, actualInterfaceKind, actualOwnership, actualLocation, allocNum) = interfaceReference
     vassert(actualInterfaceKind.hamut == interfaceRefH)
-    val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, allocNum)
+    val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, actualLocation, allocNum)
 
     val prototypeH = edge.structPrototypesByInterfaceMethod.values.toList(indexInEdge)
     val functionH = programH.functions.find(_.prototype == prototypeH).get;
@@ -892,65 +900,56 @@ object ExpressionVivem {
     (functionH, maybeReturnReference)
   }
 
-  def dropReferenceIfNonOwning(
-      programH: ProgramH,
-      heap: Heap,
-      stdout: String => Unit,
-      stdin: () => String,
-      callId: CallId,
-      reference: ReferenceV) = {
-    heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId), reference)
-    dropReference(programH, heap, stdout, stdin, callId, reference)
-//    reference.ownership match {
-//      case OwnH =>
-//      case BorrowH | ShareH => {
-//      }
-//    }
-  }
-
-  def dropReference(
-      programH: ProgramH,
-      heap: Heap,
-      stdout: String => Unit,
-      stdin: () => String,
-      callId: CallId,
-      reference: ReferenceV
+  def discard(
+    programH: ProgramH,
+    heap: Heap,
+    stdout: String => Unit,
+    stdin: () => String,
+    callId: CallId,
+    expectedReference: ReferenceH[ReferendH],
+    actualReference: ReferenceV
   ): Unit = {
-    if (heap.getTotalRefCount(reference) == 0) {
-      // If it's a share ref, then use runtime information to crawl through and decrement
-      // ref counts.
-      reference.ownership match {
+
+    heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId), actualReference)
+
+    if (heap.getTotalRefCount(actualReference) == 0) {
+      expectedReference.ownership match {
+        case OwnH => // Do nothing, Vivem often discards owning things, if we're making a new owning reference to it.
+        case BorrowH => // Do nothing.
         case ShareH => {
-          reference.actualKind.hamut match {
+          expectedReference.kind match {
+            case IntH() | BoolH() | StrH() | FloatH() => heap.deallocate(actualReference)
+            case x if x == ProgramH.emptyTupleStructRef => heap.deallocate(actualReference)
             case InterfaceRefH(_) => {
-              // We don't expect this because we asked for the actualKind, not the seenAsKind.
-              vwat()
-            }
-            case IntH() | StrH() | BoolH() | FloatH() => {
-              heap.deallocate(reference)
+              vimpl()
             }
             case StructRefH(_) => {
-              // Deallocates the thing.
-              val references = heap.destructure(reference, true)
-              references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
+              val prototypeH = programH.immDestructorsByKind(expectedReference.kind)
+              val functionH = programH.functions.find(_.prototype == prototypeH).get
+
+              val (calleeCallId, retuurn) =
+                FunctionVivem.executeFunction(
+                  programH, stdin, stdout, heap, Vector(actualReference), functionH)
+
+              vassert(retuurn.returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
             }
             case UnknownSizeArrayTH(_, _) => {
-              val ArrayInstanceV(_, _, _, elements) = heap.dereference(reference)
-              val references = elements.indices.map(i => heap.deinitializeArrayElement(reference, elements.size - 1 - i))
-              heap.deallocate(reference)
-              references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
+              vimpl()
+              //              val ArrayInstanceV(_, _, _, elements) = heap.dereference(reference)
+              //              val references = elements.indices.map(i => heap.deinitializeArrayElement(reference, elements.size - 1 - i))
+              //              heap.deallocate(reference)
+              //              references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
             }
             case KnownSizeArrayTH(_, _, _) => {
-              val ArrayInstanceV(_, _, _, elements) = heap.dereference(reference)
-              val references = elements.indices.map(i => heap.deinitializeArrayElement(reference, elements.size - 1 - i))
-              heap.deallocate(reference)
-              references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
+              val prototypeH = programH.immDestructorsByKind(expectedReference.kind)
+              val functionH = programH.functions.find(_.prototype == prototypeH).get
+              val (calleeCallId, retuurn) =
+                FunctionVivem.executeFunction(
+                  programH, stdin, stdout, heap, Vector(actualReference), functionH)
+              vassert(retuurn.returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
             }
           }
         }
-//        case OwnH => {
-//          vimpl()
-//        }
       }
     }
   }

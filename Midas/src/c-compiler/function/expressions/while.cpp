@@ -48,6 +48,8 @@ LLVMValueRef translateWhile(
   // Add a conditional branch to go to either itself, or the afterward block.
   LLVMBuildCondBr(bodyBlockBuilder, bodyExpr, bodyBlockL, afterwardBlockL);
 
+  LLVMDisposeBuilder(bodyBlockBuilder);
+
   // Like explained above, here we're re-pointing the `builder` to point at
   // the afterward block, so that subsequent instructions (after the While)
   // can keep using the same builder, but they'll be adding to the "afterward"

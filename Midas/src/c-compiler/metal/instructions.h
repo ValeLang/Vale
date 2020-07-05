@@ -153,14 +153,17 @@ public:
 class StructToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
+  Reference* sourceStructType;
   StructReferend* sourceStructId;
   InterfaceReferend* targetInterfaceRef;
 
   StructToInterfaceUpcast(
       Expression* sourceExpr_,
+      Reference* sourceStructType_,
       StructReferend* sourceStructId_,
       InterfaceReferend* targetInterfaceRef_) :
       sourceExpr(sourceExpr_),
+      sourceStructType(sourceStructType_),
       sourceStructId(sourceStructId_),
       targetInterfaceRef(targetInterfaceRef_) {}
 };

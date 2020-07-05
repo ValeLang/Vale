@@ -1,6 +1,8 @@
 #include <iostream>
-#include <function/expressions/shared/elements.h>
-#include <function/expressions/shared/members.h>
+#include "function/expressions/shared/elements.h"
+#include "function/expressions/shared/controlblock.h"
+#include "function/expressions/shared/members.h"
+#include "function/expressions/shared/heap.h"
 
 #include "translatetype.h"
 
@@ -45,10 +47,6 @@ LLVMValueRef translateExpression(
         localAddr);
     return LLVMBuildLoad(builder, localAddr, "");
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
-//    std::string x = "Discard ";
-//    auto s = LLVMConstString(x.data(), x.length(), false);
-    auto s = LLVMBuildGlobalStringPtr(builder, "Discard ", "");
-    LLVMBuildCall(builder, globalState->printStr, &s, 1, "");
     return translateDiscard(globalState, functionState, builder, discardM);
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
     return LLVMBuildRet(
@@ -74,14 +72,14 @@ LLVMValueRef translateExpression(
     LLVMBuildStore(builder, valueToStore, localAddr);
     return oldValue;
   } else if (auto localLoad = dynamic_cast<LocalLoad*>(expr)) {
-    if (isInlImm(globalState, localLoad->local->type)) {
+    if (localLoad->local->type->location == Location::INLINE) {
       auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
       return LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
     } else {
       auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
       auto ptrLE =
           LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
-      adjustRC(builder, ptrLE, 1);
+      adjustRc(AFL("LocalLoad"), globalState, builder, ptrLE, localLoad->local->type, 1);
       return ptrLE;
     }
   } else if (auto unstackify = dynamic_cast<Unstackify*>(expr)) {
@@ -101,7 +99,7 @@ LLVMValueRef translateExpression(
         translateExpressions(
             globalState, functionState, builder, newStruct->sourceExprs);
     return translateConstruct(
-        globalState, builder, newStruct->resultType, memberExprs);
+        AFL("NewStruct"), globalState, builder, newStruct->resultType, memberExprs);
   } else if (auto block = dynamic_cast<Block*>(expr)) {
     auto exprs =
         translateExpressions(globalState, functionState, builder, block->exprs);
@@ -120,17 +118,21 @@ LLVMValueRef translateExpression(
     auto mutability = ownershipToMutability(memberLoad->structType->ownership);
     auto memberIndex = memberLoad->memberIndex;
     auto memberName = memberLoad->memberName;
+    auto resultLE =
+        loadMember(
+            AFL("MemberLoad"),
+            globalState,
+            builder,
+            memberLoad->structType,
+            structExpr,
+            mutability,
+            memberLoad->expectedResultType,
+            memberIndex,
+            memberName);
     dropReference(
+        AFL("MemberLoad drop struct"),
         globalState, functionState, builder, memberLoad->structType, structExpr);
-    return loadMember(
-        globalState,
-        builder,
-        memberLoad->structType,
-        structExpr,
-        mutability,
-        memberLoad->expectedResultType,
-        memberIndex,
-        memberName);
+    return resultLE;
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
     auto arrayLE =
         translateExpression(
@@ -140,7 +142,7 @@ LLVMValueRef translateExpression(
             globalState, functionState, builder, knownSizeArrayLoad->indexExpr);
     auto mutability = ownershipToMutability(knownSizeArrayLoad->arrayType->ownership);
     dropReference(
-        globalState, functionState, builder, knownSizeArrayLoad->arrayType, arrayLE);
+        AFL("KSALoad"), globalState, functionState, builder, knownSizeArrayLoad->arrayType, arrayLE);
     return loadElement(
         globalState,
         builder,
@@ -165,22 +167,46 @@ LLVMValueRef translateExpression(
     auto structDefM = globalState->program->getStruct(structReferend->fullName);
     auto memberIndex = memberStore->memberIndex;
     auto memberName = memberStore->memberName;
+    auto oldMemberLE =
+        swapMember(
+            builder, structDefM, structExpr, memberIndex, memberName, sourceExpr);
     dropReference(
-        globalState, functionState, builder, memberStore->structType, structExpr);
-    return storeMember(
-        globalState,
-        builder,
-        structDefM,
-        structExpr,
-        memberStore->resultType,
-        memberIndex,
-        memberName,
-        sourceExpr);
+        AFL("MemberStore discard struct"), globalState, functionState, builder, memberStore->structType, structExpr);
+    return oldMemberLE;
   } else if (auto structToInterfaceUpcast =
       dynamic_cast<StructToInterfaceUpcast*>(expr)) {
-    auto sourceExpr =
+    auto sourceLE =
         translateExpression(
             globalState, functionState, builder, structToInterfaceUpcast->sourceExpr);
+
+    // If it was inline before, upgrade it to a yonder struct.
+    // This however also means that small imm virtual params must be pointers,
+    // and value-ify themselves immediately inside their bodies.
+    // If the receiver expects a yonder, then they'll assume its on the heap.
+    // But if receiver expects an inl, its in a register.
+    // But we can only interfacecall with a yonder.
+    // So we need a thunk to receive that yonder, copy it, fire it into the
+    // real function.
+    // fuck... thunks. didnt want to do that.
+
+    // alternative:
+    // what if we made it so someone receiving an override of an imm inl interface
+    // just takes in that much memory? it really just means a bit of wasted stack
+    // space, but it means we wouldnt need any thunking.
+    // It also means we wouldnt need any heap allocating.
+    // So, the override function will receive the entire interface, and just
+    // assume that the right thing is in there.
+    // Any callers will also have to wrap in an interface. but theyre copying
+    // anyway so should be fine.
+
+    // alternative:
+    // only inline primitives. Which cant have interfaces anyway.
+    // maybe the best solution for now?
+
+    // maybe function params that are inl can take a pointer, and they can
+    // just copy it immediately?
+
+    assert(structToInterfaceUpcast->sourceStructType->location != Location::INLINE);
 
     auto interfaceRefLT =
         globalState->getInterfaceRefStruct(
@@ -191,7 +217,7 @@ LLVMValueRef translateExpression(
         LLVMBuildInsertValue(
             builder,
             interfaceRefLE,
-            sourceExpr,
+            getControlBlockPtr(builder, sourceLE, structToInterfaceUpcast->sourceStructType),
             0,
             "interfaceRefWithOnlyObj");
     interfaceRefLE =

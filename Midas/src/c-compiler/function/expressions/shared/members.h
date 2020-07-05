@@ -10,8 +10,10 @@
 #include "metal/instructions.h"
 #include "globalstate.h"
 #include "function/function.h"
+#include "shared.h"
 
 LLVMValueRef loadMember(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* structRefM,
@@ -21,60 +23,18 @@ LLVMValueRef loadMember(
     int memberIndex,
     const std::string& memberName);
 
-// See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef getRcPtr(
+LLVMValueRef loadInnerStructMember(
     LLVMBuilderRef builder,
-    LLVMValueRef structExpr);
+    LLVMValueRef innerStructPtrLE,
+    int memberIndex,
+    const std::string& memberName);
 
-LLVMValueRef getRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr);
-
-void setRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    LLVMValueRef newRcLE);
-
-void adjustRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    // 1 or -1
-    int adjustAmount);
-
-void adjustInterfaceRC(
-    LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE,
-    // 1 or -1
-    int adjustAmount);
-
-LLVMValueRef rcEquals(
-    LLVMBuilderRef builder,
-    LLVMValueRef structExpr,
-    LLVMValueRef equalTo);
-
-void flareRc(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    int color,
-    LLVMValueRef structExpr);
-
-void fillControlBlock(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef newStructLE);
-
-LLVMValueRef getControlBlockPtr(LLVMBuilderRef builder, LLVMValueRef structLE);
-
-LLVMValueRef getCountedContents(LLVMBuilderRef builder, LLVMValueRef structLE);
-
-LLVMValueRef storeMember(
-    GlobalState* globalState,
+LLVMValueRef swapMember(
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
     LLVMValueRef structExpr,
-    Reference* memberType,
     int memberIndex,
     const std::string& memberName,
-    LLVMValueRef newValueLE);
+    LLVMValueRef newMemberLE);
 
 #endif

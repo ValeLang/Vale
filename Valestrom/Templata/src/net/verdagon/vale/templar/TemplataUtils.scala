@@ -25,6 +25,8 @@ object simpleName {
       case TupleName2(_) => None
       case LambdaCitizenName2(_) => None
       case CitizenName2(humanName, _) => Some(humanName)
+      case ImmConcreteDestructorName2(_) => None
+      case ImmInterfaceDestructorName2(_) => None
     }
   }
 }

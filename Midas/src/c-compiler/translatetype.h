@@ -23,7 +23,7 @@ constexpr int NEVER_INT_BITS = 57;
 
 Mutability ownershipToMutability(Ownership ownership);
 
-bool isInlImm(GlobalState* globalState, Reference* referenceM);
+Mutability getMutability(GlobalState* globalState, Reference* referenceM);
 
 LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT);
 

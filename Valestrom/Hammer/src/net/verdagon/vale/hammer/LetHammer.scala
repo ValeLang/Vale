@@ -80,7 +80,7 @@ object LetHammer {
   ExpressionH[ReferendH] = {
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
-    val expectedLocalBoxType = ReferenceH(m.OwnH, boxStructRefH)
+    val expectedLocalBoxType = ReferenceH(m.OwnH, InlineH, boxStructRefH)
 
     val local =
       locals.addTemplarLocal(hinputs, hamuts, varId, expectedLocalBoxType)
@@ -195,7 +195,6 @@ object LetHammer {
         val innerTypeH = TypeHammer.translateReference(hinputs, hamuts, innerType2)
         val structRefH =
           StructHammer.makeBox(hinputs, hamuts, variability, innerType2, innerTypeH)
-        val localTypeH = ReferenceH(m.OwnH, structRefH)
 
         val unstackifyBoxNode = UnstackifyH(local)
         locals.markUnstackified(varId)
@@ -203,7 +202,7 @@ object LetHammer {
         val innerLocal = locals.addHammerLocal(innerTypeH)
 
         val desH =
-          DestructureH(
+          DestroyH(
             unstackifyBoxNode.expectStructAccess(),
             List(innerTypeH),
             Vector(innerLocal))
@@ -223,9 +222,9 @@ object LetHammer {
     hinputs: Hinputs,
     hamuts: HamutsBox,
     locals: LocalsBox,
-    des2: DestructureArraySequence2
+    des2: DestroyArraySequenceIntoLocals2
   ): ExpressionH[ReferendH] = {
-    val DestructureArraySequence2(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
+    val DestroyArraySequenceIntoLocals2(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
       translate(hinputs, hamuts, locals, sourceExpr2);
@@ -263,13 +262,13 @@ object LetHammer {
       hinputs, hamuts, locals, stackNode, sourceExprDeferreds)
   }
 
-  def translateDestructure(
+  def translateDestroy(
       hinputs: Hinputs,
       hamuts: HamutsBox,
       locals: LocalsBox,
-      des2: Destructure2):
+      des2: Destroy2):
   ExpressionH[ReferendH] = {
-    val Destructure2(sourceExpr2, structRef2, destinationReferenceLocalVariables) = des2
+    val Destroy2(sourceExpr2, structRef2, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
       translate(hinputs, hamuts, locals, sourceExpr2);
@@ -313,7 +312,7 @@ object LetHammer {
               val (boxStructRefH) =
                 StructHammer.makeBox(hinputs, hamuts, member2.variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.
-              val localBoxType = ReferenceH(m.BorrowH, boxStructRefH)
+              val localBoxType = ReferenceH(m.BorrowH, YonderH, boxStructRefH)
               val localIndex = locals.addHammerLocal(localBoxType)
 
               (remainingDestinationReferenceLocalVariables, previousLocalTypes :+ localBoxType, previousLocalIndices :+ localIndex)
@@ -323,7 +322,7 @@ object LetHammer {
       })
 
     val destructureH =
-        DestructureH(
+        DestroyH(
           sourceExprResultLine.expectStructAccess(),
           localTypes,
           localIndices.toVector)

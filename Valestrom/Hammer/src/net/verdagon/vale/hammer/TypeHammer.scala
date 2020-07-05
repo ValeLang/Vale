@@ -33,7 +33,7 @@ object TypeHammer {
           val (boxStructRefH) =
             StructHammer.makeBox(hinputs, hamuts, member2.variability, coord, referenceH)
           // The stack owns the box, closure structs just borrow it.
-          (ReferenceH(m.BorrowH, boxStructRefH))
+          (ReferenceH(m.BorrowH, YonderH, boxStructRefH))
         }
       }
     StructMemberH(
@@ -96,8 +96,23 @@ object TypeHammer {
       coord: Coord):
   (ReferenceH[ReferendH]) = {
     val Coord(ownership, innerType) = coord;
+    val location =
+      (ownership, innerType) match {
+        case (Own, _) => YonderH
+        case (Borrow, _) => YonderH
+        case (Share, OverloadSet(_, _, _)) => InlineH
+        case (Share, PackT2(_, _)) => InlineH
+        case (Share, TupleT2(_, _)) => InlineH
+        case (Share, StructRef2(FullName2(_, TupleName2(_)))) => InlineH
+        case (Share, Void2()) => InlineH
+        case (Share, Int2()) => InlineH
+        case (Share, Bool2()) => InlineH
+        case (Share, Float2()) => InlineH
+        case (Share, Str2()) => InlineH
+        case (Share, _) => YonderH
+      }
     val (innerH) = translateKind(hinputs, hamuts, innerType);
-    (ReferenceH(Conversions.evaluateOwnership(ownership), innerH))
+    (ReferenceH(Conversions.evaluateOwnership(ownership), location, innerH))
   }
 
   def translateReferences(

@@ -9,12 +9,12 @@ class VivemTests extends FunSuite with Matchers {
   test("Return 7") {
     val main =
       FunctionH(
-        PrototypeH(FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,IntH())),
+        PrototypeH(FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,IntH())),
         false,
         false,
         true,
         BlockH(List(ConstantI64H(7))))
-    val programH = ProgramH(List(), List(), List(), List(main))
+    val programH = ProgramH(List(), List(), List(), List(main), Map())
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(7)
@@ -24,12 +24,12 @@ class VivemTests extends FunSuite with Matchers {
 
     val addPrototype =
       PrototypeH(
-        FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(VonObject("Ref",None,Vector(VonMember("ownership",VonObject("Share",None,Vector())), VonMember("kind",VonObject("Int",None,Vector())))), VonObject("Ref",None,Vector(VonMember("ownership",VonObject("Share",None,Vector())), VonMember("kind",VonObject("Int",None,Vector()))))))))))),
-        List(ReferenceH(ShareH,IntH()), ReferenceH(ShareH,IntH())),
-        ReferenceH(ShareH,IntH()))
+        FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(VonObject("Ref",None,Vector(VonMember("ownership",VonObject("Share",None,Vector())), VonMember("location",VonObject("Inline",None,Vector())), VonMember("kind",VonObject("Int",None,Vector())))), VonObject("Ref",None,Vector(VonMember("ownership",VonObject("Share",None,Vector())), VonMember("location",VonObject("Inline",None,Vector())), VonMember("kind",VonObject("Int",None,Vector()))))))))))),
+        List(ReferenceH(ShareH,InlineH,IntH()), ReferenceH(ShareH,InlineH,IntH())),
+        ReferenceH(ShareH,InlineH,IntH()))
     val main =
       FunctionH(
-        PrototypeH(FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,IntH())),
+        PrototypeH(FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,IntH())),
         false,
         false,
         true,
@@ -51,7 +51,7 @@ class VivemTests extends FunSuite with Matchers {
         true,
         false,
         BlockH(List(ConstantI64H(133337))))
-    val programH = ProgramH(List(), List(), List(), List(main, addExtern))
+    val programH = ProgramH(List(), List(), List(), List(main, addExtern), Map())
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(159)

@@ -9,12 +9,6 @@
 #include "metal/instructions.h"
 
 #define CONTROL_BLOCK_STRUCT_NAME "__ControlBlock"
-// This is basically a void*, it can point to any struct.
-// It's a wrapper around the control block struct.
-// Interface ref fat pointers' objptr points to this type.
-#define ANY_STRUCT_NAME "__Any"
-
-#define MAX_INLINE_SIZE_BYTES 32
 
 class GlobalState {
 public:
@@ -22,10 +16,17 @@ public:
   LLVMModuleRef mod;
 
   Program* program;
+  LLVMValueRef objIdCounter;
   LLVMValueRef liveHeapObjCounter;
-  LLVMValueRef malloc, free, assert, assertI64Eq, flareI64, printStr, printInt, printBool;
+  LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printStr, printInt, printBool;
 
+  int controlBlockTypeStrIndex;
+  int controlBlockObjIdIndex;
+  int controlBlockRcMemberIndex;
   LLVMTypeRef controlBlockStructL;
+
+  LLVMBuilderRef stringConstantBuilder;
+  std::unordered_map<std::string, LLVMValueRef> stringConstants;
 
   // These don't have a ref count.
   // They're used directly for inl imm references, and
@@ -78,6 +79,21 @@ public:
   LLVMValueRef getInterfaceTablePtr(Edge* edge) {
     auto iter = interfaceTablePtrs.find(edge);
     assert(iter != interfaceTablePtrs.end());
+    return iter->second;
+  }
+  LLVMValueRef getOrMakeStringConstant(const std::string& str) {
+    auto iter = stringConstants.find(str);
+    if (iter == stringConstants.end()) {
+
+      iter =
+          stringConstants.emplace(
+              str,
+              LLVMBuildGlobalStringPtr(
+                  stringConstantBuilder,
+                  str.c_str(),
+                  (std::string("conststr") + std::to_string(stringConstants.size())).c_str()))
+          .first;
+    }
     return iter->second;
   }
 };

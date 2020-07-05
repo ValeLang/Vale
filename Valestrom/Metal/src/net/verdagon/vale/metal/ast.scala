@@ -9,14 +9,16 @@ object ProgramH {
   val emptyTupleStructRef =
     // If the templar ever decides to change this things name, update this to match templar's.
     StructRefH(FullNameH(List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
-  val emptyTupleStructType = ReferenceH(ShareH, emptyTupleStructRef)
+
+  def emptyTupleStructType = ReferenceH(ShareH, InlineH, emptyTupleStructRef)
 }
 
 case class ProgramH(
-  interfaces: List[InterfaceDefinitionH],
-  structs: List[StructDefinitionH],
-  externs: List[PrototypeH],
-  functions: List[FunctionH]) {
+    interfaces: List[InterfaceDefinitionH],
+    structs: List[StructDefinitionH],
+    externs: List[PrototypeH],
+    functions: List[FunctionH],
+    immDestructorsByKind: Map[ReferendH, PrototypeH]) {
   def externFunctions = functions.filter(_.isExtern)
   def abstractFunctions = functions.filter(_.isAbstract)
   // Functions that are neither extern nor abstract
@@ -144,6 +146,8 @@ case class FullNameH(parts: List[IVonData]) {
         "Share" -> "*",
         "Borrow" -> "&",
         "Own" -> "^",
+        "Inline" -> "<",
+        "Yonder" -> ">",
         "CoordTemplata" -> "TR",
         "KindTemplata" -> "TK",
         "CitizenName" -> "C",

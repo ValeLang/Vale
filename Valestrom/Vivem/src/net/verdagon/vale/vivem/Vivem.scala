@@ -2,7 +2,7 @@ package net.verdagon.vale.vivem
 
 import java.io.PrintStream
 
-import net.verdagon.vale.metal.{ProgramH, ShareH}
+import net.verdagon.vale.metal.{InlineH, ProgramH, ShareH}
 import net.verdagon.vale.{vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
 
@@ -18,7 +18,7 @@ object Vivem {
     val heap = new Heap(vivemDout)
     val argReferences =
       externalArgumentReferends.map(argReferend => {
-        heap.add(ShareH, argReferend);
+        heap.add(ShareH, InlineH, argReferend);
       });
     innerExecute(programH, argReferences, heap, vivemDout, stdin, stdout)
   }
@@ -83,7 +83,7 @@ object Vivem {
     vivemDout.print("Ending program")
 
     val von = heap.toVon(returnRef)
-    ExpressionVivem.dropReferenceIfNonOwning(programH, heap, stdout, stdin, calleeCallId, returnRef)
+    ExpressionVivem.discard(programH, heap, stdout, stdin, calleeCallId, main.prototype.returnType, returnRef)
     vivemDout.println()
     println("Checking for leaks")
     heap.checkForLeaks()

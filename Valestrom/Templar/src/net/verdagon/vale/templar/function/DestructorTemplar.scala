@@ -42,7 +42,11 @@ object DestructorTemplar {
         OverloadTemplar.scoutExpectedFunctionForPrototype(
           env,
           temputs,
-          GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
+          if (type2.ownership == Share) {
+            ImmInterfaceDestructorImpreciseNameA()
+          } else {
+            GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME)
+          },
           List(),
           List(ParamFilter(type2, None)),
           List(),
@@ -419,7 +423,7 @@ object DestructorTemplar {
       OverloadTemplar.scoutExpectedFunctionForPrototype(
         env,
         temputs,
-        GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
+        ImmInterfaceDestructorImpreciseNameA(),
         List(),
         List(ParamFilter(Coord(Share, structRef2), Some(Override2(implementedInterfaceRefT)))),
         List(),

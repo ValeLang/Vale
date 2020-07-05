@@ -184,7 +184,7 @@ object ExpressionVivem {
         // DDSOT
         heap.ensureTotalRefCount(structReference, 0)
 
-        val oldMemberReferences = heap.destructure(structReference, structReference.ownership == OwnH)
+        val oldMemberReferences = heap.destructure(structReference)
 
         vassert(oldMemberReferences.size == locals.size)
         oldMemberReferences.zip(localTypes).zip(locals).foreach({ case ((memberRef, localType), localIndex) =>
@@ -920,33 +920,31 @@ object ExpressionVivem {
           expectedReference.kind match {
             case IntH() | BoolH() | StrH() | FloatH() => heap.deallocate(actualReference)
             case x if x == ProgramH.emptyTupleStructRef => heap.deallocate(actualReference)
-            case InterfaceRefH(_) => {
-              vimpl()
-            }
-            case StructRefH(_) => {
+            case ir @ InterfaceRefH(_) => {
+              heap.vivemDout.println()
+              heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard icall)")
               val prototypeH = programH.immDestructorsByKind(expectedReference.kind)
-              val functionH = programH.functions.find(_.prototype == prototypeH).get
-
-              val (calleeCallId, retuurn) =
-                FunctionVivem.executeFunction(
-                  programH, stdin, stdout, heap, Vector(actualReference), functionH)
-
-              vassert(retuurn.returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+              val indexInEdge = programH.interfaces.find(_.getRef == ir).get.methods.indexWhere(_.prototypeH == prototypeH)
+              vassert(indexInEdge >= 0)
+              val (functionH, (calleeCallId, retuurn)) =
+                executeInterfaceFunction(programH, stdin, stdout, heap, List(actualReference), 0, ir, indexInEdge, prototypeH)
+              heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
+              val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
             }
-            case UnknownSizeArrayTH(_, _) => {
-              vimpl()
-              //              val ArrayInstanceV(_, _, _, elements) = heap.dereference(reference)
-              //              val references = elements.indices.map(i => heap.deinitializeArrayElement(reference, elements.size - 1 - i))
-              //              heap.deallocate(reference)
-              //              references.foreach(dropReference(programH, heap, stdout, stdin, callId, _))
-            }
-            case KnownSizeArrayTH(_, _, _) => {
+            case StructRefH(_) | UnknownSizeArrayTH(_, _) | KnownSizeArrayTH(_, _, _) => {
+              heap.vivemDout.println()
+              heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard call)")
               val prototypeH = programH.immDestructorsByKind(expectedReference.kind)
               val functionH = programH.functions.find(_.prototype == prototypeH).get
               val (calleeCallId, retuurn) =
                 FunctionVivem.executeFunction(
                   programH, stdin, stdout, heap, Vector(actualReference), functionH)
-              vassert(retuurn.returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+              heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
+              val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+              vassert(returnRef.actualKind.hamut == ProgramH.emptyTupleStructRef)
+              discard(programH, heap, stdout, stdin, callId, prototypeH.returnType, returnRef)
             }
           }
         }

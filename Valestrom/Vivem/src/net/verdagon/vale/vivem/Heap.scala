@@ -315,19 +315,14 @@ class Heap(in_vivemDout: PrintStream) {
     }
   }
 
-  def destructure(reference: ReferenceV, alsoDeallocate: Boolean): Vector[ReferenceV] = {
+  def destructure(reference: ReferenceV): Vector[ReferenceV] = {
     val allocation = dereference(reference)
     allocation match {
       case StructInstanceV(structDefH, memberRefs) => {
         memberRefs.zipWithIndex.foreach({ case (memberRef, index) =>
           decrementReferenceRefCount(MemberToObjectReferrer(MemberAddressV(reference.allocId, index)), memberRef)
         })
-        if (reference.ownership == OwnH) {
-          vassert(alsoDeallocate)
-        }
-        if (alsoDeallocate) {
-          deallocate(reference)
-        }
+        deallocate(reference)
         memberRefs
       }
     }

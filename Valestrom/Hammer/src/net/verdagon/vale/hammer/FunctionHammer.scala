@@ -19,7 +19,7 @@ object FunctionHammer {
     })
   }
 
-  private def translateFunction(hinputs: Hinputs, hamuts: HamutsBox, function2: Function2):
+  def translateFunction(hinputs: Hinputs, hamuts: HamutsBox, function2: Function2):
   (FunctionRefH) = {
     println("Translating function " + function2.header.fullName)
     hamuts.functionRefs.get(function2.header.toPrototype) match {

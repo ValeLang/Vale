@@ -9,10 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-int64_t __liveHeapObjCounter;
-
 void __vassert(char value) {
-  printf("Running assertion!\n");
   if (!value) {
     printf("Assertion failed!\n");
     exit(255);

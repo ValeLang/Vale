@@ -1,12 +1,11 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
-import net.verdagon.vale.metal.{Mutable => _, Variability => _, Varying => _, _}
-import net.verdagon.vale.{metal => m}
+import net.verdagon.vale.metal.{Mutable => _, Immutable => _, Variability => _, Varying => _, _}
+import net.verdagon.vale.{vassert, vassertSome, metal => m}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.CoordTemplata
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.vassert
 
 import scala.collection.immutable.ListMap
 
@@ -42,7 +41,7 @@ object StructHammer {
     hamuts.interfaceRefs.get(interfaceRef2) match {
       case Some(structRefH) => structRefH
       case None => {
-        val (fullNameH) = NameHammer.translateFullName(hinputs, hamuts, interfaceRef2.fullName)
+        val fullNameH = NameHammer.translateFullName(hinputs, hamuts, interfaceRef2.fullName)
         // This is the only place besides InterfaceDefinitionH that can make a InterfaceRefH
         val temporaryInterfaceRefH = InterfaceRefH(fullNameH);
         hamuts.forwardDeclareInterface(interfaceRef2, temporaryInterfaceRefH)
@@ -51,19 +50,20 @@ object StructHammer {
 
         val edgeBlueprint = hinputs.edgeBlueprintsByInterface(interfaceRef2);
 
-        val prototypes2 =
+        val methodsH =
           edgeBlueprint.superFamilyRootBanners.map(superFamilyRootBanner => {
-            hinputs.lookupFunction(superFamilyRootBanner.toSignature).get.header.toPrototype
+            val header = hinputs.lookupFunction(superFamilyRootBanner.toSignature).get.header
+            val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, header.toPrototype)
+            val virtualParamIndex = header.params.indexWhere(_.virtuality.nonEmpty)
+            InterfaceMethodH(prototypeH, virtualParamIndex)
           })
-
-        val (prototypesH) = FunctionHammer.translatePrototypes(hinputs, hamuts, prototypes2)
 
         val interfaceDefH =
           InterfaceDefinitionH(
             fullNameH,
             Conversions.evaluateMutability(interfaceDef2.mutability),
             List() /* super interfaces */,
-            prototypesH)
+            methodsH)
         hamuts.addInterface(interfaceRef2, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
         (interfaceDefH.getRef)
@@ -77,7 +77,7 @@ object StructHammer {
 
   def translateStructRef(
       hinputs: Hinputs,
-    hamuts: HamutsBox,
+      hamuts: HamutsBox,
       structRef2: StructRef2):
   (StructRefH) = {
     hamuts.structRefsByRef2.get(structRef2) match {
@@ -92,6 +92,19 @@ object StructHammer {
           TypeHammer.translateMembers(hinputs, hamuts, structDef2.fullName, structDef2.members)
 
         val (edgesH) = translateEdgesForStruct(hinputs, hamuts, temporaryStructRefH, structRef2)
+
+        // Make sure there's a destructor for this shared struct.
+        structDef2.mutability match {
+          case Mutable => None
+          case Immutable => {
+            if (structRef2 != Program2.emptyTupleStructRef) {
+              vassertSome(
+                hinputs.functions.find(function => {
+                  function.header.fullName == FullName2(List(), ImmConcreteDestructorName2(structRef2))
+                }))
+            }
+          }
+        }
 
         val structDefH =
           StructDefinitionH(
@@ -167,9 +180,9 @@ object StructHammer {
 
   private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructRefH, interfaceDefH: InterfaceDefinitionH, edge2: Edge2):
   (EdgeH) = {
-    val interfacePrototypesH = interfaceDefH.prototypes;
+    val interfacePrototypesH = interfaceDefH.methods;
     val (prototypesH) = FunctionHammer.translatePrototypes(hinputs, hamuts, edge2.methods)
-    val structPrototypesByInterfacePrototype = ListMap[PrototypeH, PrototypeH](interfacePrototypesH.zip(prototypesH) : _*)
+    val structPrototypesByInterfacePrototype = ListMap[InterfaceMethodH, PrototypeH](interfacePrototypesH.zip(prototypesH) : _*)
     (EdgeH(structRefH, interfaceDefH.getRef, structPrototypesByInterfacePrototype))
   }
 }

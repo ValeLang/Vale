@@ -1,6 +1,8 @@
+#include "utils/fileio.h"
 #include "heap.h"
 #include "members.h"
 #include "shared.h"
+#include "controlblock.h"
 
 LLVMValueRef mallocStruct(
     GlobalState* globalState,
@@ -8,6 +10,9 @@ LLVMValueRef mallocStruct(
     LLVMTypeRef structL) {
   size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, structL);
   LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
+
+//  buildFlare(FL(), globalState, builder, "Malloc ", sizeLE);
+
   auto newStructLE =
       LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
 
@@ -21,22 +26,24 @@ LLVMValueRef mallocStruct(
 }
 
 void freeStruct(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef structLE) {
-  LLVMValueRef rcIsOne =
-      rcEquals(builder, structLE, LLVMConstInt(LLVMInt64Type(), 1, false));
-  LLVMBuildCall(
-      builder, globalState->assert, &rcIsOne, 1, "");
+    LLVMValueRef structPtrLE,
+    Reference* concreteRefM) {
+
+  auto rcIsZeroLE = rcIsZero(globalState, builder, structPtrLE, concreteRefM);
+  buildAssert(from, globalState, functionState, builder, rcIsZeroLE, "Tried to free struct that had nonzero RC!");
 
   adjustCounter(builder, globalState->liveHeapObjCounter, -1);
 
   auto structAsCharPtrLE =
       LLVMBuildBitCast(
           builder,
-          structLE,
+          structPtrLE,
           LLVMPointerType(LLVMInt8Type(), 0),
-          "charptrstruct");
+          "structCharPtrForFree");
   LLVMBuildCall(
       builder, globalState->free, &structAsCharPtrLE, 1, "");
 }

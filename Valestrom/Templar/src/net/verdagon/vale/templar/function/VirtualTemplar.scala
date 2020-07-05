@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.GlobalFunctionFamilyNameA
+import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, ImmInterfaceDestructorImpreciseNameA}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
@@ -114,6 +114,7 @@ object VirtualTemplar {
         val nameToScoutFor =
           sparkHeader.fullName.last match {
             case FunctionName2(humanName, _, _) => GlobalFunctionFamilyNameA(humanName)
+            case ImmInterfaceDestructorName2(_, _) => ImmInterfaceDestructorImpreciseNameA()
             case _ => vcurious()
           }
 

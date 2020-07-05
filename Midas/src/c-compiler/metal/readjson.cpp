@@ -39,13 +39,14 @@ public:
   Never* never = new Never();
 
   std::unordered_map<Name*, StructReferend*> structReferends;
+  std::unordered_map<Name*, InterfaceReferend*> interfaceReferends;
   std::unordered_map<std::string, Name*> names;
 
   // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
   std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
   std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
   std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
-  std::unordered_map<Referend*, std::unordered_map<Ownership, Reference*>> references;
+  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> references;
   std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
   std::unordered_map<int, VariableId*> variableIds;
   std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
@@ -53,6 +54,7 @@ public:
 
 Reference* readReference(Cache* cache, const json& reference);
 Ownership readOwnership(Cache* cache, const json& ownership);
+Location readLocation(Cache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 
 //template<typename T>
@@ -114,6 +116,17 @@ StructReferend* readStructReferend(Cache* cache, const json& referend) {
       [&](){ return new StructReferend(structName); });
 }
 
+InterfaceReferend* readInterfaceReferend(Cache* cache, const json& referend) {
+  assert(referend[""] == "InterfaceId");
+
+  auto interfaceName = readName(cache, referend["name"]);
+
+  return makeIfNotPresent(
+      &cache->interfaceReferends,
+      interfaceName,
+      [&](){ return new InterfaceReferend(interfaceName); });
+}
+
 RawArrayT* readRawArray(Cache* cache, const json& rawArray) {
   assert(rawArray[""] == "Array");
 
@@ -165,6 +178,8 @@ Referend* readReferend(Cache* cache, const json& referend) {
     return readUnknownSizeArray(cache, referend);
   } else if (referend[""] == "KnownSizeArray") {
     return readKnownSizeArray(cache, referend);
+  } else if (referend[""] == "InterfaceId") {
+    return readInterfaceReferend(cache, referend);
   } else {
     std::cerr << "Unrecognized referend: " << referend[""] << std::endl;
     assert(false);
@@ -175,13 +190,14 @@ Reference* readReference(Cache* cache, const json& reference) {
   assert(reference.is_object());
   assert(reference[""] == "Ref");
 
-  auto ownership =readOwnership(cache, reference["ownership"]);
+  auto ownership = readOwnership(cache, reference["ownership"]);
+  auto location = readLocation(cache, reference["location"]);
   auto referend = readReferend(cache, reference["referend"]);
 
   return makeIfNotPresent(
-      &cache->references[referend],
-      ownership,
-      [&](){ return new Reference(ownership, referend); });
+      &cache->references[referend][ownership],
+      location,
+      [&](){ return new Reference(ownership, location, referend); });
 }
 
 Mutability readMutability(const json& mutability) {
@@ -215,6 +231,18 @@ Ownership readOwnership(Cache* cache, const json& ownership) {
     return Ownership::BORROW;
   } else if (ownership[""].get<std::string>() == "Share") {
     return Ownership::SHARE;
+  } else {
+    assert(false);
+  }
+}
+
+Location readLocation(Cache* cache, const json& location) {
+  assert(location.is_object());
+//  std::cout << location.type() << std::endl;
+  if (location[""].get<std::string>() == "Inline") {
+    return Location::INLINE;
+  } else if (location[""].get<std::string>() == "Yonder") {
+    return Location::YONDER;
   } else {
     assert(false);
   }
@@ -280,6 +308,14 @@ Expression* readExpression(Cache* cache, const json& expression) {
         readLocal(cache, expression["local"]),
         readExpression(cache, expression["sourceExpr"]),
         expression["localName"]);
+  } else if (type == "MemberStore") {
+    return new MemberStore(
+        readExpression(cache, expression["structExpr"]),
+        readReference(cache, expression["structType"]),
+        expression["memberIndex"],
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["resultType"]),
+        expression["memberName"]);
   } else if (type == "Discard") {
     return new Discard(
         readExpression(cache, expression["sourceExpr"]),
@@ -320,8 +356,8 @@ Expression* readExpression(Cache* cache, const json& expression) {
     return new NewStruct(
         readArray(cache, expression["sourceExprs"], readExpression),
         readReference(cache, expression["resultType"]));
-  } else if (type == "Destructure") {
-    return new Destructure(
+  } else if (type == "Destroy") {
+    return new Destroy(
         readExpression(cache, expression["structExpr"]),
         readReference(cache, expression["structType"]),
         readArray(cache, expression["localTypes"], readReference),
@@ -347,6 +383,26 @@ Expression* readExpression(Cache* cache, const json& expression) {
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["resultType"]),
         readOwnership(cache, expression["targetOwnership"]));
+  } else if (type == "StructToInterfaceUpcast") {
+    return new StructToInterfaceUpcast(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceStructType"]),
+        readStructReferend(cache, expression["sourceStructName"]),
+        readInterfaceReferend(cache, expression["targetInterfaceName"]));
+  } else if (type == "DestroyKnownSizeArrayIntoFunction") {
+    return new DestroyKnownSizeArrayIntoFunction(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readKnownSizeArray(cache, expression["arrayReferend"]),
+        readExpression(cache, expression["consumerExpr"]),
+        readReference(cache, expression["consumerType"]));
+  } else if (type == "InterfaceCall") {
+    return new InterfaceCall(
+        readArray(cache, expression["argExprs"], readExpression),
+        expression["virtualParamIndex"],
+        readInterfaceReferend(cache, expression["interfaceRef"]),
+        expression["indexInEdge"],
+        readPrototype(cache, expression["functionType"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);
@@ -362,14 +418,49 @@ StructMember* readStructMember(Cache* cache, const json& struuct) {
       readReference(cache, struuct["type"]));
 }
 
+InterfaceMethod* readInterfaceMethod(Cache* cache, const json& struuct) {
+  assert(struuct.is_object());
+  assert(struuct[""] == "InterfaceMethod");
+  return new InterfaceMethod(
+      readPrototype(cache, struuct["prototype"]),
+      struuct["virtualParamIndex"]);
+}
+
+std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(Cache* cache, const json& edge) {
+  assert(edge.is_object());
+  assert(edge[""] == "Entry");
+  return std::make_pair(
+      readInterfaceMethod(cache, edge["key"]),
+      readPrototype(cache, edge["value"]));
+}
+
+Edge* readEdge(Cache* cache, const json& edge) {
+  assert(edge.is_object());
+  assert(edge[""] == "Edge");
+  return new Edge(
+      readStructReferend(cache, edge["structName"]),
+      readInterfaceReferend(cache, edge["interfaceName"]),
+      readArray(cache, edge["methods"], readInterfaceMethodAndPrototypeEntry));
+}
+
 StructDefinition* readStruct(Cache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "Struct");
   return new StructDefinition(
       readName(cache, struuct["name"]),
       readMutability(struuct["mutability"]),
-      {},
+      readArray(cache, struuct["edges"], readEdge),
       readArray(cache, struuct["members"], readStructMember));
+}
+
+InterfaceDefinition* readInterface(Cache* cache, const json& struuct) {
+  assert(struuct.is_object());
+  assert(struuct[""] == "Interface");
+  return new InterfaceDefinition(
+      readName(cache, struuct["name"]),
+      readMutability(struuct["mutability"]),
+      {},
+      readArray(cache, struuct["methods"], readInterfaceMethod));
 }
 
 Function* readFunction(Cache* cache, const json& function) {
@@ -380,12 +471,26 @@ Function* readFunction(Cache* cache, const json& function) {
       readExpression(cache, function["block"]));
 }
 
+std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(Cache* cache, const json& edge) {
+  assert(edge.is_object());
+  assert(edge[""] == "Entry");
+  return std::make_pair(
+      readReferend(cache, edge["key"]),
+      readPrototype(cache, edge["value"]));
+}
+
 Program* readProgram(const json& program) {
   assert(program.is_object());
   assert(program[""] == "Program");
   Cache cache;
   return new Program(
-      {},//readArray<readInterface>(program["interfaces"]),
+      readArrayIntoMap<std::string, InterfaceDefinition*>(
+          &cache,
+          program["interfaces"],
+          [](Cache* cache, json j){
+            auto s = readInterface(cache, j);
+            return std::make_pair(s->name->name, s);
+          }),
       readArrayIntoMap<std::string, StructDefinition*>(
           &cache,
           program["structs"],
@@ -399,7 +504,11 @@ Program* readProgram(const json& program) {
           &cache,
           program["functions"],
           [](Cache* cache, json j){
-              auto f = readFunction(cache, j);
-              return std::make_pair(f->prototype->name->name, f);
-          }));
+            auto f = readFunction(cache, j);
+            return std::make_pair(f->prototype->name->name, f);
+          }),
+      readArrayIntoMap<Referend*, Prototype*>(
+          &cache,
+          program["immDestructorsByKind"],
+          readReferendAndPrototypeEntry));
 }

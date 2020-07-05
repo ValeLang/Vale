@@ -276,7 +276,6 @@ case class StructDefinition2(
   members: List[StructMember2],
   isClosure: Boolean
 ) extends CitizenDefinition2 with Queriable2 {
-
   // debt: move this to somewhere else. let's allow packs to have packs, just nothing else.
 //  all({
 //    case StructMember2(_, _, ReferenceMemberType2(Coord(_, PackT2(_, _)))) => {

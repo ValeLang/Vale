@@ -742,6 +742,22 @@ case class CompleteProgram2(
   impls: List[Impl2],
   emptyPackStructRef: StructRef2,
   functions: List[Function2]) extends Queriable2 {
+
+  // Make sure every immutable struct has a destructor.
+  structs
+    .filter(_.mutability == Immutable)
+    // Void is the only struct without a destructor.
+    .filter(_.getRef != Program2.emptyTupleStructRef)
+    .foreach(structDef => {
+      vassertSome(
+        functions.find(function => {
+          function.header.fullName == FullName2(List(), ImmConcreteDestructorName2(structDef.getRef)) &&
+            function.header.params.size == 1 &&
+            function.header.params.head.virtuality.isEmpty &&
+            function.header.params.head.tyype == Coord(Share, structDef.getRef)
+        }))
+    })
+
   def getAllNonExternFunctions: List[Function2] = {
     functions.filter(!_.header.isExtern)
   }

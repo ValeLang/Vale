@@ -48,16 +48,16 @@ object ExpressionHammer {
           LetHammer.translateLetAndLend(hinputs, hamuts, locals, let2)
         (borrowAccess, List())
       }
-      case des2 @ Destructure2(_, _, _) => {
-        val destructureH =
-            LetHammer.translateDestructure(hinputs, hamuts, locals, des2)
+      case des2 @ Destroy2(_, _, _) => {
+        val destroyH =
+            LetHammer.translateDestroy(hinputs, hamuts, locals, des2)
         // Templar destructures put things in local variables (even though hammer itself
         // uses registers internally to make that happen).
         // Since all the members landed in locals, we still need something to return, so we
         // return a void.
-        (destructureH, List())
+        (destroyH, List())
       }
-      case des2 @ DestructureArraySequence2(_, _, _) => {
+      case des2 @ DestroyArraySequenceIntoLocals2(_, _, _) => {
         val destructureH =
             LetHammer.translateDestructureArraySequence(hinputs, hamuts, locals, des2)
         // Templar destructures put things in local variables (even though hammer itself
@@ -366,27 +366,10 @@ object ExpressionHammer {
       case Discard2(innerExpr) => {
         val (undiscardedInnerExprH, innerDeferreds) =
           translate(hinputs, hamuts, locals, innerExpr);
-
         vassert(innerDeferreds.isEmpty) // BMHD, probably need to translate them here.
-
-        undiscardedInnerExprH.resultType.ownership match {
-          case m.BorrowH | m.ShareH =>
-          case m.OwnH => {
-            vfail("Owns can only be discarded via destructuring!")
-          }
-        }
-
-        // We don't discard Void, see VDND.
-        val innerExprH =
-          if (innerExpr.resultRegister.reference.referend != Void2()) {
-            DiscardH(undiscardedInnerExprH)
-          } else {
-            undiscardedInnerExprH
-          }
-
+        val innerExprH = DiscardH(undiscardedInnerExprH)
         val innerWithDeferredsExprH =
           translateDeferreds(hinputs, hamuts, locals, innerExprH, innerDeferreds)
-
         (innerWithDeferredsExprH, List())
       }
       case Return2(innerExpr) => {
@@ -406,7 +389,7 @@ object ExpressionHammer {
         (argNode, List())
       }
 
-      case das2 @ DestroyArraySequence2(_, _, _) => {
+      case das2 @ DestroyArraySequenceIntoFunction2(_, _, _) => {
         val dasH =
             CallHammer.translateDestroyArraySequence(
               hinputs, hamuts, locals, das2)

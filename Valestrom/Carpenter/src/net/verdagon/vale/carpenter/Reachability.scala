@@ -1,9 +1,9 @@
 package net.verdagon.vale.carpenter
 
-import net.verdagon.vale.templar.templata.{FunctionHeader2, Signature2}
-import net.verdagon.vale.templar.types.{InterfaceRef2, StructRef2}
-import net.verdagon.vale.templar.{Edge2, FunctionCall2, FunctionName2, Impl2, InterfaceEdgeBlueprint, Program2, Temputs}
-import net.verdagon.vale.vcurious
+import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionHeader2, KindTemplata, Signature2}
+import net.verdagon.vale.templar.types.{Coord, Immutable, InterfaceRef2, KnownSizeArrayT2, Share, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.templar.{Discard2, Edge2, FullName2, FunctionCall2, FunctionName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, Impl2, InterfaceEdgeBlueprint, Program2, Temputs}
+import net.verdagon.vale.{vassertSome, vcurious}
 
 import scala.collection.mutable
 
@@ -38,11 +38,13 @@ object Reachability {
       return
     }
     reachables.functions.add(calleeSignature)
-    val function = temputs.lookupFunction(calleeSignature).get
+    val function = vassertSome(temputs.lookupFunction(calleeSignature))
     function.all({
       case FunctionCall2(calleePrototype, _) => visitFunction(temputs, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case sr @ StructRef2(_) => visitStruct(temputs, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceRef2(_) => visitInterface(temputs, edgeBlueprints, edges, reachables, ir)
+      case ksa @ KnownSizeArrayT2(_, _) => visitKnownSizeArray(temputs, edgeBlueprints, edges, reachables, ksa)
+      case usa @ UnknownSizeArrayT2(_) => visitUnknownSizeArray(temputs, edgeBlueprints, edges, reachables, usa)
     })
   }
 
@@ -52,6 +54,13 @@ object Reachability {
     }
     reachables.structs.add(structRef)
     val structDef = temputs.lookupStruct(structRef)
+    // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
+    // that let go of a reference.
+    if (structDef.mutability == Immutable && structRef != Program2.emptyTupleStructRef) {
+      val destructorSignature =
+        Signature2(FullName2(List(), ImmConcreteDestructorName2(structRef)))
+      visitFunction(temputs, edgeBlueprints, edges, reachables, destructorSignature)
+    }
     structDef.all({
       case sr @ StructRef2(_) => visitStruct(temputs, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceRef2(_) => visitInterface(temputs, edgeBlueprints, edges, reachables, ir)
@@ -65,6 +74,13 @@ object Reachability {
     }
     reachables.interfaces.add(interfaceRef)
     val interfaceDef = temputs.lookupInterface(interfaceRef)
+    // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
+    // that let go of a reference.
+    if (interfaceDef.mutability == Immutable) {
+      val destructorSignature =
+        Signature2(FullName2(List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, interfaceRef))), List(Coord(Share, interfaceRef)))))
+      visitFunction(temputs, edgeBlueprints, edges, reachables, destructorSignature)
+    }
     interfaceDef.all({
       case sr @ StructRef2(_) => visitStruct(temputs, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceRef2(_) => visitInterface(temputs, edgeBlueprints, edges, reachables, ir)
@@ -85,5 +101,35 @@ object Reachability {
       visitInterface(temputs, edgeBlueprints, edges, reachables, edge.interface)
       edge.methods.map(_.toSignature).foreach(visitFunction(temputs, edgeBlueprints, edges, reachables, _))
     })
+  }
+
+  def visitKnownSizeArray(
+    temputs: Temputs,
+    edgeBlueprints: List[InterfaceEdgeBlueprint],
+    edges: List[Edge2],
+    reachables: Reachables,
+    ksa: KnownSizeArrayT2): Unit = {
+    // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
+    // that let go of a reference.
+    if (ksa.array.mutability == Immutable) {
+      val destructorSignature =
+        Signature2(FullName2(List(), ImmConcreteDestructorName2(ksa)))
+      visitFunction(temputs, edgeBlueprints, edges, reachables, destructorSignature)
+    }
+  }
+
+  def visitUnknownSizeArray(
+    temputs: Temputs,
+    edgeBlueprints: List[InterfaceEdgeBlueprint],
+    edges: List[Edge2],
+    reachables: Reachables,
+    usa: UnknownSizeArrayT2): Unit = {
+    // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
+    // that let go of a reference.
+    if (usa.array.mutability == Immutable) {
+      val destructorSignature =
+        Signature2(FullName2(List(), ImmConcreteDestructorName2(usa)))
+      visitFunction(temputs, edgeBlueprints, edges, reachables, destructorSignature)
+    }
   }
 }

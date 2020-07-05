@@ -18,7 +18,7 @@ class Str;
 class Void;
 class Float;
 class Never;
-class InterfaceRef;
+class InterfaceReferend;
 class StructReferend;
 class RawArrayT;
 class KnownSizeArrayT;
@@ -46,6 +46,11 @@ enum class Mutability {
     MUTABLE
 };
 
+enum class Virtuality {
+  NORMAL,
+  ABSTRACT
+};
+
 enum class Variability {
     FINAL,
     VARYING
@@ -55,11 +60,16 @@ enum class Variability {
 class Reference {
 public:
     Ownership ownership;
+    Location location;
     Referend* referend;
 
     Reference(
         Ownership ownership_,
-    Referend* referend_) : ownership(ownership_), referend(referend_) {}
+        Location location_,
+        Referend* referend_) :
+      ownership(ownership_),
+      location(location_),
+      referend(referend_) {}
 };
 
 class Referend {
@@ -94,6 +104,9 @@ public:
 class InterfaceReferend : public Referend {
 public:
     Name* fullName;
+
+  InterfaceReferend(Name* fullName_) :
+      fullName(fullName_) {}
 };
 
 // Interned

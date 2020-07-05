@@ -4,11 +4,11 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.{FinalP, ImmutableP, MutabilityP, MutableP}
-import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.{FunctionTemplar, FunctionTemplarCore, FunctionTemplarMiddleLayer, FunctionTemplarOrdinaryOrTemplatedLayer}
+import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, FunctionTemplarCore, FunctionTemplarMiddleLayer, FunctionTemplarOrdinaryOrTemplatedLayer}
 import net.verdagon.vale._
 
 import scala.collection.immutable.List
@@ -22,6 +22,9 @@ object StructTemplarCore {
     temputs.declareStructMutability(structDef2.getRef, Immutable)
     temputs.declareStructEnv(structDef2.getRef, emptyTupleEnv)
     temputs.add(structDef2)
+    // Normally after adding a struct we would add its destructor. Void is the only one we don't
+    // have a destructor for.
+
     temputs.declarePack(List(), structDef2.getRef)
     (structDef2.getRef)
   }
@@ -70,25 +73,38 @@ object StructTemplarCore {
 
     temputs.add(structDef2);
 
+    // If it's immutable, make sure there's a zero-arg destructor.
+    if (mutability == Immutable) {
+      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, structDef2.getRef)
+    }
+
+
     val implementedInterfaceRefs2 =
-      ImplTemplar.getParentInterfaces(temputs, temporaryStructRef);
+      ImplTemplar.getParentInterfaces(temputs, structDef2.getRef);
 
     implementedInterfaceRefs2.foreach({
       case (implementedInterfaceRefT) => {
-        val ownership = if (structDef2.mutability == Mutable) Own else Share
-        val sefResult =
-          OverloadTemplar.scoutExpectedFunctionForPrototype(
-            structInnerEnv,
-            temputs,
-            GlobalFunctionFamilyNameA(CallTemplar.INTERFACE_DESTRUCTOR_NAME),
-            List(),
-            List(ParamFilter(Coord(ownership, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
-            List(),
-            true)
-          sefResult match {
-          case ScoutExpectedFunctionSuccess(_) =>
-          case ScoutExpectedFunctionFailure(humanName, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
-            vfail(sefResult.toString)
+        structDef2.mutability match {
+          case Mutable => {
+            val sefResult =
+              OverloadTemplar.scoutExpectedFunctionForPrototype(
+                structInnerEnv,
+                temputs,
+                GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
+                List(),
+                List(ParamFilter(Coord(Own, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
+                List(),
+                true)
+            sefResult match {
+              case ScoutExpectedFunctionSuccess(_) =>
+              case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+                vfail(sefResult.toString)
+              }
+            }
+          }
+          case Immutable => {
+            // If it's immutable, make sure there's a zero-arg destructor.
+            DestructorTemplar.getImmInterfaceDestructorOverride(temputs, structInnerEnv, structDef2.getRef, implementedInterfaceRefT)
           }
         }
       }
@@ -170,6 +186,11 @@ object StructTemplarCore {
         mutability,
         internalMethods2)
     temputs.add(interfaceDef2)
+
+    // If it's immutable, make sure there's a zero-arg destructor.
+    if (mutability == Immutable) {
+      DestructorTemplar.getImmInterfaceDestructor(temputs, interfaceInnerEnv, interfaceDef2.getRef)
+    }
 
     val _ = ImplTemplar.getParentInterfaces(temputs, temporaryInferfaceRef)
 
@@ -290,6 +311,11 @@ object StructTemplarCore {
     val closureStructDefinition = StructDefinition2(fullName, false, mutability, members, true);
     temputs.add(closureStructDefinition)
 
+    // If it's immutable, make sure there's a zero-arg destructor.
+    if (mutability == Immutable) {
+      DestructorTemplar.getImmConcreteDestructor(temputs, structEnv, closureStructDefinition.getRef)
+    }
+
     val closuredVarsStructRef = closureStructDefinition.getRef;
 
     (closuredVarsStructRef, mutability, functionTemplata)
@@ -327,6 +353,12 @@ object StructTemplarCore {
     temputs.declareStructMutability(newStructDef.getRef, packMutability)
     temputs.declareStructEnv(newStructDef.getRef, structInnerEnv);
     temputs.add(newStructDef)
+
+    // If it's immutable, make sure there's a zero-arg destructor.
+    if (packMutability == Immutable) {
+      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, newStructDef.getRef)
+    }
+
     temputs.declarePack(memberCoords, newStructDef.getRef);
 
     (newStructDef.getRef, packMutability)
@@ -437,6 +469,11 @@ object StructTemplarCore {
         false)
     temputs.add(structDef)
 
+    // If it's immutable, make sure there's a zero-arg destructor.
+    if (mutability == Immutable) {
+      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
+    }
+
     forwarderFunctionHeaders.zip(callables).zipWithIndex.foreach({
       case ((forwarderHeader, lambda), methodIndex) => {
         val localVariables =
@@ -541,6 +578,11 @@ object StructTemplarCore {
         List(),
         false)
     temputs.add(structDef)
+
+    // If it's immutable, make sure there's a zero-arg destructor.
+    if (mutability == Immutable) {
+      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
+    }
 
     val forwarderFunction =
       Function2(

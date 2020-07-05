@@ -41,6 +41,8 @@ void buildIf(
   // Instruction to jump to the afterward block.
   LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
 
+  LLVMDisposeBuilder(thenBlockBuilder);
+
   // Like explained above, here we're re-pointing the `builder` to point at
   // the afterward block, so that subsequent instructions (after the If) can
   // keep using the same builder, but they'll be adding to the "afterward"
@@ -98,11 +100,13 @@ LLVMValueRef buildIfElse(
   auto thenExpr = buildThen(thenBlockBuilder);
   // Instruction to jump to the afterward block.
   LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
+  LLVMDisposeBuilder(thenBlockBuilder);
 
   // Now, we fill in the "else" block.
   auto elseExpr = buildElse(elseBlockBuilder);
   // Instruction to jump to the afterward block.
   LLVMBuildBr(elseBlockBuilder, afterwardBlockL);
+  LLVMDisposeBuilder(elseBlockBuilder);
 
   // Like explained above, here we're re-pointing the `builder` to point at
   // the afterward block, so that subsequent instructions (after the If) can

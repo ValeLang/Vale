@@ -8,6 +8,9 @@ import net.verdagon.vale.{vimpl, vwat}
 object NameTranslator {
   def translateFunctionNameToTemplateName(functionName: IFunctionDeclarationNameA): IFunctionTemplateName2 = {
       functionName match {
+        case ImmConcreteDestructorNameA() => ImmConcreteDestructorTemplateName2()
+        case ImmInterfaceDestructorNameA() => ImmInterfaceDestructorTemplateName2()
+        case ImmDropNameA() => ImmDropTemplateName2()
         case LambdaNameA(/*parent, */codeLocation) => {
           LambdaTemplateName2(NameTranslator.translateCodeLocation(codeLocation))
         }

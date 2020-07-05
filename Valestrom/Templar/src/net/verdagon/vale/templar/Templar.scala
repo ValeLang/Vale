@@ -233,7 +233,7 @@ object Templar {
             OverloadTemplar.scoutExpectedFunctionForPrototype(
               env,
               temputs,
-              GlobalFunctionFamilyNameA(neededOverride.humanName),
+              neededOverride.name,
               List(), // No explicitly specified ones. It has to be findable just by param filters.
               neededOverride.paramFilters,
               List(),

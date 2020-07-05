@@ -194,3 +194,28 @@ void buildAssert(
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
 }
+
+LLVMValueRef buildInterfaceCall(
+    LLVMBuilderRef builder,
+    std::vector<LLVMValueRef> argExprsLE,
+    int virtualParamIndex,
+    int indexInEdge) {
+  auto virtualArgLE = argExprsLE[virtualParamIndex];
+  auto objPtrLE =
+      LLVMBuildPointerCast(
+          builder,
+          getInterfaceControlBlockPtr(builder, virtualArgLE),
+          LLVMPointerType(LLVMVoidType(), 0),
+          "objAsVoidPtr");
+  auto itablePtrLE = getTablePtrFromInterfaceRef(builder, virtualArgLE);
+  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
+  auto funcPtrPtrLE =
+      LLVMBuildStructGEP(
+          builder, itablePtrLE, indexInEdge, "methodPtrPtr");
+  auto funcPtrLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
+
+  argExprsLE[virtualParamIndex] = objPtrLE;
+
+  return LLVMBuildCall(
+      builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
+}

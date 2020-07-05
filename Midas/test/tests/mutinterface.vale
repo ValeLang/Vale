@@ -19,7 +19,7 @@ fn sum(list &MyList) Int {
   list.value + sum(list.next)
 }
 
-fn sum(virtual opt &MyOption) Int { 0 }
+abstract fn sum(virtual opt &MyOption) Int;
 fn sum(opt &MyNone impl MyOption) Int { 0 }
 fn sum(opt &MySome impl MyOption) Int {
    sum(opt.value)
@@ -27,6 +27,6 @@ fn sum(opt &MySome impl MyOption) Int {
 
 
 fn main() Int {
-  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+  list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
   = sum(&list);
 }

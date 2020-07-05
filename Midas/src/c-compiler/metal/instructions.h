@@ -11,7 +11,7 @@ class ConstantF64;
 class Argument;
 class Stackify;
 class Unstackify;
-class Destructure;
+class Destroy;
 class StructToInterfaceUpcast;
 class InterfaceToInterfaceUpcast;
 class Unreachable;
@@ -32,7 +32,7 @@ class InlineBlock;
 class Block;
 class Return;
 class ConstructUnknownSizeArray;
-class DestroyKnownSizeArray;
+class DestroyKnownSizeArrayIntoFunction;
 class DestroyUnknownSizeArray;
 class NewStruct;
 class ArrayLength;
@@ -131,14 +131,14 @@ public:
 };
 
 
-class Destructure : public Expression {
+class Destroy : public Expression {
 public:
   Expression* structExpr;
   Reference* structType;
   std::vector<Reference*> localTypes;
   std::vector<Local*> localIndices;
 
-  Destructure(
+  Destroy(
       Expression* structExpr_,
       Reference* structType_,
       std::vector<Reference*> localTypes_,
@@ -424,7 +424,28 @@ public:
   Reference* arrayRefType;
 };
 
-class DestroyKnownSizeArray : public Expression {
+class DestroyKnownSizeArrayIntoFunction : public Expression {
+public:
+  Expression* arrayExpr;
+  Reference* arrayType;
+  KnownSizeArrayT* arrayReferend;
+  Expression* consumerExpr;
+  Reference* consumerType;
+
+  DestroyKnownSizeArrayIntoFunction(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      KnownSizeArrayT* arrayReferend_,
+      Expression* consumerExpr_,
+      Reference* consumerType_) :
+    arrayExpr(arrayExpr_),
+    arrayType(arrayType_),
+    arrayReferend(arrayReferend_),
+    consumerExpr(consumerExpr_),
+    consumerType(consumerType_) {}
+};
+
+class DestroyKnownSizeArrayIntoLocals : public Expression {
 public:
   Expression* arrayExpr;
   Expression* consumerExpr;

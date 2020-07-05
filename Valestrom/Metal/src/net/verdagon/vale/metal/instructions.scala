@@ -153,7 +153,7 @@ localIndices: Vector[Local],
 // local variables.
 // This creates those local variables, much as a StackifyH would, and puts into them
 // the values from the dying struct instance.
-case class DestructureArraySequenceH(
+case class DestroyKnownSizeArrayIntoLocalsH(
   // The register to take the struct from.
   // As with any read from a register, this will invalidate the register.
   structRegister: ExpressionH[KnownSizeArrayTH],
@@ -547,7 +547,7 @@ case class ConstructUnknownSizeArrayH(
 }
 
 // Destroys an array previously created with NewArrayFromValuesH.
-case class DestroyKnownSizeArrayH(
+case class DestroyKnownSizeArrayIntoFunctionH(
   // Register containing the array we'll destroy.
   // This is an owning reference.
   // As with any read from a register, this will invalidate the register.

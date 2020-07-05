@@ -13,7 +13,7 @@ LLVMValueRef translateDiscard(
   auto inner =
       translateExpression(
           globalState, functionState, builder, discardM->sourceExpr);
-  dropReference(
+  discard(
       AFL(std::string("Discard from ") + typeid(*discardM->sourceExpr).name()),
       globalState,
       functionState,

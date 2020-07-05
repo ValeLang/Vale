@@ -56,7 +56,7 @@ void acquireReference(
   }
 }
 
-void dropReference(
+void discard(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
@@ -70,7 +70,7 @@ void dropReference(
       dynamic_cast<Bool*>(sourceRnd) ||
       dynamic_cast<Float*>(sourceRnd)) {
     // Do nothing for these, they're always inlined and copied.
-  } else if (dynamic_cast<InterfaceReferend*>(sourceRnd)) {
+  } else if (auto interfaceRnd = dynamic_cast<InterfaceReferend*>(sourceRnd)) {
     if (sourceRef->ownership == Ownership::OWN) {
       // We can't discard owns, they must be destructured.
       assert(false); // impl
@@ -85,13 +85,26 @@ void dropReference(
             functionState,
             builder,
             isZeroLE(builder, rcLE),
-            [globalState, expr](LLVMBuilderRef thenBuilder) {
-              buildFlare(FL(), globalState, thenBuilder, "Should free this imm interface!");
+            [globalState, expr, interfaceRnd, sourceRef](LLVMBuilderRef thenBuilder) {
+              auto immDestructor = globalState->program->getImmDestructor(sourceRef->referend);
+
+              auto interfaceM = globalState->program->getInterface(interfaceRnd->fullName);
+              int indexInEdge = -1;
+              for (int i = 0; i < interfaceM->methods.size(); i++) {
+                if (interfaceM->methods[i]->prototype == immDestructor) {
+                  indexInEdge = i;
+                }
+              }
+              assert(indexInEdge >= 0);
+
+              std::vector<LLVMValueRef> argExprsL = { expr };
+              buildInterfaceCall(thenBuilder, argExprsL, 0, indexInEdge);
             });
       }
     }
   } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
-      dynamic_cast<KnownSizeArrayT*>(sourceRnd)) {
+      dynamic_cast<KnownSizeArrayT*>(sourceRnd) ||
+      dynamic_cast<UnknownSizeArrayT*>(sourceRnd)) {
     if (sourceRef->ownership == Ownership::OWN) {
       // We can't discard owns, they must be destructured.
       assert(false);
@@ -107,13 +120,15 @@ void dropReference(
             builder,
             isZeroLE(builder, rcLE),
             [from, globalState, functionState, expr, sourceRef](LLVMBuilderRef thenBuilder) {
-
-              freeStruct(from, globalState, functionState, thenBuilder, expr, sourceRef);
+              auto immDestructor = globalState->program->getImmDestructor(sourceRef->referend);
+              auto funcL = globalState->getFunction(immDestructor->name);
+              std::vector<LLVMValueRef> argExprsL = { expr };
+              return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
             });
       }
     }
   } else {
-    std::cerr << "Unimplemented type in dropReference: "
+    std::cerr << "Unimplemented type in discard: "
         << typeid(*sourceRef->referend).name() << std::endl;
     assert(false);
   }

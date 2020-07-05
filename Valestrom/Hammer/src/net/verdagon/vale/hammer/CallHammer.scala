@@ -132,7 +132,7 @@ object CallHammer {
     vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == arrayTypeH.rawArray.elementType)
 
     val destroyArraySequenceCallNode =
-        DestroyKnownSizeArrayH(
+        DestroyKnownSizeArrayIntoFunctionH(
           arrayExprResultLine.expectKnownSizeArrayAccess(),
           consumerCallableResultLine.expectInterfaceAccess())
 

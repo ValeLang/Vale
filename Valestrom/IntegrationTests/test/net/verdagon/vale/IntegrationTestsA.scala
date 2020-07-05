@@ -151,36 +151,44 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
-  test("Tests weird crash") {
+  // Known failure 2020-07-05
+  test("Tests virtual doesn't get called if theres a better override") {
     val compile = new Compilation(
       """
-        |struct Thing {
-        |  v Vec3i;
+        |interface MyOption { }
+        |
+        |struct MySome {
+        |  value MyList;
+        |}
+        |impl MySome for MyOption;
+        |
+        |struct MyNone { }
+        |impl MyNone for MyOption;
+        |
+        |
+        |struct MyList {
+        |  value Int;
+        |  next MyOption;
         |}
         |
-        |struct Vec3i imm {
-        |  x Int;
-        |  y Int;
-        |  z Int;
+        |fn sum(list &MyList) Int {
+        |  list.value + sum(list.next)
         |}
         |
-        |fn bork(thing &Thing, v Vec3i) Void {
-        |  mut thing.v = v;
+        |virtual fn sum(virtual opt &MyOption) Int { 0 }
+        |fn sum(opt &MyNone impl MyOption) Int { 0 }
+        |fn sum(opt &MySome impl MyOption) Int {
+        |   sum(opt.value)
         |}
         |
-        |fn makeThing() Thing {
-        |  thing = Thing(Vec3i(7, 8, 9));
-        |  bork(&thing, Vec3i(4, 5, 6));
-        |  = thing;
-        |}
         |
-        |fn main() {
-        |  = makeThing().v.y;
+        |fn main() Int {
+        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+        |  = sum(&list);
         |}
-        |
         |
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(60)
   }
 
   test("Tests single expression and single statement functions' returns") {

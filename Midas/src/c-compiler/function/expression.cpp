@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/branch.h>
 #include "function/expressions/shared/elements.h"
 #include "function/expressions/shared/controlblock.h"
 #include "function/expressions/shared/members.h"
@@ -25,6 +26,15 @@ std::vector<LLVMValueRef> translateExpressions(
   return result;
 }
 
+LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+  auto localAddr = LLVMBuildAlloca(builder, type, "");
+  LLVMBuildStore(
+      builder,
+      LLVMConstInt(type, value, false),
+      localAddr);
+  return LLVMBuildLoad(builder, localAddr, "");
+}
+
 LLVMValueRef translateExpression(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -32,20 +42,10 @@ LLVMValueRef translateExpression(
     Expression* expr) {
   if (auto constantI64 = dynamic_cast<ConstantI64*>(expr)) {
     // See ULTMCIE for why we load and store here.
-    auto localAddr = LLVMBuildAlloca(builder, LLVMInt64Type(), "");
-    LLVMBuildStore(
-        builder,
-        LLVMConstInt(LLVMInt64Type(), constantI64->value, false),
-        localAddr);
-    return LLVMBuildLoad(builder, localAddr, "");
+    return makeConstIntExpr(builder, LLVMInt64Type(), constantI64->value);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
     // See ULTMCIE for why this is an add.
-    auto localAddr = LLVMBuildAlloca(builder, LLVMInt1Type(), "");
-    LLVMBuildStore(
-        builder,
-        LLVMConstInt(LLVMInt1Type(), constantBool->value, false),
-        localAddr);
-    return LLVMBuildLoad(builder, localAddr, "");
+    return makeConstIntExpr(builder, LLVMInt1Type(), constantBool->value);
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     return translateDiscard(globalState, functionState, builder, discardM);
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
@@ -109,7 +109,7 @@ LLVMValueRef translateExpression(
     return translateIf(globalState, functionState, builder, iff);
   } else if (auto whiile = dynamic_cast<While*>(expr)) {
     return translateWhile(globalState, functionState, builder, whiile);
-  } else if (auto destructureM = dynamic_cast<Destructure*>(expr)) {
+  } else if (auto destructureM = dynamic_cast<Destroy*>(expr)) {
     return translateDestructure(globalState, functionState, builder, destructureM);
   } else if (auto memberLoad = dynamic_cast<MemberLoad*>(expr)) {
     auto structExpr =
@@ -129,10 +129,91 @@ LLVMValueRef translateExpression(
             memberLoad->expectedResultType,
             memberIndex,
             memberName);
-    dropReference(
+    discard(
         AFL("MemberLoad drop struct"),
         globalState, functionState, builder, memberLoad->structType, structExpr);
     return resultLE;
+  } else if (auto destroyKnownSizeArrayIntoFunction = dynamic_cast<DestroyKnownSizeArrayIntoFunction*>(expr)) {
+    auto consumerType = destroyKnownSizeArrayIntoFunction->consumerType;
+    auto arrayWrapperLE =
+        translateExpression(
+            globalState, functionState, builder, destroyKnownSizeArrayIntoFunction->arrayExpr);
+    auto arrayLE =
+        getCountedContentsPtr(builder, arrayWrapperLE);
+    auto consumerLE =
+        translateExpression(
+            globalState, functionState, builder, destroyKnownSizeArrayIntoFunction->consumerExpr);
+
+
+    LLVMValueRef consumeIndexPtrLE = LLVMBuildAlloca(builder, LLVMInt64Type(), "consumeIndexPtr");
+    LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0, false), consumeIndexPtrLE);
+
+    LLVMBasicBlockRef bodyBlockL =
+        LLVMAppendBasicBlock(
+            functionState->containingFunc,
+            functionState->nextBlockName().c_str());
+    LLVMBuilderRef bodyBlockBuilder = LLVMCreateBuilder();
+    LLVMPositionBuilderAtEnd(bodyBlockBuilder, bodyBlockL);
+
+    // Jump from our previous block into the body for the first time.
+    LLVMBuildBr(builder, bodyBlockL);
+
+    auto consumeIndexLE = LLVMBuildLoad(bodyBlockBuilder, consumeIndexPtrLE, "consumeIndex");
+    auto isBeforeEndLE =
+        LLVMBuildICmp(
+            bodyBlockBuilder,
+            LLVMIntSLT,
+            consumeIndexLE,
+            LLVMConstInt(LLVMInt64Type(), destroyKnownSizeArrayIntoFunction->arrayReferend->size, false),
+            "consumeIndexIsBeforeEnd");
+
+    auto continueLE =
+        buildIfElse(
+            functionState, bodyBlockBuilder, isBeforeEndLE, LLVMInt1Type(),
+            [globalState, functionState, arrayLE, consumerLE, consumerType, consumeIndexPtrLE](
+                LLVMBuilderRef thenBlockBuilder) {
+
+              acquireReference(AFL("DestroyKSAIntoF consume iteration"), globalState, thenBlockBuilder, consumerType, consumerLE);
+
+              std::vector<LLVMValueRef> indices = {
+                  LLVMConstInt(LLVMInt64Type(), 0, false),
+                  LLVMBuildLoad(thenBlockBuilder, consumeIndexPtrLE, "consumeIndex")
+              };
+              auto elementPtrLE = LLVMBuildGEP(thenBlockBuilder, arrayLE, indices.data(), indices.size(), "elementPtr");
+              auto elementLE = LLVMBuildLoad(thenBlockBuilder, elementPtrLE, "element");
+              std::vector<LLVMValueRef> argExprsLE = {
+                  consumerLE,
+                  elementLE
+              };
+              buildInterfaceCall(thenBlockBuilder, argExprsLE, 0, 0);
+
+              adjustCounter(thenBlockBuilder, consumeIndexPtrLE, 1);
+              // Return true, so the while loop will keep executing.
+              return makeConstIntExpr(thenBlockBuilder, LLVMInt1Type(), 1);
+            },
+            [globalState, functionState](LLVMBuilderRef elseBlockBuilder) {
+              // Return false, so the while loop will stop executing.
+              return makeConstIntExpr(elseBlockBuilder, LLVMInt1Type(), 0);
+            });
+
+    LLVMBasicBlockRef afterwardBlockL =
+        LLVMAppendBasicBlock(
+            functionState->containingFunc,
+            functionState->nextBlockName().c_str());
+
+    LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyBlockL, afterwardBlockL);
+
+    LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+
+    freeStruct(
+        AFL("DestroyKSAIntoF"), globalState, functionState, builder,
+        arrayWrapperLE, destroyKnownSizeArrayIntoFunction->arrayType);
+
+    discard(
+        AFL("DestroyKSAIntoF"), globalState, functionState, builder,
+        destroyKnownSizeArrayIntoFunction->consumerType, consumerLE);
+
+    return makeNever();
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
     auto arrayLE =
         translateExpression(
@@ -141,8 +222,9 @@ LLVMValueRef translateExpression(
         translateExpression(
             globalState, functionState, builder, knownSizeArrayLoad->indexExpr);
     auto mutability = ownershipToMutability(knownSizeArrayLoad->arrayType->ownership);
-    dropReference(
-        AFL("KSALoad"), globalState, functionState, builder, knownSizeArrayLoad->arrayType, arrayLE);
+    discard(
+        AFL("KSALoad"), globalState, functionState, builder,
+        knownSizeArrayLoad->arrayType, arrayLE);
     return loadElement(
         globalState,
         builder,
@@ -170,8 +252,9 @@ LLVMValueRef translateExpression(
     auto oldMemberLE =
         swapMember(
             builder, structDefM, structExpr, memberIndex, memberName, sourceExpr);
-    dropReference(
-        AFL("MemberStore discard struct"), globalState, functionState, builder, memberStore->structType, structExpr);
+    discard(
+        AFL("MemberStore discard struct"), globalState, functionState, builder,
+        memberStore->structType, structExpr);
     return oldMemberLE;
   } else if (auto structToInterfaceUpcast =
       dynamic_cast<StructToInterfaceUpcast*>(expr)) {

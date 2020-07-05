@@ -47,29 +47,37 @@ public:
     StructReferend* emptyPackStructRef;
     std::unordered_map<std::string, Prototype*> externs;
     std::unordered_map<std::string, Function*> functions;
+    std::unordered_map<Referend*, Prototype*> immDestructorsByKind;
 
     Program(
       std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
       std::unordered_map<std::string, StructDefinition*> structs_,
       StructReferend* emptyPackStructRef_,
       std::unordered_map<std::string, Prototype*> externs_,
-      std::unordered_map<std::string, Function*> functions_) :
+      std::unordered_map<std::string, Function*> functions_,
+        std::unordered_map<Referend*, Prototype*> immDestructorsByKind_) :
         interfaces(move(interfaces_)),
         structs(move(structs_)),
         emptyPackStructRef(emptyPackStructRef_),
         externs(move(externs_)),
-        functions(move(functions_)) {}
+        functions(move(functions_)),
+        immDestructorsByKind(move(immDestructorsByKind_)) {}
 
 
   StructDefinition* getStruct(Name* name) {
-    auto structIter = structs.find(name->name);
-    assert(structIter != structs.end());
-    return structIter->second;
+    auto iter = structs.find(name->name);
+    assert(iter != structs.end());
+    return iter->second;
   }
   InterfaceDefinition* getInterface(Name* name) {
-    auto interfaceIter = interfaces.find(name->name);
-    assert(interfaceIter != interfaces.end());
-    return interfaceIter->second;
+    auto iter = interfaces.find(name->name);
+    assert(iter != interfaces.end());
+    return iter->second;
+  }
+  Prototype* getImmDestructor(Referend* referend) {
+    auto iter = immDestructorsByKind.find(referend);
+    assert(iter != immDestructorsByKind.end());
+    return iter->second;
   }
 };
 

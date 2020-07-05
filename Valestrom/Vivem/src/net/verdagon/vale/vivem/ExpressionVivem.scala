@@ -194,7 +194,7 @@ object ExpressionVivem {
         })
         NodeContinue(makeVoid(programH, heap, callId))
       }
-      case DestructureArraySequenceH(arrExpr, localTypes, locals) => {
+      case DestroyKnownSizeArrayIntoLocalsH(arrExpr, localTypes, locals) => {
         val arrReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrExpr) match {
             case r @ NodeReturn(_) => return r
@@ -693,7 +693,7 @@ object ExpressionVivem {
         NodeContinue(arrayReference)
       }
 
-      case DestroyKnownSizeArrayH(arrayExpr, consumerInterfaceExpr) => {
+      case DestroyKnownSizeArrayIntoFunctionH(arrayExpr, consumerInterfaceExpr) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r

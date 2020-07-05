@@ -356,8 +356,8 @@ Expression* readExpression(Cache* cache, const json& expression) {
     return new NewStruct(
         readArray(cache, expression["sourceExprs"], readExpression),
         readReference(cache, expression["resultType"]));
-  } else if (type == "Destructure") {
-    return new Destructure(
+  } else if (type == "Destroy") {
+    return new Destroy(
         readExpression(cache, expression["structExpr"]),
         readReference(cache, expression["structType"]),
         readArray(cache, expression["localTypes"], readReference),
@@ -389,6 +389,13 @@ Expression* readExpression(Cache* cache, const json& expression) {
         readReference(cache, expression["sourceStructType"]),
         readStructReferend(cache, expression["sourceStructName"]),
         readInterfaceReferend(cache, expression["targetInterfaceName"]));
+  } else if (type == "DestroyKnownSizeArrayIntoFunction") {
+    return new DestroyKnownSizeArrayIntoFunction(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readKnownSizeArray(cache, expression["arrayReferend"]),
+        readExpression(cache, expression["consumerExpr"]),
+        readReference(cache, expression["consumerType"]));
   } else if (type == "InterfaceCall") {
     return new InterfaceCall(
         readArray(cache, expression["argExprs"], readExpression),
@@ -419,7 +426,7 @@ InterfaceMethod* readInterfaceMethod(Cache* cache, const json& struuct) {
       struuct["virtualParamIndex"]);
 }
 
-std::pair<InterfaceMethod*, Prototype*> readEntry(Cache* cache, const json& edge) {
+std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(Cache* cache, const json& edge) {
   assert(edge.is_object());
   assert(edge[""] == "Entry");
   return std::make_pair(
@@ -433,7 +440,7 @@ Edge* readEdge(Cache* cache, const json& edge) {
   return new Edge(
       readStructReferend(cache, edge["structName"]),
       readInterfaceReferend(cache, edge["interfaceName"]),
-      readArray(cache, edge["methods"], readEntry));
+      readArray(cache, edge["methods"], readInterfaceMethodAndPrototypeEntry));
 }
 
 StructDefinition* readStruct(Cache* cache, const json& struuct) {
@@ -464,6 +471,14 @@ Function* readFunction(Cache* cache, const json& function) {
       readExpression(cache, function["block"]));
 }
 
+std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(Cache* cache, const json& edge) {
+  assert(edge.is_object());
+  assert(edge[""] == "Entry");
+  return std::make_pair(
+      readReferend(cache, edge["key"]),
+      readPrototype(cache, edge["value"]));
+}
+
 Program* readProgram(const json& program) {
   assert(program.is_object());
   assert(program[""] == "Program");
@@ -489,7 +504,11 @@ Program* readProgram(const json& program) {
           &cache,
           program["functions"],
           [](Cache* cache, json j){
-              auto f = readFunction(cache, j);
-              return std::make_pair(f->prototype->name->name, f);
-          }));
+            auto f = readFunction(cache, j);
+            return std::make_pair(f->prototype->name->name, f);
+          }),
+      readArrayIntoMap<Referend*, Prototype*>(
+          &cache,
+          program["immDestructorsByKind"],
+          readReferendAndPrototypeEntry));
 }

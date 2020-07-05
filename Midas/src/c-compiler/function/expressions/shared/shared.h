@@ -45,7 +45,7 @@ void acquireReference(
     Reference* sourceRef,
     LLVMValueRef expr);
 
-void dropReference(
+void discard(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
@@ -138,5 +138,11 @@ inline void buildFlare(
   buildFlareInner(globalState, builder, std::forward<T>(rest)...);
   buildPrint(globalState, builder, "\n");
 }
+
+LLVMValueRef buildInterfaceCall(
+    LLVMBuilderRef builder,
+    std::vector<LLVMValueRef> argExprsLE,
+    int virtualParamIndex,
+    int indexInEdge);
 
 #endif

@@ -11,7 +11,7 @@ class ConstantF64;
 class Argument;
 class Stackify;
 class Unstackify;
-class Destructure;
+class Destroy;
 class StructToInterfaceUpcast;
 class InterfaceToInterfaceUpcast;
 class Unreachable;
@@ -32,7 +32,7 @@ class InlineBlock;
 class Block;
 class Return;
 class ConstructUnknownSizeArray;
-class DestroyKnownSizeArray;
+class DestroyKnownSizeArrayIntoFunction;
 class DestroyUnknownSizeArray;
 class NewStruct;
 class ArrayLength;
@@ -131,14 +131,14 @@ public:
 };
 
 
-class Destructure : public Expression {
+class Destroy : public Expression {
 public:
   Expression* structExpr;
   Reference* structType;
   std::vector<Reference*> localTypes;
   std::vector<Local*> localIndices;
 
-  Destructure(
+  Destroy(
       Expression* structExpr_,
       Reference* structType_,
       std::vector<Reference*> localTypes_,
@@ -153,13 +153,25 @@ public:
 class StructToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  InterfaceRef* targetInterfaceRef;
+  Reference* sourceStructType;
+  StructReferend* sourceStructId;
+  InterfaceReferend* targetInterfaceRef;
+
+  StructToInterfaceUpcast(
+      Expression* sourceExpr_,
+      Reference* sourceStructType_,
+      StructReferend* sourceStructId_,
+      InterfaceReferend* targetInterfaceRef_) :
+      sourceExpr(sourceExpr_),
+      sourceStructType(sourceStructType_),
+      sourceStructId(sourceStructId_),
+      targetInterfaceRef(targetInterfaceRef_) {}
 };
 
 class InterfaceToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  InterfaceRef* targetInterfaceRef;
+  InterfaceReferend* targetInterfaceRef;
 };
 
 class Unreachable : public Expression {
@@ -201,9 +213,25 @@ public:
 class MemberStore : public Expression {
 public:
   Expression* structExpr;
+  Reference* structType;
   int memberIndex;
   Expression* sourceExpr;
+  Reference* resultType;
   std::string memberName;
+
+  MemberStore(
+      Expression* structExpr_,
+      Reference* structType_,
+      int memberIndex_,
+      Expression* sourceExpr_,
+      Reference* resultType_,
+      std::string memberName_) :
+    structExpr(structExpr_),
+    structType(structType_),
+    memberIndex(memberIndex_),
+    sourceExpr(sourceExpr_),
+    resultType(resultType_),
+    memberName(memberName_) {}
 };
 
 
@@ -327,9 +355,21 @@ class InterfaceCall : public Expression {
 public:
   std::vector<Expression*> argExprs;
   int virtualParamIndex;
-  InterfaceRef* interfaceRef;
+  InterfaceReferend* interfaceRef;
   int indexInEdge;
   Prototype* functionType;
+
+  InterfaceCall(
+      std::vector<Expression*> argExprs_,
+      int virtualParamIndex_,
+      InterfaceReferend* interfaceRef_,
+      int indexInEdge_,
+      Prototype* functionType_) :
+    argExprs(argExprs_),
+    virtualParamIndex(virtualParamIndex_),
+    interfaceRef(interfaceRef_),
+    indexInEdge(indexInEdge_),
+    functionType(functionType_) {}
 };
 
 
@@ -384,7 +424,28 @@ public:
   Reference* arrayRefType;
 };
 
-class DestroyKnownSizeArray : public Expression {
+class DestroyKnownSizeArrayIntoFunction : public Expression {
+public:
+  Expression* arrayExpr;
+  Reference* arrayType;
+  KnownSizeArrayT* arrayReferend;
+  Expression* consumerExpr;
+  Reference* consumerType;
+
+  DestroyKnownSizeArrayIntoFunction(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      KnownSizeArrayT* arrayReferend_,
+      Expression* consumerExpr_,
+      Reference* consumerType_) :
+    arrayExpr(arrayExpr_),
+    arrayType(arrayType_),
+    arrayReferend(arrayReferend_),
+    consumerExpr(consumerExpr_),
+    consumerType(consumerType_) {}
+};
+
+class DestroyKnownSizeArrayIntoLocals : public Expression {
 public:
   Expression* arrayExpr;
   Expression* consumerExpr;

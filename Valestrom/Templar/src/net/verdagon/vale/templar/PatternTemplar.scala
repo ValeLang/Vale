@@ -20,43 +20,6 @@ import scala.collection.immutable.List
 //    a struct containing it all (for signatures)
 
 object PatternTemplar {
-
-//  // Note: This will unlet/drop the input expressions. Be warned.
-//  // patternInputExprs2 is a list of reference expression because they're coming in from
-//  // god knows where... arguments, the right side of a let, a variable, don't know!
-//  // If a pattern needs to send it to multiple places, the pattern is free to put it into
-//  // a local variable.
-//  // PatternTemplar must be sure to NOT USE IT TWICE! That would mean copying the entire
-//  // expression subtree that it contains!
-//  // Has "InferAnd" because we evaluate the template rules too.
-//  // Returns:
-//  // - Temputs
-//  // - Function state
-//  // - Exports, to toss into the environment
-//  // - Local variables
-//  def nonCheckingInferAndTranslateList(
-//    temputs: TemputsBox,
-//    fate: FunctionEnvironmentBox,
-//    rules: List[IRulexAR],
-//    typeByRune: Map[IRuneA, ITemplataType],
-//    localRunes: Set[IRuneA],
-//    patterns1: List[AtomAP],
-//    patternInputExprs2: List[ReferenceExpression2]):
-//  List[ReferenceExpression2] = {
-//
-//    val patternInputCoords = patternInputExprs2.map(_.resultRegister.reference)
-//
-//    val templatasByRune =
-//      InferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, patterns1, None, List(), patternInputCoords.map(arg => ParamFilter(arg, None))) match {
-//        case (InferSolveFailure(_, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!")
-//        case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
-//      }
-//
-//    fate.addEntries(templatasByRune.map({ case (key, value) => (key, value) }).toMap)
-//
-//    nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
-//  }
-
   // Note: This will unlet/drop the input expressions. Be warned.
   // patternInputExprs2 is a list of reference expression because they're coming in from
   // god knows where... arguments, the right side of a let, a variable, don't know!
@@ -364,11 +327,11 @@ object PatternTemplar {
     arrSeqRefOwnership match {
       case Own => {
         val memberLocalVariables = makeLocals(fate, counter, memberTypes)
-        val destructure =
-          DestructureArraySequence2(
+        val destroy =
+          DestroyArraySequenceIntoLocals2(
             inputArraySeqExpr, arraySeqT, memberLocalVariables)
         val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
-        (destructure :: lets)
+        (destroy :: lets)
       }
       case Share => {
         // This is different from the Own case because we're not destructuring the incoming thing, we're just
@@ -423,10 +386,10 @@ object PatternTemplar {
       case Own => {
         val memberLocalVariables = makeLocals(fate, counter, memberTypes)
 
-        val destructure = Destructure2(inputStructExpr, structRef2, memberLocalVariables)
+        val destroy2 = Destroy2(inputStructExpr, structRef2, memberLocalVariables)
 
         val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
-        (destructure :: lets)
+        (destroy2 :: lets)
       }
       case Share => {
         // This is different from the Own case because we're not destructuring the incoming thing, we're just

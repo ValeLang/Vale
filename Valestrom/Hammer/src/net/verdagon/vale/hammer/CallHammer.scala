@@ -105,9 +105,9 @@ object CallHammer {
       hinputs: Hinputs,
       hamuts: HamutsBox,
       locals: LocalsBox,
-      das2: DestroyArraySequence2):
+      das2: DestroyArraySequenceIntoFunction2):
   ExpressionH[ReferendH] = {
-    val DestroyArraySequence2(arrayExpr2, arraySequenceType, consumerExpr2) = das2;
+    val DestroyArraySequenceIntoFunction2(arrayExpr2, arraySequenceType, consumerExpr2) = das2;
 
     val KnownSizeArrayT2(size, rawArrayType2 @ RawArrayT2(memberType2, mutability)) = arraySequenceType
 
@@ -127,12 +127,12 @@ object CallHammer {
 
     val consumerInterfaceRef = consumerCallableResultLine.expectInterfaceAccess().resultType.kind;
     val consumerInterfaceDef = vassertSome(hamuts.interfaceDefs.values.find(_.getRef == consumerInterfaceRef))
-    vassert(consumerInterfaceDef.prototypes.head.params.size == 2)
-    vassert(consumerInterfaceDef.prototypes.head.params(0).kind == consumerInterfaceRef)
-    vassert(consumerInterfaceDef.prototypes.head.params(1) == arrayTypeH.rawArray.elementType)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params.size == 2)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == arrayTypeH.rawArray.elementType)
 
     val destroyArraySequenceCallNode =
-        DestroyKnownSizeArrayH(
+        DestroyKnownSizeArrayIntoFunctionH(
           arrayExprResultLine.expectKnownSizeArrayAccess(),
           consumerCallableResultLine.expectInterfaceAccess())
 
@@ -182,7 +182,7 @@ object CallHammer {
 
     val (conditionBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, locals, condition2);
-    vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, BoolH()))
+    vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH,BoolH()))
 
     val (thenBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, locals, thenBlock2);

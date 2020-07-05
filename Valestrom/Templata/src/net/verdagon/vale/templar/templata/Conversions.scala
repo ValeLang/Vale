@@ -63,6 +63,13 @@ object Conversions {
     }
   }
 
+  def unevaluateMutability(mutability: Mutability): MutabilityP = {
+    mutability match {
+      case Mutable => MutableP
+      case Immutable => ImmutableP
+    }
+  }
+
   def unevaluateTemplataType(tyype: ITemplataType): ITypeSR = {
     tyype match {
       case CoordTemplataType => CoordTypeSR

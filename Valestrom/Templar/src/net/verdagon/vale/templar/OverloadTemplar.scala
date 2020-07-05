@@ -19,7 +19,7 @@ object OverloadTemplar {
       // The environment to look in.
       env: IEnvironment,
       temputs: TemputsBox,
-      functionName: GlobalFunctionFamilyNameA,
+      functionName: IImpreciseNameStepA,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       args: List[ParamFilter],
     extraEnvsToLookIn: List[IEnvironment],
@@ -51,7 +51,7 @@ object OverloadTemplar {
   sealed trait IScoutExpectedFunctionResult
   case class ScoutExpectedFunctionSuccess(prototype: Prototype2) extends IScoutExpectedFunctionResult
   case class ScoutExpectedFunctionFailure(
-    humanName: GlobalFunctionFamilyNameA,
+    humanName: IImpreciseNameStepA,
     args: List[ParamFilter],
     // All the ones that could have worked, but were outscored by the best match
     outscoredReasonByPotentialBanner: Map[IPotentialBanner, String],
@@ -77,7 +77,7 @@ object OverloadTemplar {
   def scoutExpectedFunctionForPrototype(
     env: IEnvironment,
     temputs: TemputsBox,
-    functionName: GlobalFunctionFamilyNameA,
+    functionName: IImpreciseNameStepA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
     args: List[ParamFilter],
     extraEnvsToLookIn: List[IEnvironment],
@@ -158,7 +158,7 @@ object OverloadTemplar {
   private def getCandidateBanners(
     env: IEnvironment,
     temputs: TemputsBox,
-    functionName: GlobalFunctionFamilyNameA,
+    functionName: IImpreciseNameStepA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
     paramFilters: List[ParamFilter],
     extraEnvsToLookIn: List[IEnvironment],
@@ -372,7 +372,7 @@ object OverloadTemplar {
   def scoutPotentialFunction(
       env: IEnvironment,
       temputs: TemputsBox,
-      functionName: GlobalFunctionFamilyNameA,
+      functionName: IImpreciseNameStepA,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       args: List[ParamFilter],
     extraEnvsToLookIn: List[IEnvironment],

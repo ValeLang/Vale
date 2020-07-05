@@ -47,25 +47,67 @@ public:
     StructReferend* emptyPackStructRef;
     std::unordered_map<std::string, Prototype*> externs;
     std::unordered_map<std::string, Function*> functions;
+    std::unordered_map<Referend*, Prototype*> immDestructorsByKind;
 
     Program(
       std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
       std::unordered_map<std::string, StructDefinition*> structs_,
       StructReferend* emptyPackStructRef_,
       std::unordered_map<std::string, Prototype*> externs_,
-      std::unordered_map<std::string, Function*> functions_) :
+      std::unordered_map<std::string, Function*> functions_,
+        std::unordered_map<Referend*, Prototype*> immDestructorsByKind_) :
         interfaces(move(interfaces_)),
         structs(move(structs_)),
         emptyPackStructRef(emptyPackStructRef_),
         externs(move(externs_)),
-        functions(move(functions_)) {}
+        functions(move(functions_)),
+        immDestructorsByKind(move(immDestructorsByKind_)) {}
 
 
   StructDefinition* getStruct(Name* name) {
-    auto structIter = structs.find(name->name);
-    assert(structIter != structs.end());
-    return structIter->second;
+    auto iter = structs.find(name->name);
+    assert(iter != structs.end());
+    return iter->second;
   }
+  InterfaceDefinition* getInterface(Name* name) {
+    auto iter = interfaces.find(name->name);
+    assert(iter != interfaces.end());
+    return iter->second;
+  }
+  Prototype* getImmDestructor(Referend* referend) {
+    auto iter = immDestructorsByKind.find(referend);
+    assert(iter != immDestructorsByKind.end());
+    return iter->second;
+  }
+};
+
+class InterfaceMethod {
+public:
+  Prototype* prototype;
+  int virtualParamIndex;
+
+  InterfaceMethod(
+      Prototype* prototype_,
+      int virtualParamIndex_) :
+      prototype(prototype_),
+      virtualParamIndex(virtualParamIndex_) {}
+};
+
+// Represents how a struct implements an interface.
+// Each edge has a vtable.
+class Edge {
+public:
+  StructReferend* structName;
+  InterfaceReferend* interfaceName;
+  std::vector<std::pair<InterfaceMethod*, Prototype*>> structPrototypesByInterfaceMethod;
+
+  Edge(
+      StructReferend* structName_,
+      InterfaceReferend* interfaceName_,
+      std::vector<std::pair<InterfaceMethod*, Prototype*>> structPrototypesByInterfaceMethod_) :
+      structName(structName_),
+      interfaceName(interfaceName_),
+      structPrototypesByInterfaceMethod(structPrototypesByInterfaceMethod_) {}
 };
 
 class StructDefinition {
@@ -84,6 +126,15 @@ public:
         mutability(mutability_),
         edges(edges_),
         members(members_) {}
+
+    Edge* getEdgeForInterface(Name* interfaceName) {
+      for (auto e : edges) {
+        if (e->interfaceName->fullName == interfaceName)
+          return e;
+      }
+      assert(false);
+      return nullptr;
+    }
 };
 
 class StructMember {
@@ -105,19 +156,19 @@ public:
 class InterfaceDefinition {
 public:
     Name* name;
-    Mutability* mutability;
+    Mutability mutability;
     std::vector<Name*> superInterfaces;
-    std::vector<Prototype*> prototypes;
-};
+    std::vector<InterfaceMethod*> methods;
 
-// Represents how a struct implements an interface.
-// Each edge has a vtable.
-class Edge {
-public:
-    Name* structName;
-    Name* interfaceName;
-    std::vector<std::pair<Prototype*, Prototype*>>
-        structPrototypesByInterfacePrototype;
+    InterfaceDefinition(
+        Name* name_,
+        Mutability mutability_,
+        std::vector<Name*> superInterfaces_,
+        std::vector<InterfaceMethod*> methods_) :
+      name(name_),
+      mutability(mutability_),
+      superInterfaces(superInterfaces_),
+      methods(methods_) {}
 };
 
 class Function {
@@ -143,12 +194,11 @@ public:
 
     Prototype(
         Name* name_,
-    std::vector<Reference*> params_,
-    Reference* returnType_
-        ) :
-        name(name_),
-        params(std::move(params_)),
-        returnType(returnType_) {}
+        std::vector<Reference*> params_,
+        Reference* returnType_) :
+      name(name_),
+      params(std::move(params_)),
+      returnType(returnType_) {}
 };
 
 #endif

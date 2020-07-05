@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
         errorExit(ExitCode::BadOpts, "Specify a Cone program to compile.");
     coneopt.srcpath = argv[1];
     new (&coneopt.srcDir) std::string(fileDirectory(coneopt.srcpath));
-    new (&coneopt.srcNameNoExt) std::string(fileName(coneopt.srcpath));
+    new (&coneopt.srcNameNoExt) std::string(getFileNameNoExt(coneopt.srcpath));
     new (&coneopt.srcDirAndNameNoExt) std::string(coneopt.srcDir + coneopt.srcNameNoExt);
 
     // We set up generation early because we need target info, e.g.: pointer size

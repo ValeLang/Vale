@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IImpreciseNameStepA, INameA}
+import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IImpreciseNameStepA, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameA}
 import net.verdagon.vale.templar.templata.{FunctionBanner2, Override2, Prototype2, Signature2}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail, vwat}
@@ -8,7 +8,7 @@ import net.verdagon.vale.{vassert, vfail, vwat}
 object EdgeTemplar {
   sealed trait IMethod
   case class NeededOverride(
-    humanName: String,
+    name: IImpreciseNameStepA,
     paramFilters: List[ParamFilter]
   ) extends IMethod
   case class FoundFunction(prototype: Prototype2) extends IMethod
@@ -47,7 +47,8 @@ object EdgeTemplar {
                       case (tyype, _) => ParamFilter(tyype, None)
                     })
                   superFunction.fullName.last match {
-                    case FunctionName2(humanName, _, _) => NeededOverride(humanName, overrideParamFilters)
+                    case FunctionName2(humanName, _, _) => NeededOverride(GlobalFunctionFamilyNameA(humanName), overrideParamFilters)
+                    case ImmInterfaceDestructorName2(_, _) => NeededOverride(ImmInterfaceDestructorImpreciseNameA(), overrideParamFilters)
                     case _ => vwat()
                   }
                 }
@@ -111,6 +112,7 @@ object EdgeTemplar {
                     case (FunctionName2(possibleSuperFunctionHumanName, _, _), FunctionName2(overrideFunctionHumanName, _, _)) => {
                       possibleSuperFunctionHumanName == overrideFunctionHumanName
                     }
+                    case (ImmInterfaceDestructorName2(_, _), ImmInterfaceDestructorName2(_, _)) => true
                     case _ => false
                   }
                 namesMatch && possibleSuperFunction.paramTypes == needleSuperFunctionParamTypes

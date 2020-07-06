@@ -100,21 +100,10 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
     }
   } else if (auto unknownSizeArrayMT =
       dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
-    if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      assert(false);
-      return nullptr;
-    } else {
-      auto innerArrayLT = makeInnerUnknownSizeArrayLT(globalState,
-          unknownSizeArrayMT);
-      if (referenceM->location == Location::INLINE) {
-        return innerArrayLT;
-      } else {
-        auto knownSizeArrayCountedStructLT =
-            translateUnknownSizeArrayToWrapperStruct(
-                globalState, unknownSizeArrayMT);
-        return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-      }
-    }
+    auto knownSizeArrayCountedStructLT =
+        translateUnknownSizeArrayToWrapperStruct(
+            globalState, unknownSizeArrayMT);
+    return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
   } else if (auto interfaceReferend =
       dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
     auto interfaceRefStructL =

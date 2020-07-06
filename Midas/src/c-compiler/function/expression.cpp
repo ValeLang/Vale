@@ -148,7 +148,16 @@ LLVMValueRef translateExpression(
           buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
         });
 
+    if (arrayType->ownership == Ownership::OWN) {
+      adjustRc(AFL("Destroy decrementing the owning ref"), globalState, builder, arrayWrapperLE, arrayType, -1);
+    } else if (arrayType->ownership == Ownership::SHARE) {
+      // We dont decrement anything here, we're only here because we already hit zero.
+    } else {
+      assert(false);
+    }
+
     freeStruct(AFL("DestroyKSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
+
     discard(AFL("DestroyKSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
     return makeNever();
@@ -168,7 +177,7 @@ LLVMValueRef translateExpression(
     foreachArrayElement(
         functionState, builder, arrayLenLE, arrayPtrLE,
         [globalState, consumerType, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
-          acquireReference(AFL("DestroyKSAIntoF consume iteration"), globalState, bodyBuilder, consumerType, consumerLE);
+          acquireReference(AFL("DestroyUSAIntoF consume iteration"), globalState, bodyBuilder, consumerType, consumerLE);
 
           std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
           auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
@@ -177,8 +186,17 @@ LLVMValueRef translateExpression(
           buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
         });
 
-    freeStruct(AFL("DestroyKSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
-    discard(AFL("DestroyKSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
+    if (arrayType->ownership == Ownership::OWN) {
+      adjustRc(AFL("Destroy decrementing the owning ref"), globalState, builder, arrayWrapperLE, arrayType, -1);
+    } else if (arrayType->ownership == Ownership::SHARE) {
+      // We dont decrement anything here, we're only here because we already hit zero.
+    } else {
+      assert(false);
+    }
+
+    freeStruct(AFL("DestroyUSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
+
+    discard(AFL("DestroyUSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
     return makeNever();
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {

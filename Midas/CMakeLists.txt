@@ -76,7 +76,9 @@ add_executable(valec
 		src/c-compiler/function/expressions/discard.cpp
 		src/c-compiler/function/expressions/externs.cpp
 		src/c-compiler/function/expressions/if.cpp
+		src/c-compiler/function/expressions/constantstr.cpp
 		src/c-compiler/function/expressions/while.cpp
+		src/c-compiler/function/expressions/constructunknownsizearray.cpp
 		src/c-compiler/function/expressions/newarrayfromvalues.cpp
 
 		src/c-compiler/function/expressions/shared/elements.cpp
@@ -84,6 +86,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/shared.cpp
 		src/c-compiler/function/expressions/shared/alias.cpp
 		src/c-compiler/function/expressions/shared/branch.cpp
+		src/c-compiler/function/expressions/shared/string.cpp
 		src/c-compiler/function/expressions/shared/heap.cpp
 
 		src/c-compiler/utils/fileio.cpp

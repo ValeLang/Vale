@@ -1,5 +1,6 @@
 #include <iostream>
-#include <function/expressions/shared/controlblock.h>
+#include "function/expressions/shared/controlblock.h"
+#include "function/expressions/shared/elements.h"
 
 #include "translatetype.h"
 
@@ -39,11 +40,11 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
   fillControlBlock(
       globalState,
       builder,
-      getStructControlBlockPtr(builder, newStructLE),
+      getConcreteControlBlockPtr(builder, newStructLE),
       typeName);
   fillKnownSizeArray(
       builder,
-      getCountedContentsPtr(builder, newStructLE),
+      getKnownSizeArrayContentsPtr(builder, newStructLE),
       membersLE);
   return newStructLE;
 }
@@ -77,7 +78,7 @@ LLVMValueRef translateNewArrayFromValues(
       } else {
         // If we get here, arrayLT is a pointer to our counted struct.
         auto knownSizeArrayCountedStructLT =
-            translateKnownSizeArrayToCountedStruct(
+            translateKnownSizeArrayToWrapperStruct(
                 globalState, knownSizeArrayMT);
         return constructKnownSizeArrayCountedStruct(
             globalState, builder, knownSizeArrayCountedStructLT, elementsLE, knownSizeArrayMT->name->name);

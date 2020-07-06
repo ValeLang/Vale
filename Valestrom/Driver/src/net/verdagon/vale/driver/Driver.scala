@@ -85,7 +85,7 @@ object Driver {
     } else {
       val file = path
       val bufferedSource = Source.fromFile(file)
-      val code = bufferedSource.getLines.mkString
+      val code = bufferedSource.getLines.mkString("\n")
       bufferedSource.close
       code
     }
@@ -98,6 +98,9 @@ object Driver {
         case f @ VParser.Failure(msg, next) => vfail(f.toString())
         case VParser.Success((program0, commentRanges), next) => {
           vassert(next.atEnd)
+          if (!next.atEnd) {
+            throw InputException("Couldnt parse entire file!")
+          }
           program0
         }
       }
@@ -219,9 +222,9 @@ object Driver {
         }
       }
     } catch {
-      case InputException(msg) => {
+      case ie @ InputException(msg) => {
         println(msg)
-        return
+        throw ie
       }
     }
   }

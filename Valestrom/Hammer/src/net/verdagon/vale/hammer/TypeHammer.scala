@@ -108,7 +108,7 @@ object TypeHammer {
         case (Share, Int2()) => InlineH
         case (Share, Bool2()) => InlineH
         case (Share, Float2()) => InlineH
-        case (Share, Str2()) => InlineH
+        case (Share, Str2()) => YonderH
         case (Share, _) => YonderH
       }
     val (innerH) = translateKind(hinputs, hamuts, innerType);

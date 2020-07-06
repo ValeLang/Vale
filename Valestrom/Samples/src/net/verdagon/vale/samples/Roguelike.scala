@@ -136,7 +136,7 @@ object Roguelike {
         |    } else if (key == 100) {
         |      mut newPlayerCol = newPlayerCol + 1;
         |    }
-        |    if (board.(newPlayerRow).(newPlayerCol) == ".") {
+        |    if (board[newPlayerRow][newPlayerCol] == ".") {
         |      mut playerRow = newPlayerRow;
         |      mut playerCol = newPlayerCol;
         |    }

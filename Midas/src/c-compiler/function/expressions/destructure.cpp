@@ -1,6 +1,6 @@
 #include <iostream>
-#include <function/expressions/shared/members.h>
-#include <function/expressions/shared/heap.h>
+#include "function/expressions/shared/members.h"
+#include "function/expressions/shared/heap.h"
 
 #include "translatetype.h"
 
@@ -26,7 +26,8 @@ LLVMValueRef translateDestructure(
 
   for (int i = 0; i < structM->members.size(); i++) {
     auto memberName = structM->members[i]->name;
-    LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structLE);
+    LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
+        structLE);
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
@@ -46,7 +47,8 @@ LLVMValueRef translateDestructure(
     assert(false);
   }
 
-  freeStruct(AFL("Destroy freeing"), globalState, functionState, builder, structLE, destructureM->structType);
+  freeConcrete(AFL("Destroy freeing"), globalState, functionState, builder,
+      structLE, destructureM->structType);
 
   return makeNever();
 }

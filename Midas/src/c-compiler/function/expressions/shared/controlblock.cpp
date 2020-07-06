@@ -1,11 +1,11 @@
 #include "controlblock.h"
 #include "shared.h"
 
-LLVMValueRef getStructControlBlockPtr(
+LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef structPtrLE) {
-  // Control block is always the 0th element of every struct.
-  return LLVMBuildStructGEP(builder, structPtrLE, 0, "controlPtr");
+    LLVMValueRef concretePtrLE) {
+  // Control block is always the 0th element of every concrete struct.
+  return LLVMBuildStructGEP(builder, concretePtrLE, 0, "controlPtr");
 }
 
 LLVMValueRef getInterfaceControlBlockPtr(

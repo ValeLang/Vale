@@ -71,9 +71,13 @@ LLVMValueRef getControlBlockPtr(
   if (dynamic_cast<InterfaceReferend*>(refM->referend)) {
     return getInterfaceControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(refM->referend)) {
-    return getStructControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(refM->referend)) {
-    return getStructControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<UnknownSizeArrayT*>(refM->referend)) {
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<Str*>(refM->referend)) {
+    return getConcreteControlBlockPtr(builder, referenceLE);
   } else {
     assert(false);
     return nullptr;
@@ -84,6 +88,7 @@ void flareAdjustRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef controlBlockPtr,
     LLVMValueRef oldAmount,
     LLVMValueRef newAmount) {
@@ -91,6 +96,8 @@ void flareAdjustRc(
       from,
       globalState,
       builder,
+      typeid(*refM->referend).name(),
+      " ",
       getTypeNameStrPtrFromControlBlockPtr(globalState, builder, controlBlockPtr),
       getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtr),
       ", ",
@@ -112,7 +119,7 @@ LLVMValueRef adjustRc(
       getRcPtrFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
   auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
-  flareAdjustRc(from, globalState, builder, controlBlockPtrLE, oldRc, newRc);
+  flareAdjustRc(from, globalState, builder, refM, controlBlockPtrLE, oldRc, newRc);
   return newRc;
 }
 
@@ -150,7 +157,7 @@ void buildPrint(
     LLVMBuilderRef builder,
     const std::string& first) {
   auto s = globalState->getOrMakeStringConstant(first);
-  LLVMBuildCall(builder, globalState->printStr, &s, 1, "");
+  LLVMBuildCall(builder, globalState->printCStr, &s, 1, "");
 }
 
 void buildPrint(
@@ -159,15 +166,13 @@ void buildPrint(
     LLVMValueRef exprLE) {
   if (LLVMTypeOf(exprLE) == LLVMInt64Type()) {
     LLVMBuildCall(builder, globalState->printInt, &exprLE, 1, "");
-  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt64Type(), 0)) {
+  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8Type(), 0)) {
+    LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
+  } else {
     buildPrint(
         globalState,
         builder,
         LLVMBuildPointerCast(builder, exprLE, LLVMInt64Type(), ""));
-  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8Type(), 0)) {
-    LLVMBuildCall(builder, globalState->printStr, &exprLE, 1, "");
-  } else {
-    assert(false);
   }
 }
 
@@ -218,4 +223,13 @@ LLVMValueRef buildInterfaceCall(
 
   return LLVMBuildCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
+}
+
+LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+  auto localAddr = LLVMBuildAlloca(builder, type, "");
+  LLVMBuildStore(
+      builder,
+      LLVMConstInt(type, value, false),
+      localAddr);
+  return LLVMBuildLoad(builder, localAddr, "");
 }

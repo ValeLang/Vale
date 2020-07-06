@@ -127,6 +127,16 @@ void discard(
             });
       }
     }
+  } else if (dynamic_cast<Str*>(sourceRnd)) {
+    assert(sourceRef->ownership == Ownership::SHARE);
+    auto rcLE = adjustRc(from, globalState, builder, expr, sourceRef, -1);
+    buildIf(
+        functionState,
+        builder,
+        isZeroLE(builder, rcLE),
+        [from, globalState, functionState, expr, sourceRef](LLVMBuilderRef thenBuilder) {
+          freeConcrete(from, globalState, functionState, thenBuilder, expr, sourceRef);
+        });
   } else {
     std::cerr << "Unimplemented type in discard: "
         << typeid(*sourceRef->referend).name() << std::endl;

@@ -4,9 +4,10 @@
 #include "globalstate.h"
 #include <llvm-c/Core.h>
 
-LLVMValueRef getStructControlBlockPtr(
+// A concrete is a struct, known size array, unknown size array, or Str.
+LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef structPtrLE);
+    LLVMValueRef concretePtrLE);
 
 LLVMValueRef getInterfaceControlBlockPtr(
     LLVMBuilderRef builder,
@@ -34,8 +35,6 @@ LLVMValueRef fillControlBlock(
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtrLE,
     const std::string& typeName);
-
-LLVMValueRef getCountedContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE);
 
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,

@@ -544,7 +544,8 @@ object VonHammer {
           None,
           Vector(
             VonMember("function", vonifyPrototype(functionExpr)),
-            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyNode)))))
+            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyNode))),
+            VonMember("argTypes", VonArray(None, argsExprs.toVector.map(_.resultType).map(vonifyCoord)))))
       }
       case CallH(functionExpr, argsExprs) => {
         VonObject(

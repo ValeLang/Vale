@@ -73,4 +73,10 @@ LLVMValueRef translateConstructUnknownSizeArray(
     LLVMBuilderRef builder,
     ConstructUnknownSizeArray* constructUnknownSizeArray);
 
+LLVMValueRef translateConstantStr(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    ConstantStr* constantStr);
+
 #endif

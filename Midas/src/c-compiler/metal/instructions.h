@@ -86,6 +86,10 @@ public:
 class ConstantStr : public Expression {
 public:
   std::string value;
+
+  ConstantStr(
+      const std::string &value_) :
+      value(value_) {}
 };
 
 
@@ -364,12 +368,15 @@ class ExternCall : public Expression {
 public:
     Prototype *function;
     std::vector<Expression *> argExprs;
+    std::vector<Reference *> argTypes;
 
     ExternCall(
         Prototype *function_,
-        std::vector<Expression *> argExprs_)
+        std::vector<Expression *> argExprs_,
+        std::vector<Reference *> argTypes_)
         : function(function_),
-        argExprs(argExprs_) {}
+        argExprs(argExprs_),
+        argTypes(argTypes_) {}
 };
 
 

@@ -339,7 +339,8 @@ Expression* readExpression(Cache* cache, const json& expression) {
   } else if (type == "ExternCall") {
     return new ExternCall(
         readPrototype(cache, expression["function"]),
-        readArray(cache, expression["argExprs"], readExpression));
+        readArray(cache, expression["argExprs"], readExpression),
+        readArray(cache, expression["argTypes"], readReference));
   } else if (type == "Block") {
     return new Block(
         readArray(cache, expression["exprs"], readExpression));
@@ -434,6 +435,9 @@ Expression* readExpression(Cache* cache, const json& expression) {
         readInterfaceReferend(cache, expression["interfaceRef"]),
         expression["indexInEdge"],
         readPrototype(cache, expression["functionType"]));
+  } else if (type == "ConstantStr") {
+    return new ConstantStr(
+        expression["value"]);
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);

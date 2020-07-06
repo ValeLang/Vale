@@ -145,6 +145,12 @@ class ValeTest(unittest.TestCase):
     def test_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code("immusalen.vale", 5)
 
+    def test_mutusa(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutusa.vale", 3)
+
+    def test_mutusalen(self) -> None:
+        self.compile_and_execute_and_expect_return_code("mutusalen.vale", 5)
+
     def test_roguelike(self) -> None:
         self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)
 

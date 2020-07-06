@@ -1,5 +1,5 @@
 #include <iostream>
-#include <function/expressions/shared/branch.h>
+#include "function/expressions/shared/branch.h"
 #include "function/expressions/shared/elements.h"
 #include "function/expressions/shared/controlblock.h"
 #include "function/expressions/shared/members.h"
@@ -31,6 +31,7 @@ LLVMValueRef translateExpression(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Expression* expr) {
+  buildFlare(FL(), globalState, builder, typeid(*expr).name());
   if (auto constantI64 = dynamic_cast<ConstantI64*>(expr)) {
     // See ULTMCIE for why we load and store here.
     return makeConstIntExpr(builder, LLVMInt64Type(), constantI64->value);
@@ -85,6 +86,8 @@ LLVMValueRef translateExpression(
     return translateExternCall(globalState, functionState, builder, externCall);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     return LLVMGetParam(functionState->containingFunc, argument->argumentIndex);
+  } else if (auto constantStr = dynamic_cast<ConstantStr*>(expr)) {
+    return translateConstantStr(FL(), globalState, builder, constantStr);
   } else if (auto newStruct = dynamic_cast<NewStruct*>(expr)) {
     auto memberExprs =
         translateExpressions(
@@ -156,7 +159,8 @@ LLVMValueRef translateExpression(
       assert(false);
     }
 
-    freeStruct(AFL("DestroyKSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
+    freeConcrete(AFL("DestroyKSAIntoF"), globalState, functionState, builder,
+        arrayWrapperLE, arrayType);
 
     discard(AFL("DestroyKSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
@@ -194,7 +198,8 @@ LLVMValueRef translateExpression(
       assert(false);
     }
 
-    freeStruct(AFL("DestroyUSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
+    freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, builder,
+        arrayWrapperLE, arrayType);
 
     discard(AFL("DestroyUSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 

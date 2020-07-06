@@ -1,6 +1,6 @@
 #include <iostream>
-#include <function/expressions/shared/members.h>
-#include <function/expressions/shared/heap.h>
+#include "function/expressions/shared/members.h"
+#include "function/expressions/shared/heap.h"
 
 #include "translatetype.h"
 
@@ -47,7 +47,8 @@ LLVMValueRef translateDestructure(
     assert(false);
   }
 
-  freeStruct(AFL("Destroy freeing"), globalState, functionState, builder, structLE, destructureM->structType);
+  freeConcrete(AFL("Destroy freeing"), globalState, functionState, builder,
+      structLE, destructureM->structType);
 
   return makeNever();
 }

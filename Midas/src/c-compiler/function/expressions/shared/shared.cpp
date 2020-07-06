@@ -71,9 +71,11 @@ LLVMValueRef getControlBlockPtr(
   if (dynamic_cast<InterfaceReferend*>(refM->referend)) {
     return getInterfaceControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(refM->referend)) {
-    return getStructControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(refM->referend)) {
-    return getStructControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<UnknownSizeArrayT*>(refM->referend)) {
+    return getConcreteControlBlockPtr(builder, referenceLE);
   } else {
     assert(false);
     return nullptr;
@@ -218,4 +220,13 @@ LLVMValueRef buildInterfaceCall(
 
   return LLVMBuildCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
+}
+
+LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+  auto localAddr = LLVMBuildAlloca(builder, type, "");
+  LLVMBuildStore(
+      builder,
+      LLVMConstInt(type, value, false),
+      localAddr);
+  return LLVMBuildLoad(builder, localAddr, "");
 }

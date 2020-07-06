@@ -25,4 +25,16 @@ void buildIf(
     LLVMValueRef conditionLE,
     std::function<void(LLVMBuilderRef)> buildThen);
 
+
+void buildWhile(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildBody);
+
+void buildWhile(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildCondition,
+    std::function<void(LLVMBuilderRef)> buildBody);
+
 #endif

@@ -302,7 +302,8 @@ object VonHammer {
           "ArrayLength",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
       case ReturnH(sourceExpr) => {
         VonObject(
@@ -329,7 +330,7 @@ object VonHammer {
       }
       case NewArrayFromValuesH(resultType, sourceExprs) => {
         VonObject(
-          "NewArrayFromValuesH",
+          "NewArrayFromValues",
           None,
           Vector(
             VonMember(
@@ -418,7 +419,11 @@ object VonHammer {
           None,
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
-            VonMember("consumerExpr", vonifyNode(consumerExpr))))
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
+            VonMember("consumerExpr", vonifyNode(consumerExpr)),
+            VonMember("consumerType", vonifyCoord(consumerExpr.resultType)),
+            VonMember("consumerReferend", vonifyKind(consumerExpr.resultType.kind))))
       }
       case StructToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         VonObject(
@@ -488,7 +493,7 @@ object VonHammer {
       }
       case UnknownSizeArrayStoreH(arrayExpr, indexExpr, sourceExpr) => {
         VonObject(
-          "UnknownSizeArrayStoreH",
+          "UnknownSizeArrayStore",
           None,
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
@@ -497,26 +502,34 @@ object VonHammer {
       }
       case usal @ UnknownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
         VonObject(
-          "UnknownSizeArrayLoadH",
+          "UnknownSizeArrayLoad",
           None,
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
             VonMember("indexExpr", vonifyNode(indexExpr)),
+            VonMember("indexType", vonifyCoord(indexExpr.resultType)),
+            VonMember("indexReferend", vonifyKind(indexExpr.resultType.kind)),
             VonMember("resultType", vonifyCoord(usal.resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
       }
       case ConstructUnknownSizeArrayH(sizeExpr, generatorExpr, resultType) => {
         VonObject(
-          "UnknownSizeArrayLoadH",
+          "ConstructUnknownSizeArray",
           None,
           Vector(
             VonMember("sizeExpr", vonifyNode(sizeExpr)),
+            VonMember("sizeType", vonifyCoord(sizeExpr.resultType)),
+            VonMember("sizeReferend", vonifyKind(sizeExpr.resultType.kind)),
             VonMember("generatorExpr", vonifyNode(generatorExpr)),
+            VonMember("generatorType", vonifyCoord(generatorExpr.resultType)),
+            VonMember("generatorReferend", vonifyKind(generatorExpr.resultType.kind)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
       case ksal @ KnownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
         VonObject(
-          "KnownSizeArrayLoadH",
+          "KnownSizeArrayLoad",
           None,
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),

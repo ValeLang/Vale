@@ -25,7 +25,13 @@ Mutability ownershipToMutability(Ownership ownership);
 
 Mutability getMutability(GlobalState* globalState, Reference* referenceM);
 
-LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT);
+LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
+    GlobalState* globalState,
+    KnownSizeArrayT* knownSizeArrayMT);
+
+LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
+    GlobalState* globalState,
+    UnknownSizeArrayT* unknownSizeArrayMT);
 
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,

@@ -20,4 +20,11 @@ void freeStruct(
     LLVMValueRef structLE,
     Reference* structRefM);
 
+LLVMValueRef mallocUnknownSizeArray(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef usaWrapperLT,
+    LLVMTypeRef usaElementLT,
+    LLVMValueRef lengthLE);
+
 #endif

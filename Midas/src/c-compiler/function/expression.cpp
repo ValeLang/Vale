@@ -26,15 +26,6 @@ std::vector<LLVMValueRef> translateExpressions(
   return result;
 }
 
-LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
-  auto localAddr = LLVMBuildAlloca(builder, type, "");
-  LLVMBuildStore(
-      builder,
-      LLVMConstInt(type, value, false),
-      localAddr);
-  return LLVMBuildLoad(builder, localAddr, "");
-}
-
 LLVMValueRef translateExpression(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -135,105 +126,101 @@ LLVMValueRef translateExpression(
     return resultLE;
   } else if (auto destroyKnownSizeArrayIntoFunction = dynamic_cast<DestroyKnownSizeArrayIntoFunction*>(expr)) {
     auto consumerType = destroyKnownSizeArrayIntoFunction->consumerType;
-    auto arrayWrapperLE =
-        translateExpression(
-            globalState, functionState, builder, destroyKnownSizeArrayIntoFunction->arrayExpr);
-    auto arrayLE =
-        getCountedContentsPtr(builder, arrayWrapperLE);
-    auto consumerLE =
-        translateExpression(
-            globalState, functionState, builder, destroyKnownSizeArrayIntoFunction->consumerExpr);
+    auto arrayReferend = destroyKnownSizeArrayIntoFunction->arrayReferend;
+    auto arrayExpr = destroyKnownSizeArrayIntoFunction->arrayExpr;
+    auto consumerExpr = destroyKnownSizeArrayIntoFunction->consumerExpr;
+    auto arrayType = destroyKnownSizeArrayIntoFunction->arrayType;
 
+    auto arrayWrapperLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    auto arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperLE);
 
-    LLVMValueRef consumeIndexPtrLE = LLVMBuildAlloca(builder, LLVMInt64Type(), "consumeIndexPtr");
-    LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0, false), consumeIndexPtrLE);
+    auto consumerLE = translateExpression(globalState, functionState, builder, consumerExpr);
 
-    LLVMBasicBlockRef bodyBlockL =
-        LLVMAppendBasicBlock(
-            functionState->containingFunc,
-            functionState->nextBlockName().c_str());
-    LLVMBuilderRef bodyBlockBuilder = LLVMCreateBuilder();
-    LLVMPositionBuilderAtEnd(bodyBlockBuilder, bodyBlockL);
+    foreachArrayElement(
+        functionState, builder, LLVMConstInt(LLVMInt64Type(), arrayReferend->size, false), arrayPtrLE,
+        [globalState, consumerType, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+          acquireReference(AFL("DestroyKSAIntoF consume iteration"), globalState, bodyBuilder, consumerType, consumerLE);
 
-    // Jump from our previous block into the body for the first time.
-    LLVMBuildBr(builder, bodyBlockL);
+          std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
+          auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
+          auto elementLE = LLVMBuildLoad(bodyBuilder, elementPtrLE, "element");
+          std::vector<LLVMValueRef> argExprsLE = { consumerLE, elementLE };
+          buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
+        });
 
-    auto consumeIndexLE = LLVMBuildLoad(bodyBlockBuilder, consumeIndexPtrLE, "consumeIndex");
-    auto isBeforeEndLE =
-        LLVMBuildICmp(
-            bodyBlockBuilder,
-            LLVMIntSLT,
-            consumeIndexLE,
-            LLVMConstInt(LLVMInt64Type(), destroyKnownSizeArrayIntoFunction->arrayReferend->size, false),
-            "consumeIndexIsBeforeEnd");
+    freeStruct(AFL("DestroyKSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
+    discard(AFL("DestroyKSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
-    auto continueLE =
-        buildIfElse(
-            functionState, bodyBlockBuilder, isBeforeEndLE, LLVMInt1Type(),
-            [globalState, functionState, arrayLE, consumerLE, consumerType, consumeIndexPtrLE](
-                LLVMBuilderRef thenBlockBuilder) {
+    return makeNever();
+  } else if (auto destroyUnknownSizeArrayIntoFunction = dynamic_cast<DestroyUnknownSizeArray*>(expr)) {
+    auto consumerType = destroyUnknownSizeArrayIntoFunction->consumerType;
+    auto arrayReferend = destroyUnknownSizeArrayIntoFunction->arrayReferend;
+    auto arrayExpr = destroyUnknownSizeArrayIntoFunction->arrayExpr;
+    auto consumerExpr = destroyUnknownSizeArrayIntoFunction->consumerExpr;
+    auto arrayType = destroyUnknownSizeArrayIntoFunction->arrayType;
 
-              acquireReference(AFL("DestroyKSAIntoF consume iteration"), globalState, thenBlockBuilder, consumerType, consumerLE);
+    auto arrayWrapperLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    auto arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperLE);
+    auto arrayLenLE = getUnknownSizeArrayLength(builder, arrayPtrLE);
 
-              std::vector<LLVMValueRef> indices = {
-                  LLVMConstInt(LLVMInt64Type(), 0, false),
-                  LLVMBuildLoad(thenBlockBuilder, consumeIndexPtrLE, "consumeIndex")
-              };
-              auto elementPtrLE = LLVMBuildGEP(thenBlockBuilder, arrayLE, indices.data(), indices.size(), "elementPtr");
-              auto elementLE = LLVMBuildLoad(thenBlockBuilder, elementPtrLE, "element");
-              std::vector<LLVMValueRef> argExprsLE = {
-                  consumerLE,
-                  elementLE
-              };
-              buildInterfaceCall(thenBlockBuilder, argExprsLE, 0, 0);
+    auto consumerLE = translateExpression(globalState, functionState, builder, consumerExpr);
 
-              adjustCounter(thenBlockBuilder, consumeIndexPtrLE, 1);
-              // Return true, so the while loop will keep executing.
-              return makeConstIntExpr(thenBlockBuilder, LLVMInt1Type(), 1);
-            },
-            [globalState, functionState](LLVMBuilderRef elseBlockBuilder) {
-              // Return false, so the while loop will stop executing.
-              return makeConstIntExpr(elseBlockBuilder, LLVMInt1Type(), 0);
-            });
+    foreachArrayElement(
+        functionState, builder, arrayLenLE, arrayPtrLE,
+        [globalState, consumerType, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+          acquireReference(AFL("DestroyKSAIntoF consume iteration"), globalState, bodyBuilder, consumerType, consumerLE);
 
-    LLVMBasicBlockRef afterwardBlockL =
-        LLVMAppendBasicBlock(
-            functionState->containingFunc,
-            functionState->nextBlockName().c_str());
+          std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
+          auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
+          auto elementLE = LLVMBuildLoad(bodyBuilder, elementPtrLE, "element");
+          std::vector<LLVMValueRef> argExprsLE = { consumerLE, elementLE };
+          buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
+        });
 
-    LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyBlockL, afterwardBlockL);
-
-    LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
-
-    freeStruct(
-        AFL("DestroyKSAIntoF"), globalState, functionState, builder,
-        arrayWrapperLE, destroyKnownSizeArrayIntoFunction->arrayType);
-
-    discard(
-        AFL("DestroyKSAIntoF"), globalState, functionState, builder,
-        destroyKnownSizeArrayIntoFunction->consumerType, consumerLE);
+    freeStruct(AFL("DestroyKSAIntoF"), globalState, functionState, builder, arrayWrapperLE, arrayType);
+    discard(AFL("DestroyKSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
     return makeNever();
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
-    auto arrayLE =
-        translateExpression(
-            globalState, functionState, builder, knownSizeArrayLoad->arrayExpr);
-    auto indexLE =
-        translateExpression(
-            globalState, functionState, builder, knownSizeArrayLoad->indexExpr);
-    auto mutability = ownershipToMutability(knownSizeArrayLoad->arrayType->ownership);
-    discard(
-        AFL("KSALoad"), globalState, functionState, builder,
-        knownSizeArrayLoad->arrayType, arrayLE);
-    return loadElement(
-        globalState,
-        builder,
-        knownSizeArrayLoad->arrayType,
-        arrayLE,
-        mutability,
-        indexLE);
+    auto arrayType = knownSizeArrayLoad->arrayType;
+    auto arrayExpr = knownSizeArrayLoad->arrayExpr;
+    auto indexExpr = knownSizeArrayLoad->indexExpr;
+
+    auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    auto sizeLE = constI64LE(dynamic_cast<KnownSizeArrayT*>(knownSizeArrayLoad->arrayType->referend)->size);
+    auto indexLE = translateExpression(globalState, functionState, builder, indexExpr);
+    auto mutability = ownershipToMutability(arrayType->ownership);
+    discard(AFL("KSALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
+
+    LLVMValueRef arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+    return loadElement(globalState, functionState, builder, arrayType, sizeLE, arrayPtrLE, mutability, indexLE);
+  } else if (auto unknownSizeArrayLoad = dynamic_cast<UnknownSizeArrayLoad*>(expr)) {
+    auto arrayType = unknownSizeArrayLoad->arrayType;
+    auto arrayExpr = unknownSizeArrayLoad->arrayExpr;
+    auto indexExpr = unknownSizeArrayLoad->indexExpr;
+
+    auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
+    auto indexLE = translateExpression(globalState, functionState, builder, indexExpr);
+    auto mutability = ownershipToMutability(arrayType->ownership);
+    discard(AFL("USALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
+
+    LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+    return loadElement(globalState, functionState, builder, arrayType, sizeLE, arrayPtrLE, mutability, indexLE);
+  } else if (auto arrayLength = dynamic_cast<ArrayLength*>(expr)) {
+    auto arrayType = arrayLength->sourceType;
+    auto arrayExpr = arrayLength->sourceExpr;
+//    auto indexExpr = arrayLength->indexExpr;
+
+    auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
+    discard(AFL("USALen"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
+
+    return sizeLE;
   } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
     return translateNewArrayFromValues(globalState, functionState, builder, newArrayFromValues);
+  } else if (auto constructUnknownSizeArray = dynamic_cast<ConstructUnknownSizeArray*>(expr)) {
+    return translateConstructUnknownSizeArray(globalState, functionState, builder, constructUnknownSizeArray);
   } else if (auto interfaceCall = dynamic_cast<InterfaceCall*>(expr)) {
     return translateInterfaceCall(
         globalState, functionState, builder, interfaceCall);

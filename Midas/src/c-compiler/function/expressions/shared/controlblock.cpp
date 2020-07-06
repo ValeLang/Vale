@@ -1,7 +1,7 @@
 #include "controlblock.h"
 #include "shared.h"
 
-LLVMValueRef getStructControlBlockPtr(
+LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
     LLVMValueRef structPtrLE) {
   // Control block is always the 0th element of every struct.

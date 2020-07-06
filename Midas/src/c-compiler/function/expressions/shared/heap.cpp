@@ -25,6 +25,35 @@ LLVMValueRef mallocStruct(
       "newstruct");
 }
 
+LLVMValueRef mallocUnknownSizeArray(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef usaWrapperLT,
+    LLVMTypeRef usaElementLT,
+    LLVMValueRef lengthLE) {
+  auto sizeBytesLE =
+      LLVMBuildAdd(
+          builder,
+          constI64LE(LLVMABISizeOfType(globalState->dataLayout, usaWrapperLT)),
+          LLVMBuildMul(
+              builder,
+              constI64LE(LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(usaElementLT, 1))),
+              lengthLE,
+              ""),
+          "usaMallocSizeBytes");
+
+  auto newWrapperLE =
+      LLVMBuildCall(builder, globalState->malloc, &sizeBytesLE, 1, "");
+
+  adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+
+  return LLVMBuildBitCast(
+      builder,
+      newWrapperLE,
+      LLVMPointerType(usaWrapperLT, 0),
+      "newstruct");
+}
+
 void freeStruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,

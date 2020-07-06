@@ -67,4 +67,10 @@ LLVMValueRef translateNewArrayFromValues(
     LLVMBuilderRef builder,
     NewArrayFromValues* newArrayFromValues);
 
+LLVMValueRef translateConstructUnknownSizeArray(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    ConstructUnknownSizeArray* constructUnknownSizeArray);
+
 #endif

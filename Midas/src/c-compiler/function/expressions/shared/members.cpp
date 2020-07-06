@@ -4,12 +4,13 @@
 
 #include "shared.h"
 
-LLVMValueRef getCountedContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE) {
+LLVMValueRef getStructContentsPtr(
+    LLVMBuilderRef builder, LLVMValueRef concretePtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      structPtrLE,
+      concretePtrLE,
       1, // Inner struct is after the control block.
-      "innerStructPtr");
+      "contentsPtr");
 }
 
 LLVMValueRef loadInnerStructMember(
@@ -58,7 +59,8 @@ LLVMValueRef loadMember(
       return LLVMBuildExtractValue(
           builder, structExpr, memberIndex, memberName.c_str());
     } else {
-      LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
+      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
+          structExpr);
       auto resultLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
@@ -66,7 +68,8 @@ LLVMValueRef loadMember(
       return resultLE;
     }
   } else if (mutability == Mutability::MUTABLE) {
-    LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
+    LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
+        structExpr);
     auto resultLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, memberIndex, memberName);
@@ -86,7 +89,8 @@ LLVMValueRef swapMember(
     const std::string& memberName,
     LLVMValueRef newMemberLE) {
   assert(structDefM->mutability == Mutability::MUTABLE);
-  LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structExpr);
+  LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
+      structExpr);
 
   LLVMValueRef oldMember =
       loadInnerStructMember(

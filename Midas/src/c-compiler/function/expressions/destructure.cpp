@@ -26,7 +26,8 @@ LLVMValueRef translateDestructure(
 
   for (int i = 0; i < structM->members.size(); i++) {
     auto memberName = structM->members[i]->name;
-    LLVMValueRef innerStructPtrLE = getCountedContentsPtr(builder, structLE);
+    LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
+        structLE);
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);

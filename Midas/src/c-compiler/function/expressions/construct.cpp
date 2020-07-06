@@ -31,9 +31,11 @@ LLVMValueRef constructCountedStruct(
   auto newStructPtrLE = mallocStruct(globalState, builder, structL);
   auto objIdLE =
       fillControlBlock(
-          globalState, builder, getStructControlBlockPtr(builder, newStructPtrLE), structM->name->name);
+          globalState, builder,
+          getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
   fillInnerStruct(
-      builder, structM, membersLE, getCountedContentsPtr(builder, newStructPtrLE));
+      builder, structM, membersLE,
+      getStructContentsPtr(builder, newStructPtrLE));
   buildFlare(from, globalState, builder, "Allocating ", structM->name->name, objIdLE);
   return newStructPtrLE;
 }

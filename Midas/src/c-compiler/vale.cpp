@@ -14,7 +14,7 @@
 #include <sstream>
 
 #include <nlohmann/json.hpp>
-#include <function/expressions/shared/shared.h>
+#include "function/expressions/shared/shared.h"
 #include "struct/interface.h"
 
 #include "metal/types.h"
@@ -28,6 +28,163 @@
 
 // for convenience
 using json = nlohmann::json;
+
+void initInternalExterns(GlobalState* globalState) {
+  {
+    LLVMTypeRef retType = LLVMPointerType(LLVMInt8Type(), 0);
+    LLVMTypeRef paramType = LLVMInt64Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState->malloc = LLVMAddFunction(globalState->mod, "malloc", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramType = LLVMPointerType(LLVMInt8Type(), 0);
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState->free = LLVMAddFunction(globalState->mod, "free", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramType = LLVMInt8Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState->exit = LLVMAddFunction(globalState->mod, "exit", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramType = LLVMInt1Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
+    globalState->assert = LLVMAddFunction(globalState->mod, "__vassert", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramTypes[2] = { LLVMInt64Type(), LLVMInt64Type() };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
+    globalState->assertI64Eq = LLVMAddFunction(globalState->mod, "__vassertI64Eq", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    LLVMTypeRef paramTypes[] = { LLVMInt64Type(), LLVMInt64Type() };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
+    globalState->flareI64 = LLVMAddFunction(globalState->mod, "__vflare_i64", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMInt8Type(), 0)
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->printCStr = LLVMAddFunction(globalState->mod, "__vprintCStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMInt64Type()
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->printInt = LLVMAddFunction(globalState->mod, "__vprintI64", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMInt1Type()
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->printBool = LLVMAddFunction(globalState->mod, "__vprintBool", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(globalState->stringInnerStructL, 0),
+        LLVMPointerType(LLVMInt8Type(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->initStr = LLVMAddFunction(globalState->mod, "__vinitStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(globalState->stringInnerStructL, 0),
+        LLVMPointerType(globalState->stringInnerStructL, 0),
+        LLVMPointerType(globalState->stringInnerStructL, 0)
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->addStr = LLVMAddFunction(globalState->mod, "__vaddStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMInt8Type();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(globalState->stringInnerStructL, 0),
+        LLVMPointerType(globalState->stringInnerStructL, 0)
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->eqStr = LLVMAddFunction(globalState->mod, "__veqStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(globalState->stringInnerStructL, 0)
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->printVStr = LLVMAddFunction(globalState->mod, "__vprintStr", funcType);
+  }
+}
+
+void initInternalStructs(GlobalState* globalState) {
+  {
+    auto controlBlockStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), CONTROL_BLOCK_STRUCT_NAME);
+    std::vector<LLVMTypeRef> memberTypesL;
+
+    globalState->controlBlockTypeStrIndex = memberTypesL.size();
+    memberTypesL.push_back(LLVMPointerType(LLVMInt8Type(), 0));
+
+    globalState->controlBlockObjIdIndex = memberTypesL.size();
+    memberTypesL.push_back(LLVMInt64Type());
+
+    globalState->controlBlockRcMemberIndex = memberTypesL.size();
+    memberTypesL.push_back(LLVMInt64Type());
+
+    LLVMStructSetBody(
+        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
+    globalState->controlBlockStructL = controlBlockStructL;
+  }
+
+  {
+    auto stringInnerStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "__Str");
+    std::vector<LLVMTypeRef> memberTypesL;
+    memberTypesL.push_back(LLVMInt64Type());
+    memberTypesL.push_back(LLVMArrayType(LLVMInt8Type(), 0));
+    LLVMStructSetBody(
+        stringInnerStructL, memberTypesL.data(), memberTypesL.size(), false);
+    globalState->stringInnerStructL = stringInnerStructL;
+  }
+
+  {
+    auto stringWrapperStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "__Str_rc");
+    std::vector<LLVMTypeRef> memberTypesL;
+    memberTypesL.push_back(globalState->controlBlockStructL);
+    memberTypesL.push_back(globalState->stringInnerStructL);
+    LLVMStructSetBody(
+        stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
+    globalState->stringWrapperStructL = stringWrapperStructL;
+  }
+}
 
 void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char* filename) {
   std::ifstream instream(filename);
@@ -81,95 +238,8 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 //  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
   LLVMSetInitializer(globalState.objIdCounter, LLVMConstInt(LLVMInt64Type(), 501, false));
 
-  {
-    LLVMTypeRef retType = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef paramType = LLVMInt64Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState.malloc = LLVMAddFunction(mod, "malloc", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramType = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState.free = LLVMAddFunction(mod, "free", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramType = LLVMInt8Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState.exit = LLVMAddFunction(mod, "exit", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramType = LLVMInt1Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState.assert = LLVMAddFunction(mod, "__vassert", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramTypes[2] = { LLVMInt64Type(), LLVMInt64Type() };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
-    globalState.assertI64Eq = LLVMAddFunction(mod, "__vassertI64Eq", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramTypes[] = { LLVMInt64Type(), LLVMInt64Type() };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
-    globalState.flareI64 = LLVMAddFunction(mod, "__vflare_i64", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(LLVMInt8Type(), 0)
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState.printStr = LLVMAddFunction(mod, "__vprintCStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMInt64Type()
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState.printInt = LLVMAddFunction(mod, "__vprintI64", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMInt1Type()
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState.printBool = LLVMAddFunction(mod, "__vprintBool", funcType);
-  }
-
-
-  {
-    auto controlBlockStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), CONTROL_BLOCK_STRUCT_NAME);
-    std::vector<LLVMTypeRef> memberTypesL;
-
-    globalState.controlBlockTypeStrIndex = memberTypesL.size();
-    memberTypesL.push_back(LLVMPointerType(LLVMInt8Type(), 0));
-
-    globalState.controlBlockObjIdIndex = memberTypesL.size();
-    memberTypesL.push_back(LLVMInt64Type());
-
-    globalState.controlBlockRcMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(LLVMInt64Type());
-
-    LLVMStructSetBody(
-        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState.controlBlockStructL = controlBlockStructL;
-  }
+  initInternalStructs(&globalState);
+  initInternalExterns(&globalState);
 
   for (auto p : program->structs) {
     auto name = p.first;
@@ -204,6 +274,7 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   }
 
   LLVMValueRef mainL = nullptr;
+  int numFuncs = program->functions.size();
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;

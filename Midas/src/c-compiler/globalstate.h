@@ -18,12 +18,14 @@ public:
   Program* program;
   LLVMValueRef objIdCounter;
   LLVMValueRef liveHeapObjCounter;
-  LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printStr, printInt, printBool;
+  LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printCStr, printInt, printBool, initStr, addStr, eqStr, printVStr;
 
   int controlBlockTypeStrIndex;
   int controlBlockObjIdIndex;
   int controlBlockRcMemberIndex;
   LLVMTypeRef controlBlockStructL;
+  LLVMTypeRef stringWrapperStructL;
+  LLVMTypeRef stringInnerStructL;
 
   LLVMBuilderRef stringConstantBuilder;
   std::unordered_map<std::string, LLVMValueRef> stringConstants;

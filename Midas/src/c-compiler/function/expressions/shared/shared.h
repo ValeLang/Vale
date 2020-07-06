@@ -54,7 +54,7 @@ void discard(
     LLVMValueRef expr);
 
 
-LLVMValueRef getCountedContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE);
+LLVMValueRef getStructContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE);
 
 LLVMValueRef adjustCounter(
     LLVMBuilderRef builder,
@@ -97,7 +97,7 @@ void buildAssert(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef lestLE,
+    LLVMValueRef conditionLE,
     const std::string& failMessage);
 
 
@@ -144,5 +144,12 @@ LLVMValueRef buildInterfaceCall(
     std::vector<LLVMValueRef> argExprsLE,
     int virtualParamIndex,
     int indexInEdge);
+
+
+LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value);
+
+inline LLVMValueRef constI64LE(int n) {
+  return LLVMConstInt(LLVMInt64Type(), n, false);
+}
 
 #endif

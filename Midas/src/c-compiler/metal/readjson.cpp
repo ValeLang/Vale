@@ -339,7 +339,8 @@ Expression* readExpression(Cache* cache, const json& expression) {
   } else if (type == "ExternCall") {
     return new ExternCall(
         readPrototype(cache, expression["function"]),
-        readArray(cache, expression["argExprs"], readExpression));
+        readArray(cache, expression["argExprs"], readExpression),
+        readArray(cache, expression["argTypes"], readReference));
   } else if (type == "Block") {
     return new Block(
         readArray(cache, expression["exprs"], readExpression));
@@ -372,17 +373,48 @@ Expression* readExpression(Cache* cache, const json& expression) {
         readReference(cache, expression["expectedMemberType"]),
         readReference(cache, expression["expectedResultType"]),
         expression["memberName"]);
-  } else if (type == "NewArrayFromValuesH") {
+  } else if (type == "NewArrayFromValues") {
     return new NewArrayFromValues(
         readArray(cache, expression["sourceExprs"], readExpression),
         readReference(cache, expression["resultType"]));
-  } else if (type == "KnownSizeArrayLoadH") {
+  } else if (type == "KnownSizeArrayLoad") {
     return new KnownSizeArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["resultType"]),
         readOwnership(cache, expression["targetOwnership"]));
+  } else if (type == "UnknownSizeArrayLoad") {
+    return new UnknownSizeArrayLoad(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readReferend(cache, expression["arrayReferend"]),
+        readExpression(cache, expression["indexExpr"]),
+        readReference(cache, expression["indexType"]),
+        readReferend(cache, expression["indexReferend"]),
+        readReference(cache, expression["resultType"]),
+        readOwnership(cache, expression["targetOwnership"]));
+  } else if (type == "ConstructUnknownSizeArray") {
+    return new ConstructUnknownSizeArray(
+        readExpression(cache, expression["sizeExpr"]),
+        readReference(cache, expression["sizeType"]),
+        readReferend(cache, expression["sizeReferend"]),
+        readExpression(cache, expression["generatorExpr"]),
+        readReference(cache, expression["generatorType"]),
+        readInterfaceReferend(cache, expression["generatorReferend"]),
+        readReference(cache, expression["resultType"]));
+  } else if (type == "DestroyUnknownSizeArray") {
+    return new DestroyUnknownSizeArray(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readUnknownSizeArray(cache, expression["arrayReferend"]),
+        readExpression(cache, expression["consumerExpr"]),
+        readReference(cache, expression["consumerType"]),
+        readInterfaceReferend(cache, expression["consumerReferend"]));
+  } else if (type == "ArrayLength") {
+    return new ArrayLength(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]));
   } else if (type == "StructToInterfaceUpcast") {
     return new StructToInterfaceUpcast(
         readExpression(cache, expression["sourceExpr"]),
@@ -403,6 +435,9 @@ Expression* readExpression(Cache* cache, const json& expression) {
         readInterfaceReferend(cache, expression["interfaceRef"]),
         expression["indexInEdge"],
         readPrototype(cache, expression["functionType"]));
+  } else if (type == "ConstantStr") {
+    return new ConstantStr(
+        expression["value"]);
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);

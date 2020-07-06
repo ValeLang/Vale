@@ -128,3 +128,69 @@ LLVMValueRef buildIfElse(
 
   return phi;
 }
+
+void buildWhile(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildBody) {
+
+  // While only has a body expr, no separate condition.
+  // If the body itself returns true, then we'll run the body again.
+
+  // We already are in the "current" block (which is what `builder` is
+  // pointing at currently), but we're about to make two more: "body" and
+  // "afterward".
+  //              .-----> body -----.
+  //  current ---'         ↑         :---> afterward
+  //                       `--------'
+  // Right now, the `builder` is pointed at the "current" block.
+  // After we're done, we'll change it to point at the "afterward" block, so
+  // that subsequent instructions (after the While) can keep using the same
+  // builder, but they'll be adding to the "afterward" block we're making
+  // here.
+
+  LLVMBasicBlockRef bodyBlockL =
+      LLVMAppendBasicBlock(
+          functionState->containingFunc,
+          functionState->nextBlockName().c_str());
+  LLVMBuilderRef bodyBlockBuilder = LLVMCreateBuilder();
+  LLVMPositionBuilderAtEnd(bodyBlockBuilder, bodyBlockL);
+
+  // Jump from our previous block into the body for the first time.
+  LLVMBuildBr(builder, bodyBlockL);
+
+  auto continueLE = buildBody(bodyBlockBuilder);
+
+  LLVMBasicBlockRef afterwardBlockL =
+      LLVMAppendBasicBlock(
+          functionState->containingFunc,
+          functionState->nextBlockName().c_str());
+
+  LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyBlockL, afterwardBlockL);
+
+  LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+}
+
+void buildWhile(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildCondition,
+    std::function<void(LLVMBuilderRef)> buildBody) {
+  buildWhile(
+      functionState,
+      builder,
+      [functionState, buildCondition, buildBody](LLVMBuilderRef bodyBuilder) {
+        auto conditionLE = buildCondition(bodyBuilder);
+        return buildIfElse(
+            functionState, bodyBuilder, conditionLE, LLVMInt1Type(),
+            [buildBody](LLVMBuilderRef thenBlockBuilder) {
+              buildBody(thenBlockBuilder);
+              // Return true, so the while loop will keep executing.
+              return makeConstIntExpr(thenBlockBuilder, LLVMInt1Type(), 1);
+            },
+            [](LLVMBuilderRef elseBlockBuilder) {
+              // Return false, so the while loop will stop executing.
+              return makeConstIntExpr(elseBlockBuilder, LLVMInt1Type(), 0);
+            });
+      });
+}

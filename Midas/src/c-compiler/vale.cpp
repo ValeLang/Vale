@@ -204,6 +204,7 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   }
 
   LLVMValueRef mainL = nullptr;
+  int numFuncs = program->functions.size();
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;

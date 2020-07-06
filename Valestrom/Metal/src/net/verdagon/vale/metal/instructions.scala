@@ -73,7 +73,7 @@ case class ConstantStrH(
   // The value of the string.
   value: String
 ) extends ExpressionH[StrH] {
-  override def resultType: ReferenceH[StrH] = ReferenceH(ShareH, InlineH, StrH())
+  override def resultType: ReferenceH[StrH] = ReferenceH(ShareH, YonderH, StrH())
 }
 
 // Creates a float and puts it into a register.

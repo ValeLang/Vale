@@ -1,16 +1,19 @@
 #include <iostream>
+#include "function/expressions/shared/heap.h"
 
 #include "translatetype.h"
 
-LLVMTypeRef makeInnerArrayLT(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
+LLVMTypeRef makeInnerKnownSizeArrayLT(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
   auto elementLT = translateType(globalState, knownSizeArrayMT->rawArray->elementType);
   return LLVMArrayType(elementLT, knownSizeArrayMT->size);
 }
 
 // This gives the actual struct, *not* a pointer to a struct, which you sometimes
 // might need instead. For that, use translateType.
-LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
-  auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
+LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
+    GlobalState* globalState,
+    KnownSizeArrayT* knownSizeArrayMT) {
+  auto innerArrayLT = makeInnerKnownSizeArrayLT(globalState, knownSizeArrayMT);
 
   auto iter = globalState->knownSizeArrayCountedStructs.find(knownSizeArrayMT->name);
   if (iter == globalState->knownSizeArrayCountedStructs.end()) {
@@ -26,6 +29,33 @@ LLVMTypeRef translateKnownSizeArrayToCountedStruct(GlobalState* globalState, Kno
   return iter->second;
 }
 
+LLVMTypeRef makeInnerUnknownSizeArrayLT(GlobalState* globalState, UnknownSizeArrayT* unknownSizeArrayMT) {
+  auto elementLT = translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
+  return LLVMArrayType(elementLT, 0);
+}
+
+// This gives the actual struct, *not* a pointer to a struct, which you sometimes
+// might need instead. For that, use translateType.
+LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
+    GlobalState* globalState,
+    UnknownSizeArrayT* unknownSizeArrayMT) {
+  auto innerArrayLT = makeInnerUnknownSizeArrayLT(globalState, unknownSizeArrayMT);
+
+  auto iter = globalState->unknownSizeArrayCountedStructs.find(unknownSizeArrayMT->name);
+  if (iter == globalState->unknownSizeArrayCountedStructs.end()) {
+    auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "rc").c_str());
+    std::vector<LLVMTypeRef> elementsL;
+    elementsL.push_back(globalState->controlBlockStructL);
+    elementsL.push_back(LLVMInt64Type());
+    elementsL.push_back(innerArrayLT);
+    LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
+
+    iter = globalState->unknownSizeArrayCountedStructs.emplace(unknownSizeArrayMT->name, countedStruct).first;
+  }
+
+  return iter->second;
+}
+
 LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
   if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
     assert(referenceM->ownership == Ownership::SHARE);
@@ -33,6 +63,9 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
   } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
     assert(referenceM->ownership == Ownership::SHARE);
     return LLVMInt1Type();
+  } else if (dynamic_cast<Str*>(referenceM->referend) != nullptr) {
+    assert(referenceM->ownership == Ownership::SHARE);
+    return LLVMPointerType(globalState->stringWrapperStructL, 0);
   } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
     return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
   } else if (auto structReferend =
@@ -57,17 +90,24 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       assert(false);
       return nullptr;
     } else {
-      auto innerArrayLT = makeInnerArrayLT(globalState, knownSizeArrayMT);
+      auto innerArrayLT = makeInnerKnownSizeArrayLT(globalState,
+          knownSizeArrayMT);
       if (referenceM->location == Location::INLINE) {
         return innerArrayLT;
       } else {
         auto knownSizeArrayCountedStructLT =
-            translateKnownSizeArrayToCountedStruct(
+            translateKnownSizeArrayToWrapperStruct(
                 globalState, knownSizeArrayMT);
 
         return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
       }
     }
+  } else if (auto unknownSizeArrayMT =
+      dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
+    auto knownSizeArrayCountedStructLT =
+        translateUnknownSizeArrayToWrapperStruct(
+            globalState, unknownSizeArrayMT);
+    return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
   } else if (auto interfaceReferend =
       dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
     auto interfaceRefStructL =

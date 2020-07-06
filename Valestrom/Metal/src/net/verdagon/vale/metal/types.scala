@@ -34,10 +34,15 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
   }
 
   kind match {
-    case IntH() | BoolH() | StrH() | FloatH() => {
+    case IntH() | BoolH() | FloatH() => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)
+    }
+    case StrH() => {
+      // Strings need to be yonder because Midas needs to do refcounting for them.
+      vassert(ownership == ShareH)
+      vassert(location == YonderH)
     }
     case StructRefH(name) => {
       val isBox = name.toString.startsWith("C(\"__Box\"")

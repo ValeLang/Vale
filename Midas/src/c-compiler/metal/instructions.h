@@ -86,6 +86,10 @@ public:
 class ConstantStr : public Expression {
 public:
   std::string value;
+
+  ConstantStr(
+      const std::string &value_) :
+      value(value_) {}
 };
 
 
@@ -298,9 +302,31 @@ public:
 class UnknownSizeArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
+  Reference* arrayType;
+  Referend* arrayReferend;
   Expression* indexExpr;
+  Reference* indexType;
+  Referend* indexReferend;
   Reference* resultType;
   Ownership targetOwnership;
+
+  UnknownSizeArrayLoad(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      Referend* arrayReferend_,
+      Expression* indexExpr_,
+      Reference* indexType_,
+      Referend* indexReferend_,
+      Reference* resultType_,
+      Ownership targetOwnership_) :
+    arrayExpr(arrayExpr_),
+    arrayType(arrayType_),
+    arrayReferend(arrayReferend_),
+    indexExpr(indexExpr_),
+    indexType(indexType_),
+    indexReferend(indexReferend_),
+    resultType(resultType_),
+    targetOwnership(targetOwnership_) {}
 };
 
 
@@ -342,12 +368,15 @@ class ExternCall : public Expression {
 public:
     Prototype *function;
     std::vector<Expression *> argExprs;
+    std::vector<Reference *> argTypes;
 
     ExternCall(
         Prototype *function_,
-        std::vector<Expression *> argExprs_)
+        std::vector<Expression *> argExprs_,
+        std::vector<Reference *> argTypes_)
         : function(function_),
-        argExprs(argExprs_) {}
+        argExprs(argExprs_),
+        argTypes(argTypes_) {}
 };
 
 
@@ -420,8 +449,28 @@ public:
 class ConstructUnknownSizeArray : public Expression {
 public:
   Expression* sizeExpr;
+  Reference* sizeType;
+  Referend* sizeReferend;
   Expression* generatorExpr;
+  Reference* generatorType;
+  InterfaceReferend* generatorReferend;
   Reference* arrayRefType;
+
+  ConstructUnknownSizeArray(
+      Expression* sizeExpr_,
+      Reference* sizeType_,
+      Referend* sizeReferend_,
+      Expression* generatorExpr_,
+      Reference* generatorType_,
+      InterfaceReferend* generatorReferend_,
+      Reference* arrayRefType_) :
+    sizeExpr(sizeExpr_),
+    sizeType(sizeType_),
+    sizeReferend(sizeReferend_),
+    generatorExpr(generatorExpr_),
+    generatorType(generatorType_),
+    generatorReferend(generatorReferend_),
+    arrayRefType(arrayRefType_) {}
 };
 
 class DestroyKnownSizeArrayIntoFunction : public Expression {
@@ -454,7 +503,25 @@ public:
 class DestroyUnknownSizeArray : public Expression {
 public:
   Expression* arrayExpr;
+  Reference* arrayType;
+  UnknownSizeArrayT* arrayReferend;
   Expression* consumerExpr;
+  Reference* consumerType;
+  InterfaceReferend* consumerReferend;
+
+  DestroyUnknownSizeArray(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      UnknownSizeArrayT* arrayReferend_,
+      Expression* consumerExpr_,
+      Reference* consumerType_,
+      InterfaceReferend* consumerReferend_) :
+    arrayExpr(arrayExpr_),
+    arrayType(arrayType_),
+    arrayReferend(arrayReferend_),
+    consumerExpr(consumerExpr_),
+    consumerType(consumerType_),
+    consumerReferend(consumerReferend_) {}
 };
 
 class NewStruct : public Expression {
@@ -472,6 +539,13 @@ public:
 class ArrayLength : public Expression {
 public:
   Expression* sourceExpr;
+  Reference* sourceType;
+
+  ArrayLength(
+      Expression* sourceExpr_,
+      Reference* sourceType_) :
+      sourceExpr(sourceExpr_),
+      sourceType(sourceType_) {}
 };
 
 

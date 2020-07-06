@@ -30,8 +30,7 @@ class ValeTest(unittest.TestCase):
                 "-o",
                 vir_file,
                 vale_file
-            ],
-            check=True
+            ]
         )
 
     def valec(self, vir_file: str,
@@ -69,6 +68,8 @@ class ValeTest(unittest.TestCase):
 
         vir_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}.vir"
         proc = self.valestrom(f"test/tests/{vale_file}", vir_file)
+        print(proc.stdout)
+        print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"valestrom couldn't compile {vale_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
@@ -137,6 +138,9 @@ class ValeTest(unittest.TestCase):
 
     def test_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code("mutstructstore.vale", 42)
+
+    def test_roguelike(self) -> None:
+        self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)
 
 
 if __name__ == '__main__':

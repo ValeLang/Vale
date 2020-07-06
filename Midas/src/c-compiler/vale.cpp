@@ -82,6 +82,12 @@ void initInternalExterns(GlobalState* globalState) {
   }
 
   {
+    LLVMTypeRef retType = LLVMPointerType(LLVMInt64Type(), 0);
+    LLVMTypeRef funcType = LLVMFunctionType(retType, nullptr, 0, 0);
+    globalState->getch = LLVMAddFunction(globalState->mod, "getch", funcType);
+  }
+
+  {
     LLVMTypeRef retType = LLVMVoidType();
     std::vector<LLVMTypeRef> paramTypes = {
         LLVMInt64Type()

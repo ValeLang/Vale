@@ -69,8 +69,14 @@ LLVMValueRef translateExternCall(
             globalState, functionState, builder, call->argExprs[1]),
         "mul");
   } else if (name == "F(\"__subtractIntInt\",[],[R(*,<,i),R(*,<,i)])") {
-    // VivemExterns.subtractIntInt
-    assert(false);
+    assert(call->argExprs.size() == 2);
+    return LLVMBuildSub(
+        builder,
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[1]),
+        "diff");
   } else if (name == "F(\"__addStrStr\",[],[R(*,>,s),R(*,>,s)])") {
     assert(call->argExprs.size() == 2);
 
@@ -103,8 +109,7 @@ LLVMValueRef translateExternCall(
 
     return destStrWrapperPtrLE;
   } else if (name == "F(\"__getch\")") {
-    // VivemExterns.getch
-    assert(false);
+    return LLVMBuildCall(builder, globalState->getch, nullptr, 0, "");
   } else if (name == "F(\"__lessThanInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
@@ -156,8 +161,15 @@ LLVMValueRef translateExternCall(
     // VivemExterns.castIntStr
     assert(false);
   } else if (name == "F(\"__and\",[],[R(*,<,b),R(*,<,b)])") {
-    // VivemExterns.and
-    assert(false);
+    assert(call->argExprs.size() == 2);
+    auto result = LLVMBuildAnd(
+        builder,
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[1]),
+        "");
+    return result;
   } else if (name == "F(\"__mod\",[],[R(*,<,i),R(*,<,i)])") {
     // VivemExterns.mod
     assert(false);

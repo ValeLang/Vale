@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/shared.h>
 
 #include "translatetype.h"
 
@@ -13,8 +14,13 @@ LLVMValueRef translateCall(
   assert(funcIter != globalState->functions.end());
   auto funcL = funcIter->second;
 
-  auto argExprsL =
-      translateExpressions(globalState, functionState, builder, call->argExprs);
-  return LLVMBuildCall(
-      builder, funcL, argExprsL.data(), argExprsL.size(), "");
+  auto argsLE = std::vector<LLVMValueRef>{};
+  argsLE.reserve(call->argExprs.size());
+  for (int i = 0; i < call->argExprs.size(); i++) {
+    auto argLE = translateExpression(globalState, functionState, builder, call->argExprs[i]);
+    checkValidReference(FL(), globalState, functionState, builder, call->function->params[i], argLE);
+    argsLE.push_back(argLE);
+  }
+
+  return LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
 }

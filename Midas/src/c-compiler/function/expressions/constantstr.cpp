@@ -10,16 +10,5 @@ LLVMValueRef translateConstantStr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     ConstantStr* constantStr) {
-
-  auto lengthLE = constI64LE(constantStr->value.length());
-
-  auto strWrapperPtrLE = mallocStr(globalState, builder, lengthLE);
-
-  std::vector<LLVMValueRef> argsLE = {
-      getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE),
-      globalState->getOrMakeStringConstant(constantStr->value)
-  };
-  LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
-
-  return strWrapperPtrLE;
+  return buildConstantVStr(globalState, builder, constantStr->value);
 }

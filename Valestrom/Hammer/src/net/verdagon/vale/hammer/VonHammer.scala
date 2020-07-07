@@ -310,7 +310,8 @@ object VonHammer {
           "Return",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
       case DiscardH(sourceExpr) => {
         VonObject(

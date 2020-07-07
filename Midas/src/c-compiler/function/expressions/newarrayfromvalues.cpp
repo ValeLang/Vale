@@ -33,10 +33,11 @@ void fillKnownSizeArray(
 LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* structTypeM,
     LLVMTypeRef structLT,
     const std::vector<LLVMValueRef>& membersLE,
     const std::string& typeName) {
-  auto newStructLE = mallocStruct(globalState, builder, structLT);
+  auto newStructLE = allocateStruct(globalState, builder, structTypeM, structLT);
   fillControlBlock(
       globalState,
       builder,
@@ -81,7 +82,7 @@ LLVMValueRef translateNewArrayFromValues(
             translateKnownSizeArrayToWrapperStruct(
                 globalState, knownSizeArrayMT);
         return constructKnownSizeArrayCountedStruct(
-            globalState, builder, knownSizeArrayCountedStructLT, elementsLE, knownSizeArrayMT->name->name);
+            globalState, builder, newArrayFromValues->arrayRefType, knownSizeArrayCountedStructLT, elementsLE, knownSizeArrayMT->name->name);
       }
     }
     default:

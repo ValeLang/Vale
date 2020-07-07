@@ -158,8 +158,29 @@ LLVMValueRef translateExternCall(
     // VivemExterns.not
     assert(false);
   } else if (name == "F(\"__castIntStr\",[],[R(*,<,i)])") {
-    // VivemExterns.castIntStr
-    assert(false);
+    assert(call->argExprs.size() == 1);
+    auto intLE =
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[0]);
+
+    int bufferSize = 150;
+    auto charsPtrLocalLE =
+        LLVMBuildAlloca(builder, LLVMArrayType(LLVMInt8Type(), bufferSize), "charsPtrLocal");
+    auto itoaDestPtrLE =
+        LLVMBuildPointerCast(
+            builder, charsPtrLocalLE, LLVMPointerType(LLVMInt8Type(), 0), "itoaDestPtr");
+    std::vector<LLVMValueRef> atoiArgsLE = { intLE, itoaDestPtrLE, constI64LE(bufferSize) };
+    LLVMBuildCall(builder, globalState->intToCStr, atoiArgsLE.data(), atoiArgsLE.size(), "");
+
+    std::vector<LLVMValueRef> strlenArgsLE = { itoaDestPtrLE };
+    auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
+
+    auto strWrapperPtrLE = mallocStr(globalState, builder, lengthLE);
+    auto innerStrWrapperLE = getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
+    std::vector<LLVMValueRef> argsLE = { innerStrWrapperLE, itoaDestPtrLE };
+    LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+    return strWrapperPtrLE;
   } else if (name == "F(\"__and\",[],[R(*,<,b),R(*,<,b)])") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildAnd(

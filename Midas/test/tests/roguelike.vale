@@ -413,7 +413,7 @@ fn display(board &Array<mut, Array<mut, Str>>, playerRow Int, playerCol Int) {
   print(toPrint);
 }
 
-fn main() {
+fn main() Int {
   board = makeBoard();
 
   playerRow! = 4;
@@ -443,8 +443,5 @@ fn main() {
       mut playerCol = newPlayerCol;
     }
   }
+  = 0;
 }
-
-
-
-

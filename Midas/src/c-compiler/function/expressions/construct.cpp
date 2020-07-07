@@ -26,9 +26,10 @@ LLVMValueRef constructCountedStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMTypeRef structL,
+    Reference* structTypeM,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
-  auto newStructPtrLE = mallocStruct(globalState, builder, structL);
+  LLVMValueRef newStructPtrLE = allocateStruct(globalState, builder, structTypeM, structL);
   auto objIdLE =
       fillControlBlock(
           globalState, builder,
@@ -82,7 +83,7 @@ LLVMValueRef translateConstruct(
     case Mutability::MUTABLE: {
       auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
       return constructCountedStruct(
-          from, globalState, builder, countedStructL, structM, membersLE);
+          from, globalState, builder, countedStructL, desiredReference, structM, membersLE);
     }
     case Mutability::IMMUTABLE: {
       if (desiredReference->location == Location::INLINE) {
@@ -94,7 +95,7 @@ LLVMValueRef translateConstruct(
         auto countedStructL =
             globalState->getCountedStruct(structReferend->fullName);
         return constructCountedStruct(
-            from, globalState, builder, countedStructL, structM, membersLE);
+            from, globalState, builder, countedStructL, desiredReference, structM, membersLE);
       }
     }
     default:

@@ -16,11 +16,14 @@ LLVMValueRef getKnownSizeArrayContentsPtr(
 
 LLVMValueRef getUnknownSizeArrayLengthPtr(
     LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE) {
-  return LLVMBuildStructGEP(
-      builder,
-      unknownSizeArrayWrapperPtrLE,
-      1, // Length is after the control block and before contents.
-      "usaLenPtr");
+  auto resultLE =
+      LLVMBuildStructGEP(
+          builder,
+          unknownSizeArrayWrapperPtrLE,
+          1, // Length is after the control block and before contents.
+          "usaLenPtr");
+  assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt64Type(), 0));
+  return resultLE;
 }
 
 LLVMValueRef getUnknownSizeArrayLength(

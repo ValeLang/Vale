@@ -41,45 +41,79 @@ LLVMValueRef translateExpression(
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     return translateDiscard(globalState, functionState, builder, discardM);
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
-    return LLVMBuildRet(
-        builder,
-        translateExpression(
-            globalState, functionState, builder, ret->sourceExpr));
+    auto sourceLE = translateExpression(globalState, functionState, builder, ret->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, ret->sourceType, sourceLE);
+    return LLVMBuildRet(builder, sourceLE);
   } else if (auto stackify = dynamic_cast<Stackify*>(expr)) {
-    auto valueToStore =
+    auto valueToStoreLE =
         translateExpression(
             globalState, functionState, builder, stackify->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, stackify->local->type, valueToStoreLE);
     makeLocal(
-        globalState, functionState, builder, stackify->local, valueToStore);
+        globalState, functionState, builder, stackify->local, valueToStoreLE);
     return makeNever();
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     // The purpose of LocalStore is to put a swap value into a local, and give
     // what was in it.
     auto localAddr = functionState->getLocalAddr(*localStore->local->id);
-    auto oldValue =
+    auto oldValueLE =
         LLVMBuildLoad(builder, localAddr, localStore->localName.c_str());
-    auto valueToStore =
+    checkValidReference(FL(), globalState, functionState, builder, localStore->local->type, oldValueLE);
+    auto valueToStoreLE =
         translateExpression(
             globalState, functionState, builder, localStore->sourceExpr);
-    LLVMBuildStore(builder, valueToStore, localAddr);
-    return oldValue;
+    checkValidReference(FL(), globalState, functionState, builder, localStore->local->type, valueToStoreLE);
+    LLVMBuildStore(builder, valueToStoreLE, localAddr);
+    return oldValueLE;
   } else if (auto localLoad = dynamic_cast<LocalLoad*>(expr)) {
-    if (localLoad->local->type->location == Location::INLINE) {
+    if (localLoad->local->type->ownership == Ownership::SHARE) {
+      if (localLoad->local->type->location == Location::INLINE) {
+        auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
+        auto resultLE = LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
+        checkValidReference(FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
+        return resultLE;
+      } else {
+        auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
+        auto resultLE =
+            LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
+        checkValidReference(FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
+        adjustRc(AFL("LocalLoad"), globalState, builder, resultLE,
+            localLoad->local->type, 1);
+        return resultLE;
+      }
+    } else if (localLoad->local->type->ownership == Ownership::OWN) {
+      assert(localLoad->targetOwnership != Ownership::OWN);
+
+      // We do the same thing for inline and yonder muts, the only difference is
+      // where the memory lives.
+
       auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
-      return LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
-    } else {
+      auto resultLE = LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
+      checkValidReference(FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
+      adjustRc(AFL("LocalLoad"), globalState, builder, resultLE, localLoad->local->type, 1);
+      return resultLE;
+    } else if (localLoad->local->type->ownership == Ownership::BORROW) {
+      assert(localLoad->local->type->location != Location::INLINE);
+
       auto localAddr = functionState->getLocalAddr(*localLoad->local->id);
-      auto ptrLE =
+      auto resultLE =
           LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
-      adjustRc(AFL("LocalLoad"), globalState, builder, ptrLE, localLoad->local->type, 1);
-      return ptrLE;
+      checkValidReference(FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
+      adjustRc(AFL("LocalLoad"), globalState, builder, resultLE,
+          localLoad->local->type, 1);
+      return resultLE;
+    } else {
+      assert(false);
     }
   } else if (auto unstackify = dynamic_cast<Unstackify*>(expr)) {
     // The purpose of Unstackify is to destroy the local and give what was in
     // it, but in LLVM there's no instruction (or need) for destroying a local.
     // So, we just give what was in it. It's ironically identical to LocalLoad.
     auto localAddr = functionState->getLocalAddr(*unstackify->local->id);
-    return LLVMBuildLoad(builder, localAddr, "");
+    forgetLocal(functionState, unstackify->local);
+    auto resultLE = LLVMBuildLoad(builder, localAddr, "");
+    checkValidReference(FL(), globalState, functionState, builder, unstackify->local->type, resultLE);
+    return resultLE;
   } else if (auto call = dynamic_cast<Call*>(expr)) {
     return translateCall(globalState, functionState, builder, call);
   } else if (auto externCall = dynamic_cast<ExternCall*>(expr)) {
@@ -174,7 +208,7 @@ LLVMValueRef translateExpression(
 
     auto arrayWrapperLE = translateExpression(globalState, functionState, builder, arrayExpr);
     auto arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperLE);
-    auto arrayLenLE = getUnknownSizeArrayLength(builder, arrayPtrLE);
+    auto arrayLenLE = getUnknownSizeArrayLength(builder, arrayWrapperLE);
 
     auto consumerLE = translateExpression(globalState, functionState, builder, consumerExpr);
 

@@ -32,11 +32,9 @@ void makeLocal(
     Local* local,
     LLVMValueRef valueToStore);
 
-void flare(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    int color,
-    LLVMValueRef numExpr);
+void forgetLocal(
+    FunctionState* functionState,
+    Local* local);
 
 void acquireReference(
     AreaAndFileAndLine from,
@@ -151,5 +149,20 @@ LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int valu
 inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);
 }
+
+
+void buildAssertCensusContains(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef refLE);
+
+void checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef refLE);
 
 #endif

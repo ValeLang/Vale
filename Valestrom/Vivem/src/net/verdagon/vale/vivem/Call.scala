@@ -13,6 +13,7 @@ class Call(callId: CallId, in_args: Vector[ReferenceV]) {
   def addLocal(varAddr: VariableAddressV, reference: ReferenceV, tyype: ReferenceH[ReferendH]): Unit = {
     vassert(varAddr.callId == callId)
     vassert(!locals.contains(varAddr))
+    vassert(!locals.exists(_._1.local.id.number == varAddr.local.id.number))
     locals.put(varAddr, VariableV(varAddr, reference, tyype))
   }
 

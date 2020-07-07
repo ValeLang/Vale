@@ -438,11 +438,14 @@ public:
 
 class Return : public Expression {
 public:
-    Expression *sourceExpr;
+  Expression *sourceExpr;
+  Reference* sourceType;
 
-    Return(
-        Expression *sourceExpr_)
-        : sourceExpr(sourceExpr_) {}
+  Return(
+    Expression *sourceExpr_,
+    Reference* sourceType_)
+    : sourceExpr(sourceExpr_),
+      sourceType(sourceType_) {}
 };
 
 

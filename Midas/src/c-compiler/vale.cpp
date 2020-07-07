@@ -82,9 +82,9 @@ void initInternalExterns(GlobalState* globalState) {
   }
 
   {
-    LLVMTypeRef retType = LLVMPointerType(LLVMInt64Type(), 0);
+    LLVMTypeRef retType = LLVMInt64Type();
     LLVMTypeRef funcType = LLVMFunctionType(retType, nullptr, 0, 0);
-    globalState->getch = LLVMAddFunction(globalState->mod, "getch", funcType);
+    globalState->getch = LLVMAddFunction(globalState->mod, "getchar", funcType);
   }
 
   {
@@ -143,6 +143,53 @@ void initInternalExterns(GlobalState* globalState) {
     };
     LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
     globalState->printVStr = LLVMAddFunction(globalState->mod, "__vprintStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMInt64Type(),
+        LLVMPointerType(LLVMInt8Type(), 0),
+        LLVMInt64Type(),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->intToCStr = LLVMAddFunction(globalState->mod, "__vintToCStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMInt64Type();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMInt8Type(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->strlen = LLVMAddFunction(globalState->mod, "strlen", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMInt64Type();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMVoidType(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->censusContains = LLVMAddFunction(globalState->mod, "__vcensusContains", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMVoidType(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->censusAdd = LLVMAddFunction(globalState->mod, "__vcensusAdd", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMVoidType(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->censusRemove = LLVMAddFunction(globalState->mod, "__vcensusRemove", funcType);
   }
 }
 

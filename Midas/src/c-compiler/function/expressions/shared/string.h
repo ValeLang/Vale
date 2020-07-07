@@ -15,4 +15,9 @@ LLVMValueRef getLenFromStrWrapperPtr(
     LLVMBuilderRef builder,
     LLVMValueRef strWrapperPtrLE);
 
+LLVMValueRef buildConstantVStr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    const std::string& contents);
+
 #endif

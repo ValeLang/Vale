@@ -80,6 +80,7 @@ std::unordered_map<K, V> readArrayIntoMap(Cache* cache, const json& j, const F& 
   map.reserve(j.size());
   for (const auto& element : j) {
     std::pair<K, V> p = f(cache, element);
+//    assert(map.find(p.first) == map.end());
     map.emplace(move(p.first), move(p.second));
   }
   return map;
@@ -297,7 +298,8 @@ Expression* readExpression(Cache* cache, const json& expression) {
         expression["value"]);
   } else if (type == "Return") {
     return new Return(
-        readExpression(cache, expression["sourceExpr"]));
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]));
   } else if (type == "Stackify") {
     return new Stackify(
         readExpression(cache, expression["sourceExpr"]),

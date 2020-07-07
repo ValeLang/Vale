@@ -18,7 +18,9 @@ public:
   Program* program;
   LLVMValueRef objIdCounter;
   LLVMValueRef liveHeapObjCounter;
-  LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printCStr, getch, printInt, printBool, initStr, addStr, eqStr, printVStr;
+  LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printCStr,
+      getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
+      strlen, censusContains, censusAdd, censusRemove;
 
   int controlBlockTypeStrIndex;
   int controlBlockObjIdIndex;

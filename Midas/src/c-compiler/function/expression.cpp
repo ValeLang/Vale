@@ -51,7 +51,7 @@ LLVMValueRef translateExpression(
     checkValidReference(FL(), globalState, functionState, builder, stackify->local->type, valueToStoreLE);
     makeLocal(
         globalState, functionState, builder, stackify->local, valueToStoreLE);
-    return makeNever();
+    return makeConstExpr(builder, makeNever());
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     // The purpose of LocalStore is to put a swap value into a local, and give
     // what was in it.
@@ -209,7 +209,7 @@ LLVMValueRef translateExpression(
 
     discard(AFL("DestroyKSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
-    return makeNever();
+    return makeConstExpr(builder, makeNever());
   } else if (auto destroyUnknownSizeArrayIntoFunction = dynamic_cast<DestroyUnknownSizeArray*>(expr)) {
     auto consumerType = destroyUnknownSizeArrayIntoFunction->consumerType;
     auto arrayReferend = destroyUnknownSizeArrayIntoFunction->arrayReferend;
@@ -251,7 +251,7 @@ LLVMValueRef translateExpression(
 
     discard(AFL("DestroyUSAIntoF"), globalState, functionState, builder, consumerType, consumerLE);
 
-    return makeNever();
+    return makeConstExpr(builder, makeNever());
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
     auto arrayType = knownSizeArrayLoad->arrayType;
     auto arrayExpr = knownSizeArrayLoad->arrayExpr;
@@ -391,6 +391,13 @@ LLVMValueRef translateExpression(
             1,
             "interfaceRef");
     return interfaceRefLE;
+  } else if (auto unreachableMoot = dynamic_cast<UnreachableMoot*>(expr)) {
+    auto sourceLE = translateExpression(globalState, functionState, builder, unreachableMoot->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, unreachableMoot->sourceType, sourceLE);
+    discard(
+        AFL("MemberLoad drop struct"),
+        globalState, functionState, builder, unreachableMoot->sourceType, sourceLE);
+    return makeConstExpr(builder, makeNever());
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;

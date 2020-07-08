@@ -8,6 +8,12 @@
 // This is useful in a lot of situations, for example:
 // - The return type of Panic()
 // - The result of the Discard node
+LLVMTypeRef makeNeverType() {
+  // We arbitrarily use a zero-len array of i57 here because it's zero sized and
+  // very unlikely to be used anywhere else.
+  // We could use an empty struct instead, but this'll do.
+  return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
+}
 LLVMValueRef makeNever() {
   LLVMValueRef empty[1] = {};
   // We arbitrarily use a zero-len array of i57 here because it's zero sized and
@@ -222,13 +228,14 @@ LLVMValueRef buildInterfaceCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
 }
 
-LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
-  auto localAddr = LLVMBuildAlloca(builder, type, "");
-  LLVMBuildStore(
-      builder,
-      LLVMConstInt(type, value, false),
-      localAddr);
+LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr) {
+  auto localAddr = LLVMBuildAlloca(builder, LLVMTypeOf(constExpr), "");
+  LLVMBuildStore(builder,constExpr,localAddr);
   return LLVMBuildLoad(builder, localAddr, "");
+}
+
+LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+  return makeConstExpr(builder, LLVMConstInt(type, value, false));
 }
 
 void buildAssertCensusContains(

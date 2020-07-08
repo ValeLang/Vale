@@ -24,6 +24,8 @@ LLVMValueRef translateIf(
           builder,
           conditionExpr,
           translateType(globalState, iff->commonSupertype),
+          dynamic_cast<Never*>(iff->thenResultType->referend) != nullptr,
+          dynamic_cast<Never*>(iff->elseResultType->referend) != nullptr,
           [globalState, functionState, iff](LLVMBuilderRef thenBlockBuilder) {
             return translateExpression(
                 globalState, functionState, thenBlockBuilder, iff->thenExpr);

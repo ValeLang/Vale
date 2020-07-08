@@ -26,5 +26,10 @@ LLVMValueRef translateInterfaceCall(
       buildInterfaceCall(
           builder, argExprsLE, call->virtualParamIndex, call->indexInEdge);
   checkValidReference(FL(), globalState, functionState, builder, call->functionType->returnType, resultLE);
-  return resultLE;
+
+  if (dynamic_cast<Never*>(call->functionType->returnType->referend) != nullptr) {
+    return makeConstExpr(builder, makeNever());
+  } else {
+    return resultLE;
+  }
 }

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/shared.h>
 
 #include "translatetype.h"
 
@@ -73,8 +74,17 @@ void translateFunction(
 
   // Translate the body of the function. Can ignore the result because it's a
   // Never, because Valestrom guarantees we end function bodies in a ret.
-  translateExpression(
-      globalState, &functionState, bodyTopLevelBuilder, functionM->block);
+  auto resultLE =
+      translateExpression(
+          globalState, &functionState, bodyTopLevelBuilder, functionM->block);
+
+  // This is a total hack, to try and appease LLVM to say that yes, we're sure
+  // we'll never reach this statement.
+  // In .ll we can call a noreturn function and then put an unreachable block,
+  // but I can't figure out how to specify noreturn with the LLVM C API.
+  if (LLVMTypeOf(resultLE) == makeNeverType()) {
+    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(translateType(globalState, functionM->prototype->returnType)));
+  }
 
   LLVMDisposeBuilder(bodyTopLevelBuilder);
 }

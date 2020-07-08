@@ -52,5 +52,5 @@ LLVMValueRef translateDestructure(
   freeConcrete(AFL("Destroy freeing"), globalState, functionState, builder,
       structLE, destructureM->structType);
 
-  return makeNever();
+  return makeConstExpr(builder, makeNever());
 }

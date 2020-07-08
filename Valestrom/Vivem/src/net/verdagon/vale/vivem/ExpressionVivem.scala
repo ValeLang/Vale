@@ -20,8 +20,8 @@ object ExpressionVivem {
     void
   }
 
-  def makePrimitive(heap: Heap, callId: CallId, referend: ReferendV) = {
-    val ref = heap.allocateTransient(ShareH, InlineH, referend)
+  def makePrimitive(heap: Heap, callId: CallId, location: LocationH, referend: ReferendV) = {
+    val ref = heap.allocateTransient(ShareH, location, referend)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId), ref)
     ref
   }
@@ -82,19 +82,19 @@ object ExpressionVivem {
         vfail()
       }
       case ConstantI64H(value) => {
-        val ref = makePrimitive(heap, callId, IntV(value))
+        val ref = makePrimitive(heap, callId, InlineH, IntV(value))
         NodeContinue(ref)
       }
       case ConstantF64H(value) => {
-        val ref = makePrimitive(heap, callId, FloatV(value))
+        val ref = makePrimitive(heap, callId, InlineH, FloatV(value))
         NodeContinue(ref)
       }
       case ConstantStrH(value) => {
-        val ref = makePrimitive(heap, callId, StrV(value))
+        val ref = makePrimitive(heap, callId, YonderH, StrV(value))
         NodeContinue(ref)
       }
       case ConstantBoolH(value) => {
-        val ref = makePrimitive(heap, callId, BoolV(value))
+        val ref = makePrimitive(heap, callId, InlineH, BoolV(value))
         NodeContinue(ref)
       }
       case ArgumentH(resultType, argumentIndex) => {
@@ -232,7 +232,7 @@ object ExpressionVivem {
 
         discard(programH, heap, stdout, stdin, callId, arrExpr.resultType, arrayReference)
 
-        val lenRef = makePrimitive(heap, callId, IntV(arr.getSize()))
+        val lenRef = makePrimitive(heap, callId, InlineH, IntV(arr.getSize()))
         NodeContinue(lenRef)
       }
       case StackifyH(sourceExpr, localIndex, name) => {

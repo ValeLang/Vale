@@ -4,6 +4,7 @@
 #include <llvm-c/Core.h>
 
 #include <unordered_map>
+#include <metal/metalcache.h>
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
@@ -15,12 +16,14 @@ public:
   LLVMTargetDataRef dataLayout;
   LLVMModuleRef mod;
 
+  MetalCache metalCache;
+
   Program* program;
   LLVMValueRef objIdCounter;
   LLVMValueRef liveHeapObjCounter;
   LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printCStr,
       getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
-      strlen, censusContains, censusAdd, censusRemove;
+      strlen, censusContains, censusAdd, censusRemove, panic;
 
   int controlBlockTypeStrIndex;
   int controlBlockObjIdIndex;

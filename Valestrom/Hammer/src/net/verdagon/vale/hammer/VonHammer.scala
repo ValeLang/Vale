@@ -267,7 +267,8 @@ object VonHammer {
           "UnreachableMoot",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
       case ConstantBoolH(value) => {
         VonObject(
@@ -574,7 +575,9 @@ object VonHammer {
           Vector(
             VonMember("conditionBlock", vonifyNode(conditionBlock)),
             VonMember("thenBlock", vonifyNode(thenBlock)),
+            VonMember("thenResultType", vonifyCoord(thenBlock.resultType)),
             VonMember("elseBlock", vonifyNode(elseBlock)),
+            VonMember("elseResultType", vonifyCoord(elseBlock.resultType)),
             VonMember("commonSupertype", vonifyCoord(commonSupertype))))
       }
       case WhileH(bodyBlock) => {

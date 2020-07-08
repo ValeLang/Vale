@@ -3,42 +3,6 @@
 #define VALE_INSTRUCTIONS_H_
 
 class Expression;
-class ConstantI64;
-class ConstantVoid;
-class ConstantBool;
-class ConstantStr;
-class ConstantF64;
-class Argument;
-class Stackify;
-class Unstackify;
-class Destroy;
-class StructToInterfaceUpcast;
-class InterfaceToInterfaceUpcast;
-class Unreachable;
-class LocalStore;
-class LocalLoad;
-class MemberStore;
-class MemberLoad;
-class NewArrayFromValues;
-class KnownSizeArrayStore;
-class UnknownSizeArrayStore;
-class UnknownSizeArrayLoad;
-class KnownSizeArrayLoad;
-class Call;
-class InterfaceCall;
-class If;
-class While;
-class InlineBlock;
-class Block;
-class Return;
-class ConstructUnknownSizeArray;
-class DestroyKnownSizeArrayIntoFunction;
-class DestroyUnknownSizeArray;
-class NewStruct;
-class ArrayLength;
-class CheckRefCount;
-class Discard;
-class Expression;
 class IRegister;
 class ReferenceRegister;
 class AddressRegister;
@@ -178,8 +142,16 @@ public:
   InterfaceReferend* targetInterfaceRef;
 };
 
-class Unreachable : public Expression {
+class UnreachableMoot : public Expression {
 public:
+  Expression* sourceExpr;
+  Reference* sourceType;
+
+  UnreachableMoot(
+      Expression* sourceExpr_,
+      Reference* sourceType_) :
+      sourceExpr(sourceExpr_),
+      sourceType(sourceType_) {}
 };
 
 class LocalStore : public Expression {
@@ -412,17 +384,23 @@ class If : public Expression {
 public:
   Expression * conditionExpr;
   Expression * thenExpr;
+  Reference * thenResultType;
   Expression * elseExpr;
+  Reference * elseResultType;
   Reference * commonSupertype;
 
   If(
       Expression * conditionExpr_,
       Expression * thenExpr_,
+      Reference* thenResultType_,
       Expression * elseExpr_,
+      Reference* elseResultType_,
       Reference * commonSupertype_) :
     conditionExpr(conditionExpr_),
     thenExpr(thenExpr_),
+    thenResultType(thenResultType_),
     elseExpr(elseExpr_),
+    elseResultType(elseResultType_),
     commonSupertype(commonSupertype_) {}
 };
 

@@ -60,6 +60,8 @@ LLVMValueRef buildIfElse(
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     LLVMTypeRef resultTypeL,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildThen,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) {
 
@@ -106,11 +108,15 @@ LLVMValueRef buildIfElse(
       LLVMAppendBasicBlock(
           functionState->containingFunc,
           functionState->nextBlockName().c_str());
-  // Instruction to jump to the afterward block.
-  LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
+  if (!thenResultIsNever) {
+    // Instruction to jump to the afterward block.
+    LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
+  }
   LLVMDisposeBuilder(thenBlockBuilder);
-  // Instruction to jump to the afterward block.
-  LLVMBuildBr(elseBlockBuilder, afterwardBlockL);
+  if (!elseResultIsNever) {
+    // Instruction to jump to the afterward block.
+    LLVMBuildBr(elseBlockBuilder, afterwardBlockL);
+  }
   LLVMDisposeBuilder(elseBlockBuilder);
   // Like explained above, here we're re-pointing the `builder` to point at
   // the afterward block, so that subsequent instructions (after the If) can
@@ -118,19 +124,27 @@ LLVMValueRef buildIfElse(
   // block we're making here.
   LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
 
-  // Now, we fill in the afterward block, to receive the result value of the
-  // then or else block, whichever we just came from.
-  auto phi = LLVMBuildPhi(builder, resultTypeL, "");
-  LLVMValueRef incomingValueRefs[2] = { thenExpr, elseExpr };
-  LLVMBasicBlockRef incomingBlocks[2] = { thenFinalBlockL, elseFinalBlockL };
-  LLVMAddIncoming(phi, incomingValueRefs, incomingBlocks, 2);
+  if (thenResultIsNever && elseResultIsNever) {
+    assert(false); // implement
+  } else if (thenResultIsNever) {
+    return elseExpr;
+  } else if (elseResultIsNever) {
+    return thenExpr;
+  } else {
+    // Now, we fill in the afterward block, to receive the result value of the
+    // then or else block, whichever we just came from.
+    auto phi = LLVMBuildPhi(builder, resultTypeL, "");
+    LLVMValueRef incomingValueRefs[2] = {thenExpr, elseExpr};
+    LLVMBasicBlockRef incomingBlocks[2] = {thenFinalBlockL, elseFinalBlockL};
+    LLVMAddIncoming(phi, incomingValueRefs, incomingBlocks, 2);
 
-  // We're done with the "current" block, and also the "then" and "else"
-  // blocks, nobody else will write to them now.
-  // We re-pointed the `builder` to point at the "afterward" block, and
-  // subsequent instructions after the if will keep adding to that.
+    // We're done with the "current" block, and also the "then" and "else"
+    // blocks, nobody else will write to them now.
+    // We re-pointed the `builder` to point at the "afterward" block, and
+    // subsequent instructions after the if will keep adding to that.
 
-  return phi;
+    return phi;
+  }
 }
 
 void buildWhile(
@@ -186,7 +200,12 @@ void buildWhile(
       [functionState, buildCondition, buildBody](LLVMBuilderRef bodyBuilder) {
         auto conditionLE = buildCondition(bodyBuilder);
         return buildIfElse(
-            functionState, bodyBuilder, conditionLE, LLVMInt1Type(),
+            functionState,
+            bodyBuilder,
+            conditionLE,
+            LLVMInt1Type(),
+            false,
+            false,
             [buildBody](LLVMBuilderRef thenBlockBuilder) {
               buildBody(thenBlockBuilder);
               // Return true, so the while loop will keep executing.

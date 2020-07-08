@@ -169,8 +169,8 @@ class ValeTest(unittest.TestCase):
     def test_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code("unstackifyret.vale", 42)
 
-    def test_mutusatwice(self) -> None:
-        self.compile_and_execute_and_expect_return_code("mutusatwice.vale", 42)
+    def test_unreachablemoot(self) -> None:
+        self.compile_and_execute_and_expect_return_code("unreachablemoot.vale", 42)
 
     def test_roguelike(self) -> None:
         self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)

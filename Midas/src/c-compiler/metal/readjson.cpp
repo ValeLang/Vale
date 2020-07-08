@@ -3,58 +3,14 @@
 #include "readjson.h"
 #include "metal/instructions.h"
 #include "metal/ast.h"
+#include "metalcache.h"
 
 // for convenience
 using json = nlohmann::json;
 
-struct HashRefVec {
-  size_t operator()(const std::vector<Reference *> &refs) const {
-    size_t result = 1337;
-    for (auto el : refs) {
-      result += (size_t) el;
-    }
-    return result;
-  }
-};
-struct RefVecEquals {
-  bool operator()(
-      const std::vector<Reference *> &a,
-      const std::vector<Reference *> &b) const {
-    if (a.size() != b.size())
-      return false;
-    for (size_t i = 0; i < a.size(); i++) {
-      if (a[i] != b[i])
-        return false;
-    }
-    return true;
-  }
-};
-
-class Cache {
-public:
-  Int* innt = new Int();
-  Bool* boool = new Bool();
-  Str* str = new Str();
-  Void* vooid = new Void();
-  Never* never = new Never();
-
-  std::unordered_map<Name*, StructReferend*> structReferends;
-  std::unordered_map<Name*, InterfaceReferend*> interfaceReferends;
-  std::unordered_map<std::string, Name*> names;
-
-  // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
-  std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
-  std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
-  std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
-  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> references;
-  std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
-  std::unordered_map<int, VariableId*> variableIds;
-  std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
-};
-
-Reference* readReference(Cache* cache, const json& reference);
-Ownership readOwnership(Cache* cache, const json& ownership);
-Location readLocation(Cache* cache, const json& location);
+Reference* readReference(MetalCache* cache, const json& reference);
+Ownership readOwnership(MetalCache* cache, const json& ownership);
+Location readLocation(MetalCache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 
 //template<typename T>
@@ -64,7 +20,7 @@ Mutability readMutability(const json& mutability);
 template<
     typename F,
     typename T = decltype((*(const F*)nullptr)(nullptr, *(const json*)nullptr))>
-std::vector<T> readArray(Cache* cache, const json& j, const F& f) {
+std::vector<T> readArray(MetalCache* cache, const json& j, const F& f) {
   assert(j.is_array());
   auto vec = std::vector<T>{};
   for (const auto& element : j) {
@@ -74,7 +30,7 @@ std::vector<T> readArray(Cache* cache, const json& j, const F& f) {
 }
 // F should return pair<key, value>
 template<typename K, typename V, typename F>
-std::unordered_map<K, V> readArrayIntoMap(Cache* cache, const json& j, const F& f) {
+std::unordered_map<K, V> readArrayIntoMap(MetalCache* cache, const json& j, const F& f) {
   assert(j.is_array());
   auto map = std::unordered_map<K, V>{};
   map.reserve(j.size());
@@ -86,17 +42,7 @@ std::unordered_map<K, V> readArrayIntoMap(Cache* cache, const json& j, const F& 
   return map;
 }
 
-template<typename K, typename V, typename H, typename E, typename F>
-V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeElement) {
-  auto iter = map->find(key);
-  if (iter == map->end()) {
-    auto p = map->emplace(key, makeElement());
-    iter = p.first;
-  }
-  return iter->second;
-}
-
-Name* readName(Cache* cache, const json& name) {
+Name* readName(MetalCache* cache, const json& name) {
   assert(name.is_string());
   auto nameStr = name.get<std::string>();
 
@@ -106,7 +52,7 @@ Name* readName(Cache* cache, const json& name) {
       [&](){ return new Name(nameStr); });
 }
 
-StructReferend* readStructReferend(Cache* cache, const json& referend) {
+StructReferend* readStructReferend(MetalCache* cache, const json& referend) {
   assert(referend[""] == "StructId");
 
   auto structName = readName(cache, referend["name"]);
@@ -117,7 +63,7 @@ StructReferend* readStructReferend(Cache* cache, const json& referend) {
       [&](){ return new StructReferend(structName); });
 }
 
-InterfaceReferend* readInterfaceReferend(Cache* cache, const json& referend) {
+InterfaceReferend* readInterfaceReferend(MetalCache* cache, const json& referend) {
   assert(referend[""] == "InterfaceId");
 
   auto interfaceName = readName(cache, referend["name"]);
@@ -128,7 +74,7 @@ InterfaceReferend* readInterfaceReferend(Cache* cache, const json& referend) {
       [&](){ return new InterfaceReferend(interfaceName); });
 }
 
-RawArrayT* readRawArray(Cache* cache, const json& rawArray) {
+RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
   assert(rawArray[""] == "Array");
 
   auto mutability = readMutability(rawArray["mutability"]);
@@ -140,7 +86,7 @@ RawArrayT* readRawArray(Cache* cache, const json& rawArray) {
       [&](){ return new RawArrayT(mutability, elementType); });
 }
 
-UnknownSizeArrayT* readUnknownSizeArray(Cache* cache, const json& referend) {
+UnknownSizeArrayT* readUnknownSizeArray(MetalCache* cache, const json& referend) {
   auto name = readName(cache, referend["name"]);
   auto rawArray = readRawArray(cache, referend["array"]);
 
@@ -150,7 +96,7 @@ UnknownSizeArrayT* readUnknownSizeArray(Cache* cache, const json& referend) {
       [&](){ return new UnknownSizeArrayT(name, rawArray); });
 }
 
-KnownSizeArrayT* readKnownSizeArray(Cache* cache, const json& referend) {
+KnownSizeArrayT* readKnownSizeArray(MetalCache* cache, const json& referend) {
   auto name = readName(cache, referend["name"]);
   auto rawArray = readRawArray(cache, referend["array"]);
   auto size = referend["size"].get<int>();
@@ -161,7 +107,7 @@ KnownSizeArrayT* readKnownSizeArray(Cache* cache, const json& referend) {
       [&](){ return new KnownSizeArrayT(name, size, rawArray); });
 }
 
-Referend* readReferend(Cache* cache, const json& referend) {
+Referend* readReferend(MetalCache* cache, const json& referend) {
   assert(referend.is_object());
   if (referend[""] == "Int") {
     return cache->innt;
@@ -187,7 +133,7 @@ Referend* readReferend(Cache* cache, const json& referend) {
   }
 }
 
-Reference* readReference(Cache* cache, const json& reference) {
+Reference* readReference(MetalCache* cache, const json& reference) {
   assert(reference.is_object());
   assert(reference[""] == "Ref");
 
@@ -195,10 +141,7 @@ Reference* readReference(Cache* cache, const json& reference) {
   auto location = readLocation(cache, reference["location"]);
   auto referend = readReferend(cache, reference["referend"]);
 
-  return makeIfNotPresent(
-      &cache->references[referend][ownership],
-      location,
-      [&](){ return new Reference(ownership, location, referend); });
+  return cache->getReference(ownership, location, referend);
 }
 
 Mutability readMutability(const json& mutability) {
@@ -223,7 +166,7 @@ Variability readVariability(const json& variability) {
   }
 }
 
-Ownership readOwnership(Cache* cache, const json& ownership) {
+Ownership readOwnership(MetalCache* cache, const json& ownership) {
   assert(ownership.is_object());
 //  std::cout << ownership.type() << std::endl;
   if (ownership[""].get<std::string>() == "Own") {
@@ -237,7 +180,7 @@ Ownership readOwnership(Cache* cache, const json& ownership) {
   }
 }
 
-Location readLocation(Cache* cache, const json& location) {
+Location readLocation(MetalCache* cache, const json& location) {
   assert(location.is_object());
 //  std::cout << location.type() << std::endl;
   if (location[""].get<std::string>() == "Inline") {
@@ -249,7 +192,7 @@ Location readLocation(Cache* cache, const json& location) {
   }
 }
 
-Prototype* readPrototype(Cache* cache, const json& prototype) {
+Prototype* readPrototype(MetalCache* cache, const json& prototype) {
   assert(prototype.is_object());
   assert(prototype[""] == "Prototype");
 
@@ -263,7 +206,7 @@ Prototype* readPrototype(Cache* cache, const json& prototype) {
       [&](){ return new Prototype(name, params, retuurn); });
 }
 
-VariableId* readVariableId(Cache* cache, const json& variable) {
+VariableId* readVariableId(MetalCache* cache, const json& variable) {
   assert(variable.is_object());
   assert(variable[""] == "VariableId");
 
@@ -275,7 +218,7 @@ VariableId* readVariableId(Cache* cache, const json& variable) {
       [&](){ return new VariableId(number, ""); });
 }
 
-Local* readLocal(Cache* cache, const json& local) {
+Local* readLocal(MetalCache* cache, const json& local) {
   assert(local.is_object());
   assert(local[""] == "Local");
   auto varId = readVariableId(cache, local["id"]);
@@ -287,7 +230,7 @@ Local* readLocal(Cache* cache, const json& local) {
       [&](){ return new Local(varId, ref); });
 }
 
-Expression* readExpression(Cache* cache, const json& expression) {
+Expression* readExpression(MetalCache* cache, const json& expression) {
   assert(expression.is_object());
   std::string type = expression[""];
   if (type == "ConstantI64") {
@@ -350,7 +293,9 @@ Expression* readExpression(Cache* cache, const json& expression) {
     return new If(
         readExpression(cache, expression["conditionBlock"]),
         readExpression(cache, expression["thenBlock"]),
+        readReference(cache, expression["thenResultType"]),
         readExpression(cache, expression["elseBlock"]),
+        readReference(cache, expression["elseResultType"]),
         readReference(cache, expression["commonSupertype"]));
   } else if (type == "While") {
     return new While(
@@ -442,13 +387,17 @@ Expression* readExpression(Cache* cache, const json& expression) {
   } else if (type == "ConstantStr") {
     return new ConstantStr(
         expression["value"]);
+  } else if (type == "UnreachableMoot") {
+    return new UnreachableMoot(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);
   }
 }
 
-StructMember* readStructMember(Cache* cache, const json& struuct) {
+StructMember* readStructMember(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "StructMember");
   return new StructMember(
@@ -457,7 +406,7 @@ StructMember* readStructMember(Cache* cache, const json& struuct) {
       readReference(cache, struuct["type"]));
 }
 
-InterfaceMethod* readInterfaceMethod(Cache* cache, const json& struuct) {
+InterfaceMethod* readInterfaceMethod(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "InterfaceMethod");
   return new InterfaceMethod(
@@ -465,7 +414,7 @@ InterfaceMethod* readInterfaceMethod(Cache* cache, const json& struuct) {
       struuct["virtualParamIndex"]);
 }
 
-std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(Cache* cache, const json& edge) {
+std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
   assert(edge[""] == "Entry");
   return std::make_pair(
@@ -473,7 +422,7 @@ std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(Cac
       readPrototype(cache, edge["value"]));
 }
 
-Edge* readEdge(Cache* cache, const json& edge) {
+Edge* readEdge(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
   assert(edge[""] == "Edge");
   return new Edge(
@@ -482,7 +431,7 @@ Edge* readEdge(Cache* cache, const json& edge) {
       readArray(cache, edge["methods"], readInterfaceMethodAndPrototypeEntry));
 }
 
-StructDefinition* readStruct(Cache* cache, const json& struuct) {
+StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "Struct");
   return new StructDefinition(
@@ -492,7 +441,7 @@ StructDefinition* readStruct(Cache* cache, const json& struuct) {
       readArray(cache, struuct["members"], readStructMember));
 }
 
-InterfaceDefinition* readInterface(Cache* cache, const json& struuct) {
+InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "Interface");
   return new InterfaceDefinition(
@@ -502,7 +451,7 @@ InterfaceDefinition* readInterface(Cache* cache, const json& struuct) {
       readArray(cache, struuct["methods"], readInterfaceMethod));
 }
 
-Function* readFunction(Cache* cache, const json& function) {
+Function* readFunction(MetalCache* cache, const json& function) {
   assert(function.is_object());
   assert(function[""] == "Function");
   return new Function(
@@ -510,7 +459,7 @@ Function* readFunction(Cache* cache, const json& function) {
       readExpression(cache, function["block"]));
 }
 
-std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(Cache* cache, const json& edge) {
+std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
   assert(edge[""] == "Entry");
   return std::make_pair(
@@ -518,36 +467,35 @@ std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(Cache* cache, con
       readPrototype(cache, edge["value"]));
 }
 
-Program* readProgram(const json& program) {
+Program* readProgram(MetalCache* cache, const json& program) {
   assert(program.is_object());
   assert(program[""] == "Program");
-  Cache cache;
   return new Program(
       readArrayIntoMap<std::string, InterfaceDefinition*>(
-          &cache,
+          cache,
           program["interfaces"],
-          [](Cache* cache, json j){
+          [](MetalCache* cache, json j){
             auto s = readInterface(cache, j);
             return std::make_pair(s->name->name, s);
           }),
       readArrayIntoMap<std::string, StructDefinition*>(
-          &cache,
+          cache,
           program["structs"],
-          [](Cache* cache, json j){
+          [](MetalCache* cache, json j){
             auto s = readStruct(cache, j);
             return std::make_pair(s->name->name, s);
           }),
       nullptr,//readStructName(program["emptyPackStructRef"]),
       {},//readArray<readExtern>(program["externs"]),
       readArrayIntoMap<std::string, Function*>(
-          &cache,
+          cache,
           program["functions"],
-          [](Cache* cache, json j){
+          [](MetalCache* cache, json j){
             auto f = readFunction(cache, j);
             return std::make_pair(f->prototype->name->name, f);
           }),
       readArrayIntoMap<Referend*, Prototype*>(
-          &cache,
+          cache,
           program["immDestructorsByKind"],
           readReferendAndPrototypeEntry));
 }

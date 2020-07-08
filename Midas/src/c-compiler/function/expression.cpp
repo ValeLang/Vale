@@ -119,15 +119,21 @@ LLVMValueRef translateExpression(
   } else if (auto externCall = dynamic_cast<ExternCall*>(expr)) {
     return translateExternCall(globalState, functionState, builder, externCall);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
-    return LLVMGetParam(functionState->containingFunc, argument->argumentIndex);
+    auto resultLE = LLVMGetParam(functionState->containingFunc, argument->argumentIndex);
+    checkValidReference(FL(), globalState, functionState, builder, argument->resultType, resultLE);
+    return resultLE;
   } else if (auto constantStr = dynamic_cast<ConstantStr*>(expr)) {
-    return translateConstantStr(FL(), globalState, builder, constantStr);
+    auto resultLE = translateConstantStr(FL(), globalState, builder, constantStr);
+    return resultLE;
   } else if (auto newStruct = dynamic_cast<NewStruct*>(expr)) {
     auto memberExprs =
         translateExpressions(
             globalState, functionState, builder, newStruct->sourceExprs);
-    return translateConstruct(
-        AFL("NewStruct"), globalState, builder, newStruct->resultType, memberExprs);
+    auto resultLE =
+        translateConstruct(
+            AFL("NewStruct"), globalState, builder, newStruct->resultType, memberExprs);
+    checkValidReference(FL(), globalState, functionState, builder, newStruct->resultType, resultLE);
+    return resultLE;
   } else if (auto block = dynamic_cast<Block*>(expr)) {
     auto exprs =
         translateExpressions(globalState, functionState, builder, block->exprs);
@@ -140,9 +146,10 @@ LLVMValueRef translateExpression(
   } else if (auto destructureM = dynamic_cast<Destroy*>(expr)) {
     return translateDestructure(globalState, functionState, builder, destructureM);
   } else if (auto memberLoad = dynamic_cast<MemberLoad*>(expr)) {
-    auto structExpr =
+    auto structLE =
         translateExpression(
             globalState, functionState, builder, memberLoad->structExpr);
+    checkValidReference(FL(), globalState, functionState, builder, memberLoad->structType, structLE);
     auto mutability = ownershipToMutability(memberLoad->structType->ownership);
     auto memberIndex = memberLoad->memberIndex;
     auto memberName = memberLoad->memberName;
@@ -152,14 +159,15 @@ LLVMValueRef translateExpression(
             globalState,
             builder,
             memberLoad->structType,
-            structExpr,
+            structLE,
             mutability,
             memberLoad->expectedResultType,
             memberIndex,
             memberName);
+    checkValidReference(FL(), globalState, functionState, builder, memberLoad->expectedResultType, resultLE);
     discard(
         AFL("MemberLoad drop struct"),
-        globalState, functionState, builder, memberLoad->structType, structExpr);
+        globalState, functionState, builder, memberLoad->structType, structLE);
     return resultLE;
   } else if (auto destroyKnownSizeArrayIntoFunction = dynamic_cast<DestroyKnownSizeArrayIntoFunction*>(expr)) {
     auto consumerType = destroyKnownSizeArrayIntoFunction->consumerType;
@@ -169,18 +177,21 @@ LLVMValueRef translateExpression(
     auto arrayType = destroyKnownSizeArrayIntoFunction->arrayType;
 
     auto arrayWrapperLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperLE);
     auto arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperLE);
 
     auto consumerLE = translateExpression(globalState, functionState, builder, consumerExpr);
+    checkValidReference(FL(), globalState, functionState, builder, consumerType, consumerLE);
 
     foreachArrayElement(
         functionState, builder, LLVMConstInt(LLVMInt64Type(), arrayReferend->size, false), arrayPtrLE,
-        [globalState, consumerType, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+        [globalState, functionState, consumerType, arrayReferend, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
           acquireReference(AFL("DestroyKSAIntoF consume iteration"), globalState, bodyBuilder, consumerType, consumerLE);
 
           std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
           auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
           auto elementLE = LLVMBuildLoad(bodyBuilder, elementPtrLE, "element");
+          checkValidReference(FL(), globalState, functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementLE);
           std::vector<LLVMValueRef> argExprsLE = { consumerLE, elementLE };
           buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
         });
@@ -207,19 +218,22 @@ LLVMValueRef translateExpression(
     auto arrayType = destroyUnknownSizeArrayIntoFunction->arrayType;
 
     auto arrayWrapperLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperLE);
     auto arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperLE);
     auto arrayLenLE = getUnknownSizeArrayLength(builder, arrayWrapperLE);
 
     auto consumerLE = translateExpression(globalState, functionState, builder, consumerExpr);
+    checkValidReference(FL(), globalState, functionState, builder, consumerType, consumerLE);
 
     foreachArrayElement(
         functionState, builder, arrayLenLE, arrayPtrLE,
-        [globalState, consumerType, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+        [globalState, functionState, consumerType, arrayReferend, arrayPtrLE, consumerLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
           acquireReference(AFL("DestroyUSAIntoF consume iteration"), globalState, bodyBuilder, consumerType, consumerLE);
 
           std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
           auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
           auto elementLE = LLVMBuildLoad(bodyBuilder, elementPtrLE, "element");
+          checkValidReference(FL(), globalState, functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementLE);
           std::vector<LLVMValueRef> argExprsLE = { consumerLE, elementLE };
           buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
         });
@@ -242,34 +256,46 @@ LLVMValueRef translateExpression(
     auto arrayType = knownSizeArrayLoad->arrayType;
     auto arrayExpr = knownSizeArrayLoad->arrayExpr;
     auto indexExpr = knownSizeArrayLoad->indexExpr;
+    auto arrayReferend = knownSizeArrayLoad->arrayReferend;
 
     auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
     auto sizeLE = constI64LE(dynamic_cast<KnownSizeArrayT*>(knownSizeArrayLoad->arrayType->referend)->size);
     auto indexLE = translateExpression(globalState, functionState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
     discard(AFL("KSALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
 
     LLVMValueRef arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
-    return loadElement(globalState, functionState, builder, arrayType, sizeLE, arrayPtrLE, mutability, indexLE);
+    auto resultLE = loadElement(globalState, functionState, builder, arrayType, arrayReferend->rawArray->elementType, sizeLE, arrayPtrLE, mutability, indexLE);
+    checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, arrayPtrLE);
+    return resultLE;
   } else if (auto unknownSizeArrayLoad = dynamic_cast<UnknownSizeArrayLoad*>(expr)) {
     auto arrayType = unknownSizeArrayLoad->arrayType;
     auto arrayExpr = unknownSizeArrayLoad->arrayExpr;
     auto indexExpr = unknownSizeArrayLoad->indexExpr;
+    auto arrayReferend = unknownSizeArrayLoad->arrayReferend;
 
     auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     auto indexLE = translateExpression(globalState, functionState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
     discard(AFL("USALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
 
     LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
-    return loadElement(globalState, functionState, builder, arrayType, sizeLE, arrayPtrLE, mutability, indexLE);
+    auto resultLE = loadElement(globalState, functionState, builder, arrayType, arrayReferend->rawArray->elementType, sizeLE, arrayPtrLE, mutability, indexLE);
+
+    buildFlare(FL(), globalState, builder, "Loading from USA ", arrayPtrLE, " index ", indexLE);
+
+    checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, resultLE);
+    return resultLE;
   } else if (auto arrayLength = dynamic_cast<ArrayLength*>(expr)) {
     auto arrayType = arrayLength->sourceType;
     auto arrayExpr = arrayLength->sourceExpr;
 //    auto indexExpr = arrayLength->indexExpr;
 
     auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     discard(AFL("USALen"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
 
@@ -282,29 +308,36 @@ LLVMValueRef translateExpression(
     return translateInterfaceCall(
         globalState, functionState, builder, interfaceCall);
   } else if (auto memberStore = dynamic_cast<MemberStore*>(expr)) {
-    auto sourceExpr =
-        translateExpression(
-            globalState, functionState, builder, memberStore->sourceExpr);
-    auto structExpr =
-        translateExpression(
-            globalState, functionState, builder, memberStore->structExpr);
     auto structReferend =
         dynamic_cast<StructReferend*>(memberStore->structType->referend);
     auto structDefM = globalState->program->getStruct(structReferend->fullName);
     auto memberIndex = memberStore->memberIndex;
     auto memberName = memberStore->memberName;
+    auto memberType = structDefM->members[memberIndex]->type;
+
+    auto sourceExpr =
+        translateExpression(
+            globalState, functionState, builder, memberStore->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, memberType, sourceExpr);
+
+    auto structExpr =
+        translateExpression(
+            globalState, functionState, builder, memberStore->structExpr);
+    checkValidReference(FL(), globalState, functionState, builder, memberStore->structType, structExpr);
+
     auto oldMemberLE =
         swapMember(
             builder, structDefM, structExpr, memberIndex, memberName, sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, memberType, structExpr);
     discard(
         AFL("MemberStore discard struct"), globalState, functionState, builder,
         memberStore->structType, structExpr);
     return oldMemberLE;
-  } else if (auto structToInterfaceUpcast =
-      dynamic_cast<StructToInterfaceUpcast*>(expr)) {
+  } else if (auto structToInterfaceUpcast = dynamic_cast<StructToInterfaceUpcast*>(expr)) {
     auto sourceLE =
         translateExpression(
             globalState, functionState, builder, structToInterfaceUpcast->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, structToInterfaceUpcast->sourceStructType, sourceLE);
 
     // If it was inline before, upgrade it to a yonder struct.
     // This however also means that small imm virtual params must be pointers,

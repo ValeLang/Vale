@@ -42,19 +42,24 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
 }
 
 LLVMValueRef loadInnerArrayMember(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
+    Reference* elementRefM,
     LLVMValueRef indexLE) {
   assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
   LLVMValueRef indices[2] = {
       constI64LE(0),
       indexLE
   };
-  return LLVMBuildLoad(
-      builder,
-      LLVMBuildGEP(
-          builder, elemsPtrLE, indices, 2, "indexPtr"),
-      "index");
+  auto resultLE =
+      LLVMBuildLoad(
+          builder,
+          LLVMBuildGEP(
+              builder, elemsPtrLE, indices, 2, "indexPtr"),
+          "index");
+  adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
+  return resultLE;
 }
 
 LLVMValueRef loadElement(
@@ -62,6 +67,7 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
@@ -78,10 +84,10 @@ LLVMValueRef loadElement(
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
       return nullptr;
     } else {
-      return loadInnerArrayMember(builder, arrayPtrLE, indexLE);
+      return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    return loadInnerArrayMember(builder, arrayPtrLE, indexLE);
+    return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
   } else {
     assert(false);
     return nullptr;

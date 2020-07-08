@@ -274,12 +274,15 @@ class NewArrayFromValues : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
   Reference* arrayRefType;
+  KnownSizeArrayT* arrayReferend;
 
   NewArrayFromValues(
       std::vector<Expression*> sourceExprs_,
-      Reference* arrayRefType_) :
+      Reference* arrayRefType_,
+      KnownSizeArrayT* arrayReferend_) :
       sourceExprs(sourceExprs_),
-      arrayRefType(arrayRefType_) {}
+      arrayRefType(arrayRefType_),
+      arrayReferend(arrayReferend_) {}
 };
 
 
@@ -303,7 +306,7 @@ class UnknownSizeArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  Referend* arrayReferend;
+  UnknownSizeArrayT* arrayReferend;
   Expression* indexExpr;
   Reference* indexType;
   Referend* indexReferend;
@@ -313,7 +316,7 @@ public:
   UnknownSizeArrayLoad(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      Referend* arrayReferend_,
+      UnknownSizeArrayT* arrayReferend_,
       Expression* indexExpr_,
       Reference* indexType_,
       Referend* indexReferend_,
@@ -334,6 +337,7 @@ class KnownSizeArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
+  KnownSizeArrayT* arrayReferend;
   Expression* indexExpr;
   Reference* resultType;
   Ownership targetOwnership;
@@ -341,11 +345,13 @@ public:
   KnownSizeArrayLoad(
       Expression* arrayExpr_,
       Reference* arrayType_,
+      KnownSizeArrayT* arrayReferend_,
       Expression* indexExpr_,
       Reference* resultType_,
       Ownership targetOwnership_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
+    arrayReferend(arrayReferend_),
     indexExpr(indexExpr_),
     resultType(resultType_),
     targetOwnership(targetOwnership_) {}

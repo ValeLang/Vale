@@ -22,5 +22,7 @@ LLVMValueRef translateCall(
     argsLE.push_back(argLE);
   }
 
-  return LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
+  auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
+  checkValidReference(FL(), globalState, functionState, builder, call->function->returnType, resultLE);
+  return resultLE;
 }

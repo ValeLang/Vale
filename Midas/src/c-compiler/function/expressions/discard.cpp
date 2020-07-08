@@ -22,5 +22,5 @@ LLVMValueRef translateDiscard(
       builder,
       discardM->sourceResultType,
       innerLE);
-  return makeNever();
+  return makeConstExpr(builder, makeNever());
 }

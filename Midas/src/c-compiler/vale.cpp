@@ -243,9 +243,11 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
 
+  GlobalState globalState;
+
   assert(str.size() > 0);
   auto programJ = json::parse(str.c_str());
-  auto program = readProgram(programJ);
+  auto program = readProgram(&globalState.metalCache, programJ);
 
 
 
@@ -274,7 +276,6 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
 
 
-  GlobalState globalState;
   globalState.dataLayout = dataLayout;
   globalState.mod = mod;
   globalState.program = program;

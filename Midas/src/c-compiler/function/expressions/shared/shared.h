@@ -24,6 +24,7 @@ struct AreaAndFileAndLine {
 #define AFL(area) (AreaAndFileAndLine{ (area), __FILE__, __LINE__ })
 
 LLVMValueRef makeNever();
+LLVMTypeRef makeNeverType();
 
 void makeLocal(
     GlobalState* globalState,
@@ -145,6 +146,8 @@ LLVMValueRef buildInterfaceCall(
 
 
 LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value);
+
+LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr);
 
 inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);

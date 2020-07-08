@@ -60,7 +60,7 @@ LLVMValueRef translateExternCall(
     // VivemExterns.addFloatFloat
     assert(false);
   } else if (name == "F(\"panic\")") {
-    return makeNever();
+    return makeConstExpr(builder, makeNever());
   } else if (name == "F(\"__multiplyIntInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     return LLVMBuildMul(

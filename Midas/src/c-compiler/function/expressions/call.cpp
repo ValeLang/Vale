@@ -24,5 +24,10 @@ LLVMValueRef translateCall(
 
   auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
   checkValidReference(FL(), globalState, functionState, builder, call->function->returnType, resultLE);
-  return resultLE;
+
+  if (dynamic_cast<Never*>(call->function->returnType->referend) != nullptr) {
+    return makeConstExpr(builder, makeNever());
+  } else {
+    return resultLE;
+  }
 }

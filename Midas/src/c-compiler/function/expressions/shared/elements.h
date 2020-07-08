@@ -16,6 +16,7 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,

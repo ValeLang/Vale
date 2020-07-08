@@ -334,10 +334,9 @@ object VonHammer {
           "NewArrayFromValues",
           None,
           Vector(
-            VonMember(
-              "sourceExprs",
-              VonArray(None, sourceExprs.map(vonifyNode).toVector)),
-            VonMember("resultType", vonifyCoord(resultType))))
+            VonMember("sourceExprs", VonArray(None, sourceExprs.map(vonifyNode).toVector)),
+            VonMember("resultType", vonifyCoord(resultType)),
+            VonMember("resultReferend", vonifyKind(resultType.kind))))
       }
       case NewStructH(sourceExprs, resultType) => {
         VonObject(
@@ -535,6 +534,7 @@ object VonHammer {
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
             VonMember("indexExpr", vonifyNode(indexExpr)),
             VonMember("resultType", vonifyCoord(ksal.resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership))))

@@ -123,18 +123,18 @@ inline void buildFlare(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     T&&... rest) {
-  buildPrint(globalState, builder, "\033[0;34m");
-  buildPrint(globalState, builder, getFileName(from.file));
-  buildPrint(globalState, builder, ":");
-  buildPrint(globalState, builder, from.line);
-  buildPrint(globalState, builder, "\033[0m");
-  buildPrint(globalState, builder, " ");
-  if (!from.area.empty()) {
-    buildPrint(globalState, builder, getFileName(from.area));
-    buildPrint(globalState, builder, ": ");
-  }
-  buildFlareInner(globalState, builder, std::forward<T>(rest)...);
-  buildPrint(globalState, builder, "\n");
+//  buildPrint(globalState, builder, "\033[0;34m");
+//  buildPrint(globalState, builder, getFileName(from.file));
+//  buildPrint(globalState, builder, ":");
+//  buildPrint(globalState, builder, from.line);
+//  buildPrint(globalState, builder, "\033[0m");
+//  buildPrint(globalState, builder, " ");
+//  if (!from.area.empty()) {
+//    buildPrint(globalState, builder, getFileName(from.area));
+//    buildPrint(globalState, builder, ": ");
+//  }
+//  buildFlareInner(globalState, builder, std::forward<T>(rest)...);
+//  buildPrint(globalState, builder, "\n");
 }
 
 LLVMValueRef buildInterfaceCall(
@@ -152,6 +152,7 @@ inline LLVMValueRef constI64LE(int n) {
 
 
 void buildAssertCensusContains(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

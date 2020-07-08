@@ -16,13 +16,13 @@ LLVMValueRef translateExternCall(
   auto name = call->function->name->name;
   if (name == "F(\"__addIntInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
-    auto left =
+    auto leftLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
-    auto right =
+    auto rightLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]);
-    auto result = LLVMBuildAdd(builder, left, right,"add");
+    auto result = LLVMBuildAdd(builder, leftLE, rightLE,"add");
     return result;
   } else if (name == "F(\"__eqStrStr\",[],[R(*,>,s),R(*,>,s)])") {
     assert(call->argExprs.size() == 2);
@@ -31,11 +31,13 @@ LLVMValueRef translateExternCall(
     auto leftStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperPtrLE);
 
     auto rightStrTypeM = call->argTypes[1];
     auto rightStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperPtrLE);
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
@@ -84,6 +86,7 @@ LLVMValueRef translateExternCall(
     auto leftStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperPtrLE);
     auto leftStrLenLE = getLenFromStrWrapperPtr(builder, leftStrWrapperPtrLE);
 
     auto rightStrTypeM = call->argTypes[1];
@@ -91,6 +94,7 @@ LLVMValueRef translateExternCall(
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]);
     auto rightStrLenLE = getLenFromStrWrapperPtr(builder, rightStrWrapperPtrLE);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperPtrLE);
 
     auto combinedLenLE =
         LLVMBuildAdd(builder, leftStrLenLE, rightStrLenLE, "lenSum");
@@ -106,6 +110,8 @@ LLVMValueRef translateExternCall(
 
     discard(FL(), globalState, functionState, builder, leftStrTypeM, leftStrWrapperPtrLE);
     discard(FL(), globalState, functionState, builder, rightStrTypeM, rightStrWrapperPtrLE);
+
+    checkValidReference(FL(), globalState, functionState, builder, call->function->returnType, destStrWrapperPtrLE);
 
     return destStrWrapperPtrLE;
   } else if (name == "F(\"__getch\")") {
@@ -145,6 +151,7 @@ LLVMValueRef translateExternCall(
     auto argStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], argStrWrapperPtrLE);
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, argStrWrapperPtrLE),

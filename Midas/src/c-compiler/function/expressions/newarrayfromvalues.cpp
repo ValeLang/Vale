@@ -59,6 +59,10 @@ LLVMValueRef translateNewArrayFromValues(
   auto elementsLE =
       translateExpressions(
           globalState, functionState, builder, newArrayFromValues->sourceExprs);
+  for (auto elementLE : elementsLE) {
+    checkValidReference(FL(), globalState, functionState, builder,
+        newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
+  }
 
   auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(newArrayFromValues->arrayRefType->referend);
 
@@ -81,8 +85,17 @@ LLVMValueRef translateNewArrayFromValues(
         auto knownSizeArrayCountedStructLT =
             translateKnownSizeArrayToWrapperStruct(
                 globalState, knownSizeArrayMT);
-        return constructKnownSizeArrayCountedStruct(
-            globalState, builder, newArrayFromValues->arrayRefType, knownSizeArrayCountedStructLT, elementsLE, knownSizeArrayMT->name->name);
+        auto resultLE =
+            constructKnownSizeArrayCountedStruct(
+                globalState,
+                builder,
+                newArrayFromValues->arrayRefType,
+                knownSizeArrayCountedStructLT,
+                elementsLE,
+                knownSizeArrayMT->name->name);
+        checkValidReference(FL(), globalState, functionState, builder,
+            newArrayFromValues->arrayRefType, resultLE);
+        return resultLE;
       }
     }
     default:

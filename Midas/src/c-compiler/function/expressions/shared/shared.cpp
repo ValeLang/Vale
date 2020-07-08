@@ -232,6 +232,7 @@ LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int valu
 }
 
 void buildAssertCensusContains(
+    AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -241,7 +242,7 @@ void buildAssertCensusContains(
           builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
-  buildAssert(FL(), globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
+  buildAssert(checkerAFL, globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
 }
 
 void checkValidReference(
@@ -253,7 +254,7 @@ void checkValidReference(
     LLVMValueRef refLE) {
   if (refM->ownership == Ownership::OWN) {
     auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
-    buildAssertCensusContains(globalState, functionState, builder, controlBlockPtrLE);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
   } else if (refM->ownership == Ownership::SHARE) {
     if (refM->location == Location::INLINE) {
       // Nothing to do, there's no control block or ref counts or anything.
@@ -265,10 +266,10 @@ void checkValidReference(
 //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(0), "");
 //      buildAssert(checkerAFL, globalState, functionState, builder, rcPositiveLE, "Invalid RC!");
 
-      buildAssertCensusContains(globalState, functionState, builder, controlBlockPtrLE);
+      buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else assert(false);
   } else if (refM->ownership == Ownership::BORROW) {
     auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
-    buildAssertCensusContains(globalState, functionState, builder, controlBlockPtrLE);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
   } else assert(false);
 }

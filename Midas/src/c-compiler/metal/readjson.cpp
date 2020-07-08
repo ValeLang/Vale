@@ -378,11 +378,13 @@ Expression* readExpression(Cache* cache, const json& expression) {
   } else if (type == "NewArrayFromValues") {
     return new NewArrayFromValues(
         readArray(cache, expression["sourceExprs"], readExpression),
-        readReference(cache, expression["resultType"]));
+        readReference(cache, expression["resultType"]),
+        readKnownSizeArray(cache, expression["resultReferend"]));
   } else if (type == "KnownSizeArrayLoad") {
     return new KnownSizeArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
+        readKnownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["resultType"]),
         readOwnership(cache, expression["targetOwnership"]));
@@ -390,7 +392,7 @@ Expression* readExpression(Cache* cache, const json& expression) {
     return new UnknownSizeArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readReferend(cache, expression["arrayReferend"]),
+        readUnknownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["indexType"]),
         readReferend(cache, expression["indexReferend"]),

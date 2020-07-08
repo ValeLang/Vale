@@ -5,23 +5,36 @@
 #include "controlblock.h"
 #include "string.h"
 
-LLVMValueRef mallocStruct(
+LLVMValueRef allocateStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* structTypeM,
     LLVMTypeRef structL) {
-  size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, structL);
-  LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
-
-  auto newStructLE =
-      LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
-
   adjustCounter(builder, globalState->liveHeapObjCounter, 1);
 
-  return LLVMBuildBitCast(
-      builder,
-      newStructLE,
-      LLVMPointerType(structL, 0),
-      "newstruct");
+  LLVMValueRef resultPtrLE = nullptr;
+  if (structTypeM->location == Location::INLINE) {
+    resultPtrLE = LLVMBuildAlloca(builder, structL, "newstruct");
+  } else if (structTypeM->location == Location::YONDER) {
+    size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, structL);
+    LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
+
+    auto newStructLE =
+        LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
+
+    resultPtrLE =
+        LLVMBuildBitCast(
+            builder, newStructLE, LLVMPointerType(structL, 0), "newstruct");
+  } else {
+    assert(false);
+    return nullptr;
+  }
+
+  LLVMValueRef resultAsVoidPtrLE =
+      LLVMBuildBitCast(
+          builder, resultPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+  LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+  return resultPtrLE;
 }
 
 LLVMValueRef mallocUnknownSizeArray(
@@ -41,14 +54,19 @@ LLVMValueRef mallocUnknownSizeArray(
               ""),
           "usaMallocSizeBytes");
 
-  auto newWrapperLE =
+  auto newWrapperPtrLE =
       LLVMBuildCall(builder, globalState->malloc, &sizeBytesLE, 1, "");
 
   adjustCounter(builder, globalState->liveHeapObjCounter, 1);
 
+  LLVMValueRef resultAsVoidPtrLE =
+      LLVMBuildBitCast(
+          builder, newWrapperPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+  LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+
   return LLVMBuildBitCast(
       builder,
-      newWrapperLE,
+      newWrapperPtrLE,
       LLVMPointerType(usaWrapperLT, 0),
       "newstruct");
 }
@@ -81,6 +99,11 @@ LLVMValueRef mallocStr(
       globalState, builder, getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
+  LLVMValueRef resultAsVoidPtrLE =
+      LLVMBuildBitCast(
+          builder, newStrWrapperPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+  LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+
   // The caller still needs to initialize the actual chars inside!
 
   return newStrWrapperPtrLE;
@@ -94,20 +117,35 @@ void freeConcrete(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef concreteLE,
+    LLVMValueRef concretePtrLE,
     Reference* concreteRefM) {
 
-  auto rcIsZeroLE = rcIsZero(globalState, builder, concreteLE, concreteRefM);
-  buildAssert(from, globalState, functionState, builder, rcIsZeroLE, "Tried to free concrete that had nonzero RC!");
+  LLVMValueRef resultAsVoidPtrLE =
+      LLVMBuildBitCast(
+          builder, concretePtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+  LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1, "");
+
+  auto rcIsZeroLE = rcIsZero(globalState, builder, concretePtrLE, concreteRefM);
+  buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+      "Tried to free concrete that had nonzero RC!");
+
+  if (concreteRefM->location == Location::INLINE) {
+    // Do nothing, it was alloca'd.
+  } else if (concreteRefM->location == Location::YONDER) {
+    auto concreteAsCharPtrLE =
+        LLVMBuildBitCast(
+            builder,
+            concretePtrLE,
+            LLVMPointerType(LLVMInt8Type(), 0),
+            "concreteCharPtrForFree");
+    buildFlare(
+        AFL("Freeing: "),
+        globalState,
+        builder,
+        LLVMBuildBitCast(builder, concreteAsCharPtrLE, LLVMPointerType(LLVMInt64Type(), 0), "printthis"));
+    LLVMBuildCall(
+        builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+  }
 
   adjustCounter(builder, globalState->liveHeapObjCounter, -1);
-
-  auto concreteAsCharPtrLE =
-      LLVMBuildBitCast(
-          builder,
-          concreteLE,
-          LLVMPointerType(LLVMInt8Type(), 0),
-          "concreteCharPtrForFree");
-  LLVMBuildCall(
-      builder, globalState->free, &concreteAsCharPtrLE, 1, "");
 }

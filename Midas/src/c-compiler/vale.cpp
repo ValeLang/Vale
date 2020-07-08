@@ -82,6 +82,12 @@ void initInternalExterns(GlobalState* globalState) {
   }
 
   {
+    LLVMTypeRef retType = LLVMInt64Type();
+    LLVMTypeRef funcType = LLVMFunctionType(retType, nullptr, 0, 0);
+    globalState->getch = LLVMAddFunction(globalState->mod, "getchar", funcType);
+  }
+
+  {
     LLVMTypeRef retType = LLVMVoidType();
     std::vector<LLVMTypeRef> paramTypes = {
         LLVMInt64Type()
@@ -138,6 +144,53 @@ void initInternalExterns(GlobalState* globalState) {
     LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
     globalState->printVStr = LLVMAddFunction(globalState->mod, "__vprintStr", funcType);
   }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMInt64Type(),
+        LLVMPointerType(LLVMInt8Type(), 0),
+        LLVMInt64Type(),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->intToCStr = LLVMAddFunction(globalState->mod, "__vintToCStr", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMInt64Type();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMInt8Type(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->strlen = LLVMAddFunction(globalState->mod, "strlen", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMInt64Type();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMVoidType(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->censusContains = LLVMAddFunction(globalState->mod, "__vcensusContains", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMVoidType(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->censusAdd = LLVMAddFunction(globalState->mod, "__vcensusAdd", funcType);
+  }
+
+  {
+    LLVMTypeRef retType = LLVMVoidType();
+    std::vector<LLVMTypeRef> paramTypes = {
+        LLVMPointerType(LLVMVoidType(), 0),
+    };
+    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+    globalState->censusRemove = LLVMAddFunction(globalState->mod, "__vcensusRemove", funcType);
+  }
 }
 
 void initInternalStructs(GlobalState* globalState) {
@@ -190,9 +243,11 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
 
+  GlobalState globalState;
+
   assert(str.size() > 0);
   auto programJ = json::parse(str.c_str());
-  auto program = readProgram(programJ);
+  auto program = readProgram(&globalState.metalCache, programJ);
 
 
 
@@ -221,7 +276,6 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
 
 
-  GlobalState globalState;
   globalState.dataLayout = dataLayout;
   globalState.mod = mod;
   globalState.program = program;

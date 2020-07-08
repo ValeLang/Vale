@@ -8,6 +8,12 @@
 // This is useful in a lot of situations, for example:
 // - The return type of Panic()
 // - The result of the Discard node
+LLVMTypeRef makeNeverType() {
+  // We arbitrarily use a zero-len array of i57 here because it's zero sized and
+  // very unlikely to be used anywhere else.
+  // We could use an empty struct instead, but this'll do.
+  return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
+}
 LLVMValueRef makeNever() {
   LLVMValueRef empty[1] = {};
   // We arbitrarily use a zero-len array of i57 here because it's zero sized and
@@ -27,21 +33,17 @@ void makeLocal(
           builder,
           translateType(globalState, local->type),
           local->id->maybeName.c_str());
-  functionState->localAddrByLocalId.emplace(
-      local->id->number, localAddr);
+  assert(functionState->localAddrByLocalId.find(local->id->number) == functionState->localAddrByLocalId.end());
+  functionState->localAddrByLocalId.emplace(local->id->number, localAddr);
   LLVMBuildStore(builder, valueToStore, localAddr);
 }
 
-void flare(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    int color,
-    LLVMValueRef numExpr) {
-  LLVMValueRef args[2] = {
-      LLVMConstInt(LLVMInt64Type(), color, false),
-      numExpr
-  };
-  LLVMBuildCall(builder, globalState->flareI64, args, 2, "");
+void forgetLocal(
+    FunctionState* functionState,
+    Local* local) {
+  auto iter = functionState->localAddrByLocalId.find(local->id->number);
+  assert(iter != functionState->localAddrByLocalId.end());
+  functionState->localAddrByLocalId.erase(iter);
 }
 
 LLVMValueRef adjustCounter(
@@ -53,6 +55,7 @@ LLVMValueRef adjustCounter(
       LLVMBuildAdd(
           builder, prevValLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "counterNewVal");
   LLVMBuildStore(builder, newValLE, counterPtrLE);
+
   return newValLE;
 }
 
@@ -225,11 +228,55 @@ LLVMValueRef buildInterfaceCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
 }
 
-LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
-  auto localAddr = LLVMBuildAlloca(builder, type, "");
-  LLVMBuildStore(
-      builder,
-      LLVMConstInt(type, value, false),
-      localAddr);
+LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr) {
+  auto localAddr = LLVMBuildAlloca(builder, LLVMTypeOf(constExpr), "");
+  LLVMBuildStore(builder,constExpr,localAddr);
   return LLVMBuildLoad(builder, localAddr, "");
+}
+
+LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+  return makeConstExpr(builder, LLVMConstInt(type, value, false));
+}
+
+void buildAssertCensusContains(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef refLE) {
+  LLVMValueRef resultAsVoidPtrLE =
+      LLVMBuildBitCast(
+          builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
+  auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
+  auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
+  buildAssert(checkerAFL, globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
+}
+
+void checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef refLE) {
+  if (refM->ownership == Ownership::OWN) {
+    auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+  } else if (refM->ownership == Ownership::SHARE) {
+    if (refM->location == Location::INLINE) {
+      // Nothing to do, there's no control block or ref counts or anything.
+    } else if (refM->location == Location::YONDER) {
+      auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+
+      // We dont check ref count >0 because imm destructors receive with rc=0.
+//      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+//      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(0), "");
+//      buildAssert(checkerAFL, globalState, functionState, builder, rcPositiveLE, "Invalid RC!");
+
+      buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+    } else assert(false);
+  } else if (refM->ownership == Ownership::BORROW) {
+    auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+  } else assert(false);
 }

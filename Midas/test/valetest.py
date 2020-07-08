@@ -80,7 +80,7 @@ class ValeTest(unittest.TestCase):
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"{build_dir}/{os.path.splitext(vale_file)[0]}"
-        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c"]
+        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c"]
         proc = self.clang(o_files, exe_file)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
@@ -92,8 +92,8 @@ class ValeTest(unittest.TestCase):
     def compile_and_execute_and_expect_return_code(self, vale_file: str,
                                                    expected_return_code) -> None:
         proc = self.compile_and_execute(vale_file)
-        print(proc.stdout)
-        print(proc.stderr)
+        # print(proc.stdout)
+        # print(proc.stderr)
         self.assertEqual(proc.returncode, expected_return_code,
                          f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
 
@@ -154,8 +154,23 @@ class ValeTest(unittest.TestCase):
     def test_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code("stradd.vale", 42)
 
+    def test_lambdamut(self) -> None:
+        self.compile_and_execute_and_expect_return_code("lambdamut.vale", 42)
+
     def test_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code("strprint.vale", 42)
+
+    def test_inttostr(self) -> None:
+        self.compile_and_execute_and_expect_return_code("inttostr.vale", 42)
+
+    def test_nestedif(self) -> None:
+        self.compile_and_execute_and_expect_return_code("nestedif.vale", 42)
+
+    def test_unstackifyret(self) -> None:
+        self.compile_and_execute_and_expect_return_code("unstackifyret.vale", 42)
+
+    def test_unreachablemoot(self) -> None:
+        self.compile_and_execute_and_expect_return_code("unreachablemoot.vale", 42)
 
     def test_roguelike(self) -> None:
         self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)

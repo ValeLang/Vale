@@ -18,17 +18,22 @@ LLVMValueRef translateIf(
   auto conditionExpr =
       translateExpression(
           globalState, functionState, builder, iff->conditionExpr);
-  return buildIfElse(
-      functionState,
-      builder,
-      conditionExpr,
-      translateType(globalState, iff->commonSupertype),
-      [globalState, functionState, iff](LLVMBuilderRef thenBlockBuilder) {
-        return translateExpression(
-            globalState, functionState, thenBlockBuilder, iff->thenExpr);
-      },
-      [globalState, functionState, iff](LLVMBuilderRef elseBlockBuilder) {
-        return translateExpression(
-            globalState, functionState, elseBlockBuilder, iff->elseExpr);
-      });
+  auto resultLE =
+      buildIfElse(
+          functionState,
+          builder,
+          conditionExpr,
+          translateType(globalState, iff->commonSupertype),
+          dynamic_cast<Never*>(iff->thenResultType->referend) != nullptr,
+          dynamic_cast<Never*>(iff->elseResultType->referend) != nullptr,
+          [globalState, functionState, iff](LLVMBuilderRef thenBlockBuilder) {
+            return translateExpression(
+                globalState, functionState, thenBlockBuilder, iff->thenExpr);
+          },
+          [globalState, functionState, iff](LLVMBuilderRef elseBlockBuilder) {
+            return translateExpression(
+                globalState, functionState, elseBlockBuilder, iff->elseExpr);
+          });
+  checkValidReference(FL(), globalState, functionState, builder, iff->commonSupertype, resultLE);
+  return resultLE;
 }

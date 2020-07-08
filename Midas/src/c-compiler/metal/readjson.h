@@ -5,7 +5,9 @@
 
 #include "metal/types.h"
 #include "metal/ast.h"
+#include "instructions.h"
+#include "metalcache.h"
 
-Program* readProgram(const nlohmann::json& program);
+Program* readProgram(MetalCache* cache, const nlohmann::json& program);
 
 #endif

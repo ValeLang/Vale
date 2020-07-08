@@ -413,7 +413,31 @@ fn display(board &Array<mut, Array<mut, Str>>, playerRow Int, playerCol Int) {
   print(toPrint);
 }
 
-fn main() {
+fn inputKey() Int {
+  key! = 0;
+  running! = true;
+  while (running) {
+    mut key = __getch();
+    println(key);
+    if (key == 81) {
+      mut running = false;
+    } else if (key == 119) {
+      mut running = false;
+    } else if (key == 115) {
+      mut running = false;
+    } else if (key == 97) {
+      mut running = false;
+    } else if (key == 100) {
+      mut running = false;
+    } else if (key == 10) {
+      // Enter key, do nothing
+    }
+    // Continue
+  }
+  ret key;
+}
+
+fn main() Int {
   board = makeBoard();
 
   playerRow! = 4;
@@ -423,8 +447,7 @@ fn main() {
   while (running) {
     display(&board, playerRow, playerCol);
 
-    key = __getch();
-    println(key);
+    key = inputKey();
     newPlayerRow! = playerRow;
     newPlayerCol! = playerCol;
     if (key == 81) {
@@ -443,8 +466,5 @@ fn main() {
       mut playerCol = newPlayerCol;
     }
   }
+  = 0;
 }
-
-
-
-

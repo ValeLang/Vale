@@ -267,7 +267,8 @@ object VonHammer {
           "UnreachableMoot",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
       case ConstantBoolH(value) => {
         VonObject(
@@ -310,7 +311,8 @@ object VonHammer {
           "Return",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
       case DiscardH(sourceExpr) => {
         VonObject(
@@ -333,10 +335,9 @@ object VonHammer {
           "NewArrayFromValues",
           None,
           Vector(
-            VonMember(
-              "sourceExprs",
-              VonArray(None, sourceExprs.map(vonifyNode).toVector)),
-            VonMember("resultType", vonifyCoord(resultType))))
+            VonMember("sourceExprs", VonArray(None, sourceExprs.map(vonifyNode).toVector)),
+            VonMember("resultType", vonifyCoord(resultType)),
+            VonMember("resultReferend", vonifyKind(resultType.kind))))
       }
       case NewStructH(sourceExprs, resultType) => {
         VonObject(
@@ -534,6 +535,7 @@ object VonHammer {
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
             VonMember("indexExpr", vonifyNode(indexExpr)),
             VonMember("resultType", vonifyCoord(ksal.resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
@@ -573,7 +575,9 @@ object VonHammer {
           Vector(
             VonMember("conditionBlock", vonifyNode(conditionBlock)),
             VonMember("thenBlock", vonifyNode(thenBlock)),
+            VonMember("thenResultType", vonifyCoord(thenBlock.resultType)),
             VonMember("elseBlock", vonifyNode(elseBlock)),
+            VonMember("elseResultType", vonifyCoord(elseBlock.resultType)),
             VonMember("commonSupertype", vonifyCoord(commonSupertype))))
       }
       case WhileH(bodyBlock) => {

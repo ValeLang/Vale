@@ -61,3 +61,7 @@ uint8_t __veqStr(__Str * restrict a, __Str * restrict b) {
 void __vprintStr(__Str * restrict a) {
   printf("%s", a->chars);
 }
+
+void __vintToCStr(int n, char* dest, int destSize) {
+  snprintf(dest, destSize, "%d", n);
+}

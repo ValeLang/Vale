@@ -16,13 +16,13 @@ LLVMValueRef translateExternCall(
   auto name = call->function->name->name;
   if (name == "F(\"__addIntInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
-    auto left =
+    auto leftLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
-    auto right =
+    auto rightLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]);
-    auto result = LLVMBuildAdd(builder, left, right,"add");
+    auto result = LLVMBuildAdd(builder, leftLE, rightLE,"add");
     return result;
   } else if (name == "F(\"__eqStrStr\",[],[R(*,>,s),R(*,>,s)])") {
     assert(call->argExprs.size() == 2);
@@ -31,11 +31,13 @@ LLVMValueRef translateExternCall(
     auto leftStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperPtrLE);
 
     auto rightStrTypeM = call->argTypes[1];
     auto rightStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperPtrLE);
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
@@ -58,7 +60,7 @@ LLVMValueRef translateExternCall(
     // VivemExterns.addFloatFloat
     assert(false);
   } else if (name == "F(\"panic\")") {
-    return makeNever();
+    return makeConstExpr(builder, makeNever());
   } else if (name == "F(\"__multiplyIntInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     return LLVMBuildMul(
@@ -69,8 +71,14 @@ LLVMValueRef translateExternCall(
             globalState, functionState, builder, call->argExprs[1]),
         "mul");
   } else if (name == "F(\"__subtractIntInt\",[],[R(*,<,i),R(*,<,i)])") {
-    // VivemExterns.subtractIntInt
-    assert(false);
+    assert(call->argExprs.size() == 2);
+    return LLVMBuildSub(
+        builder,
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[1]),
+        "diff");
   } else if (name == "F(\"__addStrStr\",[],[R(*,>,s),R(*,>,s)])") {
     assert(call->argExprs.size() == 2);
 
@@ -78,6 +86,7 @@ LLVMValueRef translateExternCall(
     auto leftStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperPtrLE);
     auto leftStrLenLE = getLenFromStrWrapperPtr(builder, leftStrWrapperPtrLE);
 
     auto rightStrTypeM = call->argTypes[1];
@@ -85,6 +94,7 @@ LLVMValueRef translateExternCall(
         translateExpression(
             globalState, functionState, builder, call->argExprs[1]);
     auto rightStrLenLE = getLenFromStrWrapperPtr(builder, rightStrWrapperPtrLE);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperPtrLE);
 
     auto combinedLenLE =
         LLVMBuildAdd(builder, leftStrLenLE, rightStrLenLE, "lenSum");
@@ -101,10 +111,11 @@ LLVMValueRef translateExternCall(
     discard(FL(), globalState, functionState, builder, leftStrTypeM, leftStrWrapperPtrLE);
     discard(FL(), globalState, functionState, builder, rightStrTypeM, rightStrWrapperPtrLE);
 
+    checkValidReference(FL(), globalState, functionState, builder, call->function->returnType, destStrWrapperPtrLE);
+
     return destStrWrapperPtrLE;
   } else if (name == "F(\"__getch\")") {
-    // VivemExterns.getch
-    assert(false);
+    return LLVMBuildCall(builder, globalState->getch, nullptr, 0, "");
   } else if (name == "F(\"__lessThanInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
@@ -140,6 +151,7 @@ LLVMValueRef translateExternCall(
     auto argStrWrapperPtrLE =
         translateExpression(
             globalState, functionState, builder, call->argExprs[0]);
+    checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], argStrWrapperPtrLE);
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
@@ -153,11 +165,39 @@ LLVMValueRef translateExternCall(
     // VivemExterns.not
     assert(false);
   } else if (name == "F(\"__castIntStr\",[],[R(*,<,i)])") {
-    // VivemExterns.castIntStr
-    assert(false);
+    assert(call->argExprs.size() == 1);
+    auto intLE =
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[0]);
+
+    int bufferSize = 150;
+    auto charsPtrLocalLE =
+        LLVMBuildAlloca(builder, LLVMArrayType(LLVMInt8Type(), bufferSize), "charsPtrLocal");
+    auto itoaDestPtrLE =
+        LLVMBuildPointerCast(
+            builder, charsPtrLocalLE, LLVMPointerType(LLVMInt8Type(), 0), "itoaDestPtr");
+    std::vector<LLVMValueRef> atoiArgsLE = { intLE, itoaDestPtrLE, constI64LE(bufferSize) };
+    LLVMBuildCall(builder, globalState->intToCStr, atoiArgsLE.data(), atoiArgsLE.size(), "");
+
+    std::vector<LLVMValueRef> strlenArgsLE = { itoaDestPtrLE };
+    auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
+
+    auto strWrapperPtrLE = mallocStr(globalState, builder, lengthLE);
+    auto innerStrWrapperLE = getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
+    std::vector<LLVMValueRef> argsLE = { innerStrWrapperLE, itoaDestPtrLE };
+    LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+    return strWrapperPtrLE;
   } else if (name == "F(\"__and\",[],[R(*,<,b),R(*,<,b)])") {
-    // VivemExterns.and
-    assert(false);
+    assert(call->argExprs.size() == 2);
+    auto result = LLVMBuildAnd(
+        builder,
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, builder, call->argExprs[1]),
+        "");
+    return result;
   } else if (name == "F(\"__mod\",[],[R(*,<,i),R(*,<,i)])") {
     // VivemExterns.mod
     assert(false);

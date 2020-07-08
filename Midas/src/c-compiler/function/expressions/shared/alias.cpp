@@ -49,6 +49,10 @@ void acquireReference(
         adjustRc(from, globalState, builder, expr, sourceRef, 1);
       }
     }
+  } else if (dynamic_cast<Str*>(sourceRnd)) {
+    assert(sourceRef->ownership == Ownership::SHARE);
+    assert(sourceRef->location == Location::YONDER);
+    adjustRc(from, globalState, builder, expr, sourceRef, 1);
   } else {
     std::cerr << "Unimplemented type in acquireReference: "
         << typeid(*sourceRef->referend).name() << std::endl;

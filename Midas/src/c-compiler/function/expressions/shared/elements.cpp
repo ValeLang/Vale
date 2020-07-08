@@ -16,11 +16,14 @@ LLVMValueRef getKnownSizeArrayContentsPtr(
 
 LLVMValueRef getUnknownSizeArrayLengthPtr(
     LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE) {
-  return LLVMBuildStructGEP(
-      builder,
-      unknownSizeArrayWrapperPtrLE,
-      1, // Length is after the control block and before contents.
-      "usaLenPtr");
+  auto resultLE =
+      LLVMBuildStructGEP(
+          builder,
+          unknownSizeArrayWrapperPtrLE,
+          1, // Length is after the control block and before contents.
+          "usaLenPtr");
+  assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt64Type(), 0));
+  return resultLE;
 }
 
 LLVMValueRef getUnknownSizeArrayLength(
@@ -39,19 +42,39 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
 }
 
 LLVMValueRef loadInnerArrayMember(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
+    Reference* elementRefM,
     LLVMValueRef indexLE) {
   assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
   LLVMValueRef indices[2] = {
       constI64LE(0),
       indexLE
   };
-  return LLVMBuildLoad(
-      builder,
-      LLVMBuildGEP(
-          builder, elemsPtrLE, indices, 2, "indexPtr"),
-      "index");
+  auto resultLE =
+      LLVMBuildLoad(
+          builder,
+          LLVMBuildGEP(
+              builder, elemsPtrLE, indices, 2, "indexPtr"),
+          "index");
+
+
+  if (elementRefM->ownership == Ownership::SHARE) {
+    if (elementRefM->location == Location::INLINE) {
+    } else {
+      adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
+    }
+  } else if (elementRefM->ownership == Ownership::OWN) {
+    adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
+  } else if (elementRefM->ownership == Ownership::BORROW) {
+    adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
+  } else {
+    assert(false);
+  }
+
+
+  return resultLE;
 }
 
 LLVMValueRef loadElement(
@@ -59,6 +82,7 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
@@ -75,10 +99,10 @@ LLVMValueRef loadElement(
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
       return nullptr;
     } else {
-      return loadInnerArrayMember(builder, arrayPtrLE, indexLE);
+      return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    return loadInnerArrayMember(builder, arrayPtrLE, indexLE);
+    return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
   } else {
     assert(false);
     return nullptr;

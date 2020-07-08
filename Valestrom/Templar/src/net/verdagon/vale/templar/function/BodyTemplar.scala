@@ -80,6 +80,7 @@ object BodyTemplar {
           // Let it through, it returns the expected type.
         } else if (returns == Set(Coord(Share, Never2()))) {
           // Let it through, it returns a never but we expect something else, that's fine
+          NeverReinterpret2(body2, expectedRetCoord)
         } else {
           vfail("In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns)
         }

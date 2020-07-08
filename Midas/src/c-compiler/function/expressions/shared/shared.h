@@ -24,6 +24,7 @@ struct AreaAndFileAndLine {
 #define AFL(area) (AreaAndFileAndLine{ (area), __FILE__, __LINE__ })
 
 LLVMValueRef makeNever();
+LLVMTypeRef makeNeverType();
 
 void makeLocal(
     GlobalState* globalState,
@@ -32,11 +33,9 @@ void makeLocal(
     Local* local,
     LLVMValueRef valueToStore);
 
-void flare(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    int color,
-    LLVMValueRef numExpr);
+void forgetLocal(
+    FunctionState* functionState,
+    Local* local);
 
 void acquireReference(
     AreaAndFileAndLine from,
@@ -125,18 +124,18 @@ inline void buildFlare(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     T&&... rest) {
-  buildPrint(globalState, builder, "\033[0;34m");
-  buildPrint(globalState, builder, getFileName(from.file));
-  buildPrint(globalState, builder, ":");
-  buildPrint(globalState, builder, from.line);
-  buildPrint(globalState, builder, "\033[0m");
-  buildPrint(globalState, builder, " ");
-  if (!from.area.empty()) {
-    buildPrint(globalState, builder, getFileName(from.area));
-    buildPrint(globalState, builder, ": ");
-  }
-  buildFlareInner(globalState, builder, std::forward<T>(rest)...);
-  buildPrint(globalState, builder, "\n");
+//  buildPrint(globalState, builder, "\033[0;34m");
+//  buildPrint(globalState, builder, getFileName(from.file));
+//  buildPrint(globalState, builder, ":");
+//  buildPrint(globalState, builder, from.line);
+//  buildPrint(globalState, builder, "\033[0m");
+//  buildPrint(globalState, builder, " ");
+//  if (!from.area.empty()) {
+//    buildPrint(globalState, builder, getFileName(from.area));
+//    buildPrint(globalState, builder, ": ");
+//  }
+//  buildFlareInner(globalState, builder, std::forward<T>(rest)...);
+//  buildPrint(globalState, builder, "\n");
 }
 
 LLVMValueRef buildInterfaceCall(
@@ -148,8 +147,26 @@ LLVMValueRef buildInterfaceCall(
 
 LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value);
 
+LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr);
+
 inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);
 }
+
+
+void buildAssertCensusContains(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef refLE);
+
+void checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef refLE);
 
 #endif

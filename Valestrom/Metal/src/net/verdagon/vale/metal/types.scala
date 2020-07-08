@@ -34,7 +34,7 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
   }
 
   kind match {
-    case IntH() | BoolH() | FloatH() => {
+    case IntH() | BoolH() | FloatH() | NeverH() => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)

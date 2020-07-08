@@ -142,6 +142,22 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(heap, Vector(ref))
   }
 
+  test("Tests weird thing") {
+    val compile = new Compilation(
+      """
+        |fn main() Int {
+        |  playerRow! = 4;
+        |
+        |  if (false) {
+        |    newPlayerRow! = 0;
+        |  }
+        |  ret 42;
+        |}
+        |
+      """.stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
   test("Reads a struct member") {
     val compile = new Compilation(
       """

@@ -69,14 +69,14 @@ object LetHammer {
   }
 
   private def translateAddressibleLet(
-                                       hinputs: Hinputs,
-                                       hamuts: HamutsBox,
-                                       locals: LocalsBox,
-                                       sourceExprResultLine: ExpressionH[ReferendH],
-                                       sourceResultPointerTypeH: ReferenceH[ReferendH],
-                                       varId: FullName2[IVarName2],
-                                       variability: Variability,
-                                       reference: Coord):
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    locals: LocalsBox,
+    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    varId: FullName2[IVarName2],
+    variability: Variability,
+    reference: Coord):
   ExpressionH[ReferendH] = {
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
@@ -94,16 +94,16 @@ object LetHammer {
   }
 
   private def translateAddressibleLetAndLend(
-                                              hinputs: Hinputs,
-                                              hamuts: HamutsBox,
-                                              locals: LocalsBox,
-                                              sourceExpr2: ReferenceExpression2,
-                                              sourceExprResultLine: ExpressionH[ReferendH],
-                                              sourceResultPointerTypeH: ReferenceH[ReferendH],
-                                              let2: LetAndLend2,
-                                              varId: FullName2[IVarName2],
-                                              variability: Variability,
-                                              reference: Coord):
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    locals: LocalsBox,
+    sourceExpr2: ReferenceExpression2,
+    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    let2: LetAndLend2,
+    varId: FullName2[IVarName2],
+    variability: Variability,
+    reference: Coord):
   (ExpressionH[ReferendH]) = {
     val stackifyH =
       translateAddressibleLet(

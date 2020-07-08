@@ -16,6 +16,8 @@ LLVMValueRef buildIfElse(
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     LLVMTypeRef resultTypeL,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildThen,
     std::function<LLVMValueRef(LLVMBuilderRef)> buildElse);
 

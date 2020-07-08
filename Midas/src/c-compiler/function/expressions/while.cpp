@@ -17,5 +17,5 @@ LLVMValueRef translateWhile(
             globalState, functionState, bodyBuilder, whiile->bodyExpr);
       });
   // Nobody should use a result of a while, so we'll just return a Never.
-  return makeNever();
+  return makeConstExpr(builder, makeNever());
 }

@@ -19,20 +19,20 @@ object TemplatedLinkedList {
       |  next *MyOption<*MyList<T>>;
       |}
       |
-      |fn printValues(list *MyList<*Int>) Void {
+      |fn printValues(list *MyList<int>) void {
       |	 print(list.value);
       |	 printNextValue(list.next);
       |}
       |
-      |fn printNextValue(virtual opt *MyOption<*MyList<*Int>>) Void { }
-      |fn printNextValue(opt *MyNone<*MyList<*Int>> impl MyOption<*MyList<*Int>>) Void { }
-      |fn printNextValue(opt *MySome<*MyList<*Int>> impl MyOption<*MyList<*Int>>) Void {
+      |fn printNextValue(virtual opt *MyOption<*MyList<int>>) void { }
+      |fn printNextValue(opt *MyNone<*MyList<int>> impl MyOption<*MyList<int>>) void { }
+      |fn printNextValue(opt *MySome<*MyList<int>> impl MyOption<*MyList<int>>) void {
       |	 printValues(opt.value);
       |}
       |
       |
-      |fn main() *Int {
-      | 	list = MyList<*Int>(10, MySome<*MyList<*Int>>(MyList<*Int>(20, MySome<*MyList<*Int>>(MyList<*Int>(30, MyNone<*MyList<*Int>>())))));
+      |fn main() int {
+      | 	list = MyList<int>(10, MySome<*MyList<int>>(MyList<int>(20, MySome<*MyList<int>>(MyList<int>(30, MyNone<*MyList<int>>())))));
       | 	printValues(list);
       | 	= 0;
       |}

@@ -27,7 +27,7 @@ class HammerTests extends FunSuite with Matchers {
 //        |struct ListNode<T> imm rules(T: Ref) {
 //        |  tail: *ListNode<T>;
 //        |}
-//        |fn main(a: *ListNode:*Int) {}
+//        |fn main(a: *ListNode:int) {}
 //      """.stripMargin)
 //    val hamuts = compile.getHamuts()
 //    hamuts.structs.find(_.fullName.parts.last.humanName == "ListNode").get;
@@ -42,7 +42,7 @@ class HammerTests extends FunSuite with Matchers {
         |struct MySome<T> imm rules(T Ref) { value T; }
         |impl<T> MySome<T> for MyOption<T>;
         |
-        |fn main(a *MySome<*Int>, b *MyNone<*Int>) {}
+        |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
     val hamuts = compile.getHamuts()
     hamuts.interfaces.find(_.fullName.toString == """C("MyOption",[TR(R(*,<,i))])""").get;
@@ -60,10 +60,10 @@ class HammerTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface Blark imm { }
-        |abstract fn wot(virtual b *Blark) *Int;
+        |abstract fn wot(virtual b *Blark) int;
         |struct MyStruct export imm {}
         |impl MyStruct for Blark;
-        |fn wot(b *MyStruct impl Blark) *Int { 9 }
+        |fn wot(b *MyStruct impl Blark) int { 9 }
       """.stripMargin)
     val hamuts = compile.getHamuts()
     hamuts.nonExternFunctions.find(f => f.prototype.fullName.toString.startsWith("""F("wot"""")).get;

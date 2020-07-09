@@ -39,14 +39,14 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
 
   test("Simple Int") {
     // Make sure every pattern on the way down to kind can match Int
-    compile(typeIdentifier,"Int") shouldHave { case "Int" => }
-    compile(runeOrKindPattern,"Int") shouldHave { case NameOrRunePT(StringP(_, "Int")) => }
-    compile(patternType,"Int") shouldHave { case PatternTypePPI(None, NameOrRunePT(StringP(_, "Int"))) => }
-    compile(atomPattern,"_ Int") shouldHave { case Patterns.fromEnv("Int") => }
+    compile(typeIdentifier,"int") shouldHave { case "int" => }
+    compile(runeOrKindPattern,"int") shouldHave { case NameOrRunePT(StringP(_, "int")) => }
+    compile(patternType,"int") shouldHave { case PatternTypePPI(None, NameOrRunePT(StringP(_, "int"))) => }
+    compile(atomPattern,"_ int") shouldHave { case Patterns.fromEnv("int") => }
   }
   test("Pattern Templexes") {
-    compile(patternType,"Int") shouldHave { case PatternTypePPI(None, NameOrRunePT(StringP(_, "Int"))) => }
-    compile(patternType,"*Int") shouldHave { case PatternTypePPI(Some(ShareP), NameOrRunePT(StringP(_, "Int"))) => }
+    compile(patternType,"int") shouldHave { case PatternTypePPI(None, NameOrRunePT(StringP(_, "int"))) => }
+    compile(patternType,"*int") shouldHave { case PatternTypePPI(Some(ShareP), NameOrRunePT(StringP(_, "int"))) => }
   }
   test("Name-only Capture") {
     compile(atomPattern,"a") match {
@@ -87,26 +87,26 @@ class PatternParserTests extends FunSuite with Matchers with Collector {
 
   test("CSTODTS") {
     // This tests us handling an ambiguity properly, see CSTODTS in docs.
-    compile("moo T(a Int)") shouldHave {
+    compile("moo T(a int)") shouldHave {
       case PatternPP(
           _,_,
           Some(CaptureP(_,LocalNameP(StringP(_, "moo")),FinalP)),
           Some(NameOrRunePT(StringP(_, "T"))),
-          Some(DestructureP(_,List(PatternPP(_,_, Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),Some(NameOrRunePT(StringP(_, "Int"))),None,None)))),
+          Some(DestructureP(_,List(PatternPP(_,_, Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),Some(NameOrRunePT(StringP(_, "int"))),None,None)))),
           None) =>
     }
   }
 
   test("Capture with destructure with type outside") {
-    compile("a [Int, Bool](a, b)") shouldHave {
+    compile("a [int, bool](a, b)") shouldHave {
       case PatternPP(
           _,_,
           Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),
           Some(
             ManualSequencePT(_,
                   List(
-                    NameOrRunePT(StringP(_, "Int")),
-                    NameOrRunePT(StringP(_, "Bool"))))),
+                    NameOrRunePT(StringP(_, "int")),
+                    NameOrRunePT(StringP(_, "bool"))))),
           Some(DestructureP(_,List(capture("a"), capture("b")))),
           None) =>
     }

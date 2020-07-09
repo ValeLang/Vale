@@ -29,7 +29,7 @@ class RuleScoutTests extends FunSuite with Matchers {
           TemplexSR(CallST(NameST(CodeTypeNameS("List")),List(RuneST(CodeRuneS("A")))))),
         EqualsSR(
           TypedSR(CodeRuneS("C"),CoordTypeSR),
-          OrSR(List(TemplexSR(RuneST(CodeRuneS("B"))), TemplexSR(RuneST(CodeRuneS("A"))), TemplexSR(NameST(CodeTypeNameS("Int")))))),
+          OrSR(List(TemplexSR(RuneST(CodeRuneS("B"))), TemplexSR(RuneST(CodeRuneS("A"))), TemplexSR(NameST(CodeTypeNameS("int")))))),
         TypedSR(CodeRuneS("A"),CoordTypeSR))
     RuleSUtils.getDistinctOrderedRunesForRulexes(expectedRulesS) shouldEqual
       List(CodeRuneS("B"), CodeRuneS("A"), CodeRuneS("C"))
@@ -39,7 +39,7 @@ class RuleScoutTests extends FunSuite with Matchers {
         """fn main<A>(a A)
           |rules(
           |  B Ref = List<A>,
-          |  C Ref = B | A | Int)
+          |  C Ref = B | A | int)
           |{ }
           |""".stripMargin)
     results match {
@@ -49,7 +49,7 @@ class RuleScoutTests extends FunSuite with Matchers {
           TemplexSR(CallST(NameST(CodeTypeNameS("List")),List(RuneST(ar1 @ CodeRuneS("A")))))),
         EqualsSR(
           TypedSR(CodeRuneS("C"),CoordTypeSR),
-          OrSR(List(TemplexSR(RuneST(br2)), TemplexSR(RuneST(ar3)), TemplexSR(NameST(CodeTypeNameS("Int")))))),
+          OrSR(List(TemplexSR(RuneST(br2)), TemplexSR(RuneST(ar3)), TemplexSR(NameST(CodeTypeNameS("int")))))),
         TypedSR(ar2,CoordTypeSR)) => {
         vassert(br1 == br2)
         vassert(ar1 == ar2)

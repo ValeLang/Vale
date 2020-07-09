@@ -163,7 +163,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |}
 //        |
 //        |fn main() {
-//        |  dance(SA<Int>());
+//        |  dance(SA<int>());
 //        |}
 //        |
 //        |struct SB<T> { }
@@ -173,7 +173,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |}
 //        |
 //        |fn thing() {
-//        |  x = SB<Int>();
+//        |  x = SB<int>();
 //        |}
 //      """.stripMargin)
 //    vfail("what would this test be testing")
@@ -211,8 +211,8 @@ class VirtualTests extends FunSuite with Matchers {
 //        |}
 //        |
 //        |fn main() {
-//        |  x = SB<Int>();
-//        |  dance(SA<Int>());
+//        |  x = SB<int>();
+//        |  dance(SA<int>());
 //        |}
 //      """.stripMargin)
 //    compile.getTemputs()
@@ -251,7 +251,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual T) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -299,14 +299,14 @@ class VirtualTests extends FunSuite with Matchers {
 //    vassert(getParamArgTypeByVirtualRoot(doThingFamilyForMyStruct) == Map("MyStruct" -> "MyStruct"))
 //  }
 //
-//  // We manifest a doThing<Int>, which takes in an I<Int>.
-//  // If you thought it should spawn a doThing(:MyStruct<Int>), youre wrong; the function
+//  // We manifest a doThing<int>, which takes in an I<int>.
+//  // If you thought it should spawn a doThing(:MyStruct<int>), youre wrong; the function
 //  // specifically says its parameter is an I<T>, not a MyStruct<T>.
-//  // There should never be a doThing(:MyStruct<Int>), doThing(:K<Int>), or doThing(:J<Int>).
-//  // That said, we can still pass a MyStruct<Int> arg to an I<Int> parameter.
+//  // There should never be a doThing(:MyStruct<int>), doThing(:K<int>), or doThing(:J<int>).
+//  // That said, we can still pass a MyStruct<int> arg to an I<int> parameter.
 //  // This should only spawn that one function family.
 //  // However, each struct is required to have a vtable entry for that function... they'll all
-//  // point to the original doThing<Int>(:I<Int>).
+//  // point to the original doThing<int>(:I<int>).
 //  test("Stamps virtual functions on a templated interface") {
 //    val compile = new Compilation(
 //      """
@@ -324,7 +324,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual I<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -364,7 +364,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual MyStruct<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -392,7 +392,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: MyStruct<T> for I<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -442,7 +442,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: MyStruct<T> for MyInterface<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  y = MyStruct<Str>();
 //        |  doThing(x);
 //        |  doThing(y);
@@ -465,7 +465,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: MyStruct<T> for MyInterface<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  y = MyStruct<Str>();
 //        |  doThing(x);
 //        |  doThing(y);

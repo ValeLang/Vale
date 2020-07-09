@@ -22,7 +22,7 @@ object NotEquals {
       Some(CodeRuneA("B")),
       List(
         TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("B"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Bool"), CoordTemplataType)))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("B"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),

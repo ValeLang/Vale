@@ -75,7 +75,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   }
 
   test("Anonymous typed param") {
-    val program1 = compile("""fn main(_ Int) { }""")
+    val program1 = compile("""fn main(_ int) { }""")
     val main = program1.lookupFunction("main")
     val List(param) = main.params
     val paramRune =
@@ -92,7 +92,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       case List(
         EqualsSR(
           TypedSR(pr,CoordTypeSR),
-          TemplexSR(NameST(CodeTypeNameS("Int"))))) => {
+          TemplexSR(NameST(CodeTypeNameS("int"))))) => {
         vassert(pr == paramRune)
       }
     }
@@ -127,7 +127,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
   test("Rune destructure") {
     // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""fn main<T>(moo T(a Int)) { }""")
+    val program1 = compile("""fn main<T>(moo T(a int)) { }""")
     val main = program1.lookupFunction("main")
 
     val List(param) = main.params
@@ -153,7 +153,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
         TypedSR(tr,CoordTypeSR),
         EqualsSR(
           TypedSR(ar,CoordTypeSR),
-          TemplexSR(NameST(CodeTypeNameS("Int"))))) => {
+          TemplexSR(NameST(CodeTypeNameS("int"))))) => {
         vassert(tr == tRune)
         vassert(ar == aRune)
       }

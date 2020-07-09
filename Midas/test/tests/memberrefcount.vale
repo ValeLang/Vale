@@ -3,12 +3,12 @@ struct Thing {
 }
 
 struct Vec3i imm {
-  x Int;
-  y Int;
-  z Int;
+  x int;
+  y int;
+  z int;
 }
 
-fn bork(thing &Thing, v Vec3i) Void {
+fn bork(thing &Thing, v Vec3i) void {
   mut thing.v = v;
 }
 

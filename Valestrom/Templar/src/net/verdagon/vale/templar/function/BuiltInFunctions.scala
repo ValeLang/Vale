@@ -76,7 +76,7 @@ object BuiltInFunctions {
                       KindTemplataType)))),
               EqualsAR(
                 TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)),
-                TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+                TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
             GeneratedBodyA("concreteDestructorGenerator"))),
       functionGeneratorByName +
         (
@@ -159,7 +159,7 @@ object BuiltInFunctions {
                     KindTemplataType)))),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)),
-              TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+              TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
           GeneratedBodyA("interfaceDestructorGenerator"))),
       functionGeneratorByName +
         ("interfaceDestructorGenerator" ->
@@ -235,7 +235,7 @@ object BuiltInFunctions {
             CallAR("passThroughIfInterface", List(TemplexAR(RuneAT(CodeRuneA("I"), KindTemplataType))), KindTemplataType),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)),
-              TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+              TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
           GeneratedBodyA("implDestructorGenerator"))),
       functionGeneratorByName + (
         "implDestructorGenerator" ->
@@ -317,7 +317,7 @@ object BuiltInFunctions {
               TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
               EqualsAR(
                 TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)),
-                TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+                TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
             GeneratedBodyA("dropGenerator"))),
       functionGeneratorByName + (
         "dropGenerator" ->
@@ -373,7 +373,7 @@ object BuiltInFunctions {
                       KindTemplataType))))),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)),
-              TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType)))),
+              TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType)))),
           CodeBodyA(
             BodyAE(
               List(),
@@ -414,7 +414,7 @@ object BuiltInFunctions {
                       KindTemplataType))))),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)),
-              TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType)))),
+              TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType)))),
           CodeBodyA(
             BodyAE(
               List(),

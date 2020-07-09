@@ -87,9 +87,9 @@ class CarpenterTests extends FunSuite with Matchers {
 //        |
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
-//        |  y = OtherStruct<Int>();
+//        |  y = OtherStruct<int>();
 //        |  doThing(y);
 //        |}
 //      """.stripMargin)
@@ -116,7 +116,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: MyStruct<T> for J<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -142,7 +142,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual MyStruct<T>) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -172,7 +172,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual T) {}
 //        |
 //        |fn main() {
-//        |  x = MyStruct<Int>();
+//        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
 //      """.stripMargin)
@@ -197,8 +197,8 @@ class CarpenterTests extends FunSuite with Matchers {
 //        |fn doBThing<T>(x: virtual T) {}
 //        |
 //        |fn main() {
-//        |  doAThing(MyStruct<Int>());
-//        |  doBThing(MyStruct<Int>());
+//        |  doAThing(MyStruct<int>());
+//        |  doBThing(MyStruct<int>());
 //        |}
 //      """.stripMargin)
 //    val hinputs = compile.getHinputs()

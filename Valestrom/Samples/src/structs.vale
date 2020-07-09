@@ -1,5 +1,5 @@
 
-struct MyStruct { a Int; }
+struct MyStruct { a int; }
 
 struct OtherStruct { b MyStruct; }
 

@@ -93,20 +93,20 @@ class DestructureParserTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Capture with types inside") {
-    compile("a (_ Int, _ Bool)") shouldHave {
+    compile("a (_ int, _ bool)") shouldHave {
       case PatternPP(_,_,
           Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),
           None,
-          Some(DestructureP(_,List(fromEnv("Int"), fromEnv("Bool")))),
+          Some(DestructureP(_,List(fromEnv("int"), fromEnv("bool")))),
           None) =>
     }
   }
   test("Destructure with type inside") {
-    compile("(a Int, b Bool)") shouldHave {
+    compile("(a int, b bool)") shouldHave {
       case withDestructure(
       List(
-          capturedWithType("a", NameOrRunePT(StringP(_, "Int"))),
-          capturedWithType("b", NameOrRunePT(StringP(_, "Bool"))))) =>
+          capturedWithType("a", NameOrRunePT(StringP(_, "int"))),
+          capturedWithType("b", NameOrRunePT(StringP(_, "bool"))))) =>
     }
   }
   test("Nested destructures A") {

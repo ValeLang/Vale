@@ -1,7 +1,7 @@
 struct Vec3i imm {
-  x Int;
-  y Int;
-  z Int;
+  x int;
+  y int;
+  z int;
 }
 
 fn main() {

@@ -38,7 +38,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("Ignoring name") {
-    compile("_ Int") shouldHave { case fromEnv("Int") => }
+    compile("_ int") shouldHave { case fromEnv("int") => }
   }
 //  test("Callable type") {
 //    compile("_ fn(T)Void") shouldHave {
@@ -46,7 +46,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
 //          FunctionPT(
 //            None,
 //            List(NameOrRunePT(StringP(_, "T"))),
-//            NameOrRunePT(StringP(_, "Void")))) =>
+//            NameOrRunePT(StringP(_, "void")))) =>
 //    }
 //  }
   test("15a") {
@@ -70,12 +70,12 @@ class TypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("Sequence type") {
-    compile("_ [Int, Bool]") shouldHave {
+    compile("_ [int, bool]") shouldHave {
       case withType(
           ManualSequencePT(_,
             List(
-              NameOrRunePT(StringP(_, "Int")),
-              NameOrRunePT(StringP(_, "Bool"))))) =>
+              NameOrRunePT(StringP(_, "int")),
+              NameOrRunePT(StringP(_, "bool"))))) =>
     }
   }
   test("15") {
@@ -109,7 +109,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("15z") {
-    compile("_ MyOption<MyList<Int>>") shouldHave {
+    compile("_ MyOption<MyList<int>>") shouldHave {
       case PatternPP(_,_,
         None,
         Some(
@@ -120,7 +120,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
               CallPT(_,
                 NameOrRunePT(StringP(_, "MyList")),
                 List(
-                  NameOrRunePT(StringP(_, "Int"))))))),
+                  NameOrRunePT(StringP(_, "int"))))))),
         None,
         None) =>
     }

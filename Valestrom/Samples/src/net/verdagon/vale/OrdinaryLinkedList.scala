@@ -15,23 +15,23 @@ object OrdinaryLinkedList {
       |
       |
       |struct MyList imm {
-      |  value *Int;
+      |  value int;
       |  next *MyOption;
       |}
       |
-      |fn printValues(list *MyList) Void {
+      |fn printValues(list *MyList) void {
       |	 print(list.value);
       |	 printNextValue(list.next);
       |}
       |
-      |fn printNextValue(virtual opt *MyOption) Void { }
-      |fn printNextValue(opt *MyNone impl MyOption) Void { }
-      |fn printNextValue(opt *MySome impl MyOption) Void {
+      |fn printNextValue(virtual opt *MyOption) void { }
+      |fn printNextValue(opt *MyNone impl MyOption) void { }
+      |fn printNextValue(opt *MySome impl MyOption) void {
       |	 printValues(opt.value);
       |}
       |
       |
-      |fn main() Int {
+      |fn main() int {
       | 	list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
       | 	printValues(list);
       | 	= 0;

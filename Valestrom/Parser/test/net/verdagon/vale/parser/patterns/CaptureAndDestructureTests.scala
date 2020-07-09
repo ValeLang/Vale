@@ -39,15 +39,15 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector {
 
 
   test("Capture with destructure with type inside") {
-    compile("a (a Int, b Bool)") shouldHave {
+    compile("a (a int, b bool)") shouldHave {
       case PatternPP(_,_,
           Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),
           None,
           Some(
           DestructureP(_,
             List(
-              capturedWithType("a", NameOrRunePT(StringP(_, "Int"))),
-              capturedWithType("b", NameOrRunePT(StringP(_, "Bool")))))),
+              capturedWithType("a", NameOrRunePT(StringP(_, "int"))),
+              capturedWithType("b", NameOrRunePT(StringP(_, "bool")))))),
           None) =>
     }
   }
@@ -66,13 +66,13 @@ class CaptureAndDestructureTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Destructure with nested atom") {
-    compile("a (b Int)") shouldHave {
+    compile("a (b int)") shouldHave {
       case PatternPP(_,_,
           Some(CaptureP(_,LocalNameP(StringP(_, "a")), FinalP)),
           None,
           Some(
           DestructureP(_,
-            List(capturedWithType("b", NameOrRunePT(StringP(_, "Int")))))),
+            List(capturedWithType("b", NameOrRunePT(StringP(_, "int")))))),
           None) =>
     }
   }

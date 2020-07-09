@@ -456,7 +456,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Self borrowing param") {
     val program1 = compile(
       """
-        |fn main(x Int) {
+        |fn main(x int) {
         |  print(&x);
         |}
       """.stripMargin)
@@ -472,7 +472,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   test("Children borrowing param") {
     val program1 = compile(
       """
-        |fn main(x Int) {
+        |fn main(x int) {
         |  { print(&x); }();
         |}
       """.stripMargin)

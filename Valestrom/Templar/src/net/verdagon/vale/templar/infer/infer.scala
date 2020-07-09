@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.types.ParamFilter
 import scala.collection.immutable.List
 
 package object infer {
-  // When the user says "Int", that's assumed to be a Kind.
+  // When the user says "int", that's assumed to be a Kind.
   // It can sometimes be coerced to a coord, see CCKTC.
   case class UncoercedTemplata(templata: ITemplata)
 

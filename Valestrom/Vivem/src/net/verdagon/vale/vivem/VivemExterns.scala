@@ -1,6 +1,6 @@
 package net.verdagon.vale.vivem
 
-import net.verdagon.vale.metal.{InlineH, ShareH}
+import net.verdagon.vale.metal.{InlineH, ShareH, YonderH}
 import net.verdagon.vale.vassert
 
 object VivemExterns {
@@ -92,7 +92,7 @@ object VivemExterns {
     val bReferend = memory.dereference(args(1))
     (aReferend, bReferend) match {
       case (StrV(aValue), StrV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, StrV(aValue + bValue))
+        memory.addAllocationForReturn(ShareH, YonderH, StrV(aValue + bValue))
       }
     }
   }
@@ -229,13 +229,13 @@ object VivemExterns {
   def castIntStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val IntV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, StrV(value.toString))
+    memory.addAllocationForReturn(ShareH, YonderH, StrV(value.toString))
   }
 
   def castFloatStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
-    memory.addAllocationForReturn(ShareH, InlineH, StrV(value.toString))
+    memory.addAllocationForReturn(ShareH, YonderH, StrV(value.toString))
   }
 
   def castIntFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {

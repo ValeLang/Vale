@@ -1,5 +1,5 @@
 
-fn main() Int {
+fn main() int {
   x! = 10;
   { mut x = 42; }();
   = x;

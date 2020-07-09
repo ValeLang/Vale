@@ -24,13 +24,13 @@ object Templar {
         None,
         FullName2(List(), GlobalNamespaceName2()),
         Map(
-          PrimitiveName2("Int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
+          PrimitiveName2("int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
           PrimitiveName2("Array") -> List(TemplataEnvEntry(ArrayTemplateTemplata())),
-          PrimitiveName2("Bool") -> List(TemplataEnvEntry(KindTemplata(Bool2()))),
-          PrimitiveName2("Float") -> List(TemplataEnvEntry(KindTemplata(Float2()))),
+          PrimitiveName2("bool") -> List(TemplataEnvEntry(KindTemplata(Bool2()))),
+          PrimitiveName2("float") -> List(TemplataEnvEntry(KindTemplata(Float2()))),
           PrimitiveName2("__Never") -> List(TemplataEnvEntry(KindTemplata(Never2()))),
-          PrimitiveName2("Str") -> List(TemplataEnvEntry(KindTemplata(Str2()))),
-          PrimitiveName2("Void") -> List(TemplataEnvEntry(KindTemplata(Void2())))))
+          PrimitiveName2("str") -> List(TemplataEnvEntry(KindTemplata(Str2()))),
+          PrimitiveName2("void") -> List(TemplataEnvEntry(KindTemplata(Void2())))))
     val functionGeneratorByName0 = Map[String, IFunctionGenerator]()
     val (env1, functionGeneratorByName1) = BuiltInFunctions.addBuiltInFunctions(env0, functionGeneratorByName0)
     val functionGeneratorByName2 = functionGeneratorByName1 ++ StructTemplar.getFunctionGenerators()

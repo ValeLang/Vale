@@ -230,11 +230,11 @@ class InfererTests extends FunSuite with Matchers {
     val mutArraySequenceOf4IntName = CitizenName2("MutArraySequenceOf4Int", List())
     entries = entries ++ Map(mutArraySequenceOf4IntName ->
       TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
-    val voidName = PrimitiveName2("Void")
+    val voidName = PrimitiveName2("void")
     entries = entries ++ Map(voidName -> TemplataEnvEntry(KindTemplata(Void2())))
-    val intName = PrimitiveName2("Int")
+    val intName = PrimitiveName2("int")
     entries = entries ++ Map(intName -> TemplataEnvEntry(KindTemplata(Int2())))
-    val boolName = PrimitiveName2("Bool")
+    val boolName = PrimitiveName2("bool")
     entries = entries ++ Map(boolName -> TemplataEnvEntry(KindTemplata(Bool2())))
     val callPrototype = PrototypeTemplata(incrementPrototype)
     entries = entries ++ Map(callPrototype.value.fullName.last -> TemplataEnvEntry(callPrototype))
@@ -435,7 +435,7 @@ class InfererTests extends FunSuite with Matchers {
           FakeState(),
           List(
             TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),
-            EqualsTR(TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),TemplexTR(NameTT(CodeTypeNameA("Int"), CoordTemplataType)))),
+            EqualsTR(TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),TemplexTR(NameTT(CodeTypeNameA("int"), CoordTemplataType)))),
           Map(CodeRune2("Z") -> CoordTemplataType),
           Set(CodeRune2("Z")),
           Map(),
@@ -475,7 +475,7 @@ class InfererTests extends FunSuite with Matchers {
           FakeState(),
           List(
             TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),
-            EqualsTR(TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),CallTR("toRef", List(TemplexTR(NameTT(CodeTypeNameA("Int"), KindTemplataType))), CoordTemplataType))),
+            EqualsTR(TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),CallTR("toRef", List(TemplexTR(NameTT(CodeTypeNameA("int"), KindTemplataType))), CoordTemplataType))),
           Map(CodeRune2("Z") -> CoordTemplataType),
           Set(CodeRune2("Z")),
           Map(),
@@ -608,7 +608,7 @@ class InfererTests extends FunSuite with Matchers {
             List(
               OrTR(List(TemplexTR(OwnershipTT(OwnP)), TemplexTR(OwnershipTT(ShareP)))),
               CallTR("passThroughIfConcrete",List(TemplexTR(RuneTT(CodeRune2("Z"), KindTemplataType))), KindTemplataType)))),
-        EqualsTR(TemplexTR(RuneTT(CodeRune2("V"), CoordTemplataType)),CallTR("toRef",List(TemplexTR(NameTT(CodeTypeNameA("Void"),KindTemplataType))), CoordTemplataType)))
+        EqualsTR(TemplexTR(RuneTT(CodeRune2("V"), CoordTemplataType)),CallTR("toRef",List(TemplexTR(NameTT(CodeTypeNameA("void"),KindTemplataType))), CoordTemplataType)))
     val atoms =
       List(AtomAP(CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
 
@@ -663,7 +663,7 @@ class InfererTests extends FunSuite with Matchers {
               CallTR("passThroughIfInterface",List(TemplexTR(RuneTT(CodeRune2("Z"), KindTemplataType))), KindTemplataType)))),
         EqualsTR(
           TemplexTR(RuneTT(CodeRune2("V"), CoordTemplataType)),
-          CallTR("toRef",List(TemplexTR(NameTT(CodeTypeNameA("Void"), KindTemplataType))), CoordTemplataType)))
+          CallTR("toRef",List(TemplexTR(NameTT(CodeTypeNameA("void"), KindTemplataType))), CoordTemplataType)))
     val atoms =
       List(AtomAP(CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
 
@@ -761,7 +761,7 @@ class InfererTests extends FunSuite with Matchers {
           TemplexTR(
             CallTT(
               NameTT(CodeTypeNameA("MutTStruct"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
-              List(NameTT(CodeTypeNameA("Int"), CoordTemplataType)),
+              List(NameTT(CodeTypeNameA("int"), CoordTemplataType)),
               CoordTemplataType))))
     val atoms =
       List(AtomAP(CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
@@ -878,7 +878,7 @@ class InfererTests extends FunSuite with Matchers {
           TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),
           EqualsTR(
             TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),
-            TemplexTR(RepeaterSequenceTT(MutabilityTT(ImmutableP), IntTT(5),OwnershippedTT(ShareP,NameTT(CodeTypeNameA("Int"), CoordTemplataType)), CoordTemplataType)))),
+            TemplexTR(RepeaterSequenceTT(MutabilityTT(ImmutableP), IntTT(5),OwnershippedTT(ShareP,NameTT(CodeTypeNameA("int"), CoordTemplataType)), CoordTemplataType)))),
         Map(CodeRune2("Z") -> CoordTemplataType),
         Set(CodeRune2("Z")),
         Map(),
@@ -950,7 +950,7 @@ class InfererTests extends FunSuite with Matchers {
             TemplexTR(
               CallTT(
                 NameTT(CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
-                List(MutabilityTT(MutableP), NameTT(CodeTypeNameA("Int"), CoordTemplataType)),
+                List(MutabilityTT(MutableP), NameTT(CodeTypeNameA("int"), CoordTemplataType)),
                 KindTemplataType))),
           EqualsTR(
             TemplexTR(RuneTT(CodeRune2("K"), KindTemplataType)),
@@ -1053,8 +1053,8 @@ class InfererTests extends FunSuite with Matchers {
                 PrototypeTemplataType,
                 List(
                   TemplexTR(StringTT("increment")),
-                  TemplexTR(CoordListTT(List(NameTT(CodeTypeNameA("Int"), CoordTemplataType)))),
-                  TemplexTR(NameTT(CodeTypeNameA("Int"), CoordTemplataType)))),
+                  TemplexTR(CoordListTT(List(NameTT(CodeTypeNameA("int"), CoordTemplataType)))),
+                  TemplexTR(NameTT(CodeTypeNameA("int"), CoordTemplataType)))),
               TemplexTR(RuneTT(CodeRune2("F"),PrototypeTemplataType)))),
           Map(CodeRune2("F") -> CoordTemplataType),
           Set(CodeRune2("F")),
@@ -1086,7 +1086,7 @@ class InfererTests extends FunSuite with Matchers {
                       List(
                         RuneTT(CodeRune2("T"),CoordTemplataType)))),
                   EqualsTR(
-                    TemplexTR(NameTT(CodeTypeNameA("Int"),CoordTemplataType)),
+                    TemplexTR(NameTT(CodeTypeNameA("int"),CoordTemplataType)),
                     TemplexTR(RuneTT(CodeRune2("T"),CoordTemplataType))))),
               TemplexTR(RuneTT(CodeRune2("F"),PrototypeTemplataType)))),
           Map(CodeRune2("T") -> CoordTemplataType, CodeRune2("F") -> PrototypeTemplataType),
@@ -1154,9 +1154,9 @@ class InfererTests extends FunSuite with Matchers {
       isf.toString
     }
 
-    expectSuccess(run("Int", OwnP)) shouldEqual Coord(Share, Int2())
-    expectSuccess(run("Int", BorrowP)) shouldEqual Coord(Share, Int2())
-    expectSuccess(run("Int", ShareP)) shouldEqual Coord(Share, Int2())
+    expectSuccess(run("int", OwnP)) shouldEqual Coord(Share, Int2())
+    expectSuccess(run("int", BorrowP)) shouldEqual Coord(Share, Int2())
+    expectSuccess(run("int", ShareP)) shouldEqual Coord(Share, Int2())
 
     vassert(expectFail(run("MutStruct", ShareP)).contains("Expected a share, but was an own"))
     expectSuccess(run("MutStruct", OwnP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
@@ -1166,9 +1166,9 @@ class InfererTests extends FunSuite with Matchers {
     expectSuccess(run("MutStructBorrow", OwnP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStructBorrow", BorrowP)) shouldEqual Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
-    expectSuccess(run("Void", ShareP)) shouldEqual Coord(Share, Void2())
-    expectSuccess(run("Void", OwnP)) shouldEqual Coord(Share, Void2())
-    expectSuccess(run("Void", BorrowP)) shouldEqual Coord(Share, Void2())
+    expectSuccess(run("void", ShareP)) shouldEqual Coord(Share, Void2())
+    expectSuccess(run("void", OwnP)) shouldEqual Coord(Share, Void2())
+    expectSuccess(run("void", BorrowP)) shouldEqual Coord(Share, Void2())
   }
 
   test("test matching ownershipped") {
@@ -1201,13 +1201,13 @@ class InfererTests extends FunSuite with Matchers {
       isf.toString
     }
 
-    expectSuccess(run("Int", OwnP)) shouldEqual Coord(Share, Int2())
-    expectSuccess(run("Int", BorrowP)) shouldEqual Coord(Share, Int2())
-    expectSuccess(run("Int", ShareP)) shouldEqual Coord(Share, Int2())
+    expectSuccess(run("int", OwnP)) shouldEqual Coord(Share, Int2())
+    expectSuccess(run("int", BorrowP)) shouldEqual Coord(Share, Int2())
+    expectSuccess(run("int", ShareP)) shouldEqual Coord(Share, Int2())
 
-    expectSuccess(run("Void", OwnP)) shouldEqual Coord(Share, Void2())
-    expectSuccess(run("Void", BorrowP)) shouldEqual Coord(Share, Void2())
-    expectSuccess(run("Void", ShareP)) shouldEqual Coord(Share, Void2())
+    expectSuccess(run("void", OwnP)) shouldEqual Coord(Share, Void2())
+    expectSuccess(run("void", BorrowP)) shouldEqual Coord(Share, Void2())
+    expectSuccess(run("void", ShareP)) shouldEqual Coord(Share, Void2())
 
     vassert(expectFail(run("MutStruct", ShareP)).contains("Couldn't match incoming Own against expected Share"))
     // Takes the own off the incoming own coord, ends up as another own.

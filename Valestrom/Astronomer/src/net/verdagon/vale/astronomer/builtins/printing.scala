@@ -22,8 +22,8 @@ object Printing {
         ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("S"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("S"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Str"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("S"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("str"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -54,8 +54,8 @@ object Printing {
         ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -65,7 +65,7 @@ object Printing {
               FunctionLoadAE(GlobalFunctionFamilyNameA("println")),
               List(
                 FunctionCallAE(
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("Str")),
+                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), false))))))))))
 
@@ -86,8 +86,8 @@ object Printing {
         ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -97,7 +97,7 @@ object Printing {
               FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("Str")),
+                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), false))))))))))
 }

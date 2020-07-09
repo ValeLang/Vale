@@ -19,20 +19,20 @@ object ForeachLinkedList {
       |  next ^MyOption<^MyList<T>>;
       |}
       |
-      |abstract fn forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) *Int;
-      |fn forEach<F, T>(opt &MyNone<MyList<T>> impl MyOption<MyList<T>>, func F) *Int { 0 }
-      |fn forEach<F, T>(opt &MySome<MyList<T>> impl MyOption<MyList<T>>, func F) *Int {
+      |abstract fn forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) int;
+      |fn forEach<F, T>(opt &MyNone<MyList<T>> impl MyOption<MyList<T>>, func F) int { 0 }
+      |fn forEach<F, T>(opt &MySome<MyList<T>> impl MyOption<MyList<T>>, func F) int {
       |   forEach<F, T>(opt.value, func);
       |   = 0;
       |}
-      |fn forEach<F, T>(list &MyList<T>, func F) *Int {
+      |fn forEach<F, T>(list &MyList<T>, func F) int {
       |  func(list.value);
       |  forEach<F, T>(list.next, func);
       |  = 0;
       |}
       |
-      |fn main() *Int {
-      |  list = MyList<*Int>(10, MySome<^MyList<*Int>>(MyList<*Int>(20, MySome<^MyList<*Int>>(MyList<*Int>(30, MyNone<^MyList<*Int>>())))));
+      |fn main() int {
+      |  list = MyList<int>(10, MySome<^MyList<int>>(MyList<int>(20, MySome<^MyList<int>>(MyList<int>(30, MyNone<^MyList<int>>())))));
       |  forEach(&list, print);
       |  = 0;
       |}

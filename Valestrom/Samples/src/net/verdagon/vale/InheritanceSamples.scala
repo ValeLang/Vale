@@ -4,7 +4,7 @@ object InheritanceSamples {
   val upcasting =
     """
       |interface MyInterface { }
-      |struct MyStruct { value *Int; }
+      |struct MyStruct { value int; }
       |impl MyStruct for MyInterface;
       |fn main() {
       |  x MyInterface = MyStruct(9);
@@ -14,21 +14,21 @@ object InheritanceSamples {
   val calling =
     """
       |interface Car { }
-      |abstract fn doCivicDance(virtual this Car) Int;
+      |abstract fn doCivicDance(virtual this Car) int;
       |
       |struct Civic {}
       |impl Civic for Car;
-      |fn doCivicDance(civic Civic impl Car) Int {
+      |fn doCivicDance(civic Civic impl Car) int {
       |	= 4;
       |}
       |
       |struct Toyota {}
       |impl Toyota for Car;
-      |fn doCivicDance(toyota Toyota impl Car) Int {
+      |fn doCivicDance(toyota Toyota impl Car) int {
       |	= 7;
       |}
       |
-      |fn main() Int {
+      |fn main() int {
       |	x Car = Toyota();
       |	= doCivicDance(x);
       |}
@@ -37,21 +37,21 @@ object InheritanceSamples {
   val callingThroughBorrow =
     """
       |interface Car { }
-      |abstract fn doCivicDance(virtual this &Car) Int;
+      |abstract fn doCivicDance(virtual this &Car) int;
       |
       |struct Civic {}
       |impl Civic for Car;
-      |fn doCivicDance(civic &Civic impl Car) Int {
+      |fn doCivicDance(civic &Civic impl Car) int {
       |	= 4;
       |}
       |
       |struct Toyota {}
       |impl Toyota for Car;
-      |fn doCivicDance(toyota &Toyota impl Car) Int {
+      |fn doCivicDance(toyota &Toyota impl Car) int {
       |	= 7;
       |}
       |
-      |fn main() Int {
+      |fn main() int {
       |	x Car = Toyota();
       | b = &x;
       |	= doCivicDance(b);
@@ -62,15 +62,15 @@ object InheritanceSamples {
 
     """
       |interface MyInterface<T> rules(T Ref) { }
-      |abstract fn doThing<T>(virtual x MyInterface<T>) *Int;
+      |abstract fn doThing<T>(virtual x MyInterface<T>) int;
       |
       |struct MyStruct<T> rules(T Ref) { }
       |impl<T> MyStruct<T> for MyInterface<T>;
-      |fn doThing<T>(x MyStruct<T> impl MyInterface<T>) *Int {4}
+      |fn doThing<T>(x MyStruct<T> impl MyInterface<T>) int {4}
       |
       |fn main() {
-      |  x = MyStruct<*Int>();
-      |  y = MyStruct<*Str>();
+      |  x = MyStruct<int>();
+      |  y = MyStruct<str>();
       |  doThing(x);
       |  = doThing(y);
       |}

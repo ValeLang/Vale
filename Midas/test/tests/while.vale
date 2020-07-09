@@ -1,5 +1,5 @@
 fn main() {
-  a! Int = 1;
+  a! int = 1;
   while (a < 42) {
     mut a = a + 1;
   }

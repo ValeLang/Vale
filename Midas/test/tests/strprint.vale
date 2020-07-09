@@ -1,5 +1,5 @@
 
-fn main() Int {
+fn main() int {
   println("Hello");
   = 42;
 }

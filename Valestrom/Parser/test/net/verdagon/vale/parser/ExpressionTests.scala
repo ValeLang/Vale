@@ -119,11 +119,11 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Template calling") {
-    compile("MyNone<Int>()") shouldHave {
-      case FunctionCallPE(_,None,LookupPE(StringP(_, "MyNone"), Some(TemplateArgsP(_, List(NameOrRunePT(StringP(_, "Int")))))),List(), true) =>
+    compile("MyNone<int>()") shouldHave {
+      case FunctionCallPE(_,None,LookupPE(StringP(_, "MyNone"), Some(TemplateArgsP(_, List(NameOrRunePT(StringP(_, "int")))))),List(), true) =>
     }
-    compile("MySome<MyNone<Int>>()") shouldHave {
-      case FunctionCallPE(_,None,LookupPE(StringP(_, "MySome"), Some(TemplateArgsP(_, List(CallPT(_,NameOrRunePT(StringP(_, "MyNone")),List(NameOrRunePT(StringP(_, "Int")))))))),List(), true) =>
+    compile("MySome<MyNone<int>>()") shouldHave {
+      case FunctionCallPE(_,None,LookupPE(StringP(_, "MySome"), Some(TemplateArgsP(_, List(CallPT(_,NameOrRunePT(StringP(_, "MyNone")),List(NameOrRunePT(StringP(_, "int")))))))),List(), true) =>
     }
   }
 

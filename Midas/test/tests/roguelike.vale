@@ -4,9 +4,9 @@ impl<T> Some<T> for Opt<T>;
 struct None<T> rules(T Ref) { }
 impl<T> None<T> for Opt<T>;
 
-abstract fn empty?<T>(virtual opt &Opt<T>) Bool;
-fn empty?<T>(opt &None<T> impl Opt<T>) Bool { true }
-fn empty?<T>(opt &Some<T> impl Opt<T>) Bool { false }
+abstract fn empty?<T>(virtual opt &Opt<T>) bool;
+fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
+fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
 
 abstract fn get<T>(virtual opt Opt<T>) T;
 fn get<T>(opt None<T> impl Opt<T>) T { panic() }
@@ -35,23 +35,23 @@ fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
   Some<R>(func(opt.value))
 }
 
-abstract fn getSize<T>(virtual opt &Opt<T>) *Int;
-fn getSize<T>(opt &None<T> impl Opt<T>) *Int { 0 }
-fn getSize<T>(opt &Some<T> impl Opt<T>) *Int { 1 }
+abstract fn getSize<T>(virtual opt &Opt<T>) *int;
+fn getSize<T>(opt &None<T> impl Opt<T>) *int { 0 }
+fn getSize<T>(opt &Some<T> impl Opt<T>) *int { 1 }
 
 struct List<E> rules(E Ref) {
   array Array<mut, Opt<E>>;
-  size Int;
+  size int;
 }
 fn List<E>() rules(E Ref) {
-  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, Int, Opt<E>>((index){ panic()})), 0)
+  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ panic()})), 0)
 }
 fn len<E>(list &List<E>) { list.size }
 fn add<E>(list &List<E>, newElement E) {
   if (list.size == list.len()) {
     newLen = if (len(list) == 0) { 1 } else { len(list) * 2 };
     newArray =
-        Array<mut, Opt<E>>(newLen, &IFunction1<mut, Int, Opt<E>>((index){
+        Array<mut, Opt<E>>(newLen, &IFunction1<mut, int, Opt<E>>((index){
           = if (index < len(list)) {
               = (mut list.array[index] = None<E>());
             } else {
@@ -65,15 +65,15 @@ fn add<E>(list &List<E>, newElement E) {
   mut list.size = list.size + 1;
 }
 // todo make that return a &E
-fn get<E>(list &List<E>, index Int) &Opt<E> {
+fn get<E>(list &List<E>, index int) &Opt<E> {
   a = list.array;
   = a[index];
 }
-fn set<E>(list &List<E>, index Int, value E) Void {
+fn set<E>(list &List<E>, index int, value E) void {
   mut list.array[index] = Some(value);
 }
 fn toArray<M, E>(list &List<E>) Array<M, E> rules(M Mutability) {
-  Array<M, E>(list.len(), &IFunction1<mut, Int, E>((i){ list.get(i).get()}))
+  Array<M, E>(list.len(), &IFunction1<mut, int, E>((i){ list.get(i).get()}))
 }
 fn toList<E>(arr &Array<_, E>) List<E> {
   list = List<E>();
@@ -84,12 +84,12 @@ fn toList<E>(arr &Array<_, E>) List<E> {
 }
 
 
-fn panic(msg Str) {
+fn panic(msg str) {
   println(msg);
   = panic();
 }
 
-fn abs(a Int) {
+fn abs(a int) {
   = if (a < 0) { a * -1 } else { a }
 }
 
@@ -102,27 +102,27 @@ struct HashMap<K, V, H, E> {
   hasher H;
   equator E;
   table Array<mut, Opt<HashNode<K, V>>>;
-  size Int;
+  size int;
 }
 
 fn HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
   HashMap<K, V, H, E>(hasher, equator, 0)
 }
 
-fn HashMap<K, V, H, E>(hasher H, equator E, capacity Int) HashMap<K, V, H, E> {
+fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
   HashMap<K, V>(
       hasher,
       equator,
       Array<mut, Opt<HashNode<K, V>>>(
         capacity,
-        &IFunction1<mut, Int, Opt<HashNode<K, V>>>((index){
+        &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
           opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
           = opt;
         })),
       0)
 }
 
-fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) Void {
+fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
   if (map.has(key)) {
     panic("Map already has given key!");
   }
@@ -133,7 +133,7 @@ fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) Void {
     newTable =
         Array<mut, Opt<HashNode<K, V>>>(
             newSize,
-            &IFunction1<mut, Int, Opt<HashNode<K, V>>>((index){
+            &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
               opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
               = opt;
             }));
@@ -164,7 +164,7 @@ fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashNode<K, V>>>, hasher H, nod
   mut table[index] = opt;
 }
 
-fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex Int, key K) Int {
+fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex int, key K) int {
   i = 0;
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
@@ -178,22 +178,22 @@ fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex
   = panic("findEmptyIndexForKey went past end of table!");
 }
 
-fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashNode<K, V>>>, equator E, startIndex Int, key K) Opt<Int> {
+fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
   i = 0;
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
     something = table[index];
     if (something.empty?()) {
-      ret None<Int>();
+      ret None<int>();
     }
     node = something.get();
     if ((equator)(node.key, key)) {
-      ret Some<Int>(index);
+      ret Some<int>(index);
     }
     // continue to next node
     mut i = i + 1;
   }
-  = panic("findIndexOfKey went past end of table! len " + Str(table.len()) + " and i " + Str(i));
+  = panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
 }
 
 fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
@@ -212,7 +212,7 @@ fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
   ret opt;
 }
 
-fn has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Bool {
+fn has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
   not(self.get(key).empty?())
 }
 
@@ -232,26 +232,26 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
 
 
 fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) {
-  Array<M, E>(N, &IFunction1<SM, Int, E>((i){ seq[i]}))
+  Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
 }
 
-//fn each<N, E, F, M>(seq &[<M> N * E], func F) Void {
-//  Array<mut, Int>(N, &IFunction1<mut, Int, Int>((i){ func(seq[i]); = 0; }));
+//fn each<N, E, F, M>(seq &[<M> N * E], func F) void {
+//  Array<mut, int>(N, &IFunction1<mut, int, int>((i){ func(seq[i]); = 0; }));
 //}
 
 //fn map<M>(seq &[<_> N * E], func F) rules(M Mutability) {
 //  Array<M>(N, (i){ func(seq[i]) })
 //}
 
-//fn each<E, F>(arr &Array<_, E>, func F) Void {
-//  Array<mut, Int>(arr.len(), &IFunction1<mut, Int, Void>((i){ func(arr[i]); = 0; }));
+//fn each<E, F>(arr &Array<_, E>, func F) void {
+//  Array<mut, int>(arr.len(), &IFunction1<mut, int, void>((i){ func(arr[i]); = 0; }));
 //}
 
 //fn map<M>(arr &Array<_, E>, func F) rules(M Mutability) {
 //  Array<M>(arr.len(), (i){ func(arr[i]) })
 //}
 
-fn has<E, F>(arr &Array<_, E>, elem E, equator F) Bool {
+fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
   i = 0;
   while (i < arr.len()) {
     if ((equator)(arr[i], elem)) {
@@ -262,11 +262,11 @@ fn has<E, F>(arr &Array<_, E>, elem E, equator F) Bool {
   = false;
 }
 
-fn has<E>(arr &Array<_, E>, elem E) Bool {
+fn has<E>(arr &Array<_, E>, elem E) bool {
   has(arr, elem, ==)
 }
 
-fn has<E, F>(seq &[<_> _ * E], elem E, equator F) Bool {
+fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
   i = 0;
   while (i < seq.len()) {
     if ((equator)(seq[i], elem)) {
@@ -277,17 +277,17 @@ fn has<E, F>(seq &[<_> _ * E], elem E, equator F) Bool {
   = false;
 }
 
-fn has<E>(seq &[<_> _ * E], elem E) Bool {
+fn has<E>(seq &[<_> _ * E], elem E) bool {
   has(seq, elem, ==)
 }
 
-fn Arr<M, F>(n Int, generator &F) Array<M, T>
-rules(M Mutability, T Ref, Prot("__call", (&F, Int), T))
+fn Arr<M, F>(n int, generator &F) Array<M, T>
+rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
 {
-  Array<M>(n, &IFunction1<mut, Int, T>(generator))
+  Array<M>(n, &IFunction1<mut, int, T>(generator))
 }
 
-fn each<M, T, F>(arr &Array<M, T>, func F) Void {
+fn each<M, T, F>(arr &Array<M, T>, func F) void {
   i! = 0;
   l = len(&arr);
   while (i < l) {
@@ -296,11 +296,11 @@ fn each<M, T, F>(arr &Array<M, T>, func F) Void {
   }
 }
 
-fn indices<>(arr &Array<_, _>) Array<imm, Int> {
+fn indices<>(arr &Array<_, _>) Array<imm, int> {
   Arr<imm>(len(arr), {_})
 }
 
-fn eachI<F>(arr &Array<_, _>, func F) Void {
+fn eachI<F>(arr &Array<_, _>, func F) void {
   i! = 0;
   l = len(&arr);
   while (i < l) {
@@ -312,24 +312,24 @@ fn eachI<F>(arr &Array<_, _>, func F) Void {
 
 
 struct Vec2 imm {
-  x Float;
-  y Float;
+  x float;
+  y float;
 }
 
 struct Vec3 imm {
-  x Float;
-  y Float;
-  z Float;
+  x float;
+  y float;
+  z float;
 }
 
 struct Location imm {
-  groupX Int;
-  groupY Int;
-  indexInGroup Int;
+  groupX int;
+  groupY int;
+  indexInGroup int;
 }
 
 struct Pattern imm {
-  name Str;
+  name str;
   cornersByShapeIndex Array<imm, Array<imm, Vec2>>;
   patternTiles Array<imm, PatternTile>;
   xOffset Vec2;
@@ -337,32 +337,32 @@ struct Pattern imm {
 }
 
 struct PatternTile imm {
-  shapeIndex Int;
-  rotateRadians Float;
+  shapeIndex int;
+  rotateRadians float;
   translate Vec2;
   sideAdjacenciesBySideIndex Array<imm, PatternSideAdjacency>;
   cornerAdjacenciesByCornerIndex Array<imm, Array<imm, PatternCornerAdjacency>>;
 }
 
 struct PatternSideAdjacency imm {
-  groupRelativeX Int;
-  groupRelativeY Int;
-  tileIndex Int;
-  sideIndex Int;
+  groupRelativeX int;
+  groupRelativeY int;
+  tileIndex int;
+  sideIndex int;
 }
 
 struct PatternCornerAdjacency imm {
-  groupRelativeX Int;
-  groupRelativeY Int;
-  tileIndex Int;
-  cornerIndex Int;
+  groupRelativeX int;
+  groupRelativeY int;
+  tileIndex int;
+  cornerIndex int;
 }
 
 
 struct TerrainTile {
-  elevation Int;
-  walkable Bool;
-  classId Str;
+  elevation int;
+  walkable bool;
+  classId str;
 }
 
 struct LocationHasher { }
@@ -381,11 +381,11 @@ fn __call(this &LocationEquator, a Location, b Location) {
 
 struct Terrain {
   pattern Pattern;
-  elevationStepHeight Float;
+  elevationStepHeight float;
   tiles HashMap<Location, TerrainTile, LocationHasher, LocationEquator>;
 }
 
-fn makeBoard() Array<mut, Array<mut, Str>> {
+fn makeBoard() Array<mut, Array<mut, str>> {
   ret
     Arr<mut>(10, (row){
       Arr<mut>(10, (col){
@@ -398,7 +398,7 @@ fn makeBoard() Array<mut, Array<mut, Str>> {
     });
 }
 
-fn display(board &Array<mut, Array<mut, Str>>, playerRow Int, playerCol Int) {
+fn display(board &Array<mut, Array<mut, str>>, playerRow int, playerCol int) {
   toPrint! = "";
   eachI &board (rowI, row){
     eachI &row (cellI, cell){
@@ -413,7 +413,7 @@ fn display(board &Array<mut, Array<mut, Str>>, playerRow Int, playerCol Int) {
   print(toPrint);
 }
 
-fn inputKey() Int {
+fn inputKey() int {
   key! = 0;
   running! = true;
   while (running) {
@@ -438,26 +438,26 @@ fn inputKey() Int {
 }
 
 struct IntHasher { }
-fn __call(this &IntHasher, x Int) { x }
+fn __call(this &IntHasher, x int) { x }
 
 struct IntEquator { }
-fn __call(this &IntEquator, a Int, b Int) { a == b }
+fn __call(this &IntEquator, a int, b int) { a == b }
 
 struct Goblin {
-  row! Int;
-  col! Int;
+  row! int;
+  col! int;
 }
 
-fn main() Int {
+fn main() int {
   board = makeBoard();
 
   playerRow! = 4;
   playerCol! = 3;
 
-  goblins = HashMap<Int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  goblins.add(17, Goblin(2, 3));
-  goblins.add(17, Goblin(7, 4));
-  goblins.add(17, Goblin(8, 3));
+  // goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
+  // goblins.add(17, Goblin(2, 3));
+  // goblins.add(17, Goblin(7, 4));
+  // goblins.add(17, Goblin(8, 3));
 
   running! = true;
   while (running) {

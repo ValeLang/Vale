@@ -43,8 +43,8 @@ object Terrain {
       PentagonPattern9.code +
       Terrain.code +
       """
-        |fn println(f: Float) Void {
-        |  println(Str(f));
+        |fn println(f: Float) void {
+        |  println(str(f));
         |}
         |
         |fn GetTileCenter(pattern: Pattern, loc: Location) Vec2 {
@@ -91,8 +91,8 @@ object Terrain {
         |  = toArray<imm>(&result);
         |}
         |
-        |fn Str(loc: Location) {
-        |  "Location(" + Str(loc.groupX) + ", " + Str(loc.groupY) + ", " + Str(loc.indexInGroup) + ")"
+        |fn str(loc: Location) {
+        |  "Location(" + str(loc.groupX) + ", " + str(loc.groupY) + ", " + str(loc.indexInGroup) + ")"
         |}
         |
         |fn getAdjacentLocationsToAll(
@@ -117,7 +117,7 @@ object Terrain {
         |        // if this is a source loc, and we don't want to include them, do nothing.
         |      } else {
         |        if (not(result.has(adjacentLocation))) {
-        |          println("Found an adjacent location: " + Str(adjacentLocation));
+        |          println("Found an adjacent location: " + str(adjacentLocation));
         |          result.add(adjacentLocation, 0);
         |        }
         |      }
@@ -170,15 +170,15 @@ object Terrain {
         |fn main() {
         |  pattern = makePentagonPattern9();
         |  //adjacent1Locations = getAdjacentLocations(pattern, Location(0, 0, 0), true);
-        |  //println("Adjacent 1s: " + Str(adjacent1Locations.len()));
+        |  //println("Adjacent 1s: " + str(adjacent1Locations.len()));
         |  //adjacent2Locations = getAdjacentLocationsToAll(pattern, adjacent1Locations, true, true);
-        |  //println("Adjacent 2s: " + Str(adjacent2Locations.keys().len()));
+        |  //println("Adjacent 2s: " + str(adjacent2Locations.keys().len()));
         |  //adjacent3Locations = getAdjacentLocationsToAll(pattern, adjacent2Locations.keys(), true, true);
-        |  //println("Adjacent 3s: " + Str(adjacent3Locations.keys().len()));
+        |  //println("Adjacent 3s: " + str(adjacent3Locations.keys().len()));
         |  //adjacent4Locations = getAdjacentLocationsToAll(pattern, adjacent3Locations.keys(), true, true);
-        |  //println("Adjacent 4s: " + Str(adjacent4Locations.keys().len()));
+        |  //println("Adjacent 4s: " + str(adjacent4Locations.keys().len()));
         |  //adjacent5Locations = getAdjacentLocationsToAll(pattern, adjacent4Locations.keys(), true, true);
-        |  //println("Done! 5s: " + Str(adjacent5Locations.keys().len()));
+        |  //println("Done! 5s: " + str(adjacent5Locations.keys().len()));
         |  terrain = Terrain(pattern, 0.4, HashMap<Location, TerrainTile>(LocationHasher(), LocationEquator(), 1024));
         |
         |  terrain.tiles.add(Location(0, 0, 0), TerrainTile(1, true, "ground"));
@@ -306,7 +306,7 @@ object Terrain {
         |    tile = tile?^.get();
         |    mut tile.elevation = 1 + (abs(location.groupX + location.groupY + location.indexInGroup + rand) mod 3);
         |    mut rand = rand * 41 + 13;
-        |    println(Str(location) + " " + Str(tile.elevation));
+        |    println(str(location) + " " + str(tile.elevation));
         |  };
         |
         |  = terrain.tiles.keys();

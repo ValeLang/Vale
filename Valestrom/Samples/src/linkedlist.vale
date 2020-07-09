@@ -27,7 +27,7 @@ fn forEach<F, T>(list: MyList<T>, func: F)Int {
 }
 
 fn main()Int {
-  list = MyList<Int>(10, MySome<MyList<Int>>(MyList<Int>(25, MySome<MyList<Int>>(MyList<Int>(30, MyNone<MyList<Int>>())))));
+  list = MyList<int>(10, MySome<MyList<int>>(MyList<int>(25, MySome<MyList<int>>(MyList<int>(30, MyNone<MyList<int>>())))));
   forEach(list, print);
   0
 }

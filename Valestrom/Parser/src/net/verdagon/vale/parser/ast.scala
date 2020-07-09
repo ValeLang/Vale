@@ -87,7 +87,7 @@ case class FunctionP(
   isExtern: Option[UnitP],
   isAbstract: Option[UnitP],
 
-  // If Some(List()), should show up like the <> in fn moo<>(a Int, b Bool)
+  // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
   maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
 

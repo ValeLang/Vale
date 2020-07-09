@@ -62,7 +62,7 @@ class IfTests extends FunSuite with Matchers {
   test("Moving from inside if") {
     val compile = new Compilation(
       """
-        |struct Marine { x *Int; }
+        |struct Marine { x int; }
         |fn main() {
         |  m = Marine(5);
         |  = if (false) {
@@ -92,7 +92,7 @@ class IfTests extends FunSuite with Matchers {
   test("If with complex condition") {
     val compile = new Compilation(
       """
-        |struct Marine { x *Int; }
+        |struct Marine { x int; }
         |fn main() {
         |  m = Marine(5);
         |  = if (m.x == 5) { "#" }
@@ -110,8 +110,8 @@ class IfTests extends FunSuite with Matchers {
 
   test("Ret from inside if will destroy locals") {
     val compile = new Compilation(
-      """struct Marine { hp Int; }
-        |fn destructor(marine Marine) Void {
+      """struct Marine { hp int; }
+        |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
@@ -135,8 +135,8 @@ class IfTests extends FunSuite with Matchers {
 
   test("Can continue if other branch would have returned") {
     val compile = new Compilation(
-      """struct Marine { hp Int; }
-        |fn destructor(marine Marine) Void {
+      """struct Marine { hp int; }
+        |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}

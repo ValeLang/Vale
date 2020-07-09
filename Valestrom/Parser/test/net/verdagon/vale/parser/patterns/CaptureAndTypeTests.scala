@@ -38,13 +38,13 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
   }
 
   test("No capture, with type") {
-    compile("_ Int") shouldHave {
-      case PatternPP(_,None, _, Some(NameOrRunePT(StringP(_, "Int"))), None, None) =>
+    compile("_ int") shouldHave {
+      case PatternPP(_,None, _, Some(NameOrRunePT(StringP(_, "int"))), None, None) =>
     }
   }
   test("Capture with type") {
-    compile("a Int") shouldHave {
-      case capturedWithType("a", NameOrRunePT(StringP(_, "Int"))) =>
+    compile("a int") shouldHave {
+      case capturedWithType("a", NameOrRunePT(StringP(_, "int"))) =>
     }
   }
   test("Simple capture with tame") {

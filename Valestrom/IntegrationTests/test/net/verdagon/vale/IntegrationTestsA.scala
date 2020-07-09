@@ -23,7 +23,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Taking an argument and returning it") {
-    val compile = new Compilation("fn main(a Int){a}")
+    val compile = new Compilation("fn main(a int){a}")
     compile.evalForReferend(Vector(IntV(5))) shouldEqual VonInt(5)
   }
 
@@ -46,8 +46,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Carrier {
-        |  hp Int;
-        |  interceptors Int;
+        |  hp int;
+        |  interceptors int;
         |}
         |
         |fn main() {
@@ -77,7 +77,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = new Compilation("fn main(){(a Int){ +(a,a)}(3)}");
+    val compile = new Compilation("fn main(){(a int){ +(a,a)}(3)}");
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
@@ -129,8 +129,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn doAThing<T>(s SomeStruct<T>) { }
         |impl<T> SomeStruct<T> for MyInterface<T>;
         |
-        |fn main(a SomeStruct<Int>) {
-        |  doAThing<Int>(a);
+        |fn main(a SomeStruct<int>) {
+        |  doAThing<int>(a);
         |}
       """.stripMargin)
     val hamuts = compile.getHamuts()
@@ -145,7 +145,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Tests weird thing") {
     val compile = new Compilation(
       """
-        |fn main() Int {
+        |fn main() int {
         |  playerRow! = 4;
         |
         |  if (false) {
@@ -161,7 +161,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Reads a struct member") {
     val compile = new Compilation(
       """
-        |struct MyStruct { a *Int; }
+        |struct MyStruct { a int; }
         |fn main() { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
@@ -183,22 +183,22 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |
         |struct MyList {
-        |  value Int;
+        |  value int;
         |  next MyOption;
         |}
         |
-        |fn sum(list &MyList) Int {
+        |fn sum(list &MyList) int {
         |  list.value + sum(list.next)
         |}
         |
-        |virtual fn sum(virtual opt &MyOption) Int { 0 }
-        |fn sum(opt &MyNone impl MyOption) Int { 0 }
-        |fn sum(opt &MySome impl MyOption) Int {
+        |virtual fn sum(virtual opt &MyOption) int { 0 }
+        |fn sum(opt &MyNone impl MyOption) int { 0 }
+        |fn sum(opt &MySome impl MyOption) int {
         |   sum(opt.value)
         |}
         |
         |
-        |fn main() Int {
+        |fn main() int {
         |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
         |  = sum(&list);
         |}
@@ -210,7 +210,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Tests single expression and single statement functions' returns") {
     val compile = new Compilation(
       """
-        |struct MyThing { value *Int; }
+        |struct MyThing { value int; }
         |fn moo() { MyThing(4) }
         |fn main() { moo(); }
       """.stripMargin)
@@ -222,7 +222,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |struct MySome<T> rules(T Ref) { value T; }
         |fn main() {
-        |  MySome<*Int>(4).value
+        |  MySome<int>(4).value
         |}
       """.stripMargin)
     compile.evalForReferend(Vector())
@@ -239,7 +239,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests making a variable with a pattern") {
-    // Tests putting MyOption<Int> as the type of x.
+    // Tests putting MyOption<int> as the type of x.
     val compile = new Compilation(
       """
         |interface MyOption<T> rules(T Ref) { }
@@ -247,12 +247,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct MySome<T> rules(T Ref) {}
         |impl<T> MySome<T> for MyOption<T>;
         |
-        |fn doSomething(opt MyOption<*Int>) *Int {
+        |fn doSomething(opt MyOption<int>) int {
         |  = 9;
         |}
         |
-        |fn main() Int {
-        |	x MyOption<*Int> = MySome<*Int>();
+        |fn main() int {
+        |	x MyOption<int> = MySome<int>();
         |	= doSomething(x);
         |}
       """.stripMargin)
@@ -273,15 +273,15 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface MyInterface<T> rules(T Ref) { }
-        |abstract fn doThing<T>(virtual x MyInterface<T>) *Int;
+        |abstract fn doThing<T>(virtual x MyInterface<T>) int;
         |
         |struct MyStruct<T> rules(T Ref) { }
         |impl<T> MyStruct<T> for MyInterface<T>;
-        |fn doThing<T>(x MyStruct<T> impl MyInterface<T>) *Int {4}
+        |fn doThing<T>(x MyStruct<T> impl MyInterface<T>) int {4}
         |
         |fn main() {
-        |  x = MyStruct<*Int>();
-        |  y = MyStruct<*Str>();
+        |  x = MyStruct<int>();
+        |  y = MyStruct<str>();
         |  doThing(x);
         |  = doThing(y);
         |}
@@ -320,7 +320,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |impl<T> L<T> for K<T>;
         |
         |fn main() {
-        |  x = L<*Int>();
+        |  x = L<int>();
         |  = 4;
         |}
       """.stripMargin)
@@ -331,7 +331,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Tests recursion") {
     val compile = new Compilation(
       """
-        |fn factorial(x Int) Int {
+        |fn factorial(x int) int {
         |  = if (x == 0) {
         |      1
         |    } else {
@@ -350,7 +350,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Moo imm {
-        |  x Float;
+        |  x float;
         |}
         |fn main() {
         |  7
@@ -377,8 +377,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |fn main() {
-        |  a Opt<Int> = Some(9);
-        |  = a.getOr<Int>(12);
+        |  a Opt<int> = Some(9);
+        |  = a.getOr<int>(12);
         |}
         |""".stripMargin)
 
@@ -389,7 +389,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface Opt { }
-        |struct Some { value Int; }
+        |struct Some { value int; }
         |impl Some for Opt;
         |
         |fn doIt() Opt {
@@ -415,7 +415,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface Opt { }
-        |struct Some { value Int; }
+        |struct Some { value int; }
         |impl Some for Opt;
         |
         |fn doIt() Opt {
@@ -463,14 +463,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |struct MyEquals9Functor { }
-        |impl MyEquals9Functor for IFunction1<mut, Int, Bool>;
-        |fn __call(this &MyEquals9Functor impl IFunction1<mut, Int, Bool>, i Int) Bool { i == 9 }
+        |impl MyEquals9Functor for IFunction1<mut, int, bool>;
+        |fn __call(this &MyEquals9Functor impl IFunction1<mut, int, bool>, i int) bool { i == 9 }
         |
         |fn main() {
-        |  a Opt<Int> = Some(9);
+        |  a Opt<int> = Some(9);
         |  f = MyEquals9Functor();
-        |  b Opt<Bool> = a.map<Int, Bool>(&f);
-        |  = b.getOr<Bool>(false);
+        |  b Opt<bool> = a.map<int, bool>(&f);
+        |  = b.getOr<bool>(false);
         |}
         |""".stripMargin)
 
@@ -483,9 +483,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val compile = new Compilation(
       """
-        |fn bork(x Str) { print(x); }
-        |fn helperFunc(x Int) { print(x); }
-        |fn helperFunc(x Str) { print(x); }
+        |fn bork(x str) { print(x); }
+        |fn helperFunc(x int) { print(x); }
+        |fn helperFunc(x str) { print(x); }
         |fn main() {
         |  helperFunc(4);
         |}
@@ -504,10 +504,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val compile = new Compilation(
       """
-        |fn Arr<M, F>(n Int, generator &F) Array<M, T>
-        |rules(M Mutability, T Ref, Prot("__call", (&F, Int), T))
+        |fn Arr<M, F>(n int, generator &F) Array<M, T>
+        |rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
         |{
-        |  Array<M>(n, &IFunction1<mut, Int, T>(generator))
+        |  Array<M>(n, &IFunction1<mut, int, T>(generator))
         |}
         |
         |fn main() {

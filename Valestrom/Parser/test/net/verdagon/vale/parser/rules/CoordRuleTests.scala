@@ -74,20 +74,20 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     //   rules(
     //     Ref#T[_, _, Ref[_, _, Int]]:Ref[_, _, Void]))
     //   (a: #T)
-    compile(rulePR, "Int") shouldHave {
-      case TemplexPR(NameOrRunePRT(StringP(_, "Int"))) =>
+    compile(rulePR, "int") shouldHave {
+      case TemplexPR(NameOrRunePRT(StringP(_, "int"))) =>
     }
-//        CoordPR(None,None,None,None,None,Some(List(NameTemplexPR("Int"))))
+//        CoordPR(None,None,None,None,None,Some(List(NameTemplexPR("int"))))
 
   }
 
   test("Coord with Int in kind rule") {
-    compile(rulePR, "T Ref(_, Int)") shouldHave {
+    compile(rulePR, "T Ref(_, int)") shouldHave {
       case ComponentsPR(
           TypedPR(Some(StringP(_, "T")),CoordTypePR),
-          List(TemplexPR(AnonymousRunePRT()), TemplexPR(NameOrRunePRT(StringP(_, "Int"))))) =>
+          List(TemplexPR(AnonymousRunePRT()), TemplexPR(NameOrRunePRT(StringP(_, "int"))))) =>
     }
-//      runedTCoordWithEnvKind("T", "Int")
+//      runedTCoordWithEnvKind("T", "int")
 
   }
 
@@ -103,37 +103,37 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   }
 
   test("Coord with value") {
-    compile(rulePR, "T Ref = Int") shouldHave {
+    compile(rulePR, "T Ref = int") shouldHave {
       case EqualsPR(
           TypedPR(Some(StringP(_, "T")),CoordTypePR),
-          TemplexPR(NameOrRunePRT(StringP(_, "Int")))) =>
+          TemplexPR(NameOrRunePRT(StringP(_, "int")))) =>
     }
   }
 
   test("Coord with destructure and value") {
-    compile(rulePR, "T Ref(_, _) = Int") shouldHave {
+    compile(rulePR, "T Ref(_, _) = int") shouldHave {
       case EqualsPR(
           ComponentsPR(TypedPR(Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePRT()), TemplexPR(AnonymousRunePRT()))),
-          TemplexPR(NameOrRunePRT(StringP(_, "Int")))) =>
+          TemplexPR(NameOrRunePRT(StringP(_, "int")))) =>
     }
-//        runedTCoordWithValue("T", NameTemplexPR("Int"))
+//        runedTCoordWithValue("T", NameTemplexPR("int"))
   }
 
   test("Coord with sequence in value spot") {
-    compile(rulePR, "T Ref = [Int, Bool]") shouldHave {
+    compile(rulePR, "T Ref = [int, bool]") shouldHave {
       case EqualsPR(
           TypedPR(Some(StringP(_, "T")),CoordTypePR),
           TemplexPR(
             ManualSequencePRT(
-              List(NameOrRunePRT(StringP(_, "Int")), NameOrRunePRT(StringP(_, "Bool")))))) =>
+              List(NameOrRunePRT(StringP(_, "int")), NameOrRunePRT(StringP(_, "bool")))))) =>
     }
   }
 
   test("Braces without Ref is sequence") {
-    compile(rulePR, "[Int, Bool]") shouldHave {
+    compile(rulePR, "[int, bool]") shouldHave {
       case TemplexPR(
           ManualSequencePRT(
-            List(NameOrRunePRT(StringP(_, "Int")), NameOrRunePRT(StringP(_, "Bool"))))) =>
+            List(NameOrRunePRT(StringP(_, "int")), NameOrRunePRT(StringP(_, "bool"))))) =>
         }
   }
 }

@@ -1,10 +1,10 @@
 struct UnitSnapshot imm {
-  hp Int;
-  mp Int;
-  armor Int;
-  strength Int;
-  agility Int;
-  intelligence Int;
+  hp int;
+  mp int;
+  armor int;
+  strength int;
+  agility int;
+  intelligence int;
 }
 
 fn main() {

@@ -21,7 +21,7 @@ object TemplateSamples {
     """
       |struct MySome<T> rules(T Ref) { value T; }
       |fn main() {
-      |  MySome<*Int>(4).value
+      |  MySome<int>(4).value
       |}
     """.stripMargin
 }

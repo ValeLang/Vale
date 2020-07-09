@@ -59,7 +59,7 @@ object FunctionVivem {
       case """F("__subtractIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.subtractIntInt
 //      case PrototypeH(FullNameH(List(NamePartH("__subtractFloatFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.subtractFloatFloat
-      case """F("__addStrStr",[],[R(*,<,s),R(*,<,s)])""" => VivemExterns.addStrStr
+      case """F("__addStrStr",[],[R(*,>,s),R(*,>,s)])""" => VivemExterns.addStrStr
       case """F("__getch")""" => VivemExterns.getch
 //      case PrototypeH(FullNameH(List(NamePartH("__sqrt", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.sqrt
@@ -72,11 +72,11 @@ object FunctionVivem {
 //        VivemExterns.lessThanOrEqInt
 //      case PrototypeH(FullNameH(List(NamePartH("__greaterThanInt", Some(List()), Some(List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH()))), None))), List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH())), ReferenceH(m.Share,BoolH())) =>
 //        VivemExterns.greaterThanInt
-      case """F("__eqStrStr",[],[R(*,<,s),R(*,<,s)])""" => VivemExterns.eqStrStr
+      case """F("__eqStrStr",[],[R(*,>,s),R(*,>,s)])""" => VivemExterns.eqStrStr
       case """F("__greaterThanOrEqInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.greaterThanOrEqInt
       case """F("__eqIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.eqIntInt
       case """F("__eqBoolBool",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.eqBoolBool
-      case """F("__print",[],[R(*,<,s)])""" => VivemExterns.print
+      case """F("__print",[],[R(*,>,s)])""" => VivemExterns.print
       case """F("__not",[],[R(*,<,b)])""" => VivemExterns.not
       case """F("__castIntStr",[],[R(*,<,i)])""" => VivemExterns.castIntStr
 //      case PrototypeH(FullNameH(List(NamePartH("__castFloatStr", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,StrH())) =>

@@ -95,7 +95,7 @@ class ClosureTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Marine {
-        |  hp *Int;
+        |  hp int;
         |}
         |fn main() {
         |  m = Marine(9);

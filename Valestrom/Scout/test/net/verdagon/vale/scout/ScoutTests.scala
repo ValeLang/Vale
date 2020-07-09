@@ -32,7 +32,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Struct") {
-    val program1 = compile("struct Moo { x Int; }")
+    val program1 = compile("struct Moo { x int; }")
     val imoo = program1.lookupStruct("Moo")
 
     val mooName =
@@ -41,7 +41,7 @@ class ScoutTests extends FunSuite with Matchers {
     val memberRune = MemberRuneS(0)
     imoo.rules match {
       case List(
-        EqualsSR(TypedSR(memberRune, CoordTypeSR), TemplexSR(NameST(CodeTypeNameS("Int")))),
+        EqualsSR(TypedSR(memberRune, CoordTypeSR), TemplexSR(NameST(CodeTypeNameS("int")))),
         EqualsSR(TemplexSR(RuneST(ImplicitRuneS(_, _))), TemplexSR(MutabilityST(MutableP)))) =>
     }
     imoo.members shouldEqual List(StructMemberS("x",FinalP,memberRune))
@@ -60,7 +60,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Interface") {
-    val program1 = compile("interface IMoo { fn blork(a Bool)Void; }")
+    val program1 = compile("interface IMoo { fn blork(a bool)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
     imoo.rules match {
@@ -75,10 +75,10 @@ class ScoutTests extends FunSuite with Matchers {
         case List(
           EqualsSR(
             TypedSR(actualParamRune, CoordTypeSR),
-            TemplexSR(NameST(CodeTypeNameS("Bool")))),
+            TemplexSR(NameST(CodeTypeNameS("bool")))),
           EqualsSR(
             TypedSR(actualRetRune, CoordTypeSR),
-            TemplexSR(NameST(CodeTypeNameS("Void"))))) => {
+            TemplexSR(NameST(CodeTypeNameS("void"))))) => {
           actualParamRune match {
             case ImplicitRuneS(_, 0) =>
           }

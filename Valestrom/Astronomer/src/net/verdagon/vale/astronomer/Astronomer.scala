@@ -130,11 +130,11 @@ case class Astrouts(
 object Astronomer {
   val primitives =
     Map(
-      "Int" -> KindTypeSR,
-      "Str" -> KindTypeSR,
-      "Bool" -> KindTypeSR,
-      "Float" -> KindTypeSR,
-      "Void" -> KindTypeSR,
+      "int" -> KindTypeSR,
+      "str" -> KindTypeSR,
+      "bool" -> KindTypeSR,
+      "float" -> KindTypeSR,
+      "void" -> KindTypeSR,
       "IFunction1" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
       "Array" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR), KindTypeSR))
 

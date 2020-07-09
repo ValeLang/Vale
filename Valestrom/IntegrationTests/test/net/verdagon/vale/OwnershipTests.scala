@@ -16,7 +16,7 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Borrowing a temporary mutable makes a local var") {
     val compile = new Compilation(
       """
-        |struct Muta { hp *Int; }
+        |struct Muta { hp int; }
         |fn main() {
         |  = (&Muta(9)).hp;
         |}
@@ -39,7 +39,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """
         |struct Muta { }
         |
-        |fn destructor(m ^Muta) Void {
+        |fn destructor(m ^Muta) void {
         |  println("Destroying!");
         |  Muta() = m;
         |}
@@ -59,7 +59,7 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Saves return value then destroys temporary") {
     val compile = new Compilation(
       """
-        |struct Muta { hp *Int; }
+        |struct Muta { hp int; }
         |
         |fn destructor(m ^Muta) {
         |  println("Destroying!");
@@ -143,7 +143,7 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Saves return value then destroys local var") {
     val compile = new Compilation(
       """
-        |struct Muta { hp *Int; }
+        |struct Muta { hp int; }
         |
         |fn destructor(m ^Muta) {
         |  println("Destroying!");
@@ -167,7 +167,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Wand {
-        |  charges *Int;
+        |  charges int;
         |}
         |struct Wizard {
         |  wand ^Wand;

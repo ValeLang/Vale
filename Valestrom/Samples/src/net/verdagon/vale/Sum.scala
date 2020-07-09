@@ -3,7 +3,7 @@ package net.verdagon.vale
 object Sum {
   val code =
     """
-      |fn sum(a Int, b Int) Int {
+      |fn sum(a int, b int) int {
       |  a + b
       |}
     """.stripMargin

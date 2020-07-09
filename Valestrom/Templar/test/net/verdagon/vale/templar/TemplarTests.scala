@@ -86,7 +86,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Taking an argument and returning it") {
-    val compile = new Compilation("fn main(a Int){a}")
+    val compile = new Compilation("fn main(a int){a}")
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").onlyOf(classOf[Parameter2]).tyype == Coord(Share, Int2())
     val lookup = temputs.lookupFunction("main").allOf(classOf[LocalLookup2]).head;
@@ -110,7 +110,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Recursion") {
-    val compile = new Compilation("fn main() Int{main()}")
+    val compile = new Compilation("fn main() int{main()}")
     val temputs = compile.getTemputs()
 
     // Make sure it inferred the param type and return type correctly
@@ -141,7 +141,7 @@ class TemplarTests extends FunSuite with Matchers {
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = new Compilation("fn main(){(a Int){+(a,a)}(3)}");
+    val compile = new Compilation("fn main(){(a int){+(a,a)}(3)}");
     val temputs = compile.getTemputs()
 
     val lambda = temputs.lookupLambdaIn("main");
@@ -220,7 +220,7 @@ class TemplarTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |struct MyStruct imm {}
-//        |fn wot(b: *MyStruct) *Int { 9 }
+//        |fn wot(b: *MyStruct) int { 9 }
 //      """.stripMargin)
 //    val temputs = compile.getTemputs()
 //
@@ -230,7 +230,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Reads a struct member") {
     val compile = new Compilation(
       """
-        |struct MyStruct { a *Int; }
+        |struct MyStruct { a int; }
         |fn main() { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -292,7 +292,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface MyOption<T> rules(T Ref) { }
-        |fn main(a MyOption<*Int>) { }
+        |fn main(a MyOption<int>) { }
       """.stripMargin)
     val temputs = compile.getTemputs()
 
@@ -312,7 +312,7 @@ class TemplarTests extends FunSuite with Matchers {
         |interface MyOption<T> imm rules(T Ref) { }
         |struct MySome<T> export imm rules(T Ref) { value T; }
         |impl<T> MySome<T> for MyOption<T>;
-        |fn moo(a MySome<*Int>) { }
+        |fn moo(a MySome<int>) { }
       """.stripMargin)
     val temputs = compile.getTemputs()
 
@@ -329,7 +329,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Tests single expression and single statement functions' returns") {
     val compile = new Compilation(
       """
-        |struct MyThing { value *Int; }
+        |struct MyThing { value int; }
         |fn moo() { MyThing(4) }
         |fn main() { moo(); }
       """.stripMargin)
@@ -410,13 +410,13 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a templated function with explicit template args") {
-    // Tests putting MyOption<Int> as the type of x.
+    // Tests putting MyOption<int> as the type of x.
     val compile = new Compilation(
       """
         |fn moo<T> () rules(T Ref) { }
         |
         |fn main() {
-        |	moo<*Int>();
+        |	moo<int>();
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -427,9 +427,9 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Vec3i imm {
-        |  x Int;
-        |  y Int;
-        |  z Int;
+        |  x int;
+        |  y int;
+        |  z int;
         |}
         |
         |fn main() {
@@ -452,7 +452,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests making a variable with a pattern") {
-    // Tests putting MyOption<Int> as the type of x.
+    // Tests putting MyOption<int> as the type of x.
     val compile = new Compilation(
       """
         |interface MyOption<T> rules(T Ref) { }
@@ -460,12 +460,12 @@ class TemplarTests extends FunSuite with Matchers {
         |struct MySome<T> rules(T Ref) {}
         |impl<T> MySome<T> for MyOption<T>;
         |
-        |fn doSomething(opt MyOption<*Int>) *Int {
+        |fn doSomething(opt MyOption<int>) int {
         |  = 9;
         |}
         |
-        |fn main() Int {
-        |	x MyOption<*Int> = MySome<*Int>();
+        |fn main() int {
+        |	x MyOption<int> = MySome<int>();
         |	= doSomething(x);
         |}
       """.stripMargin)
@@ -508,7 +508,7 @@ class TemplarTests extends FunSuite with Matchers {
         |struct ListNode<T> imm rules(T Ref) {
         |  tail ListNode<T>;
         |}
-        |fn main(a ListNode<Int>) {}
+        |fn main(a ListNode<int>) {}
       """.stripMargin)
     val temputs = compile.getTemputs()
   }
@@ -518,8 +518,8 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Vec2 imm {
-        |  x Float;
-        |  y Float;
+        |  x float;
+        |  y float;
         |}
         |struct Pattern imm {
         |  patternTiles Array<imm, Vec2>;
@@ -532,7 +532,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |fn main() {
-        |  a = Array<mut, Int>(11, &IFunction1<imm, Int, Int>({_}));
+        |  a = Array<mut, int>(11, &IFunction1<imm, int, int>({_}));
         |  = len(&a);
         |}
       """.stripMargin)
@@ -572,7 +572,7 @@ class TemplarTests extends FunSuite with Matchers {
 
   test("Test return from inside if destroys locals") {
     val compile = new Compilation(
-      """struct Marine { hp Int; }
+      """struct Marine { hp int; }
         |fn main() {
         |  m = Marine(5);
         |  x =
@@ -606,7 +606,7 @@ class TemplarTests extends FunSuite with Matchers {
         |impl<T> None<T> for IOption<T>;
         |
         |fn main() {
-        |  m IOption<Int> = None<Int>();
+        |  m IOption<int> = None<int>();
         |  mut m = Some(6);
         |}
       """.stripMargin)
@@ -628,10 +628,10 @@ class TemplarTests extends FunSuite with Matchers {
         |impl<T> None<T> for IOption<T>;
         |
         |struct Marine {
-        |  weapon IOption<Int>;
+        |  weapon IOption<int>;
         |}
         |fn main() {
-        |  m = Marine(None<Int>());
+        |  m = Marine(None<int>());
         |  mut m.weapon = Some(6);
         |}
       """.stripMargin)
@@ -644,7 +644,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Lambda inside template") {
-    // This originally didn't work because both helperFunc<Int> and helperFunc<Str>
+    // This originally didn't work because both helperFunc<int> and helperFunc<Str>
     // made a closure struct called helperFunc:lam1, which collided.
     // This is what spurred namespace support.
 
@@ -667,10 +667,10 @@ class TemplarTests extends FunSuite with Matchers {
     // We need to disambiguate by parameters, not just template args.
 
     val compile = new Compilation(
-      """fn helperFunc(x Int) {
+      """fn helperFunc(x int) {
         |  { print(x); }();
         |}
-        |fn helperFunc(x Str) {
+        |fn helperFunc(x str) {
         |  { print(x); }();
         |}
         |fn main() {

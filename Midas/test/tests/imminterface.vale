@@ -11,22 +11,22 @@ impl MyNone for MyOption;
 
 
 struct MyList imm {
-  value *Int;
+  value *int;
   next *MyOption;
 }
 
-fn sum(list *MyList) Int {
+fn sum(list *MyList) int {
   list.value + sum(list.next)
 }
 
-abstract fn sum(virtual opt *MyOption) Int;
-fn sum(opt *MyNone impl MyOption) Int { 0 }
-fn sum(opt *MySome impl MyOption) Int {
+abstract fn sum(virtual opt *MyOption) int;
+fn sum(opt *MyNone impl MyOption) int { 0 }
+fn sum(opt *MySome impl MyOption) int {
    sum(opt.value)
 }
 
 
-fn main() Int {
+fn main() int {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
   = sum(list);
 }

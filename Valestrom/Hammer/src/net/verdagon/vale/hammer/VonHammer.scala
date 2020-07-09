@@ -498,8 +498,14 @@ object VonHammer {
           None,
           Vector(
             VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
+            VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
             VonMember("indexExpr", vonifyNode(indexExpr)),
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("indexType", vonifyCoord(indexExpr.resultType)),
+            VonMember("indexReferend", vonifyKind(indexExpr.resultType.kind)),
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind))))
       }
       case usal @ UnknownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
         VonObject(

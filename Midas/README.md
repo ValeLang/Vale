@@ -1,10 +1,45 @@
-# Vale
+# Vale Compiler
 
-Compiler for the Vale programming language - http://vale.dev/
+Compiler for the Vale programming language.
 
-## Building and Running Vale in Terminal (OSX)
+## Vale
 
-- get llvm 7 and set LDFLAGS, CPPFLAGS, PATH env vars:
+Vale is the fast, safe, and easy programming language. It uses single ownership with constraint references for memory safety without garbage collection, and an emphasis on modern, readable syntax.
+
+See http://vale.dev/ for samples and more information on the language!
+
+## Building and Running
+
+### Linux
+
+#### Linux Terminal
+
+1: Install LLVM 7.
+
+```
+$ sudo apt-get install llvm-7-dev
+```
+
+2: Generate the build files, and use it to build Midas:
+
+```
+$ cmake -B cmake-build-debug
+$ cd cmake-build-debug
+$ make
+```
+
+3: Run tests:
+
+```
+$ cd ../test
+$ python3 -m unittest -f
+```
+
+### OSX
+
+#### OSX Terminal
+
+1: Install LLVM 7 and set LDFLAGS, CPPFLAGS, PATH env vars:
 
 ```
 $ brew install llvm@7
@@ -13,7 +48,7 @@ $ export CPPFLAGS="-I/usr/local/opt/llvm@7/include"
 $ export PATH=/usr/local/opt/llvm@7/bin:$PATH
 ```
 
-- generate the build files, and use it to build valec:
+2: Generate the build files, and use it to build Midas:
 
 ```
 $ cmake -B cmake-build-debug
@@ -21,35 +56,32 @@ $ cd cmake-build-debug
 $ make
 ```
 
-- run functional tests:
+3: Run tests:
 
 ```
 $ cd ../test
 $ python3 -m unittest -f
 ```
 
-## Building and Running Vale in CLion (OSX)
+#### OSX CLion
 
-- get llvm 7
+1: Install LLVM 7.
+
 ```
 $ brew install llvm@7
 ```
 
-- apply default .idea configuration. 
+2: Apply default .idea configuration.
+ 
 ```
 $ git merge --no-ff origin/idea_config
 $ git reset HEAD~1
 ```
+
 The CMake environment should point to an llvm-7 installation *similar* to the `export` commands in the Terminal variant instructions above. See Preferences -> Build, Execution, Deployment -> CMake for details or if you need to modify the environment. If you must clean the repo, you may prefer `git clean -xfd -e .idea` from the top-level
 
-- open CLion and open Midas through CMakeLists.txt
+- Open CLion and open Midas through CMakeLists.txt
 
 - Select the `valec|Debug` configuration (upper right toolbar) and build it by clicking the control that looks like a hammer (left of configuration dropdown)
 
 - Select the `Unittests in tests` configuration and run it by clicking on the control that looks like a triangle/play button (right of configuration dropdown)
-
-## Emitting Source To LLVM Assembly
-
-```
-$ clang -c -emit-llvm foo.cpp -o foo.bc && llvm-dis -o foo.ll foo.bc 
-```

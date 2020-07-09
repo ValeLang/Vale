@@ -308,7 +308,7 @@ object LetHammer {
               val (memberRefTypeH) =
                 TypeHammer.translateReference(hinputs, hamuts, memberRefType2);
               // In the case of an addressible struct member, its variability refers to the
-              // variability of the pointee variable, see StructMember2
+              // variability of the pointee variable, see structMember2
               val (boxStructRefH) =
                 StructHammer.makeBox(hinputs, hamuts, member2.variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.

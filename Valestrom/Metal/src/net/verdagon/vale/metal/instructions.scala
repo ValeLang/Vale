@@ -529,7 +529,7 @@ case class ConstructUnknownSizeArrayH(
   // Register containing the size of the new array.
   // As with any read from a register, this will invalidate the register.
   sizeRegister: ExpressionH[IntH],
-  // Register containing the IFunction<Int, T> interface reference which we'll
+  // Register containing the IFunction<int, T> interface reference which we'll
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.

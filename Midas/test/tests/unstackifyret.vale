@@ -3,7 +3,7 @@
 // We had a bug where Unstackify wasnt unregistering the local in its local ID
 // to LLVMValueRef map.
 
-fn main() Int {
+fn main() int {
   playerRow! = 4;
 
   if (false) {

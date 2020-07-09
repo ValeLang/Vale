@@ -21,13 +21,13 @@ object Roguelike {
         |}
         |
         |struct Location imm {
-        |  groupX Int;
-        |  groupY Int;
-        |  indexInGroup Int;
+        |  groupX int;
+        |  groupY int;
+        |  indexInGroup int;
         |}
         |
         |struct Pattern imm {
-        |  name Str;
+        |  name str;
         |  cornersByShapeIndex Array<imm, Array<imm, Vec2>>;
         |  patternTiles Array<imm, PatternTile>;
         |  xOffset Vec2;
@@ -35,7 +35,7 @@ object Roguelike {
         |}
         |
         |struct PatternTile imm {
-        |  shapeIndex Int;
+        |  shapeIndex int;
         |  rotateRadians Float;
         |  translate Vec2;
         |  sideAdjacenciesBySideIndex Array<imm, PatternSideAdjacency>;
@@ -43,24 +43,24 @@ object Roguelike {
         |}
         |
         |struct PatternSideAdjacency imm {
-        |  groupRelativeX Int;
-        |  groupRelativeY Int;
-        |  tileIndex Int;
-        |  sideIndex Int;
+        |  groupRelativeX int;
+        |  groupRelativeY int;
+        |  tileIndex int;
+        |  sideIndex int;
         |}
         |
         |struct PatternCornerAdjacency imm {
-        |  groupRelativeX Int;
-        |  groupRelativeY Int;
-        |  tileIndex Int;
-        |  cornerIndex Int;
+        |  groupRelativeX int;
+        |  groupRelativeY int;
+        |  tileIndex int;
+        |  cornerIndex int;
         |}
         |
         |
         |struct TerrainTile {
-        |  elevation Int;
-        |  walkable Bool;
-        |  classId Str;
+        |  elevation int;
+        |  walkable bool;
+        |  classId str;
         |}
         |
         |struct LocationHasher { }
@@ -96,7 +96,7 @@ object Roguelike {
         |    });
         |}
         |
-        |fn display(board &Array<mut, Array<mut, Str>>, playerRow Int, playerCol Int) {
+        |fn display(board &Array<mut, Array<mut, Str>>, playerRow int, playerCol int) {
         |  toPrint! = "";
         |  eachI &board (rowI, row){
         |    eachI &row (cellI, cell){

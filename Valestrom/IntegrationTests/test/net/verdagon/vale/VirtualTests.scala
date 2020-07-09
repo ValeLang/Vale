@@ -75,7 +75,7 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface I {
-        |  fn doThing(virtual i I) Int;
+        |  fn doThing(virtual i I) int;
         |}
         |fn main(i I) {
         |  doThing(i)

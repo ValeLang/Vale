@@ -108,8 +108,8 @@ class BiggerTests extends FunSuite with Matchers with Collector {
   }
 
   test("Simple struct") {
-    compile(VParser.struct, "struct Moo { x &Int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), false, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "Int"))))))) =>
+    compile(VParser.struct, "struct Moo { x &int; }") shouldHave {
+      case StructP(_, StringP(_, "Moo"), false, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 
@@ -120,8 +120,8 @@ class BiggerTests extends FunSuite with Matchers with Collector {
   }
 
   test("Export struct") {
-    compile(VParser.struct, "struct Moo export { x &Int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), true, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "Int"))))))) =>
+    compile(VParser.struct, "struct Moo export { x &int; }") shouldHave {
+      case StructP(_, StringP(_, "Moo"), true, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 
@@ -198,13 +198,13 @@ class BiggerTests extends FunSuite with Matchers with Collector {
     compile(
       VParser.impl,
       """
-        |impl MyIntIdentity for IFunction1<mut, Int, Int>;
+        |impl MyIntIdentity for IFunction1<mut, int, int>;
         |""".stripMargin) shouldHave {
       case ImplP(_,
       None,
       None,
       NameOrRunePT(StringP(_, "MyIntIdentity")),
-      CallPT(_,NameOrRunePT(StringP(_, "IFunction1")), List(MutabilityPT(MutableP), NameOrRunePT(StringP(_, "Int")), NameOrRunePT(StringP(_, "Int"))))) =>
+      CallPT(_,NameOrRunePT(StringP(_, "IFunction1")), List(MutabilityPT(MutableP), NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "int"))))) =>
     }
   }
 
@@ -213,13 +213,13 @@ class BiggerTests extends FunSuite with Matchers with Collector {
     compile(
       VParser.topLevelFunction,
       """
-        |fn doCivicDance(virtual this Car) Int;
+        |fn doCivicDance(virtual this Car) int;
       """.stripMargin) shouldHave {
       case FunctionP(
         _,
         Some(StringP(_, "doCivicDance")), None, None, None, None,
         Some(ParamsP(_, List(PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "this")), FinalP)), Some(NameOrRunePT(StringP(_, "Car"))), None, Some(AbstractP))))),
-        Some(NameOrRunePT(StringP(_, "Int"))), None) =>
+        Some(NameOrRunePT(StringP(_, "int"))), None) =>
     }
   }
 

@@ -47,7 +47,7 @@ case class ImmDropNameA() extends IFunctionDeclarationNameA
 
 sealed trait IRuneA extends INameA
 case class CodeRuneA(name: String) extends IRuneA {
-  vassert(name != "Str")
+  vassert(name != "str")
 }
 case class ImplicitRuneA(containerName: INameA, name: Int) extends IRuneA
 case class LetImplicitRuneA(codeLocationS: CodeLocationS, name: Int) extends IRuneA

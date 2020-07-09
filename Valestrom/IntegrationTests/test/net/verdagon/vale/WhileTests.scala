@@ -65,7 +65,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Return from infinite while loop") {
     val compile = new Compilation(
       """
-        |fn main() Int {
+        |fn main() int {
         |  while (true) {
         |    ret 9;
         |  }
@@ -80,7 +80,7 @@ class WhileTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |fn doThings(m: Marine) { }
-//        |struct Marine { hp: *Int; }
+//        |struct Marine { hp: int; }
 //        |fn main() {
 //        |  m = Marine(7);
 //        |  while (true) {

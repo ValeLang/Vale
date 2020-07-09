@@ -33,7 +33,7 @@ object Arrays {
       Some(CodeRuneA("R")),
       List(
         EqualsAR(TemplexAR(RuneAT(CodeRuneA("ArrayMutability"), MutabilityTemplataType)), TemplexAR(MutabilityAT(mutability))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
         TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
         EqualsAR(
           TemplexAR(RuneAT(CodeRuneA("Generator"), CoordTemplataType)),
@@ -46,7 +46,7 @@ object Arrays {
                   NameAT(CodeTypeNameA("IFunction1"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType), KindTemplataType)),
                   List(
                     RuneAT(CodeRuneA("M"), MutabilityTemplataType),
-                    NameAT(CodeTypeNameA("Int"), CoordTemplataType),
+                    NameAT(CodeTypeNameA("int"), CoordTemplataType),
                     RuneAT(CodeRuneA("T"), CoordTemplataType)),
                   KindTemplataType))))),
         EqualsAR(

@@ -280,7 +280,6 @@ LLVMValueRef translateExpression(
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     auto indexLE = translateExpression(globalState, functionState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
-    discard(AFL("USALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
 
     LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
     auto resultLE = loadElement(globalState, functionState, builder, arrayType, arrayReferend->rawArray->elementType, sizeLE, arrayPtrLE, mutability, indexLE);
@@ -288,7 +287,38 @@ LLVMValueRef translateExpression(
     buildFlare(FL(), globalState, builder, "Loading from USA ", arrayPtrLE, " index ", indexLE);
 
     checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, resultLE);
+
+    discard(AFL("USALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
+
     return resultLE;
+  } else if (auto unknownSizeArrayStore = dynamic_cast<UnknownSizeArrayStore*>(expr)) {
+    auto arrayType = unknownSizeArrayStore->arrayType;
+    auto arrayExpr = unknownSizeArrayStore->arrayExpr;
+    auto indexExpr = unknownSizeArrayStore->indexExpr;
+    auto arrayReferend = unknownSizeArrayStore->arrayReferend;
+
+    auto arrayWrapperPtrLE = translateExpression(globalState, functionState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
+    auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
+    auto indexLE = translateExpression(globalState, functionState, builder, indexExpr);
+    auto mutability = ownershipToMutability(arrayType->ownership);
+
+
+
+    // The purpose of UnknownSizeArrayStore is to put a swap value into a spot, and give
+    // what was in it.
+    LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+    auto oldValueLE = loadElement(globalState, functionState, builder, arrayType, arrayReferend->rawArray->elementType, sizeLE, arrayPtrLE, mutability, indexLE);
+    checkValidReference(FL(), globalState, functionState, builder, localStore->local->type, oldValueLE);
+    auto valueToStoreLE =
+        translateExpression(
+            globalState, functionState, builder, localStore->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, localStore->local->type, valueToStoreLE);
+    storeElement(globalState, functionState, builder, arrayType, arrayReferend->rawArray->elementType, sizeLE, arrayPtrLE, mutability, indexLE, valueToStoreLE);
+
+    discard(AFL("USALoad"), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
+
+    return oldValueLE;
   } else if (auto arrayLength = dynamic_cast<ArrayLength*>(expr)) {
     auto arrayType = arrayLength->sourceType;
     auto arrayExpr = arrayLength->sourceExpr;

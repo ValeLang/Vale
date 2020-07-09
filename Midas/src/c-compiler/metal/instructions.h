@@ -269,8 +269,34 @@ public:
 class UnknownSizeArrayStore : public Expression {
 public:
   Expression* arrayExpr;
+  Reference* arrayType;
+  UnknownSizeArrayT* arrayReferend;
   Expression* indexExpr;
+  Reference* indexType;
+  Referend* indexReferend;
   Expression* sourceExpr;
+  Reference* sourceType;
+  Referend* sourceReferend;
+
+  UnknownSizeArrayStore(
+      Expression* arrayExpr_,
+      Reference* arrayType_,
+      UnknownSizeArrayT* arrayReferend_,
+      Expression* indexExpr_,
+      Reference* indexType_,
+      Referend* indexReferend_,
+      Expression* sourceExpr_,
+      Reference* sourceType_,
+      Referend* sourceReferend_) :
+    arrayExpr(arrayExpr_),
+    arrayType(arrayType_),
+    arrayReferend(arrayReferend_),
+    indexExpr(indexExpr_),
+    indexType(indexType_),
+    indexReferend(indexReferend_),
+    sourceExpr(sourceExpr_),
+    sourceType(sourceType_),
+    sourceReferend(sourceReferend_) {}
 };
 
 

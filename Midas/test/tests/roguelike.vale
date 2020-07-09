@@ -437,11 +437,27 @@ fn inputKey() Int {
   ret key;
 }
 
+struct IntHasher { }
+fn __call(this &IntHasher, x Int) { x }
+
+struct IntEquator { }
+fn __call(this &IntEquator, a Int, b Int) { a == b }
+
+struct Goblin {
+  row! Int;
+  col! Int;
+}
+
 fn main() Int {
   board = makeBoard();
 
   playerRow! = 4;
   playerCol! = 3;
+
+  goblins = HashMap<Int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
+  goblins.add(17, Goblin(2, 3));
+  goblins.add(17, Goblin(7, 4));
+  goblins.add(17, Goblin(8, 3));
 
   running! = true;
   while (running) {

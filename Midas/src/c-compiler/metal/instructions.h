@@ -437,13 +437,21 @@ public:
   While(Expression* bodyExpr_) : bodyExpr(bodyExpr_) {}
 };
 
+class Consecutor : public Expression {
+public:
+  std::vector<Expression *> exprs;
+
+  Consecutor(
+      std::vector<Expression *> exprs_) :
+      exprs(exprs_) {}
+};
+
 class Block : public Expression {
 public:
-    std::vector<Expression *> exprs;
+    Expression * inner;
 
-    Block(
-        std::vector<Expression *> exprs_) :
-    exprs(exprs_) {}
+    Block(Expression * inner_) :
+    inner(inner_) {}
 };
 
 class Return : public Expression {

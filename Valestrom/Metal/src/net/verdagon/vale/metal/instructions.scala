@@ -479,20 +479,24 @@ case class WhileH(
 }
 
 // A collection of instructions. The last one will be used as the block's result.
-case class BlockH(
-                   // The instructions to run.
-                   nodes: List[ExpressionH[ReferendH]],
-                   //  // The resulting type of the block.
-                   //  // TODO: Get rid of this, it's redundant with the last node's result type.
-                   //  resultType: ReferenceH[ReferendH]
+case class ConsecutorH(
+  // The instructions to run.
+  nodes: List[ExpressionH[ReferendH]],
 ) extends ExpressionH[ReferendH] {
   // We should simplify these away
   vassert(nodes.nonEmpty)
-  vassert(!nodes.exists({ case BlockH(_) => true case _ => false }))
   // The init ones should always return void structs.
   nodes.init.foreach(n => n.resultType.kind match { case StructRefH(_) => case NeverH() => })
 
   override def resultType: ReferenceH[ReferendH] = nodes.last.resultType
+}
+
+// An expression where all locals declared inside will be destroyed by the time we exit.
+case class BlockH(
+  // The instructions to run. This will probably be a consecutor.
+  inner: ExpressionH[ReferendH],
+) extends ExpressionH[ReferendH] {
+  override def resultType: ReferenceH[ReferendH] = inner.resultType
 }
 
 // Ends the current function and returns a reference. A function will always end
@@ -503,23 +507,6 @@ case class ReturnH(
   sourceRegister: ExpressionH[ReferendH]
 ) extends ExpressionH[NeverH] {
   override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, NeverH())
-
-  sourceRegister match {
-    case ReturnH(_) => vwat()
-    case ReinterpretH(BlockH(exprs), _) => {
-      exprs.last match {
-        case ReturnH(_) => vwat()
-        case _ =>
-      }
-    }
-    case BlockH(exprs) => {
-      exprs.last match {
-        case ReturnH(_) => vwat()
-        case _ =>
-      }
-    }
-    case _ =>
-  }
 }
 
 // Constructs an unknown-size array, whose length is the integer from sizeRegister,
@@ -672,4 +659,6 @@ case class VariableIdH(
   // the same number.
   number: Int,
   // Just for debugging purposes
-  name: Option[FullNameH])
+  name: Option[FullNameH]) {
+  println("oi")
+}

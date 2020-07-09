@@ -10,14 +10,15 @@
 LLVMValueRef translateDestructure(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Destroy* destructureM) {
   auto mutability = ownershipToMutability(destructureM->structType->ownership);
 
   auto structLE =
       translateExpression(
-          globalState, functionState, builder, destructureM->structExpr);
-  checkValidReference(FL(), globalState, functionState, builder, destructureM->structType, structLE);
+          globalState, functionState, blockState, builder, destructureM->structExpr);
+  checkValidReference(FL(), globalState, functionState, blockState, builder, destructureM->structType, structLE);
 
   auto structReferend =
       dynamic_cast<StructReferend *>(destructureM->structType->referend);
@@ -32,11 +33,12 @@ LLVMValueRef translateDestructure(
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
-    checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberLE);
+    checkValidReference(FL(), globalState, functionState, blockState, builder, structM->members[i]->type, memberLE);
     makeLocal(
         globalState,
-        functionState,
-        builder,
+      functionState,
+      blockState,
+      builder,
         destructureM->localIndices[i],
         memberLE);
   }
@@ -49,7 +51,7 @@ LLVMValueRef translateDestructure(
     assert(false);
   }
 
-  freeConcrete(AFL("Destroy freeing"), globalState, functionState, builder,
+  freeConcrete(AFL("Destroy freeing"), globalState, functionState, blockState, builder,
       structLE, destructureM->structType);
 
   return makeConstExpr(builder, makeNever());

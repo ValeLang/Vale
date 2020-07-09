@@ -154,7 +154,10 @@ object ExpressionVivem {
 //        }
 //        heap.maybeDeallocateAddressExpr(sourceExprId, address)
 //      }
-      case BlockH(innerExprs) => {
+      case BlockH(sourceExpr) => {
+        executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr)
+      }
+      case ConsecutorH(innerExprs) => {
         var lastInnerExprResultRef: Option[ReferenceV] = None
 
         for (i <- innerExprs.indices) {

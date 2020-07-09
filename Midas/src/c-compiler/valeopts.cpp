@@ -1,12 +1,5 @@
-/** Option handling
- * @file
- *
- * This source file is part of the Cone Programming Language C compiler
- * See Copyright Notice in conec.h
-*/
 
-#include "main.h"
-#include "coneopts.h"
+#include "valeopts.h"
 #include "utils/options.h"
 
 #include <string.h>
@@ -103,7 +96,7 @@ static opt_arg_t args[] =
 static void usage()
 {
     printf("%s\n%s\n%s\n%s\n%s\n%s", // for complying with -Woverlength-strings
-        "cone [OPTIONS] <source_file>\n"
+        "valec [OPTIONS] <source_file>\n"
         ,
         "The source directory defaults to the current directory.\n"
         ,
@@ -163,19 +156,18 @@ static void usage()
         "  --files         Print source file names as each is processed.\n"
         "  --lint-llvm     Run the LLVM linting pass on generated IR.\n"
         ,
-        "" // "Runtime options for Cone programs (not for use with Cone compiler):\n"
+        "" // "Runtime options for Vale programs (not for use with Vale compiler):\n"
     );
 }
 
-int coneOptSet(ConeOptions *opt, int *argc, char **argv) {
+int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     opt_state_t s;
     int id;
     int ok = 1;
     int print_usage = 0;
     int i;
 
-    memset(opt, 0, sizeof(ConeOptions));
-    opt->verbosity = 0;
+    memset(opt, 0, sizeof(ValeOptions));
     // options->limit = PASS_ALL;
     // options->check.errors = errors_alloc();
 
@@ -185,7 +177,7 @@ int coneOptSet(ConeOptions *opt, int *argc, char **argv) {
     while ((id = optNext(&s)) != -1) {
         switch (id) {
         case OPT_VERSION:
-            printf("%s\n", CONE_RELEASE);
+            printf("%s\n", "0.1");
             return 0;
 
         case OPT_HELP:
@@ -193,65 +185,20 @@ int coneOptSet(ConeOptions *opt, int *argc, char **argv) {
             return 0;
 
         case OPT_DEBUG: opt->release = 0; break;
-        case OPT_STRIP: opt->strip_debug = 1; break;
         case OPT_OUTPUT_DIR: opt->output = s.arg_val; break;
         case OPT_LIBRARY: opt->library = 1; break;
-        case OPT_RUNTIMEBC: opt->runtimebc = 1; break;
         case OPT_PIC: opt->pic = 1; break;
         case OPT_NOPIC: opt->pic = 0; break;
-        case OPT_DOCS:
-        {
-            opt->docs = 1;
-            opt->docs_private = 1;
-        }
-        break;
-        case OPT_DOCS_PUBLIC:
-        {
-            opt->docs = 1;
-            opt->docs_private = 1;
-        }
-        break;
-        case OPT_BUILDFLAG:
-            // define_build_flag(s.arg_val); 
-            break;
-        case OPT_PATHS:
-            // package_add_paths(s.arg_val, &opt); 
-            break;
-        case OPT_SAFE:
-            //if (!package_add_safe(s.arg_val, &opt))
-            //    ok = false;
-            break;
+        case OPT_DOCS: opt->docs = 1; break;
         case OPT_WASM: opt->wasm = 1; opt->triple = "wasm32-unknown-unknown-wasm"; break;
 
         case OPT_CPU: opt->cpu = s.arg_val; break;
         case OPT_FEATURES: opt->features = s.arg_val; break;
         case OPT_TRIPLE: opt->triple = s.arg_val; break;
-        case OPT_STATS: opt->print_stats = 1; break;
-        case OPT_LINK_ARCH: opt->link_arch = s.arg_val; break;
-        case OPT_LINKER: opt->linker = s.arg_val; break;
 
-        case OPT_IR: opt->print_ir = 1; break;
         case OPT_ASM: opt->print_asm = 1; break;
         case OPT_LLVMIR: opt->print_llvmir = 1; break;
-        case OPT_TRACE: opt->parse_trace = 1; break;
-        case OPT_WIDTH: opt->ir_print_width = atoi(s.arg_val); break;
-            // case OPT_IMMERR: errors_set_immediate(opt.check.errors, 1); break;
         case OPT_VERIFY: opt->verify = 1; break;
-        case OPT_EXTFUN: opt->extfun = 1; break;
-        case OPT_SIMPLEBUILTIN: opt->simple_builtin = 1; break;
-        case OPT_FILENAMES: opt->print_filenames = 1; break;
-        case OPT_CHECKTREE: opt->check_tree = 1; break;
-        case OPT_LINT_LLVM: opt->lint_llvm = 1; break;
-
-        case OPT_VERBOSE:
-        {
-            int v = atoi(s.arg_val);
-            if (v >= 0 && v <= 4)
-                opt->verbosity = v;
-            else
-                ok = 0;
-        }
-        break;
 
         default: usage(); return -1;
         }

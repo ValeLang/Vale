@@ -22,6 +22,18 @@ LLVMValueRef loadElement(
     Mutability mutability,
     LLVMValueRef indexLE);
 
+LLVMValueRef storeElement(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefM,
+    Reference* elementRefM,
+    LLVMValueRef sizeLE,
+    LLVMValueRef arrayPtrLE,
+    Mutability mutability,
+    LLVMValueRef indexLE,
+    LLVMValueRef sourceLE);
+
 void foreachArrayElement(
     FunctionState* functionState,
     LLVMBuilderRef builder,

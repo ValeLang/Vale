@@ -343,6 +343,17 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReferend(cache, expression["indexReferend"]),
         readReference(cache, expression["resultType"]),
         readOwnership(cache, expression["targetOwnership"]));
+  } else if (type == "UnknownSizeArrayStore") {
+    return new UnknownSizeArrayStore(
+        readExpression(cache, expression["arrayExpr"]),
+        readReference(cache, expression["arrayType"]),
+        readUnknownSizeArray(cache, expression["arrayReferend"]),
+        readExpression(cache, expression["indexExpr"]),
+        readReference(cache, expression["indexType"]),
+        readReferend(cache, expression["indexReferend"]),
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        readReferend(cache, expression["sourceReferend"]));
   } else if (type == "ConstructUnknownSizeArray") {
     return new ConstructUnknownSizeArray(
         readExpression(cache, expression["sizeExpr"]),

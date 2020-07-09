@@ -8,13 +8,23 @@
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
+#include "valeopts.h"
 
 #define CONTROL_BLOCK_STRUCT_NAME "__ControlBlock"
 
 class GlobalState {
 public:
+  LLVMTargetMachineRef machine;
+  LLVMContextRef context;
+  LLVMDIBuilderRef dibuilder;
+  LLVMMetadataRef compileUnit;
+  LLVMMetadataRef difile;
+
+  ValeOptions *opt;
+
   LLVMTargetDataRef dataLayout;
   LLVMModuleRef mod;
+  int ptrSize;
 
   MetalCache metalCache;
 

@@ -9,12 +9,13 @@
 LLVMValueRef translateWhile(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     While* whiile) {
   buildWhile(functionState, builder,
-      [globalState, functionState, whiile](LLVMBuilderRef bodyBuilder) {
+      [globalState, functionState, blockState, whiile](LLVMBuilderRef bodyBuilder) {
         return translateExpression(
-            globalState, functionState, bodyBuilder, whiile->bodyExpr);
+            globalState, functionState, blockState, bodyBuilder, whiile->bodyExpr);
       });
   // Nobody should use a result of a while, so we'll just return a Never.
   return makeConstExpr(builder, makeNever());

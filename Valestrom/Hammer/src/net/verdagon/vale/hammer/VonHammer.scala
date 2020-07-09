@@ -250,16 +250,6 @@ object VonHammer {
         VonMember("block", vonifyNode(body))))
   }
 
-  def vonifyBlock(block: BlockH): IVonData = {
-    val BlockH(nodes) = block
-
-    VonObject(
-      "Block",
-      None,
-      Vector(
-        VonMember("exprs", VonArray(None, nodes.map(node => vonifyNode(node)).toVector))))
-  }
-
   def vonifyNode(node: ExpressionH[ReferendH]): IVonData = {
     node match {
       case UnreachableMootH(sourceExpr) => {
@@ -593,8 +583,19 @@ object VonHammer {
           Vector(
             VonMember("bodyBlock", vonifyNode(bodyBlock))))
       }
-      case blockH @ BlockH(_) => {
-        vonifyBlock(blockH)
+      case ConsecutorH(nodes) => {
+        VonObject(
+          "Consecutor",
+          None,
+          Vector(
+            VonMember("exprs", VonArray(None, nodes.map(node => vonifyNode(node)).toVector))))
+      }
+      case BlockH(inner) => {
+        VonObject(
+          "Block",
+          None,
+          Vector(
+            VonMember("innerExpr", vonifyNode(inner))))
       }
     }
   }

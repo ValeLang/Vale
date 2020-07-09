@@ -29,13 +29,10 @@ LLVMTypeRef makeNeverType();
 void makeLocal(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
     LLVMValueRef valueToStore);
-
-void forgetLocal(
-    FunctionState* functionState,
-    Local* local);
 
 void acquireReference(
     AreaAndFileAndLine from,
@@ -48,6 +45,7 @@ void discard(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
     LLVMValueRef expr);
@@ -165,8 +163,14 @@ void checkValidReference(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef refLE);
+
+// Get parent local IDs that the child unstackified.
+std::unordered_set<VariableId*> getChildUnstackifiedParentLocalIds(
+    BlockState* parentBlockState,
+    BlockState* childBlockState);
 
 #endif

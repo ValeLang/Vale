@@ -12,9 +12,17 @@
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
 
+LLVMValueRef translateBlock(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* parentBlockState,
+    LLVMBuilderRef builder,
+    Block* block);
+
 LLVMValueRef translateDestructure(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Destroy* destructureM);
 
@@ -28,48 +36,56 @@ LLVMValueRef translateConstruct(
 LLVMValueRef translateCall(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Call* call);
 
 LLVMValueRef translateInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     InterfaceCall* call);
 
 LLVMValueRef translateExternCall(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     ExternCall* expr);
 
 LLVMValueRef translateIf(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     If* iff);
 
 LLVMValueRef translateWhile(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     While* whiile);
 
 LLVMValueRef translateDiscard(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Discard* discardM);
 
 LLVMValueRef translateNewArrayFromValues(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     NewArrayFromValues* newArrayFromValues);
 
 LLVMValueRef translateConstructUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     ConstructUnknownSizeArray* constructUnknownSizeArray);
 

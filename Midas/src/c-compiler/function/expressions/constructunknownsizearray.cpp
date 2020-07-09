@@ -12,6 +12,7 @@
 void fillUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* generatorType,
     LLVMValueRef generatorLE,
@@ -36,6 +37,7 @@ void fillUnknownSizeArray(
 LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* generatorType,
     LLVMValueRef generatorLE,
@@ -55,6 +57,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
   fillUnknownSizeArray(
       globalState,
       functionState,
+      blockState,
       builder,
       generatorType,
       generatorLE,
@@ -66,6 +69,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
 LLVMValueRef translateConstructUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     ConstructUnknownSizeArray* constructUnknownSizeArray) {
 
@@ -80,10 +84,10 @@ LLVMValueRef translateConstructUnknownSizeArray(
   auto usaWrapperPtrLT = translateType(globalState, constructUnknownSizeArray->arrayRefType);
   auto usaElementLT = translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
 
-  auto sizeLE = translateExpression(globalState, functionState, builder, sizeExpr);
+  auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
-  auto generatorLE = translateExpression(globalState, functionState, builder, generatorExpr);
-  checkValidReference(FL(), globalState, functionState, builder,
+  auto generatorLE = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
+  checkValidReference(FL(), globalState, functionState, blockState, builder,
       constructUnknownSizeArray->generatorType, generatorLE);
 
   // If we get here, arrayLT is a pointer to our counted struct.
@@ -93,19 +97,20 @@ LLVMValueRef translateConstructUnknownSizeArray(
   auto resultLE =
       constructKnownSizeArrayCountedStruct(
           globalState,
-          functionState,
-          builder,
+      functionState,
+      blockState,
+      builder,
           generatorType,
           generatorLE,
           unknownSizeArrayCountedStructLT,
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);
-  checkValidReference(FL(), globalState, functionState, builder,
+  checkValidReference(FL(), globalState, functionState, blockState, builder,
       constructUnknownSizeArray->arrayRefType, resultLE);
 
-  discard(AFL("ConstructUSA"), globalState, functionState, builder, sizeType, sizeLE);
-  discard(AFL("ConstructUSA"), globalState, functionState, builder, generatorType, generatorLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorType, generatorLE);
 
   return resultLE;
 }

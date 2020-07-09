@@ -415,26 +415,25 @@ fn display(board &Array<mut, Array<mut, str>>, playerRow int, playerCol int) {
 
 fn inputKey() int {
   key! = 0;
-  running! = true;
-  while (running) {
+  while (true) {
     mut key = __getch();
     println(key);
     if (key == 81) {
-      mut running = false;
+      ret key;
     } else if (key == 119) {
-      mut running = false;
+      ret key;
     } else if (key == 115) {
-      mut running = false;
+      ret key;
     } else if (key == 97) {
-      mut running = false;
+      ret key;
     } else if (key == 100) {
-      mut running = false;
+      ret key;
     } else if (key == 10) {
       // Enter key, do nothing
     }
     // Continue
   }
-  ret key;
+  panic();
 }
 
 struct IntHasher { }

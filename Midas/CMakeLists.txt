@@ -72,6 +72,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/interfacecall.cpp
 		src/c-compiler/function/expressions/construct.cpp
 		src/c-compiler/function/expressions/destructure.cpp
+		src/c-compiler/function/expressions/block.cpp
 		src/c-compiler/function/expressions/discard.cpp
 		src/c-compiler/function/expressions/externs.cpp
 		src/c-compiler/function/expressions/if.cpp

@@ -30,6 +30,7 @@ void freeConcrete(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     LLVMValueRef concreteLE,
     Reference* concreteRefM);

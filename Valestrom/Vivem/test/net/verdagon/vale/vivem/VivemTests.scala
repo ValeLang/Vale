@@ -13,7 +13,7 @@ class VivemTests extends FunSuite with Matchers {
         false,
         false,
         true,
-        BlockH(List(ConstantI64H(7))))
+        BlockH(ConstantI64H(7)))
     val programH = ProgramH(List(), List(), List(), List(main), Map())
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
@@ -34,23 +34,22 @@ class VivemTests extends FunSuite with Matchers {
         false,
         true,
         BlockH(
-          List(
-            CallH(
-              addPrototype,
-              List(
-                ConstantI64H(52),
-                CallH(
-                  addPrototype,
-                  List(
-                    ConstantI64H(53),
-                    ConstantI64H(54))))))))
+          CallH(
+            addPrototype,
+            List(
+              ConstantI64H(52),
+              CallH(
+                addPrototype,
+                List(
+                  ConstantI64H(53),
+                  ConstantI64H(54)))))))
     val addExtern =
       FunctionH(
         addPrototype,
         false,
         true,
         false,
-        BlockH(List(ConstantI64H(133337))))
+        BlockH(ConstantI64H(133337)))
     val programH = ProgramH(List(), List(), List(), List(main, addExtern), Map())
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)

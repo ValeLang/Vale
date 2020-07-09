@@ -305,7 +305,7 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
-  // Known failure 2020-07-03
+  // Known failure 2020-07-08
   test("Tests stamping a struct and its implemented interface from a function param") {
     val compile = new Compilation(
       """

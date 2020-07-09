@@ -133,7 +133,7 @@ class StructTests extends FunSuite with Matchers {
     compile.evalForStdout(Vector()) shouldEqual "Destroying marine!\nDestroying weapon!\n"
   }
 
-  // Known failure 2020-07-03
+  // Known failure 2020-07-08
   test("Mutate destroys member after moving it out of the object") {
     val compile = new Compilation(
       """
@@ -160,8 +160,8 @@ class StructTests extends FunSuite with Matchers {
         |}
         |
         |struct GetMarineWeaponNameFunc { }
-        |impl GetMarineWeaponNameFunc for IFunction1<mut, &Marine, Str>;
-        |fn __call(this &GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, Str>, m &Marine) Str {
+        |impl GetMarineWeaponNameFunc for IFunction1<mut, &Marine, str>;
+        |fn __call(this &GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, str>, m &Marine) str {
         |  m.weapon.name
         |}
         |

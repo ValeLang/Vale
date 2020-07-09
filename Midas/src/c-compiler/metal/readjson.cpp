@@ -211,11 +211,15 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
   assert(variable[""] == "VariableId");
 
   int number = variable["number"];
+  std::string maybeName;
+  if (variable["name"][""] == "Some") {
+    maybeName = variable["name"]["value"];
+  }
 
   return makeIfNotPresent(
       &cache->variableIds,
       number,
-      [&](){ return new VariableId(number, ""); });
+      [&](){ return new VariableId(number, maybeName); });
 }
 
 Local* readLocal(MetalCache* cache, const json& local) {
@@ -286,9 +290,12 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readPrototype(cache, expression["function"]),
         readArray(cache, expression["argExprs"], readExpression),
         readArray(cache, expression["argTypes"], readReference));
+  } else if (type == "Consecutor") {
+    return new Consecutor(
+        readArray(cache, expression["exprs"], readExpression));
   } else if (type == "Block") {
     return new Block(
-        readArray(cache, expression["exprs"], readExpression));
+        readExpression(cache, expression["innerExpr"]));
   } else if (type == "If") {
     return new If(
         readExpression(cache, expression["conditionBlock"]),

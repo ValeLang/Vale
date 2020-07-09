@@ -64,6 +64,7 @@ void discard(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
     LLVMValueRef expr) {
@@ -138,8 +139,8 @@ void discard(
         functionState,
         builder,
         isZeroLE(builder, rcLE),
-        [from, globalState, functionState, expr, sourceRef](LLVMBuilderRef thenBuilder) {
-          freeConcrete(from, globalState, functionState, thenBuilder, expr, sourceRef);
+        [from, globalState, functionState, blockState, expr, sourceRef](LLVMBuilderRef thenBuilder) {
+          freeConcrete(from, globalState, functionState, blockState, thenBuilder, expr, sourceRef);
         });
   } else {
     std::cerr << "Unimplemented type in discard: "

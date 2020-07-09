@@ -14,6 +14,7 @@
 LLVMValueRef loadElement(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* structRefM,
     Reference* elementRefM,
@@ -25,6 +26,7 @@ LLVMValueRef loadElement(
 LLVMValueRef storeElement(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* arrayRefM,
     Reference* elementRefM,

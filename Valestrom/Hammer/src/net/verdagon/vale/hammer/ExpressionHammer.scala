@@ -79,7 +79,7 @@ object ExpressionHammer {
       }
       case b @ Block2(_) => {
         val blockH =
-          BlockHammer.translateBlock(hinputs, hamuts, locals.snapshot, b)
+          BlockHammer.translateBlock(hinputs, hamuts, locals, b)
         (blockH, List())
       }
       case call2 @ FunctionCall2(callableExpr, args) => {
@@ -103,7 +103,7 @@ object ExpressionHammer {
           vassert(nonLastResultLine.resultType == ProgramH.emptyTupleStructType)
         })
         vassert(deferreds.isEmpty) // curiosity, would we have any here?
-        (flattenAndMakeBlock(resultLines), List())
+        (ConsecutorH(resultLines), List())
       }
 
       case PackE2(exprs, resultType, resultPackType) => {
@@ -418,11 +418,11 @@ object ExpressionHammer {
   }
 
   def translateDeferreds(
-                          hinputs: Hinputs,
-                          hamuts: HamutsBox,
-                          locals: LocalsBox,
-                          originalExpr: ExpressionH[ReferendH],
-                          deferreds: List[Expression2]):
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    locals: LocalsBox,
+    originalExpr: ExpressionH[ReferendH],
+    deferreds: List[Expression2]):
   ExpressionH[ReferendH] = {
     if (deferreds.isEmpty) {
       return originalExpr
@@ -443,51 +443,22 @@ object ExpressionHammer {
 
     vcurious(deferredExprs.nonEmpty)
 
-    val temporaryResultLocal = locals.addHammerLocal(originalExpr.resultType)
-
     val newExprs =
       if (originalExpr.resultType == ProgramH.emptyTupleStructType) {
         val void = NewStructH(List(), ProgramH.emptyTupleStructType)
         originalExpr :: (deferredExprs :+ void)
       } else {
+        val temporaryResultLocal = locals.addHammerLocal(originalExpr.resultType)
         val stackify = StackifyH(originalExpr, temporaryResultLocal, None)
         val unstackify = UnstackifyH(temporaryResultLocal)
+        locals.markUnstackified(temporaryResultLocal.id)
         stackify :: (deferredExprs :+ unstackify)
       }
 
-    val result = flattenAndMakeBlock(newExprs)
+    val result = ConsecutorH(newExprs)
     vassert(originalExpr.resultType == result.resultType)
     result
   }
-
-  def flattenAndMakeBlock(innerExprsH: List[ExpressionH[ReferendH]]): BlockH = {
-    vassert(innerExprsH.nonEmpty) // If we trip this, maybe we could make this return a non-block expr?
-    BlockH(
-      innerExprsH.flatMap({
-        case BlockH(innerExprs) => innerExprs
-        case other => List(other)
-      }))
-  }
-
-//  def translateExpressions(
-//      hinputs: Hinputs, hamuts: HamutsBox,
-//      locals: LocalsBox,
-//      stackHeight: StackHeightBox,
-//      exprs2: List[Expression2]):
-//  (List[NodeH[ReferendH]], List[Expression2]) = {
-//    exprs2 match {
-//      case Nil => (List(), List())
-//      case firstExpr :: restExprs => {
-//        val (firstResultLine, firstDeferreds) =
-//          translate(hinputs, hamuts, locals, firstExpr);
-//        val (restResultLines, restDeferreds) =
-//          translateExpressions(hinputs, hamuts, locals, restExprs);
-//
-//        val resultLines = firstResultLine :: restResultLines
-//        (resultLines, restDeferreds ++ firstDeferreds)
-//      }
-//    }
-//  }
 
   def translateExpressions(
       hinputs: Hinputs, hamuts: HamutsBox,

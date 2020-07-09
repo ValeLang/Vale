@@ -142,16 +142,20 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(heap, Vector(ref))
   }
 
-  test("Tests weird thing") {
+  test("Tests unstackifying a variable multiple times in a function") {
     val compile = new Compilation(
       """
         |fn main() int {
-        |  playerRow! = 4;
+        |  playerRow! = 137;
         |
         |  if (false) {
-        |    newPlayerRow! = 0;
+        |    ret 50;
+        |  } else if (false) {
+        |    ret 50;
+        |  } else if (true) {
+        |    ret 42;
         |  }
-        |  ret 42;
+        |  ret playerRow;
         |}
         |
       """.stripMargin)
@@ -167,7 +171,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
-  // Known failure 2020-07-05
+  // Known failure 2020-07-08
   test("Tests virtual doesn't get called if theres a better override") {
     val compile = new Compilation(
       """
@@ -191,7 +195,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  list.value + sum(list.next)
         |}
         |
-        |virtual fn sum(virtual opt &MyOption) int { 0 }
+        |fn sum(virtual opt &MyOption) int { 0 }
         |fn sum(opt &MyNone impl MyOption) int { 0 }
         |fn sum(opt &MySome impl MyOption) int {
         |   sum(opt.value)

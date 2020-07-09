@@ -22,8 +22,8 @@ class StructTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Marine {
-        |  hp Int;
-        |  cool Bool;
+        |  hp int;
+        |  cool bool;
         |}
         |fn Marine() {
         |  this.hp = 10;
@@ -40,7 +40,7 @@ class StructTests extends FunSuite with Matchers {
   test("Make struct") {
     val compile = new Compilation(
       """
-        |struct Marine { hp *Int; }
+        |struct Marine { hp int; }
         |fn main() {
         |  Marine(9);
         |}
@@ -52,7 +52,7 @@ class StructTests extends FunSuite with Matchers {
   test("Make struct and get member") {
     val compile = new Compilation(
       """
-        |struct Marine { hp *Int; }
+        |struct Marine { hp int; }
         |fn main() {
         |  m = Marine(9);
         |  = m.hp;
@@ -65,7 +65,7 @@ class StructTests extends FunSuite with Matchers {
   test("Mutate struct") {
     val compile = new Compilation(
       """
-        |struct Marine { hp *Int; }
+        |struct Marine { hp int; }
         |fn main() {
         |  m = Marine(9);
         |  mut m.hp = 4;
@@ -80,8 +80,8 @@ class StructTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Marine {
-        |  hp Int;
-        |  ammo Int;
+        |  hp int;
+        |  ammo int;
         |}
         |fn main() {
         |  m = Marine(4, 7);
@@ -97,8 +97,8 @@ class StructTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Marine {
-        |  hp Int;
-        |  ammo Int;
+        |  hp int;
+        |  ammo int;
         |}
         |fn main() {
         |  m = Marine(4, 7);
@@ -114,14 +114,14 @@ class StructTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct Weapon { }
-        |fn destructor(weapon Weapon) Void {
+        |fn destructor(weapon Weapon) void {
         |  println("Destroying weapon!");
         |  Weapon() = weapon;
         |}
         |struct Marine {
         |  weapon Weapon;
         |}
-        |fn destructor(marine Marine) Void {
+        |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
@@ -166,17 +166,17 @@ class StructTests extends FunSuite with Matchers {
         |}
         |
         |struct Weapon {
-        |  name Str;
+        |  name str;
         |  owner Opt<&Marine>;
         |}
-        |fn destructor(weapon Weapon) Void {
+        |fn destructor(weapon Weapon) void {
         |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&GetMarineWeaponNameFunc()).getOr("none"));
         |  Weapon(name, owner) = weapon;
         |}
         |struct Marine {
         |  weapon Weapon;
         |}
-        |fn destructor(marine Marine) Void {
+        |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  mut marine.weapon.owner = None<&Marine>();
         |  Marine(weapon) = marine;
@@ -215,7 +215,7 @@ class StructTests extends FunSuite with Matchers {
         |fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
         |
         |fn main() {
-        |  m Opt<Int> = None<Int>();
+        |  m Opt<int> = None<int>();
         |  = m.get();
         |}
       """.stripMargin)
@@ -233,7 +233,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """fn get<T>(a &T) &T { a }
         |
-        |fn main() Int {
+        |fn main() int {
         |  = get(6);
         |}
       """.stripMargin)

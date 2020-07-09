@@ -8,15 +8,15 @@ object TemplatedInterface {
       |}
       |
       |struct MyFunc { }
-      |impl MyFunc for MyIFunction1<Int, Int>;
+      |impl MyFunc for MyIFunction1<int, int>;
       |
-      |fn go(this &MyFunc impl MyIFunction1<Int, Int>, param Int) Int {
+      |fn go(this &MyFunc impl MyIFunction1<int, int>, param int) int {
       |  param * 2
       |}
       |
       |fn main() {
       |  m = MyFunc();
-      |  i &MyIFunction1<Int, Int> = &m;
+      |  i &MyIFunction1<int, int> = &m;
       |  println(i.go(4));
       |  println(i.go(6));
       |}

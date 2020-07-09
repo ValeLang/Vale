@@ -13,7 +13,7 @@ class OptTests extends FunSuite with Matchers {
       Opt.code +
         """
           |fn main() {
-          |  opt Opt<Int> = Some(9);
+          |  opt Opt<int> = Some(9);
           |  = if (opt.empty?()) { 0 }
           |    else { opt.get() }
           |}
@@ -27,7 +27,7 @@ class OptTests extends FunSuite with Matchers {
       Opt.code +
         """
           |fn main() {
-          |  opt Opt<Int> = None<Int>();
+          |  opt Opt<int> = None<int>();
           |  = if (opt.empty?()) { 0 }
           |    else { opt.get() }
           |}

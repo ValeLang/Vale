@@ -13,12 +13,12 @@ object TemplatedOption {
       |struct MyNone<T> rules(T Ref) { }
       |impl<T> MyNone<T> for MyOption<T>;
       |
-      |abstract fn getSize<T>(virtual opt &MyOption<T>) *Int;
-      |fn getSize<T>(opt &MyNone<T> impl MyOption<T>) *Int { 0 }
-      |fn getSize<T>(opt &MySome<T> impl MyOption<T>) *Int { 1 }
+      |abstract fn getSize<T>(virtual opt &MyOption<T>) int;
+      |fn getSize<T>(opt &MyNone<T> impl MyOption<T>) int { 0 }
+      |fn getSize<T>(opt &MySome<T> impl MyOption<T>) int { 1 }
       |
-      |fn main() *Int {
-      |  myOpt MyOption<Int> = MySome<*Int>(4);
+      |fn main() int {
+      |  myOpt MyOption<int> = MySome<int>(4);
       |  = getSize(&myOpt);
       |}
     """.stripMargin

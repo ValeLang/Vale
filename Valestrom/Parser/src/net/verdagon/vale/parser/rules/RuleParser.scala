@@ -33,7 +33,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
 //    "Interface" ^^^ InterfaceTypePR |
     // Int must be after Interface, otherwise we'll have a hanging "erface"
     // Same with Kint and KindTemplate
-    "Int" ^^^ IntTypePR |
+    "int" ^^^ IntTypePR |
     "Kind" ^^^ KindTypePR
   }
 

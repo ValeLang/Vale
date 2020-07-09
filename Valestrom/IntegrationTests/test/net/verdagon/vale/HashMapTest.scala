@@ -16,7 +16,7 @@ class HashMapTest extends FunSuite with Matchers {
       Assert.code +
       """
         |fn main() {
-        |  m = HashMap<Int, Int>({_}, ==);
+        |  m = HashMap<int, int>({_}, ==);
         |  m.add(0, 100);
         |  m.add(4, 101);
         |  m.add(8, 102);
@@ -57,17 +57,17 @@ class HashMapTest extends FunSuite with Matchers {
       Assert.code +
       """
         |struct IntHasher { }
-        |fn __call(this &IntHasher, x Int) { x }
+        |fn __call(this &IntHasher, x int) { x }
         |
         |struct IntEquator { }
-        |fn __call(this &IntEquator, a Int, b Int) { a == b }
+        |fn __call(this &IntEquator, a int, b int) { a == b }
         |
-        |fn add42(map &HashMap<Int, Int, IntHasher, IntEquator>) {
+        |fn add42(map &HashMap<int, int, IntHasher, IntEquator>) {
         |  map.add(42, 100);
         |}
         |
         |fn main() {
-        |  m = HashMap<Int, Int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+        |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
         |  add42(&m);
         |  = m.get(42).get();
         |}
@@ -84,9 +84,9 @@ class HashMapTest extends FunSuite with Matchers {
         Assert.code +
         """
           |struct Location imm {
-          |  groupX Int;
-          |  groupY Int;
-          |  indexInGroup Int;
+          |  groupX int;
+          |  groupY int;
+          |  indexInGroup int;
           |}
           |
           |struct LocationHasher { }
@@ -104,7 +104,7 @@ class HashMapTest extends FunSuite with Matchers {
           |}
           |
           |fn main() {
-          |  m = HashMap<Location, Int>(LocationHasher(), LocationEquator());
+          |  m = HashMap<Location, int>(LocationHasher(), LocationEquator());
           |  m.add(Location(4, 5, 6), 100);
           |  = m.get(Location(4, 5, 6)).get();
           |}
@@ -121,7 +121,7 @@ class HashMapTest extends FunSuite with Matchers {
         Assert.code +
         """
           |fn main() {
-          |  m = HashMap<Int, Int>(IFunction1<mut, Int, Int>({_}), ==);
+          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 100);
           |  m.add(4, 101);
           |  m.add(8, 102);
@@ -148,7 +148,7 @@ class HashMapTest extends FunSuite with Matchers {
         Assert.code +
         """
           |fn main() {
-          |  m = HashMap<Int, Int>(IFunction1<mut, Int, Int>({_}), ==);
+          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 100);
           |  m.add(4, 101);
           |  m.add(8, 102);

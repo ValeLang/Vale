@@ -31,7 +31,7 @@ class PatternTests extends FunSuite with Matchers {
     // Checks that the 5 made it into y, and it was an int
     val compile = new Compilation(
       """
-        |struct Marine { hp *Int; }
+        |struct Marine { hp int; }
         |fn main() { (x, y) = [Marine(6), Marine(8)]; = y.hp; }
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -44,7 +44,7 @@ class PatternTests extends FunSuite with Matchers {
     // Checks that the 5 made it into y, and it was an int
     val compile = new Compilation(
       """
-        |struct Marine { hp *Int; }
+        |struct Marine { hp int; }
         |fn main() { (x, y) = [7, Marine(8)]; = y.hp; }
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -56,7 +56,7 @@ class PatternTests extends FunSuite with Matchers {
     // Checks that the 5 made it into y, and it was an int
     val compile = new Compilation(
       """
-        |struct Marine { hp *Int; }
+        |struct Marine { hp int; }
         |fn main() {
         |  m = Marine(8);
         |  (x, y) = [7, &m];

@@ -25,9 +25,9 @@ object RefCounting {
         ParameterA(AtomAP(CaptureA(CodeVarNameA("num"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
         EqualsAR(TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)), ComponentsAR(CoordTemplataType, List(TemplexAR(OwnershipAT(BorrowP)), TemplexAR(RuneAT(CodeRuneA("TK"), KindTemplataType))))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -66,9 +66,9 @@ object RefCounting {
         ParameterA(AtomAP(CaptureA(CodeVarNameA("num"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Int"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
         EqualsAR(TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)), ComponentsAR(CoordTemplataType, List(TemplexAR(OwnershipAT(BorrowP)), TemplexAR(RuneAT(CodeRuneA("TK"), KindTemplataType))))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("Void"), CoordTemplataType)))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),

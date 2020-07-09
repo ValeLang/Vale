@@ -8,9 +8,9 @@ object Opt {
       |struct None<T> rules(T Ref) { }
       |impl<T> None<T> for Opt<T>;
       |
-      |abstract fn empty?<T>(virtual opt &Opt<T>) Bool;
-      |fn empty?<T>(opt &None<T> impl Opt<T>) Bool { true }
-      |fn empty?<T>(opt &Some<T> impl Opt<T>) Bool { false }
+      |abstract fn empty?<T>(virtual opt &Opt<T>) bool;
+      |fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
+      |fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
       |
       |abstract fn get<T>(virtual opt Opt<T>) T;
       |fn get<T>(opt None<T> impl Opt<T>) T { panic() }
@@ -39,9 +39,9 @@ object Opt {
       |  Some<R>(func(opt.value))
       |}
       |
-      |abstract fn getSize<T>(virtual opt &Opt<T>) *Int;
-      |fn getSize<T>(opt &None<T> impl Opt<T>) *Int { 0 }
-      |fn getSize<T>(opt &Some<T> impl Opt<T>) *Int { 1 }
+      |abstract fn getSize<T>(virtual opt &Opt<T>) int;
+      |fn getSize<T>(opt &None<T> impl Opt<T>) int { 0 }
+      |fn getSize<T>(opt &Some<T> impl Opt<T>) int { 1 }
       |
     """.stripMargin
 }

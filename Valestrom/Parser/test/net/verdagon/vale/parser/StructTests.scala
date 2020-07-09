@@ -45,9 +45,9 @@ class StructTests extends FunSuite with Matchers with Collector {
     compile(VParser.topLevelThing,
       """
         |struct Vecf<N>
-        |rules(N Int)
+        |rules(N int)
         |{
-        |  values [N * Float];
+        |  values [N * float];
         |}
         |
       """.stripMargin) shouldHave {
@@ -59,7 +59,7 @@ class StructTests extends FunSuite with Matchers with Collector {
       MutableP,
       Some(IdentifyingRunesP(_, List(StringP(_, "N")))),
       Some(TemplateRulesP(_, List(TypedPR(Some(StringP(_, "N")), IntTypePR)))),
-      StructMembersP(_, List(StructMemberP(_,StringP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(MutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "Float")))))))) =>
+      StructMembersP(_, List(StructMemberP(_,StringP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(MutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "float")))))))) =>
     }
   }
 
@@ -67,9 +67,9 @@ class StructTests extends FunSuite with Matchers with Collector {
     compile(VParser.topLevelThing,
       """
         |struct Vecf<N>
-        |rules(N Int)
+        |rules(N int)
         |{
-        |  values [<imm> N * Float];
+        |  values [<imm> N * float];
         |}
         |
       """.stripMargin) shouldHave {
@@ -81,7 +81,7 @@ class StructTests extends FunSuite with Matchers with Collector {
           MutableP,
           Some(IdentifyingRunesP(_, List(StringP(_, "N")))),
           Some(TemplateRulesP(_, List(TypedPR(Some(StringP(_, "N")),IntTypePR)))),
-          StructMembersP(_, List(StructMemberP(_,StringP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(ImmutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "Float")))))))) =>
+          StructMembersP(_, List(StructMemberP(_,StringP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(ImmutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "float")))))))) =>
     }
   }
 }

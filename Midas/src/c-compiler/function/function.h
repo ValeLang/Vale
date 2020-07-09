@@ -35,7 +35,6 @@ void translateFunction(
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    LLVMModuleRef mod,
     Function* functionM);
 
 #endif

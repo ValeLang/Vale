@@ -63,8 +63,7 @@ add_executable(valec
 		src/c-compiler/struct/interface.cpp
 		src/c-compiler/metal/readjson.cpp
 		src/c-compiler/translatetype.cpp
-		src/c-compiler/main.cpp
-		src/c-compiler/coneopts.cpp
+        src/c-compiler/valeopts.cpp
 
 		src/c-compiler/function/function.cpp
 		src/c-compiler/function/expression.cpp
@@ -88,12 +87,10 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/branch.cpp
 		src/c-compiler/function/expressions/shared/string.cpp
 		src/c-compiler/function/expressions/shared/heap.cpp
+		src/c-compiler/function/expressions/shared/controlblock.cpp
 
 		src/c-compiler/utils/fileio.cpp
-		src/c-compiler/utils/options.cpp
-
-		src/c-compiler/genllvm.cpp
-        src/c-compiler/function/expressions/shared/controlblock.cpp src/c-compiler/function/expressions/shared/controlblock.h)
+		src/c-compiler/utils/options.cpp)
 
 target_link_libraries(valec ${llvm_libs} nlohmann_json::nlohmann_json)
 

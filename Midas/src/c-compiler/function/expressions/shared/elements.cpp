@@ -77,6 +77,28 @@ LLVMValueRef loadInnerArrayMember(
   return resultLE;
 }
 
+LLVMValueRef storeInnerArrayMember(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef elemsPtrLE,
+    Reference* elementRefM,
+    LLVMValueRef indexLE,
+    LLVMValueRef sourceLE) {
+  assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
+  LLVMValueRef indices[2] = {
+      constI64LE(0),
+      indexLE
+  };
+  auto resultLE =
+      LLVMBuildStore(
+          builder,
+          sourceLE,
+          LLVMBuildGEP(
+              builder, elemsPtrLE, indices, 2, "indexPtr"));
+
+  return resultLE;
+}
+
 LLVMValueRef loadElement(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -103,6 +125,40 @@ LLVMValueRef loadElement(
     }
   } else if (mutability == Mutability::MUTABLE) {
     return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+  } else {
+    assert(false);
+    return nullptr;
+  }
+}
+
+
+LLVMValueRef storeElement(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefM,
+    Reference* elementRefM,
+    LLVMValueRef sizeLE,
+    LLVMValueRef arrayPtrLE,
+    Mutability mutability,
+    LLVMValueRef indexLE,
+    LLVMValueRef sourceLE) {
+
+  auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
+  auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
+  auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
+  buildAssert(AFL("Bounds check"), globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
+
+  if (mutability == Mutability::IMMUTABLE) {
+    if (arrayRefM->location == Location::INLINE) {
+      assert(false);
+//      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
+      return nullptr;
+    } else {
+      return storeInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE, sourceLE);
+    }
+  } else if (mutability == Mutability::MUTABLE) {
+    return storeInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE, sourceLE);
   } else {
     assert(false);
     return nullptr;

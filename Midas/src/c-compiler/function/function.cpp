@@ -8,7 +8,6 @@
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    LLVMModuleRef mod,
     Function* functionM) {
 
   auto paramTypesL = translateTypes(globalState, functionM->prototype->params);
@@ -18,7 +17,7 @@ LLVMValueRef declareFunction(
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(mod, nameL.c_str(), functionTypeL);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, nameL.c_str(), functionTypeL);
 
   assert(globalState->functions.count(functionM->prototype->name->name) == 0);
   globalState->functions.emplace(functionM->prototype->name->name, functionL);

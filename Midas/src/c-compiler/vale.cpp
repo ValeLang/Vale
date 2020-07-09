@@ -3,15 +3,11 @@
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Analysis.h>
 
-#include <stdio.h>
 #include <assert.h>
 #include <string>
 #include <vector>
 #include <iostream>
-#include <memory>
 #include <fstream>
-#include <unordered_map>
-#include <sstream>
 
 #include <nlohmann/json.hpp>
 #include "function/expressions/shared/shared.h"
@@ -24,10 +20,24 @@
 #include "function/function.h"
 #include "struct/struct.h"
 #include "metal/readjson.h"
-#include "vale.h"
+#include "error.h"
+
+#include <cstring>
+#include <llvm-c/Transforms/Scalar.h>
+#include <llvm-c/Transforms/Utils.h>
+#include <llvm-c/Transforms/IPO.h>
+
+#ifdef _WIN32
+#define asmext "asm"
+#define objext "obj"
+#else
+#define asmext "s"
+#define objext "o"
+#endif
 
 // for convenience
 using json = nlohmann::json;
+
 
 void initInternalExterns(GlobalState* globalState) {
   {
@@ -239,15 +249,13 @@ void initInternalStructs(GlobalState* globalState) {
   }
 }
 
-void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char* filename) {
+void compileValeCode(GlobalState* globalState, const char* filename) {
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
 
-  GlobalState globalState;
-
   assert(str.size() > 0);
   auto programJ = json::parse(str.c_str());
-  auto program = readProgram(&globalState.metalCache, programJ);
+  auto program = readProgram(&globalState->metalCache, programJ);
 
 
 
@@ -263,7 +271,7 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
       LLVMFunctionType(
           LLVMInt64Type(), paramTypesL.data(), paramTypesL.size(), 0);
   LLVMValueRef entryFunctionL =
-      LLVMAddFunction(mod, "main", functionTypeL);
+      LLVMAddFunction(globalState->mod, "main", functionTypeL);
   LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
   LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
@@ -276,54 +284,52 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
 
 
-  globalState.dataLayout = dataLayout;
-  globalState.mod = mod;
-  globalState.program = program;
+  globalState->program = program;
 
-  globalState.stringConstantBuilder = entryBuilder;
+  globalState->stringConstantBuilder = entryBuilder;
 
-  globalState.liveHeapObjCounter =
-      LLVMAddGlobal(mod, LLVMInt64Type(), "__liveHeapObjCounter");
-//  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
-  LLVMSetInitializer(globalState.liveHeapObjCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+  globalState->liveHeapObjCounter =
+      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__liveHeapObjCounter");
+//  LLVMSetLinkage(globalState->liveHeapObjCounter, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
-  globalState.objIdCounter =
-      LLVMAddGlobal(mod, LLVMInt64Type(), "__objIdCounter");
-//  LLVMSetLinkage(globalState.liveHeapObjCounter, LLVMExternalLinkage);
-  LLVMSetInitializer(globalState.objIdCounter, LLVMConstInt(LLVMInt64Type(), 501, false));
+  globalState->objIdCounter =
+      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__objIdCounter");
+//  LLVMSetLinkage(globalState->liveHeapObjCounter, LLVMExternalLinkage);
+  LLVMSetInitializer(globalState->objIdCounter, LLVMConstInt(LLVMInt64Type(), 501, false));
 
-  initInternalStructs(&globalState);
-  initInternalExterns(&globalState);
+  initInternalStructs(globalState);
+  initInternalExterns(globalState);
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    declareStruct(&globalState, structM);
+    declareStruct(globalState, structM);
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    declareInterface(&globalState, interfaceM);
+    declareInterface(globalState, interfaceM);
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    translateStruct(&globalState, structM);
+    translateStruct(globalState, structM);
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    translateInterface(&globalState, interfaceM);
+    translateInterface(globalState, interfaceM);
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      declareEdge(&globalState, e);
+      declareEdge(globalState, e);
     }
   }
 
@@ -332,7 +338,7 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    LLVMValueRef entryFunctionL = declareFunction(&globalState, mod, function);
+    LLVMValueRef entryFunctionL = declareFunction(globalState, function);
     if (function->prototype->name->name == "F(\"main\")") {
       mainL = entryFunctionL;
     }
@@ -345,14 +351,14 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      translateEdge(&globalState, e);
+      translateEdge(globalState, e);
     }
   }
 
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    translateFunction(&globalState, function);
+    translateFunction(globalState, function);
   }
 
 
@@ -363,10 +369,220 @@ void compileValeCode(LLVMModuleRef mod, LLVMTargetDataRef dataLayout, const char
 
   LLVMValueRef args[2] = {
       LLVMConstInt(LLVMInt64Type(), 0, false),
-      LLVMBuildLoad(entryBuilder, globalState.liveHeapObjCounter, "numLiveObjs")
+      LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs")
   };
-  LLVMBuildCall(entryBuilder, globalState.assertI64Eq, args, 2, "");
+  LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
 
   LLVMBuildRet(entryBuilder, mainResult);
   LLVMDisposeBuilder(entryBuilder);
+}
+
+void createModule(GlobalState *globalState) {
+  globalState->mod = LLVMModuleCreateWithNameInContext(globalState->opt->srcDirAndNameNoExt.c_str(), globalState->context);
+  if (!globalState->opt->release) {
+    globalState->dibuilder = LLVMCreateDIBuilder(globalState->mod);
+    globalState->difile = LLVMDIBuilderCreateFile(globalState->dibuilder, "main.vale", 9, ".", 1);
+    // If theres a compile error on this line, its some sort of LLVM version issue, try commenting or uncommenting the last four args.
+    globalState->compileUnit = LLVMDIBuilderCreateCompileUnit(globalState->dibuilder, LLVMDWARFSourceLanguageC,
+        globalState->difile, "Vale compiler", 13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0/*, "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere")*/);
+  }
+  compileValeCode(globalState, globalState->opt->srcpath);
+  if (!globalState->opt->release)
+    LLVMDIBuilderFinalize(globalState->dibuilder);
+}
+
+// Use provided options (triple, etc.) to creation a machine
+LLVMTargetMachineRef createMachine(ValeOptions *opt) {
+  char *err;
+
+//    LLVMInitializeAllTargetInfos();
+//    LLVMInitializeAllTargetMCs();
+//    LLVMInitializeAllTargets();
+//    LLVMInitializeAllAsmPrinters();
+//    LLVMInitializeAllAsmParsers();
+
+  LLVMInitializeX86TargetInfo();
+  LLVMInitializeX86TargetMC();
+  LLVMInitializeX86Target();
+  LLVMInitializeX86AsmPrinter();
+  LLVMInitializeX86AsmParser();
+
+  // Find target for the specified triple
+  if (!opt->triple)
+    opt->triple = LLVMGetDefaultTargetTriple();
+
+  LLVMTargetRef target;
+  if (LLVMGetTargetFromTriple(opt->triple, &target, &err) != 0) {
+    errorExit(ExitCode::LlvmSetupFailed, "Could not create target: ", err);
+    LLVMDisposeMessage(err);
+    return NULL;
+  }
+
+  // Create a specific target machine
+
+  LLVMCodeGenOptLevel opt_level = opt->release? LLVMCodeGenLevelAggressive : LLVMCodeGenLevelNone;
+
+  LLVMRelocMode reloc = (opt->pic || opt->library)? LLVMRelocPIC : LLVMRelocDefault;
+  if (!opt->cpu)
+    opt->cpu = "generic";
+  if (!opt->features)
+    opt->features = "";
+
+  LLVMTargetMachineRef machine;
+  if (!(machine = LLVMCreateTargetMachine(target, opt->triple, opt->cpu, opt->features, opt_level, reloc, LLVMCodeModelDefault))) {
+    errorExit(ExitCode::LlvmSetupFailed, "Could not create target machine");
+    return NULL;
+  }
+
+  return machine;
+}
+
+// Generate requested object file
+void generateOutput(
+    const char *objpath,
+    const char *asmpath,
+    LLVMModuleRef mod,
+    const char *triple,
+    LLVMTargetMachineRef machine) {
+  char *err;
+
+  LLVMSetTarget(mod, triple);
+  LLVMTargetDataRef dataref = LLVMCreateTargetDataLayout(machine);
+  char *layout = LLVMCopyStringRepOfTargetData(dataref);
+  LLVMSetDataLayout(mod, layout);
+  LLVMDisposeMessage(layout);
+
+  if (asmpath) {
+    char asmpathCStr[1024] = {0};
+    strncpy(asmpathCStr, asmpath, 1024);
+
+    // Generate assembly file if requested
+    if (LLVMTargetMachineEmitToFile(machine, mod, asmpathCStr,
+        LLVMAssemblyFile, &err) != 0) {
+      std::cerr << "Could not emit asm file: " << asmpathCStr << std::endl;
+      LLVMDisposeMessage(err);
+    }
+  }
+
+  char objpathCStr[1024] = { 0 };
+  strncpy(objpathCStr, objpath, 1024);
+
+  // Generate .o or .obj file
+  if (LLVMTargetMachineEmitToFile(machine, mod, objpathCStr, LLVMObjectFile, &err) != 0) {
+    std::cerr << "Could not emit obj file to path " << objpathCStr << " " << err << std::endl;
+    LLVMDisposeMessage(err);
+  }
+}
+
+// Generate IR nodes into LLVM IR using LLVM
+void generateModule(GlobalState *globalState) {
+  char *err;
+
+  // Generate IR to LLVM IR
+  createModule(globalState);
+
+  // Serialize the LLVM IR, if requested
+  if (globalState->opt->print_llvmir && LLVMPrintModuleToFile(globalState->mod, fileMakePath(globalState->opt->output, globalState->opt->srcNameNoExt.c_str(), "ll").c_str(), &err) != 0) {
+    std::cerr << "Could not emit pre-ir file: " << err << std::endl;
+    LLVMDisposeMessage(err);
+  }
+
+  // Verify generated IR
+  if (globalState->opt->verify) {
+    char *error = NULL;
+    LLVMVerifyModule(globalState->mod, LLVMAbortProcessAction, &error);
+    if (error) {
+      if (*error)
+        errorExit(ExitCode::VerifyFailed, "Module verification failed:\n%s", error);
+      LLVMDisposeMessage(error);
+    }
+  }
+
+  // Optimize the generated LLVM IR
+  LLVMPassManagerRef passmgr = LLVMCreatePassManager();
+  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
+  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
+  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
+  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
+  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
+  if (globalState->opt->release)
+    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
+  LLVMRunPassManager(passmgr, globalState->mod);
+  LLVMDisposePassManager(passmgr);
+
+  // Serialize the LLVM IR, if requested
+  auto outputFilePath = fileMakePath(globalState->opt->output, globalState->opt->srcNameNoExt.c_str(), "opt.ll");
+  std::cout << "Printing file " << outputFilePath << std::endl;
+  if (globalState->opt->print_llvmir && LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
+    std::cerr << "Could not emit ir file: " << err << std::endl;
+    LLVMDisposeMessage(err);
+  }
+
+  // Transform IR to target's ASM and OBJ
+  if (globalState->machine) {
+    auto objpath =
+        fileMakePath(globalState->opt->output, globalState->opt->srcNameNoExt.c_str(),
+            globalState->opt->wasm ? "wasm" : objext);
+    auto asmpath =
+        fileMakePath(globalState->opt->output,
+            globalState->opt->srcNameNoExt.c_str(),
+            globalState->opt->wasm ? "wat" : asmext);
+    generateOutput(
+        objpath.c_str(), globalState->opt->print_asm ? asmpath.c_str() : NULL,
+        globalState->mod, globalState->opt->triple, globalState->machine);
+  }
+
+
+  LLVMDisposeModule(globalState->mod);
+  // LLVMContextDispose(gen.context);  // Only need if we created a new context
+}
+
+// Setup LLVM generation, ensuring we know intended target
+void setup(GlobalState *globalState, ValeOptions *opt) {
+  globalState->opt = opt;
+
+  LLVMTargetMachineRef machine = createMachine(opt);
+  if (!machine)
+    exit((int)(ExitCode::BadOpts));
+
+  // Obtain data layout info, particularly pointer sizes
+  globalState->machine = machine;
+  globalState->dataLayout = LLVMCreateTargetDataLayout(machine);
+  globalState->ptrSize = LLVMPointerSize(globalState->dataLayout) << 3u;
+
+  // LLVM inlining bugs prevent use of LLVMContextCreate();
+  globalState->context = LLVMGetGlobalContext();
+}
+
+void closeGlobalState(GlobalState *globalState) {
+  LLVMDisposeTargetMachine(globalState->machine);
+}
+
+
+int main(int argc, char **argv) {
+  ValeOptions valeOptions;
+
+  // Get compiler's options from passed arguments
+  int ok = valeOptSet(&valeOptions, &argc, argv);
+  if (ok <= 0) {
+    exit((int)(ok == 0 ? ExitCode::Success : ExitCode::BadOpts));
+  }
+  if (argc < 2)
+    errorExit(ExitCode::BadOpts, "Specify a Vale program to compile.");
+  valeOptions.srcpath = argv[1];
+  new (&valeOptions.srcDir) std::string(fileDirectory(valeOptions.srcpath));
+  new (&valeOptions.srcNameNoExt) std::string(getFileNameNoExt(valeOptions.srcpath));
+  new (&valeOptions.srcDirAndNameNoExt) std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
+
+  // We set up generation early because we need target info, e.g.: pointer size
+  GlobalState globalState;
+  setup(&globalState, &valeOptions);
+
+  // Parse source file, do semantic analysis, and generate code
+//    ModuleNode *modnode = NULL;
+//    if (!errors)
+  generateModule(&globalState);
+
+  closeGlobalState(&globalState);
+//    errorSummary();
 }

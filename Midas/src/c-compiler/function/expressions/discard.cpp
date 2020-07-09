@@ -9,16 +9,18 @@
 LLVMValueRef translateDiscard(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Discard* discardM) {
   auto innerLE =
       translateExpression(
-          globalState, functionState, builder, discardM->sourceExpr);
-  checkValidReference(FL(), globalState, functionState, builder, discardM->sourceResultType, innerLE);
+          globalState, functionState, blockState, builder, discardM->sourceExpr);
+  checkValidReference(FL(), globalState, functionState, blockState, builder, discardM->sourceResultType, innerLE);
   discard(
       AFL(std::string("Discard from ") + typeid(*discardM->sourceExpr).name()),
       globalState,
       functionState,
+      blockState,
       builder,
       discardM->sourceResultType,
       innerLE);

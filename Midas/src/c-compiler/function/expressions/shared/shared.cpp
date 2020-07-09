@@ -25,6 +25,7 @@ LLVMValueRef makeNever() {
 void makeLocal(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
     LLVMValueRef valueToStore) {
@@ -33,17 +34,9 @@ void makeLocal(
           builder,
           translateType(globalState, local->type),
           local->id->maybeName.c_str());
-  assert(functionState->localAddrByLocalId.find(local->id->number) == functionState->localAddrByLocalId.end());
-  functionState->localAddrByLocalId.emplace(local->id->number, localAddr);
+  assert(blockState->localAddrByLocalId.find(local->id) == blockState->localAddrByLocalId.end());
+  blockState->localAddrByLocalId.emplace(local->id, localAddr);
   LLVMBuildStore(builder, valueToStore, localAddr);
-}
-
-void forgetLocal(
-    FunctionState* functionState,
-    Local* local) {
-  auto iter = functionState->localAddrByLocalId.find(local->id->number);
-  assert(iter != functionState->localAddrByLocalId.end());
-  functionState->localAddrByLocalId.erase(iter);
 }
 
 LLVMValueRef adjustCounter(
@@ -256,6 +249,7 @@ void checkValidReference(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef refLE) {
@@ -271,7 +265,7 @@ void checkValidReference(
       // We dont check ref count >0 because imm destructors receive with rc=0.
 //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
 //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(0), "");
-//      buildAssert(checkerAFL, globalState, functionState, builder, rcPositiveLE, "Invalid RC!");
+//      buildAssert(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
 
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else assert(false);
@@ -279,4 +273,21 @@ void checkValidReference(
     auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
   } else assert(false);
+}
+
+// Get parent local IDs that the child unstackified.
+std::unordered_set<VariableId*> getChildUnstackifiedParentLocalIds(
+    BlockState* parentBlockState,
+    BlockState* childBlockState) {
+  std::unordered_set<VariableId*> childUnstackifiedParentLocalIds;
+  for (VariableId* unstackifiedLocalId : childBlockState->unstackifiedLocalIds) {
+    // Ignore any that were made by the child block
+    if (childBlockState->localAddrByLocalId.count(unstackifiedLocalId))
+      continue;
+    // Ignore any that were already unstackified by the parent
+    if (parentBlockState->unstackifiedLocalIds.count(unstackifiedLocalId))
+      continue;
+    childUnstackifiedParentLocalIds.insert(unstackifiedLocalId);
+  }
+  return childUnstackifiedParentLocalIds;
 }

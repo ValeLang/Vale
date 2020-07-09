@@ -175,39 +175,60 @@ object CallHammer {
 
   def translateIf(
       hinputs: Hinputs, hamuts: HamutsBox,
-      locals: LocalsBox,
+    parentLocals: LocalsBox,
       if2: If2):
   ExpressionH[ReferendH] = {
     val If2(condition2, thenBlock2, elseBlock2) = if2
 
     val (conditionBlockH, List()) =
-      ExpressionHammer.translate(hinputs, hamuts, locals, condition2);
+      ExpressionHammer.translate(hinputs, hamuts, parentLocals, condition2);
     vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH,BoolH()))
 
+    val thenLocals = LocalsBox(parentLocals.snapshot)
     val (thenBlockH, List()) =
-      ExpressionHammer.translate(hinputs, hamuts, locals, thenBlock2);
+      ExpressionHammer.translate(hinputs, hamuts, thenLocals, thenBlock2);
     val thenResultCoord = thenBlockH.resultType
 
+    val elseLocals = LocalsBox(parentLocals.snapshot)
     val (elseBlockH, List()) =
-      ExpressionHammer.translate(hinputs, hamuts, locals, elseBlock2);
+      ExpressionHammer.translate(hinputs, hamuts, elseLocals, elseBlock2);
     val elseResultCoord = elseBlockH.resultType
 
     val commonSupertypeH =
       TypeHammer.translateReference(hinputs, hamuts, if2.resultRegister.reference)
 
-//    val resultCoord =
-//      (thenResultCoord, elseResultCoord) match {
-//        case (ReferenceH(m.ShareH, NeverH()), ReferenceH(m.ShareH, NeverH())) => ReferenceH(m.ShareH, NeverH()))
-//        case (ReferenceH(m.ShareH, NeverH()), elseResultCoord) => elseResultCoord)
-//        case (thenResultCoord, ReferenceH(m.ShareH, NeverH())) => thenResultCoord)
-//        case (thenResultCoord, elseResultCoord) => {
-//          vassert(thenResultCoord == elseResultCoord, "what\n" + thenResultCoord + "\n" + elseResultCoord)
-//          // Arbitrarily choose the then
-//          Some(thenResultCoord)
-//        }
-//        case _ => vwat()
-//      }
     val ifCallNode = IfH(conditionBlockH.expectBoolAccess(), thenBlockH, elseBlockH, commonSupertypeH)
+
+
+    val thenContinues = thenResultCoord.kind != NeverH()
+    val elseContinues = elseResultCoord.kind != NeverH()
+
+    val localsFromBranchToUseForUnstackifyingParentLocals =
+      if (thenContinues == elseContinues) { // Both continue, or both don't
+        val parentLocalsAfterThen = thenLocals.locals.keySet -- thenLocals.unstackifiedVars
+        val parentLocalsAfterElse = elseLocals.locals.keySet -- elseLocals.unstackifiedVars
+        // The same outside-if variables should still exist no matter which branch we went down.
+        vassert(parentLocalsAfterThen == parentLocalsAfterElse)
+        // Since theyre the same, just arbitrarily use the then.
+        thenLocals
+      } else {
+        // One of them continues and the other does not.
+        if (thenContinues) {
+          // Throw away any information from the else. But do consider those from the then.
+          thenLocals
+        } else if (elseContinues) {
+          elseLocals
+        } else vfail()
+      }
+
+    val parentLocalsToUnstackify =
+      // All the parent locals...
+      parentLocals.locals.keySet
+        // ...minus the ones that were unstackified before...
+        .diff(parentLocals.unstackifiedVars)
+        // ...which were unstackified by the branch.
+        .intersect(localsFromBranchToUseForUnstackifyingParentLocals.unstackifiedVars)
+    parentLocalsToUnstackify.foreach(parentLocals.markUnstackified)
 
     ifCallNode
   }

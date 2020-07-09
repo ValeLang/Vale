@@ -53,14 +53,15 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
 LLVMValueRef translateNewArrayFromValues(
     GlobalState* globalState,
     FunctionState* functionState,
+    BlockState* blockState,
     LLVMBuilderRef builder,
     NewArrayFromValues* newArrayFromValues) {
 
   auto elementsLE =
       translateExpressions(
-          globalState, functionState, builder, newArrayFromValues->sourceExprs);
+          globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
   for (auto elementLE : elementsLE) {
-    checkValidReference(FL(), globalState, functionState, builder,
+    checkValidReference(FL(), globalState, functionState, blockState, builder,
         newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
   }
 
@@ -93,7 +94,7 @@ LLVMValueRef translateNewArrayFromValues(
                 knownSizeArrayCountedStructLT,
                 elementsLE,
                 knownSizeArrayMT->name->name);
-        checkValidReference(FL(), globalState, functionState, builder,
+        checkValidReference(FL(), globalState, functionState, blockState, builder,
             newArrayFromValues->arrayRefType, resultLE);
         return resultLE;
       }

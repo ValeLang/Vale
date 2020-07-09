@@ -117,7 +117,7 @@ object LetHammer {
         variability,
         sourceExpr2.resultRegister.reference,
         let2.resultRegister.reference.ownership)
-    BlockH(List(stackifyH, borrowAccess))
+    ConsecutorH(List(stackifyH, borrowAccess))
   }
 
   private def translateMundaneLet(
@@ -167,7 +167,7 @@ object LetHammer {
         sourceExpr2.resultRegister.reference,
         let2.resultRegister.reference.ownership)
 
-      BlockH(List(stackifyH, borrowAccess))
+      ConsecutorH(List(stackifyH, borrowAccess))
   }
 
   def translateUnlet(
@@ -210,10 +210,7 @@ object LetHammer {
 
         val unstackifyContentsNode = UnstackifyH(innerLocal)
 
-        val blockH =
-          ExpressionHammer.flattenAndMakeBlock(List(desH, unstackifyContentsNode))
-
-        blockH
+        ConsecutorH(List(desH, unstackifyContentsNode))
       }
     }
   }
@@ -347,7 +344,7 @@ object LetHammer {
         }
       })
 
-    val destructureAndUnboxings = ExpressionHammer.flattenAndMakeBlock(destructureH :: unboxingsH)
+    val destructureAndUnboxings = ConsecutorH(destructureH :: unboxingsH)
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, locals, destructureAndUnboxings, sourceExprDeferreds)

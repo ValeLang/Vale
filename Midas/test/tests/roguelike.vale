@@ -1,3 +1,104 @@
+// roguelike.vale - A simple Roguelike game, made in Vale.
+//
+// This program displays a map like:
+//   ##########
+//   #......g.#
+//   #........#
+//   #..g..g..#
+//   #..@...g.#
+//   #.g......#
+//   #.g.g..g.#
+//   #g...g...#
+//   #........#
+//   ##########
+// where the player controls the @. When the player tries to move onto a space
+// already occupied by a goblin ("g"), it will destroy the goblin.
+//
+// Most of this program is implementations for basic STL classes (Opt, List,
+// HashMap), and the actual game code can be found near the end.
+
+
+// Utilities
+
+fn panic(msg str) {
+  println(msg);
+  = panic();
+}
+
+fn abs(a int) {
+  = if (a < 0) { a * -1 } else { a }
+}
+
+
+// Array Utilities
+
+
+fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) {
+  Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
+}
+
+fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
+  i = 0;
+  while (i < arr.len()) {
+    if ((equator)(arr[i], elem)) {
+      ret true;
+    }
+    mut i = i + 1;
+  }
+  = false;
+}
+
+fn has<E>(arr &Array<_, E>, elem E) bool {
+  has(arr, elem, ==)
+}
+
+fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
+  i = 0;
+  while (i < seq.len()) {
+    if ((equator)(seq[i], elem)) {
+      ret true;
+    }
+    mut i = i + 1;
+  }
+  = false;
+}
+
+fn has<E>(seq &[<_> _ * E], elem E) bool {
+  has(seq, elem, ==)
+}
+
+fn Arr<M, F>(n int, generator &F) Array<M, T>
+rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+{
+  Array<M>(n, &IFunction1<mut, int, T>(generator))
+}
+
+fn each<M, T, F>(arr &Array<M, T>, func F) void {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    mut i = i + 1;
+  }
+}
+
+fn indices<>(arr &Array<_, _>) Array<imm, int> {
+  Arr<imm>(len(arr), {_})
+}
+
+fn eachI<F>(arr &Array<_, _>, func F) void {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(i, arr[i]);
+    mut i = i + 1;
+  }
+}
+
+
+
+// Opt<T>
+
 interface Opt<T> rules(T Ref) { }
 struct Some<T> rules(T Ref) { value T; }
 impl<T> Some<T> for Opt<T>;
@@ -38,6 +139,10 @@ fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
 abstract fn getSize<T>(virtual opt &Opt<T>) *int;
 fn getSize<T>(opt &None<T> impl Opt<T>) *int { 0 }
 fn getSize<T>(opt &Some<T> impl Opt<T>) *int { 1 }
+
+
+
+// List<E>
 
 struct List<E> rules(E Ref) {
   array Array<mut, Opt<E>>;
@@ -84,14 +189,8 @@ fn toList<E>(arr &Array<_, E>) List<E> {
 }
 
 
-fn panic(msg str) {
-  println(msg);
-  = panic();
-}
 
-fn abs(a int) {
-  = if (a < 0) { a * -1 } else { a }
-}
+// HashMap<K, V, H, E>
 
 struct HashNode<K, V> {
   key K;
@@ -231,158 +330,16 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
 
 
 
-fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) {
-  Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
-}
+// Roguelike
 
-//fn each<N, E, F, M>(seq &[<M> N * E], func F) void {
-//  Array<mut, int>(N, &IFunction1<mut, int, int>((i){ func(seq[i]); = 0; }));
-//}
-
-//fn map<M>(seq &[<_> N * E], func F) rules(M Mutability) {
-//  Array<M>(N, (i){ func(seq[i]) })
-//}
-
-//fn each<E, F>(arr &Array<_, E>, func F) void {
-//  Array<mut, int>(arr.len(), &IFunction1<mut, int, void>((i){ func(arr[i]); = 0; }));
-//}
-
-//fn map<M>(arr &Array<_, E>, func F) rules(M Mutability) {
-//  Array<M>(arr.len(), (i){ func(arr[i]) })
-//}
-
-fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
-  i = 0;
-  while (i < arr.len()) {
-    if ((equator)(arr[i], elem)) {
-      ret true;
-    }
-    mut i = i + 1;
-  }
-  = false;
-}
-
-fn has<E>(arr &Array<_, E>, elem E) bool {
-  has(arr, elem, ==)
-}
-
-fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
-  i = 0;
-  while (i < seq.len()) {
-    if ((equator)(seq[i], elem)) {
-      ret true;
-    }
-    mut i = i + 1;
-  }
-  = false;
-}
-
-fn has<E>(seq &[<_> _ * E], elem E) bool {
-  has(seq, elem, ==)
-}
-
-fn Arr<M, F>(n int, generator &F) Array<M, T>
-rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+struct Vec<N, T> rules(N int)
 {
-  Array<M>(n, &IFunction1<mut, int, T>(generator))
+  values [<imm> N * T];
 }
 
-fn each<M, T, F>(arr &Array<M, T>, func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(arr[i]);
-    mut i = i + 1;
-  }
-}
-
-fn indices<>(arr &Array<_, _>) Array<imm, int> {
-  Arr<imm>(len(arr), {_})
-}
-
-fn eachI<F>(arr &Array<_, _>, func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(i, arr[i]);
-    mut i = i + 1;
-  }
-}
-
-
-
-struct Vec2 imm {
-  x float;
-  y float;
-}
-
-struct Vec3 imm {
-  x float;
-  y float;
-  z float;
-}
-
-struct Location imm {
-  groupX int;
-  groupY int;
-  indexInGroup int;
-}
-
-struct Pattern imm {
-  name str;
-  cornersByShapeIndex Array<imm, Array<imm, Vec2>>;
-  patternTiles Array<imm, PatternTile>;
-  xOffset Vec2;
-  yOffset Vec2;
-}
-
-struct PatternTile imm {
-  shapeIndex int;
-  rotateRadians float;
-  translate Vec2;
-  sideAdjacenciesBySideIndex Array<imm, PatternSideAdjacency>;
-  cornerAdjacenciesByCornerIndex Array<imm, Array<imm, PatternCornerAdjacency>>;
-}
-
-struct PatternSideAdjacency imm {
-  groupRelativeX int;
-  groupRelativeY int;
-  tileIndex int;
-  sideIndex int;
-}
-
-struct PatternCornerAdjacency imm {
-  groupRelativeX int;
-  groupRelativeY int;
-  tileIndex int;
-  cornerIndex int;
-}
-
-
-struct TerrainTile {
-  elevation int;
-  walkable bool;
-  classId str;
-}
-
-struct LocationHasher { }
-fn __call(this &LocationHasher, loc Location) {
-  hash! = 0;
-  mut hash = 41 * hash + loc.groupX;
-  mut hash = 41 * hash + loc.groupY;
-  mut hash = 41 * hash + loc.indexInGroup;
-  = hash;
-}
-
-struct LocationEquator { }
-fn __call(this &LocationEquator, a Location, b Location) {
-  (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup)
-}
-
-struct Terrain {
-  pattern Pattern;
-  elevationStepHeight float;
-  tiles HashMap<Location, TerrainTile, LocationHasher, LocationEquator>;
+struct Goblin {
+  location Vec<2, int>;
+  alive bool;
 }
 
 fn makeBoard() Array<mut, Array<mut, str>> {
@@ -415,7 +372,7 @@ fn display(
           goblin? = goblins.get(key);
           goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
-          if (and(goblin.alive, and(rowI == goblin.row, cellI == goblin.col))) {
+          if (and(goblin.alive, and(rowI == goblin.location.values.1, cellI == goblin.location.values.0))) {
             mut charToPrint = "g";
           }
         });
@@ -457,11 +414,7 @@ fn __call(this &IntHasher, x int) { x }
 struct IntEquator { }
 fn __call(this &IntEquator, a int, b int) { a == b }
 
-struct Goblin {
-  row! int;
-  col! int;
-  alive bool;
-}
+
 
 fn main() int {
   board = makeBoard();
@@ -470,16 +423,16 @@ fn main() int {
   playerCol! = 3;
 
   goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  goblins.add(13, Goblin(6, 3, true));
-  goblins.add(14, Goblin(2, 6, true));
-  goblins.add(15, Goblin(5, 7, true));
-  goblins.add(17, Goblin(2, 5, true));
-  goblins.add(19, Goblin(7, 1, true));
-  goblins.add(23, Goblin(3, 3, true));
-  goblins.add(24, Goblin(1, 7, true));
-  goblins.add(25, Goblin(7, 6, true));
-  goblins.add(27, Goblin(4, 6, true));
-  goblins.add(29, Goblin(7, 4, true));
+  goblins.add(13, Goblin(Vec([6, 3]), true));
+  goblins.add(14, Goblin(Vec([2, 6]), true));
+  goblins.add(15, Goblin(Vec([5, 7]), true));
+  goblins.add(17, Goblin(Vec([2, 5]), true));
+  goblins.add(19, Goblin(Vec([7, 1]), true));
+  goblins.add(23, Goblin(Vec([3, 3]), true));
+  goblins.add(24, Goblin(Vec([1, 7]), true));
+  goblins.add(25, Goblin(Vec([7, 6]), true));
+  goblins.add(27, Goblin(Vec([4, 6]), true));
+  goblins.add(29, Goblin(Vec([7, 4]), true));
 
   running! = true;
   while (running) {
@@ -505,7 +458,9 @@ fn main() int {
       goblin? = goblins.get(key);
       goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
-      if (and(goblin.alive, and(newPlayerRow == goblin.row, newPlayerCol == goblin.col))) {
+      (goblinCol, goblinRow) = goblin.location.values;
+
+      if (and(goblin.alive, and(newPlayerRow == goblinRow, newPlayerCol == goblinCol))) {
         mut goblin.alive = false;
         mut killedGoblin = true;
       }

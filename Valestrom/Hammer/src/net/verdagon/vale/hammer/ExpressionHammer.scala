@@ -408,7 +408,12 @@ object ExpressionHammer {
           translate(hinputs, hamuts, locals, innerExpr);
         val innerWithDeferredsH =
           translateDeferreds(hinputs, hamuts, locals, innerExprResultLine, innerDeferreds)
-        (UnreachableMootH(innerWithDeferredsH), List())
+
+        // Throw away the inner expression because we dont want it to be generated, because
+        // theyll never get run anyway.
+        // We only translated them above to mark unstackified things unstackified.
+
+        (innerWithDeferredsH, List())
       }
 
       case _ => {
@@ -475,6 +480,28 @@ object ExpressionHammer {
 
         val resultLines = firstResultLine :: restResultLines
         (resultLines, restDeferreds ++ firstDeferreds)
+      }
+    }
+  }
+
+  def translateExpressionsAndDeferreds(
+    hinputs: Hinputs, hamuts: HamutsBox,
+    locals: LocalsBox,
+    exprs2: List[Expression2]):
+  List[ExpressionH[ReferendH]] = {
+    exprs2 match {
+      case Nil => List()
+      case firstExpr :: restExprs => {
+        val (firstResultLine, firstDeferreds) =
+          translate(hinputs, hamuts, locals, firstExpr);
+        val firstExprWithDeferredsH =
+          translateDeferreds(hinputs, hamuts, locals, firstResultLine, firstDeferreds)
+
+        val restResultLines =
+          translateExpressionsAndDeferreds(hinputs, hamuts, locals, restExprs);
+
+        val resultLines = firstExprWithDeferredsH :: restResultLines
+        (resultLines)
       }
     }
   }

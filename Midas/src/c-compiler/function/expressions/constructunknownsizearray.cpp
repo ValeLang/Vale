@@ -87,7 +87,7 @@ LLVMValueRef translateConstructUnknownSizeArray(
   auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
   auto generatorLE = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
-  checkValidReference(FL(), globalState, functionState, blockState, builder,
+  checkValidReference(FL(), globalState, functionState, builder,
       constructUnknownSizeArray->generatorType, generatorLE);
 
   // If we get here, arrayLT is a pointer to our counted struct.
@@ -106,7 +106,7 @@ LLVMValueRef translateConstructUnknownSizeArray(
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);
-  checkValidReference(FL(), globalState, functionState, blockState, builder,
+  checkValidReference(FL(), globalState, functionState, builder,
       constructUnknownSizeArray->arrayRefType, resultLE);
 
   discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);

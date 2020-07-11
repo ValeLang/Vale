@@ -18,7 +18,7 @@ LLVMValueRef translateDestructure(
   auto structLE =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
-  checkValidReference(FL(), globalState, functionState, blockState, builder, destructureM->structType, structLE);
+  checkValidReference(FL(), globalState, functionState, builder, destructureM->structType, structLE);
 
   auto structReferend =
       dynamic_cast<StructReferend *>(destructureM->structType->referend);
@@ -33,7 +33,7 @@ LLVMValueRef translateDestructure(
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
-    checkValidReference(FL(), globalState, functionState, blockState, builder, structM->members[i]->type, memberLE);
+    checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberLE);
     makeLocal(
         globalState,
       functionState,

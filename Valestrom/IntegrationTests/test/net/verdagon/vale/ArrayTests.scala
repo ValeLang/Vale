@@ -256,6 +256,25 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForStdout(Vector()) shouldEqual "6\n"
   }
 
+  test("Swap out of array") {
+    val compile = new Compilation(
+      """
+        |struct Goblin { }
+        |
+        |struct GoblinMaker {}
+        |impl GoblinMaker for IFunction1<mut, int, Goblin>;
+        |fn __call(this &GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
+        |fn main() {
+        |  m = GoblinMaker();
+        |  arr = Array<mut, Goblin>(1, &m);
+        |  mut arr.0 = Goblin();
+        |  = 4;
+        |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+  }
+
 
   test("Test array length") {
     val compile = new Compilation(

@@ -22,14 +22,16 @@ typedef struct ValeOptions {
     void* data; // User-defined data for unit test callbacks
 
     // Boolean flags
-    int wasm;        // 1=WebAssembly
-    int release;    // 0=debug (no optimizations). 1=release (default)
-    int library;    // 1=generate a C-API compatible static library
-    int pic;        // Compile using position independent code
-    int verify;        // Verify LLVM IR
-    int print_asm;        // Print out assembly file
-    int print_llvmir;    // Print out LLVM IR
-    int docs;            // Generate code documentation
+    bool wasm;        // 1=WebAssembly
+    bool release;    // 0=debug (no optimizations). 1=release (default)
+    bool library;    // 1=generate a C-API compatible static library
+    bool pic;        // Compile using position independent code
+    bool verify;        // Verify LLVM IR
+    bool print_asm;        // Print out assembly file
+    bool print_llvmir;    // Print out LLVM IR
+    bool docs;            // Generate code documentation
+    bool census;    // Enable census checking
+    bool flares;    // Enable flare output
 } ValeOptions;
 
 int valeOptSet(ValeOptions *opt, int *argc, char **argv);

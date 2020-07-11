@@ -59,21 +59,6 @@ LLVMValueRef loadInnerArrayMember(
               builder, elemsPtrLE, indices, 2, "indexPtr"),
           "index");
 
-
-  if (elementRefM->ownership == Ownership::SHARE) {
-    if (elementRefM->location == Location::INLINE) {
-    } else {
-      adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
-    }
-  } else if (elementRefM->ownership == Ownership::OWN) {
-    adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
-  } else if (elementRefM->ownership == Ownership::BORROW) {
-    adjustRc(FL(), globalState, builder, resultLE, elementRefM, 1);
-  } else {
-    assert(false);
-  }
-
-
   return resultLE;
 }
 

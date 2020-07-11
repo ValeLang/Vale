@@ -61,7 +61,7 @@ LLVMValueRef translateNewArrayFromValues(
       translateExpressions(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
   for (auto elementLE : elementsLE) {
-    checkValidReference(FL(), globalState, functionState, blockState, builder,
+    checkValidReference(FL(), globalState, functionState, builder,
         newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
   }
 
@@ -94,7 +94,7 @@ LLVMValueRef translateNewArrayFromValues(
                 knownSizeArrayCountedStructLT,
                 elementsLE,
                 knownSizeArrayMT->name->name);
-        checkValidReference(FL(), globalState, functionState, blockState, builder,
+        checkValidReference(FL(), globalState, functionState, builder,
             newArrayFromValues->arrayRefType, resultLE);
         return resultLE;
       }

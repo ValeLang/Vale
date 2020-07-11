@@ -85,3 +85,7 @@ The CMake environment should point to an llvm-7 installation *similar* to the `e
 - Select the `valec|Debug` configuration (upper right toolbar) and build it by clicking the control that looks like a hammer (left of configuration dropdown)
 
 - Select the `Unittests in tests` configuration and run it by clicking on the control that looks like a triangle/play button (right of configuration dropdown)
+
+# Notes
+
+Vale started in January 2013, and back then we called it "VLang", though there's now another language with that name. We then called it GelLLVM, in honor of Gel, the first language to offer constraint references. Since then, we've settled on the name "Vale". Note that Vale and Vala are two different languages.

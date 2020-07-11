@@ -423,6 +423,7 @@ class RuleTyperEvaluator[Env, State](
     val templataType =
       typeSR match {
         case CoordTypeSR => CoordTemplataType
+        case IntTypeSR => IntegerTemplataType
         case KindTypeSR => KindTemplataType
         case MutabilityTypeSR => MutabilityTemplataType
         case PrototypeTypeSR => PrototypeTemplataType

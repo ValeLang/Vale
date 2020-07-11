@@ -465,6 +465,7 @@ class RuleTyperMatcher[Env, State](
       case KindTemplataType =>
       case MutabilityTemplataType =>
       case PrototypeTemplataType =>
+      case IntegerTemplataType =>
     }
     // If we fail here, that means we didn't take this ITypeSR into account
     // in the main match below.
@@ -473,9 +474,11 @@ class RuleTyperMatcher[Env, State](
       case KindTypeSR =>
       case MutabilityTypeSR =>
       case PrototypeTypeSR =>
+      case IntTypeSR =>
     }
     (expectedType, rule.tyype) match {
       case (CoordTemplataType, CoordTypeSR) =>
+      case (IntegerTemplataType, IntTypeSR) =>
       case (KindTemplataType, KindTypeSR) =>
       case (MutabilityTemplataType, MutabilityTypeSR) =>
       case (PrototypeTemplataType, PrototypeTypeSR) =>

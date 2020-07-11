@@ -1,7 +1,7 @@
 package net.verdagon.vale
 
 import net.verdagon.vale.hammer._
-import net.verdagon.vale.metal.{InlineH, IntH, ReferenceH}
+import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReferenceH}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.Share
 import org.scalatest.{FunSuite, Matchers}
@@ -73,4 +73,21 @@ class HammerTests extends FunSuite with Matchers {
     vassert(hamuts.getAllUserFunctions.size == 1)
   }
 
+  test("Tests stripping things after panic") {
+    val compile = new Compilation(
+      """
+        |fn main() int {
+        |  panic();
+        |  a = 42;
+        |  = a;
+        |}
+      """.stripMargin)
+    val hamuts = compile.getHamuts()
+    val main = hamuts.lookupFunction("main")
+    main.body match {
+      case BlockH(CallH(PrototypeH(fullNameH, List(), ReferenceH(_, _, NeverH())), List())) => {
+        vassert(fullNameH.toString.contains("panic"))
+      }
+    }
+  }
 }

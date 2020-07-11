@@ -39,7 +39,7 @@ LLVMValueRef translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  checkValidReference(FL(), globalState, functionState, parentBlockState, builder, iff->commonSupertype, resultLE);
+  checkValidReference(FL(), globalState, functionState, builder, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;

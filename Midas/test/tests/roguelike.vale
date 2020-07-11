@@ -398,15 +398,30 @@ fn makeBoard() Array<mut, Array<mut, str>> {
     });
 }
 
-fn display(board &Array<mut, Array<mut, str>>, playerRow int, playerCol int) {
+fn display(
+    board &Array<mut, Array<mut, str>>,
+    goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+    playerRow int,
+    playerCol int) {
   toPrint! = "";
   eachI &board (rowI, row){
     eachI &row (cellI, cell){
+      charToPrint! = cell;
+
       if (and(rowI == playerRow, cellI == playerCol)) {
-        mut toPrint = toPrint + "@";
+        mut charToPrint = "@";
       } else {
-        mut toPrint = toPrint + cell;
+        goblins.keys().each((key){
+          goblin? = goblins.get(key);
+          goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+
+          if (and(goblin.alive, and(rowI == goblin.row, cellI == goblin.col))) {
+            mut charToPrint = "g";
+          }
+        });
       }
+
+      mut toPrint = toPrint + charToPrint;
     }
     mut toPrint = toPrint + "\n";
   }
@@ -445,6 +460,7 @@ fn __call(this &IntEquator, a int, b int) { a == b }
 struct Goblin {
   row! int;
   col! int;
+  alive bool;
 }
 
 fn main() int {
@@ -453,14 +469,21 @@ fn main() int {
   playerRow! = 4;
   playerCol! = 3;
 
-  // goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  // goblins.add(17, Goblin(2, 3));
-  // goblins.add(17, Goblin(7, 4));
-  // goblins.add(17, Goblin(8, 3));
+  goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
+  goblins.add(13, Goblin(6, 3, true));
+  goblins.add(14, Goblin(2, 6, true));
+  goblins.add(15, Goblin(5, 7, true));
+  goblins.add(17, Goblin(2, 5, true));
+  goblins.add(19, Goblin(7, 1, true));
+  goblins.add(23, Goblin(3, 3, true));
+  goblins.add(24, Goblin(1, 7, true));
+  goblins.add(25, Goblin(7, 6, true));
+  goblins.add(27, Goblin(4, 6, true));
+  goblins.add(29, Goblin(7, 4, true));
 
   running! = true;
   while (running) {
-    display(&board, playerRow, playerCol);
+    display(&board, &goblins, playerRow, playerCol);
 
     key = inputKey();
     newPlayerRow! = playerRow;
@@ -476,9 +499,22 @@ fn main() int {
     } else if (key == 100) {
       mut newPlayerCol = newPlayerCol + 1;
     }
-    if (board[newPlayerRow][newPlayerCol] == ".") {
-      mut playerRow = newPlayerRow;
-      mut playerCol = newPlayerCol;
+
+    killedGoblin! = false;
+    goblins.keys().each((key){
+      goblin? = goblins.get(key);
+      goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+
+      if (and(goblin.alive, and(newPlayerRow == goblin.row, newPlayerCol == goblin.col))) {
+        mut goblin.alive = false;
+        mut killedGoblin = true;
+      }
+    });
+    if (not killedGoblin) {
+      if (board[newPlayerRow][newPlayerCol] == ".") {
+        mut playerRow = newPlayerRow;
+        mut playerCol = newPlayerCol;
+      }
     }
   }
   = 0;

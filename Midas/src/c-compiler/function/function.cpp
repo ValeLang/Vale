@@ -30,10 +30,11 @@ void translateFunction(
     Function* functionM) {
 
   auto functionL = globalState->getFunction(functionM->prototype->name);
+  auto returnTypeL = translateType(globalState, functionM->prototype->returnType);
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 
-  FunctionState functionState(functionL);
+  FunctionState functionState(functionL, returnTypeL);
 
   int blockNumber = functionState.nextBlockNumber++;
   auto blockName = std::string("block") + std::to_string(blockNumber);

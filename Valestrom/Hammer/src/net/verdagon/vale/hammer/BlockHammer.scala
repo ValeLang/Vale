@@ -16,15 +16,27 @@ object BlockHammer {
   (BlockH) = {
     val blockLocals = LocalsBox(parentLocals.snapshot)
 
-    val (exprsWithoutDeferredsH, deferreds) =
-      ExpressionHammer.translateExpressions(
+    val unfilteredExprsH =
+      ExpressionHammer.translateExpressionsAndDeferreds(
         hinputs, hamuts, blockLocals, block2.exprs);
 
+    val indexOfFirstNever = unfilteredExprsH.indexWhere(_.resultType.kind == NeverH())
+    // If there's an expression returning a Never, then remove all the expressions after that.
+    val exprsH =
+      if (indexOfFirstNever >= 0) {
+        unfilteredExprsH.slice(0, indexOfFirstNever + 1)
+      } else {
+        unfilteredExprsH
+      }
+    vassert(exprsH.nonEmpty)
+
+    val exprH =
+      exprsH match {
+        case List(onlyExprH) => onlyExprH
+        case zeroOrOneExprs => ConsecutorH(zeroOrOneExprs)
+      }
+
     // We dont vassert(deferreds.isEmpty) here, see BMHD for why.
-
-    val exprsWithDeferredsH =
-      translateDeferreds(hinputs, hamuts, blockLocals, BlockH(ConsecutorH(exprsWithoutDeferredsH)), deferreds)
-
 
     val localIdsInThisBlock = blockLocals.locals.keys.toSet.diff(parentLocals.locals.keys.toSet)
     val localsInThisBlock = localIdsInThisBlock.map(blockLocals.locals)
@@ -44,8 +56,8 @@ object BlockHammer {
         .intersect(blockLocals.unstackifiedVars)
     unstackifiedLocalsFromParent.foreach(parentLocals.markUnstackified)
 
-    val resultType = exprsWithDeferredsH.resultType
+    val resultType = exprH.resultType
 //    start here, we're returning locals and thats not optimal
-    BlockH(ConsecutorH(List(exprsWithDeferredsH)))
+    BlockH(exprH)
   }
 }

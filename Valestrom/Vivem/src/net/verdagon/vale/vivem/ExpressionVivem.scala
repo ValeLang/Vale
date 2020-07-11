@@ -78,9 +78,6 @@ object ExpressionVivem {
           case NodeContinue(r) => vfail()
         }
       }
-      case UnreachableMootH(_) => {
-        vfail()
-      }
       case ConstantI64H(value) => {
         val ref = makePrimitive(heap, callId, InlineH, IntV(value))
         NodeContinue(ref)

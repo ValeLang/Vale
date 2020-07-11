@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{vassert, vimpl, metal => m}
+import net.verdagon.vale.{vassert, vfail, vimpl, metal => m}
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
@@ -252,14 +252,6 @@ object VonHammer {
 
   def vonifyNode(node: ExpressionH[ReferendH]): IVonData = {
     node match {
-      case UnreachableMootH(sourceExpr) => {
-        VonObject(
-          "UnreachableMoot",
-          None,
-          Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
-            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
-      }
       case ConstantBoolH(value) => {
         VonObject(
           "ConstantBool",
@@ -595,7 +587,8 @@ object VonHammer {
           "Block",
           None,
           Vector(
-            VonMember("innerExpr", vonifyNode(inner))))
+            VonMember("innerExpr", vonifyNode(inner)),
+            VonMember("innerType", vonifyCoord(inner.resultType))))
       }
     }
   }

@@ -195,10 +195,6 @@ case class InterfaceToInterfaceUpcastH(
   def resultType = ReferenceH(sourceRegister.resultType.ownership, sourceRegister.resultType.location, targetInterfaceRef)
 }
 
-case class UnreachableMootH(innerExpr: ExpressionH[ReferendH]) extends ExpressionH[NeverH] {
-  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, NeverH())
-}
-
 case class ReinterpretH(
   sourceExpr: ExpressionH[ReferendH],
   resultType: ReferenceH[ReferendH]
@@ -487,6 +483,14 @@ case class ConsecutorH(
   vassert(nodes.nonEmpty)
   // The init ones should always return void structs.
   nodes.init.foreach(n => n.resultType.kind match { case StructRefH(_) => case NeverH() => })
+
+  val indexOfFirstNever = nodes.indexWhere(_.resultType.kind == NeverH())
+  if (indexOfFirstNever >= 0) {
+    // The first never should be the last line. There shouldn't be anything after never.
+    if (indexOfFirstNever != nodes.size - 1) {
+      vfail()
+    }
+  }
 
   override def resultType: ReferenceH[ReferendH] = nodes.last.resultType
 }

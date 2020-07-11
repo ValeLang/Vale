@@ -142,18 +142,6 @@ public:
   InterfaceReferend* targetInterfaceRef;
 };
 
-class UnreachableMoot : public Expression {
-public:
-  Expression* sourceExpr;
-  Reference* sourceType;
-
-  UnreachableMoot(
-      Expression* sourceExpr_,
-      Reference* sourceType_) :
-      sourceExpr(sourceExpr_),
-      sourceType(sourceType_) {}
-};
-
 class LocalStore : public Expression {
 public:
   Local* local;
@@ -448,10 +436,12 @@ public:
 
 class Block : public Expression {
 public:
-    Expression * inner;
+  Expression * inner;
+  Reference * innerType;
 
-    Block(Expression * inner_) :
-    inner(inner_) {}
+  Block(Expression * inner_, Reference * innerType_) :
+  inner(inner_),
+  innerType(innerType_) {}
 };
 
 class Return : public Expression {

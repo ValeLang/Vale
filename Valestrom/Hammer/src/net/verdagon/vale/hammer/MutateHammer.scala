@@ -149,12 +149,12 @@ object MutateHammer {
   }
 
   private def translateMundaneMemberMutate(
-                                            hinputs: Hinputs,
-                                            hamuts: HamutsBox,
-                                            locals: LocalsBox,
-                                            sourceExprResultLine: ExpressionH[ReferendH],
-                                            structExpr2: ReferenceExpression2,
-                                            memberName: FullName2[IVarName2]
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    locals: LocalsBox,
+    sourceExprResultLine: ExpressionH[ReferendH],
+    structExpr2: ReferenceExpression2,
+    memberName: FullName2[IVarName2]
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, locals, structExpr2);

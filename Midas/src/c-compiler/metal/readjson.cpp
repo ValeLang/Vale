@@ -295,7 +295,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readArray(cache, expression["exprs"], readExpression));
   } else if (type == "Block") {
     return new Block(
-        readExpression(cache, expression["innerExpr"]));
+        readExpression(cache, expression["innerExpr"]),
+        readReference(cache, expression["innerType"]));
   } else if (type == "If") {
     return new If(
         readExpression(cache, expression["conditionBlock"]),
@@ -405,10 +406,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "ConstantStr") {
     return new ConstantStr(
         expression["value"]);
-  } else if (type == "UnreachableMoot") {
-    return new UnreachableMoot(
-        readExpression(cache, expression["sourceExpr"]),
-        readReference(cache, expression["sourceType"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);

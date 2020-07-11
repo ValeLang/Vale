@@ -33,7 +33,7 @@ case class ProgramH(
   }
 
   def lookupFunction(humanName: String) = {
-    val matches = functions.filter(_.fullName.parts.last == vimpl(humanName))
+    val matches = functions.filter(_.fullName.toString.startsWith(s"""F("${humanName}""""))
     vassert(matches.size == 1)
     matches.head
   }

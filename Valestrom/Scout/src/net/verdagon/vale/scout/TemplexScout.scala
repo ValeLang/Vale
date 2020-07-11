@@ -19,6 +19,7 @@ object TemplexScout {
           NameST(CodeTypeNameS(nameOrRune))
         }
       }
+      case IntPT(_, num) => IntST(num)
       case MutabilityPT(mutability) => MutabilityST(mutability)
       case CallPT(_,template, args) => CallST(translateTemplex(declaredRunes, template), args.map(arg => translateTemplex(declaredRunes, arg)))
       case NullablePT(inner) => NullableST(translateTemplex(declaredRunes, inner))

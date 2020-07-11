@@ -232,6 +232,23 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector())
   }
 
+  test("Test int generic") {
+    val compile = new Compilation(
+      """
+        |
+        |struct Vec<N, T> rules(N int)
+        |{
+        |  values [<mut> N * T];
+        |}
+        |
+        |fn main() {
+        |  v = Vec<3, int>([3, 4, 5]);
+        |  = v.values.2;
+        |}
+      """.stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+  }
+
   test("Tests upcasting from a struct to an interface") {
     val compile = new Compilation(InheritanceSamples.upcasting)
     compile.run(Vector())

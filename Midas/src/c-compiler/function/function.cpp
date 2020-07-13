@@ -72,13 +72,16 @@ void translateFunction(
   //
   // All builders work like this, at whatever level theyre on.
 
-  BlockState initialBlockState;
+  BlockState initialBlockState(nullptr);
 
   // Translate the body of the function. Can ignore the result because it's a
   // Never, because Valestrom guarantees we end function bodies in a ret.
   auto resultLE =
       translateExpression(
           globalState, &functionState, &initialBlockState, bodyTopLevelBuilder, functionM->block);
+
+
+  initialBlockState.checkAllIntroducedLocalsWereUnstackified();
 
   // This is a total hack, to try and appease LLVM to say that yes, we're sure
   // we'll never reach this statement.

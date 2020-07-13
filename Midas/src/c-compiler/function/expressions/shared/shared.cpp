@@ -34,8 +34,7 @@ void makeLocal(
           builder,
           translateType(globalState, local->type),
           local->id->maybeName.c_str());
-  assert(blockState->localAddrByLocalId.find(local->id) == blockState->localAddrByLocalId.end());
-  blockState->localAddrByLocalId.emplace(local->id, localAddr);
+  blockState->addLocal(local->id, localAddr);
   LLVMBuildStore(builder, valueToStore, localAddr);
 }
 
@@ -274,21 +273,4 @@ void checkValidReference(
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else assert(false);
   }
-}
-
-// Get parent local IDs that the child unstackified.
-std::unordered_set<VariableId*> getChildUnstackifiedParentLocalIds(
-    BlockState* parentBlockState,
-    BlockState* childBlockState) {
-  std::unordered_set<VariableId*> childUnstackifiedParentLocalIds;
-  for (VariableId* unstackifiedLocalId : childBlockState->unstackifiedLocalIds) {
-    // Ignore any that were made by the child block
-    if (childBlockState->localAddrByLocalId.count(unstackifiedLocalId))
-      continue;
-    // Ignore any that were already unstackified by the parent
-    if (parentBlockState->unstackifiedLocalIds.count(unstackifiedLocalId))
-      continue;
-    childUnstackifiedParentLocalIds.insert(unstackifiedLocalId);
-  }
-  return childUnstackifiedParentLocalIds;
 }

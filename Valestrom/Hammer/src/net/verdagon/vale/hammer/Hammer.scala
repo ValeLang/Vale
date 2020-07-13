@@ -105,7 +105,7 @@ case class Locals(
     // Make sure it existed and wasnt already unstackified
     vassert(locals.contains(varIdH))
     if (unstackifiedVars.contains(varIdH)) {
-      vfail("nooo")
+      vfail("Already unstackified " + varIdH)
     }
     Locals(templarLocals, unstackifiedVars + varIdH, locals)
   }

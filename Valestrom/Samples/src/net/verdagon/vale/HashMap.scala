@@ -75,7 +75,7 @@ object HashMap {
       |}
       |
       |fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashNode<K, V>>>, hasher H, node HashNode<K, V>) {
-      |  hash = (hasher)(node.key);
+      |  hash int = (hasher)(node.key);
       |  startIndex = abs(hash mod table.len());
       |  index = findEmptyIndexForKey(table, startIndex, node.key);
       |
@@ -119,7 +119,7 @@ object HashMap {
       |  if (self.table.len() == 0) {
       |    ret None<&V>();
       |  }
-      |  hash = (self.hasher)(key);
+      |  hash int = (self.hasher)(key);
       |  startIndex = abs(hash mod self.table.len());
       |  index? = findIndexOfKey(self.table, self.equator, startIndex, key);
       |  if (index?.empty?()) {
@@ -146,6 +146,42 @@ object HashMap {
       |    mut index = index + 1;
       |  }
       |  = list.toArray<imm>();
+      |}
+      |
+      |fn innerRemove<K, V, H, E>(
+      |  table &Array<mut, Opt<HashNode<K, V>>>,
+      |  hasher H,
+      |  equator E,
+      |  key K)
+      |int {
+      |  hash int = (hasher)(key);
+      |  startIndex = abs(hash mod table.len());
+      |  index? = findIndexOfKey(table, equator, startIndex, key);
+      |  index = index?.get();
+      |  mut table[index] = None<HashNode<K, V>>();
+      |  ret index;
+      |}
+      |
+      |fn remove<K, V, H, E>(
+      |  map &HashMap<K, V, H, E>,
+      |  key K)
+      |void {
+      |  originalIndex = innerRemove(map.table, map.hasher, map.equator, key);
+      |  mut map.size = map.size - 1;
+      |
+      |  i! = 1;
+      |  while (i < map.table.len()) {
+      |    neighborIndex = (originalIndex + i) mod len(map.table);
+      |    neighbor? = (mut map.table[neighborIndex] = None<HashNode<K, V>>());
+      |    if (not neighbor?.empty?()) {
+      |      (neighborKey, neighborValue) = neighbor?^.get();
+      |      addNodeToTable(map.table, map.hasher, HashNode<K, V>(neighborKey, neighborValue));
+      |    } else {
+      |      drop(neighbor?);
+      |      mut i = map.table.len(); // break
+      |    }
+      |    mut i = i + 1;
+      |  }
       |}
       |
     """.stripMargin

@@ -169,9 +169,4 @@ void checkValidReference(
     Reference* refM,
     LLVMValueRef refLE);
 
-// Get parent local IDs that the child unstackified.
-std::unordered_set<VariableId*> getChildUnstackifiedParentLocalIds(
-    BlockState* parentBlockState,
-    BlockState* childBlockState);
-
 #endif

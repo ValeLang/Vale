@@ -96,6 +96,35 @@ fn eachI<F>(arr &Array<_, _>, func F) void {
 }
 
 
+// Printing utilities
+
+fn println<A, B>(a A, b B) {
+  print(a);
+  print(b);
+  println("");
+}
+fn println<A, B, C>(a A, b B, c C) {
+  print(a);
+  print(b);
+  print(c);
+  println("");
+}
+fn println<A, B, C, D>(a A, b B, c C, d D) {
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  println("");
+}
+fn println<A, B, C, D, E>(a A, b B, c C, d D, e E) {
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+  println("");
+}
+
 
 // Opt<T>
 
@@ -110,14 +139,18 @@ fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
 fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
 
 abstract fn get<T>(virtual opt Opt<T>) T;
-fn get<T>(opt None<T> impl Opt<T>) T { panic() }
+fn get<T>(opt None<T> impl Opt<T>) T {
+  panic("Called get on None!");
+}
 fn get<T>(opt Some<T> impl Opt<T>) T {
   Some<T>(value) = opt;
   = value;
 }
 
 abstract fn get<T>(virtual opt &Opt<T>) &T;
-fn get<T>(opt &None<T> impl Opt<T>) &T { panic() }
+fn get<T>(opt &None<T> impl Opt<T>) &T {
+  panic("Called get on None!");
+}
 fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
 
 abstract fn getOr<T>(virtual opt &Opt<T>, default T) T;
@@ -255,7 +288,7 @@ fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
 }
 
 fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashNode<K, V>>>, hasher H, node HashNode<K, V>) {
-  hash = (hasher)(node.key);
+  hash int = (hasher)(node.key);
   startIndex = abs(hash mod table.len());
   index = findEmptyIndexForKey(table, startIndex, node.key);
 
@@ -299,7 +332,7 @@ fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
   if (self.table.len() == 0) {
     ret None<&V>();
   }
-  hash = (self.hasher)(key);
+  hash int = (self.hasher)(key);
   startIndex = abs(hash mod self.table.len());
   index? = findIndexOfKey(self.table, self.equator, startIndex, key);
   if (index?.empty?()) {
@@ -328,6 +361,42 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
   = list.toArray<imm>();
 }
 
+fn innerRemove<K, V, H, E>(
+  table &Array<mut, Opt<HashNode<K, V>>>,
+  hasher H,
+  equator E,
+  key K)
+int {
+  hash int = (hasher)(key);
+  startIndex = abs(hash mod table.len());
+  index? = findIndexOfKey(table, equator, startIndex, key);
+  index = index?.get();
+  mut table[index] = None<HashNode<K, V>>();
+  ret index;
+}
+
+fn remove<K, V, H, E>(
+  map &HashMap<K, V, H, E>,
+  key K)
+void {
+  originalIndex = innerRemove(map.table, map.hasher, map.equator, key);
+  mut map.size = map.size - 1;
+
+  i! = 1;
+  while (i < map.table.len()) {
+    neighborIndex = (originalIndex + i) mod len(map.table);
+    neighbor? = (mut map.table[neighborIndex] = None<HashNode<K, V>>());
+    if (not neighbor?.empty?()) {
+      (neighborKey, neighborValue) = neighbor?^.get();
+      addNodeToTable(map.table, map.hasher, HashNode<K, V>(neighborKey, neighborValue));
+    } else {
+      drop(neighbor?);
+      mut i = map.table.len(); // break
+    }
+    mut i = i + 1;
+  }
+}
+
 
 
 // Roguelike
@@ -339,7 +408,6 @@ struct Vec<N, T> rules(N int)
 
 struct Goblin {
   location Vec<2, int>;
-  alive bool;
 }
 
 fn makeBoard() Array<mut, Array<mut, str>> {
@@ -359,7 +427,8 @@ fn display(
     board &Array<mut, Array<mut, str>>,
     goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
     playerRow int,
-    playerCol int) {
+    playerCol int)
+{
   toPrint! = "";
   eachI &board (rowI, row){
     eachI &row (cellI, cell){
@@ -372,7 +441,7 @@ fn display(
           goblin? = goblins.get(key);
           goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
-          if (and(goblin.alive, and(rowI == goblin.location.values.1, cellI == goblin.location.values.0))) {
+          if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
             mut charToPrint = "g";
           }
         });
@@ -389,7 +458,6 @@ fn inputKey() int {
   key! = 0;
   while (true) {
     mut key = __getch();
-    println(key);
     if (key == 81) {
       ret key;
     } else if (key == 119) {
@@ -415,6 +483,18 @@ struct IntEquator { }
 fn __call(this &IntEquator, a int, b int) { a == b }
 
 
+fn goblinAt?(
+  goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+  goblinKey int,
+  row int,
+  col int)
+bool {
+  a = goblins.get(goblinKey);
+  b = a^.get();
+  (goblinCol, goblinRow) = b.location.values;
+  ret and(row == goblinRow, col == goblinCol);
+}
+
 
 fn main() int {
   board = makeBoard();
@@ -423,16 +503,16 @@ fn main() int {
   playerCol! = 3;
 
   goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  goblins.add(13, Goblin(Vec([6, 3]), true));
-  goblins.add(14, Goblin(Vec([2, 6]), true));
-  goblins.add(15, Goblin(Vec([5, 7]), true));
-  goblins.add(17, Goblin(Vec([2, 5]), true));
-  goblins.add(19, Goblin(Vec([7, 1]), true));
-  goblins.add(23, Goblin(Vec([3, 3]), true));
-  goblins.add(24, Goblin(Vec([1, 7]), true));
-  goblins.add(25, Goblin(Vec([7, 6]), true));
-  goblins.add(27, Goblin(Vec([4, 6]), true));
-  goblins.add(29, Goblin(Vec([7, 4]), true));
+  goblins.add(13, Goblin(Vec([6, 3])));
+  goblins.add(14, Goblin(Vec([2, 6])));
+  goblins.add(15, Goblin(Vec([5, 7])));
+  goblins.add(17, Goblin(Vec([2, 5])));
+  goblins.add(19, Goblin(Vec([7, 1])));
+  goblins.add(23, Goblin(Vec([3, 3])));
+  goblins.add(24, Goblin(Vec([1, 7])));
+  goblins.add(25, Goblin(Vec([7, 6])));
+  goblins.add(27, Goblin(Vec([4, 6])));
+  goblins.add(29, Goblin(Vec([7, 4])));
 
   running! = true;
   while (running) {
@@ -455,16 +535,12 @@ fn main() int {
 
     killedGoblin! = false;
     goblins.keys().each((key){
-      goblin? = goblins.get(key);
-      goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
-
-      (goblinCol, goblinRow) = goblin.location.values;
-
-      if (and(goblin.alive, and(newPlayerRow == goblinRow, newPlayerCol == goblinCol))) {
-        mut goblin.alive = false;
+      if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
+        goblins.remove(key);
         mut killedGoblin = true;
       }
     });
+    println("bork13");
     if (not killedGoblin) {
       if (board[newPlayerRow][newPlayerCol] == ".") {
         mut playerRow = newPlayerRow;

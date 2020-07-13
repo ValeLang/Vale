@@ -165,4 +165,60 @@ class HashMapTest extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
+
+  test("Hash map with mutable values") {
+    val compile = new Compilation(
+      Opt.code +
+        OptingArrayList.code +
+        HashMap.code +
+        Assert.code +
+        """
+          |struct Plane {}
+          |
+          |fn main() {
+          |  m = HashMap<int, Plane>(IFunction1<mut, int, int>({_}), ==);
+          |  m.add(0, Plane());
+          |  m.add(4, Plane());
+          |  m.add(8, Plane());
+          |  m.add(12, Plane());
+          |  assert(m.has(0));
+          |  assert(m.has(4));
+          |  assert(m.has(8));
+          |  assert(m.has(12));
+          |  m.remove(12);
+          |  assert(not m.has(12));
+          |  = 1337;
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+  }
+
+  test("Hash map remove") {
+    val compile = new Compilation(
+      Opt.code +
+        OptingArrayList.code +
+        HashMap.code +
+        Assert.code +
+        """
+          |fn main() {
+          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
+          |  m.add(0, 100);
+          |  m.add(4, 101);
+          |  m.add(8, 102);
+          |  m.add(12, 103);
+          |  assert(m.has(8));
+          |  m.remove(8);
+          |  assert(not m.has(8));
+          |  m.add(8, 102);
+          |  assert(m.has(8));
+          |  assert(m.has(4));
+          |  m.remove(4);
+          |  assert(not m.has(4));
+          |  = 1337;
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+  }
 }

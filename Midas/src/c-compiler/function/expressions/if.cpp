@@ -20,8 +20,8 @@ LLVMValueRef translateIf(
       translateExpression(
           globalState, functionState, parentBlockState, builder, iff->conditionExpr);
 
-  BlockState thenBlockState = *parentBlockState;
-  BlockState elseBlockState = *parentBlockState;
+  BlockState thenBlockState(parentBlockState);
+  BlockState elseBlockState(parentBlockState);
 
   auto resultLE =
       buildIfElse(
@@ -45,10 +45,8 @@ LLVMValueRef translateIf(
   bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;
   bool elseContinues = iff->elseResultType->referend != globalState->metalCache.never;
 
-  auto thenUnstackifiedParentLocalIds =
-      getChildUnstackifiedParentLocalIds(parentBlockState, &thenBlockState);
-  auto elseUnstackifiedParentLocalIds =
-      getChildUnstackifiedParentLocalIds(parentBlockState, &thenBlockState);
+  auto thenUnstackifiedParentLocalIds = thenBlockState.getParentLocalIdsThatSelfUnstackified();
+  auto elseUnstackifiedParentLocalIds = elseBlockState.getParentLocalIdsThatSelfUnstackified();
 
   // This is the set of locals that we should unstackify from the parent,
   // because they were unstackified from both, or whichever branch actually

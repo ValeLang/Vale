@@ -158,4 +158,35 @@ class IfTests extends FunSuite with Matchers {
     val main = compile.getTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "In else!\nIn rest!\nDestroying marine!\n"
   }
+
+  test("Destructure inside if") {
+    val compile = new Compilation(
+
+      """
+        |struct Bork {
+        |  num int;
+        |}
+        |struct Moo {
+        |  bork Bork;
+        |}
+        |
+        |fn main() {
+        |  i! = 0;
+        |  while (i < 4) {
+        |    moo = Moo(Bork(5));
+        |    if (true) {
+        |      (bork) = moo;
+        |      println(bork.num);
+        |    } else {
+        |      drop(moo);
+        |    }
+        |    mut i = i + 1;
+        |  }
+        |}
+        |""".stripMargin)
+
+    val main = compile.getTemputs().lookupFunction("main")
+    compile.evalForStdout(Vector()) shouldEqual "5\n5\n5\n5\n"
+  }
+
 }

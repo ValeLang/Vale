@@ -280,6 +280,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
+
   test("Tests a linked list") {
     val compile = new Compilation(OrdinaryLinkedList.code)
     compile.evalForReferend(Vector())

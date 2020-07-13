@@ -178,8 +178,11 @@ class ValeTest(unittest.TestCase):
     def test_panic(self) -> None:
         self.compile_and_execute_and_expect_return_code("panic.vale", 42)
 
-    def test_roguelike(self) -> None:
-        self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)
+    def test_nestedblocks(self) -> None:
+        self.compile_and_execute_and_expect_return_code("nestedblocks.vale", 42)
+
+    # def test_roguelike(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)
 
 
 if __name__ == '__main__':

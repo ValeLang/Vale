@@ -35,6 +35,11 @@ $ cd ../test
 $ python3 -m unittest -f
 ```
 
+4. Run compiler:
+```
+$ python3 valec.py test/tests/roguelike.vale
+```
+
 ### OSX
 
 #### OSX Terminal

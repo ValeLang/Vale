@@ -36,8 +36,12 @@ class ValeCompiler(unittest.TestCase):
     def valec(self, vir_file: str,
               o_files_dir: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
+        valec_path = shutil.which("valec")
+        if not type(valec_path) is str:
+            valec_path = "cmake-build-debug/valec"
+
         return procrun(
-            [f"cmake-build-debug/valec", "--verify", "--llvmir", "--output-dir",
+            [valec_path, "--verify", "--llvmir", "--output-dir",
              o_files_dir, vir_file])
 
     def clang(self, o_files: List[str],

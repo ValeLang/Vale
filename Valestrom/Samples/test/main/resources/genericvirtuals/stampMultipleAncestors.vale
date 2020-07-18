@@ -1,0 +1,16 @@
+
+interface I<T> imm rules(T Ref) { }
+
+interface J<T> imm rules(T Ref) { }
+impl<T> J<T> for I<T>;
+
+interface K<T> imm rules(T Ref) { }
+impl<T> K<T> for J<T>;
+
+struct L<T> imm rules(T Ref) { }
+impl<T> L<T> for K<T>;
+
+fn main() {
+  x = L<int>();
+  = 4;
+}

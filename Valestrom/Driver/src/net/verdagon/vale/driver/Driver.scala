@@ -12,7 +12,6 @@ import net.verdagon.vale.parser.{Program0, VParser, Vonifier}
 import net.verdagon.vale.scout.Scout
 import net.verdagon.vale.templar.Templar
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.samples.Roguelike
 import net.verdagon.vale.{MainRetAdd, OrdinaryLinkedList, Sum, Terrain, vassert, vassertSome, vcheck, vfail}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
@@ -75,7 +74,6 @@ object Driver {
       allLines.toString()
     } else if (path.startsWith("sample:")) {
       path.toLowerCase().slice("sample:".length, path.length) match {
-        case "roguelike" => Roguelike.code
         case "terrain" => Terrain.generatorCode
         case "linkedlist" => OrdinaryLinkedList.code
         case "mainretadd" => MainRetAdd.code

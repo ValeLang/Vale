@@ -10,10 +10,10 @@ import net.verdagon.vale.driver.Compilation
 class HashMapTest extends FunSuite with Matchers {
   test("Hash map collisions") {
     val compile = new Compilation(
-      Opt.code +
-      OptingArrayList.code +
-      HashMap.code +
-      Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("genericvirtuals/hashmap.vale") +
+      Samples.get("utils.vale") +
       """
         |fn main() {
         |  m = HashMap<int, int>({_}, ==);
@@ -51,10 +51,10 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map with functors") {
     val compile = new Compilation(
-      Opt.code +
-      OptingArrayList.code +
-      HashMap.code +
-      Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("genericvirtuals/hashmap.vale") +
+      Samples.get("utils.vale") +
       """
         |struct IntHasher { }
         |fn __call(this &IntHasher, x int) { x }
@@ -78,10 +78,10 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map with struct as key") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
-        HashMap.code +
-        Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
         """
           |struct Location imm {
           |  groupX int;
@@ -115,10 +115,10 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map has") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
-        HashMap.code +
-        Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
         """
           |fn main() {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
@@ -142,10 +142,10 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map keys") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
-        HashMap.code +
-        Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
         """
           |fn main() {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
@@ -168,10 +168,10 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map with mutable values") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
-        HashMap.code +
-        Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
         """
           |struct Plane {}
           |
@@ -196,10 +196,10 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map remove") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
-        HashMap.code +
-        Assert.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
         """
           |fn main() {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);

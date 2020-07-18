@@ -19,20 +19,7 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Constructor with this") {
-    val compile = new Compilation(
-      """
-        |struct Marine {
-        |  hp int;
-        |  cool bool;
-        |}
-        |fn Marine() {
-        |  this.hp = 10;
-        |  this.cool = true;
-        |}
-        |fn main() {
-        |  Marine().hp
-        |}
-      """.stripMargin)
+    val compile = new Compilation(Samples.get("structs/constructor.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
@@ -50,29 +37,12 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Make struct and get member") {
-    val compile = new Compilation(
-      """
-        |struct Marine { hp int; }
-        |fn main() {
-        |  m = Marine(9);
-        |  = m.hp;
-        |}
-      """.stripMargin)
-
+    val compile = new Compilation(Samples.get("structs/getMember.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
   test("Mutate struct") {
-    val compile = new Compilation(
-      """
-        |struct Marine { hp int; }
-        |fn main() {
-        |  m = Marine(9);
-        |  mut m.hp = 4;
-        |  = m.hp;
-        |}
-      """.stripMargin)
-
+    val compile = new Compilation(Samples.get("structs/mutate.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
@@ -133,7 +103,7 @@ class StructTests extends FunSuite with Matchers {
     compile.evalForStdout(Vector()) shouldEqual "Destroying marine!\nDestroying weapon!\n"
   }
 
-  // Known failure 2020-07-08
+  // Known failure 2020-07-18
   test("Mutate destroys member after moving it out of the object") {
     val compile = new Compilation(
       """

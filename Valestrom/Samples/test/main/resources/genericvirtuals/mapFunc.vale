@@ -1,0 +1,33 @@
+
+interface Opt<T> rules(T Ref) { }
+struct Some<T> rules(T Ref) { value T; }
+impl<T> Some<T> for Opt<T>;
+struct None<T> rules(T Ref) { }
+impl<T> None<T> for Opt<T>;
+
+abstract fn getOr<T>(virtual opt &Opt<T>, default T) T;
+fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
+  default
+}
+fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
+  opt.value
+}
+
+abstract fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, T, R>) Opt<R>;
+fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
+  None<R>()
+}
+fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
+  Some<R>(func(opt.value))
+}
+
+struct MyEquals9Functor { }
+impl MyEquals9Functor for IFunction1<mut, int, bool>;
+fn __call(this &MyEquals9Functor impl IFunction1<mut, int, bool>, i int) bool { i == 9 }
+
+fn main() {
+  a Opt<int> = Some(9);
+  f = MyEquals9Functor();
+  b Opt<bool> = a.map<int, bool>(&f);
+  = b.getOr<bool>(false);
+}

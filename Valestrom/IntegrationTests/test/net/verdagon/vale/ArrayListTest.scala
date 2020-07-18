@@ -53,8 +53,8 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list with optionals") {
     val compile = new Compilation(
-      Opt.code +
-      OptingArrayList.code +
+      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("genericvirtuals/optingarraylist.vale") +
       """
         |
         |fn main() {
@@ -79,8 +79,8 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list zero-constructor") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
         """
           |
           |fn main() {
@@ -97,8 +97,8 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list len") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
         """
           |
           |fn main() {
@@ -115,8 +115,8 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list set") {
     val compile = new Compilation(
-      Opt.code +
-        OptingArrayList.code +
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
         """
           |
           |fn main() {
@@ -134,8 +134,8 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list with optionals with mutable element") {
     val compile = new Compilation(
-      Opt.code +
-      OptingArrayList.code +
+      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("genericvirtuals/optingarraylist.vale") +
         """
           |struct Marine { hp int; }
           |
@@ -184,7 +184,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Move mutable from in lambda") {
     val compile = new Compilation(
-      Opt.code +
+      Samples.get("genericvirtuals/opt.vale") +
       """
         |struct Marine { hp int; }
         |

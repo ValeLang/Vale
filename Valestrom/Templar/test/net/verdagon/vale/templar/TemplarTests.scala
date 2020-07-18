@@ -164,7 +164,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Test overloads") {
-    val compile = new Compilation(OverloadSamples.overloads)
+    val compile = new Compilation(Samples.get("overloads.vale"))
     val temputs = compile.getTemputs()
 
     temputs.lookupFunction("main").header.returnType shouldEqual
@@ -220,7 +220,22 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Stamps an interface template via a function return") {
-    val compile = new Compilation(TemplateSamples.stampingViaReturn)
+    val compile = new Compilation(
+      """
+        |interface MyInterface<X> rules(X Ref) { }
+        |
+        |struct SomeStruct<X> rules(X Ref) { x X; }
+        |impl<X> SomeStruct<X> for MyInterface<X>;
+        |
+        |fn doAThing<T>(t T) {
+        |  SomeStruct<T>(t)
+        |}
+        |
+        |fn main() {
+        |  doAThing(4);
+        |}
+        |""".stripMargin
+    )
     val temputs = compile.getTemputs()
   }
 //
@@ -313,7 +328,7 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
-  // Known failure 2020-07-08
+  // Known failure 2020-07-18
   test("Tests stamping a struct and its implemented interface from a function param") {
     val compile = new Compilation(
       """
@@ -354,7 +369,14 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a templated struct's constructor") {
-    val compile = new Compilation(TemplateSamples.callingTemplatedConstructor)
+    val compile = new Compilation(
+      """
+        |struct MySome<T> rules(T Ref) { value T; }
+        |fn main() {
+        |  MySome<int>(4).value
+        |}
+        |""".stripMargin
+    )
 
     val temputs = compile.getTemputs()
 
@@ -481,17 +503,17 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests a linked list") {
-    val compile = new Compilation(OrdinaryLinkedList.code)
+    val compile = new Compilation(Samples.get("virtuals/ordinarylinkedlist.vale"))
     val temputs = compile.getTemputs()
   }
 
   test("Tests a templated linked list") {
-    val compile = new Compilation(TemplatedLinkedList.code)
+    val compile = new Compilation(Samples.get("genericvirtuals/templatedlinkedlist.vale"))
     val temputs = compile.getTemputs()
   }
 
   test("Tests calling an abstract function") {
-    val compile = new Compilation(readCodeFromResource("virtuals/callingAbstract.vale"))
+    val compile = new Compilation(Samples.get("genericvirtuals/callingAbstract.vale"))
     val temputs = compile.getTemputs()
 
     temputs.functions.collectFirst({
@@ -500,7 +522,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests a foreach for a linked list") {
-    val compile = new Compilation(ForeachLinkedList.code)
+    val compile = new Compilation(Samples.get("genericvirtuals/foreachlinkedlist.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -600,7 +622,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Test complex interface") {
-    val compile = new Compilation(TemplatedInterface.code)
+    val compile = new Compilation(Samples.get("genericvirtuals/templatedinterface.vale"))
     val temputs = compile.getTemputs()
   }
 

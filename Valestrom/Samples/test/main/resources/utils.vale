@@ -1,0 +1,27 @@
+
+fn panic(msg str) {
+  println(msg);
+  = panic();
+}
+
+fn abs(a int) {
+  = if (a < 0) { a * -1 } else { a }
+}
+
+fn assert(cond bool) void {
+  assert(cond, "Assertion failed!");
+}
+fn assert(cond bool, msg str) void {
+  if (cond == false) {
+    println(msg);
+    panic();
+  }
+}
+
+fn assertEq<T>(a T, b T) void {
+  assert(a == b, "Assertion failed, not equal!");
+}
+
+fn assertEq<T>(a T, b T, msg str) void {
+  assert(a == b, msg);
+}

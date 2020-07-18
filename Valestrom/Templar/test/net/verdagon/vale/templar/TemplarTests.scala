@@ -2,15 +2,23 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.parser.{Program0, VParser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
-import net.verdagon.vale.templar.env.{ReferenceLocalVariable2}
+import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.templar.types.{_}
+import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
 import org.scalatest.{FunSuite, Matchers, _}
 
+import scala.io.Source
+
 class TemplarTests extends FunSuite with Matchers {
   // TODO: pull all of the templar specific stuff out, the unit test-y stuff
+
+  def readCodeFromResource(resourceFilename: String): String = {
+    val is = Source.fromInputStream(getClass().getClassLoader().getResourceAsStream(resourceFilename))
+    vassert(is != null)
+    is.mkString("")
+  }
 
   class Compilation(code: String) {
     var parsedCache: Option[Program0] = None
@@ -370,7 +378,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = new Compilation(InheritanceSamples.upcasting)
+    val compile = new Compilation(readCodeFromResource("virtuals/upcasting.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -383,7 +391,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a virtual function") {
-    val compile = new Compilation(InheritanceSamples.calling)
+    val compile = new Compilation(readCodeFromResource("virtuals/calling.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -398,7 +406,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a virtual function through a borrow ref") {
-    val compile = new Compilation(InheritanceSamples.callingThroughBorrow)
+    val compile = new Compilation(readCodeFromResource("virtuals/callingThroughBorrow.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -483,7 +491,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling an abstract function") {
-    val compile = new Compilation(InheritanceSamples.callingAbstract)
+    val compile = new Compilation(readCodeFromResource("virtuals/callingAbstract.vale"))
     val temputs = compile.getTemputs()
 
     temputs.functions.collectFirst({

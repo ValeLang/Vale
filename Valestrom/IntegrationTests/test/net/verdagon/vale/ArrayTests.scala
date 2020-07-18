@@ -342,7 +342,7 @@ class ArrayTests extends FunSuite with Matchers {
 
   test("Nested imm arrays") {
     val compile = new Compilation(
-      ArrayUtils.code +
+      Samples.get("generics/arrayutils.vale") +
       """fn main() {
         |  [[6, 60].toArray<imm>(), [4, 40].toArray<imm>(), [3, 30].toArray<imm>()].toArray<imm>()[2][1]
         |}
@@ -350,10 +350,10 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(30)
   }
 
-  // Known failure 2020-07-08
+  // Known failure 2020-07-18
   test("Array foreach") {
     val compile = new Compilation(
-      ArrayUtils.code +
+      Samples.get("generics/arrayutils.vale") +
       """fn main() {
         |  sum = 0;
         |  [6, 60, 103].each(&IFunction1<mut, int, void>({ mut sum = sum + _; }));
@@ -365,7 +365,7 @@ class ArrayTests extends FunSuite with Matchers {
 
   test("Array has") {
     val compile = new Compilation(
-      ArrayUtils.code +
+      Samples.get("generics/arrayutils.vale") +
         """fn main() {
           |  [6, 60, 103].has(103)
           |}
@@ -375,7 +375,7 @@ class ArrayTests extends FunSuite with Matchers {
 
 //  test("Destroy lambda with mutable captures") {
 //    val compile = new Compilation(
-//      ArrayUtils.code +
+//      Samples.get("generics/arrayutils.vale") +
 //        """
 //          |fn main() {
 //          |  list = Array<mut, int>(3, &IFunction1<mut, int, int>({_}));

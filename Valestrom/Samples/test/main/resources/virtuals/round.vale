@@ -1,0 +1,9 @@
+
+fn round(num float) int {
+  distanceToLower = num - float(int(num));
+  = int(num) + if (distanceToLower < 0.5) { 0 } else { 1 };
+}
+
+fn main() int {
+  round(7.9)
+}

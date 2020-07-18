@@ -1,0 +1,7 @@
+
+struct Marine { hp int; }
+fn main() {
+  m = Marine(9);
+  mut m.hp = 4;
+  = m.hp;
+}

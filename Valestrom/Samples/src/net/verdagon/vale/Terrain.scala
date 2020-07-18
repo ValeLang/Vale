@@ -34,12 +34,12 @@ object Terrain {
     """.stripMargin
 
   val generatorCode =
-    Opt.code +
-      OptingArrayList.code +
-      HashMap.code +
-      Vec.code +
+    Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("genericvirtuals/hashmap.vale") +
+      Samples.get("vec.vale") +
       Pattern.code +
-      ArrayUtils.code +
+      Samples.get("generics/opt.vale") +
       PentagonPattern9.code +
       Terrain.code +
       """

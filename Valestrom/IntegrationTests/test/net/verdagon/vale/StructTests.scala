@@ -133,7 +133,7 @@ class StructTests extends FunSuite with Matchers {
     compile.evalForStdout(Vector()) shouldEqual "Destroying marine!\nDestroying weapon!\n"
   }
 
-  // Known failure 2020-07-08
+  // Known failure 2020-07-18
   test("Mutate destroys member after moving it out of the object") {
     val compile = new Compilation(
       """

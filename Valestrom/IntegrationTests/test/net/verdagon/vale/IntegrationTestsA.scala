@@ -1,5 +1,7 @@
 package net.verdagon.vale
 
+import java.io.FileNotFoundException
+
 import net.verdagon.vale.templar._
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.vivem.{Heap, IntV, StructInstanceV}
@@ -10,7 +12,16 @@ import net.verdagon.vale.metal.YonderH
 import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Share, Str2}
 
+import scala.io.Source
+import scala.util.Try
+
 class IntegrationTestsA extends FunSuite with Matchers {
+
+  def readCodeFromResource(resourceFilename: String): String = {
+    val is = Source.fromInputStream(getClass().getClassLoader().getResourceAsStream(resourceFilename))
+    vassert(is != null)
+    is.mkString("")
+  }
 
   test("Simple program returning an int") {
     val compile = new Compilation("fn main(){3}")
@@ -250,12 +261,22 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = new Compilation(InheritanceSamples.upcasting)
+    val compile = new Compilation(readCodeFromResource("virtuals/upcasting.vale"))
     compile.run(Vector())
   }
 
+  test("Tests from file") {
+    val compile = new Compilation(readCodeFromResource("doubleclosure.vale"))
+    compile.run(Vector())
+  }
+
+  test("Tests from subdir file") {
+    val compile = new Compilation(readCodeFromResource("virtuals/round.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(8)
+  }
+
   test("Tests calling a virtual function") {
-    val compile = new Compilation(InheritanceSamples.calling)
+    val compile = new Compilation(readCodeFromResource("virtuals/calling.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 

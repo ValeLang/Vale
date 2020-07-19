@@ -2,7 +2,7 @@ package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.astronomer.externs.Externs.makeExtern
-import net.verdagon.vale.parser.FinalP
+import net.verdagon.vale.parser.{FinalP, OwnP}
 import net.verdagon.vale.scout.{CodeLocationS, LocalVariable1, NotUsed, Used}
 
 import scala.collection.immutable.List
@@ -55,6 +55,6 @@ object Forwarders {
             List(
               FunctionCallAE(
                 FunctionLoadAE(GlobalFunctionFamilyNameA(callee)),
-                params.map(param => LocalLoadAE(CodeVarNameA(param._1), false))))))))
+                params.map(param => LocalLoadAE(CodeVarNameA(param._1), OwnP))))))))
   }
 }

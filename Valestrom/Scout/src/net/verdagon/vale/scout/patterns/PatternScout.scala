@@ -232,7 +232,7 @@ object PatternScout {
         }
       }
       case MutabilityPT(mutability) => (List(), MutabilityST(mutability), None)
-      case OwnershippedPT(_,BorrowP, NameOrRunePT(StringP(_, ownedCoordRuneName))) if declaredRunes.contains(CodeRuneS(ownedCoordRuneName)) => {
+      case OwnershippedPT(_,ownership @ (BorrowP|WeakP), NameOrRunePT(StringP(_, ownedCoordRuneName))) if declaredRunes.contains(CodeRuneS(ownedCoordRuneName)) => {
         vassert(declaredRunes.contains(CodeRuneS(ownedCoordRuneName)))
         val ownedCoordRune = CodeRuneS(ownedCoordRuneName)
         val kindRune = rulesS.newImplicitRune()
@@ -251,7 +251,7 @@ object PatternScout {
             ComponentsSR(
               TypedSR(borrowedCoordRune, CoordTypeSR),
               List(
-                TemplexSR(OwnershipST(BorrowP)),
+                TemplexSR(OwnershipST(ownership)),
                 TemplexSR(RuneST(kindRune)))))
         (newRules, RuneST(borrowedCoordRune), Some(borrowedCoordRune))
       }

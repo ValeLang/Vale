@@ -87,7 +87,7 @@ object VParser
     pos ~
         ("interface " ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
-        existsMW("sealed") ~
+        (repsep(citizenAttribute, white) <~ optWhite) ~
         (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite <~ "{" <~ optWhite) ~
         repsep(topLevelFunction, optWhite) ~
@@ -99,18 +99,24 @@ object VParser
     }
   }
 
+  def citizenAttribute: Parser[IStructAttributeP] = {
+    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(Range(begin, end)) } |
+    pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(Range(begin, end)) } |
+    pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) }
+  }
+
   def struct: Parser[StructP] = {
     pos ~ ("struct" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
-        (opt("export") <~ optWhite) ~
+        (repsep(citizenAttribute, white) <~ optWhite) ~
         (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite) ~
         (pos <~ "{" <~ optWhite) ~
         ("..." <~ optWhite ^^^ List() | repsep(structContent, optWhite)) ~
         (optWhite ~> "}" ~> pos) ^^ {
-      case begin ~ name ~ identifyingRunes ~ export ~ imm ~ maybeTemplateRules ~ membersBegin ~ members ~ end => {
+      case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ membersBegin ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP
-        StructP(Range(begin, end), name, export.nonEmpty, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members))
+        StructP(Range(begin, end), name, attributes, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members))
       }
     }
   }

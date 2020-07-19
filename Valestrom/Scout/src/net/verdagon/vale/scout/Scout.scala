@@ -135,7 +135,7 @@ object Scout {
   }
 
   private def scoutStruct(file: String, head: StructP): StructS = {
-    val StructP(range, StringP(_, structHumanName), export, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(range, StringP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val codeLocation = Scout.evalPos(range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
 
@@ -193,9 +193,13 @@ object Scout {
         Some(KindTypeSR)
       }
 
+    val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
+    val export = attributesP.exists({ case w @ ExportP(_) => true case _ => false })
+
     StructS(
       structName,
       export,
+      weakable,
       mutabilityRune,
       Some(mutability),
       knowableValueRunes,
@@ -208,7 +212,7 @@ object Scout {
   }
 
   private def scoutInterface(file: String, headP: InterfaceP): InterfaceS = {
-    val InterfaceP(range, StringP(_, interfaceHumanName), seealed, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
+    val InterfaceP(range, StringP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
     val codeLocation = Scout.evalPos(range.begin)
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
     val rulesP = maybeRulesP.toList.flatMap(_.rules)
@@ -254,9 +258,13 @@ object Scout {
 
     val internalMethodsS = internalMethodsP.map(FunctionScout.scoutInterfaceMember(interfaceEnv, _))
 
+    val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
+    val seealed = attributesP.exists({ case w @ SealedP(_) => true case _ => false })
+
     val interfaceS =
       InterfaceS(
         interfaceFullName,
+        weakable,
         mutabilityRune,
         Some(mutability),
         knowableValueRunes,

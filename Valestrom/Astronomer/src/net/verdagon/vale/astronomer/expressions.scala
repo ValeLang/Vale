@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{MutabilityP, VariabilityP}
+import net.verdagon.vale.parser.{MutabilityP, OwnershipP, VariabilityP}
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
@@ -26,6 +26,7 @@ case class GlobalMutateAE(name: IImpreciseNameStepA, expr: IExpressionAE) extend
 case class LocalMutateAE(name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
 
 case class ExpressionLendAE(innerExpr1: IExpressionAE) extends IExpressionAE
+case class ExpressionWeakLendAE(innerExpr1: IExpressionAE) extends IExpressionAE
 case class ReturnAE(innerExpr1: IExpressionAE) extends IExpressionAE
 
 
@@ -121,7 +122,7 @@ case class FunctionCallAE(callableExpr: IExpressionAE, argsExprs1: List[IExpress
 case class TemplateSpecifiedLookupAE(name: String, templateArgs: List[ITemplexS]) extends IExpressionAE
 case class RuneLookupAE(rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
 
-case class LocalLoadAE(name: IVarNameA, borrow: Boolean) extends IExpressionAE
+case class LocalLoadAE(name: IVarNameA, targetOwnership: OwnershipP) extends IExpressionAE
 case class FunctionLoadAE(name: GlobalFunctionFamilyNameA) extends IExpressionAE
 
 case class UnletAE(name: String) extends IExpressionAE

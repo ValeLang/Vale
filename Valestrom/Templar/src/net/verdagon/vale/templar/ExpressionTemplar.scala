@@ -52,11 +52,11 @@ object ExpressionTemplar {
     temputs: TemputsBox,
     fate: FunctionEnvironmentBox,
     name: IVarName2,
-    borrow: Boolean):
+    targetOwnership: OwnershipP):
   (Option[Expression2]) = {
     evaluateAddressibleLookup(temputs, fate, name) match {
       case Some(x) => {
-        val thing = ExpressionTemplar.softLoad(fate, x, borrow)
+        val thing = ExpressionTemplar.softLoad(fate, x, Conversions.evaluateOwnership(targetOwnership))
         (Some(thing))
       }
       case None => {
@@ -197,7 +197,7 @@ object ExpressionTemplar {
               // Closures never contain owning references.
               // If we're capturing an own, then on the inside of the closure
               // it's a borrow. See "Captured own is borrow" test for more.
-              ExpressionTemplar.softLoad(fate, lookup, borrow = true)
+              ExpressionTemplar.softLoad(fate, lookup, Borrow)
             }
             case AddressMemberType2(reference) => {
               vassert(reference == lookup.resultRegister.reference)
@@ -235,7 +235,7 @@ object ExpressionTemplar {
   (ReferenceExpression2) = {
     expr2 match {
       case r : ReferenceExpression2 => (r)
-      case a : AddressExpression2 => softLoad(fate, a, borrow = a.coerceToBorrow)
+      case a : AddressExpression2 => softLoad(fate, a, a.coerceToOwnership)
     }
   }
 
@@ -350,7 +350,7 @@ object ExpressionTemplar {
         val (undecayedCallableExpr2, returnsFromCallable) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, callableExpr1);
         val decayedCallableExpr2 =
-          maybeSoftLoad(fate, undecayedCallableExpr2, true)
+          maybeSoftLoad(fate, undecayedCallableExpr2, Borrow)
         val (argsExprs2, returnsFromArgs) =
           evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
         val functionPointerCall2 =
@@ -364,14 +364,27 @@ object ExpressionTemplar {
         val resultExpr2 =
           innerExpr2.resultRegister.underlyingReference.ownership match {
             case Borrow | Share => (innerExpr2)
-            case Own => makeTemporaryLocal(temputs, fate, innerExpr2)
+            case Weak => vfail("Can't lend a weak, must lock!")
+            case Own => makeTemporaryLocal(temputs, fate, innerExpr2, Borrow)
           }
         (resultExpr2, returnsFromInner)
       }
-      case LocalLoadAE(nameA, borrow) => {
+      case ExpressionWeakLendAE(innerExpr1) => {
+        val (innerExpr2, returnsFromInner) =
+          evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
+        val resultExpr2 =
+          innerExpr2.resultRegister.underlyingReference.ownership match {
+            case Weak => (innerExpr2)
+            case Borrow => vimpl()
+            case Share => vfail("Can't lend a weak, must lock!")
+            case Own => makeTemporaryLocal(temputs, fate, innerExpr2, Weak)
+          }
+        (resultExpr2, returnsFromInner)
+      }
+      case LocalLoadAE(nameA, targetOwnership) => {
         val name = NameTranslator.translateVarNameStep(nameA)
         val lookupExpr1 =
-          evaluateLookup(temputs, fate, name, borrow) match {
+          evaluateLookup(temputs, fate, name, targetOwnership) match {
             case (None) => vfail("Couldnt find " + name)
             case (Some(x)) => (x)
           }
@@ -506,7 +519,7 @@ object ExpressionTemplar {
             }
             case TupleT2(_, structRef) => {
               temputs.lookupStruct(structRef) match {
-                case structDef @ StructDefinition2(_, _, _, _, _) => {
+                case structDef @ StructDefinition2(_, _, _, _, _, _) => {
                   val (structMember, memberIndex) = structDef.getMemberAndIndex(memberName)
                   val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                   val memberType = structMember.tyype.expectReferenceMember().reference;
@@ -842,7 +855,7 @@ object ExpressionTemplar {
       case r: ReferenceExpression2 => {
         val unborrowedContainerExpr2 = decaySoloPack(fate, r)
         unborrowedContainerExpr2.resultRegister.reference.ownership match {
-          case Own => makeTemporaryLocal(temputs, fate, unborrowedContainerExpr2)
+          case Own => makeTemporaryLocal(temputs, fate, unborrowedContainerExpr2, Borrow)
           case Borrow | Share => (unborrowedContainerExpr2)
         }
       }
@@ -864,10 +877,11 @@ object ExpressionTemplar {
   def makeTemporaryLocal(
       temputs: TemputsBox,
       fate: FunctionEnvironmentBox,
-      r: ReferenceExpression2):
+      r: ReferenceExpression2,
+      targetOwnership: Ownership):
   (Defer2) = {
     val rlv = makeTemporaryLocal(temputs, fate, r.resultRegister.reference)
-    val letExpr2 = LetAndLend2(rlv, r)
+    val letExpr2 = LetAndLend2(rlv, r, targetOwnership)
 
     val unlet = ExpressionTemplar.unletLocal(fate, rlv)
     val destructExpr2 =
@@ -963,39 +977,53 @@ object ExpressionTemplar {
   def maybeSoftLoad(
       fate: FunctionEnvironmentBox,
       expr2: Expression2,
-      borrow: Boolean):
+      targetOwnership: Ownership):
   (ReferenceExpression2) = {
     expr2 match {
       case e : ReferenceExpression2 => (e)
-      case e : AddressExpression2 => softLoad(fate, e, borrow)
+      case e : AddressExpression2 => softLoad(fate, e, targetOwnership)
     }
   }
 
-  def softLoad(fate: FunctionEnvironmentBox, a: AddressExpression2, borrow: Boolean):
+  def softLoad(fate: FunctionEnvironmentBox, a: AddressExpression2, specifiedTargetOwnership: Ownership):
   (ReferenceExpression2) = {
-    if (borrow) {
-      val targetOwnership =
+    specifiedTargetOwnership match {
+      case Borrow => {
+        val actualTargetOwnership =
+          a.resultRegister.reference.ownership match {
+            case Own => Borrow
+            case Borrow => Borrow // it's fine if they accidentally borrow a borrow ref
+            case Weak => vfail("Can't borrow a weak local, must lock()")
+            case Share => Share
+          }
+        (SoftLoad2(a, actualTargetOwnership))
+      }
+      case Weak => {
+        val actualTargetOwnership =
+          a.resultRegister.reference.ownership match {
+            case Own => Weak
+            case Borrow => Weak // it's fine if they weak a borrow ref
+            case Weak => Weak // it's fine if they accidentally weak a borrow ref
+            case Share => Share
+          }
+        (SoftLoad2(a, actualTargetOwnership))
+      }
+      case Own => {
         a.resultRegister.reference.ownership match {
-          case Own => Borrow
-          case Borrow => Borrow // it's fine if they accidentally borrow a borrow ref
-          case Share => Share
-        }
-      (SoftLoad2(a, targetOwnership))
-    } else {
-      a.resultRegister.reference.ownership match {
-        case Own => {
-          val localVar =
-            a match {
-              case LocalLookup2(lv, _) => lv
-              case AddressMemberLookup2(_, _, _) => {
-                vfail("Can't move out of a member!")
+          case Own => {
+            val localVar =
+              a match {
+                case LocalLookup2(lv, _) => lv
+                case AddressMemberLookup2(_, _, _) => {
+                  vfail("Can't move out of a member!")
+                }
               }
-            }
-          fate.markVariableMoved(localVar.id)
-          (Unlet2(localVar))
-        }
-        case Borrow | Share => {
-          (SoftLoad2(a, a.resultRegister.reference.ownership))
+            fate.markVariableMoved(localVar.id)
+            (Unlet2(localVar))
+          }
+          case Borrow | Share | Weak => {
+            (SoftLoad2(a, a.resultRegister.reference.ownership))
+          }
         }
       }
     }

@@ -70,6 +70,10 @@ object ExpressionAstronomer {
         val innerExprA = translateExpression(env, astrouts, innerExprS)
         ExpressionLendAE(innerExprA)
       }
+      case ExpressionWeakLendSE(innerExprS) => {
+        val innerExprA = translateExpression(env, astrouts, innerExprS)
+        ExpressionWeakLendAE(innerExprA)
+      }
       case ReturnSE(innerExprS) => {
         val innerExprA = translateExpression(env, astrouts, innerExprS)
         (ReturnAE(innerExprA))

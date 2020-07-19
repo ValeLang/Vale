@@ -67,26 +67,28 @@ object VonHammer {
   }
 
   def vonifyInterface(interface: InterfaceDefinitionH): IVonData = {
-    val InterfaceDefinitionH(fullName, mutability, superInterfaces, prototypes) = interface
+    val InterfaceDefinitionH(fullName, weakable, mutability, superInterfaces, prototypes) = interface
 
     VonObject(
       "Interface",
       None,
       Vector(
         VonMember("name", VonStr(fullName.toString())),
+        VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterfaceRef).toVector)),
         VonMember("methods", VonArray(None, prototypes.map(vonifyInterfaceMethod).toVector))))
   }
 
   def vonfiyStruct(struct: StructDefinitionH): IVonData = {
-    val StructDefinitionH(fullName, export, mutability, edges, members) = struct
+    val StructDefinitionH(fullName, export, weakable, mutability, edges, members) = struct
 
     VonObject(
       "Struct",
       None,
       Vector(
         VonMember("name", VonStr(fullName.toString())),
+        VonMember("weakable", VonBool(weakable)),
         VonMember("export", VonBool(export)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("edges", VonArray(None, edges.map(edge => vonifyEdge(edge)).toVector)),

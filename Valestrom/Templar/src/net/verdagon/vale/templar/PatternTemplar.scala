@@ -143,7 +143,7 @@ object PatternTemplar {
         // This will mark the variable as moved
         val localLookupExpr =
           ExpressionTemplar.softLoad(
-            fate, LocalLookup2(export, inputExpr.resultRegister.reference), false)
+            fate, LocalLookup2(export, inputExpr.resultRegister.reference), Own)
 
         expectedCoord.referend match {
           case StructRef2(_) => {

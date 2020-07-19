@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP}
+import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar.{FunctionName2, IName2, IRune2, NameTranslator}
@@ -547,19 +547,30 @@ class InfererMatcher[Env, State](
           (instanceOwnership, expectedOwnership) match {
             case (Own, OwnP) => true
             case (Own, BorrowP) => false
+            case (Own, WeakP) => false
             case (Own, ShareP) => false
 
             case (Borrow, OwnP) => false
             case (Borrow, BorrowP) => true
+            case (Borrow, WeakP) => false
             case (Borrow, ShareP) => false
+
+            case (Weak, OwnP) => false
+            case (Weak, BorrowP) => false
+            case (Weak, WeakP) => true
+            case (Weak, ShareP) => false
 
             case (Share, OwnP) => true
             case (Share, BorrowP) => true
+            case (Share, WeakP) => false
             case (Share, ShareP) => true
           }
         if (compatible) {
-          // The incoming thing is a borrow, and we expect a borrow, so send a regular own into the inner rule matcher.
           if (instanceOwnership == Borrow && expectedOwnership == BorrowP) {
+            // The incoming thing is a borrow, and we expect a borrow, so send a regular own into the inner rule matcher.
+            matchTemplataAgainstTemplexTR(env, state, localRunes, inferences, CoordTemplata(Coord(Own, instanceKind)), innerCoordTemplex)
+          } else if (instanceOwnership == Weak && expectedOwnership == WeakP) {
+            // The incoming thing is a weak, and we expect a weak, so send a regular own into the inner rule matcher.
             matchTemplataAgainstTemplexTR(env, state, localRunes, inferences, CoordTemplata(Coord(Own, instanceKind)), innerCoordTemplex)
           } else {
             matchTemplataAgainstTemplexTR(env, state, localRunes, inferences, CoordTemplata(Coord(instanceOwnership, instanceKind)), innerCoordTemplex)

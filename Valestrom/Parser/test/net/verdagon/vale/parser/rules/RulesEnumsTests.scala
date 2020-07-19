@@ -39,10 +39,10 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "X") shouldHave { case TemplexPR(NameOrRunePRT(StringP(_, "X"))) => }
     compile(rulePR, "X Ownership") shouldHave { case TypedPR(Some(StringP(_, "X")),OwnershipTypePR) => }
     compile(rulePR, "X = own") shouldHave { case EqualsPR(TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(OwnershipPRT(OwnP))) => }
-    compile(rulePR, "X Ownership = own|borrow") shouldHave {
+    compile(rulePR, "X Ownership = own|borrow|weak") shouldHave {
       case EqualsPR(
           TypedPR(Some(StringP(_, "X")),OwnershipTypePR),
-          OrPR(List(TemplexPR(OwnershipPRT(OwnP)), TemplexPR(OwnershipPRT(BorrowP))))) =>
+          OrPR(List(TemplexPR(OwnershipPRT(OwnP)), TemplexPR(OwnershipPRT(BorrowP)), TemplexPR(OwnershipPRT(WeakP))))) =>
     }
     compile(rulePR, "_ Ownership") shouldHave { case TypedPR(None,OwnershipTypePR) => }
     compile(rulePR, "own") shouldHave { case TemplexPR(OwnershipPRT(OwnP)) => }

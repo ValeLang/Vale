@@ -32,6 +32,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     "false" ^^^ BoolPT(false) |
     "own" ^^^ OwnershipPT(OwnP) |
     "borrow" ^^^ OwnershipPT(BorrowP) |
+    "weak" ^^^ OwnershipPT(WeakP) |
     "share" ^^^ OwnershipPT(ShareP) |
     "mut" ^^^ MutabilityPT(MutableP) |
     "imm" ^^^ MutabilityPT(ImmutableP) |
@@ -46,7 +47,11 @@ trait TemplexParser extends RegexParsers with ParserUtils {
 
   private[parser] def templex: Parser[ITemplexPT] = {
     ("?" ~> optWhite ~> templex ^^ NullablePT) |
-    (pos ~ (("&&"|"&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&")) ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), BorrowP, inner) } |
+    (pos ~ ("&&" ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), WeakP, inner) } |
+    (pos ~ ("&" ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), BorrowP, inner) } |
+    // Replace these 'a& rules when we actually implement regions
+    (pos ~ (("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), BorrowP, inner) } |
+    (pos ~ (("'" ~ opt(exprIdentifier <~ optWhite) <~ "&&") ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), WeakP, inner) } |
     (pos ~ ("^" ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), OwnP, inner) } |
     (pos ~ ("*" ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), ShareP, inner) } |
     (pos ~ ("inl" ~> white ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) } |

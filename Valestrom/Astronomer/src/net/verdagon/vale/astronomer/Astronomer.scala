@@ -273,7 +273,7 @@ object Astronomer {
   }
 
   def translateStruct(astrouts: AstroutsBox, env: Environment, structS: StructS): StructA = {
-    val StructS(nameS, export, mutabilityRuneS, maybePredictedMutabilityS, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, members) = structS
+    val StructS(nameS, export, weakable, mutabilityRuneS, maybePredictedMutabilityS, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, members) = structS
     val mutabilityRuneA = Astronomer.translateRune(mutabilityRuneS)
     val maybePredictedMutabilityA = maybePredictedMutabilityS
     val nameA = Astronomer.translateTopLevelCitizenDeclarationName(nameS)
@@ -311,6 +311,7 @@ object Astronomer {
     StructA(
       nameA,
       export,
+      weakable,
       mutabilityRuneA,
       maybePredictedMutabilityA,
       tyype,
@@ -323,7 +324,7 @@ object Astronomer {
   }
 
   def translateInterface(astrouts: AstroutsBox, env: Environment, interfaceS: InterfaceS): InterfaceA = {
-    val InterfaceS(nameS, mutabilityRuneS, maybePredictedMutability, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, internalMethodsS) = interfaceS
+    val InterfaceS(nameS, weakable, mutabilityRuneS, maybePredictedMutability, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, internalMethodsS) = interfaceS
     val mutabilityRuneA = Astronomer.translateRune(mutabilityRuneS)
     val localRunesA = localRunesS.map(Astronomer.translateRune)
     val knowableRunesA = knowableRunesS.map(Astronomer.translateRune)
@@ -357,6 +358,7 @@ object Astronomer {
     val interfaceA =
       InterfaceA(
         nameA,
+        weakable,
         mutabilityRuneA,
         maybePredictedMutability,
         tyype,

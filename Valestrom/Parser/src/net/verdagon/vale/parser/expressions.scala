@@ -7,6 +7,7 @@ trait IExpressionPE
 case class VoidPE(range: Range) extends IExpressionPE {}
 
 case class LendPE(range: Range, expr: IExpressionPE) extends IExpressionPE
+case class WeakLendPE(range: Range, expr: IExpressionPE) extends IExpressionPE
 
 case class AndPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionPE
 
@@ -52,7 +53,10 @@ case class FunctionCallPE(
   inline: Option[UnitP],
   callableExpr: IExpressionPE,
   argExprs: List[IExpressionPE],
-  borrowCallable: Boolean
+  // If we're calling a lambda or some other callable struct,
+  // the 'this' ptr parameter might want a certain ownership,
+  // so the user might specify that.
+  targetOwnershipForCallable: OwnershipP
 ) extends IExpressionPE
 
 case class MethodCallPE(

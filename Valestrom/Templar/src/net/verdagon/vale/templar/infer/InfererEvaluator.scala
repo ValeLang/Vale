@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP}
+import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar.{IName2, IRune2, NameTranslator, SolverKindRune2}
 import net.verdagon.vale.templar.infer.infer._
@@ -681,11 +681,18 @@ class InfererEvaluator[Env, State](
                 case (Own, ShareP) => return (InferEvaluateConflict(inferences.inferences, "Expected a share, but was an own!", List()))
                 case (Own, OwnP) => Own // No change, allow it
                 case (Own, BorrowP) => Borrow // Can borrow an own, allow it
+                case (Own, WeakP) => Weak // Can weak an own, allow it
                 case (Borrow, ShareP) => return (InferEvaluateConflict(inferences.inferences, "Expected a share, but was a borrow!", List()))
-                case (Borrow, OwnP) => Own
+                case (Borrow, OwnP) => Own // Can turn a borrow into an own, allow it
                 case (Borrow, BorrowP) => Borrow // No change, allow it
+                case (Borrow, WeakP) => Weak // Can weak a borrow, allow it
+                case (Weak, ShareP) => return (InferEvaluateConflict(inferences.inferences, "Expected a share, but was a weak!", List()))
+                case (Weak, OwnP) => return (InferEvaluateConflict(inferences.inferences, "Expected a own, but was a weak!", List()))
+                case (Weak, BorrowP) => return (InferEvaluateConflict(inferences.inferences, "Expected a borrow, but was a weak!", List()))
+                case (Weak, WeakP) => Weak // No change, allow it
                 case (Share, OwnP) => Share // Can own a share, just becomes another share.
                 case (Share, BorrowP) => Share // Can borrow a share, just becomes another share.
+                case (Share, WeakP) => return (InferEvaluateConflict(inferences.inferences, "Expected a weak, but was a share!", List())) // Cant get a weak ref to a share because it doesnt have lock().
                 case (Share, ShareP) => Share // No change, allow it
               }
 

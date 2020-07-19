@@ -30,7 +30,7 @@ class StructTests extends FunSuite with Matchers with Collector {
             StructP(
               _,
               StringP(_, "ListNode"),
-              false,
+              List(),
               MutableP,
               Some(IdentifyingRunesP(_, List(StringP(_, "E")))),
               None,
@@ -55,7 +55,7 @@ class StructTests extends FunSuite with Matchers with Collector {
       StructP(
       _,
       StringP(_, "Vecf"),
-      false,
+      List(),
       MutableP,
       Some(IdentifyingRunesP(_, List(StringP(_, "N")))),
       Some(TemplateRulesP(_, List(TypedPR(Some(StringP(_, "N")), IntTypePR)))),
@@ -75,9 +75,9 @@ class StructTests extends FunSuite with Matchers with Collector {
       """.stripMargin) shouldHave {
       case TopLevelStruct(
         StructP(
-        _,
+          _,
           StringP(_, "Vecf"),
-          false,
+          List(),
           MutableP,
           Some(IdentifyingRunesP(_, List(StringP(_, "N")))),
           Some(TemplateRulesP(_, List(TypedPR(Some(StringP(_, "N")),IntTypePR)))),

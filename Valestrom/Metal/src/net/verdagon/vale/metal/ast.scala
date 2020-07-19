@@ -49,6 +49,7 @@ case class ProgramH(
 case class StructDefinitionH(
     fullName: FullNameH,
     export: Boolean,
+    weakable: Boolean,
     mutability: Mutability,
     edges: List[EdgeH],
     members: List[StructMemberH]) {
@@ -91,6 +92,7 @@ case class InterfaceMethodH(
 
 case class InterfaceDefinitionH(
   fullName: FullNameH,
+  weakable: Boolean,
   mutability: Mutability,
   // TODO: Change this to edges, since interfaces impl other interfaces.
   superInterfaces: List[InterfaceRefH],

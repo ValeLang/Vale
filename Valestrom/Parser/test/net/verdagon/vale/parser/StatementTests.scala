@@ -81,7 +81,7 @@ class StatementTests extends FunSuite with Matchers with Collector {
           FunctionCallPE(_,None,
             LookupPE(StringP(_, "Wizard"), None),
             List(IntLiteralPE(_,8)),
-            true),
+            BorrowP),
           LookupPE(StringP(_, "charges"), None)) =>
     }
   }
@@ -143,7 +143,7 @@ class StatementTests extends FunSuite with Matchers with Collector {
                     PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
               None,
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
-        true) =>
+        BorrowP) =>
     }
   }
 
@@ -163,7 +163,7 @@ class StatementTests extends FunSuite with Matchers with Collector {
                     PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
               None,
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
-        true) =>
+        BorrowP) =>
     }
   }
 }

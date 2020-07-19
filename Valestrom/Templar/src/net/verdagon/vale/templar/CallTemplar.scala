@@ -209,7 +209,7 @@ object CallTemplar {
         case Coord(Borrow, _) => (givenCallableUnborrowedExpr2)
         case Coord(Share, _) => (givenCallableUnborrowedExpr2)
         case Coord(Own, _) => {
-          ExpressionTemplar.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
+          ExpressionTemplar.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2, Borrow)
         }
       }
 

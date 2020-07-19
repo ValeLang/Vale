@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, MutabilityP, MutableP}
+import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, MutabilityP, MutableP, OwnP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
@@ -68,8 +68,8 @@ object Arrays {
             List(
               ConstructArrayAE(
                 RuneAT(CodeRuneA("T"), CoordTemplataType),
-                LocalLoadAE(CodeVarNameA("size"), false),
-                LocalLoadAE(CodeVarNameA("generator"), false),
+                LocalLoadAE(CodeVarNameA("size"), OwnP),
+                LocalLoadAE(CodeVarNameA("generator"), OwnP),
                 mutability))))))
   }
 }

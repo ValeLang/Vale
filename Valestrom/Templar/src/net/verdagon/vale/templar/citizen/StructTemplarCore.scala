@@ -17,7 +17,7 @@ object StructTemplarCore {
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): StructRef2 = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
     val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, Map())
-    val structDef2 = StructDefinition2(emptyTupleFullName, false, Immutable, List(), false)
+    val structDef2 = StructDefinition2(emptyTupleFullName, false, false, Immutable, List(), false)
     temputs.declareStruct(structDef2.getRef)
     temputs.declareStructMutability(structDef2.getRef, Immutable)
     temputs.declareStructEnv(structDef2.getRef, emptyTupleEnv)
@@ -69,7 +69,7 @@ object StructTemplarCore {
         case None => vwat()
       }
 
-    val structDef2 = StructDefinition2(fullName, export, mutability, members, false)
+    val structDef2 = StructDefinition2(fullName, export, struct1.weakable, mutability, members, false)
 
     temputs.add(structDef2);
 
@@ -183,6 +183,7 @@ object StructTemplarCore {
     val interfaceDef2 =
       InterfaceDefinition2(
         fullName,
+        interfaceA.weakable,
         mutability,
         internalMethods2)
     temputs.add(interfaceDef2)
@@ -308,7 +309,7 @@ object StructTemplarCore {
     temputs.declareStructMutability(structRef, mutability)
     temputs.declareStructEnv(structRef, structEnv);
 
-    val closureStructDefinition = StructDefinition2(fullName, false, mutability, members, true);
+    val closureStructDefinition = StructDefinition2(fullName, false, false, mutability, members, true);
     temputs.add(closureStructDefinition)
 
     // If it's immutable, make sure there's a zero-arg destructor.
@@ -345,7 +346,7 @@ object StructTemplarCore {
         fullName,
         Map())
 
-    val newStructDef = StructDefinition2(structInnerEnv.fullName, false, packMutability, members, false);
+    val newStructDef = StructDefinition2(structInnerEnv.fullName, false, false, packMutability, members, false);
     if (memberCoords.isEmpty && packMutability != Immutable)
       vfail("curiosity")
 
@@ -462,6 +463,7 @@ object StructTemplarCore {
       StructDefinition2(
         anonymousSubstructName,
         false,
+        interfaceDef.weakable,
         mutability,
         callables.zipWithIndex.map({ case (lambda, index) =>
           StructMember2(AnonymousSubstructMemberName2(index), Final, ReferenceMemberType2(lambda))
@@ -573,6 +575,7 @@ object StructTemplarCore {
     val structDef =
       StructDefinition2(
         structFullName,
+        false,
         false,
         mutability,
         List(),

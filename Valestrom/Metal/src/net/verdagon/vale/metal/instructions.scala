@@ -236,6 +236,7 @@ case class LocalLoadH(
     val location =
       (targetOwnership, local.typeH.location) match {
         case (BorrowH, _) => YonderH
+        case (WeakH, _) => YonderH
         case (OwnH, location) => location
         case (ShareH, location) => location
       }
@@ -589,6 +590,19 @@ case class ArrayLengthH(
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH())
 }
 
+// Locks a weak ref to turn it into an optional of borrow ref.
+case class LockWeakH(
+  // Register containing the array whose length we'll get.
+  // As with any read from a register, this will invalidate the register.
+  sourceRegister: ExpressionH[ReferendH],
+  // Should be an owned ref to optional of borrow ref of something
+  resultType: ReferenceH[InterfaceRefH],
+  // Function to give a borrow ref to to make a Some(borrow ref)
+  someConstructor: PrototypeH,
+  // Function to make a None of the right type
+  noneConstructor: PrototypeH,
+) extends ExpressionH[ReferendH]
+
 // Only used for the VM, or a debug mode. Checks that the reference count
 // is as we expected.
 // This instruction can be safely ignored, it's mainly here for tests.
@@ -619,17 +633,8 @@ case object RegisterRefCount extends RefCountCategory
 // destructor prototype in it.
 case class DiscardH(sourceRegister: ExpressionH[ReferendH]) extends ExpressionH[StructRefH] {
   sourceRegister.resultType.ownership match {
-    case BorrowH | ShareH =>
+    case BorrowH | ShareH | WeakH =>
   }
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
-}
-
-// Discards a shared ref, and if it gets down to zero, calls the destructor on it.
-// This can safely be ignored on a GC'd runtime.
-case class DiscardSharedReferenceH(
-  sourceRegister: ExpressionH[ReferendH],
-  destructorPrototype: PrototypeH
-) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 

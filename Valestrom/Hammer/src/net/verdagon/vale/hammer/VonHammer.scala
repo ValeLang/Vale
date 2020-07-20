@@ -176,6 +176,7 @@ object VonHammer {
       case m.OwnH => VonObject("Own", None, Vector())
       case m.BorrowH => VonObject("Borrow", None, Vector())
       case m.ShareH => VonObject("Share", None, Vector())
+      case m.WeakH => VonObject("Weak", None, Vector())
     }
   }
 
@@ -289,6 +290,17 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
+      }
+      case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
+        VonObject(
+          "LockWeak",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("resultOptType", vonifyCoord(resultOptType)),
+            VonMember("resultOptReferend", vonifyCoord(resultOptType)),
+            VonMember("someConstructor", vonifyPrototype(someConstructor)),
+            VonMember("noneConstructor", vonifyPrototype(noneConstructor))))
       }
       case ReturnH(sourceExpr) => {
         VonObject(

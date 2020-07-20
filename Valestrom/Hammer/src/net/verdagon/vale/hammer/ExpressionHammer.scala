@@ -43,7 +43,7 @@ object ExpressionHammer {
           LetHammer.translateLet(hinputs, hamuts, locals, let2)
         (letH, List())
       }
-      case let2 @ LetAndLend2(_, _) => {
+      case let2 @ LetAndLend2(_, _, _) => {
         val borrowAccess =
           LetHammer.translateLetAndLend(hinputs, hamuts, locals, let2)
         (borrowAccess, List())
@@ -137,9 +137,29 @@ object ExpressionHammer {
         val lengthResultNode = ArrayLengthH(resultLine);
 
         val arrayLengthAndDeferredsExprH =
-            translateDeferreds(hinputs, hamuts, locals, lengthResultNode, deferreds)
+          translateDeferreds(hinputs, hamuts, locals, lengthResultNode, deferreds)
 
         (arrayLengthAndDeferredsExprH, List())
+      }
+
+      case LockWeak2(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor) => {
+        val (resultLine, deferreds) =
+          translate(hinputs, hamuts, locals, innerExpr2);
+        val (resultOptBorrowTypeH) =
+          TypeHammer.translateReference(hinputs, hamuts, resultOptBorrowType2)
+
+        val someConstructorH =
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, someConstructor);
+        val noneConstructorH =
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, noneConstructor);
+
+        val resultNode =
+          LockWeakH(
+            resultLine,
+            resultOptBorrowTypeH.expectInterfaceReference(),
+            someConstructorH.prototype,
+            noneConstructorH.prototype);
+        (resultNode, deferreds)
       }
 
       case TupleE2(exprs, resultType, resultPackType) => {

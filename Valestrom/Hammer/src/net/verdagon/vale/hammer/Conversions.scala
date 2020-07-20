@@ -47,6 +47,7 @@ object Conversions {
       case t.Own => OwnH
       case t.Borrow => BorrowH
       case t.Share => ShareH
+      case t.Weak => WeakH
     }
   }
 

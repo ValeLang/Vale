@@ -445,17 +445,19 @@ object BuiltInFunctions {
           ExternBodyA))
   }
 
+  // Uses coord instead of kind as an identifying rune because the implementation
+  // might be different for different regions.
   private def addWeakLock(currentlyConstructingEnv: NamespaceEnvironment[IName2]): NamespaceEnvironment[IName2] = {
     currentlyConstructingEnv
       .addUnevaluatedFunction(
         FunctionA(
           FunctionNameA("lock", s.CodeLocationS(1, 1)),
           true,
-          TemplateTemplataType(List(KindTemplataType), FunctionTemplataType),
+          TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
           Set(),
-          List(CodeRuneA("K")),
-          Set(CodeRuneA("K"), CodeRuneA("OptBorrowRune"), CodeRuneA("WeakRune")),
-          Map(CodeRuneA("K") -> KindTemplataType, CodeRuneA("OptBorrowRune") -> CoordTemplataType, CodeRuneA("WeakRune") -> CoordTemplataType),
+          List(CodeRuneA("OwningRune")),
+          Set(CodeRuneA("OwningRune"), CodeRuneA("OptBorrowRune"), CodeRuneA("WeakRune")),
+          Map(CodeRuneA("OwningRune") -> CoordTemplataType, CodeRuneA("OptBorrowRune") -> CoordTemplataType, CodeRuneA("WeakRune") -> CoordTemplataType),
           List(ParameterA(AtomAP(CaptureA(CodeVarNameA("weakRef"), FinalP), None, CodeRuneA("WeakRune"), None))),
           Some(CodeRuneA("OptBorrowRune")),
           List(
@@ -464,12 +466,18 @@ object BuiltInFunctions {
               TemplexAR(
                 CallAT(
                   NameAT(CodeTypeNameA("Opt"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
-                  List(OwnershippedAT(BorrowP, RuneAT(CodeRuneA("K"), CoordTemplataType))),
+                  List(OwnershippedAT(BorrowP, RuneAT(CodeRuneA("OwningRune"), CoordTemplataType))),
                   CoordTemplataType))),
             EqualsAR(
               TemplexAR(RuneAT(CodeRuneA("WeakRune"), CoordTemplataType)),
               TemplexAR(
-                OwnershippedAT(WeakP, RuneAT(CodeRuneA("K"), CoordTemplataType))))),
-          ExternBodyA))
+                OwnershippedAT(WeakP, RuneAT(CodeRuneA("OwningRune"), CoordTemplataType))))),
+          CodeBodyA(
+            BodyAE(
+              List(),
+              BlockAE(
+                List(LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+                List(
+                  LockWeakAE(LocalLoadAE(CodeVarNameA("weakRef"), WeakP))))))))
   }
 }

@@ -130,7 +130,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val ref =
       heap.add(m.OwnH, YonderH, StructInstanceV(
         hamuts.lookupStruct("SomeStruct"),
-        Vector()))
+        Some(Vector())))
     compile.run(heap, Vector(ref))
   }
 

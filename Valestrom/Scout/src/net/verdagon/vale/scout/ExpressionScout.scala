@@ -112,15 +112,10 @@ object ExpressionScout {
 
         (stackFrame0, NormalResult(FunctionSE(function1)), noVariableUses, childMaybeUses)
       }
-      case LendPE(_, innerPE) => {
+      case LendPE(_, innerPE, targetOwnership) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, BorrowP)
-        (stackFrame1, NormalResult(ExpressionLendSE(inner1)), innerSelfUses, innerChildUses)
-      }
-      case WeakLendPE(_, innerPE) => {
-        val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, WeakP)
-        (stackFrame1, NormalResult(ExpressionWeakLendSE(inner1)), innerSelfUses, innerChildUses)
+          scoutExpressionAndCoerce(stackFrame0, innerPE, targetOwnership)
+        (stackFrame1, NormalResult(LendSE(inner1, targetOwnership)), innerSelfUses, innerChildUses)
       }
       case ReturnPE(_, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
@@ -138,7 +133,7 @@ object ExpressionScout {
       case FloatLiteralPE(_,value) => (stackFrame0, NormalResult(FloatLiteralSE(value)), noVariableUses, noVariableUses)
 
       case MethodCallPE(range, container, borrowCallable, memberLookup, methodArgs) => {
-        val maybeLendContainer = if (borrowCallable) LendPE(Range(range.begin, range.begin), container) else container
+        val maybeLendContainer = if (borrowCallable) LendPE(Range(range.begin, range.begin), container, BorrowP) else container
         // Correct method calls like anExpr.bork(4) from FunctionCall(Dot(anExpr, bork), List(4))
         // to FunctionCall(bork, List(anExpr, 4))
         val newExprP = FunctionCallPE(range, None, memberLookup, maybeLendContainer :: methodArgs, OwnP)

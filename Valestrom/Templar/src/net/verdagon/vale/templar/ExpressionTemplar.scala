@@ -7,8 +7,10 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.BlockTemplar.unletAll
+import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar}
 import net.verdagon.vale.templar.templata.TemplataTemplar
 import net.verdagon.vale.{vassert, vassertSome, vcheck, vfail, vimpl, vwat}
@@ -358,27 +360,58 @@ object ExpressionTemplar {
         (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
       }
 
-      case ExpressionLendAE(innerExpr1) => {
+      case LendAE(innerExpr1, targetOwnership) => {
         val (innerExpr2, returnsFromInner) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
         val resultExpr2 =
           innerExpr2.resultRegister.underlyingReference.ownership match {
-            case Borrow | Share => (innerExpr2)
-            case Weak => vfail("Can't lend a weak, must lock!")
-            case Own => makeTemporaryLocal(temputs, fate, innerExpr2, Borrow)
+            case Borrow | Share | Weak => innerExpr2
+            case Own => makeTemporaryLocal(temputs, fate, innerExpr2, Conversions.evaluateOwnership(targetOwnership))
           }
         (resultExpr2, returnsFromInner)
       }
-      case ExpressionWeakLendAE(innerExpr1) => {
+      case LockWeakAE(innerExpr1) => {
         val (innerExpr2, returnsFromInner) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
-        val resultExpr2 =
-          innerExpr2.resultRegister.underlyingReference.ownership match {
-            case Weak => (innerExpr2)
-            case Borrow => vimpl()
-            case Share => vfail("Can't lend a weak, must lock!")
-            case Own => makeTemporaryLocal(temputs, fate, innerExpr2, Weak)
+        vcheck(innerExpr2.resultRegister.reference.ownership == Weak, "Can only lock a weak")
+
+        val kind = innerExpr2.referend
+        val borrowCoord = Coord(Borrow, kind)
+
+        val interfaceTemplata =
+          fate.getNearestTemplataWithName(CodeTypeNameA("Opt"), Set(TemplataLookupContext)) match {
+            case Some(it @ InterfaceTemplata(_, _)) => it
+            case _ => vfail()
           }
+        val optBorrowInterfaceRef =
+          StructTemplar.getInterfaceRef(temputs, interfaceTemplata, List(CoordTemplata(borrowCoord)))
+        val ownOptBorrowCoord = Coord(Own, optBorrowInterfaceRef)
+
+        val someConstructorTemplata =
+          fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("Some"), Set(ExpressionLookupContext)) match {
+            case Some(ft @ FunctionTemplata(_, _)) => ft
+            case _ => vwat();
+          }
+        val someConstructor =
+          FunctionTemplar.evaluateTemplatedFunctionFromCallForPrototype(
+            temputs, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
+            case seff @ EvaluateFunctionFailure(_) => vfail(seff.toString)
+            case EvaluateFunctionSuccess(p) => p
+          }
+
+        val noneConstructorTemplata =
+          fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("None"), Set(ExpressionLookupContext)) match {
+            case Some(ft @ FunctionTemplata(_, _)) => ft
+            case _ => vwat();
+          }
+        val noneConstructor =
+          FunctionTemplar.evaluateTemplatedFunctionFromCallForPrototype(
+            temputs, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
+            case seff @ EvaluateFunctionFailure(_) => vfail(seff.toString)
+            case EvaluateFunctionSuccess(p) => p
+          }
+
+        val resultExpr2 = LockWeak2(innerExpr2, ownOptBorrowCoord, someConstructor, noneConstructor)
         (resultExpr2, returnsFromInner)
       }
       case LocalLoadAE(nameA, targetOwnership) => {

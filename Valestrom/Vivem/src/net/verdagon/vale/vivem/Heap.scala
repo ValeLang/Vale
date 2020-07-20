@@ -287,8 +287,18 @@ class Heap(in_vivemDout: PrintStream) {
     }
   }
 
-  def dereference(reference: ReferenceV): ReferendV = {
-    vassert(containsLiveObject(reference.allocId))
+  // Undead meaning it's been zero'd out, but its still allocated because a weak
+  // is pointing at it.
+  private def containsLiveOrUndeadObject(allocId: AllocationId): Boolean = {
+    objectsById.contains(allocId)
+  }
+
+  // Undead meaning it's been zero'd out, but its still allocated because a weak
+  // is pointing at it.
+  def dereference(reference: ReferenceV, allowUndead: Boolean = false): ReferendV = {
+    if (!allowUndead) {
+      vassert(containsLiveObject(reference.allocId))
+    }
     objectsById.get(reference.allocId).referend
   }
 
@@ -302,12 +312,12 @@ class Heap(in_vivemDout: PrintStream) {
 
   // rename to incrementObjectRefCount
   def incrementReferenceRefCount(referrer: IObjectReferrer, reference: ReferenceV) = {
-    incrementObjectRefCount(referrer, reference.allocId)
+    incrementObjectRefCount(referrer, reference.allocId, reference.ownership == WeakH)
   }
 
   // rename to decrementObjectRefCount
   def decrementReferenceRefCount(referrer: IObjectReferrer, reference: ReferenceV) = {
-    decrementObjectRefCount(referrer, reference.allocId)
+    decrementObjectRefCount(referrer, reference.allocId, reference.ownership == WeakH)
   }
 
   def destructureArray(reference: ReferenceV): Vector[ReferenceV] = {
@@ -365,9 +375,14 @@ class Heap(in_vivemDout: PrintStream) {
     }
   }
 
-  private def incrementObjectRefCount(pointingFrom: IObjectReferrer, allocId: AllocationId) = {
-    if (!containsLiveObject(allocId)) {
-      vfail("Trying to increment dead object: " + allocId)
+  private def incrementObjectRefCount(
+      pointingFrom: IObjectReferrer,
+      allocId: AllocationId,
+      allowUndead: Boolean = false) = {
+    if (!allowUndead) {
+      if (!containsLiveObject(allocId)) {
+        vfail("Trying to increment dead object: " + allocId)
+      }
     }
     val obj = objectsById.get(allocId)
     obj.incrementRefCount(pointingFrom)
@@ -375,9 +390,15 @@ class Heap(in_vivemDout: PrintStream) {
     vivemDout.print(" o" + allocId.num + "rc" + (newRefCount - 1) + "->" + newRefCount)
   }
 
-  private def decrementObjectRefCount(pointedFrom: IObjectReferrer, allocId: AllocationId): Int = {
-    if (!containsLiveObject(allocId)) {
-      vfail("Can't decrement object " + allocId + ", not in heap!")
+  private def decrementObjectRefCount(
+      pointedFrom: IObjectReferrer,
+      allocId: AllocationId,
+      allowUndead: Boolean = false):
+  Int = {
+    if (!allowUndead) {
+      if (!containsLiveObject(allocId)) {
+        vfail("Can't decrement object " + allocId + ", not in heap!")
+      }
     }
     val obj = objectsById.get(allocId)
     obj.decrementRefCount(pointedFrom)
@@ -390,27 +411,29 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def getRefCount(reference: ReferenceV, category: RefCountCategory): Int = {
-    vassert(containsLiveObject(reference.allocId))
+    if (reference.ownership == WeakH) {
+      vassert(containsLiveOrUndeadObject(reference.allocId))
+    } else {
+      vassert(containsLiveObject(reference.allocId))
+    }
     val allocation = objectsById.get(reference.allocId)
     allocation.getRefCount(category)
   }
 
   def getTotalRefCount(reference: ReferenceV): Int = {
-    vassert(containsLiveObject(reference.allocId))
+    if (reference.ownership == WeakH) {
+      vassert(containsLiveOrUndeadObject(reference.allocId))
+    } else {
+      vassert(containsLiveObject(reference.allocId))
+    }
     val allocation = objectsById.get(reference.allocId)
     allocation.getTotalRefCount(None)
   }
 
-  def ensureRefCount(reference: ReferenceV, category: RefCountCategory, expectedNum: Int) = {
+  def ensureRefCount(reference: ReferenceV, categoryFilter: Option[RefCountCategory], ownershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
     vassert(containsLiveObject(reference.allocId))
     val allocation = objectsById.get(reference.allocId)
-    allocation.ensureRefCount(category, expectedNum)
-  }
-
-  def ensureTotalRefCount(reference: ReferenceV, expectedNum: Int) = {
-    vassert(containsLiveObject(reference.allocId))
-    val allocation = objectsById.get(reference.allocId)
-    allocation.ensureTotalRefCount(expectedNum)
+    allocation.ensureRefCount(categoryFilter, ownershipFilter, expectedNum)
   }
 
   def add(ownership: OwnershipH, location: LocationH, referend: ReferendV): ReferenceV = {
@@ -684,11 +707,15 @@ class Heap(in_vivemDout: PrintStream) {
 
 
   def checkReference(expectedType: ReferenceH[ReferendH], actualReference: ReferenceV): Unit = {
-    vassert(containsLiveObject(actualReference.allocId))
+    if (actualReference.ownership == WeakH) {
+      vassert(containsLiveOrUndeadObject(actualReference.allocId))
+    } else {
+      vassert(containsLiveObject(actualReference.allocId))
+    }
     if (actualReference.seenAsCoord.hamut != expectedType) {
       vfail("Expected " + expectedType + " but was " + actualReference.seenAsCoord.hamut)
     }
-    val actualReferend = dereference(actualReference)
+    val actualReferend = dereference(actualReference, actualReference.ownership == WeakH)
     checkReferend(expectedType.kind, actualReferend)
   }
 

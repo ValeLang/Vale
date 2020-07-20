@@ -9,22 +9,22 @@ import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
 class WeakTests extends FunSuite with Matchers {
-  test("Make and lock weak ref") {
+  test("Make and lock weak ref then destroy own") {
     val compile = new Compilation(
       Samples.get("genericvirtuals/opt.vale") +
-      """
-        |struct Muta weakable { hp int; }
-        |fn main() {
-        |  ownMuta = Muta(7);
-        |  weakMuta = &&ownMuta;
-        |  maybeBorrowMuta = lock(weakMuta);
-        |  = if (maybeBorrowMuta.empty?()) {
-        |      drop(maybeBorrowMuta);
-        |      = 73;
-        |    } else {
-        |      maybeBorrowMuta^.get().hp
-        |    }
-        |}
+        """
+          |struct Muta weakable { hp int; }
+          |fn main() {
+          |  ownMuta = Muta(7);
+          |  weakMuta = &&ownMuta;
+          |  maybeBorrowMuta = lock(weakMuta);
+          |  = if (maybeBorrowMuta.empty?()) {
+          |      drop(maybeBorrowMuta);
+          |      = 73;
+          |    } else {
+          |      maybeBorrowMuta^.get().hp
+          |    }
+          |}
       """.stripMargin)
 
     val main = compile.getTemputs().lookupFunction("main")
@@ -37,6 +37,28 @@ class WeakTests extends FunSuite with Matchers {
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+  }
+
+  test("Destroy own then locking gives none") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        """
+          |struct Muta weakable { hp int; }
+          |fn main() {
+          |  ownMuta = Muta(73);
+          |  weakMuta = &&ownMuta;
+          |  drop(ownMuta);
+          |  maybeBorrowMuta = lock(weakMuta);
+          |  = if (maybeBorrowMuta.empty?()) {
+          |      drop(maybeBorrowMuta);
+          |      = 42;
+          |    } else {
+          |      maybeBorrowMuta^.get().hp
+          |    }
+          |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
 }

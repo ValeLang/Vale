@@ -61,26 +61,37 @@ class Allocation(
       .sum
   }
 
-  def ensureRefCount(category: RefCountCategory, expectedNum: Int) = {
-    val matchingReferrers =
-      referrers
-        .toList
-        .filter({ case (key, _) => getCategory(key) == category })
-        .map(_._2)
+  def ensureRefCount(maybeCategoryFilter: Option[RefCountCategory], maybeOwnershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
+    var referrers = this.referrers
+    referrers =
+      maybeCategoryFilter match {
+        case None => referrers
+        case Some(categoryFilter) => referrers.filter({ case (key, _) => getCategory(key) == categoryFilter })
+      }
+    referrers =
+      maybeOwnershipFilter match {
+        case None => referrers
+        case Some(ownershipFilter) => referrers.filter({ case (key, _) => ownershipFilter.contains(key.ownership)})
+      }
+    val matchingReferrers = referrers.toList.map(_._2)
     if (matchingReferrers.size != expectedNum) {
       vfail(
-        "Expected " + expectedNum + " " + category + " but was " + matchingReferrers.size + ":\n" +
-        matchingReferrers.mkString("\n"))
+        "Expected " +
+          expectedNum +
+          maybeCategoryFilter.map(_.toString + " ").getOrElse("") +
+          maybeOwnershipFilter.map(_.toString + " ").getOrElse("") +
+          "but was " + matchingReferrers.size + ":\n" +
+          matchingReferrers.mkString("\n"))
     }
   }
-
-  def ensureTotalRefCount(expectedNum: Int) = {
-    if (referrers.size != expectedNum) {
-      vfail(
-        "o" + reference.allocId.num + " expected " + expectedNum + " but was " + referrers.size + ":\n" +
-            referrers.mkString("\n") + "\nReferend:\n" + referend)
-    }
-  }
+//
+//  def ensureTotalRefCount(expectedNum: Int) = {
+//    if (referrers.size != expectedNum) {
+//      vfail(
+//        "o" + reference.allocId.num + " expected " + expectedNum + " but was " + referrers.size + ":\n" +
+//            referrers.mkString("\n") + "\nReferend:\n" + referend)
+//    }
+//  }
 
   def printRefs() = {
     if (getTotalRefCount(None) > 0) {

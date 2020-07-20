@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{MutabilityP, OwnershipP, VariabilityP}
+import net.verdagon.vale.parser.{BorrowP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
@@ -25,8 +25,14 @@ case class ExprMutateAE(mutatee: IExpressionAE, expr: IExpressionAE) extends IEx
 case class GlobalMutateAE(name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
 case class LocalMutateAE(name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
 
-case class ExpressionLendAE(innerExpr1: IExpressionAE) extends IExpressionAE
-case class ExpressionWeakLendAE(innerExpr1: IExpressionAE) extends IExpressionAE
+case class LendAE(innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extends IExpressionAE {
+  targetOwnership match {
+    case WeakP =>
+    case BorrowP =>
+  }
+}
+case class LockWeakAE(innerExpr1: IExpressionAE) extends IExpressionAE
+
 case class ReturnAE(innerExpr1: IExpressionAE) extends IExpressionAE
 
 

@@ -17,21 +17,26 @@ class WeakTests extends FunSuite with Matchers {
         |fn main() {
         |  ownMuta = Muta(7);
         |  weakMuta = &&ownMuta;
-        |  borrowMuta = lock(weakMuta);
-        |  = borrowMuta.hp;
+        |  maybeBorrowMuta = lock(weakMuta);
+        |  = if (maybeBorrowMuta.empty?()) {
+        |      drop(maybeBorrowMuta);
+        |      = 73;
+        |    } else {
+        |      maybeBorrowMuta^.get().hp
+        |    }
         |}
       """.stripMargin)
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({
-      case LetAndLend2(ReferenceLocalVariable2(FullName2(List(FunctionName2("main",List(),List())),TemplarTemporaryVarName2(0)),Final,_),refExpr) => {
+      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakMuta")),Final,Coord(Weak, _)),refExpr) => {
         refExpr.resultRegister.reference match {
-          case Coord(Own, StructRef2(simpleName("Muta"))) =>
+          case Coord(Weak, StructRef2(simpleName("Muta"))) =>
         }
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
 }

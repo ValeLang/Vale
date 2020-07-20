@@ -21,7 +21,7 @@ class Allocation(
 
   def incrementRefCount(referrer: IObjectReferrer) = {
     referrer match {
-      case RegisterToObjectReferrer(_) => {
+      case RegisterToObjectReferrer(_, _) => {
         // We can have multiple of these, thats fine
       }
       case _ => {
@@ -46,10 +46,10 @@ class Allocation(
 
   private def getCategory(referrer: IObjectReferrer) = {
     referrer match {
-      case VariableToObjectReferrer(_) => VariableRefCount
-      case MemberToObjectReferrer(_) => MemberRefCount
-      case RegisterToObjectReferrer(_) => RegisterRefCount
-      case ArgumentToObjectReferrer(_) => ArgumentRefCount
+      case VariableToObjectReferrer(_, _) => VariableRefCount
+      case MemberToObjectReferrer(_, _) => MemberRefCount
+      case RegisterToObjectReferrer(_, _) => RegisterRefCount
+      case ArgumentToObjectReferrer(_, _) => ArgumentRefCount
     }
   }
 
@@ -83,13 +83,17 @@ class Allocation(
   }
 
   def printRefs() = {
-    if (getTotalRefCount() > 0) {
+    if (getTotalRefCount(None) > 0) {
       println("o" + reference.allocId.num + ": " + referrers.mkString(" "))
     }
   }
 
-  def getTotalRefCount() = {
-    referrers.size
+  def getTotalRefCount(maybeOwnershipFilter: Option[OwnershipH]) = {
+    maybeOwnershipFilter match {
+      case None => referrers.size
+      case Some(ownershipFilter) => referrers.keys.filter(_.ownership == ownershipFilter).size
+    }
+
   }
 
   override def finalize(): Unit = {
@@ -124,20 +128,27 @@ case class StrV(value: String) extends PrimitiveReferendV {
 
 case class StructInstanceV(
     structH: StructDefinitionH,
-    private var members: Vector[ReferenceV]
+    private var members: Option[Vector[ReferenceV]]
 ) extends ReferendV {
-  vassert(members.size == structH.members.size)
+  vassert(members.get.size == structH.members.size)
 
   override def tyype = RRReferend(structH.getRef)
 
   def getReferenceMember(index: Int) = {
-    (structH.members(index).tyype, members(index)) match {
+    (structH.members(index).tyype, members.get(index)) match {
       case (_, ref) => ref
     }
   }
 
   def setReferenceMember(index: Int, reference: ReferenceV) = {
-    members = members.updated(index, reference)
+    members = Some(members.get.updated(index, reference))
+  }
+
+  // Zeros out the memory, which happens when the owning ref goes away.
+  // The allocation is still alive until we let go of the last weak ref
+  // too.
+  def zero(): Unit = {
+    members = None
   }
 }
 
@@ -216,15 +227,17 @@ case class ReferenceV(
   val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, seenAsKind.hamut))
 }
 
-sealed trait IObjectReferrer
-case class VariableToObjectReferrer(varAddr: VariableAddressV) extends IObjectReferrer
-case class MemberToObjectReferrer(memberAddr: MemberAddressV) extends IObjectReferrer
-case class ElementToObjectReferrer(elementAddr: ElementAddressV) extends IObjectReferrer
-case class RegisterToObjectReferrer(callId: CallId) extends IObjectReferrer
+sealed trait IObjectReferrer {
+  def ownership: OwnershipH
+}
+case class VariableToObjectReferrer(varAddr: VariableAddressV, ownership: OwnershipH) extends IObjectReferrer
+case class MemberToObjectReferrer(memberAddr: MemberAddressV, ownership: OwnershipH) extends IObjectReferrer
+case class ElementToObjectReferrer(elementAddr: ElementAddressV, ownership: OwnershipH) extends IObjectReferrer
+case class RegisterToObjectReferrer(callId: CallId, ownership: OwnershipH) extends IObjectReferrer
 // This is us holding onto something during a while loop or array generator call, so the called functions dont eat them and deallocate them
-case class RegisterHoldToObjectReferrer(expressionId: ExpressionId) extends IObjectReferrer
+case class RegisterHoldToObjectReferrer(expressionId: ExpressionId, ownership: OwnershipH) extends IObjectReferrer
 //case class ResultToObjectReferrer(callId: CallId) extends IObjectReferrer
-case class ArgumentToObjectReferrer(argumentId: ArgumentId) extends IObjectReferrer
+case class ArgumentToObjectReferrer(argumentId: ArgumentId, ownership: OwnershipH) extends IObjectReferrer
 
 case class VariableAddressV(callId: CallId, local: Local) {
   override def toString: String = "&v:" + callId + "#v" + local.id

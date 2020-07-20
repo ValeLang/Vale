@@ -1,7 +1,8 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.astronomer.ruletyper.{RuleTyperSolveFailure, RuleTyperSolveSuccess}
-import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
+import net.verdagon.vale.parser.{BorrowP, WeakP}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.vfail
 
 object ExpressionAstronomer {
@@ -66,13 +67,9 @@ object ExpressionAstronomer {
         val exprA = translateExpression(env, astrouts, exprS)
         LocalMutateAE(Astronomer.translateVarNameStep(nameS), exprA)
       }
-      case ExpressionLendSE(innerExprS) => {
+      case LendSE(innerExprS, targetOwnership) => {
         val innerExprA = translateExpression(env, astrouts, innerExprS)
-        ExpressionLendAE(innerExprA)
-      }
-      case ExpressionWeakLendSE(innerExprS) => {
-        val innerExprA = translateExpression(env, astrouts, innerExprS)
-        ExpressionWeakLendAE(innerExprA)
+        LendAE(innerExprA, targetOwnership)
       }
       case ReturnSE(innerExprS) => {
         val innerExprA = translateExpression(env, astrouts, innerExprS)

@@ -50,13 +50,13 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   private[parser] def lend: Parser[IExpressionPE] = {
     // TODO: split the 'a rule out when we implement regions
     pos ~ (("&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> optWhite ~> postfixableExpressions) ~ pos ^^ {
-      case begin ~ inner ~ end => LendPE(Range(begin, end), inner)
+      case begin ~ inner ~ end => LendPE(Range(begin, end), inner, BorrowP)
     }
   }
 
   private[parser] def weakLend: Parser[IExpressionPE] = {
     pos ~ ("&&" ~> optWhite ~> postfixableExpressions) ~ pos ^^ {
-      case begin ~ inner ~ end => WeakLendPE(Range(begin, end), inner)
+      case begin ~ inner ~ end => LendPE(Range(begin, end), inner, WeakP)
     }
   }
 

@@ -6,8 +6,12 @@ trait IExpressionPE
 
 case class VoidPE(range: Range) extends IExpressionPE {}
 
-case class LendPE(range: Range, expr: IExpressionPE) extends IExpressionPE
-case class WeakLendPE(range: Range, expr: IExpressionPE) extends IExpressionPE
+case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: OwnershipP) extends IExpressionPE {
+  targetOwnership match {
+    case WeakP =>
+    case BorrowP =>
+  }
+}
 
 case class AndPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionPE
 

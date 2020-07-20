@@ -70,6 +70,26 @@ case class LetAndLend2(
   }
 }
 
+case class LockWeak2(
+  innerExpr: ReferenceExpression2,
+  // We could just calculate this, but it feels better to let the StructTemplar
+  // make it, so we're sure it's created.
+  resultOptBorrowType: Coord,
+
+  // Function to give a borrow ref to to make a Some(borrow ref)
+  someConstructor: Prototype2,
+  // Function to make a None of the right type
+  noneConstructor: Prototype2,
+) extends ReferenceExpression2 {
+  override def resultRegister: ReferenceRegister2 = {
+    ReferenceRegister2(resultOptBorrowType)
+  }
+
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ resultOptBorrowType.all(func)
+  }
+}
+
 case class LetNormal2(
     variable: ILocalVariable2,
     expr: ReferenceExpression2
@@ -111,6 +131,7 @@ case class Discard2(
   expr.resultRegister.reference.ownership match {
     case Borrow =>
     case Share =>
+    case Weak =>
   }
 
   expr match {

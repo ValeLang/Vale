@@ -1,7 +1,0 @@
-
-fn main() {
-  if (false) {
-    panic();
-  }
-  = 42;
-}

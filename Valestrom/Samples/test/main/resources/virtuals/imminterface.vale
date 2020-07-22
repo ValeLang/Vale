@@ -1,0 +1,32 @@
+
+interface MyOption imm { }
+
+struct MySome imm {
+  value *MyList;
+}
+impl MySome for MyOption;
+
+struct MyNone imm { }
+impl MyNone for MyOption;
+
+
+struct MyList imm {
+  value *int;
+  next *MyOption;
+}
+
+fn sum(list *MyList) int {
+  list.value + sum(list.next)
+}
+
+abstract fn sum(virtual opt *MyOption) int;
+fn sum(opt *MyNone impl MyOption) int { 0 }
+fn sum(opt *MySome impl MyOption) int {
+   sum(opt.value)
+}
+
+
+fn main() int {
+  list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
+  = sum(list);
+}

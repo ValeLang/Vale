@@ -1,0 +1,11 @@
+
+fn main() int {
+  a = "Glory to the ";
+  b = "Lizard People";
+  combined = a + b;
+  = if (combined == "Glory to the Lizard People") {
+      42
+    } else {
+      1
+    }
+}

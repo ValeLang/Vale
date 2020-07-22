@@ -164,7 +164,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Test overloads") {
-    val compile = new Compilation(Samples.get("overloads.vale"))
+    val compile = new Compilation(Samples.get("functions/overloads.vale"))
     val temputs = compile.getTemputs()
 
     temputs.lookupFunction("main").header.returnType shouldEqual

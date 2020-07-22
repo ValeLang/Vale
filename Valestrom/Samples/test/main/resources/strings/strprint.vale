@@ -1,0 +1,5 @@
+
+fn main() int {
+  println("Hello");
+  = 42;
+}

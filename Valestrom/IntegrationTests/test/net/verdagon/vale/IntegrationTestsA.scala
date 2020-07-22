@@ -47,7 +47,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test constraint ref") {
-    val compile = new Compilation(Samples.get("constraintRef.vale"))
+    val compile = new Compilation(Samples.get("constraintref.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
@@ -74,7 +74,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test overloads") {
-    val compile = new Compilation(Samples.get("overloads.vale"))
+    val compile = new Compilation(Samples.get("functions/overloads.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
@@ -232,7 +232,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests from file") {
-    val compile = new Compilation(Samples.get("doubleclosure.vale"))
+    val compile = new Compilation(Samples.get("lambdas/doubleclosure.vale"))
     compile.run(Vector())
   }
 
@@ -306,7 +306,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests recursion") {
-    val compile = new Compilation(Samples.get("recursion.vale"))
+    val compile = new Compilation(Samples.get("functions/recursion.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(120)
   }
 

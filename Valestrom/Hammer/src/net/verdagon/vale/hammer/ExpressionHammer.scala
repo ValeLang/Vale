@@ -43,7 +43,7 @@ object ExpressionHammer {
           LetHammer.translateLet(hinputs, hamuts, locals, let2)
         (letH, List())
       }
-      case let2 @ LetAndLend2(_, _, _) => {
+      case let2 @ LetAndLend2(_, _) => {
         val borrowAccess =
           LetHammer.translateLetAndLend(hinputs, hamuts, locals, let2)
         (borrowAccess, List())
@@ -434,6 +434,12 @@ object ExpressionHammer {
         // We only translated them above to mark unstackified things unstackified.
 
         (innerWithDeferredsH, List())
+      }
+
+      case WeakAlias2(innerExpr) => {
+        val (innerExprResultLine, innerDeferreds) =
+          translate(hinputs, hamuts, locals, innerExpr);
+        (WeakAliasH(innerExprResultLine), innerDeferreds)
       }
 
       case _ => {

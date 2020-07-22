@@ -241,6 +241,20 @@ object ExpressionVivem {
         val lenRef = makePrimitive(heap, callId, InlineH, IntV(arr.getSize()))
         NodeContinue(lenRef)
       }
+      case waH @ WeakAliasH(sourceExpr) => {
+        val constraintRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+        vassert(constraintRef.ownership == BorrowH)
+
+        val weakRef = heap.alias(constraintRef, sourceExpr.resultType, waH.resultType)
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, weakRef.ownership), weakRef)
+        discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, constraintRef)
+
+        NodeContinue(weakRef)
+      }
       case LockWeakH(sourceExpr, resultType, someConstructor, noneConstructor) => {
         val weakRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {

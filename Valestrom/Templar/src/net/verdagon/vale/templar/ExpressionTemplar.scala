@@ -13,7 +13,7 @@ import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar}
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{vassert, vassertSome, vcheck, vfail, vimpl, vwat}
+import net.verdagon.vale.{vassert, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map, Nil, Set}
 
@@ -365,8 +365,41 @@ object ExpressionTemplar {
           evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
         val resultExpr2 =
           innerExpr2.resultRegister.underlyingReference.ownership match {
-            case Borrow | Share | Weak => innerExpr2
-            case Own => makeTemporaryLocal(temputs, fate, innerExpr2, Conversions.evaluateOwnership(targetOwnership))
+            case Own => {
+              targetOwnership match {
+                case OwnP => vcurious() // Can we even coerce to an owning reference?
+                case BorrowP => makeTemporaryLocal(temputs, fate, innerExpr2)
+                case WeakP => WeakAlias2(makeTemporaryLocal(temputs, fate, innerExpr2))
+                case ShareP => vfail()
+              }
+            }
+            case Borrow => {
+              targetOwnership match {
+                case OwnP => vcurious() // Can we even coerce to an owning reference?
+                case BorrowP => innerExpr2
+                case WeakP => WeakAlias2(innerExpr2)
+                case ShareP => vfail()
+              }
+            }
+            case Weak => {
+              targetOwnership match {
+                case OwnP => vcurious() // Can we even coerce to an owning reference?
+                case BorrowP => vfail() // Need to call lock() to do this
+                case WeakP => innerExpr2
+                case ShareP => vfail()
+              }
+            }
+            case Share => {
+              targetOwnership match {
+                case OwnP => vcurious() // Can we even coerce to an owning reference?
+                case BorrowP => {
+                  // Allow this, we can do & on a share ref, itll just give us a share ref.
+                  innerExpr2
+                }
+                case WeakP => vfail()
+                case ShareP => innerExpr2
+              }
+            }
           }
         (resultExpr2, returnsFromInner)
       }
@@ -888,7 +921,7 @@ object ExpressionTemplar {
       case r: ReferenceExpression2 => {
         val unborrowedContainerExpr2 = decaySoloPack(fate, r)
         unborrowedContainerExpr2.resultRegister.reference.ownership match {
-          case Own => makeTemporaryLocal(temputs, fate, unborrowedContainerExpr2, Borrow)
+          case Own => makeTemporaryLocal(temputs, fate, unborrowedContainerExpr2)
           case Borrow | Share => (unborrowedContainerExpr2)
         }
       }
@@ -907,14 +940,15 @@ object ExpressionTemplar {
     rlv
   }
 
+  // This makes a borrow ref, but can easily turn that into a weak
+  // separately.
   def makeTemporaryLocal(
       temputs: TemputsBox,
       fate: FunctionEnvironmentBox,
-      r: ReferenceExpression2,
-      targetOwnership: Ownership):
+      r: ReferenceExpression2):
   (Defer2) = {
     val rlv = makeTemporaryLocal(temputs, fate, r.resultRegister.reference)
-    val letExpr2 = LetAndLend2(rlv, r, targetOwnership)
+    val letExpr2 = LetAndLend2(rlv, r)
 
     val unlet = ExpressionTemplar.unletLocal(fate, rlv)
     val destructExpr2 =

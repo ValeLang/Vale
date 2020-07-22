@@ -441,9 +441,9 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def alias(
-      reference: ReferenceV,
-      expectedType: ReferenceH[ReferendH],
-      targetType: ReferenceH[ReferendH]):
+    reference: ReferenceV,
+    expectedType: ReferenceH[ReferendH],
+    targetType: ReferenceH[ReferendH]):
   ReferenceV = {
     if (expectedType.ownership == targetType.ownership) {
       return reference

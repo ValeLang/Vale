@@ -14,20 +14,7 @@ class WeakTests extends FunSuite with Matchers {
   test("Make and lock weak ref then destroy own") {
     val compile = new Compilation(
       Samples.get("genericvirtuals/opt.vale") +
-        """
-          |struct Muta weakable { hp int; }
-          |fn main() {
-          |  ownMuta = Muta(7);
-          |  weakMuta = &&ownMuta;
-          |  maybeBorrowMuta = lock(weakMuta);
-          |  = if (maybeBorrowMuta.empty?()) {
-          |      drop(maybeBorrowMuta);
-          |      = 73;
-          |    } else {
-          |      maybeBorrowMuta^.get().hp
-          |    }
-          |}
-      """.stripMargin)
+        Samples.get("weaks/lockWhileLive.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({
@@ -44,21 +31,7 @@ class WeakTests extends FunSuite with Matchers {
   test("Destroy own then locking gives none") {
     val compile = new Compilation(
       Samples.get("genericvirtuals/opt.vale") +
-        """
-          |struct Muta weakable { hp int; }
-          |fn main() {
-          |  ownMuta = Muta(73);
-          |  weakMuta = &&ownMuta;
-          |  drop(ownMuta);
-          |  maybeBorrowMuta = lock(weakMuta);
-          |  = if (maybeBorrowMuta.empty?()) {
-          |      drop(maybeBorrowMuta);
-          |      = 42;
-          |    } else {
-          |      maybeBorrowMuta^.get().hp
-          |    }
-          |}
-      """.stripMargin)
+        Samples.get("weaks/dropThenLock.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
@@ -66,16 +39,7 @@ class WeakTests extends FunSuite with Matchers {
   test("Drop while locked") {
     val compile = new Compilation(
       Samples.get("genericvirtuals/opt.vale") +
-        """
-          |struct Muta weakable { hp int; }
-          |fn main() {
-          |  ownMuta = Muta(73);
-          |  weakMuta = &&ownMuta;
-          |  maybeBorrowMuta = lock(weakMuta);
-          |  drop(ownMuta);
-          |  = maybeBorrowMuta^.get().hp;
-          |}
-      """.stripMargin)
+        Samples.get("weaks/dropWhileLocked.vale"))
 
     try {
       compile.evalForReferend(Vector()) shouldEqual VonInt(42)
@@ -89,16 +53,7 @@ class WeakTests extends FunSuite with Matchers {
   test("Make and lock weak ref from borrow then destroy own") {
     val compile = new Compilation(
       Samples.get("genericvirtuals/opt.vale") +
-        """
-          |struct Muta weakable { hp int; }
-          |fn main() {
-          |  ownMuta = Muta(7);
-          |  borrowMuta = &ownMuta;
-          |  weakMuta = &&borrowMuta;
-          |  maybeBorrowMuta = lock(weakMuta);
-          |  = maybeBorrowMuta^.get().hp;
-          |}
-          |""".stripMargin)
+      Samples.get("weaks/weakFromCRef.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
 

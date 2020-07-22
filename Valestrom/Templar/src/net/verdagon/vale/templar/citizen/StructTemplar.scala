@@ -14,6 +14,8 @@ import net.verdagon.vale._
 
 import scala.collection.immutable.List
 
+case class WeakableStructImplementingNonWeakableInterface() extends Throwable
+
 object StructTemplar {
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): (StructRef2) = {
     StructTemplarCore.addBuiltInStructs(env, temputs)

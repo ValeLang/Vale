@@ -85,4 +85,39 @@ class WeakTests extends FunSuite with Matchers {
     }
   }
 
+  test("Make and lock weak ref from borrow then destroy own") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        """
+          |struct Muta weakable { hp int; }
+          |fn main() {
+          |  ownMuta = Muta(7);
+          |  borrowMuta = &ownMuta;
+          |  weakMuta = &&borrowMuta;
+          |  maybeBorrowMuta = lock(weakMuta);
+          |  = maybeBorrowMuta^.get().hp;
+          |}
+          |""".stripMargin)
+
+    val main = compile.getTemputs().lookupFunction("main")
+
+    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+  }
+
+  test("Make weak ref from temporary") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        """
+          |struct Muta weakable { hp int; }
+          |fn getHp(weakMuta &&Muta) { lock(weakMuta)^.get().hp }
+          |fn main() { getHp(&&Muta(7)) }
+          |""".stripMargin)
+
+    val main = compile.getTemputs().lookupFunction("main")
+    main.body.only({ case WeakAlias2(_) => })
+    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+  }
+
 }

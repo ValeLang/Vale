@@ -291,6 +291,15 @@ object VonHammer {
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
+      case WeakAliasH(sourceExpr) => {
+        VonObject(
+          "LockWeak",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind))))
+      }
       case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
         VonObject(
           "LockWeak",

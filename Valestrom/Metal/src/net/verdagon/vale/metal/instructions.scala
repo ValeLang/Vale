@@ -590,6 +590,14 @@ case class ArrayLengthH(
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH())
 }
 
+// Turns a constraint ref into a weak ref.
+case class WeakAliasH(
+  // Register containing the constraint reference to turn into a weak ref.
+  refRegister: ExpressionH[ReferendH],
+) extends ExpressionH[ReferendH] {
+  override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refRegister.resultType.kind)
+}
+
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(
   // Register containing the array whose length we'll get.

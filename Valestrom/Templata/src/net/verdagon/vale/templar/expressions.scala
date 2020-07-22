@@ -55,8 +55,7 @@ trait AddressExpression2 extends Expression2 {
 
 case class LetAndLend2(
     variable: ILocalVariable2,
-    expr: ReferenceExpression2,
-    targetOwnership: Ownership
+    expr: ReferenceExpression2
 ) extends ReferenceExpression2 {
   vassert(variable.reference == expr.resultRegister.reference)
 
@@ -87,6 +86,23 @@ case class LockWeak2(
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ resultOptBorrowType.all(func)
+  }
+}
+
+// Turns a constraint ref into a weak ref
+// Note that we can also get a weak ref from LocalLoad2'ing a
+// constraint ref local into a weak ref.
+case class WeakAlias2(
+  innerExpr: ReferenceExpression2
+) extends ReferenceExpression2 {
+  vassert(innerExpr.resultRegister.reference.ownership == Borrow)
+
+  override def resultRegister: ReferenceRegister2 = {
+    ReferenceRegister2(Coord(Weak, innerExpr.referend))
+  }
+
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ innerExpr.all(func)
   }
 }
 

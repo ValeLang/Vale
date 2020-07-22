@@ -17,6 +17,8 @@ import net.verdagon.vale.{vassert, vassertSome, vcheck, vcurious, vfail, vimpl, 
 
 import scala.collection.immutable.{List, Map, Nil, Set}
 
+case class TookWeakRefOfNonWeakableError() extends Throwable
+
 object ExpressionTemplar {
   private def evaluateList(
       temputs: TemputsBox,
@@ -369,7 +371,7 @@ object ExpressionTemplar {
               targetOwnership match {
                 case OwnP => vcurious() // Can we even coerce to an owning reference?
                 case BorrowP => makeTemporaryLocal(temputs, fate, innerExpr2)
-                case WeakP => WeakAlias2(makeTemporaryLocal(temputs, fate, innerExpr2))
+                case WeakP => weakAlias(temputs.temputs, makeTemporaryLocal(temputs, fate, innerExpr2))
                 case ShareP => vfail()
               }
             }
@@ -377,7 +379,7 @@ object ExpressionTemplar {
               targetOwnership match {
                 case OwnP => vcurious() // Can we even coerce to an owning reference?
                 case BorrowP => innerExpr2
-                case WeakP => WeakAlias2(innerExpr2)
+                case WeakP => weakAlias(temputs.temputs, innerExpr2)
                 case ShareP => vfail()
               }
             }
@@ -889,6 +891,22 @@ object ExpressionTemplar {
         vfail(expr1.toString)
       }
     }
+  }
+
+  def weakAlias(temputs: Temputs, expr: ReferenceExpression2): ReferenceExpression2 = {
+    expr.referend match {
+      case sr @ StructRef2(_) => {
+        val structDef = temputs.lookupStruct(sr)
+        vcheck(structDef.weakable, TookWeakRefOfNonWeakableError)
+      }
+      case ir @ InterfaceRef2(_) => {
+        val interfaceDef = temputs.lookupInterface(ir)
+        vcheck(interfaceDef.weakable, TookWeakRefOfNonWeakableError)
+      }
+      case _ => vfail()
+    }
+
+    WeakAlias2(expr)
   }
 
   private def decaySoloPack(fate: FunctionEnvironmentBox, refExpr: ReferenceExpression2):

@@ -3,6 +3,7 @@ package net.verdagon.vale
 import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.citizen.WeakableStructImplementingNonWeakableInterface
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vivem.ConstraintViolatedException
@@ -120,4 +121,41 @@ class WeakTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
+  test("Cant make weak ref to non-weakable") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        """
+          |struct Muta { hp int; }
+          |fn getHp(weakMuta &&Muta) { lock(weakMuta)^.get().hp }
+          |fn main() { getHp(&&Muta(7)) }
+          |""".stripMargin)
+
+    try {
+      compile.getTemputs().lookupFunction("main")
+      vfail()
+    } catch {
+      case TookWeakRefOfNonWeakableError() =>
+      case _ => vfail()
+    }
+
+  }
+
+  test("Cant make weakable extend a non-weakable") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        """
+          |interface IUnit {}
+          |struct Muta weakable { hp int; }
+          |impl Muta for IUnit;
+          |fn main(muta Muta) { 7 }
+          |""".stripMargin)
+
+    try {
+      compile.getTemputs().lookupFunction("main")
+      vfail()
+    } catch {
+      case WeakableStructImplementingNonWeakableInterface() =>
+      case _ => vfail()
+    }
+  }
 }

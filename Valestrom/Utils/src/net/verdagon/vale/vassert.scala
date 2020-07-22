@@ -8,6 +8,11 @@ object vcheck {
   def apply[T <: Throwable](condition: Boolean, exceptionMaker: (String) => T): Unit = {
     vcheck(condition, "Check failed!", exceptionMaker)
   }
+  def apply[T <: Throwable](condition: Boolean, exceptionMaker: () => Throwable): Unit = {
+    if (!condition) {
+      throw exceptionMaker()
+    }
+  }
   def apply[T <: Throwable](condition: Boolean, message: String, exceptionMaker: (String) => T): Unit = {
     if (!condition) {
       throw exceptionMaker(message)

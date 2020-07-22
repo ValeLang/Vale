@@ -26,7 +26,7 @@ object Arrays {
         CodeRuneA("T") -> CoordTemplataType,
         CodeRuneA("Generator") -> CoordTemplataType,
         CodeRuneA("M") -> MutabilityTemplataType,
-        CodeRuneA("R") -> MutabilityTemplataType),
+        CodeRuneA("R") -> CoordTemplataType),
       List(
         ParameterA(AtomAP(CaptureA(CodeVarNameA("size"), FinalP), None, CodeRuneA("I"), None)),
         ParameterA(AtomAP(CaptureA(CodeVarNameA("generator"), FinalP), None, CodeRuneA("Generator"), None))),

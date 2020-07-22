@@ -1,8 +1,8 @@
 package net.verdagon.vale.templar.infer
 
-import net.verdagon.vale.astronomer.{CoordTemplataType, ITemplataType, IntegerTemplataType, KindTemplataType, MutabilityTemplataType, OwnershipTemplataType}
+import net.verdagon.vale.astronomer.{CoordTemplataType, ITemplataType, IntegerTemplataType, KindTemplataType, MutabilityTemplataType, OwnershipTemplataType, PackTemplataType, PrototypeTemplataType, StringTemplataType}
 import net.verdagon.vale.templar.IRune2
-import net.verdagon.vale.templar.templata.{CoordTemplata, ITemplata, IntegerTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata}
+import net.verdagon.vale.templar.templata.{CoordListTemplata, CoordTemplata, ITemplata, IntegerTemplata, KindTemplata, MutabilityTemplata, OwnershipTemplata, PrototypeTemplata, StringTemplata}
 import net.verdagon.vale.{vassert, vwat}
 
 case class Inferences(
@@ -20,10 +20,13 @@ case class Inferences(
     (typeByRune.get(rune), templata) match {
       case (None, _) =>
       case (Some(CoordTemplataType), CoordTemplata(_)) =>
+      case (Some(StringTemplataType), StringTemplata(_)) =>
       case (Some(KindTemplataType), KindTemplata(_)) =>
       case (Some(IntegerTemplataType), IntegerTemplata(_)) =>
       case (Some(MutabilityTemplataType), MutabilityTemplata(_)) =>
       case (Some(OwnershipTemplataType), OwnershipTemplata(_)) =>
+      case (Some(PrototypeTemplataType), PrototypeTemplata(_)) =>
+      case (Some(PackTemplataType(CoordTemplataType)), CoordListTemplata(_)) =>
       case _ => vwat()
     }
 

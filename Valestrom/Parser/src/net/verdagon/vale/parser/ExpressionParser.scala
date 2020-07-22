@@ -217,7 +217,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
         }
       }) |
       (opt("^") ~ packExpr ^^ {
-        case moveContainer ~ pack => CallStep(OwnP, pack)
+        case moveContainer ~ pack => CallStep(if (moveContainer.nonEmpty) OwnP else BorrowP, pack)
       }) |
       (indexExpr ^^ IndexStep)
     }

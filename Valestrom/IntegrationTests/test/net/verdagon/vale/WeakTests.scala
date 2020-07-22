@@ -5,6 +5,7 @@ import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnv
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
+import net.verdagon.vale.vivem.ConstraintViolatedException
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -59,6 +60,29 @@ class WeakTests extends FunSuite with Matchers {
       """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Drop while locked") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        """
+          |struct Muta weakable { hp int; }
+          |fn main() {
+          |  ownMuta = Muta(73);
+          |  weakMuta = &&ownMuta;
+          |  maybeBorrowMuta = lock(weakMuta);
+          |  drop(ownMuta);
+          |  = maybeBorrowMuta^.get().hp;
+          |}
+      """.stripMargin)
+
+    try {
+      compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+      vfail()
+    } catch {
+      case ConstraintViolatedException(_) =>
+      case _ => vfail()
+    }
   }
 
 }

@@ -4,7 +4,7 @@ package net.verdagon.vale.vivem
 //import net.verdagon.vale.scout.{MemberRefCount, RefCountCategory, RegisterRefCount, VariableRefCount}
 //import net.verdagon.vale.templar.types.Ownership
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{vassert, vcheck, vfail}
 
 // RR = Runtime Result. Don't use these to determine behavior, just use
 // these to check that things are as we expect.
@@ -74,15 +74,15 @@ class Allocation(
         case Some(ownershipFilter) => referrers.filter({ case (key, _) => ownershipFilter.contains(key.ownership)})
       }
     val matchingReferrers = referrers.toList.map(_._2)
-    if (matchingReferrers.size != expectedNum) {
-      vfail(
-        "Expected " +
-          expectedNum +
-          maybeCategoryFilter.map(_.toString + " ").getOrElse("") +
-          maybeOwnershipFilter.map(_.toString + " ").getOrElse("") +
-          "but was " + matchingReferrers.size + ":\n" +
-          matchingReferrers.mkString("\n"))
-    }
+    vcheck(
+      matchingReferrers.size == expectedNum,
+      "Expected " +
+        expectedNum + " of " +
+        maybeCategoryFilter.map(_.toString + " ").getOrElse("") +
+        maybeOwnershipFilter.map(_.toString + " ").getOrElse("") +
+        "but was " + matchingReferrers.size + ":\n" +
+        matchingReferrers.mkString("\n"),
+      ConstraintViolatedException)
   }
 //
 //  def ensureTotalRefCount(expectedNum: Int) = {

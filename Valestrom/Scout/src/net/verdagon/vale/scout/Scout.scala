@@ -89,7 +89,7 @@ object Scout {
     val identifyingRunes: List[IRuneS] =
       identifyingRuneNames
         .toList.flatMap(_.runes)
-        .map(_.str)
+        .map(_.name.str)
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val runesFromRules =
       RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(templateRulesP)
@@ -143,7 +143,7 @@ object Scout {
 
     val identifyingRunes: List[IRuneS] =
       maybeIdentifyingRunes
-          .toList.flatMap(_.runes).map(_.str)
+          .toList.flatMap(_.runes).map(_.name.str)
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val runesFromRules =
       RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(templateRulesP)
@@ -219,7 +219,7 @@ object Scout {
 
     val identifyingRunes: List[IRuneS] =
       maybeIdentifyingRunes
-        .toList.flatMap(_.runes).map(_.str)
+        .toList.flatMap(_.runes).map(_.name.str)
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val runesFromRules =
       RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rulesP)

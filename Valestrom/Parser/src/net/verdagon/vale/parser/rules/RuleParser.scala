@@ -90,10 +90,24 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   // Add any new rules to the "Nothing matches empty string" test!
 
-  private[parser] def identifyingRune: Parser[StringP] = {
-    pos ~ opt("'") ~ exprIdentifier ^^ {
-      case begin ~ None ~ e => e
-      case begin ~ Some(_) ~ StringP(r, name) => StringP(Range(begin, r.end), name)
+  private[parser] def identifyingRegionRuneAttribute: Parser[IRuneAttributeP] = {
+    pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => ReadOnlyRuneAttributeP(Range(begin, end)) } |
+    pos ~ "bump" ~ pos ^^ { case begin ~ _ ~ end => BumpRuneAttributeP(Range(begin, end)) } |
+    pos ~ "pool" ~ pos ^^ { case begin ~ _ ~ end => PoolRuneAttributeP(Range(begin, end)) } |
+    pos ~ "arena" ~ pos ^^ { case begin ~ _ ~ end => ArenaRuneAttributeP(Range(begin, end)) } |
+    pos ~ ("coord" ^^^ CoordTypePR | "kind" ^^^ KindTypePR | "reg" ^^^ RegionTypePR) ~ pos ^^ { case begin ~ tyype ~ end => TypeRuneAttributeP(Range(begin, end), tyype) }
+  }
+
+  private[parser] def identifyingRune: Parser[IdentifyingRuneP] = {
+    pos ~ opt(pstr("'")) ~ exprIdentifier ~ rep(white ~> identifyingRegionRuneAttribute) ~ pos ^^ {
+      case begin ~ maybeIsRegion ~ name ~ regionAttributes ~ end => {
+        val isRegionAttrInList =
+          maybeIsRegion match {
+            case None => List()
+            case Some(StringP(range, _)) => List(TypeRuneAttributeP(range, RegionTypePR))
+          }
+        IdentifyingRuneP(Range(begin, end), name, isRegionAttrInList ++ regionAttributes)
+      }
     }
   }
 

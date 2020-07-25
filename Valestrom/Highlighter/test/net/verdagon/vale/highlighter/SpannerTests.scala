@@ -29,4 +29,32 @@ class SpannerTests extends FunSuite with Matchers {
         Span(Block,Range(Pos(1,11),Pos(1,16)),List(
           Span(Num,Range(Pos(1,13),Pos(1,14)),List())))))
   }
+
+
+  test("Spanner map call") {
+    val program1 = compile(
+      """fn main() {
+        |  this.abilities*.getImpulse();
+        |}
+        |""".stripMargin)
+    val main = program1.lookupFunction("main")
+    Spanner.forFunction(main) match {
+      case Span(
+        Fn,_,
+        List(
+          Span(FnName,_,List()),
+          Span(Params,_,List()),
+          Span(Block,_,
+            List(
+              Span(Call,_,
+                List(
+                  Span(MemberAccess,_,
+                    List(
+                      Span(Lookup,_,List()),
+                      Span(MemberAccess,_,List()),
+                      Span(Lookup,_,List()))),
+                  Span(MemberAccess,_,List()),
+                  Span(CallLookup,_,List()))))))) =>
+    }
+  }
 }

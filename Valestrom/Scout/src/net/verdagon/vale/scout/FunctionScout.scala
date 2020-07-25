@@ -45,8 +45,7 @@ object FunctionScout {
     val FunctionP(
       range,
       Some(StringP(_, codeName)),
-      isExtern,
-      isAbstract,
+      attributes,
       userSpecifiedIdentifyingRuneNames,
       templateRulesP,
       paramsP,
@@ -60,7 +59,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
-        .map({ case StringP(_, identifyingRuneName) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
     val userRunesFromRules =
       templateRulesP
         .toList
@@ -98,9 +97,9 @@ object FunctionScout {
     //    vassert(exportedTemplateParamNames.size == exportedTemplateParamNames.toSet.size)
 
     val body1 =
-      if (isAbstract.nonEmpty) {
+      if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
         AbstractBody1
-      } else if (isExtern.nonEmpty) {
+      } else if (attributes.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
         ExternBody1
       } else {
         vassert(maybeBody0.nonEmpty)
@@ -186,13 +185,13 @@ object FunctionScout {
       parentStackFrame: StackFrame,
       lambdaFunction0: FunctionP):
   (FunctionS, VariableUses) = {
-    val FunctionP(range, _, None, None, userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT, Some(body0)) = lambdaFunction0;
+    val FunctionP(range, _, List(), userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT, Some(body0)) = lambdaFunction0;
     val codeLocation = Scout.evalPos(range.begin)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
-        .map({ case StringP(_, identifyingRuneName) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val lambdaName = LambdaNameS(/*parentStackFrame.name,*/ codeLocation)
     // Every lambda has a closure as its first arg, even if its empty
@@ -447,8 +446,7 @@ object FunctionScout {
     val FunctionP(
       range,
       Some(StringP(_, codeName)),
-      None,
-      _, // Ignore whether it thinks it's abstract or not
+      attributes,
       userSpecifiedIdentifyingRuneNames,
       templateRulesP,
       paramsP,
@@ -460,7 +458,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
           .toList
         .flatMap(_.runes)
-        .map({ case StringP(_, identifyingRuneName) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val rate = RuleStateBox(RuleState(funcName, 0))
 

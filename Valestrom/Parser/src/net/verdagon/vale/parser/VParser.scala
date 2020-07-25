@@ -23,11 +23,17 @@ object VParser
   override def skipWhitespace = false
   override val whiteSpace = "[ \t\r\f]+".r
 
-  def filledBody: Parser[BlockPE] = bracedBlock
+  def filledBody: Parser[BlockPE] = {
+    // A hack to do region highlighting
+    opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~>
+      bracedBlock
+  }
 
   def emptyBody: Parser[BlockPE] = {
-    pos ~ ("{" ~> optWhite ~> pos <~ optWhite <~ "}") ~ pos ^^ {
-      case begin ~ middle ~ end => BlockPE(Range(begin, end), List(VoidPE(Range(middle, middle))))
+    // A hack to do region highlighting
+    pos ~ opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
+    ("{" ~> optWhite ~> pos <~ optWhite <~ "}") ~ pos ^^ {
+      case begin ~ maybeRegion ~ middle ~ end => BlockPE(Range(begin, end), List(VoidPE(Range(middle, middle))))
     }
   }
 
@@ -41,10 +47,15 @@ object VParser
       (noBody ^^^ None)
   }
 
+  def functionAttribute: Parser[IFunctionAttributeP] = {
+    pos ~ "abstract" ~ pos ^^ { case begin ~ _ ~ end => AbstractAttributeP(Range(begin, end)) } |
+    pos ~ "extern" ~ pos ^^ { case begin ~ _ ~ end => ExternAttributeP(Range(begin, end)) } |
+    pos ~ "pure" ~ pos ^^ { case begin ~ _ ~ end => PureAttributeP(Range(begin, end)) }
+  }
+
   def topLevelFunction: Parser[FunctionP] = {
         pos ~
-        existsW("abstract") ~
-        existsW("extern") ~
+        (repsep(functionAttribute, white) <~ optWhite) ~
         ("fn" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
         (patternPrototypeParams <~ optWhite) ~
@@ -56,13 +67,12 @@ object VParser
         opt(templateRulesPR <~ optWhite) ~
         (maybeBody) ~
         pos ^^ {
-      case begin ~ maybeAbstract ~ maybeExtern ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ maybeBody ~ end => {
+      case begin ~ attributes ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ maybeBody ~ end => {
         vassert(!(maybeTemplateRulesBeforeReturn.nonEmpty && maybeTemplateRulesAfterReturn.nonEmpty))
         FunctionP(
           Range(begin, end),
           Some(name),
-          maybeExtern,
-          maybeAbstract,
+          attributes,
           identifyingRunes,
           (maybeTemplateRulesBeforeReturn.toList ++ maybeTemplateRulesAfterReturn.toList).headOption,
           Some(patternParams),
@@ -153,7 +163,7 @@ object VParser
   }
 
   def runParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
-    val regex = "//[^\\r\\n]*".r
+    val regex = "(//[^\\r\\n]*|«\\w+»)".r
     val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
     var code = codeWithComments
     commentRanges.foreach({ case (begin, end) =>

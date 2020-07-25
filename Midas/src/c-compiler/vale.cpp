@@ -224,6 +224,8 @@ void initInternalStructs(GlobalState* globalState) {
     globalState->controlBlockStructL = controlBlockStructL;
   }
 
+  start here, make a weakable control block containing the control block
+
   {
     auto stringInnerStructL =
         LLVMStructCreateNamed(

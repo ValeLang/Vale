@@ -42,7 +42,7 @@ trait ParserUtils extends RegexParsers {
   // but, we don't want it to parse it as (marine^).item
   // so, we need to look ahead a bit and see if there's a . after it.
   private[parser] def exprIdentifier: Parser[StringP] = {
-    pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\^\"\<\>\=\`]+""".r ~ pos ^^ {
+    pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\*\^\"\<\>\=\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => StringP(Range(begin, end), str)
     }
   }

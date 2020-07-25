@@ -47,7 +47,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test constraint ref") {
-    val compile = new Compilation(Samples.get("constraintref.vale"))
+    val compile = new Compilation(Samples.get("constraintRef.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 

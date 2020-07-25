@@ -39,6 +39,7 @@ public:
   int controlBlockObjIdIndex;
   int controlBlockRcMemberIndex;
   LLVMTypeRef controlBlockStructL;
+  LLVMTypeRef weakableControlBlockStructL;
   LLVMTypeRef stringWrapperStructL;
   LLVMTypeRef stringInnerStructL;
 

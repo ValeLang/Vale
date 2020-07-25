@@ -453,6 +453,13 @@ LLVMValueRef translateExpression(
             1,
             "interfaceRef");
     return interfaceRefLE;
+  } else if (auto lockWeak = dynamic_cast<LockWeak*>(expr)) {
+    auto sourceLE =
+        translateExpression(
+            globalState, functionState, blockState, builder, lockWeak->sourceExpr);
+    checkValidReference(FL(), globalState, functionState, builder, lockWeak->resultOptType, sourceLE);
+
+    
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;

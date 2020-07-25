@@ -20,7 +20,7 @@ case class OrPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionPE
 case class MutablePE(expr: IExpressionPE) extends IExpressionPE
 
 case class IfPE(range: Range, condition: BlockPE, thenBody: BlockPE, elseBody: BlockPE) extends IExpressionPE
-case class WhilePE(condition: BlockPE, body: BlockPE) extends IExpressionPE
+case class WhilePE(range: Range, condition: BlockPE, body: BlockPE) extends IExpressionPE
 case class DestructPE(range: Range, inner: IExpressionPE) extends IExpressionPE
 case class MatchPE(range: Range, condition: IExpressionPE, lambdas: List[LambdaPE]) extends IExpressionPE
 case class MutatePE(range: Range, mutatee: IExpressionPE, expr: IExpressionPE) extends IExpressionPE
@@ -48,13 +48,20 @@ case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE
 case class StrLiteralPE(value: StringP) extends IExpressionPE
 case class FloatLiteralPE(range: Range, value: Float) extends IExpressionPE
 
-case class DotPE(range: Range, left: IExpressionPE, member: LookupPE) extends IExpressionPE
+case class DotPE(
+  range: Range,
+  left: IExpressionPE,
+  operatorRange: Range,
+  isMapAccess: Boolean,
+  member: LookupPE) extends IExpressionPE
 
 case class DotCallPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE
 
 case class FunctionCallPE(
   range: Range,
   inline: Option[UnitP],
+  operatorRange: Range,
+  isMapCall: Boolean,
   callableExpr: IExpressionPE,
   argExprs: List[IExpressionPE],
   // If we're calling a lambda or some other callable struct,
@@ -66,7 +73,9 @@ case class FunctionCallPE(
 case class MethodCallPE(
   range: Range,
   callableExpr: IExpressionPE,
-  borrowCallable: Boolean,
+  operatorRange: Range,
+  callableTargetOwnership: OwnershipP,
+  isMapCall: Boolean,
   methodLookup: LookupPE,
   argExprs: List[IExpressionPE]
 ) extends IExpressionPE

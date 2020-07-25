@@ -57,12 +57,14 @@ object ExpressionScout {
           FunctionCallPE(
             rangeAtEnd,
             None,
+            Range.zero,
+            false,
             LookupPE(
               stackFrameBeforeConstructing.parentEnv.name match {
                 case FunctionNameS(n, _) => StringP(rangeAtEnd, n)
                 case _ => vwat()
               }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), LookupPE(StringP(rangeAtEnd, n), None))),
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), Range.zero, false, LookupPE(StringP(rangeAtEnd, n), None))),
             BorrowP)
 
         val (stackFrameAfterConstructing, NormalResult(constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
@@ -132,11 +134,15 @@ object ExpressionScout {
       case StrLiteralPE(StringP(_, value)) => (stackFrame0, NormalResult(StrLiteralSE(value)), noVariableUses, noVariableUses)
       case FloatLiteralPE(_,value) => (stackFrame0, NormalResult(FloatLiteralSE(value)), noVariableUses, noVariableUses)
 
-      case MethodCallPE(range, container, borrowCallable, memberLookup, methodArgs) => {
-        val maybeLendContainer = if (borrowCallable) LendPE(Range(range.begin, range.begin), container, BorrowP) else container
+      case MethodCallPE(range, container, operatorRange, targetOwnership, isMapCall, memberLookup, methodArgs) => {
+        val maybeLendContainer =
+          if (targetOwnership == BorrowP)
+            LendPE(Range(range.begin, range.begin), container, BorrowP)
+          else
+            container
         // Correct method calls like anExpr.bork(4) from FunctionCall(Dot(anExpr, bork), List(4))
         // to FunctionCall(bork, List(anExpr, 4))
-        val newExprP = FunctionCallPE(range, None, memberLookup, maybeLendContainer :: methodArgs, OwnP)
+        val newExprP = FunctionCallPE(range, None, operatorRange, isMapCall, memberLookup, maybeLendContainer :: methodArgs, OwnP)
         // Try again, with this new transformed expression.
         scoutExpression(stackFrame0, newExprP)
       }
@@ -178,7 +184,7 @@ object ExpressionScout {
               templateArgs.map(TemplexScout.translateTemplex(stackFrame0.parentEnv.allUserDeclaredRunes(), _))))
         (stackFrame0, result, noVariableUses, noVariableUses)
       }
-      case FunctionCallPE(_, inline, callablePE, args, borrowCallable) => {
+      case FunctionCallPE(_, inline, _, isMapCall, callablePE, args, borrowCallable) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
           scoutExpressionAndCoerce(stackFrame0, callablePE, borrowCallable)
         val (stackFrame2, args1, argsSelfUses, argsChildUses) =
@@ -211,7 +217,7 @@ object ExpressionScout {
 
         (stackFrame0, NormalResult(IfSE(cond1, then1, else1)), selfUses, childUses)
       }
-      case WhilePE(condition, body) => {
+      case WhilePE(_, condition, body) => {
         val (NormalResult(cond1), condSelfUses, condChildUses) =
           scoutBlock(stackFrame0, condition, noDeclarations)
 
@@ -279,7 +285,7 @@ object ExpressionScout {
           }
         (stackFrame2, NormalResult(mutateExpr1), sourceSelfUses.thenMerge(destinationSelfUses), sourceChildUses.thenMerge(destinationChildUses))
       }
-      case DotPE(_, containerExprPE, LookupPE(StringP(_, memberName), templateArgs)) => {
+      case DotPE(_, containerExprPE, _, isMapCall, LookupPE(StringP(_, memberName), templateArgs)) => {
         if (templateArgs.nonEmpty) {
           // such as myStruct.someField<Foo>.
           // Can't think of a good use for it yet.

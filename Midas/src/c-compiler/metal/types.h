@@ -25,9 +25,10 @@ class KnownSizeArrayT;
 class UnknownSizeArrayT;
 
 enum class Ownership {
-    OWN,
-    BORROW,
-    SHARE
+  OWN,
+  BORROW,
+  WEAK,
+  SHARE
 };
 
 enum class Permission {

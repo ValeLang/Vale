@@ -29,6 +29,7 @@ case object LocationTypePR extends ITypePR
 case object CoordTypePR extends ITypePR
 case object PrototypeTypePR extends ITypePR
 case object KindTypePR extends ITypePR
+case object RegionTypePR extends ITypePR
 case object CitizenTemplateTypePR extends ITypePR
 //case object StructTypePR extends ITypePR
 //case object SequenceTypePR extends ITypePR

@@ -39,7 +39,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
         // Yes capture, no type, no destructure:
         underscoreOr(patternCapture) ^^ { case capture => (None, capture, None, None) } |
         // Hacked in for highlighting, still need to incorporate into the above
-        existsMW("&") ~ underscoreOr(patternCapture) ^^ { case preBorrow ~ capture => (preBorrow, capture, None, None) }
+        existsMW("&") ~ existsMW("!") ~ underscoreOr(patternCapture) ^^ { case preBorrow ~ readwrite ~ capture => (preBorrow, capture, None, None) }
     ) ~
     opt(white ~> "impl" ~> white ~> templex) ~
     pos ^^ {

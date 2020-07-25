@@ -83,14 +83,27 @@ case class InterfaceP(
     templateRules: Option[TemplateRulesP],
     members: List[FunctionP])
 
-case class IdentifyingRunesP(range: Range, runes: List[StringP])
+sealed trait IFunctionAttributeP
+case class AbstractAttributeP(range: Range) extends IFunctionAttributeP
+case class ExternAttributeP(range: Range) extends IFunctionAttributeP
+case class PureAttributeP(range: Range) extends IFunctionAttributeP
+
+sealed trait IRuneAttributeP
+case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP
+case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP
+case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP
+case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP
+case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP
+
+case class IdentifyingRuneP(range: Range, name: StringP, attributes: List[IRuneAttributeP])
+
+case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP])
 case class TemplateRulesP(range: Range, rules: List[IRulexPR])
 case class ParamsP(range: Range, patterns: List[PatternPP])
 case class FunctionP(
   range: Range,
   name: Option[StringP],
-  isExtern: Option[UnitP],
-  isAbstract: Option[UnitP],
+  attributes: List[IFunctionAttributeP],
 
   // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
   maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],

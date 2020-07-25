@@ -307,7 +307,7 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("resultOptType", vonifyCoord(resultOptType)),
-            VonMember("resultOptReferend", vonifyCoord(resultOptType)),
+            VonMember("resultOptReferend", vonifyKind(resultOptType.kind)),
             VonMember("someConstructor", vonifyPrototype(someConstructor)),
             VonMember("noneConstructor", vonifyPrototype(noneConstructor))))
       }

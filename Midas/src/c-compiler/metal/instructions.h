@@ -577,6 +577,28 @@ public:
       sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
 };
 
+
+class LockWeak : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* resultOptType;
+  InterfaceReferend* resultOptReferend;
+  Prototype* someConstructor;
+  Prototype* noneConstructor;
+
+  LockWeak(
+      Expression* sourceExpr_,
+      Reference* resultOptType_,
+      InterfaceReferend* resultOptReferend_,
+      Prototype* someConstructor_,
+      Prototype* noneConstructor_) :
+    sourceExpr(sourceExpr_),
+    resultOptType(resultOptType_),
+    resultOptReferend(resultOptReferend_),
+    someConstructor(someConstructor_),
+    noneConstructor(noneConstructor_) {}
+};
+
 // Interned
 class Local {
 public:

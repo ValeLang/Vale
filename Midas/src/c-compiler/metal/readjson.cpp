@@ -173,6 +173,8 @@ Ownership readOwnership(MetalCache* cache, const json& ownership) {
     return Ownership::OWN;
   } else if (ownership[""].get<std::string>() == "Borrow") {
     return Ownership::BORROW;
+  } else if (ownership[""].get<std::string>() == "Weak") {
+    return Ownership::WEAK;
   } else if (ownership[""].get<std::string>() == "Share") {
     return Ownership::SHARE;
   } else {
@@ -406,6 +408,13 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "ConstantStr") {
     return new ConstantStr(
         expression["value"]);
+  } else if (type == "LockWeak") {
+    return new LockWeak(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["resultOptType"]),
+        readInterfaceReferend(cache, expression["resultOptReferend"]),
+        readPrototype(cache, expression["someConstructor"]),
+        readPrototype(cache, expression["noneConstructor"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);

@@ -1,4 +1,3 @@
-
 struct Carrier {
   hp int;
   interceptors int;

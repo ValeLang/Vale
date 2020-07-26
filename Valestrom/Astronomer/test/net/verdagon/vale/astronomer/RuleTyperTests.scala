@@ -92,6 +92,21 @@ class RuleTyperTests extends FunSuite with Matchers {
     vassert(conclusions.typeByRune(CodeRuneA("__C")) == CoordTemplataType)
   }
 
+  test("Weak becomes share if kind is immutable") {
+    val (conclusions, RuleTyperSolveSuccess(_)) =
+      makeCannedRuleTyper()
+        .solve(
+          FakeState(),
+          makeCannedEnvironment(),
+          List(
+            TypedSR(CodeRuneS("__C"),CoordTypeSR),
+            EqualsSR(TemplexSR(RuneST(CodeRuneS("__C"))),TemplexSR(OwnershippedST(WeakP,NameST(CodeTypeNameS("ImmInterface")))))),
+          List(),
+          None)
+
+    vassert(conclusions.typeByRune(CodeRuneA("__C")) == CoordTemplataType)
+  }
+
   test("Can infer coord rune from an incoming kind") {
     val (conclusions, RuleTyperSolveSuccess(_)) =
       makeCannedRuleTyper()

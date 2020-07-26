@@ -30,6 +30,7 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
     case (OwnH, _) =>
     case (ShareH, _) =>
     case (BorrowH, YonderH) =>
+    case (WeakH, YonderH) =>
     case _ => vfail()
   }
 
@@ -80,6 +81,13 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
   def expectStructReference() = {
     kind match {
       case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, atH)
+    }
+  }
+  // Convenience function for casting this to a Reference which the compiler knows
+  // points at interface.
+  def expectInterfaceReference() = {
+    kind match {
+      case atH @ InterfaceRefH(_) => ReferenceH[InterfaceRefH](ownership, location, atH)
     }
   }
 }
@@ -167,6 +175,7 @@ case class CodeLocation(
 sealed trait OwnershipH
 case object OwnH extends OwnershipH
 case object BorrowH extends OwnershipH
+case object WeakH extends OwnershipH
 case object ShareH extends OwnershipH
 
 // Permission says whether a reference can modify the referend it's pointing at.

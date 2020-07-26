@@ -550,35 +550,5 @@ object OverloadTemplar {
         (header.toPrototype)
       }
     }
-//    temputs.functions.find(_.header.toBanner == banner) match {
-//      case Some(existingFunction) => {
-//        // Then it was already stamped/evaluated. This is the case if it came from
-//        // a light lambda. We have to do this because the env.functions1ByOrdinarySignature
-//        // will fail down there, because lambdas aren't included there...
-//        (temputs, existingFunction.header.toPrototype)
-//      }
-//      case None => {
-//        // Then the best banner came from an ordinary banner. Let's speed up its evaluating to now.
-//        val maybeOriginFunction = banner.originFunction;
-//        maybeOriginFunction match {
-//          case None => {
-//            vfail("?") // what do we do when we want to stamp something with no origin function?
-//          }
-//          case Some(originFunction) => {
-//            originFunction.body match {
-//              case CodeBody1(block) => {
-//                FunctionTemplar.evaluateOrdinaryLightFunctionFromNonCallForPrototype(
-//                  env, temputs, originFunction)
-//              }
-//              case _ => {
-//                vfail("?") // what do we do when we want to stamp an abstract function?
-//                // val header =
-//                //   FunctionTemplar.evaluateOrdinaryLightAbstractFunctionForHeader(env, temputs, originFunction)
-//                // (temputs, header.toPrototype)
-//              }
-//            }
-//          }
-//        }
-//      }
   }
 }

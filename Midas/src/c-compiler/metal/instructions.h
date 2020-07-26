@@ -122,18 +122,21 @@ class StructToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
   Reference* sourceStructType;
-  StructReferend* sourceStructId;
-  InterfaceReferend* targetInterfaceRef;
+  StructReferend* sourceStructReferend;
+  Reference* targetInterfaceType;
+  InterfaceReferend* targetInterfaceReferend;
 
   StructToInterfaceUpcast(
       Expression* sourceExpr_,
       Reference* sourceStructType_,
-      StructReferend* sourceStructId_,
-      InterfaceReferend* targetInterfaceRef_) :
+      StructReferend* sourceStructReferend_,
+      Reference* targetInterfaceType_,
+      InterfaceReferend* targetInterfaceReferend_) :
       sourceExpr(sourceExpr_),
       sourceStructType(sourceStructType_),
-      sourceStructId(sourceStructId_),
-      targetInterfaceRef(targetInterfaceRef_) {}
+      sourceStructReferend(sourceStructReferend_),
+      targetInterfaceType(targetInterfaceType_),
+      targetInterfaceReferend(targetInterfaceReferend_) {}
 };
 
 class InterfaceToInterfaceUpcast : public Expression {
@@ -171,6 +174,22 @@ public:
       local(local),
     targetOwnership(targetOwnership),
         localName(localName) {}
+};
+
+
+class WeakAlias : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* sourceType;
+  Referend* sourceReferend;
+
+  WeakAlias(
+      Expression* sourceExpr_,
+      Reference* sourceType_,
+      Referend* sourceReferend_) :
+    sourceExpr(sourceExpr_),
+    sourceType(sourceType_),
+    sourceReferend(sourceReferend_) {}
 };
 
 
@@ -575,6 +594,46 @@ public:
 
   Discard(Expression* sourceExpr_, Reference* sourceResultType_) :
       sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
+};
+
+
+class LockWeak : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* sourceType;
+
+  Prototype* someConstructor;
+  Reference* someType;
+  StructReferend* someReferend;
+
+  Prototype* noneConstructor;
+  Reference* noneType;
+  StructReferend* noneReferend;
+
+  Reference* resultOptType;
+  InterfaceReferend* resultOptReferend;
+
+  LockWeak(
+      Expression* sourceExpr_,
+      Reference* sourceType_,
+      Prototype* someConstructor_,
+      Reference* someType_,
+      StructReferend* someReferend_,
+      Prototype* noneConstructor_,
+      Reference* noneType_,
+      StructReferend* noneReferend_,
+      Reference* resultOptType_,
+      InterfaceReferend* resultOptReferend_) :
+    sourceExpr(sourceExpr_),
+    sourceType(sourceType_),
+    someConstructor(someConstructor_),
+    someType(someType_),
+    someReferend(someReferend_),
+    noneConstructor(noneConstructor_),
+    noneType(noneType_),
+    noneReferend(noneReferend_),
+    resultOptType(resultOptType_),
+    resultOptReferend(resultOptReferend_) {}
 };
 
 // Interned

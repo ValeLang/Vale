@@ -1,10 +1,3 @@
-/** stdio - Standard library i/o
- * @file
- *
- * This source file is part of the Cone Programming Language C compiler
- * See Copyright Notice in conec.h
-*/
-
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdio.h>

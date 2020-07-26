@@ -1,8 +1,8 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{CaptureP, FinalP, ShareP}
-import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
+import net.verdagon.vale.parser.{CaptureP, FinalP, OwnP, ShareP}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
 object Printing {
@@ -35,7 +35,7 @@ object Printing {
                 FunctionCallAE(
                   FunctionLoadAE(GlobalFunctionFamilyNameA("+")),
                   List(
-                    LocalLoadAE(CodeVarNameA("line"), false),
+                    LocalLoadAE(CodeVarNameA("line"), OwnP),
                     StrLiteralAE("\n"))))))))))
 
   val printlnIntName = FunctionNameA("println", CodeLocationS(1, 1))
@@ -67,7 +67,7 @@ object Printing {
                 FunctionCallAE(
                   FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
-                    LocalLoadAE(CodeVarNameA("line"), false))))))))))
+                    LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
   val printIntName = FunctionNameA("print", CodeLocationS(1, 1))
   val printInt =
@@ -99,5 +99,5 @@ object Printing {
                 FunctionCallAE(
                   FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
-                    LocalLoadAE(CodeVarNameA("line"), false))))))))))
+                    LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 }

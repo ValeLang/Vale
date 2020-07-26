@@ -19,6 +19,12 @@ void declareStruct(
           LLVMGetGlobalContext(), (structM->name->name + "rc").c_str());
   assert(globalState->countedStructs.count(structM->name->name) == 0);
   globalState->countedStructs.emplace(structM->name->name, countedStructL);
+
+  auto structWeakRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (structM->name->name + "w").c_str());
+  assert(globalState->structWeakRefStructs.count(structM->name->name) == 0);
+  globalState->structWeakRefStructs.emplace(structM->name->name, structWeakRefStructL);
 }
 
 void translateStruct(
@@ -38,10 +44,20 @@ void translateStruct(
   // First member is a ref counts struct. We don't include the int directly
   // because we want fat pointers to point to this struct, so they can reach
   // into it and increment without doing any casting.
-  countedStructMemberTypesL.push_back(globalState->controlBlockStructL);
+  if (structM->weakable) {
+    countedStructMemberTypesL.push_back(globalState->weakableControlBlockStructL);
+  } else {
+    countedStructMemberTypesL.push_back(globalState->nonWeakableControlBlockStructL);
+  }
   countedStructMemberTypesL.push_back(valStructL);
   LLVMStructSetBody(
       countedStructL, countedStructMemberTypesL.data(), countedStructMemberTypesL.size(), false);
+
+  auto structWeakRefStructL = globalState->getStructWeakRefStruct(structM->name);
+  std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
+  structWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
+  structWeakRefStructMemberTypesL.push_back(LLVMPointerType(countedStructL, 0));
+  LLVMStructSetBody(structWeakRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
 
 void declareEdge(

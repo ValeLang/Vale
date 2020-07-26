@@ -49,6 +49,7 @@ case class ProgramH(
 case class StructDefinitionH(
     fullName: FullNameH,
     export: Boolean,
+    weakable: Boolean,
     mutability: Mutability,
     edges: List[EdgeH],
     members: List[StructMemberH]) {
@@ -91,6 +92,7 @@ case class InterfaceMethodH(
 
 case class InterfaceDefinitionH(
   fullName: FullNameH,
+  weakable: Boolean,
   mutability: Mutability,
   // TODO: Change this to edges, since interfaces impl other interfaces.
   superInterfaces: List[InterfaceRefH],
@@ -134,6 +136,12 @@ case class FullNameH(parts: List[IVonData]) {
   }
 
   override def toString: String = {
+    parts.map(MetalPrinter.print).mkString(":")
+  }
+}
+
+object MetalPrinter {
+  def print(data: IVonData): String = {
     val nameMap =
       Map(
         "Str" -> "s",
@@ -145,6 +153,7 @@ case class FullNameH(parts: List[IVonData]) {
         "Ref" -> "R",
         "Share" -> "*",
         "Borrow" -> "&",
+        "Weak" -> "&&",
         "Own" -> "^",
         "Inline" -> "<",
         "Yonder" -> ">",
@@ -159,7 +168,7 @@ case class FullNameH(parts: List[IVonData]) {
         "LambdaCitizenName" -> "LC",
       )
     val printer = new VonPrinter(VonSyntax(false, true, false, false), Int.MaxValue, nameMap, false);
-    parts.map(printer.print).mkString(":")
+    printer.print(data)
   }
 }
 

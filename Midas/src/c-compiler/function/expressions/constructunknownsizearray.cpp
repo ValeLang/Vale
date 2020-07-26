@@ -21,8 +21,10 @@ void fillUnknownSizeArray(
 
   foreachArrayElement(
       functionState, builder, sizeLE, usaElementsPtrLE,
-      [globalState, generatorType, usaElementsPtrLE, generatorLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
-        acquireReference(AFL("ConstructUSA generate iteration"), globalState, bodyBuilder, generatorType, generatorLE);
+      [globalState, functionState, generatorType, usaElementsPtrLE, generatorLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+        acquireReference(
+            AFL("ConstructUSA generate iteration"),
+            globalState, functionState, bodyBuilder, generatorType, generatorLE);
 
         std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
         auto elementPtrLE =
@@ -50,6 +52,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
           globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
   fillControlBlock(
       globalState,
+      functionState,
       builder,
       getConcreteControlBlockPtr(builder, usaWrapperPtrLE),
       typeName);

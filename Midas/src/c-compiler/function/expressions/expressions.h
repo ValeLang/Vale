@@ -29,6 +29,7 @@ LLVMValueRef translateDestructure(
 LLVMValueRef translateConstruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
     const std::vector<LLVMValueRef>& membersLE);
@@ -92,6 +93,7 @@ LLVMValueRef translateConstructUnknownSizeArray(
 LLVMValueRef translateConstantStr(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     ConstantStr* constantStr);
 

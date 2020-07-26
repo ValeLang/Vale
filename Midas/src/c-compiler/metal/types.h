@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <cassert>
 
 // Defined elsewhere
 class Name;
@@ -60,17 +61,30 @@ enum class Variability {
 // Interned
 class Reference {
 public:
-    Ownership ownership;
-    Location location;
-    Referend* referend;
+  Ownership ownership;
+  Location location;
+  Referend* referend;
+//  std::string debugStr;
 
-    Reference(
-        Ownership ownership_,
-        Location location_,
-        Referend* referend_) :
-      ownership(ownership_),
-      location(location_),
-      referend(referend_) {}
+  Reference(
+      Ownership ownership_,
+      Location location_,
+      Referend* referend_
+//      , const std::string& debugStr_
+      ) :
+    ownership(ownership_),
+    location(location_),
+    referend(referend_)
+//    , debugStr(debugStr_)
+    {
+
+    if (ownership == Ownership::BORROW || ownership == Ownership::WEAK) {
+      assert(location == Location::YONDER);
+    }
+  }
+
+  // Someday, have a nice way to print out this Reference...
+  std::string str() { return ""; }
 };
 
 class Referend {
@@ -108,6 +122,7 @@ public:
 
   InterfaceReferend(Name* fullName_) :
       fullName(fullName_) {}
+
 };
 
 // Interned
@@ -117,6 +132,7 @@ public:
 
     StructReferend(Name* fullName_) :
         fullName(fullName_) {}
+
 };
 
 // Interned
@@ -146,6 +162,7 @@ public:
       name(name_),
       size(size_),
       rawArray(rawArray_) {}
+
 };
 
 
@@ -161,6 +178,7 @@ public:
       RawArrayT* rawArray_) :
       name(name_),
       rawArray(rawArray_) {}
+
 };
 
 

@@ -173,7 +173,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
 
     optInit(args, &s, argc, argv);
     opt->release = 1;
-    opt->flares = false;
+    opt->flares = true;
     opt->census = true;
 
     while ((id = optNext(&s)) != -1) {

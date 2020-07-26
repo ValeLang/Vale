@@ -8,7 +8,8 @@
 LLVMValueRef translateConstantStr(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     ConstantStr* constantStr) {
-  return buildConstantVStr(globalState, builder, constantStr->value);
+  return buildConstantVStr(globalState, functionState, builder, constantStr->value);
 }

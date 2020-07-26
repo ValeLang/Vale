@@ -37,6 +37,7 @@ void makeLocal(
 void acquireReference(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
     LLVMValueRef expr);
@@ -71,15 +72,16 @@ LLVMValueRef getControlBlockPtr(
 
 
 // Returns the new RC
-LLVMValueRef adjustRc(
+LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
     Reference* refM,
     int amount);
 
-LLVMValueRef rcIsZero(
+LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
@@ -120,10 +122,16 @@ template<typename... T>
 inline void buildFlare(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     T&&... rest) {
   if (globalState->opt->flares) {
+    std::string indentStr = "";
+    for (int i = 0; i < functionState->instructionDepthInAst; i++)
+      indentStr += " ";
+
     buildPrint(globalState, builder, "\033[0;34m");
+    buildPrint(globalState, builder, indentStr);
     buildPrint(globalState, builder, getFileName(from.file));
     buildPrint(globalState, builder, ":");
     buildPrint(globalState, builder, from.line);
@@ -168,5 +176,23 @@ void checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef refLE);
+
+
+LLVMValueRef buildCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Prototype* prototype,
+    std::vector<LLVMValueRef> argsLE);
+
+LLVMValueRef upcast2(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceStructTypeM,
+    StructReferend* sourceStructReferendM,
+    LLVMValueRef sourceStructLE,
+    Reference* targetInterfaceTypeM,
+    InterfaceReferend* targetInterfaceReferendM);
 
 #endif

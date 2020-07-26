@@ -24,7 +24,7 @@ class SignatureTests extends FunSuite with Matchers with Collector {
       VParser.topLevelFunction,
       "fn maxHp(this Marine impl IUnit) { 5 }") shouldHave {
       case FunctionP(_,
-          Some(StringP(_, "maxHp")),None, None, None, None,
+          Some(StringP(_, "maxHp")),List(), None, None,
           Some(
             ParamsP(
               _,
@@ -48,7 +48,7 @@ class SignatureTests extends FunSuite with Matchers with Collector {
 
   test("Templated function") {
     compile(VParser.topLevelFunction, "fn sum () rules() {3}") shouldHave {
-      case FunctionP(_, Some(StringP(_, "sum")), None, None, None, Some(_), Some(_), None, Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+      case FunctionP(_, Some(StringP(_, "sum")), List(), None, Some(_), Some(_), None, Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
     }
   }
 
@@ -57,13 +57,16 @@ class SignatureTests extends FunSuite with Matchers with Collector {
       VParser.topLevelFunction,
       "fn wrap<A, F>(a A) { }") shouldHave {
       case FunctionP(_,
-        Some(StringP(_, "wrap")), None, None,
-        Some(IdentifyingRunesP(_, List(StringP(_, "A"), StringP(_, "F")))),
+        Some(StringP(_, "wrap")), List(),
+        Some(
+          IdentifyingRunesP(_,
+            List(
+            IdentifyingRuneP(_, StringP(_, "A"), List()),
+            IdentifyingRuneP(_, StringP(_, "F"), List())))),
         None,
         Some(ParamsP(_, List(Patterns.capturedWithTypeRune("a", "A")))),
         None,
         Some(BlockPE(_, List(VoidPE(_))))) =>
     }
   }
-
 }

@@ -38,7 +38,7 @@ Directory.Build.props
 *.i*86
 *.x86_64
 *.hex
-conec
+valec
 
 # Debug files
 *.dSYM/

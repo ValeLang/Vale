@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/controlblock.h>
 #include "function/expressions/shared/members.h"
 #include "function/expressions/shared/heap.h"
 
@@ -26,6 +27,12 @@ LLVMValueRef translateDestructure(
 
   auto structM = globalState->program->getStruct(structReferend->fullName);
 
+  if (structM->weakable) {
+    auto controlBlockPtrLE = getControlBlockPtr(builder, structLE, destructureM->structType);
+    auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+    LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+  }
+
   for (int i = 0; i < structM->members.size(); i++) {
     auto memberName = structM->members[i]->name;
     LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
@@ -44,7 +51,9 @@ LLVMValueRef translateDestructure(
   }
 
   if (destructureM->structType->ownership == Ownership::OWN) {
-    adjustRc(AFL("Destroy decrementing the owning ref"), globalState, builder, structLE, destructureM->structType, -1);
+    adjustStrongRc(
+        AFL("Destroy decrementing the owning ref"),
+        globalState, functionState, builder, structLE, destructureM->structType, -1);
   } else if (destructureM->structType->ownership == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
   } else {

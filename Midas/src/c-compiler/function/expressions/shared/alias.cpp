@@ -12,6 +12,7 @@
 void acquireReference(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* resultRef,
     LLVMValueRef expr) {
@@ -29,14 +30,16 @@ void acquireReference(
       // the wrong thing for resultRef?
       assert(false);
     } else if (resultRef->ownership == Ownership::BORROW) {
-      adjustRc(from, globalState, builder, expr, resultRef, 1);
+      adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+    } else if (resultRef->ownership == Ownership::WEAK) {
+      assert(false);
     } else if (resultRef->ownership == Ownership::SHARE) {
       if (resultRef->location == Location::INLINE) {
         assert(false); // impl
       } else {
-        adjustRc(from, globalState, builder, expr, resultRef, 1);
+        adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
       }
-    }
+    } else assert(false);
   } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
       dynamic_cast<KnownSizeArrayT*>(sourceRnd) ||
       dynamic_cast<UnknownSizeArrayT*>(sourceRnd)) {
@@ -44,18 +47,20 @@ void acquireReference(
       // We might be loading a member as an own if we're destructuring.
       // Don't adjust the RC, since we're only moving it.
     } else if (resultRef->ownership == Ownership::BORROW) {
-      adjustRc(from, globalState, builder, expr, resultRef, 1);
+      adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+    } else if (resultRef->ownership == Ownership::WEAK) {
+      assert(false);
     } else if (resultRef->ownership == Ownership::SHARE) {
       if (resultRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        adjustRc(from, globalState, builder, expr, resultRef, 1);
+        adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
       }
-    }
+    } else assert(false);
   } else if (dynamic_cast<Str*>(sourceRnd)) {
     assert(resultRef->ownership == Ownership::SHARE);
     assert(resultRef->location == Location::YONDER);
-    adjustRc(from, globalState, builder, expr, resultRef, 1);
+    adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
   } else {
     std::cerr << "Unimplemented type in acquireReference: "
         << typeid(*resultRef->referend).name() << std::endl;
@@ -83,12 +88,14 @@ void discard(
       // We can't discard owns, they must be destructured.
       assert(false); // impl
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustRc(from, globalState, builder, expr, sourceRef, -1);
+      adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+    } else if (sourceRef->ownership == Ownership::WEAK) {
+      assert(false);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
       } else {
-        auto rcLE = adjustRc(from, globalState, builder, expr, sourceRef, -1);
+        auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
         buildIf(
             functionState,
             builder,
@@ -109,7 +116,7 @@ void discard(
               buildInterfaceCall(thenBuilder, argExprsL, 0, indexInEdge);
             });
       }
-    }
+    } else assert(false);
   } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
       dynamic_cast<KnownSizeArrayT*>(sourceRnd) ||
       dynamic_cast<UnknownSizeArrayT*>(sourceRnd)) {
@@ -117,12 +124,17 @@ void discard(
       // We can't discard owns, they must be destructured.
       assert(false);
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustRc(from, globalState, builder, expr, sourceRef, -1);
+      adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+    } else if (sourceRef->ownership == Ownership::WEAK) {
+      auto structReferend = dynamic_cast<StructReferend*>(sourceRnd);
+      assert(structReferend);
+      auto wrciLE = getWrciFromWeakRef(builder, expr);
+      LLVMBuildCall(builder, globalState->decrementWrc, &wrciLE, 1, "");
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        auto rcLE = adjustRc(from, globalState, builder, expr, sourceRef, -1);
+        auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
         buildIf(
             functionState,
             builder,
@@ -134,10 +146,10 @@ void discard(
               return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
             });
       }
-    }
+    } else assert(false);
   } else if (dynamic_cast<Str*>(sourceRnd)) {
     assert(sourceRef->ownership == Ownership::SHARE);
-    auto rcLE = adjustRc(from, globalState, builder, expr, sourceRef, -1);
+    auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
     buildIf(
         functionState,
         builder,

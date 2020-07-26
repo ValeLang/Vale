@@ -7,6 +7,7 @@ import net.verdagon.vale.{vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
 
 case class PanicException() extends Throwable
+case class ConstraintViolatedException(msg: String) extends Throwable
 
 object Vivem {
   def executeWithPrimitiveArgs(

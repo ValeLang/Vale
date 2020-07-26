@@ -85,7 +85,7 @@ class AllocationMap(vivemDout: PrintStream) {
   def add(ownership: OwnershipH, location: LocationH, referend: ReferendV) = {
     val shouldIntern =
       referend match {
-        case StructInstanceV(structH, members) if structH.mutability == Immutable && members.isEmpty => true
+        case StructInstanceV(structH, members) if structH.mutability == Immutable && members.get.isEmpty => true
         case _ => false
       }
     if (shouldIntern) {
@@ -115,7 +115,7 @@ class AllocationMap(vivemDout: PrintStream) {
 
   def printAll(): Unit = {
     objectsById.foreach({
-      case (id, allocation) => vivemDout.println(id + " (" + allocation.getTotalRefCount() + " refs) = " + allocation.referend)
+      case (id, allocation) => vivemDout.println(id + " (" + allocation.getTotalRefCount(None) + " refs) = " + allocation.referend)
     })
   }
 
@@ -155,7 +155,7 @@ class Heap(in_vivemDout: PrintStream) {
   def addLocal(varAddr: VariableAddressV, reference: ReferenceV, expectedType: ReferenceH[ReferendH]) = {
     val call = getCurrentCall(varAddr.callId)
     call.addLocal(varAddr, reference, expectedType)
-    incrementReferenceRefCount(VariableToObjectReferrer(varAddr), reference)
+    incrementReferenceRefCount(VariableToObjectReferrer(varAddr, expectedType.ownership), reference)
   }
 
   def getReference(varAddr: VariableAddressV, expectedType: ReferenceH[ReferendH]) = {
@@ -167,7 +167,7 @@ class Heap(in_vivemDout: PrintStream) {
     val variable = getLocal(varAddr)
     val actualReference = variable.reference
     checkReference(expectedType, actualReference)
-    decrementReferenceRefCount(VariableToObjectReferrer(varAddr), actualReference)
+    decrementReferenceRefCount(VariableToObjectReferrer(varAddr, expectedType.ownership), actualReference)
     call.removeLocal(varAddr)
   }
 
@@ -193,9 +193,9 @@ class Heap(in_vivemDout: PrintStream) {
     checkReference(expectedType, reference)
     checkReference(variable.expectedType, reference)
     val oldReference = variable.reference
-    decrementReferenceRefCount(VariableToObjectReferrer(varAddress), oldReference)
+    decrementReferenceRefCount(VariableToObjectReferrer(varAddress, expectedType.ownership), oldReference)
 
-    incrementReferenceRefCount(VariableToObjectReferrer(varAddress), reference)
+    incrementReferenceRefCount(VariableToObjectReferrer(varAddress, expectedType.ownership), reference)
     callsById(varAddress.callId).mutateLocal(varAddress, reference, expectedType)
     oldReference
   }
@@ -204,10 +204,10 @@ class Heap(in_vivemDout: PrintStream) {
     objectsById.get(arrayRef).referend match {
       case ai @ ArrayInstanceV(_, _, _, _) => {
         val oldReference = ai.getElement(elementIndex)
-        decrementReferenceRefCount(ElementToObjectReferrer(elementAddress), oldReference)
+        decrementReferenceRefCount(ElementToObjectReferrer(elementAddress, expectedType.ownership), oldReference)
 
         ai.setElement(elementIndex, reference)
-        incrementReferenceRefCount(ElementToObjectReferrer(elementAddress), reference)
+        incrementReferenceRefCount(ElementToObjectReferrer(elementAddress, expectedType.ownership), reference)
         oldReference
       }
     }
@@ -216,15 +216,15 @@ class Heap(in_vivemDout: PrintStream) {
   ReferenceV = {
     val MemberAddressV(objectId, fieldIndex) = memberAddress
     objectsById.get(objectId).referend match {
-      case si @ StructInstanceV(structDefH, members) => {
+      case si @ StructInstanceV(structDefH, Some(members)) => {
         val oldMemberReference = members(fieldIndex)
-        decrementReferenceRefCount(MemberToObjectReferrer(memberAddress), oldMemberReference)
+        decrementReferenceRefCount(MemberToObjectReferrer(memberAddress, expectedType.ownership), oldMemberReference)
 //        maybeDeallocate(actualReference)
         vassert(structDefH.members(fieldIndex).tyype == expectedType)
         // We only do this to check that it's non-empty. curiosity assert, do we gotta do somethin special if somethin was moved out
         si.getReferenceMember(fieldIndex)
         si.setReferenceMember(fieldIndex, reference)
-        incrementReferenceRefCount(MemberToObjectReferrer(memberAddress), reference)
+        incrementReferenceRefCount(MemberToObjectReferrer(memberAddress, expectedType.ownership), reference)
         oldMemberReference
       }
     }
@@ -250,7 +250,7 @@ class Heap(in_vivemDout: PrintStream) {
   ): ReferenceV = {
     val MemberAddressV(objectId, fieldIndex) = address
     objectsById.get(objectId).referend match {
-      case StructInstanceV(_, members) => {
+      case StructInstanceV(_, Some(members)) => {
         val actualReference = members(fieldIndex)
         checkReference(expectedType, actualReference)
         alias(actualReference, expectedType, targetType)
@@ -272,30 +272,55 @@ class Heap(in_vivemDout: PrintStream) {
     }
   }
 
-  def dereference(reference: ReferenceV): ReferendV = {
-    vassert(objectsById.contains(reference.allocId))
+  def containsLiveObject(reference: ReferenceV): Boolean = {
+    containsLiveObject(reference.allocId)
+  }
+
+  private def containsLiveObject(allocId: AllocationId): Boolean = {
+    if (!objectsById.contains(allocId))
+      return false
+    val alloc = objectsById.get(allocId)
+    alloc.referend match {
+      case StructInstanceV(_, None) => false
+      case StructInstanceV(_, Some(_)) => true
+      case _ => true
+    }
+  }
+
+  // Undead meaning it's been zero'd out, but its still allocated because a weak
+  // is pointing at it.
+  private def containsLiveOrUndeadObject(allocId: AllocationId): Boolean = {
+    objectsById.contains(allocId)
+  }
+
+  // Undead meaning it's been zero'd out, but its still allocated because a weak
+  // is pointing at it.
+  def dereference(reference: ReferenceV, allowUndead: Boolean = false): ReferendV = {
+    if (!allowUndead) {
+      vassert(containsLiveObject(reference.allocId))
+    }
     objectsById.get(reference.allocId).referend
   }
 
   def incrementReferenceHoldCount(expressionId: ExpressionId, reference: ReferenceV) = {
-    incrementObjectRefCount(RegisterHoldToObjectReferrer(expressionId), reference.allocId)
+    incrementObjectRefCount(RegisterHoldToObjectReferrer(expressionId, reference.ownership), reference.allocId)
   }
 
   def decrementReferenceHoldCount(expressionId: ExpressionId, reference: ReferenceV) = {
-    decrementObjectRefCount(RegisterHoldToObjectReferrer(expressionId), reference.allocId)
+    decrementObjectRefCount(RegisterHoldToObjectReferrer(expressionId, reference.ownership), reference.allocId)
   }
 
   // rename to incrementObjectRefCount
   def incrementReferenceRefCount(referrer: IObjectReferrer, reference: ReferenceV) = {
-    incrementObjectRefCount(referrer, reference.allocId)
+    incrementObjectRefCount(referrer, reference.allocId, reference.ownership == WeakH)
   }
 
   // rename to decrementObjectRefCount
   def decrementReferenceRefCount(referrer: IObjectReferrer, reference: ReferenceV) = {
-    decrementObjectRefCount(referrer, reference.allocId)
+    decrementObjectRefCount(referrer, reference.allocId, reference.ownership == WeakH)
   }
 
-  def destructureArray(reference: ReferenceV, alsoDeallocate: Boolean): Vector[ReferenceV] = {
+  def destructureArray(reference: ReferenceV): Vector[ReferenceV] = {
     val allocation = dereference(reference)
     allocation match {
       case ArrayInstanceV(typeH, elementTypeH, size, elements) => {
@@ -304,12 +329,6 @@ class Heap(in_vivemDout: PrintStream) {
             .reverse
             .map(index => deinitializeArrayElement(reference, index))
             .reverse
-        if (reference.ownership == OwnH) {
-          vassert(alsoDeallocate)
-        }
-        if (alsoDeallocate) {
-          deallocate(reference)
-        }
         elementRefs
       }
     }
@@ -318,40 +337,72 @@ class Heap(in_vivemDout: PrintStream) {
   def destructure(reference: ReferenceV): Vector[ReferenceV] = {
     val allocation = dereference(reference)
     allocation match {
-      case StructInstanceV(structDefH, memberRefs) => {
+      case StructInstanceV(structDefH, Some(memberRefs)) => {
         memberRefs.zipWithIndex.foreach({ case (memberRef, index) =>
-          decrementReferenceRefCount(MemberToObjectReferrer(MemberAddressV(reference.allocId, index)), memberRef)
+          decrementReferenceRefCount(
+            MemberToObjectReferrer(
+              MemberAddressV(reference.allocId, index), memberRef.ownership),
+            memberRef)
         })
-        deallocate(reference)
+
+        zero(reference)
+        deallocateIfNoWeakRefs(reference)
         memberRefs
       }
     }
   }
 
-  def deallocate(reference: ReferenceV) = {
+  // This is *conceptually* destroying the object, this is when the owning
+  // reference disappears. If there are no weak refs, we also deallocate.
+  // Otherwise, we deallocate when the last weak ref disappears.
+  def zero(reference: ReferenceV) = {
     val allocation = objectsById.get(reference.allocId)
-    vassert(allocation.getTotalRefCount() == 0)
-    objectsById.remove(reference.allocId)
-    vivemDout.print(" o" + reference.allocId.num + "dealloc")
+    vassert(allocation.getTotalRefCount(Some(OwnH)) == 0)
+    vassert(allocation.getTotalRefCount(Some(BorrowH)) == 0)
+    allocation.referend match {
+      case si @ StructInstanceV(_, _) => si.zero()
+      case _ =>
+    }
+    vivemDout.print(" o" + reference.allocId.num + "zero")
   }
 
-  private def incrementObjectRefCount(pointingFrom: IObjectReferrer, allocId: AllocationId) = {
-    if (!objectsById.contains(allocId)) {
-      vfail("Trying to increment dead object: " + allocId)
+  // This happens when the last owning and weak references disappear.
+  def deallocateIfNoWeakRefs(reference: ReferenceV) = {
+    val allocation = objectsById.get(reference.allocId)
+    if (allocation.getTotalRefCount(None) == 0) {
+      objectsById.remove(reference.allocId)
+      vivemDout.print(" o" + reference.allocId.num + "dealloc")
+    }
+  }
+
+  private def incrementObjectRefCount(
+      pointingFrom: IObjectReferrer,
+      allocId: AllocationId,
+      allowUndead: Boolean = false) = {
+    if (!allowUndead) {
+      if (!containsLiveObject(allocId)) {
+        vfail("Trying to increment dead object: " + allocId)
+      }
     }
     val obj = objectsById.get(allocId)
     obj.incrementRefCount(pointingFrom)
-    val newRefCount = obj.getTotalRefCount()
+    val newRefCount = obj.getTotalRefCount(None)
     vivemDout.print(" o" + allocId.num + "rc" + (newRefCount - 1) + "->" + newRefCount)
   }
 
-  private def decrementObjectRefCount(pointedFrom: IObjectReferrer, allocId: AllocationId): Int = {
-    if (!objectsById.contains(allocId)) {
-      vfail("Can't decrement object " + allocId + ", not in heap!")
+  private def decrementObjectRefCount(
+      pointedFrom: IObjectReferrer,
+      allocId: AllocationId,
+      allowUndead: Boolean = false):
+  Int = {
+    if (!allowUndead) {
+      if (!containsLiveObject(allocId)) {
+        vfail("Can't decrement object " + allocId + ", not in heap!")
+      }
     }
     val obj = objectsById.get(allocId)
     obj.decrementRefCount(pointedFrom)
-    val newRefCount = obj.getTotalRefCount()
+    val newRefCount = obj.getTotalRefCount(None)
     vivemDout.print(" o" + allocId.num + "rc" + (newRefCount + 1) + "->" + newRefCount)
 //    if (newRefCount == 0) {
 //      deallocate(objectId)
@@ -360,27 +411,29 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def getRefCount(reference: ReferenceV, category: RefCountCategory): Int = {
-    vassert(objectsById.contains(reference.allocId))
+    if (reference.ownership == WeakH) {
+      vassert(containsLiveOrUndeadObject(reference.allocId))
+    } else {
+      vassert(containsLiveObject(reference.allocId))
+    }
     val allocation = objectsById.get(reference.allocId)
     allocation.getRefCount(category)
   }
 
   def getTotalRefCount(reference: ReferenceV): Int = {
-    vassert(objectsById.contains(reference.allocId))
+    if (reference.ownership == WeakH) {
+      vassert(containsLiveOrUndeadObject(reference.allocId))
+    } else {
+      vassert(containsLiveObject(reference.allocId))
+    }
     val allocation = objectsById.get(reference.allocId)
-    allocation.getTotalRefCount()
+    allocation.getTotalRefCount(None)
   }
 
-  def ensureRefCount(reference: ReferenceV, category: RefCountCategory, expectedNum: Int) = {
-    vassert(objectsById.contains(reference.allocId))
+  def ensureRefCount(reference: ReferenceV, categoryFilter: Option[RefCountCategory], ownershipFilter: Option[Set[OwnershipH]], expectedNum: Int) = {
+    vassert(containsLiveObject(reference.allocId))
     val allocation = objectsById.get(reference.allocId)
-    allocation.ensureRefCount(category, expectedNum)
-  }
-
-  def ensureTotalRefCount(reference: ReferenceV, expectedNum: Int) = {
-    vassert(objectsById.contains(reference.allocId))
-    val allocation = objectsById.get(reference.allocId)
-    allocation.ensureTotalRefCount(expectedNum)
+    allocation.ensureRefCount(categoryFilter, ownershipFilter, expectedNum)
   }
 
   def add(ownership: OwnershipH, location: LocationH, referend: ReferendV): ReferenceV = {
@@ -388,9 +441,9 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def alias(
-      reference: ReferenceV,
-      expectedType: ReferenceH[ReferendH],
-      targetType: ReferenceH[ReferendH]):
+    reference: ReferenceV,
+    expectedType: ReferenceH[ReferendH],
+    targetType: ReferenceH[ReferendH]):
   ReferenceV = {
     if (expectedType.ownership == targetType.ownership) {
       return reference
@@ -438,7 +491,7 @@ class Heap(in_vivemDout: PrintStream) {
       destinationMap: mutable.Map[ReferenceV, Allocation],
       inputReachable: ReferenceV): Unit = {
     // Doublecheck that all the inputReachables are actually in this ..
-    vassert(objectsById.contains(inputReachable.allocId))
+    vassert(containsLiveObject(inputReachable.allocId))
     vassert(objectsById.get(inputReachable.allocId).referend.tyype.hamut == inputReachable.actualKind.hamut)
 
     val allocation = objectsById.get(inputReachable.allocId)
@@ -451,7 +504,7 @@ class Heap(in_vivemDout: PrintStream) {
       case IntV(_) =>
       case BoolV(_) =>
       case FloatV(_) =>
-      case StructInstanceV(structDefH, members) => {
+      case StructInstanceV(structDefH, Some(members)) => {
         members.zip(structDefH.members).foreach({
           case (reference, StructMemberH(_, _, referenceH)) => {
             innerFindReachableAllocations(destinationMap, reference)
@@ -474,7 +527,7 @@ class Heap(in_vivemDout: PrintStream) {
     val reference = getCurrentCall(callId).takeArgument(argumentIndex)
     checkReference(expectedType, reference)
     decrementReferenceRefCount(
-      ArgumentToObjectReferrer(ArgumentId(callId, argumentIndex)),
+      ArgumentToObjectReferrer(ArgumentId(callId, argumentIndex), expectedType.ownership),
       reference) // decrementing because taking it out of arg
     // Now, the register is the only one that has this reference.
     reference
@@ -507,7 +560,7 @@ class Heap(in_vivemDout: PrintStream) {
       case BoolV(value) => vivemDout.print(value)
       case StrV(value) => vivemDout.print(value)
       case FloatV(value) => vivemDout.print(value)
-      case StructInstanceV(structH, members) => {
+      case StructInstanceV(structH, Some(members)) => {
         vivemDout.print(structH.fullName + "{" + members.map("o" + _.allocId.num).mkString(", ") + "}")
       }
       case ArrayInstanceV(typeH, memberTypeH, size, elements) => vivemDout.print("array:" + size + ":" + memberTypeH + "{" + elements.map("o" + _.allocId.num).mkString(", ") + "}")
@@ -547,7 +600,8 @@ class Heap(in_vivemDout: PrintStream) {
     dereference(arrayReference) match {
       case a @ ArrayInstanceV(_, _, _, _) => {
         incrementReferenceRefCount(
-          ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index)),
+          ElementToObjectReferrer(
+            ElementAddressV(arrayReference.allocId, index), a.elementTypeH.ownership),
           ret)
         a.initializeElement(index, ret)
       }
@@ -559,12 +613,12 @@ class Heap(in_vivemDout: PrintStream) {
       structRefH: ReferenceH[StructRefH],
       memberReferences: List[ReferenceV]):
   ReferenceV = {
-    val instance = StructInstanceV(structDefH, memberReferences.toVector)
+    val instance = StructInstanceV(structDefH, Some(memberReferences.toVector))
     val reference = add(structRefH.ownership, structRefH.location, instance)
 
     memberReferences.zipWithIndex.foreach({ case (memberReference, index) =>
       incrementReferenceRefCount(
-        MemberToObjectReferrer(MemberAddressV(reference.allocId, index)),
+        MemberToObjectReferrer(MemberAddressV(reference.allocId, index), memberReference.ownership),
         memberReference)
     })
 
@@ -577,7 +631,7 @@ class Heap(in_vivemDout: PrintStream) {
     val arrayInstance @ ArrayInstanceV(_, _, _, _) = dereference(arrayReference)
     val elementReference = arrayInstance.deinitializeElement(index)
     decrementReferenceRefCount(
-      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index)),
+      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index), elementReference.ownership),
       elementReference)
     elementReference
   }
@@ -588,7 +642,7 @@ class Heap(in_vivemDout: PrintStream) {
       elementReference: ReferenceV) = {
     val arrayInstance @ ArrayInstanceV(_, _, _, _) = dereference(arrayReference)
     incrementReferenceRefCount(
-      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index)),
+      ElementToObjectReferrer(ElementAddressV(arrayReference.allocId, index), elementReference.ownership),
       elementReference)
     arrayInstance.initializeElement(index, elementReference)
   }
@@ -644,18 +698,24 @@ class Heap(in_vivemDout: PrintStream) {
     val instance = ArrayInstanceV(arrayRefType, arrayRefType.kind.rawArray.elementType, memberRefs.size, memberRefs.toVector)
     val reference = add(arrayRefType.ownership, arrayRefType.location, instance)
     memberRefs.zipWithIndex.foreach({ case (memberRef, index) =>
-      incrementReferenceRefCount(ElementToObjectReferrer(ElementAddressV(reference.allocId, index)), memberRef)
+      incrementReferenceRefCount(
+        ElementToObjectReferrer(ElementAddressV(reference.allocId, index), memberRef.ownership),
+        memberRef)
     })
     (reference, instance)
   }
 
 
   def checkReference(expectedType: ReferenceH[ReferendH], actualReference: ReferenceV): Unit = {
-    vassert(objectsById.contains(actualReference.allocId))
+    if (actualReference.ownership == WeakH) {
+      vassert(containsLiveOrUndeadObject(actualReference.allocId))
+    } else {
+      vassert(containsLiveObject(actualReference.allocId))
+    }
     if (actualReference.seenAsCoord.hamut != expectedType) {
       vfail("Expected " + expectedType + " but was " + actualReference.seenAsCoord.hamut)
     }
-    val actualReferend = dereference(actualReference)
+    val actualReferend = dereference(actualReference, actualReference.ownership == WeakH)
     checkReferend(expectedType.kind, actualReferend)
   }
 
@@ -775,7 +835,7 @@ class Heap(in_vivemDout: PrintStream) {
       case ArrayInstanceV(typeH, elementTypeH, size, elements) => {
         VonArray(None, elements.map(toVon))
       }
-      case StructInstanceV(structH, members) => {
+      case StructInstanceV(structH, Some(members)) => {
         vassert(members.size == structH.members.size)
         VonObject(
           structH.fullName.toString,

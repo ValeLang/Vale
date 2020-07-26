@@ -24,6 +24,7 @@ void fillInnerStruct(
 LLVMValueRef constructCountedStruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMTypeRef structL,
     Reference* structTypeM,
@@ -32,12 +33,12 @@ LLVMValueRef constructCountedStruct(
   LLVMValueRef newStructPtrLE = allocateStruct(globalState, builder, structTypeM, structL);
   auto objIdLE =
       fillControlBlock(
-          globalState, builder,
+          globalState, functionState, builder,
           getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
   fillInnerStruct(
       builder, structM, membersLE,
       getStructContentsPtr(builder, newStructPtrLE));
-  buildFlare(from, globalState, builder, "Allocating ", structM->name->name, objIdLE);
+  buildFlare(from, globalState, functionState, builder, "Allocating ", structM->name->name, objIdLE);
   return newStructPtrLE;
 }
 
@@ -69,6 +70,7 @@ LLVMValueRef constructInnerStruct(
 LLVMValueRef translateConstruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
     const std::vector<LLVMValueRef>& membersLE) {
@@ -83,7 +85,7 @@ LLVMValueRef translateConstruct(
     case Mutability::MUTABLE: {
       auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
       return constructCountedStruct(
-          from, globalState, builder, countedStructL, desiredReference, structM, membersLE);
+          from, globalState, functionState, builder, countedStructL, desiredReference, structM, membersLE);
     }
     case Mutability::IMMUTABLE: {
       if (desiredReference->location == Location::INLINE) {
@@ -95,11 +97,12 @@ LLVMValueRef translateConstruct(
         auto countedStructL =
             globalState->getCountedStruct(structReferend->fullName);
         return constructCountedStruct(
-            from, globalState, builder, countedStructL, desiredReference, structM, membersLE);
+            from, globalState, functionState, builder, countedStructL, desiredReference, structM, membersLE);
       }
     }
     default:
       assert(false);
       return nullptr;
   }
+  assert(false);
 }

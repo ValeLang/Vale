@@ -14,5 +14,6 @@
     <orderEntry type="module" module-name="Templar" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
+    <orderEntry type="module" module-name="Astronomer" />
   </component>
 </module>

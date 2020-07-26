@@ -12,28 +12,6 @@ import scala.collection.immutable.List
 import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
 
 object TypeTemplar {
-//
-//  def evaluateAndReferencifyType(env: IEnvironment, temputs: TemputsBox, type1: ITemplexA, ownershipIfMutable: Ownership):
-//  (Coord) = {
-//    val typeTemplata = TemplataTemplar.evaluateTemplex(env, temputs, type1)
-//    typeTemplata match {
-//      case st @ StructTemplata(_, _) => {
-//        val structRef =
-//          StructTemplar.getStructRef(temputs, st, List())
-//        (TemplataTemplar.pointifyReferend(temputs, structRef, ownershipIfMutable))
-//      }
-//      case st @ InterfaceTemplata(_, _) => {
-//        val interfaceRef =
-//          StructTemplar.getInterfaceRef(temputs, st, List())
-//        (TemplataTemplar.pointifyReferend(temputs, interfaceRef, ownershipIfMutable))
-//      }
-//      case CoordTemplata(r) => (r)
-//      case KindTemplata(referend) => {
-//        (TemplataTemplar.pointifyReferend(temputs, referend, ownershipIfMutable))
-//      }
-//    }
-//  }
-
   def convertExprs(
       env: IEnvironment,
       temputs: TemputsBox,

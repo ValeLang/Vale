@@ -15,6 +15,7 @@
 LLVMValueRef loadMember(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
     LLVMValueRef structExpr,

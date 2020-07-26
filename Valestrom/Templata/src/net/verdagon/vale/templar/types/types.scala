@@ -13,6 +13,13 @@ import scala.collection.immutable.List
 sealed trait Ownership extends Queriable2 {
   def order: Int;
 }
+case object Share extends Ownership {
+  override def order: Int = 1;
+
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func)
+  }
+}
 case object Own extends Ownership {
   override def order: Int = 2;
 
@@ -27,7 +34,7 @@ case object Borrow extends Ownership {
     List(this).collect(func)
   }
 }
-case object Share extends Ownership {
+case object Weak extends Ownership {
   override def order: Int = 4;
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -272,6 +279,7 @@ trait CitizenDefinition2 {
 case class StructDefinition2(
   fullName: FullName2[ICitizenName2],
   export: Boolean,
+  weakable: Boolean,
   mutability: Mutability,
   members: List[StructMember2],
   isClosure: Boolean
@@ -315,6 +323,7 @@ case class StructDefinition2(
 
 case class InterfaceDefinition2(
     fullName: FullName2[CitizenName2],
+    weakable: Boolean,
     mutability: Mutability,
     // This does not include abstract functions declared outside the interface.
     // See IMRFDI for why we need to remember only the internal methods here.

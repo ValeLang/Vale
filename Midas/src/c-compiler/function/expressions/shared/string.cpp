@@ -26,12 +26,13 @@ LLVMValueRef getLenFromStrWrapperPtr(
 
 LLVMValueRef buildConstantVStr(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     const std::string& contents) {
 
   auto lengthLE = constI64LE(contents.length());
 
-  auto strWrapperPtrLE = mallocStr(globalState, builder, lengthLE);
+  auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
 
   std::vector<LLVMValueRef> argsLE = {
       getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE),

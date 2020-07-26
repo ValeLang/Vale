@@ -74,6 +74,8 @@ void translateFunction(
 
   BlockState initialBlockState(nullptr);
 
+  buildFlare(FL(), globalState, &functionState, bodyTopLevelBuilder, "Calling function ", functionM->prototype->name->name);
+
   // Translate the body of the function. Can ignore the result because it's a
   // Never, because Valestrom guarantees we end function bodies in a ret.
   auto resultLE =

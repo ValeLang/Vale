@@ -35,10 +35,14 @@ public:
       getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
       strlen, censusContains, censusAdd, censusRemove, panic;
 
+  LLVMValueRef allocWrc, incrementWrc, decrementWrc, wrcIsLive, markWrcDead, getNumWrcs;
+
   int controlBlockTypeStrIndex;
   int controlBlockObjIdIndex;
   int controlBlockRcMemberIndex;
-  LLVMTypeRef controlBlockStructL;
+  int controlBlockWrciMemberIndex;
+  LLVMTypeRef nonWeakableControlBlockStructL;
+  LLVMTypeRef weakableControlBlockStructL;
   LLVMTypeRef stringWrapperStructL;
   LLVMTypeRef stringInnerStructL;
 
@@ -57,6 +61,10 @@ public:
   std::unordered_map<std::string, LLVMTypeRef> interfaceRefStructs;
   // These contain a bunch of function pointer fields.
   std::unordered_map<std::string, LLVMTypeRef> interfaceTableStructs;
+  // These contain a pointer to the weak ref count int, and a pointer to the underlying struct.
+  std::unordered_map<std::string, LLVMTypeRef> structWeakRefStructs;
+  // These contain a pointer to the weak ref count int, and then a regular interface ref struct.
+  std::unordered_map<std::string, LLVMTypeRef> interfaceWeakRefStructs;
 
   // These contain a ref count and an array type. Yon references
   // point to these.
@@ -83,10 +91,20 @@ public:
     assert(structIter != countedStructs.end());
     return structIter->second;
   }
+  LLVMTypeRef getStructWeakRefStruct(Name* name) {
+    auto structIter = structWeakRefStructs.find(name->name);
+    assert(structIter != structWeakRefStructs.end());
+    return structIter->second;
+  }
   LLVMTypeRef getInterfaceRefStruct(Name* name) {
     auto structIter = interfaceRefStructs.find(name->name);
     assert(structIter != interfaceRefStructs.end());
     return structIter->second;
+  }
+  LLVMTypeRef getInterfaceWeakRefStruct(Name* name) {
+    auto interfaceIter = interfaceWeakRefStructs.find(name->name);
+    assert(interfaceIter != interfaceWeakRefStructs.end());
+    return interfaceIter->second;
   }
   LLVMTypeRef getInterfaceTableStruct(Name* name) {
     auto structIter = interfaceTableStructs.find(name->name);

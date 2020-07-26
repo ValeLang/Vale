@@ -140,8 +140,12 @@ Reference* readReference(MetalCache* cache, const json& reference) {
   auto ownership = readOwnership(cache, reference["ownership"]);
   auto location = readLocation(cache, reference["location"]);
   auto referend = readReferend(cache, reference["referend"]);
+//  std::string debugStr = reference["debugStr"];
 
-  return cache->getReference(ownership, location, referend);
+  return makeIfNotPresent(
+      &cache->references[referend][ownership],
+      location,
+      [&](){ return new Reference(ownership, location, referend); });
 }
 
 Mutability readMutability(const json& mutability) {
@@ -173,6 +177,8 @@ Ownership readOwnership(MetalCache* cache, const json& ownership) {
     return Ownership::OWN;
   } else if (ownership[""].get<std::string>() == "Borrow") {
     return Ownership::BORROW;
+  } else if (ownership[""].get<std::string>() == "Weak") {
+    return Ownership::WEAK;
   } else if (ownership[""].get<std::string>() == "Share") {
     return Ownership::SHARE;
   } else {
@@ -217,8 +223,8 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
   }
 
   return makeIfNotPresent(
-      &cache->variableIds,
-      number,
+      &cache->variableIds[number],
+      maybeName,
       [&](){ return new VariableId(number, maybeName); });
 }
 
@@ -281,6 +287,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readLocal(cache, expression["local"]),
         readOwnership(cache, expression["targetOwnership"]),
         expression["localName"]);
+  } else if (type == "WeakAlias") {
+    return new WeakAlias(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        readReferend(cache, expression["sourceReferend"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),
@@ -387,8 +398,9 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new StructToInterfaceUpcast(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceStructType"]),
-        readStructReferend(cache, expression["sourceStructName"]),
-        readInterfaceReferend(cache, expression["targetInterfaceName"]));
+        readStructReferend(cache, expression["sourceStructReferend"]),
+        readReference(cache, expression["targetInterfaceType"]),
+        readInterfaceReferend(cache, expression["targetInterfaceReferend"]));
   } else if (type == "DestroyKnownSizeArrayIntoFunction") {
     return new DestroyKnownSizeArrayIntoFunction(
         readExpression(cache, expression["arrayExpr"]),
@@ -406,6 +418,18 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "ConstantStr") {
     return new ConstantStr(
         expression["value"]);
+  } else if (type == "LockWeak") {
+    return new LockWeak(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        readPrototype(cache, expression["someConstructor"]),
+        readReference(cache, expression["someType"]),
+        readStructReferend(cache, expression["someReferend"]),
+        readPrototype(cache, expression["noneConstructor"]),
+        readReference(cache, expression["noneType"]),
+        readStructReferend(cache, expression["noneReferend"]),
+        readReference(cache, expression["resultOptType"]),
+        readInterfaceReferend(cache, expression["resultOptReferend"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);
@@ -453,7 +477,8 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
       readName(cache, struuct["name"]),
       readMutability(struuct["mutability"]),
       readArray(cache, struuct["edges"], readEdge),
-      readArray(cache, struuct["members"], readStructMember));
+      readArray(cache, struuct["members"], readStructMember),
+      struuct["weakable"]);
 }
 
 InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
@@ -463,7 +488,8 @@ InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
       readName(cache, struuct["name"]),
       readMutability(struuct["mutability"]),
       {},
-      readArray(cache, struuct["methods"], readInterfaceMethod));
+      readArray(cache, struuct["methods"], readInterfaceMethod),
+      struuct["weakable"]);
 }
 
 Function* readFunction(MetalCache* cache, const json& function) {

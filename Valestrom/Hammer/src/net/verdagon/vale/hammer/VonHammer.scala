@@ -67,26 +67,28 @@ object VonHammer {
   }
 
   def vonifyInterface(interface: InterfaceDefinitionH): IVonData = {
-    val InterfaceDefinitionH(fullName, mutability, superInterfaces, prototypes) = interface
+    val InterfaceDefinitionH(fullName, weakable, mutability, superInterfaces, prototypes) = interface
 
     VonObject(
       "Interface",
       None,
       Vector(
         VonMember("name", VonStr(fullName.toString())),
+        VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterfaceRef).toVector)),
         VonMember("methods", VonArray(None, prototypes.map(vonifyInterfaceMethod).toVector))))
   }
 
   def vonfiyStruct(struct: StructDefinitionH): IVonData = {
-    val StructDefinitionH(fullName, export, mutability, edges, members) = struct
+    val StructDefinitionH(fullName, export, weakable, mutability, edges, members) = struct
 
     VonObject(
       "Struct",
       None,
       Vector(
         VonMember("name", VonStr(fullName.toString())),
+        VonMember("weakable", VonBool(weakable)),
         VonMember("export", VonBool(export)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("edges", VonArray(None, edges.map(edge => vonifyEdge(edge)).toVector)),
@@ -137,6 +139,14 @@ object VonHammer {
   def vonifyCoord(coord: ReferenceH[ReferendH]): IVonData = {
     val ReferenceH(ownership, location, referend) = coord
 
+//    val vonDataWithoutDebugStr =
+//      VonObject(
+//        "Ref",
+//        None,
+//        Vector(
+//          VonMember("ownership", vonifyOwnership(ownership)),
+//          VonMember("location", vonifyLocation(location)),
+//          VonMember("referend", vonifyKind(referend))))
     VonObject(
       "Ref",
       None,
@@ -144,6 +154,13 @@ object VonHammer {
         VonMember("ownership", vonifyOwnership(ownership)),
         VonMember("location", vonifyLocation(location)),
         VonMember("referend", vonifyKind(referend))))
+//        VonMember(
+//          "debugStr",
+//          VonStr(
+//            MetalPrinter.print(vonDataWithoutDebugStr)
+//              // Because all the quotes and backslashes are annoying when debugging
+//              .replace('"'.toString, "")
+//              .replace("\\", "")))))
   }
 
   def vonifyEdge(edgeH: EdgeH): IVonData = {
@@ -174,6 +191,7 @@ object VonHammer {
       case m.OwnH => VonObject("Own", None, Vector())
       case m.BorrowH => VonObject("Borrow", None, Vector())
       case m.ShareH => VonObject("Share", None, Vector())
+      case m.WeakH => VonObject("Weak", None, Vector())
     }
   }
 
@@ -287,6 +305,31 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
+      }
+      case WeakAliasH(sourceExpr) => {
+        VonObject(
+          "WeakAlias",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind))))
+      }
+      case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
+        VonObject(
+          "LockWeak",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("someConstructor", vonifyPrototype(someConstructor)),
+            VonMember("someType", vonifyCoord(someConstructor.returnType)),
+            VonMember("someReferend", vonifyKind(someConstructor.returnType.kind)),
+            VonMember("noneConstructor", vonifyPrototype(noneConstructor)),
+            VonMember("noneType", vonifyCoord(noneConstructor.returnType)),
+            VonMember("noneReferend", vonifyKind(noneConstructor.returnType.kind)),
+            VonMember("resultOptType", vonifyCoord(resultOptType)),
+            VonMember("resultOptReferend", vonifyKind(resultOptType.kind))))
       }
       case ReturnH(sourceExpr) => {
         VonObject(
@@ -408,15 +451,16 @@ object VonHammer {
             VonMember("consumerType", vonifyCoord(consumerExpr.resultType)),
             VonMember("consumerReferend", vonifyKind(consumerExpr.resultType.kind))))
       }
-      case StructToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
+      case si @ StructToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         VonObject(
           "StructToInterfaceUpcast",
           None,
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceStructType", vonifyCoord(sourceExpr.resultType)),
-            VonMember("sourceStructName", vonifyStructRef(sourceExpr.resultType.kind)),
-            VonMember("targetInterfaceName", vonifyInterfaceRef(targetInterfaceRef))))
+            VonMember("sourceStructReferend", vonifyStructRef(sourceExpr.resultType.kind)),
+            VonMember("targetInterfaceType", vonifyCoord(si.resultType)),
+            VonMember("targetInterfaceReferend", vonifyInterfaceRef(targetInterfaceRef))))
       }
       case InterfaceToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         vimpl()

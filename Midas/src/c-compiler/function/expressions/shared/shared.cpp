@@ -79,9 +79,10 @@ LLVMValueRef getControlBlockPtr(
   }
 }
 
-void flareAdjustRc(
+void flareAdjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef controlBlockPtr,
@@ -90,6 +91,7 @@ void flareAdjustRc(
   buildFlare(
       from,
       globalState,
+      functionState,
       builder,
       typeid(*refM->referend).name(),
       " ",
@@ -102,31 +104,29 @@ void flareAdjustRc(
 }
 
 // Returns the new RC
-LLVMValueRef adjustRc(
+LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
     Reference* refM,
     int amount) {
   auto controlBlockPtrLE = getControlBlockPtr(builder, exprLE, refM);
-  auto rcPtrLE =
-      getRcPtrFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
   auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
-  flareAdjustRc(from, globalState, builder, refM, controlBlockPtrLE, oldRc, newRc);
+  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
   return newRc;
 }
 
-LLVMValueRef rcIsZero(
+LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
     Reference* refM) {
-  return isZeroLE(
-      builder,
-      getRcFromControlBlockPtr(
-          globalState, builder, getControlBlockPtr(builder, exprLE, refM)));
+  auto controlBlockPtr = getControlBlockPtr(builder, exprLE, refM);
+  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, controlBlockPtr));
 }
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
@@ -135,7 +135,7 @@ LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
       LLVMIntEQ,
       intLE,
       LLVMConstInt(LLVMTypeOf(intLE), 0, false),
-      "rcIsZero");
+      "strongRcIsZero");
 }
 
 LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
@@ -188,8 +188,8 @@ void buildAssert(
     const std::string& failMessage) {
   buildIf(
       functionState, builder, isZeroLE(builder, conditionLE),
-      [from, globalState, failMessage](LLVMBuilderRef thenBuilder) {
-        buildFlare(from, globalState, thenBuilder, failMessage, " Exiting!");
+      [from, globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
+        buildFlare(from, globalState, functionState, thenBuilder, failMessage, " Exiting!");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
@@ -273,4 +273,64 @@ void checkValidReference(
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else assert(false);
   }
+}
+
+LLVMValueRef buildCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Prototype* prototype,
+    std::vector<LLVMValueRef> argsLE) {
+  auto funcIter = globalState->functions.find(prototype->name->name);
+  assert(funcIter != globalState->functions.end());
+  auto funcL = funcIter->second;
+
+  auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
+  checkValidReference(FL(), globalState, functionState, builder, prototype->returnType, resultLE);
+
+  if (prototype->returnType->referend == globalState->metalCache.never) {
+    return LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
+  } else {
+    return resultLE;
+  }
+}
+
+LLVMValueRef upcast2(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+
+    Reference* sourceStructTypeM,
+    StructReferend* sourceStructReferendM,
+    LLVMValueRef sourceStructLE,
+
+    Reference* targetInterfaceTypeM,
+    InterfaceReferend* targetInterfaceReferendM) {
+  assert(sourceStructTypeM->location != Location::INLINE);
+
+  auto interfaceRefLT =
+      globalState->getInterfaceRefStruct(
+          targetInterfaceReferendM->fullName);
+
+  auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
+  interfaceRefLE =
+      LLVMBuildInsertValue(
+          builder,
+          interfaceRefLE,
+          getControlBlockPtr(builder, sourceStructLE, sourceStructTypeM),
+          0,
+          "interfaceRefWithOnlyObj");
+  interfaceRefLE =
+      LLVMBuildInsertValue(
+          builder,
+          interfaceRefLE,
+          globalState->getInterfaceTablePtr(
+              globalState->program->getStruct(sourceStructReferendM->fullName)
+                  ->getEdgeForInterface(targetInterfaceReferendM->fullName)),
+          1,
+          "interfaceRef");
+
+  checkValidReference(
+      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
+  return interfaceRefLE;
 }

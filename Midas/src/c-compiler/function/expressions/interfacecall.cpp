@@ -12,7 +12,6 @@ LLVMValueRef translateInterfaceCall(
     BlockState* blockState,
     LLVMBuilderRef builder,
     InterfaceCall* call) {
-  buildFlare(FL(), globalState, builder, "Begin interface call");
   auto argExprsLE =
       translateExpressions(globalState, functionState, blockState, builder, call->argExprs);
 
@@ -28,8 +27,6 @@ LLVMValueRef translateInterfaceCall(
       buildInterfaceCall(
           builder, argExprsLE, call->virtualParamIndex, call->indexInEdge);
   checkValidReference(FL(), globalState, functionState, builder, call->functionType->returnType, resultLE);
-
-  buildFlare(FL(), globalState, builder, "End interface call");
 
   if (call->functionType->returnType->referend == globalState->metalCache.never) {
     return LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));

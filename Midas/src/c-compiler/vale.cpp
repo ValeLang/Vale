@@ -39,171 +39,66 @@
 using json = nlohmann::json;
 
 
+LLVMValueRef addFunction(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
+  LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+  return LLVMAddFunction(mod, name.c_str(), funcType);
+}
+
 void initInternalExterns(GlobalState* globalState) {
-  {
-    LLVMTypeRef retType = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef paramType = LLVMInt64Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState->malloc = LLVMAddFunction(globalState->mod, "malloc", funcType);
-  }
+  auto voidLT = LLVMVoidType();
+  auto voidPtrLT = LLVMPointerType(voidLT, 0);
+  auto int1LT = LLVMInt1Type();
+  auto int8LT = LLVMInt8Type();
+  auto int64LT = LLVMInt64Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramType = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState->free = LLVMAddFunction(globalState->mod, "free", funcType);
-  }
+  auto stringInnerStructPtrLT = LLVMPointerType(globalState->stringInnerStructL, 0);
 
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramType = LLVMInt8Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState->exit = LLVMAddFunction(globalState->mod, "exit", funcType);
-  }
+  globalState->malloc = addFunction(globalState->mod, "malloc", int8PtrLT, {int64LT});
+  globalState->free = addFunction(globalState->mod, "free", voidLT, {int8PtrLT});
+  globalState->exit = addFunction(globalState->mod, "exit", voidLT, {int8LT});
+  globalState->assert = addFunction(globalState->mod, "__vassert", voidLT, {int1LT});
+  globalState->assertI64Eq = addFunction(globalState->mod, "__vassertI64Eq", voidLT, { int64LT, int64LT });
+  globalState->flareI64 = addFunction(globalState->mod, "__vflare_i64", voidLT, { int64LT, int64LT });
+  globalState->printCStr = addFunction(globalState->mod, "__vprintCStr", voidLT, {int8PtrLT});
+  globalState->getch = addFunction(globalState->mod, "getchar", int64LT, {});
+  globalState->printInt = addFunction(globalState->mod, "__vprintI64", voidLT, {int64LT});
+  globalState->printBool = addFunction(globalState->mod, "__vprintBool", voidLT, {int1LT});
+  globalState->initStr =
+      addFunction(globalState->mod, "__vinitStr", voidLT,
+          { stringInnerStructPtrLT, int8PtrLT, });
+  globalState->addStr =
+      addFunction(globalState->mod, "__vaddStr", voidLT,
+          { stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT });
+  globalState->eqStr =
+      addFunction(globalState->mod, "__veqStr", int8LT,
+          { stringInnerStructPtrLT, stringInnerStructPtrLT });
+  globalState->printVStr =
+      addFunction(globalState->mod, "__vprintStr", voidLT,
+          { stringInnerStructPtrLT });
+  globalState->intToCStr = addFunction(globalState->mod, "__vintToCStr", voidLT, { int64LT, int8PtrLT, int64LT });
+  globalState->strlen = addFunction(globalState->mod, "strlen", int64LT, { int8PtrLT });
+  globalState->censusContains = addFunction(globalState->mod, "__vcensusContains", int64LT, {voidPtrLT});
+  globalState->censusAdd = addFunction(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
+  globalState->censusRemove = addFunction(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramType = LLVMInt1Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, &paramType, 1, 0);
-    globalState->assert = LLVMAddFunction(globalState->mod, "__vassert", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramTypes[2] = { LLVMInt64Type(), LLVMInt64Type() };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
-    globalState->assertI64Eq = LLVMAddFunction(globalState->mod, "__vassertI64Eq", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    LLVMTypeRef paramTypes[] = { LLVMInt64Type(), LLVMInt64Type() };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes, 2, 0);
-    globalState->flareI64 = LLVMAddFunction(globalState->mod, "__vflare_i64", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(LLVMInt8Type(), 0)
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->printCStr = LLVMAddFunction(globalState->mod, "__vprintCStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMInt64Type();
-    LLVMTypeRef funcType = LLVMFunctionType(retType, nullptr, 0, 0);
-    globalState->getch = LLVMAddFunction(globalState->mod, "getchar", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMInt64Type()
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->printInt = LLVMAddFunction(globalState->mod, "__vprintI64", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMInt1Type()
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->printBool = LLVMAddFunction(globalState->mod, "__vprintBool", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(globalState->stringInnerStructL, 0),
-        LLVMPointerType(LLVMInt8Type(), 0),
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->initStr = LLVMAddFunction(globalState->mod, "__vinitStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(globalState->stringInnerStructL, 0),
-        LLVMPointerType(globalState->stringInnerStructL, 0),
-        LLVMPointerType(globalState->stringInnerStructL, 0)
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->addStr = LLVMAddFunction(globalState->mod, "__vaddStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMInt8Type();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(globalState->stringInnerStructL, 0),
-        LLVMPointerType(globalState->stringInnerStructL, 0)
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->eqStr = LLVMAddFunction(globalState->mod, "__veqStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(globalState->stringInnerStructL, 0)
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->printVStr = LLVMAddFunction(globalState->mod, "__vprintStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMInt64Type(),
-        LLVMPointerType(LLVMInt8Type(), 0),
-        LLVMInt64Type(),
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->intToCStr = LLVMAddFunction(globalState->mod, "__vintToCStr", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMInt64Type();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(LLVMInt8Type(), 0),
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->strlen = LLVMAddFunction(globalState->mod, "strlen", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMInt64Type();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(LLVMVoidType(), 0),
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->censusContains = LLVMAddFunction(globalState->mod, "__vcensusContains", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(LLVMVoidType(), 0),
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->censusAdd = LLVMAddFunction(globalState->mod, "__vcensusAdd", funcType);
-  }
-
-  {
-    LLVMTypeRef retType = LLVMVoidType();
-    std::vector<LLVMTypeRef> paramTypes = {
-        LLVMPointerType(LLVMVoidType(), 0),
-    };
-    LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-    globalState->censusRemove = LLVMAddFunction(globalState->mod, "__vcensusRemove", funcType);
-  }
+  globalState->allocWrc = addFunction(globalState->mod, "__allocWrc", int64LT, {});
+  globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
+  globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
+  globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});
+  globalState->markWrcDead = addFunction(globalState->mod, "__markWrcDead", voidLT, {int64LT});
+  globalState->getNumWrcs = addFunction(globalState->mod, "__getNumWrcs", int64LT, {});
 }
 
 void initInternalStructs(GlobalState* globalState) {
+  auto voidLT = LLVMVoidType();
+  auto voidPtrLT = LLVMPointerType(voidLT, 0);
+  auto int1LT = LLVMInt1Type();
+  auto int8LT = LLVMInt8Type();
+  auto int64LT = LLVMInt64Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+  auto int64PtrLT = LLVMPointerType(int64LT, 0);
+
   {
     auto controlBlockStructL =
         LLVMStructCreateNamed(
@@ -211,17 +106,40 @@ void initInternalStructs(GlobalState* globalState) {
     std::vector<LLVMTypeRef> memberTypesL;
 
     globalState->controlBlockTypeStrIndex = memberTypesL.size();
-    memberTypesL.push_back(LLVMPointerType(LLVMInt8Type(), 0));
+    memberTypesL.push_back(int8PtrLT);
 
     globalState->controlBlockObjIdIndex = memberTypesL.size();
-    memberTypesL.push_back(LLVMInt64Type());
+    memberTypesL.push_back(int64LT);
 
     globalState->controlBlockRcMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(LLVMInt64Type());
+    memberTypesL.push_back(int64LT);
+
+    globalState->controlBlockWrciMemberIndex = memberTypesL.size();
+    memberTypesL.push_back(int64LT);
 
     LLVMStructSetBody(
         controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->controlBlockStructL = controlBlockStructL;
+    globalState->weakableControlBlockStructL = controlBlockStructL;
+  }
+
+  {
+    auto controlBlockStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), CONTROL_BLOCK_STRUCT_NAME);
+    std::vector<LLVMTypeRef> memberTypesL;
+
+    assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match weakable
+    memberTypesL.push_back(int8PtrLT);
+
+    assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match weakable
+    memberTypesL.push_back(int64LT);
+
+    assert(memberTypesL.size() == globalState->controlBlockRcMemberIndex); // should match weakable
+    memberTypesL.push_back(int64LT);
+
+    LLVMStructSetBody(
+        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
+    globalState->nonWeakableControlBlockStructL = controlBlockStructL;
   }
 
   {
@@ -230,7 +148,7 @@ void initInternalStructs(GlobalState* globalState) {
             LLVMGetGlobalContext(), "__Str");
     std::vector<LLVMTypeRef> memberTypesL;
     memberTypesL.push_back(LLVMInt64Type());
-    memberTypesL.push_back(LLVMArrayType(LLVMInt8Type(), 0));
+    memberTypesL.push_back(LLVMArrayType(int8LT, 0));
     LLVMStructSetBody(
         stringInnerStructL, memberTypesL.data(), memberTypesL.size(), false);
     globalState->stringInnerStructL = stringInnerStructL;
@@ -241,7 +159,7 @@ void initInternalStructs(GlobalState* globalState) {
         LLVMStructCreateNamed(
             LLVMGetGlobalContext(), "__Str_rc");
     std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(globalState->controlBlockStructL);
+    memberTypesL.push_back(globalState->nonWeakableControlBlockStructL);
     memberTypesL.push_back(globalState->stringInnerStructL);
     LLVMStructSetBody(
         stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
@@ -367,11 +285,22 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
   LLVMValueRef mainResult =
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "valeMainCall");
 
-  LLVMValueRef args[2] = {
-      LLVMConstInt(LLVMInt64Type(), 0, false),
-      LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs")
-  };
-  LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
+  {
+    LLVMValueRef args[2] = {
+        LLVMConstInt(LLVMInt64Type(), 0, false),
+        LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs")
+    };
+    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
+  }
+
+  {
+    LLVMValueRef args[2] = {
+        LLVMConstInt(LLVMInt64Type(), 0, false),
+        LLVMBuildCall(
+            entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs")
+    };
+    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
+  }
 
   LLVMBuildRet(entryBuilder, mainResult);
   LLVMDisposeBuilder(entryBuilder);

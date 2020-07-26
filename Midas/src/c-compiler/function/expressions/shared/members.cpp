@@ -46,6 +46,7 @@ void storeInnerStructMember(
 LLVMValueRef loadMember(
     AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
     LLVMValueRef structExpr,
@@ -64,7 +65,7 @@ LLVMValueRef loadMember(
       auto resultLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      acquireReference(from, globalState, builder, memberType, resultLE);
+      acquireReference(from, globalState, functionState, builder, memberType, resultLE);
       return resultLE;
     }
   } else if (mutability == Mutability::MUTABLE) {
@@ -73,7 +74,7 @@ LLVMValueRef loadMember(
     auto resultLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, memberIndex, memberName);
-    acquireReference(from, globalState, builder, memberType, resultLE);
+    acquireReference(from, globalState, functionState, builder, memberType, resultLE);
     return resultLE;
   } else {
     assert(false);

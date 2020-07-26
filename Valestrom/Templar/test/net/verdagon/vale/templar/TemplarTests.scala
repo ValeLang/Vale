@@ -164,7 +164,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Test overloads") {
-    val compile = new Compilation(Samples.get("overloads.vale"))
+    val compile = new Compilation(Samples.get("functions/overloads.vale"))
     val temputs = compile.getTemputs()
 
     temputs.lookupFunction("main").header.returnType shouldEqual
@@ -263,6 +263,7 @@ class TemplarTests extends FunSuite with Matchers {
       case StructDefinition2(
       simpleName("MyStruct"),
       false,
+      false,
       Mutable,
       List(StructMember2(CodeVarName2("a"), Final, ReferenceMemberType2(Coord(Share, Int2())))),
       false) =>
@@ -298,12 +299,12 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interfaceDef =
       temputs.getAllInterfaces().collectFirst({
-        case id @ InterfaceDefinition2(simpleName("MyInterface"), Mutable, List()) => id
+        case id @ InterfaceDefinition2(simpleName("MyInterface"), false, Mutable, List()) => id
       }).get
 
     val structDef =
       temputs.getAllStructs.collectFirst({
-        case sd @ StructDefinition2(simpleName("MyStruct"), false, Mutable, _, false) => sd
+        case sd @ StructDefinition2(simpleName("MyStruct"), false, false, Mutable, _, false) => sd
       }).get
 
     vassert(temputs.impls.exists(impl => {

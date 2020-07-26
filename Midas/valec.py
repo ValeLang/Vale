@@ -85,7 +85,7 @@ class ValeCompiler(unittest.TestCase):
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"a.out"
-        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c"]
+        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c", "src/valestd/weaks.c"]
         proc = self.clang(o_files, exe_file)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +

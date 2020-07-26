@@ -175,8 +175,7 @@ object Driver {
               println(highlights)
             }
             case file => {
-              println("Writing to file " + opts.highlightOutputFile.get)
-              writeFile(opts.highlightOutputFile.get, highlights)
+              writeFile(file, highlights)
             }
           }
         }
@@ -225,9 +224,13 @@ object Driver {
   }
 
   def writeFile(filename: String, s: String): Unit = {
-    val file = new File(filename)
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(s)
-    bw.close()
+    if (filename == "stdout:") {
+      println(s)
+    } else {
+      val file = new File(filename)
+      val bw = new BufferedWriter(new FileWriter(file))
+      bw.write(s)
+      bw.close()
+    }
   }
 }

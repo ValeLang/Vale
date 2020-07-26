@@ -6,6 +6,7 @@ case class NullablePT(inner: ITemplexPT) extends ITemplexPT
 
 case class InlinePT(range: Range, inner: ITemplexPT) extends ITemplexPT
 //case class BorrowPT(range: Range, inner: ITemplexPT) extends ITemplexPT
+case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
 case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT
 //case class OwnPT(inner: ITemplexPT) extends ITemplexPT
 case class AnonymousRunePT() extends ITemplexPT

@@ -137,9 +137,29 @@ object ExpressionHammer {
         val lengthResultNode = ArrayLengthH(resultLine);
 
         val arrayLengthAndDeferredsExprH =
-            translateDeferreds(hinputs, hamuts, locals, lengthResultNode, deferreds)
+          translateDeferreds(hinputs, hamuts, locals, lengthResultNode, deferreds)
 
         (arrayLengthAndDeferredsExprH, List())
+      }
+
+      case LockWeak2(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor) => {
+        val (resultLine, deferreds) =
+          translate(hinputs, hamuts, locals, innerExpr2);
+        val (resultOptBorrowTypeH) =
+          TypeHammer.translateReference(hinputs, hamuts, resultOptBorrowType2)
+
+        val someConstructorH =
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, someConstructor);
+        val noneConstructorH =
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, noneConstructor);
+
+        val resultNode =
+          LockWeakH(
+            resultLine,
+            resultOptBorrowTypeH.expectInterfaceReference(),
+            someConstructorH.prototype,
+            noneConstructorH.prototype);
+        (resultNode, deferreds)
       }
 
       case TupleE2(exprs, resultType, resultPackType) => {
@@ -414,6 +434,12 @@ object ExpressionHammer {
         // We only translated them above to mark unstackified things unstackified.
 
         (innerWithDeferredsH, List())
+      }
+
+      case WeakAlias2(innerExpr) => {
+        val (innerExprResultLine, innerDeferreds) =
+          translate(hinputs, hamuts, locals, innerExpr);
+        (WeakAliasH(innerExprResultLine), innerDeferreds)
       }
 
       case _ => {

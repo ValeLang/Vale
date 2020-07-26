@@ -119,6 +119,7 @@ public:
   // called into a Never-returning function.
   LLVMTypeRef returnTypeL;
   int nextBlockNumber = 1;
+  int instructionDepthInAst = 0;
 
   FunctionState(LLVMValueRef containingFunc_, LLVMTypeRef returnTypeL_) :
       containingFunc(containingFunc_),

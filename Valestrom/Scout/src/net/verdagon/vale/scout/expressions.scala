@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{MutabilityP, VariabilityP}
+import net.verdagon.vale.parser.{BorrowP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
 import net.verdagon.vale.vassert
@@ -22,7 +22,12 @@ case class ExprMutateSE(mutatee: IExpressionSE, expr: IExpressionSE) extends IEx
 case class GlobalMutateSE(name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
 case class LocalMutateSE(name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
 
-case class ExpressionLendSE(innerExpr1: IExpressionSE) extends IExpressionSE
+case class LendSE(innerExpr1: IExpressionSE, targetOwnership: OwnershipP) extends IExpressionSE {
+  targetOwnership match {
+    case WeakP =>
+    case BorrowP =>
+  }
+}
 
 
 //case class CurriedFuncH(closureExpr: ExpressionH, funcName: String) extends ExpressionH
@@ -126,7 +131,7 @@ case class FunctionCallSE(callableExpr: IExpressionSE, argsExprs1: List[IExpress
 
 case class TemplateSpecifiedLookupSE(name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
 
-case class LocalLoadSE(name: IVarNameS, borrow: Boolean) extends IExpressionSE
+case class LocalLoadSE(name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
 case class FunctionLoadSE(name: GlobalFunctionFamilyNameS) extends IExpressionSE
 case class RuneLookupSE(rune: IRuneS) extends IExpressionSE
 

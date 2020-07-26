@@ -159,6 +159,7 @@ class InfererTests extends FunSuite with Matchers {
         InterfaceEnvEntry(
           InterfaceA(
             TopLevelCitizenDeclarationNameA("ImmInterface", CodeLocationS(0, 0)),
+            false,
             CodeRuneA("M"),
             Some(ImmutableP),
             KindTemplataType,
@@ -175,6 +176,7 @@ class InfererTests extends FunSuite with Matchers {
             StructA(
               TopLevelCitizenDeclarationNameA("MutTStruct", CodeLocationS(0, 0)),
               false,
+              false,
               CodeRuneA("M"),
               Some(MutableP),
               TemplateTemplataType(List(CoordTemplataType), KindTemplataType),
@@ -188,6 +190,7 @@ class InfererTests extends FunSuite with Matchers {
       InterfaceEnvEntry(
         InterfaceA(
           TopLevelCitizenDeclarationNameA("MutTInterface", CodeLocationS(0, 0)),
+          false,
           CodeRuneA("M"),
           Some(MutableP),
           TemplateTemplataType(List(CoordTemplataType), KindTemplataType),
@@ -202,6 +205,7 @@ class InfererTests extends FunSuite with Matchers {
         StructA(
           TopLevelCitizenDeclarationNameA("MutStruct", CodeLocationS(0, 0)),
           false,
+          false,
           CodeRuneA("M"),
           Some(MutableP),
           KindTemplataType,
@@ -215,6 +219,7 @@ class InfererTests extends FunSuite with Matchers {
       InterfaceEnvEntry(
         InterfaceA(
           TopLevelCitizenDeclarationNameA("MutInterface", CodeLocationS(0, 0)),
+          false,
           CodeRuneA("M"),
           Some(MutableP),
           KindTemplataType,
@@ -227,6 +232,9 @@ class InfererTests extends FunSuite with Matchers {
     val mutStructBorrowName = CitizenName2("MutStructBorrow", List())
     entries = entries ++ Map(mutStructBorrowName ->
       TemplataEnvEntry(CoordTemplata(Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
+    val mutStructWeakName = CitizenName2("MutStructWeak", List())
+    entries = entries ++ Map(mutStructWeakName ->
+      TemplataEnvEntry(CoordTemplata(Coord(Weak, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     val mutArraySequenceOf4IntName = CitizenName2("MutArraySequenceOf4Int", List())
     entries = entries ++ Map(mutArraySequenceOf4IntName ->
       TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
@@ -550,7 +558,7 @@ class InfererTests extends FunSuite with Matchers {
             EqualsTR(
               TemplexTR(RuneTT(CodeRune2("__Let0_"), CoordTemplataType)),
               CallTR("toRef", List(TemplexTR(NameTT(CodeTypeNameA("MutInterface"), KindTemplataType))), CoordTemplataType))),
-          Map(CodeRune2("__Let0_") -> KindTemplataType),
+          Map(CodeRune2("__Let0_") -> CoordTemplataType),
           Set(CodeRune2("__Let0_")),
           Map(),
           List(AtomAP(CaptureA(CodeVarNameA("x"),FinalP),None,CodeRuneA("__Let0_"),None)),
@@ -579,7 +587,7 @@ class InfererTests extends FunSuite with Matchers {
                       List(RuneTT(CodeRune2("T"), CoordTemplataType)),
                       KindTemplataType))),
                 CoordTemplataType))),
-          Map(CodeRune2("__Let0_") -> KindTemplataType, CodeRune2("T") -> CoordTemplataType),
+          Map(CodeRune2("__Let0_") -> CoordTemplataType, CodeRune2("T") -> CoordTemplataType),
           Set(CodeRune2("__Let0_"), CodeRune2("T")),
           Map(),
           List(AtomAP(CaptureA(CodeVarNameA("x"),FinalP),None,CodeRuneA("__Let0_"),None)),
@@ -823,7 +831,7 @@ class InfererTests extends FunSuite with Matchers {
         makeCannedEnvironment(),
         FakeState(),
         rules,
-        Map(CodeRune2("0") -> KindTemplataType, CodeRune2("T") -> CoordTemplataType),
+        Map(CodeRune2("0") -> CoordTemplataType, CodeRune2("T") -> CoordTemplataType),
         Set(CodeRune2("0"), CodeRune2("T")),
         Map(),
         List(AtomAP(CaptureA(CodeVarNameA("x"),FinalP),Some(AbstractAP),CodeRuneA("0"),None)),
@@ -1056,7 +1064,7 @@ class InfererTests extends FunSuite with Matchers {
                   TemplexTR(CoordListTT(List(NameTT(CodeTypeNameA("int"), CoordTemplataType)))),
                   TemplexTR(NameTT(CodeTypeNameA("int"), CoordTemplataType)))),
               TemplexTR(RuneTT(CodeRune2("F"),PrototypeTemplataType)))),
-          Map(CodeRune2("F") -> CoordTemplataType),
+          Map(CodeRune2("F") -> PrototypeTemplataType),
           Set(CodeRune2("F")),
           Map(),
           List(),
@@ -1156,19 +1164,28 @@ class InfererTests extends FunSuite with Matchers {
 
     expectSuccess(run("int", OwnP)) shouldEqual Coord(Share, Int2())
     expectSuccess(run("int", BorrowP)) shouldEqual Coord(Share, Int2())
+    vassert(expectFail(run("int", WeakP)).contains("Expected a weak, but was a share"))
     expectSuccess(run("int", ShareP)) shouldEqual Coord(Share, Int2())
 
     vassert(expectFail(run("MutStruct", ShareP)).contains("Expected a share, but was an own"))
     expectSuccess(run("MutStruct", OwnP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStruct", BorrowP)) shouldEqual Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStruct", WeakP)) shouldEqual Coord(Weak, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
     vassert(expectFail(run("MutStructBorrow", ShareP)).contains("Expected a share, but was a borrow"))
     expectSuccess(run("MutStructBorrow", OwnP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStructBorrow", BorrowP)) shouldEqual Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructBorrow", WeakP)) shouldEqual Coord(Weak, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+
+    vassert(expectFail(run("MutStructWeak", ShareP)).contains("Expected a share, but was a weak"))
+    vassert(expectFail(run("MutStructWeak", OwnP)).contains("Expected a own, but was a weak"))
+    vassert(expectFail(run("MutStructWeak", BorrowP)).contains("Expected a borrow, but was a weak"))
+    expectSuccess(run("MutStructWeak", WeakP)) shouldEqual Coord(Weak, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
     expectSuccess(run("void", ShareP)) shouldEqual Coord(Share, Void2())
     expectSuccess(run("void", OwnP)) shouldEqual Coord(Share, Void2())
     expectSuccess(run("void", BorrowP)) shouldEqual Coord(Share, Void2())
+    vassert(expectFail(run("void", WeakP)).contains("Expected a weak, but was a share"))
   }
 
   test("test matching ownershipped") {
@@ -1203,10 +1220,12 @@ class InfererTests extends FunSuite with Matchers {
 
     expectSuccess(run("int", OwnP)) shouldEqual Coord(Share, Int2())
     expectSuccess(run("int", BorrowP)) shouldEqual Coord(Share, Int2())
+    vassert(expectFail(run("int", WeakP)).contains("Couldn't match incoming Share against expected Weak"))
     expectSuccess(run("int", ShareP)) shouldEqual Coord(Share, Int2())
 
     expectSuccess(run("void", OwnP)) shouldEqual Coord(Share, Void2())
     expectSuccess(run("void", BorrowP)) shouldEqual Coord(Share, Void2())
+    vassert(expectFail(run("void", WeakP)).contains("Couldn't match incoming Share against expected Weak"))
     expectSuccess(run("void", ShareP)) shouldEqual Coord(Share, Void2())
 
     vassert(expectFail(run("MutStruct", ShareP)).contains("Couldn't match incoming Own against expected Share"))
@@ -1214,11 +1233,23 @@ class InfererTests extends FunSuite with Matchers {
     expectSuccess(run("MutStruct", OwnP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     // Tries to take the borrow off the incoming own coord... fails.
     vassert(expectFail(run("MutStruct", BorrowP)).contains("Couldn't match incoming Own against expected Borrow"))
+    vassert(expectFail(run("MutStruct", WeakP)).contains("Couldn't match incoming Own against expected Weak"))
 
     // Tries to take the own off the incoming borrow coord... fails.
     vassert(expectFail(run("MutStructBorrow", OwnP)).contains("Couldn't match incoming Borrow against expected Own"))
     // Takes the borrow off the incoming borrow coord, succeeds and gives us an own.
     expectSuccess(run("MutStructBorrow", BorrowP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    // Takes the weak off the incoming borrow coord... fails.
+    vassert(expectFail(run("MutStructBorrow", WeakP)).contains("Couldn't match incoming Borrow against expected Weak"))
     vassert(expectFail(run("MutStructBorrow", ShareP)).contains("Couldn't match incoming Borrow against expected Share"))
+
+    // Tries to take the own off the incoming weak coord... fails.
+    vassert(expectFail(run("MutStructWeak", OwnP)).contains("Couldn't match incoming Weak against expected Own"))
+    // Takes the borrow off the incoming weak coord... fails.
+    vassert(expectFail(run("MutStructWeak", BorrowP)).contains("Couldn't match incoming Weak against expected Borrow"))
+    // Takes the weak off the incoming weak coord, succeeds and gives us an own.
+    expectSuccess(run("MutStructWeak", WeakP)) shouldEqual Coord(Own, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    vassert(expectFail(run("MutStructWeak", ShareP)).contains("Couldn't match incoming Weak against expected Share"))
+
   }
 }

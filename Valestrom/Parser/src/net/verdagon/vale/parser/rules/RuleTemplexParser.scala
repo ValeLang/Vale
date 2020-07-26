@@ -13,6 +13,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     "false" ^^^ BoolPRT(false) |
     "own" ^^^ OwnershipPRT(OwnP) |
     "borrow" ^^^ OwnershipPRT(BorrowP) |
+    "weak" ^^^ OwnershipPRT(WeakP) |
     "share" ^^^ OwnershipPRT(ShareP) |
     "mut" ^^^ MutabilityPRT(MutableP) |
     "imm" ^^^ MutabilityPRT(ImmutableP) |

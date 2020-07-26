@@ -1,8 +1,8 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{CaptureP, FinalP}
-import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
+import net.verdagon.vale.parser.{CaptureP, FinalP, OwnP}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
 object NotEquals {
@@ -36,6 +36,6 @@ object NotEquals {
                 FunctionCallAE(
                   FunctionLoadAE(GlobalFunctionFamilyNameA("==")),
                   List(
-                    LocalLoadAE(CodeVarNameA("left"), false),
-                    LocalLoadAE(CodeVarNameA("right"), false))))))))))
+                    LocalLoadAE(CodeVarNameA("left"), OwnP),
+                    LocalLoadAE(CodeVarNameA("right"), OwnP))))))))))
 }

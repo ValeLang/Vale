@@ -1,5 +1,7 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.{vcheck, vfail}
+
 import scala.util.parsing.combinator.RegexParsers
 
 trait TemplexParser extends RegexParsers with ParserUtils {
@@ -10,7 +12,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
         RepeaterSequencePT(Range(begin, end), MutabilityPT(MutableP), numElements, elementType)
       }
     }) |
-    (pos ~ ("[<" ~> optWhite ~> unaryTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
+    (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~  mutability ~ numElements ~ elementType ~ end => {
         RepeaterSequencePT(Range(begin, end), mutability, numElements, elementType)
       }
@@ -23,7 +25,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     }
   }
 
-  private[parser] def unaryTemplex: Parser[ITemplexPT] = {
+  private[parser] def atomTemplex: Parser[ITemplexPT] = {
     ("(" ~> optWhite ~> templex <~ optWhite <~ ")") |
     repeaterSeqTemplex |
     manualSeqTemplex |
@@ -32,6 +34,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     "false" ^^^ BoolPT(false) |
     "own" ^^^ OwnershipPT(OwnP) |
     "borrow" ^^^ OwnershipPT(BorrowP) |
+    "weak" ^^^ OwnershipPT(WeakP) |
     "share" ^^^ OwnershipPT(ShareP) |
     "mut" ^^^ MutabilityPT(MutableP) |
     "imm" ^^^ MutabilityPT(ImmutableP) |
@@ -44,16 +47,23 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     (typeIdentifier ^^ NameOrRunePT)
   }
 
-  private[parser] def templex: Parser[ITemplexPT] = {
+  private[parser] def unariedTemplex: Parser[ITemplexPT] = {
+    (pos ~ ("!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => PermissionedPT(Range(begin, end), ReadwriteP, inner) }) |
     ("?" ~> optWhite ~> templex ^^ NullablePT) |
-    (pos ~ (("&&"|"&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&")) ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), BorrowP, inner) } |
-    (pos ~ ("^" ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), OwnP, inner) } |
-    (pos ~ ("*" ~> optWhite ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), ShareP, inner) } |
-    (pos ~ ("inl" ~> white ~> templex) ~ pos) ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) } |
-    (pos ~ ((unaryTemplex <~ optWhite) ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~ "," ~ optWhite) <~ optWhite <~ ">")) ~ pos ^^ {
+    (pos ~ ("^" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), OwnP, inner) }) |
+    (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), ShareP, inner) }) |
+    (pos ~ ("&&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), WeakP, inner) }) |
+    (pos ~ ("&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), BorrowP, inner) }) |
+    (pos ~ ("inl" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) }) |
+    // A hack to do region highlighting
+    ((pos ~ ("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~ templex ~ pos) ^^ { case begin ~ regionName ~ inner ~ end => inner }) |
+    (pos ~ ((atomTemplex <~ optWhite) ~ ("<" ~> optWhite ~> repsep(templex, optWhite ~ "," ~ optWhite) <~ optWhite <~ ">")) ~ pos ^^ {
       case begin ~ (template ~ args) ~ end => CallPT(Range(begin, end), template, args)
     }) |
-    unaryTemplex
+    atomTemplex
   }
 
+  private[parser] def templex: Parser[ITemplexPT] = {
+    unariedTemplex
+  }
 }

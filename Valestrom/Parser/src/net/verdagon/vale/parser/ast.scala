@@ -49,10 +49,15 @@ case class ImplP(
   struct: ITemplexPT,
   interface: ITemplexPT)
 
+sealed trait IStructAttributeP
+case class ExportP(range: Range) extends IStructAttributeP
+case class WeakableP(range: Range) extends IStructAttributeP
+case class SealedP(range: Range) extends IStructAttributeP
+
 case class StructP(
   range: Range,
   name: StringP,
-  export: Boolean,
+  attributes: List[IStructAttributeP],
   mutability: MutabilityP,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
@@ -72,20 +77,33 @@ case class StructMemberP(
 case class InterfaceP(
     range: Range,
     name: StringP,
-    seealed: Option[UnitP],
+    attributes: List[IStructAttributeP],
     mutability: MutabilityP,
     maybeIdentifyingRunes: Option[IdentifyingRunesP],
     templateRules: Option[TemplateRulesP],
     members: List[FunctionP])
 
-case class IdentifyingRunesP(range: Range, runes: List[StringP])
+sealed trait IFunctionAttributeP
+case class AbstractAttributeP(range: Range) extends IFunctionAttributeP
+case class ExternAttributeP(range: Range) extends IFunctionAttributeP
+case class PureAttributeP(range: Range) extends IFunctionAttributeP
+
+sealed trait IRuneAttributeP
+case class TypeRuneAttributeP(range: Range, tyype: ITypePR) extends IRuneAttributeP
+case class ReadOnlyRuneAttributeP(range: Range) extends IRuneAttributeP
+case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP
+case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP
+case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP
+
+case class IdentifyingRuneP(range: Range, name: StringP, attributes: List[IRuneAttributeP])
+
+case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP])
 case class TemplateRulesP(range: Range, rules: List[IRulexPR])
 case class ParamsP(range: Range, patterns: List[PatternPP])
 case class FunctionP(
   range: Range,
   name: Option[StringP],
-  isExtern: Option[UnitP],
-  isAbstract: Option[UnitP],
+  attributes: List[IFunctionAttributeP],
 
   // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
   maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
@@ -110,6 +128,7 @@ case object VaryingP extends VariabilityP
 sealed trait OwnershipP
 case object OwnP extends OwnershipP
 case object BorrowP extends OwnershipP
+case object WeakP extends OwnershipP
 case object ShareP extends OwnershipP
 
 sealed trait PermissionP

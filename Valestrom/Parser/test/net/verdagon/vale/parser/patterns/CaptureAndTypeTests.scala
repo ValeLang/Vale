@@ -62,10 +62,10 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("Capture with this. in front") {
-    compile("this.arr &R") shouldHave {
+    compile("this.arr &&R") shouldHave {
       case PatternPP(_,_,
       Some(CaptureP(_, ConstructingMemberNameP(StringP(_, "arr")),FinalP)),
-      Some(OwnershippedPT(_,BorrowP, NameOrRunePT(StringP(_, "R")))),
+      Some(OwnershippedPT(_,WeakP, NameOrRunePT(StringP(_, "R")))),
       None,
       None) =>
     }

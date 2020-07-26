@@ -2,7 +2,7 @@ package net.verdagon.vale.carpenter
 
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionHeader2, KindTemplata, Signature2}
 import net.verdagon.vale.templar.types.{Coord, Immutable, InterfaceRef2, KnownSizeArrayT2, Share, StructRef2, UnknownSizeArrayT2}
-import net.verdagon.vale.templar.{Discard2, Edge2, FullName2, FunctionCall2, FunctionName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, Impl2, InterfaceEdgeBlueprint, Program2, Temputs}
+import net.verdagon.vale.templar.{Discard2, Edge2, FullName2, FunctionCall2, FunctionName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, Impl2, InterfaceEdgeBlueprint, LockWeak2, Program2, Temputs}
 import net.verdagon.vale.{vassertSome, vcurious}
 
 import scala.collection.mutable
@@ -45,6 +45,10 @@ object Reachability {
       case ir @ InterfaceRef2(_) => visitInterface(temputs, edgeBlueprints, edges, reachables, ir)
       case ksa @ KnownSizeArrayT2(_, _) => visitKnownSizeArray(temputs, edgeBlueprints, edges, reachables, ksa)
       case usa @ UnknownSizeArrayT2(_) => visitUnknownSizeArray(temputs, edgeBlueprints, edges, reachables, usa)
+      case usa @ LockWeak2(_, _, someConstructor, noneConstructor) => {
+        visitFunction(temputs, edgeBlueprints, edges, reachables, someConstructor.toSignature)
+        visitFunction(temputs, edgeBlueprints, edges, reachables, noneConstructor.toSignature)
+      }
     })
   }
 

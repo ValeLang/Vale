@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-// #include <optional>
+#include <unordered_map>
 
 using std::move;
 
@@ -116,16 +116,19 @@ public:
     Mutability mutability;
     std::vector<Edge*> edges;
     std::vector<StructMember*> members;
+    bool weakable;
 
     StructDefinition(
         Name* name_,
         Mutability mutability_,
         std::vector<Edge*> edges_,
-        std::vector<StructMember*> members_) :
+        std::vector<StructMember*> members_,
+        bool weakable_) :
         name(name_),
         mutability(mutability_),
         edges(edges_),
-        members(members_) {}
+        members(members_),
+        weakable(weakable_) {}
 
     Edge* getEdgeForInterface(Name* interfaceName) {
       for (auto e : edges) {
@@ -159,16 +162,19 @@ public:
     Mutability mutability;
     std::vector<Name*> superInterfaces;
     std::vector<InterfaceMethod*> methods;
+    bool weakable;
 
     InterfaceDefinition(
         Name* name_,
         Mutability mutability_,
-        std::vector<Name*> superInterfaces_,
-        std::vector<InterfaceMethod*> methods_) :
+        const std::vector<Name*>& superInterfaces_,
+        const std::vector<InterfaceMethod*>& methods_,
+        bool weakable_) :
       name(name_),
       mutability(mutability_),
       superInterfaces(superInterfaces_),
-      methods(methods_) {}
+      methods(methods_),
+      weakable(weakable_) {}
 };
 
 class Function {

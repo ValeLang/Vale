@@ -32,6 +32,7 @@ void fillKnownSizeArray(
 
 LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
     LLVMTypeRef structLT,
@@ -40,6 +41,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
   auto newStructLE = allocateStruct(globalState, builder, structTypeM, structLT);
   fillControlBlock(
       globalState,
+      functionState,
       builder,
       getConcreteControlBlockPtr(builder, newStructLE),
       typeName);
@@ -89,6 +91,7 @@ LLVMValueRef translateNewArrayFromValues(
         auto resultLE =
             constructKnownSizeArrayCountedStruct(
                 globalState,
+                functionState,
                 builder,
                 newArrayFromValues->arrayRefType,
                 knownSizeArrayCountedStructLT,

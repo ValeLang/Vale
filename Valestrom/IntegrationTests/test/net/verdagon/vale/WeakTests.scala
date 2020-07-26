@@ -50,10 +50,22 @@ class WeakTests extends FunSuite with Matchers {
     }
   }
 
+  test("Make and lock weak ref from borrow local then destroy own") {
+    val compile = new Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("weaks/weakFromLocalCRef.vale"))
+
+    val main = compile.getTemputs().lookupFunction("main")
+
+    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+  }
+
   test("Make and lock weak ref from borrow then destroy own") {
     val compile = new Compilation(
       Samples.get("genericvirtuals/opt.vale") +
-      Samples.get("weaks/weakFromCRef.vale"))
+        Samples.get("weaks/weakFromCRef.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
 

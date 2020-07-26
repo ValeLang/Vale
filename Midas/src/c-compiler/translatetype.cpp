@@ -19,7 +19,7 @@ LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
   if (iter == globalState->knownSizeArrayCountedStructs.end()) {
     auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), knownSizeArrayMT->name->name.c_str());
     std::vector<LLVMTypeRef> elementsL;
-    elementsL.push_back(globalState->controlBlockStructL);
+    elementsL.push_back(globalState->nonWeakableControlBlockStructL);
     elementsL.push_back(innerArrayLT);
     LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
 
@@ -45,7 +45,7 @@ LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
   if (iter == globalState->unknownSizeArrayCountedStructs.end()) {
     auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "rc").c_str());
     std::vector<LLVMTypeRef> elementsL;
-    elementsL.push_back(globalState->controlBlockStructL);
+    elementsL.push_back(globalState->nonWeakableControlBlockStructL);
     elementsL.push_back(LLVMInt64Type());
     elementsL.push_back(innerArrayLT);
     LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
@@ -68,22 +68,6 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
     return LLVMPointerType(globalState->stringWrapperStructL, 0);
   } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
     return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
-  } else if (auto structReferend =
-      dynamic_cast<StructReferend*>(referenceM->referend)) {
-
-    auto structM = globalState->program->getStruct(structReferend->fullName);
-    if (structM->mutability == Mutability::MUTABLE) {
-      auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
-      return LLVMPointerType(countedStructL, 0);
-    } else {
-      auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
-      if (referenceM->location == Location::INLINE) {
-        return globalState->getInnerStruct(structReferend->fullName);
-      } else {
-        auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
-        return LLVMPointerType(countedStructL, 0);
-      }
-    }
   } else if (auto knownSizeArrayMT =
       dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
     if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
@@ -108,11 +92,48 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
         translateUnknownSizeArrayToWrapperStruct(
             globalState, unknownSizeArrayMT);
     return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+  } else if (auto structReferend =
+      dynamic_cast<StructReferend*>(referenceM->referend)) {
+
+    auto structM = globalState->program->getStruct(structReferend->fullName);
+    if (structM->mutability == Mutability::MUTABLE) {
+      auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+      if (referenceM->ownership == Ownership::OWN) {
+        return LLVMPointerType(countedStructL, 0);
+      } else if (referenceM->ownership == Ownership::BORROW) {
+        return LLVMPointerType(countedStructL, 0);
+      } else if (referenceM->ownership == Ownership::WEAK) {
+        return globalState->getStructWeakRefStruct(structM->name);
+      } else {
+        assert(false);
+      }
+    } else {
+      auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
+      if (referenceM->location == Location::INLINE) {
+        return globalState->getInnerStruct(structReferend->fullName);
+      } else {
+        auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+        return LLVMPointerType(countedStructL, 0);
+      }
+    }
   } else if (auto interfaceReferend =
       dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
+    auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
     auto interfaceRefStructL =
         globalState->getInterfaceRefStruct(interfaceReferend->fullName);
-    return interfaceRefStructL;
+    if (interfaceM->mutability == Mutability::MUTABLE) {
+      if (referenceM->ownership == Ownership::OWN) {
+        return interfaceRefStructL;
+      } else if (referenceM->ownership == Ownership::BORROW) {
+        return interfaceRefStructL;
+      } else if (referenceM->ownership == Ownership::WEAK) {
+        return globalState->getInterfaceWeakRefStruct(interfaceM->name);
+      } else {
+        assert(false);
+      }
+    } else {
+      return interfaceRefStructL;
+    }
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
     assert(false);

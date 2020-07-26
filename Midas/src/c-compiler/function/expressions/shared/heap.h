@@ -22,6 +22,7 @@ LLVMValueRef mallocUnknownSizeArray(
 
 LLVMValueRef mallocStr(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE);
 

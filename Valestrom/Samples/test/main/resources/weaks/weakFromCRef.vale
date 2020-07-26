@@ -2,8 +2,7 @@
 struct Muta weakable { hp int; }
 fn main() {
   ownMuta = Muta(7);
-  borrowMuta = &ownMuta;
-  weakMuta = &&borrowMuta;
+  weakMuta = &&(&ownMuta);
   maybeBorrowMuta = lock(weakMuta);
   = maybeBorrowMuta^.get().hp;
 }

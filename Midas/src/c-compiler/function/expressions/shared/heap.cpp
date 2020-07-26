@@ -77,6 +77,7 @@ LLVMValueRef mallocUnknownSizeArray(
 
 LLVMValueRef mallocStr(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE) {
 
@@ -100,7 +101,7 @@ LLVMValueRef mallocStr(
           LLVMPointerType(globalState->stringWrapperStructL, 0),
           "newStrWrapperPtr");
   fillControlBlock(
-      globalState, builder, getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
+      globalState, functionState, builder, getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
   if (globalState->opt->census) {
@@ -135,7 +136,7 @@ void freeConcrete(
         "");
   }
 
-  auto rcIsZeroLE = rcIsZero(globalState, builder, concretePtrLE, concreteRefM);
+  auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
   buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
       "Tried to free concrete that had nonzero RC!");
 
@@ -151,6 +152,7 @@ void freeConcrete(
     buildFlare(
         AFL("Freeing: "),
         globalState,
+        functionState,
         builder,
         LLVMBuildBitCast(builder, concreteAsCharPtrLE, LLVMPointerType(LLVMInt64Type(), 0), "printthis"));
     LLVMBuildCall(

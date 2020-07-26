@@ -84,7 +84,7 @@ class ValeTest(unittest.TestCase):
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"{build_dir}/{file_name_without_extension}"
-        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c"]
+        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c", "src/valestd/weaks.c"]
         proc = self.clang(o_files, exe_file)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
@@ -146,9 +146,9 @@ class ValeTest(unittest.TestCase):
             [PATH_TO_SAMPLES + "while/while.vale"],
             42)
 
-    def test_constraintref(self) -> None:
+    def test_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code(
-            [PATH_TO_SAMPLES + "constraintref.vale"],
+            [PATH_TO_SAMPLES + "constraintRef.vale"],
             8)
 
     def test_knownsizeimmarray(self) -> None:
@@ -246,6 +246,24 @@ class ValeTest(unittest.TestCase):
             [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
              PATH_TO_SAMPLES + "weaks/dropThenLock.vale"],
             42)
+
+    def test_lockWhileLive(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/lockWhileLive.vale"],
+            7)
+
+    def test_weakFromLocalCRef(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/weakFromLocalCRef.vale"],
+            7)
+
+    def test_weakFromCRef(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/weakFromCRef.vale"],
+            7)
 
     # def test_roguelike(self) -> None:
     #     self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)

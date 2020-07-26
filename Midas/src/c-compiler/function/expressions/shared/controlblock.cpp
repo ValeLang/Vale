@@ -18,7 +18,7 @@ LLVMValueRef getInterfaceControlBlockPtr(
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef getRcPtrFromControlBlockPtr(
+LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtr) {
@@ -27,6 +27,19 @@ LLVMValueRef getRcPtrFromControlBlockPtr(
       controlBlockPtr,
       globalState->controlBlockRcMemberIndex,
       "rcPtr");
+}
+
+LLVMValueRef getWrciFromControlBlockPtr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockPtr) {
+  auto wrciPtrLE =
+      LLVMBuildStructGEP(
+          builder,
+          controlBlockPtr,
+          globalState->controlBlockWrciMemberIndex,
+          "wrciPtr");
+  return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
 }
 
 LLVMValueRef getObjIdFromControlBlockPtr(
@@ -57,24 +70,32 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
       "typeNameStrPtr");
 }
 
-LLVMValueRef getRcFromControlBlockPtr(
+LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef structExpr) {
-  auto rcPtrLE = getRcPtrFromControlBlockPtr(globalState, builder, structExpr);
+  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, structExpr);
   return LLVMBuildLoad(builder, rcPtrLE, "rc");
 }
 
 // Returns object ID
 LLVMValueRef fillControlBlock(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtrLE,
     const std::string& typeName) {
 
+  bool weakable = LLVMTypeOf(controlBlockPtrLE) == LLVMPointerType(globalState->weakableControlBlockStructL, 0);
+
   auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
 
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->controlBlockStructL);
+  LLVMValueRef newControlBlockLE = nullptr;
+  if (weakable) {
+    newControlBlockLE = LLVMGetUndef(globalState->weakableControlBlockStructL);
+  } else {
+    newControlBlockLE = LLVMGetUndef(globalState->nonWeakableControlBlockStructL);
+  }
   newControlBlockLE =
       LLVMBuildInsertValue(
           builder,
@@ -97,9 +118,46 @@ LLVMValueRef fillControlBlock(
           globalState->getOrMakeStringConstant(typeName),
           globalState->controlBlockTypeStrIndex,
           "controlBlockComplete");
+  if (weakable) {
+    auto wrciLE = LLVMBuildCall(builder, globalState->allocWrc, nullptr, 0, "");
+    newControlBlockLE =
+        LLVMBuildInsertValue(
+            builder,
+            newControlBlockLE,
+            wrciLE,
+            globalState->controlBlockWrciMemberIndex,
+            "controlBlockComplete");
+  }
   LLVMBuildStore(
       builder,
       newControlBlockLE,
       controlBlockPtrLE);
   return objIdLE;
+}
+
+LLVMValueRef getWrciFromWeakRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE) {
+  return LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "wrci");
+}
+
+LLVMValueRef getIsAliveFromWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE) {
+  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
+  return LLVMBuildCall(builder, globalState->wrcIsLive, &wrciLE, 1, "isAlive");
+}
+
+LLVMValueRef getObjPtrFromWeakRef(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefM,
+    LLVMValueRef weakRefLE,
+    Reference* constraintRefM) {
+  auto refLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+  checkValidReference(FL(), globalState, functionState, builder, constraintRefM, refLE);
+  acquireReference(FL(), globalState, functionState, builder, constraintRefM, refLE);
+  return refLE;
 }

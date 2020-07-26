@@ -136,6 +136,12 @@ case class FullNameH(parts: List[IVonData]) {
   }
 
   override def toString: String = {
+    parts.map(MetalPrinter.print).mkString(":")
+  }
+}
+
+object MetalPrinter {
+  def print(data: IVonData): String = {
     val nameMap =
       Map(
         "Str" -> "s",
@@ -147,6 +153,7 @@ case class FullNameH(parts: List[IVonData]) {
         "Ref" -> "R",
         "Share" -> "*",
         "Borrow" -> "&",
+        "Weak" -> "&&",
         "Own" -> "^",
         "Inline" -> "<",
         "Yonder" -> ">",
@@ -161,7 +168,7 @@ case class FullNameH(parts: List[IVonData]) {
         "LambdaCitizenName" -> "LC",
       )
     val printer = new VonPrinter(VonSyntax(false, true, false, false), Int.MaxValue, nameMap, false);
-    parts.map(printer.print).mkString(":")
+    printer.print(data)
   }
 }
 

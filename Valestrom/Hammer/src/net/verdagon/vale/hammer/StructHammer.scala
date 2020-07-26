@@ -61,6 +61,7 @@ object StructHammer {
         val interfaceDefH =
           InterfaceDefinitionH(
             fullNameH,
+            interfaceDef2.weakable,
             Conversions.evaluateMutability(interfaceDef2.mutability),
             List() /* super interfaces */,
             methodsH)
@@ -110,6 +111,7 @@ object StructHammer {
           StructDefinitionH(
             fullNameH,
             structDef2.`export`,
+            structDef2.weakable,
             Conversions.evaluateMutability(structDef2.mutability),
             edgesH,
             membersH);
@@ -139,6 +141,7 @@ object StructHammer {
         val structDefH =
           StructDefinitionH(
             boxFullNameH,
+            false,
             false,
             m.Mutable,
             List(),

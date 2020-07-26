@@ -29,7 +29,8 @@ object BuiltInFunctions {
     val (currentlyConstructingEnv8, functionGeneratorByName8) = addDrop(currentlyConstructingEnv7, functionGeneratorByName7, Immutable)
     val currentlyConstructingEnv9 = addArrayLen(currentlyConstructingEnv8)
     val currentlyConstructingEnv10 = addPanic(currentlyConstructingEnv9)
-    (currentlyConstructingEnv10, functionGeneratorByName8)
+    val currentlyConstructingEnv11 = addWeakLock(currentlyConstructingEnv10)
+    (currentlyConstructingEnv11, functionGeneratorByName8)
   }
 
   private def addConcreteDestructor(
@@ -381,7 +382,7 @@ object BuiltInFunctions {
                 List(LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
                 List(
                   ArrayLengthAE(
-                    LocalLoadAE(CodeVarNameA("arr"), false))))))))
+                    LocalLoadAE(CodeVarNameA("arr"), OwnP))))))))
       .addUnevaluatedFunction(
         FunctionA(
           FunctionNameA("len", s.CodeLocationS(0, 1)),
@@ -442,5 +443,41 @@ object BuiltInFunctions {
               TemplexAR(RuneAT(CodeRuneA("N"), CoordTemplataType)),
               TemplexAR(NameAT(CodeTypeNameA("__Never"), CoordTemplataType)))),
           ExternBodyA))
+  }
+
+  // Uses coord instead of kind as an identifying rune because the implementation
+  // might be different for different regions.
+  private def addWeakLock(currentlyConstructingEnv: NamespaceEnvironment[IName2]): NamespaceEnvironment[IName2] = {
+    currentlyConstructingEnv
+      .addUnevaluatedFunction(
+        FunctionA(
+          FunctionNameA("lock", s.CodeLocationS(1, 1)),
+          true,
+          TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
+          Set(),
+          List(CodeRuneA("OwningRune")),
+          Set(CodeRuneA("OwningRune"), CodeRuneA("OptBorrowRune"), CodeRuneA("WeakRune")),
+          Map(CodeRuneA("OwningRune") -> CoordTemplataType, CodeRuneA("OptBorrowRune") -> CoordTemplataType, CodeRuneA("WeakRune") -> CoordTemplataType),
+          List(ParameterA(AtomAP(CaptureA(CodeVarNameA("weakRef"), FinalP), None, CodeRuneA("WeakRune"), None))),
+          Some(CodeRuneA("OptBorrowRune")),
+          List(
+            EqualsAR(
+              TemplexAR(RuneAT(CodeRuneA("OptBorrowRune"), CoordTemplataType)),
+              TemplexAR(
+                CallAT(
+                  NameAT(CodeTypeNameA("Opt"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
+                  List(OwnershippedAT(BorrowP, RuneAT(CodeRuneA("OwningRune"), CoordTemplataType))),
+                  CoordTemplataType))),
+            EqualsAR(
+              TemplexAR(RuneAT(CodeRuneA("WeakRune"), CoordTemplataType)),
+              TemplexAR(
+                OwnershippedAT(WeakP, RuneAT(CodeRuneA("OwningRune"), CoordTemplataType))))),
+          CodeBodyA(
+            BodyAE(
+              List(),
+              BlockAE(
+                List(LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+                List(
+                  LockWeakAE(LocalLoadAE(CodeVarNameA("weakRef"), WeakP))))))))
   }
 }

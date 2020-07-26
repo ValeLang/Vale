@@ -38,7 +38,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 //    (opt(templateRulesPR) <~ optWhite) ~
         pos ~
         (atomPattern <~ white <~ "=" <~ white) ~
-        (expression <~ optWhite <~ ";") ~
+        (expression) ~
         pos ^^ {
       case begin ~ /*maybeTemplateRules ~*/ pattern ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
@@ -48,16 +48,22 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def lend: Parser[IExpressionPE] = {
-    // TODO: split this out into weak and borrow and constraint and region-calling
-    pos ~ (("&&"|"&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> optWhite ~> postfixableExpressions) ~ pos ^^ {
-      case begin ~ inner ~ end => LendPE(Range(begin, end), inner)
+    // TODO: split the 'a rule out when we implement regions
+    pos ~ (("&"| ("'" ~ opt(exprIdentifier <~ optWhite) <~ "&") | ("'" ~ exprIdentifier)) ~> optWhite ~> postfixableExpressions) ~ pos ^^ {
+      case begin ~ inner ~ end => LendPE(Range(begin, end), inner, BorrowP)
+    }
+  }
+
+  private[parser] def weakLend: Parser[IExpressionPE] = {
+    pos ~ ("&&" ~> optWhite ~> postfixableExpressions) ~ pos ^^ {
+      case begin ~ inner ~ end => LendPE(Range(begin, end), inner, WeakP)
     }
   }
 
   private[parser] def not: Parser[IExpressionPE] = {
     pos ~ (pstr("not") <~ white) ~ postfixableExpressions ~ pos ^^ {
       case begin ~ not ~ expr ~ end => {
-        FunctionCallPE(Range(begin, end), None, LookupPE(not, None), List(expr), true)
+        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(not, None), List(expr), BorrowP)
       }
     }
   }
@@ -95,17 +101,17 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def eachOrEachI: Parser[FunctionCallPE] = {
-    pos ~ (pstr("eachI") | pstr("each")) ~ (white ~> postfixableExpressions <~ white) ~ lambda ~ pos ^^ {
+    pos ~ (pstr("eachI") | pstr("each")) ~ (white ~> "(" ~> optWhite ~> postfixableExpressions <~ optWhite <~ ")" <~ white) ~ lambda ~ pos ^^ {
       case begin ~ eachI ~ collection ~ lam ~ end => {
-        FunctionCallPE(Range(begin, end), None, LookupPE(eachI, None), List(collection, lam), true)
+        FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(eachI, None), List(collection, lam), BorrowP)
       }
     }
   }
 
   private[parser] def whiile: Parser[WhilePE] = {
-    ("while" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> blockExprs <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
-      case condBegin ~ condExprs ~ condEnd ~ thenBlock => {
-        WhilePE(BlockPE(Range(condBegin, condEnd), condExprs), thenBlock)
+    pos ~ ("while" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> blockExprs <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
+      case begin ~ condBegin ~ condExprs ~ condEnd ~ thenBlock ~ end => {
+        WhilePE(Range(begin, end), BlockPE(Range(condBegin, condEnd), condExprs), thenBlock)
       }
     }
   }
@@ -122,7 +128,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def ifPart: Parser[(BlockPE, BlockPE)] = {
-    ("if" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> expression <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
+    ("if" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> (let | expression) <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
       case condBegin ~ condExpr ~ condEnd ~ thenLambda => {
         (BlockPE(Range(condBegin, condEnd), List(condExpr)), thenLambda)
       }
@@ -163,7 +169,16 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     // debt: "block" is here temporarily because we get ambiguities in this case:
     //   fn main() { {_ + _}(4 + 5) }
     // because it mistakenly successfully parses {_ + _} then dies on the next part.
-    (mutate <~ optWhite <~ ";") | swap | let | mat | (destruct <~ optWhite <~ ";") | whiile | eachOrEachI | ifLadder | (expression <~ ";") | ("block" ~> optWhite ~> bracedBlock)
+    (mutate <~ optWhite <~ ";") |
+    swap |
+    (let <~ optWhite <~ ";") |
+    mat |
+    (destruct <~ optWhite <~ ";") |
+    whiile |
+    eachOrEachI |
+    ifLadder |
+    (expression <~ ";") |
+    ("block" ~> optWhite ~> bracedBlock)
   }
 
   private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {
@@ -172,7 +187,16 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       bool |
       lambda |
       (pos ~ ("()" ~> pos) ^^ { // hack for shortcalling syntax highlighting
-        case begin ~ end => FunctionCallPE(Range(begin, end), None, LookupPE(StringP(Range(begin, begin), ""), None), List(), true)
+        case begin ~ end => {
+          FunctionCallPE(
+            Range(begin, end),
+            None,
+            Range(begin, begin),
+            false,
+            LookupPE(StringP(Range(begin, begin), ""), None),
+            List(),
+            BorrowP)
+        }
       }) |
       (packExpr ^^ {
         case List(only) => only
@@ -190,10 +214,31 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   private[parser] def expressionLevel9: Parser[IExpressionPE] = {
 
     sealed trait IStep
-    case class MethodCallStep(borrowContainer: Boolean, lookup: LookupPE, args: List[IExpressionPE]) extends IStep
-    case class MemberAccessStep(name: LookupPE) extends IStep
-    case class CallStep(borrowCallable: Boolean, args: List[IExpressionPE]) extends IStep
-    case class IndexStep(args: List[IExpressionPE]) extends IStep
+    case class MethodCallStep(
+      stepRange: Range,
+      operatorRange: Range,
+      callableTargetOwnership: OwnershipP,
+      isMapCall: Boolean,
+      lookup: LookupPE,
+      args: List[IExpressionPE]
+    ) extends IStep
+    case class MemberAccessStep(
+      stepRange: Range,
+      operatorRange: Range,
+      isMapCall: Boolean,
+      name: LookupPE
+    ) extends IStep
+    case class CallStep(
+      stepRange: Range,
+      operatorRange: Range,
+      callableTargetOwnership: OwnershipP,
+      isMapCall: Boolean,
+      args: List[IExpressionPE]
+    ) extends IStep
+    case class IndexStep(
+      stepRange: Range,
+      args: List[IExpressionPE]
+    ) extends IStep
     def step: Parser[IStep] = {
       def afterDot = {
         (integer ^^ { case IntLiteralPE(range, value) => LookupPE(StringP(range, value.toString), None) }) |
@@ -201,19 +246,21 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
         lookup
       }
 
-      (opt("^") ~ ("." ~> optWhite ~> afterDot) ~ opt(optWhite ~> packExpr) ^^ {
-        case moveContainer ~ lookup ~ None => {
+      ((pos <~ optWhite) ~ (opt("^") ~ opt("*") <~ ".") ~ (pos <~ optWhite) ~ (optWhite ~> afterDot) ~ opt(optWhite ~> packExpr) ~ pos ^^ {
+        case begin ~ (moveContainer ~ mapCall) ~ opEnd ~ lookup ~ None ~ end => {
           vassert(moveContainer.isEmpty)
-          MemberAccessStep(lookup)
+          MemberAccessStep(Range(begin, end), Range(begin, opEnd), mapCall.nonEmpty, lookup)
         }
-        case moveContainer ~ name ~ Some(args) => {
-          MethodCallStep(moveContainer.isEmpty, name, args)
+        case begin ~ (moveContainer ~ mapCall) ~ opEnd ~ name ~ Some(args) ~ end => {
+          MethodCallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) OwnP else BorrowP, mapCall.nonEmpty, name, args)
         }
       }) |
-      (opt("^") ~ packExpr ^^ {
-        case moveContainer ~ pack => CallStep(moveContainer.isEmpty, pack)
+      ((pos <~ optWhite) ~ opt("^") ~ opt("*") ~ (pos <~ optWhite) ~ packExpr ~ pos ^^ {
+        case begin ~ moveContainer ~ mapCall ~ opEnd ~ pack ~ end => {
+          CallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) OwnP else BorrowP, mapCall.nonEmpty, pack)
+        }
       }) |
-      (indexExpr ^^ IndexStep)
+      ((pos <~ optWhite) ~ indexExpr ~ pos ^^ { case begin ~ i ~ end => IndexStep(Range(begin, end), i) })
     }
 
     // The float is up here because we don't want the 0.0 in [[4]].0.0 to be parsed as a float.
@@ -225,17 +272,17 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       case begin ~ maybeInline ~ first ~ restWithDots ~ end => {
         val (_, expr) =
           restWithDots.foldLeft((maybeInline, first))({
-            case ((None, prev), MethodCallStep(borrowContainer, lookup, args)) => {
-              (None, MethodCallPE(Range(begin, end), prev, borrowContainer, lookup, args))
+            case ((None, prev), MethodCallStep(stepRange, operatorRange, borrowContainer, isMapCall, lookup, args)) => {
+              (None, MethodCallPE(Range(begin, stepRange.end), prev, operatorRange, borrowContainer, isMapCall, lookup, args))
             }
-            case ((prevInline, prev), CallStep(borrowCallable, args)) => {
-              (None, FunctionCallPE(Range(begin, end), prevInline, prev, args, borrowCallable))
+            case ((prevInline, prev), CallStep(stepRange, operatorRange, borrowCallable, isMapCall, args)) => {
+              (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, borrowCallable))
             }
-            case ((None, prev), MemberAccessStep(name)) => {
-              (None, DotPE(Range(begin, end), prev, name))
+            case ((None, prev), MemberAccessStep(stepRange, operatorRange, isMapCall, name)) => {
+              (None, DotPE(Range(begin, stepRange.end), prev, operatorRange, isMapCall, name))
             }
-            case ((None, prev), IndexStep(args)) => {
-              (None, DotCallPE(Range(begin, end), prev, args))
+            case ((None, prev), IndexStep(stepRange, args)) => {
+              (None, DotCallPE(Range(begin, stepRange.end), prev, args))
             }
           })
         expr
@@ -246,7 +293,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   // Parses expressions that can contain postfix operators, like function calling
   // or dots.
   private[parser] def postfixableExpressions: Parser[IExpressionPE] = {
-    ret | mutate | ifLadder | lend | not | expressionLevel9
+    ret | mutate | ifLadder | weakLend | lend | not | expressionLevel9
   }
 
   // Binariable = can have binary operators in it
@@ -277,19 +324,19 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       binariableExpression(
         postfixableExpressions,
         white ~> (pstr("*") | pstr("/")) <~ white,
-        (range, op: StringP, left, right) => FunctionCallPE(range, None, LookupPE(op, None), List(left, right), true))
+        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
 
     val withAddSubtract =
       binariableExpression(
         withMultDiv,
         white ~> (pstr("+") | pstr("-")) <~ white,
-        (range, op: StringP, left, right) => FunctionCallPE(range, None, LookupPE(op, None), List(left, right), true))
+        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
 
     val withComparisons =
       binariableExpression(
         withAddSubtract,
         white ~> specialOperators <~ white,
-        (range, op: StringP, left, right) => FunctionCallPE(range, None, LookupPE(op, None), List(left, right), true))
+        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
 
 //    val withAnd =
 //      binariableExpression(
@@ -307,7 +354,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       binariableExpression(
         withComparisons,
         not(white ~> pstr("=") <~ white) ~> (white ~> infixFunctionIdentifier <~ white),
-        (range, funcName: StringP, left, right) => FunctionCallPE(range, None, LookupPE(funcName, None), List(left, right), true))
+        (range, funcName: StringP, left, right) => {
+          FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), List(left, right), BorrowP)
+        })
 
     withCustomBinaries |
     (specialOperators ^^ (op => LookupPE(op, None)))
@@ -404,7 +453,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   private[parser] def lambda: Parser[LambdaPE] = {
     pos ~ existsMW("[]") ~ opt(patternPrototypeParams) ~ bracedBlock ~ pos ^^ {
       case begin ~ maybeCaptures ~ maybeParams ~ block ~ end => {
-        LambdaPE(maybeCaptures, FunctionP(Range(begin, end), None, None, None, None, None, maybeParams, None, Some(block)))
+        LambdaPE(maybeCaptures, FunctionP(Range(begin, end), None, List(), None, None, maybeParams, None, Some(block)))
       }
     }
   }
@@ -424,7 +473,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   def caase: Parser[LambdaPE] = {
     pos ~ patternPrototypeParam ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
       case begin ~ param ~ paramsEnd ~ body ~ end => {
-        LambdaPE(None, FunctionP(Range(begin, end), None, None, None, None, None, Some(ParamsP(Range(begin, paramsEnd), List(param))), None, Some(body)))
+        LambdaPE(None, FunctionP(Range(begin, end), None, List(), None, None, Some(ParamsP(Range(begin, paramsEnd), List(param))), None, Some(body)))
       }
     }
   }

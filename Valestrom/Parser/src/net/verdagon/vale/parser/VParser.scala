@@ -23,11 +23,17 @@ object VParser
   override def skipWhitespace = false
   override val whiteSpace = "[ \t\r\f]+".r
 
-  def filledBody: Parser[BlockPE] = bracedBlock
+  def filledBody: Parser[BlockPE] = {
+    // A hack to do region highlighting
+    opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~>
+      bracedBlock
+  }
 
   def emptyBody: Parser[BlockPE] = {
-    pos ~ ("{" ~> optWhite ~> pos <~ optWhite <~ "}") ~ pos ^^ {
-      case begin ~ middle ~ end => BlockPE(Range(begin, end), List(VoidPE(Range(middle, middle))))
+    // A hack to do region highlighting
+    pos ~ opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
+    ("{" ~> optWhite ~> pos <~ optWhite <~ "}") ~ pos ^^ {
+      case begin ~ maybeRegion ~ middle ~ end => BlockPE(Range(begin, end), List(VoidPE(Range(middle, middle))))
     }
   }
 
@@ -41,10 +47,15 @@ object VParser
       (noBody ^^^ None)
   }
 
+  def functionAttribute: Parser[IFunctionAttributeP] = {
+    pos ~ "abstract" ~ pos ^^ { case begin ~ _ ~ end => AbstractAttributeP(Range(begin, end)) } |
+    pos ~ "extern" ~ pos ^^ { case begin ~ _ ~ end => ExternAttributeP(Range(begin, end)) } |
+    pos ~ "pure" ~ pos ^^ { case begin ~ _ ~ end => PureAttributeP(Range(begin, end)) }
+  }
+
   def topLevelFunction: Parser[FunctionP] = {
         pos ~
-        existsW("abstract") ~
-        existsW("extern") ~
+        (repsep(functionAttribute, white) <~ optWhite) ~
         ("fn" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
         (patternPrototypeParams <~ optWhite) ~
@@ -56,13 +67,12 @@ object VParser
         opt(templateRulesPR <~ optWhite) ~
         (maybeBody) ~
         pos ^^ {
-      case begin ~ maybeAbstract ~ maybeExtern ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ maybeBody ~ end => {
+      case begin ~ attributes ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ maybeBody ~ end => {
         vassert(!(maybeTemplateRulesBeforeReturn.nonEmpty && maybeTemplateRulesAfterReturn.nonEmpty))
         FunctionP(
           Range(begin, end),
           Some(name),
-          maybeExtern,
-          maybeAbstract,
+          attributes,
           identifyingRunes,
           (maybeTemplateRulesBeforeReturn.toList ++ maybeTemplateRulesAfterReturn.toList).headOption,
           Some(patternParams),
@@ -87,7 +97,7 @@ object VParser
     pos ~
         ("interface " ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
-        existsMW("sealed") ~
+        (repsep(citizenAttribute, white) <~ optWhite) ~
         (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite <~ "{" <~ optWhite) ~
         repsep(topLevelFunction, optWhite) ~
@@ -99,18 +109,24 @@ object VParser
     }
   }
 
+  def citizenAttribute: Parser[IStructAttributeP] = {
+    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(Range(begin, end)) } |
+    pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(Range(begin, end)) } |
+    pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) }
+  }
+
   def struct: Parser[StructP] = {
     pos ~ ("struct" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         opt(identifyingRunesPR <~ optWhite) ~
-        (opt("export") <~ optWhite) ~
+        (repsep(citizenAttribute, white) <~ optWhite) ~
         (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite) ~
         (pos <~ "{" <~ optWhite) ~
         ("..." <~ optWhite ^^^ List() | repsep(structContent, optWhite)) ~
         (optWhite ~> "}" ~> pos) ^^ {
-      case begin ~ name ~ identifyingRunes ~ export ~ imm ~ maybeTemplateRules ~ membersBegin ~ members ~ end => {
+      case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ membersBegin ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP
-        StructP(Range(begin, end), name, export.nonEmpty, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members))
+        StructP(Range(begin, end), name, attributes, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members))
       }
     }
   }
@@ -147,7 +163,7 @@ object VParser
   }
 
   def runParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
-    val regex = "//[^\\r\\n]*".r
+    val regex = "(//[^\\r\\n]*|«\\w+»)".r
     val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
     var code = codeWithComments
     commentRanges.foreach({ case (begin, end) =>

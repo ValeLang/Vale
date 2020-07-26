@@ -43,6 +43,7 @@ object Conversions {
     ownership match {
       case OwnP => Own
       case BorrowP => Borrow
+      case WeakP => Weak
       case ShareP => Share
     }
   }
@@ -59,6 +60,7 @@ object Conversions {
     ownership match {
       case Own => OwnP
       case Borrow => BorrowP
+      case Weak => WeakP
       case Share => ShareP
     }
   }

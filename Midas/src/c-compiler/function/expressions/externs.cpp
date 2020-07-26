@@ -102,7 +102,7 @@ LLVMValueRef translateExternCall(
     auto combinedLenLE =
         LLVMBuildAdd(builder, leftStrLenLE, rightStrLenLE, "lenSum");
 
-    auto destStrWrapperPtrLE = mallocStr(globalState, builder, combinedLenLE);
+    auto destStrWrapperPtrLE = mallocStr(globalState, functionState, builder, combinedLenLE);
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
@@ -198,7 +198,7 @@ LLVMValueRef translateExternCall(
     std::vector<LLVMValueRef> strlenArgsLE = { itoaDestPtrLE };
     auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
 
-    auto strWrapperPtrLE = mallocStr(globalState, builder, lengthLE);
+    auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
     auto innerStrWrapperLE = getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
     std::vector<LLVMValueRef> argsLE = { innerStrWrapperLE, itoaDestPtrLE };
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");

@@ -62,6 +62,7 @@ add_executable(valec
 		src/c-compiler/struct/struct.cpp
 		src/c-compiler/struct/interface.cpp
 		src/c-compiler/metal/readjson.cpp
+		src/c-compiler/metal/types.cpp
 		src/c-compiler/translatetype.cpp
         src/c-compiler/valeopts.cpp
 

@@ -157,6 +157,7 @@ object DestructorTemplar {
           FunctionCall2(destructorPrototype, List(undestructedExpr2))
         }
         case Coord(Borrow, _) => (Discard2(undestructedExpr2))
+        case Coord(Weak, _) => (Discard2(undestructedExpr2))
         case Coord(Share, _) => {
           val destroySharedCitizen =
             (temputs: TemputsBox, Coord: Coord) => {

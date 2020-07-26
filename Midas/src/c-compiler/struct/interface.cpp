@@ -20,6 +20,11 @@ void declareInterface(
   assert(globalState->interfaceTableStructs.count(interfaceM->name->name) == 0);
   globalState->interfaceTableStructs.emplace(interfaceM->name->name, interfaceTableStructL);
 
+  auto interfaceWeakRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (interfaceM->name->name + "w").c_str());
+  assert(globalState->interfaceWeakRefStructs.count(interfaceM->name->name) == 0);
+  globalState->interfaceWeakRefStructs.emplace(interfaceM->name->name, interfaceWeakRefStructL);
 }
 
 LLVMTypeRef translateInterfaceMethodToFunctionType(
@@ -53,11 +58,21 @@ void translateInterface(
   // whenever we want to affect its ref count.
   // It points to the any struct, which is a wrapper around a ref count.
   // It makes it easier to increment and decrement ref counts.
-  refStructMemberTypesL.push_back(LLVMPointerType(globalState->controlBlockStructL, 0));
+  if (interfaceM->weakable) {
+    refStructMemberTypesL.push_back(LLVMPointerType(globalState->weakableControlBlockStructL, 0));
+  } else {
+    refStructMemberTypesL.push_back(LLVMPointerType(globalState->nonWeakableControlBlockStructL, 0));
+  }
   refStructMemberTypesL.push_back(LLVMPointerType(itableStruct, 0));
   LLVMStructSetBody(
       refStructL,
       refStructMemberTypesL.data(),
       refStructMemberTypesL.size(),
       false);
+
+  auto interfaceWeakRefStructL = globalState->getInterfaceWeakRefStruct(interfaceM->name);
+  std::vector<LLVMTypeRef> interfaceWeakRefStructMemberTypesL;
+  interfaceWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMInt64Type(), 0));
+  interfaceWeakRefStructMemberTypesL.push_back(refStructL);
+  LLVMStructSetBody(interfaceWeakRefStructL, interfaceWeakRefStructMemberTypesL.data(), interfaceWeakRefStructMemberTypesL.size(), false);
 }

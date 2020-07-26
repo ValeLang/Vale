@@ -22,14 +22,14 @@ case class ProgramA(
     val matches = interfaces.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _) => i
+      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
   def lookupStruct(name: INameA) = {
     val matches = structs.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
 }
@@ -42,6 +42,7 @@ trait TypeDefinitionA {
 case class StructA(
     name: TopLevelCitizenDeclarationNameA,
     export: Boolean,
+    weakable: Boolean,
     mutabilityRune: IRuneA,
 
     // This is needed for recursive structures like
@@ -89,6 +90,7 @@ case class ImplA(
 
 case class InterfaceA(
     name: TopLevelCitizenDeclarationNameA,
+    weakable: Boolean,
     mutabilityRune: IRuneA,
     // This is needed for recursive structures like
     //   struct ListNode<T> imm rules(T Ref) {

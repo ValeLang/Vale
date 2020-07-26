@@ -8,6 +8,7 @@ case object Prog extends IClass
 case object W extends IClass
 case object Abst extends IClass
 case object Ext extends IClass
+case object Pure extends IClass
 case object Fn extends IClass
 case object Struct extends IClass
 case object FnName extends IClass
@@ -35,6 +36,7 @@ case object Typ extends IClass
 case object Call extends IClass
 case object Ret extends IClass
 case object If extends IClass
+case object While extends IClass
 case object CallLookup extends IClass
 case object Inl extends IClass
 case object Lookup extends IClass
@@ -47,13 +49,14 @@ case object MagicParam extends IClass
 case object TplArgs extends IClass
 case object Comment extends IClass
 case object Ownership extends IClass
+case object Permission extends IClass
 case object Match extends IClass
 
-case class Span(classs: IClass, range: Range, children: List[Span] = List())
+case class Span(classs: IClass, range: Range, children: List[Span])
 
 object Spanner {
   def forProgram(program: Program0): Span = {
-    Span(
+    makeSpan(
       Prog,
       Range(Pos(1, 1), Pos(Int.MaxValue, Int.MaxValue)),
       program.topLevelThings.map({
@@ -67,16 +70,16 @@ object Spanner {
   def forInterface(i: InterfaceP): Span = {
     val InterfaceP(range, name, seealed, mutability, maybeIdentifyingRunes, templateRules, members) = i
 
-    Span(
+    makeSpan(
       Interface,
       range,
-      Span(StructName, name.range, List()) ::
+      makeSpan(StructName, name.range, List()) ::
       members.map(forFunction))
   }
 
   def forImpl(i: ImplP): Span = {
     val ImplP(range, identifyingRunes, rules, struct, interface) = i
-    Span(
+    makeSpan(
       Impl,
       range,
       identifyingRunes.toList.map(forIdentifyingRunes) ++
@@ -86,14 +89,14 @@ object Spanner {
   def forStruct(struct: StructP): Span = {
     val StructP(range, StringP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, StructMembersP(membersRange, members)) = struct
 
-    Span(
+    makeSpan(
       Struct,
       range,
-      Span(StructName, nameRange, List()) ::
+      makeSpan(StructName, nameRange, List()) ::
       maybeIdentifyingRunesP.toList.map(forIdentifyingRunes) ++
       maybeTemplateRulesP.toList.map(forTemplateRules) ++
       List(
-        Span(
+        makeSpan(
           Membs,
           membersRange,
           members.map(forStructContent))))
@@ -108,23 +111,30 @@ object Spanner {
 
   def forMember(member: StructMemberP): Span = {
     val StructMemberP(range, StringP(nameRange, _), _, tyype) = member
-    Span(
+    makeSpan(
       Memb,
       range,
       List(
-        Span(MembName, nameRange, List()),
+        makeSpan(MembName, nameRange, List()),
         forTemplex(tyype)))
   }
 
-  def forFunction(function: FunctionP): Span = {
-    val FunctionP(range, maybeName, isExtern, isAbstract, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret, body) = function
+  def forFunctionAttribute(functionAttributeP: IFunctionAttributeP): Span = {
+    functionAttributeP match {
+      case ExternAttributeP(range) => makeSpan(Ext, range)
+      case AbstractAttributeP(range) => makeSpan(Abst, range)
+      case PureAttributeP(range) => makeSpan(Pure, range)
+    }
+  }
 
-    Span(
+  def forFunction(function: FunctionP): Span = {
+    val FunctionP(range, maybeName, attributes, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret, body) = function
+
+    makeSpan(
       Fn,
       range,
-      isExtern.toList.map(e => Span(Ext, e.range)) ++
-      isAbstract.toList.map(e => Span(Abst, e.range)) ++
-      maybeName.toList.map(n => Span(FnName, n.range)) ++
+      attributes.map(forFunctionAttribute) ++
+      maybeName.toList.map(n => makeSpan(FnName, n.range)) ++
       maybeUserSpecifiedIdentifyingRunes.toList.map(forIdentifyingRunes) ++
       templateRules.toList.map(forTemplateRules) ++
       params.toList.map(forParams) ++
@@ -134,50 +144,50 @@ object Spanner {
 
   def forBlock(b: BlockPE): Span = {
     val BlockPE(range, elements) = b
-    Span(Block, range, elements.map(forExpression))
+    makeSpan(Block, range, elements.map(forExpression))
   }
 
   def forExpression(e: IExpressionPE): Span = {
     e match {
-      case IntLiteralPE(range, _) => Span(Num, range, List())
-      case StrLiteralPE(StringP(range, _)) => Span(Str, range, List())
-      case BoolLiteralPE(range, _) => Span(Bool, range, List())
-      case VoidPE(range) => Span(W, range, List())
+      case IntLiteralPE(range, _) => makeSpan(Num, range, List())
+      case StrLiteralPE(StringP(range, _)) => makeSpan(Str, range, List())
+      case BoolLiteralPE(range, _) => makeSpan(Bool, range, List())
+      case VoidPE(range) => makeSpan(W, range, List())
       case MagicParamLookupPE(range) => {
-        Span(
+        makeSpan(
           MagicParam,
           range,
           List())
       }
-      case LambdaPE(captures, FunctionP(range, None, _, _, _, _, params, _, body)) => {
-        Span(
+      case LambdaPE(captures, FunctionP(range, None, _, _, _, params, _, body)) => {
+        makeSpan(
           Lambda,
           range,
           params.toList.map(forParams) ++ body.toList.map(forBlock))
       }
       case LetPE(range, templateRules, pattern, expr) => {
-        Span(
+        makeSpan(
           Let,
           range,
           List(forPattern(pattern), forExpression(expr)))
       }
       case LookupPE(StringP(range, _), templateArgs) => {
-        Span(Lookup, range, List())
+        makeSpan(Lookup, range, List())
       }
       case SequencePE(range, elements) => {
-        Span(Seq, range, elements.map(forExpression))
+        makeSpan(Seq, range, elements.map(forExpression))
       }
       case MutatePE(range, mutatee, expr) => {
-        Span(Mut, range, List(forExpression(mutatee), forExpression(expr)))
+        makeSpan(Mut, range, List(forExpression(mutatee), forExpression(expr)))
       }
-      case DotPE(range, left, member) => {
-        Span(
+      case DotPE(range, left, operatorRange, _, member) => {
+        makeSpan(
           MemberAccess,
           range,
-          List(forExpression(left), forExpression(member)))
+          List(forExpression(left), makeSpan(MemberAccess, operatorRange), forExpression(member)))
       }
-      case LendPE(range, expr) => {
-        Span(
+      case LendPE(range, expr, targetOwnership) => {
+        makeSpan(
           Lend,
           range,
           List(forExpression(expr)))
@@ -186,52 +196,59 @@ object Spanner {
         val callableSpan = forExpression(callableExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (callableSpan :: argSpans)
-        Span(Call, range, allSpans)
+        makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, callableExpr, _, LookupPE(StringP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
+      case MethodCallPE(range, callableExpr, operatorRange, _, _, LookupPE(StringP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
-        val methodSpan = Span(CallLookup, methodNameRange, List())
+        val methodSpan = makeSpan(CallLookup, methodNameRange, List())
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)
         val argSpans = argExprs.map(forExpression)
-        val allSpans = (callableSpan :: methodSpan :: (maybeTemplateArgsSpan ++ argSpans))
-        Span(Call, range, allSpans)
+        val allSpans = (callableSpan :: makeSpan(MemberAccess, operatorRange) :: methodSpan :: (maybeTemplateArgsSpan ++ argSpans))
+        makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, inlRange, LookupPE(StringP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
-        val inlSpan = inlRange.toList.map(x => Span(Inl, x.range, List()))
-        val callableSpan = Span(CallLookup, nameRange, List())
+      case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(StringP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
+        val inlSpan = inlRange.toList.map(x => makeSpan(Inl, x.range, List()))
+        val opSpan = makeSpan(MemberAccess, operatorRange)
+        val callableSpan = makeSpan(CallLookup, nameRange, List())
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)
         val argSpans = argExprs.map(forExpression)
         val allSpans =
-          (inlSpan ++ List(callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
+          (inlSpan ++ List(opSpan, callableSpan) ++ maybeTemplateArgsSpan ++ argSpans)
             .sortWith(_.range.begin < _.range.begin)
-        Span(Call, range, allSpans)
+        makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, None, callableExpr, argExprs, _) => {
+      case FunctionCallPE(range, None, operatorRange, _, callableExpr, argExprs, _) => {
         val callableSpan = forExpression(callableExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (callableSpan :: argSpans).sortWith(_.range.begin < _.range.begin)
-        Span(Call, range, allSpans)
+        makeSpan(Call, range, allSpans)
       }
       case ReturnPE(range, expr) => {
-        Span(Ret, range, List(forExpression(expr)))
+        makeSpan(Ret, range, List(forExpression(expr)))
       }
       case BlockPE(range, exprs) => {
-        Span(
+        makeSpan(
           Block,
           range,
           exprs.map(forExpression))
       }
       case MatchPE(range, condExpr, lambdas) => {
-        Span(
+        makeSpan(
           Match,
           range,
           forExpression(condExpr) :: lambdas.map(l => forFunction(l.function)))
       }
       case IfPE(range, condition, thenBody, elseBody) => {
-        Span(
+        makeSpan(
           If,
           range,
           List(forExpression(condition), forExpression(thenBody), forExpression(elseBody)))
+      }
+      case WhilePE(range, condition, body) => {
+        makeSpan(
+          While,
+          range,
+          List(forExpression(condition), forExpression(body)))
       }
       case other => vimpl(other.toString)
     }
@@ -239,15 +256,15 @@ object Spanner {
 
   def forParams(p: ParamsP): Span = {
     val ParamsP(range, params) = p
-    Span(Params, range, params.map(forPattern))
+    makeSpan(Params, range, params.map(forPattern))
   }
 
   def forPattern(p: PatternPP): Span = {
     val PatternPP(range, maybePreBorrow, capture, templex, maybeDestructure, virtuality) = p
-    Span(
+    makeSpan(
       Pat,
       range,
-      maybePreBorrow.toList.map(b => Span(Lend, b.range, List())) ++
+      maybePreBorrow.toList.map(b => makeSpan(Lend, b.range, List())) ++
       capture.toList.map(forCapture) ++
       templex.toList.map(forTemplex) ++
       maybeDestructure.toList.map(forDestructure))
@@ -255,7 +272,7 @@ object Spanner {
 
   def forDestructure(d: DestructureP): Span = {
     val DestructureP(range, patterns) = d
-    Span(
+    makeSpan(
       Destructure,
       range,
       patterns.map(forPattern))
@@ -266,13 +283,13 @@ object Spanner {
     val nameSpan =
       name match {
         case LocalNameP(StringP(nameRange, _)) => {
-          Span(CaptureName, nameRange, List())
+          makeSpan(CaptureName, nameRange, List())
         }
         case ConstructingMemberNameP(StringP(nameRange, _)) => {
-          Span(CaptureName, nameRange, List())
+          makeSpan(CaptureName, nameRange, List())
         }
       }
-    Span(
+    makeSpan(
       Capture,
       range,
       List(nameSpan))
@@ -281,28 +298,31 @@ object Spanner {
   def forTemplex(t: ITemplexPT): Span = {
     t match {
       case NameOrRunePT(StringP(range, _)) => {
-        Span(Typ, range, List())
+        makeSpan(Typ, range, List())
       }
       case InlinePT(range, inner) => {
-        Span(Inl, range, List(forTemplex(inner)))
+        makeSpan(Inl, range, List(forTemplex(inner)))
       }
       case OwnershippedPT(range, ownership, inner) => {
-        Span(Ownership, range, List(forTemplex(inner)))
+        makeSpan(Ownership, range, List(forTemplex(inner)))
+      }
+      case PermissionedPT(range, permission, inner) => {
+        makeSpan(Permission, range, List(forTemplex(inner)))
       }
       case RepeaterSequencePT(range, mutability, size, element) => {
-        Span(
+        makeSpan(
           Typ,
           range,
           List(forTemplex(size), forTemplex(element)))
       }
       case IntPT(range, value) => {
-        Span(
+        makeSpan(
           Num,
           range,
           List())
       }
       case CallPT(range, template, args) => {
-        Span(
+        makeSpan(
           TplArgs,
           range,
           forTemplex(template) :: args.map(forTemplex))
@@ -314,7 +334,7 @@ object Spanner {
 
   def forTemplateArgs(argsP: TemplateArgsP): Span = {
     val TemplateArgsP(range, args) = argsP
-    Span(
+    makeSpan(
       TplArgs,
       range,
       args.map(forTemplex))
@@ -322,7 +342,7 @@ object Spanner {
 
   def forTemplateRules(rulesP: TemplateRulesP): Span = {
     val TemplateRulesP(range, rules) = rulesP
-    Span(
+    makeSpan(
       Rules,
       range,
       rules.map(forRulex))
@@ -334,9 +354,17 @@ object Spanner {
 
   def forIdentifyingRunes(r: IdentifyingRunesP): Span = {
     val IdentifyingRunesP(range, runes) = r
-    Span(
+    makeSpan(
       IdentRunes,
       range,
-      runes.map(rune => Span(IdentRune, rune.range)))
+      runes.map(rune => makeSpan(IdentRune, rune.range)))
+  }
+
+  def makeSpan(classs: IClass, range: Range, children: List[Span] = List()) = {
+    val filteredAndSortedChildren =
+      children
+        .filter(s => s.range.begin != s.range.end)
+        .sortWith(_.range.begin < _.range.begin)
+    Span(classs, range, filteredAndSortedChildren)
   }
 }

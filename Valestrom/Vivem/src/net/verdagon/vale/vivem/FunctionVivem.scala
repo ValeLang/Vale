@@ -25,7 +25,7 @@ object FunctionVivem {
     // These will be decremented at some point in the callee function.
     args.indices.foreach(argIndex => {
       heap.incrementReferenceRefCount(
-        ArgumentToObjectReferrer(ArgumentId(callId, argIndex)),
+        ArgumentToObjectReferrer(ArgumentId(callId, argIndex), args(argIndex).ownership),
         args(argIndex))
     })
 

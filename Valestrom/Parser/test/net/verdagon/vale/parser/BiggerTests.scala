@@ -47,14 +47,14 @@ class BiggerTests extends FunSuite with Matchers with Collector {
 
   test("Simple while loop") {
     compile(VParser.statement,"while () {}") shouldHave {
-      case WhilePE(BlockPE(_, List(VoidPE(_))), BlockPE(_, List(VoidPE(_)))) =>
+      case WhilePE(_, BlockPE(_, List(VoidPE(_))), BlockPE(_, List(VoidPE(_)))) =>
     }
   }
 
   test("Result after while loop") {
     compile(VParser.blockExprs,"while () {} = false;") shouldHave {
       case List(
-      WhilePE(BlockPE(_, List(VoidPE(_))), BlockPE(_, List(VoidPE(_)))),
+      WhilePE(_, BlockPE(_, List(VoidPE(_))), BlockPE(_, List(VoidPE(_)))),
       BoolLiteralPE(_, false)) =>
     }
   }
@@ -67,21 +67,78 @@ class BiggerTests extends FunSuite with Matchers with Collector {
 
   test("Simple function") {
     compile(VParser.topLevelFunction, "fn sum(){3}") match {
-      case FunctionP(_, Some(StringP(_, "sum")), None, None, None, None, Some(ParamsP(_,List())), None, Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+      case FunctionP(_, Some(StringP(_, "sum")), List(), None, None, Some(ParamsP(_,List())), None, Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
     }
   }
 
-//  test("Simple function with typed identifying rune") {
-//    val func = compile(VParser.topLevelFunction, "fn sum<A>(a A){a}")
-//    func.templateRules shouldHave {
-  // case  }
+  test("Simple function with identifying rune") {
+    val func = compile(VParser.topLevelFunction, "fn sum<A>(a A){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_, StringP(_, "A"), List()) =>
+    }
+  }
+
+  test("Simple function with coord-typed identifying rune") {
+    val func = compile(VParser.topLevelFunction, "fn sum<A coord>(a A){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_, StringP(_, "A"), List(TypeRuneAttributeP(_, CoordTypePR))) =>
+    }
+  }
+
+  test("Simple function with region-typed identifying rune") {
+    val func = compile(VParser.topLevelFunction, "fn sum<A reg>(a A){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_, StringP(_, "A"), List(TypeRuneAttributeP(_, RegionTypePR))) =>
+    }
+  }
+
+  test("Simple function with apostrophe region-typed identifying rune") {
+    val func = compile(VParser.topLevelFunction, "fn sum<'A>(a 'A &Marine){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_, StringP(_, "A"), List(TypeRuneAttributeP(_, RegionTypePR))) =>
+    }
+  }
+
+  test("Pool region") {
+    val func = compile(VParser.topLevelFunction, "fn sum<'A pool>(a 'A &Marine){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_,
+      StringP(_, "A"),
+      List(
+      TypeRuneAttributeP(_, RegionTypePR),
+      PoolRuneAttributeP(_))) =>
+    }
+  }
+
+  test("Arena region") {
+    val func = compile(VParser.topLevelFunction, "fn sum<'A arena>(a 'A &Marine){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_,
+        StringP(_, "A"),
+        List(
+          TypeRuneAttributeP(_, RegionTypePR),
+          ArenaRuneAttributeP(_))) =>
+    }
+  }
+
+
+  test("Readonly region") {
+    val func = compile(VParser.topLevelFunction, "fn sum<'A ro>(a 'A &Marine){a}")
+    func.maybeUserSpecifiedIdentifyingRunes.get.runes.head match {
+      case IdentifyingRuneP(_,
+        StringP(_, "A"),
+        List(
+          TypeRuneAttributeP(_, RegionTypePR),
+          ReadOnlyRuneAttributeP(_))) =>
+    }
+  }
 
   test("Function call") {
     val program = compile(VParser.program, "fn main(){call(sum)}")
 //    val main = program.lookupFunction("main")
 
     program shouldHave {
-      case FunctionCallPE(_, None, LookupPE(StringP(_, "call"), None),List(LookupPE(StringP(_, "sum"), None)),true) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "call"), None),List(LookupPE(StringP(_, "sum"), None)),BorrowP) =>
     }
   }
 
@@ -98,40 +155,46 @@ class BiggerTests extends FunSuite with Matchers with Collector {
 
   test("Test templated lambda param") {
     val program = compile(VParser.program, "fn main(){(a){ a + a}(3)}")
-    program shouldHave { case FunctionCallPE(_, None, LambdaPE(_, _), List(IntLiteralPE(_, 3)),true) => }
+    program shouldHave { case FunctionCallPE(_, None, _, false, LambdaPE(_, _), List(IntLiteralPE(_, 3)),BorrowP) => }
     program shouldHave {
       case PatternPP(_,_, Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),None,None,None) =>
     }
     program shouldHave {
-      case FunctionCallPE(_, None, LookupPE(StringP(_, "+"), None),List(LookupPE(StringP(_, "a"), None), LookupPE(StringP(_, "a"), None)),true) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "+"), None),List(LookupPE(StringP(_, "a"), None), LookupPE(StringP(_, "a"), None)),BorrowP) =>
     }
   }
 
   test("Simple struct") {
     compile(VParser.struct, "struct Moo { x &int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), false, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+    }
+  }
+
+  test("Struct with weak") {
+    compile(VParser.struct, "struct Moo { x &&int; }") shouldHave {
+      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,WeakP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 
   test("Struct with inl") {
     compile(VParser.struct, "struct Moo { x inl Marine; }") shouldHave {
-      case StructP(_,StringP(_,"Moo"),false,MutableP,None,None,StructMembersP(_,List(StructMemberP(_,StringP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(StringP(_,"Marine"))))))) =>
+      case StructP(_,StringP(_,"Moo"),List(), MutableP,None,None,StructMembersP(_,List(StructMemberP(_,StringP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(StringP(_,"Marine"))))))) =>
     }
   }
 
   test("Export struct") {
     compile(VParser.struct, "struct Moo export { x &int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), true, MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+      case StructP(_, StringP(_, "Moo"), List(ExportP(_)), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 
   test("Test block's trailing void presence") {
     compile(VParser.filledBody, "{ moo() }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, LookupPE(StringP(_, "moo"), None), List(), true))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "moo"), None), List(), BorrowP))) =>
     }
 
     compile(VParser.filledBody, "{ moo(); }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, LookupPE(StringP(_, "moo"), None), List(), true), VoidPE(_))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "moo"), None), List(), BorrowP), VoidPE(_))) =>
     }
   }
 
@@ -139,16 +202,35 @@ class BiggerTests extends FunSuite with Matchers with Collector {
     compile(VParser.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
       case IfPE(_,
       BlockPE(_, List(BoolLiteralPE(_, true))),
-      BlockPE(_, List(FunctionCallPE(_, None, LookupPE(StringP(_, "doBlarks"), None), List(LendPE(_,LookupPE(StringP(_, "x"), None))), true))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doBlarks"), None), List(LendPE(_,LookupPE(StringP(_, "x"), None), BorrowP)), BorrowP))),
       BlockPE(_, List(VoidPE(_)))) =>
     }
   }
+
+  test("if let") {
+    compile(VParser.ifLadder, "if ((u) = a) {}") shouldHave {
+      case IfPE(_,
+        BlockPE(_,
+          List(
+            LetPE(_,List(),
+              PatternPP(_,None,None,None,
+                Some(
+                  DestructureP(_,
+                    List(
+                      PatternPP(_,None,Some(CaptureP(_,LocalNameP(StringP(_,"u")),FinalP)),None,None,None)))),
+                None),
+              LookupPE(StringP(_,"a"),None)))),
+        BlockPE(_,List(VoidPE(_))),
+        BlockPE(_,List(VoidPE(_)))) =>
+    }
+  }
+
 
   test("Block with only a result") {
     compile(
       VParser.blockExprs,
       "= doThings(a);") shouldHave {
-      case List(FunctionCallPE(_, None, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), true)) =>
+      case List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), BorrowP)) =>
     }
   }
 
@@ -176,7 +258,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
       """.stripMargin) shouldHave {
       case List(
           LetPE(_,List(), PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "a")), FinalP)), None, None, None), IntLiteralPE(_, 2)),
-            FunctionCallPE(_, None, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), true)) =>
+            FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), BorrowP)) =>
     }
   }
 
@@ -187,7 +269,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
         |impl<T> SomeStruct<T> for MyInterface<T>;
       """.stripMargin) shouldHave {
       case ImplP(_,
-      Some(IdentifyingRunesP(_, List(StringP(_, "T")))),
+      Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, StringP(_, "T"), List())))),
       None,
       CallPT(_,NameOrRunePT(StringP(_, "SomeStruct")), List(NameOrRunePT(StringP(_, "T")))),
       CallPT(_,NameOrRunePT(StringP(_, "MyInterface")), List(NameOrRunePT(StringP(_, "T"))))) =>
@@ -217,7 +299,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
       """.stripMargin) shouldHave {
       case FunctionP(
         _,
-        Some(StringP(_, "doCivicDance")), None, None, None, None,
+        Some(StringP(_, "doCivicDance")), List(), None, None,
         Some(ParamsP(_, List(PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "this")), FinalP)), Some(NameOrRunePT(StringP(_, "Car"))), None, Some(AbstractP))))),
         Some(NameOrRunePT(StringP(_, "int"))), None) =>
     }
@@ -247,7 +329,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
       List(),
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "newLen")), FinalP)), None, None, None),
       IfPE(_,
-      BlockPE(_, List(FunctionCallPE(_, None, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), true))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), BorrowP))),
       BlockPE(_, List(IntLiteralPE(_, 1))),
       BlockPE(_, List(IntLiteralPE(_, 2))))) =>
     }
@@ -259,8 +341,10 @@ class BiggerTests extends FunSuite with Matchers with Collector {
       case MethodCallPE(_,
         DotPE(_,
           LookupPE(StringP(_,"weapon"),None),
+          _, false,
           LookupPE(StringP(_,"owner"),None)),
-        true,
+        _, BorrowP,
+        false,
         LookupPE(StringP(_,"map"),None),
       List()) =>
     }
@@ -268,7 +352,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
 
   test("!=") {
     compile(VParser.expression,"3 != 4") shouldHave {
-      case FunctionCallPE(_, None, LookupPE(StringP(_, "!="), None), List(IntLiteralPE(_, 3), IntLiteralPE(_, 4)), true) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "!="), None), List(IntLiteralPE(_, 3), IntLiteralPE(_, 4)), BorrowP) =>
     }
   }
 }

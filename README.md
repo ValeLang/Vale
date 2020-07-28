@@ -14,19 +14,31 @@ See http://vale.dev/ for samples and more information on the language!
 
 #### Linux Terminal
 
-1: Change directory
+1: Change directory:
 
 ```
 $ cd Midas
 ```
 
-2: Install LLVM 7.
+2: Install LLVM 7:
 
 ```
 $ sudo apt-get install llvm-7-dev
 ```
 
-3: Generate the build files, and use it to build Midas:
+3: Install cmake and a C++ compiler:
+
+```
+$ sudo apt-get install build-essential cmake
+```
+
+4: Install Python
+
+```
+$ sudo apt-get install python3.7
+```
+
+5: Generate the build files, and use it to build Midas:
 
 ```
 $ cmake -B cmake-build-debug
@@ -34,23 +46,23 @@ $ cd cmake-build-debug
 $ make
 ```
 
-4: Run tests:
+6: Run tests:
 
 ```
 $ cd ../test
-$ python3 -m unittest -f
+$ python3.7 -m unittest -f
 ```
 
-5. Run compiler:
+7. Run compiler:
 ```
-$ python3 valec.py test/tests/roguelike.vale
+$ python3.7 valec.py test/tests/roguelike.vale
 ```
 
 ### OSX
 
 #### OSX Terminal
 
-1: Change directory
+1: Change directory:
 
 ```
 $ cd Midas
@@ -81,19 +93,20 @@ $ python3 -m unittest -f
 ```
 
 5. Run compiler:
+
 ```
 $ python3 valec.py test/tests/roguelike.vale
 ```
 
 #### OSX CLion
 
-1: Install LLVM 7.
+1: Install LLVM 7:
 
 ```
 $ brew install llvm@7
 ```
 
-2: Apply default .idea configuration.
+2: Apply default .idea configuration:
  
 ```
 $ git merge --no-ff origin/idea_config

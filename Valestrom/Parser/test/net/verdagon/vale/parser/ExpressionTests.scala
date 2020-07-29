@@ -3,58 +3,41 @@ package net.verdagon.vale.parser
 import net.verdagon.vale.vassert
 import org.scalatest.{FunSuite, Matchers}
 
-class ExpressionTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: CombinatorParsers.Parser[IExpressionPE], code: String): IExpressionPE = {
-    CombinatorParsers.parse(parser, code.toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail();
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        vassert(
-          rest.atEnd,
-          "Parsed \"" + code.slice(0, rest.offset) + "\" as \"" + expr + "\" but stopped at \"" + code.slice(rest.offset, code.length) + "\"")
-        expr
-      }
-    }
-  }
-  private def compile(code: String): IExpressionPE = {
-    compile(CombinatorParsers.expression, code)
-  }
-
+class ExpressionTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("PE") {
-    compile("4") shouldHave { case IntLiteralPE(_, 4) => }
+    compile(CombinatorParsers.expression, "4") shouldHave { case IntLiteralPE(_, 4) => }
   }
 
   test("2") {
-    compile("4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),BorrowP) => }
+    compile(CombinatorParsers.expression,"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),BorrowP) => }
   }
 
   test("Floats") {
-    compile("4.2") shouldHave { case FloatLiteralPE(_, 4.2f) => }
+    compile(CombinatorParsers.expression,"4.2") shouldHave { case FloatLiteralPE(_, 4.2f) => }
   }
 
   test("4") {
-    compile("+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),BorrowP) => }
+    compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),BorrowP) => }
   }
 
   test("5") {
-    compile("x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "x"), None), List(LookupPE(StringP(_, "y"), None)),BorrowP) => }
+    compile(CombinatorParsers.expression,"x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "x"), None), List(LookupPE(StringP(_, "y"), None)),BorrowP) => }
   }
 
   test("6") {
-    compile("not y") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "not"), None), List(LookupPE(StringP(_, "y"), None)),BorrowP) => }
+    compile(CombinatorParsers.expression,"not y") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "not"), None), List(LookupPE(StringP(_, "y"), None)),BorrowP) => }
   }
 
   test("Lending result of function call") {
-    compile("&Muta()") shouldHave { case LendPE(_,FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "Muta"), None), List(),BorrowP), BorrowP) => }
+    compile(CombinatorParsers.expression,"&Muta()") shouldHave { case LendPE(_,FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "Muta"), None), List(),BorrowP), BorrowP) => }
   }
 
   test("inline call") {
-    compile("inl Muta()") shouldHave { case FunctionCallPE(_,Some(UnitP(_)),_,false,LookupPE(StringP(_,"Muta"),None),List(),BorrowP) => }
+    compile(CombinatorParsers.expression,"inl Muta()") shouldHave { case FunctionCallPE(_,Some(UnitP(_)),_,false,LookupPE(StringP(_,"Muta"),None),List(),BorrowP) => }
   }
 
   test("Method call") {
-    compile("x . shout ()") shouldHave {
+    compile(CombinatorParsers.expression,"x . shout ()") shouldHave {
       case MethodCallPE(
       _,
       LookupPE(StringP(_,"x"),None),
@@ -65,7 +48,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Method on member") {
-    compile("x.moo.shout()") shouldHave {
+    compile(CombinatorParsers.expression,"x.moo.shout()") shouldHave {
       case MethodCallPE(Range(Pos(1,1),Pos(1,14)),
         DotPE(Range(Pos(1,1),Pos(1,6)),
           LookupPE(StringP(Range(Pos(1,1),Pos(1,2)),x),None),
@@ -80,7 +63,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Moving method call") {
-    compile("x ^.shout()") shouldHave {
+    compile(CombinatorParsers.expression,"x ^.shout()") shouldHave {
       case MethodCallPE(_,
         LookupPE(StringP(_,"x"),None),
         _,OwnP,false,
@@ -90,7 +73,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Map method call") {
-    compile("x*. shout()") shouldHave {
+    compile(CombinatorParsers.expression,"x*. shout()") shouldHave {
       case MethodCallPE(_,
       LookupPE(StringP(_,"x"),None),
       _,BorrowP,true,
@@ -100,7 +83,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Templated function call") {
-    compile("toArray<imm>( &result)") shouldHave {
+    compile(CombinatorParsers.expression,"toArray<imm>( &result)") shouldHave {
       case FunctionCallPE(_,None,_,false,
       LookupPE(StringP(_, "toArray"),Some(TemplateArgsP(_, List(MutabilityPT(ImmutableP))))),
         List(LendPE(_,LookupPE(StringP(_, "result"),None),BorrowP)),
@@ -109,13 +92,13 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Templated method call") {
-    compile("result.toArray <imm> ()") shouldHave {
+    compile(CombinatorParsers.expression,"result.toArray <imm> ()") shouldHave {
       case MethodCallPE(_,LookupPE(StringP(_,"result"),None),_,BorrowP,false,LookupPE(StringP(_,"toArray"),Some(TemplateArgsP(_, List(MutabilityPT(ImmutableP))))),List()) =>
     }
   }
 
   test("Custom binaries") {
-    compile("not y florgle not x") shouldHave {
+    compile(CombinatorParsers.expression,"not y florgle not x") shouldHave {
       case FunctionCallPE(_,None,_,false,
       LookupPE(StringP(_, "florgle"), None),
           List(
@@ -132,7 +115,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Custom with noncustom binaries") {
-    compile("a + b florgle x * y") shouldHave {
+    compile(CombinatorParsers.expression,"a + b florgle x * y") shouldHave {
       case FunctionCallPE(_,None,_,false,
         LookupPE(StringP(_, "florgle"), None),
           List(
@@ -149,10 +132,10 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
   }
 
   test("Template calling") {
-    compile("MyNone< int >()") shouldHave {
+    compile(CombinatorParsers.expression,"MyNone< int >()") shouldHave {
       case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "MyNone"), Some(TemplateArgsP(_, List(NameOrRunePT(StringP(_, "int")))))),List(), BorrowP) =>
     }
-    compile("MySome< MyNone <int> >()") shouldHave {
+    compile(CombinatorParsers.expression,"MySome< MyNone <int> >()") shouldHave {
       case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "MySome"), Some(TemplateArgsP(_, List(CallPT(_,NameOrRunePT(StringP(_, "MyNone")),List(NameOrRunePT(StringP(_, "int")))))))),List(), BorrowP) =>
     }
   }
@@ -178,6 +161,66 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
     }
   }
 
+  test("20") {
+    compile(CombinatorParsers.expression,
+      "weapon.owner.map()") shouldHave {
+      case MethodCallPE(_,
+      DotPE(_,
+      LookupPE(StringP(_,"weapon"),None),
+      _, false,
+      LookupPE(StringP(_,"owner"),None)),
+      _, BorrowP,
+      false,
+      LookupPE(StringP(_,"map"),None),
+      List()) =>
+    }
+  }
+
+  test("!=") {
+    compile(CombinatorParsers.expression,"3 != 4") shouldHave {
+      case FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "!="), None), List(IntLiteralPE(_, 3), IntLiteralPE(_, 4)), BorrowP) =>
+    }
+  }
+
+  test("Test templated lambda param") {
+    val program = compile(CombinatorParsers.expression, "(a){a + a}(3)")
+    program shouldHave { case FunctionCallPE(_, None, _, false, LambdaPE(_, _), List(IntLiteralPE(_, 3)),BorrowP) => }
+    program shouldHave {
+      case PatternPP(_,_, Some(CaptureP(_,LocalNameP(StringP(_, "a")),FinalP)),None,None,None) =>
+    }
+    program shouldHave {
+      case FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "+"), None),List(LookupPE(StringP(_, "a"), None), LookupPE(StringP(_, "a"), None)),BorrowP) =>
+    }
+  }
+
+
+  test("Function call") {
+    val program = compile(CombinatorParsers.expression, "call(sum)")
+    //    val main = program.lookupFunction("main")
+
+    program shouldHave {
+      case FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "call"), None),List(LookupPE(StringP(_, "sum"), None)),BorrowP) =>
+    }
+  }
+
+  test("Report leaving out semicolon or ending body after expression") {
+    compileProgramForError(
+      """
+        |fn doCivicDance(virtual this Car) {
+        |  mut x = 7 )
+        |}
+        """.stripMargin) match {
+      case BadExpressionEnd(_) =>
+    }
+    compileProgramForError(
+      """
+        |fn doCivicDance(virtual this Car) {
+        |  floop() ]
+        |}
+        """.stripMargin) match {
+      case BadExpressionEnd(_) =>
+    }
+  }
 
   // debt: fix
 //  test("Array index") {

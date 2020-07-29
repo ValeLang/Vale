@@ -18,6 +18,46 @@ class StructTests extends FunSuite with Matchers with Collector {
     }
   }
 
+  test("17") {
+    compile(
+      CombinatorParsers.structMember,
+      "a *ListNode<T>;") shouldHave {
+      case StructMemberP(_, StringP(_, "a"), FinalP, OwnershippedPT(_,ShareP,CallPT(_,NameOrRunePT(StringP(_, "ListNode")), List(NameOrRunePT(StringP(_, "T")))))) =>
+    }
+  }
+
+  test("18") {
+    compile(
+      CombinatorParsers.structMember,
+      "a Array<imm, T>;") shouldHave {
+      case StructMemberP(_, StringP(_, "a"), FinalP, CallPT(_,NameOrRunePT(StringP(_, "Array")), List(MutabilityPT(ImmutableP), NameOrRunePT(StringP(_, "T"))))) =>
+    }
+  }
+
+  test("Simple struct") {
+    compile(CombinatorParsers.struct, "struct Moo { x &int; }") shouldHave {
+      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+    }
+  }
+
+  test("Struct with weak") {
+    compile(CombinatorParsers.struct, "struct Moo { x &&int; }") shouldHave {
+      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,WeakP,NameOrRunePT(StringP(_, "int"))))))) =>
+    }
+  }
+
+  test("Struct with inl") {
+    compile(CombinatorParsers.struct, "struct Moo { x inl Marine; }") shouldHave {
+      case StructP(_,StringP(_,"Moo"),List(), MutableP,None,None,StructMembersP(_,List(StructMemberP(_,StringP(_,"x"),FinalP,InlinePT(_,NameOrRunePT(StringP(_,"Marine"))))))) =>
+    }
+  }
+
+  test("Export struct") {
+    compile(CombinatorParsers.struct, "struct Moo export { x &int; }") shouldHave {
+      case StructP(_, StringP(_, "Moo"), List(ExportP(_)), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+    }
+  }
+
   test("Struct with rune") {
     compile(CombinatorParsers.struct,
       """

@@ -25,7 +25,7 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
       case Some(parsed) => parsed
       case None => {
         Parser.runParserForProgramAndCommentRanges(code) match {
-          case ParseFailure(pos, msg) => vwat(msg + " (" + pos + ")")
+          case ParseFailure(err) => vwat(err.toString)
           case ParseSuccess((program0, _)) => {
             parsedCache = Some(program0)
             program0

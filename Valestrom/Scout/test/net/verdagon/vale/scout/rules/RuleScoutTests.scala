@@ -8,7 +8,7 @@ import org.scalatest.{FunSuite, Matchers}
 class RuleScoutTests extends FunSuite with Matchers {
   private def compile(code: String): List[IRulexSR] = {
     Parser.runParser(code) match {
-      case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")")
+      case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
         val programS = Scout.scoutProgram(program0)
         programS.lookupFunction("main").templateRules

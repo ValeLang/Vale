@@ -10,7 +10,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
-      case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")")
+      case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => Scout.scoutProgram(program0)
     }
   }

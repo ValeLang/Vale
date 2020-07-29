@@ -8,7 +8,7 @@ import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, Program0, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Program0, Vonifier}
 import net.verdagon.vale.scout.Scout
 import net.verdagon.vale.templar.Templar
 import net.verdagon.vale.vivem.Vivem
@@ -90,7 +90,11 @@ object Driver {
     val code = opts.inputFiles.map(readCode).mkString("\n\n\n")
     val parsed =
       Parser.runParserForProgramAndCommentRanges(code) match {
-        case ParseFailure(pos, msg) => vfail(msg + " (" + pos + ")")
+        case ParseFailure(error) => {
+          println(new ParseErrorHumanizer(code).humanize(error))
+          System.exit(22)
+          vfail()
+        }
         case ParseSuccess(program0) => program0._1
       }
     val scoutput = Scout.scoutProgram(parsed)
@@ -156,7 +160,11 @@ object Driver {
           val code = readCode(opts.inputFiles.head)
           val (parsed, commentRanges) =
             Parser.runParserForProgramAndCommentRanges(code) match {
-              case ParseFailure(pos, msg) => vfail(msg + " (" + pos + ")")
+              case ParseFailure(err) => {
+                println(new ParseErrorHumanizer(code).humanize(err))
+                System.exit(22)
+                vfail()
+              }
               case ParseSuccess(program0) => program0
             }
           val span = Spanner.forProgram(parsed)

@@ -507,7 +507,7 @@ fn main() int {
   goblins.add(14, Goblin(Vec([2, 6])));
   goblins.add(15, Goblin(Vec([5, 7])));
   goblins.add(17, Goblin(Vec([2, 5])));
-  goblins.add(19, Goblin(Vec([7, 1])));
+  goblins.add(19, Goblin(Vec([7, 1])));fff
   goblins.add(23, Goblin(Vec([3, 3])));
   goblins.add(24, Goblin(Vec([1, 7])));
   goblins.add(25, Goblin(Vec([7, 6])));

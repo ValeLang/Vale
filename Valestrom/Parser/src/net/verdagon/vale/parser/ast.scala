@@ -29,7 +29,7 @@ case class Program0(topLevelThings: List[ITopLevelThing]) {
   def lookupFunction(name: String) = {
     val results =
       topLevelThings.collect({
-        case TopLevelFunction(f) if f.name.exists(_.str == name) => f
+        case TopLevelFunction(f) if f.header.name.exists(_.str == name) => f
       })
     vassert(results.size == 1)
     results.head
@@ -100,7 +100,13 @@ case class IdentifyingRuneP(range: Range, name: StringP, attributes: List[IRuneA
 case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP])
 case class TemplateRulesP(range: Range, rules: List[IRulexPR])
 case class ParamsP(range: Range, patterns: List[PatternPP])
+
 case class FunctionP(
+  range: Range,
+  header: FunctionHeaderP,
+  body: Option[BlockPE])
+
+case class FunctionHeaderP(
   range: Range,
   name: Option[StringP],
   attributes: List[IFunctionAttributeP],
@@ -110,11 +116,8 @@ case class FunctionP(
   templateRules: Option[TemplateRulesP],
 
   params: Option[ParamsP],
-  ret: Option[ITemplexPT],
-  body: Option[BlockPE]
+  ret: Option[ITemplexPT]
 )
-
-
 
 
 sealed trait MutabilityP

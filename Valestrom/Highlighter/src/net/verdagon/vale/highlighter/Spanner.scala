@@ -128,7 +128,7 @@ object Spanner {
   }
 
   def forFunction(function: FunctionP): Span = {
-    val FunctionP(range, maybeName, attributes, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret, body) = function
+    val FunctionP(range, FunctionHeaderP(_, maybeName, attributes, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret), body) = function
 
     makeSpan(
       Fn,
@@ -159,7 +159,7 @@ object Spanner {
           range,
           List())
       }
-      case LambdaPE(captures, FunctionP(range, None, _, _, _, params, _, body)) => {
+      case LambdaPE(captures, FunctionP(range, FunctionHeaderP(_, None, _, _, _, params, _), body)) => {
         makeSpan(
           Lambda,
           range,

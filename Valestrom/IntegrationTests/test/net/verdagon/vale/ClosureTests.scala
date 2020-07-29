@@ -165,8 +165,6 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure we call the function somewhere
     main.onlyOf(classOf[FunctionCall2])
 
-
-    println(lambda.allOf(classOf[LocalLookup2]))
     lambda.only({
       case LocalLookup2(ReferenceLocalVariable2(FullName2(_,ClosureParamName2()),Final,_),_) =>
     })

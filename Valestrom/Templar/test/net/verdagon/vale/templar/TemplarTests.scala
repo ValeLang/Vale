@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{Program0, VParser}
+import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, Program0}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
@@ -30,9 +30,9 @@ class TemplarTests extends FunSuite with Matchers {
       parsedCache match {
         case Some(parsed) => parsed
         case None => {
-          VParser.runParser(code) match {
-            case VParser.Failure(_, _) => vwat()
-            case VParser.Success((program0, _), _) => {
+          Parser.runParserForProgramAndCommentRanges(code) match {
+            case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")")
+            case ParseSuccess((program0, _)) => {
               parsedCache = Some(program0)
               program0
             }

@@ -4,12 +4,12 @@ import net.verdagon.vale.vassert
 import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: VParser.Parser[IExpressionPE], code: String): IExpressionPE = {
-    VParser.parse(parser, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
+  private def compile[T](parser: CombinatorParsers.Parser[IExpressionPE], code: String): IExpressionPE = {
+    CombinatorParsers.parse(parser, code.toCharArray()) match {
+      case CombinatorParsers.NoSuccess(msg, input) => {
         fail();
       }
-      case VParser.Success(expr, rest) => {
+      case CombinatorParsers.Success(expr, rest) => {
         vassert(
           rest.atEnd,
           "Parsed \"" + code.slice(0, rest.offset) + "\" as \"" + expr + "\" but stopped at \"" + code.slice(rest.offset, code.length) + "\"")
@@ -18,7 +18,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
     }
   }
   private def compile(code: String): IExpressionPE = {
-    compile(VParser.expression, code)
+    compile(CombinatorParsers.expression, code)
   }
 
   test("PE") {
@@ -161,20 +161,20 @@ class ExpressionTests extends FunSuite with Matchers with Collector {
     // It turns out, this was only parsing "9 >=" because it was looking for > specifically (in fact, it was looking
     // for + - * / < >) so it parsed as >(9, =) which was bad. We changed the infix operator parser to expect the
     // whitespace on both sides, so that it was forced to parse the entire thing.
-    compile(VParser.expression,"9 >= 3") shouldHave {
+    compile(CombinatorParsers.expression,"9 >= 3") shouldHave {
       case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, ">="),None),List(IntLiteralPE(_, 9), IntLiteralPE(_, 3)),BorrowP) =>
     }
   }
 
   test("Indexing") {
-    compile(VParser.expression,"arr [4]") shouldHave {
+    compile(CombinatorParsers.expression,"arr [4]") shouldHave {
       case DotCallPE(_,LookupPE(StringP(_,arr),None),List(IntLiteralPE(_,4))) =>
     }
   }
 
   test("Identity lambda") {
-    compile(VParser.expression, "{_}") shouldHave {
-      case LambdaPE(_,FunctionP(_,None,List(),None,None,None,None,Some(BlockPE(_,List(MagicParamLookupPE(_)))))) =>
+    compile(CombinatorParsers.expression, "{_}") shouldHave {
+      case LambdaPE(_,FunctionP(_,FunctionHeaderP(_, None,List(),None,None,None,None),Some(BlockPE(_,List(MagicParamLookupPE(_)))))) =>
     }
   }
 

@@ -31,7 +31,7 @@ class TemplarTests extends FunSuite with Matchers {
         case Some(parsed) => parsed
         case None => {
           Parser.runParserForProgramAndCommentRanges(code) match {
-            case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")")
+            case ParseFailure(err) => fail(err.toString)
             case ParseSuccess((program0, _)) => {
               parsedCache = Some(program0)
               program0

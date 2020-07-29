@@ -3,27 +3,7 @@ package net.verdagon.vale.parser
 import net.verdagon.vale.{vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
-class SignatureTests extends FunSuite with Matchers with Collector {
-  private def compileProgram(code: String): Program0 = {
-    Parser.runParser(code) match {
-      case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")");
-      case ParseSuccess(result) => result
-    }
-  }
-
-  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
-    // The strip is in here because things inside the parser don't expect whitespace before and after
-    CombinatorParsers.parse(parser, code.strip().toCharArray()) match {
-      case CombinatorParsers.NoSuccess(msg, input) => {
-        fail("Couldn't parse!\n" + input.pos.longString);
-      }
-      case CombinatorParsers.Success(expr, rest) => {
-        vassert(rest.atEnd)
-        expr
-      }
-    }
-  }
-
+class SignatureTests extends FunSuite with Matchers with Collector with TestParseUtils {
   // fn maxHp(this: virtual IUnit): Int;
 
   test("Impl function") {

@@ -7,7 +7,7 @@ import org.scalatest.{FunSuite, Matchers}
 class HighlighterTests extends FunSuite with Matchers {
   private def highlight(code: String): String = {
     Parser.runParserForProgramAndCommentRanges(code) match {
-      case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")")
+      case ParseFailure(err) => fail(err.toString)
       case ParseSuccess((program0, commentRanges)) => {
         Highlighter.toHTML(code, Spanner.forProgram(program0), commentRanges)
       }

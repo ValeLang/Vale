@@ -60,7 +60,7 @@ class HammerTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |interface Blark imm { }
-        |abstract fn wot(virtual b *Blark) int;
+        |fn wot(virtual b *Blark) int abstract;
         |struct MyStruct export imm {}
         |impl MyStruct for Blark;
         |fn wot(b *MyStruct impl Blark) int { 9 }

@@ -6,16 +6,9 @@ import org.scalatest.{FunSuite, Matchers}
 
 class SpannerTests extends FunSuite with Matchers {
   private def compile(code: String): Program0 = {
-    VParser.parse(VParser.program, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
-        fail();
-      }
-      case VParser.Success(program0, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        program0
-      }
+    Parser.runParser(code) match {
+      case ParseFailure(err) => fail(err.toString)
+      case ParseSuccess(program0) => program0
     }
   }
 

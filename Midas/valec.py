@@ -75,9 +75,14 @@ class ValeCompiler(unittest.TestCase):
         proc = self.valestrom(f"{vale_file}", vir_file)
         # print(proc.stdout)
         # print(proc.stderr)
-        self.assertEqual(proc.returncode, 0,
-                         f"valestrom couldn't compile {vale_file}:\n" +
-                         proc.stdout + "\n" + proc.stderr)
+        if proc.returncode == 0:
+          pass
+        elif proc.returncode == 22:
+          print(proc.stdout + "\n" + proc.stderr)
+          sys.exit(22)
+        else:
+          print(f"Internal error while compiling {vale_file}:\n" + proc.stdout + "\n" + proc.stderr)
+          sys.exit(proc.returncode)
 
         proc = self.valec(vir_file, build_dir)
         self.assertEqual(proc.returncode, 0,

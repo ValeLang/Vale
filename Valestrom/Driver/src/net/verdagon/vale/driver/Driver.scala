@@ -8,7 +8,7 @@ import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{Program0, VParser, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Program0, Vonifier}
 import net.verdagon.vale.scout.Scout
 import net.verdagon.vale.templar.Templar
 import net.verdagon.vale.vivem.Vivem
@@ -89,15 +89,13 @@ object Driver {
   def build(opts: Options): ProgramH = {
     val code = opts.inputFiles.map(readCode).mkString("\n\n\n")
     val parsed =
-      VParser.runParser(code) match {
-        case f @ VParser.Failure(msg, next) => vfail(f.toString())
-        case VParser.Success((program0, commentRanges), next) => {
-          vassert(next.atEnd)
-          if (!next.atEnd) {
-            throw InputException("Couldnt parse entire file!")
-          }
-          program0
+      Parser.runParserForProgramAndCommentRanges(code) match {
+        case ParseFailure(error) => {
+          println(new ParseErrorHumanizer(code).humanize(error))
+          System.exit(22)
+          vfail()
         }
+        case ParseSuccess(program0) => program0._1
       }
     val scoutput = Scout.scoutProgram(parsed)
     val astrouts = Astronomer.runAstronomer(scoutput)
@@ -161,12 +159,13 @@ object Driver {
           vcheck(opts.inputFiles.size == 1, "Must have exactly 1 input file for highlighting", InputException)
           val code = readCode(opts.inputFiles.head)
           val (parsed, commentRanges) =
-            VParser.runParser(code) match {
-              case f @ VParser.Failure(msg, next) => vfail(f.toString())
-              case VParser.Success((program0, commentRanges), next) => {
-                vassert(next.atEnd)
-                (program0, commentRanges)
+            Parser.runParserForProgramAndCommentRanges(code) match {
+              case ParseFailure(err) => {
+                println(new ParseErrorHumanizer(code).humanize(err))
+                System.exit(22)
+                vfail()
               }
+              case ParseSuccess(program0) => program0
             }
           val span = Spanner.forProgram(parsed)
           val highlights = Highlighter.toHTML(code, span, commentRanges)

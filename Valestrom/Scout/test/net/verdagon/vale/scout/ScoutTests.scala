@@ -8,16 +8,9 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ScoutTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
-    VParser.parse(VParser.program, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
-        fail();
-      }
-      case VParser.Success(program0, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        Scout.scoutProgram(program0)
-      }
+    Parser.runParser(code) match {
+      case ParseFailure(err) => fail(err.toString)
+      case ParseSuccess(program0) => Scout.scoutProgram(program0)
     }
   }
 
@@ -202,7 +195,6 @@ class ScoutTests extends FunSuite with Matchers {
             _,
             AtomSP(CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             BoolLiteralSE(true)),
-          VoidSE(),
           FunctionCallSE(
             FunctionLoadSE(GlobalFunctionFamilyNameS("MyStruct")),
             List(
@@ -233,7 +225,6 @@ class ScoutTests extends FunSuite with Matchers {
           LetSE(_,_,_,
             AtomSP(CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             LendSE(LocalLoadSE(ConstructingMemberNameS("x"),BorrowP), BorrowP)),
-          VoidSE(),
           FunctionCallSE(
             FunctionLoadSE(GlobalFunctionFamilyNameS("MyStruct")),
             List(

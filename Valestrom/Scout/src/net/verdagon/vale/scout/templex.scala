@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.{vassert, vcurious, vwat}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vwat}
 
 import scala.collection.immutable.List
 
@@ -45,7 +45,9 @@ case class LetNameS(codeLocation: CodeLocationS) extends INameS
 case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class ClosureParamNameS() extends IVarNameS
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS
-case class CodeVarNameS(name: String) extends IVarNameS
+case class CodeVarNameS(name: String) extends IVarNameS {
+  vcheck(name != "mut", "Can't name a variable 'mut'")
+}
 case class ConstructingMemberNameS(name: String) extends IVarNameS
 // We differentiate rune names from regular names, we scout out what's actually
 // a rune so we can inform the templar. The templar wants to know so it can know

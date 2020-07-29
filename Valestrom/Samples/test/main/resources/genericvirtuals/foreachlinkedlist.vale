@@ -15,7 +15,7 @@ struct MyList<T> rules(T Ref) {
   next ^MyOption<^MyList<T>>;
 }
 
-abstract fn forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) int;
+fn forEach<F, T>(virtual opt &MyOption<MyList<T>>, func F) int abstract;
 fn forEach<F, T>(opt &MyNone<MyList<T>> impl MyOption<MyList<T>>, func F) int { 0 }
 fn forEach<F, T>(opt &MySome<MyList<T>> impl MyOption<MyList<T>>, func F) int {
    forEach<F, T>(opt.value, func);

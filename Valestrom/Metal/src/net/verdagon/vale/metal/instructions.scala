@@ -677,5 +677,4 @@ case class VariableIdH(
   number: Int,
   // Just for debugging purposes
   name: Option[FullNameH]) {
-  println("oi")
 }

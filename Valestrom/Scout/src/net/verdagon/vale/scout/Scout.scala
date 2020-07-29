@@ -278,15 +278,6 @@ object Scout {
     interfaceS
   }
 
-  def runScout(code: String): Option[ProgramS] = {
-    VParser.runParser(code) match {
-      case VParser.Failure(_, _) => None
-      case VParser.Success((program0, _), _) => {
-        Some(scoutProgram(program0))
-      }
-    }
-  }
-
   def evalPos(pos: Pos): CodeLocationS = {
     val Pos(line, col) = pos
     CodeLocationS(line, col)

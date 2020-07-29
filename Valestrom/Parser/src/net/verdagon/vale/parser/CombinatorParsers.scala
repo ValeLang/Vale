@@ -4,14 +4,16 @@ import net.verdagon.vale.parser.patterns.PatternParser
 import net.verdagon.vale.parser.rules._
 import net.verdagon.vale.{vassert, vfail}
 
+import scala.collection.mutable
 import scala.util.parsing.combinator.RegexParsers
+import scala.util.parsing.input.CharSequenceReader
 
 // Rules of thumb:
 // - A rule shouldn't match the empty string.
 // - A rule shouldn't match whitespace on either side (it makes it hard to require
 //   whitespace, like inside the let statement).
 
-object VParser
+object CombinatorParsers
     extends RuleParser
         with RuleTemplexParser
         with RegexParsers
@@ -53,31 +55,41 @@ object VParser
     pos ~ "pure" ~ pos ^^ { case begin ~ _ ~ end => PureAttributeP(Range(begin, end)) }
   }
 
-  def topLevelFunction: Parser[FunctionP] = {
-        pos ~
-        (repsep(functionAttribute, white) <~ optWhite) ~
-        ("fn" ~> optWhite ~> exprIdentifier <~ optWhite) ~
-        opt(identifyingRunesPR <~ optWhite) ~
-        (patternPrototypeParams <~ optWhite) ~
-        // We have template rules before and after the return type because the return type likes
-        // to parse the `rules` in `rules(stuff here)` as a type and then fail when it hits the
-        // parentheses.
-        opt(templateRulesPR <~ optWhite) ~
-        opt(templex <~ optWhite) ~
-        opt(templateRulesPR <~ optWhite) ~
-        (maybeBody) ~
-        pos ^^ {
-      case begin ~ attributes ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ maybeBody ~ end => {
+  def topLevelFunctionBegin = {
+    pos ~
+      ("fn" ~> optWhite ~> exprIdentifier <~ optWhite) ~
+      opt(identifyingRunesPR <~ optWhite) ~
+      (patternPrototypeParams <~ optWhite) ~
+      // We have template rules before and after the return type because the return type likes
+      // to parse the `rules` in `rules(stuff here)` as a type and then fail when it hits the
+      // parentheses.
+      opt(templateRulesPR <~ optWhite) ~
+      (repsep(functionAttribute, white) <~ optWhite) ~
+      opt(templex <~ optWhite) ~
+      opt(templateRulesPR <~ optWhite) ~
+      (repsep(functionAttribute, white) <~ optWhite) ~
+    pos ^^ {
+      case begin ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ attributesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ attributesBeforeBody ~ end => {
         vassert(!(maybeTemplateRulesBeforeReturn.nonEmpty && maybeTemplateRulesAfterReturn.nonEmpty))
-        FunctionP(
+        FunctionHeaderP(
           Range(begin, end),
           Some(name),
-          attributes,
+          attributesBeforeReturn ++ attributesBeforeBody,
           identifyingRunes,
           (maybeTemplateRulesBeforeReturn.toList ++ maybeTemplateRulesAfterReturn.toList).headOption,
           Some(patternParams),
-          maybeReturnType,
-          maybeBody)
+          maybeReturnType)
+      }
+    }
+  }
+
+  def topLevelFunction: Parser[FunctionP] = {
+        pos ~
+        topLevelFunctionBegin ~
+        maybeBody ~
+        pos ^^ {
+          case begin ~ header ~ maybeBody ~ end => {
+        FunctionP(Range(begin, end), header, maybeBody)
       }
     }
   }
@@ -143,16 +155,16 @@ object VParser
     }
   }
 
-  private[parser] def topLevelThing: Parser[ITopLevelThing] = {
-    struct ^^ TopLevelStruct |
-    topLevelFunction ^^ TopLevelFunction |
-    interface ^^ TopLevelInterface |
-    impl ^^ TopLevelImpl
-  }
-
-  def program: Parser[Program0] = {
-    optWhite ~> repsep(topLevelThing, optWhite) <~ optWhite ^^ Program0
-  }
+//  private[parser] def topLevelThing: Parser[ITopLevelThing] = {
+//    struct ^^ TopLevelStruct |
+//    topLevelFunction ^^ TopLevelFunction |
+//    interface ^^ TopLevelInterface |
+//    impl ^^ TopLevelImpl
+//  }
+//
+//  def program: Parser[Program0] = {
+//    optWhite ~> repsep(topLevelThing, optWhite) <~ optWhite ^^ Program0
+//  }
 
   def repeatStr(str: String, n: Int): String = {
     var result = "";
@@ -162,24 +174,24 @@ object VParser
     result
   }
 
-  def runParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
-    val regex = "(//[^\\r\\n]*|«\\w+»)".r
-    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
-    var code = codeWithComments
-    commentRanges.foreach({ case (begin, end) =>
-      code = code.substring(0, begin) + repeatStr(" ", (end - begin)) + code.substring(end)
-    })
-
-    VParser.parse(VParser.program, code.toCharArray) match {
-      case VParser.NoSuccess(msg, next) => VParser.Failure(msg, next)
-      case VParser.Success(program0, rest) => {
-        if (!rest.atEnd) {
-          vfail("Unexpected at: " + rest.source)
-        } else {
-          vassert(rest.offset == code.length)
-          VParser.Success((program0, commentRanges), rest)
-        }
-      }
-    }
-  }
+//  def runOldParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
+//    val regex = "(//[^\\r\\n]*|«\\w+»)".r
+//    val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
+//    var code = codeWithComments
+//    commentRanges.foreach({ case (begin, end) =>
+//      code = code.substring(0, begin) + repeatStr(" ", (end - begin)) + code.substring(end)
+//    })
+//
+//    VParser.parse(VParser.program, code.toCharArray) match {
+//      case VParser.NoSuccess(msg, next) => VParser.Failure(msg, next)
+//      case VParser.Success(program0, rest) => {
+//        if (!rest.atEnd) {
+//          vfail("Unexpected at: " + rest.source)
+//        } else {
+//          vassert(rest.offset == code.length)
+//          VParser.Success((program0, commentRanges), rest)
+//        }
+//      }
+//    }
+//  }
 }

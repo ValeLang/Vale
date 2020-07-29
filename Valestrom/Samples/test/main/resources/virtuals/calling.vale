@@ -1,6 +1,6 @@
 
 interface Car { }
-abstract fn doCivicDance(virtual this Car) int;
+fn doCivicDance(virtual this Car) int abstract;
 
 struct Civic {}
 impl Civic for Car;

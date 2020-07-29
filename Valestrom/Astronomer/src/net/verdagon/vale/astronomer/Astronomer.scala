@@ -634,15 +634,6 @@ object Astronomer {
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 
-  def runAstronomer(code: String): Option[ProgramA] = {
-    Scout.runScout(code) match {
-      case None => None
-      case Some(programS) => {
-        Some(runAstronomer(programS))
-      }
-    }
-  }
-
   def runAstronomer(programS: ProgramS): ProgramA = {
     val suppliedFunctions = stlFunctions ++ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
     val suppliedInterfaces = List(IFunction1.interface)

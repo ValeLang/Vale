@@ -1,6 +1,6 @@
 
 interface MyInterface<T> rules(T Ref) { }
-abstract fn doThing<T>(virtual x MyInterface<T>) int;
+fn doThing<T>(virtual x MyInterface<T>) int abstract;
 
 struct MyStruct<T> rules(T Ref) { }
 impl<T> MyStruct<T> for MyInterface<T>;

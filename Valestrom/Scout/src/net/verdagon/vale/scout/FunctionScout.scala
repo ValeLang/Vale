@@ -44,12 +44,13 @@ object FunctionScout {
   def scoutTopLevelFunction(file: String, functionP: FunctionP): FunctionS = {
     val FunctionP(
       range,
-      Some(StringP(_, codeName)),
-      attributes,
-      userSpecifiedIdentifyingRuneNames,
-      templateRulesP,
-      paramsP,
-      maybeRetPT,
+      FunctionHeaderP(_,
+        Some(StringP(_, codeName)),
+        attributes,
+        userSpecifiedIdentifyingRuneNames,
+        templateRulesP,
+        paramsP,
+        maybeRetPT),
       maybeBody0
     ) = functionP
     val codeLocation = Scout.evalPos(range.begin)
@@ -185,7 +186,10 @@ object FunctionScout {
       parentStackFrame: StackFrame,
       lambdaFunction0: FunctionP):
   (FunctionS, VariableUses) = {
-    val FunctionP(range, _, List(), userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT, Some(body0)) = lambdaFunction0;
+    val FunctionP(range,
+      FunctionHeaderP(_,
+        _, List(), userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT),
+      Some(body0)) = lambdaFunction0;
     val codeLocation = Scout.evalPos(range.begin)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
       userSpecifiedIdentifyingRuneNames
@@ -445,12 +449,13 @@ object FunctionScout {
   def scoutInterfaceMember(interfaceEnv: Environment, functionP: FunctionP): FunctionS = {
     val FunctionP(
       range,
-      Some(StringP(_, codeName)),
-      attributes,
-      userSpecifiedIdentifyingRuneNames,
-      templateRulesP,
-      paramsP,
-      maybeReturnType,
+      FunctionHeaderP(_,
+        Some(StringP(_, codeName)),
+        attributes,
+        userSpecifiedIdentifyingRuneNames,
+        templateRulesP,
+        paramsP,
+        maybeReturnType),
       None) = functionP;
     val codeLocation = Scout.evalPos(range.begin)
     val funcName = FunctionNameS(codeName, codeLocation)

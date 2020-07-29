@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vcheck}
 
 import scala.collection.immutable.List
 import scala.util.parsing.input.Positional

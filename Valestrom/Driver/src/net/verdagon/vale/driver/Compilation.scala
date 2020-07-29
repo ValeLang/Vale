@@ -5,7 +5,7 @@ import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, VonHammer}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{Program0, VParser}
+import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, Program0}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{CompleteProgram2, Templar, Temputs}
 import net.verdagon.vale.{vassert, vwat}
@@ -24,10 +24,9 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
     parsedCache match {
       case Some(parsed) => parsed
       case None => {
-        VParser.runParser(code) match {
-          case VParser.Failure(_, _) => vwat()
-          case VParser.Success((program0, _), next) => {
-            vassert(next.atEnd)
+        Parser.runParserForProgramAndCommentRanges(code) match {
+          case ParseFailure(pos, msg) => vwat(msg + " (" + pos + ")")
+          case ParseSuccess((program0, _)) => {
             parsedCache = Some(program0)
             program0
           }

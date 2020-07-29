@@ -1,18 +1,18 @@
 package net.verdagon.vale.parser.patterns
 
 import net.verdagon.vale.parser.Patterns.{capturedWithType, capturedWithTypeRune}
-import net.verdagon.vale.parser.VParser._
+import net.verdagon.vale.parser.CombinatorParsers._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.vfail
 import org.scalatest.{FunSuite, Matchers}
 
 class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
-  private def compile[T](parser: VParser.Parser[T], code: String): T = {
-    VParser.parse(parser, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
+  private def compile[T](parser: CombinatorParsers.Parser[T], code: String): T = {
+    CombinatorParsers.parse(parser, code.toCharArray()) match {
+      case CombinatorParsers.NoSuccess(msg, input) => {
         fail();
       }
-      case VParser.Success(expr, rest) => {
+      case CombinatorParsers.Success(expr, rest) => {
         if (!rest.atEnd) {
           vfail(rest.pos.longString)
         }
@@ -24,10 +24,10 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
     compile(atomPattern, code)
   }
 
-  private def checkFail[T](parser: VParser.Parser[T], code: String) = {
-    VParser.parse(parser, code) match {
-      case VParser.NoSuccess(_, _) =>
-      case VParser.Success(_, rest) => {
+  private def checkFail[T](parser: CombinatorParsers.Parser[T], code: String) = {
+    CombinatorParsers.parse(parser, code) match {
+      case CombinatorParsers.NoSuccess(_, _) =>
+      case CombinatorParsers.Success(_, rest) => {
         if (!rest.atEnd) {
           // That's good, it didn't parse all of it
         } else {

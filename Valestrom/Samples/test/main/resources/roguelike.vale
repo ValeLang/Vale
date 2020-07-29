@@ -134,11 +134,11 @@ impl<T> Some<T> for Opt<T>;
 struct None<T> rules(T Ref) { }
 impl<T> None<T> for Opt<T>;
 
-abstract fn empty?<T>(virtual opt &Opt<T>) bool;
+fn empty?<T>(virtual opt &Opt<T>) bool abstract;
 fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
 fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
 
-abstract fn get<T>(virtual opt Opt<T>) T;
+fn get<T>(virtual opt Opt<T>) T abstract;
 fn get<T>(opt None<T> impl Opt<T>) T {
   panic("Called get on None!");
 }
@@ -147,13 +147,13 @@ fn get<T>(opt Some<T> impl Opt<T>) T {
   = value;
 }
 
-abstract fn get<T>(virtual opt &Opt<T>) &T;
+fn get<T>(virtual opt &Opt<T>) &T abstract;
 fn get<T>(opt &None<T> impl Opt<T>) &T {
   panic("Called get on None!");
 }
 fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
 
-abstract fn getOr<T>(virtual opt &Opt<T>, default T) T;
+fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
 fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
   default
 }
@@ -161,7 +161,7 @@ fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
   opt.value
 }
 
-abstract fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, &T, R>) Opt<R>;
+fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> abstract;
 fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
   None<R>()
 }
@@ -169,7 +169,7 @@ fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
   Some<R>(func(opt.value))
 }
 
-abstract fn getSize<T>(virtual opt &Opt<T>) *int;
+fn getSize<T>(virtual opt &Opt<T>) *int abstract;
 fn getSize<T>(opt &None<T> impl Opt<T>) *int { 0 }
 fn getSize<T>(opt &Some<T> impl Opt<T>) *int { 1 }
 
@@ -430,8 +430,8 @@ fn display(
     playerCol int)
 {
   toPrint! = "";
-  eachI &board (rowI, row){
-    eachI &row (cellI, cell){
+  eachI (&board) (rowI, row){
+    eachI (&row) (cellI, cell){
       charToPrint! = cell;
 
       if (and(rowI == playerRow, cellI == playerCol)) {
@@ -540,7 +540,6 @@ fn main() int {
         mut killedGoblin = true;
       }
     });
-    println("bork13");
     if (not killedGoblin) {
       if (board[newPlayerRow][newPlayerCol] == ".") {
         mut playerRow = newPlayerRow;

@@ -1,6 +1,6 @@
 
 interface MyIFunction1<P1, R> rules(P1 Ref, R Ref) {
-  abstract fn go(virtual this &MyIFunction1<P1, R>, param P1) R;
+  fn go(virtual this &MyIFunction1<P1, R>, param P1) R abstract;
 }
 
 struct MyFunc { }

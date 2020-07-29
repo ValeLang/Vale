@@ -113,7 +113,7 @@ class StructTests extends FunSuite with Matchers {
         |struct None<T> rules(T Ref) { }
         |impl<T> None<T> for Opt<T>;
         |
-        |abstract fn getOr<T>(virtual opt &Opt<T>, default T) T;
+        |fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
         |fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
         |  default
         |}
@@ -121,7 +121,7 @@ class StructTests extends FunSuite with Matchers {
         |  opt.value
         |}
         |
-        |abstract fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, T, R>) Opt<R>;
+        |fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, T, R>) Opt<R> abstract;
         |fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
         |  None<R>()
         |}
@@ -180,7 +180,7 @@ class StructTests extends FunSuite with Matchers {
         |struct None<T> rules(T Ref) { }
         |impl<T> None<T> for Opt<T>;
         |
-        |abstract fn get<T>(virtual opt &Opt<T>) &T;
+        |fn get<T>(virtual opt &Opt<T>) &T abstract;
         |fn get<T>(opt &None<T> impl Opt<T>) &T { panic() }
         |fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
         |

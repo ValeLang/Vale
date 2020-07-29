@@ -5,11 +5,11 @@ import org.scalatest.{FunSuite, Matchers}
 
 class StatementTests extends FunSuite with Matchers with Collector {
   private def compile(code: String): IExpressionPE = {
-    VParser.parse(VParser.statement, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
+    CombinatorParsers.parse(CombinatorParsers.statement, code.toCharArray()) match {
+      case CombinatorParsers.NoSuccess(msg, input) => {
         fail(msg);
       }
-      case VParser.Success(expr, rest) => {
+      case CombinatorParsers.Success(expr, rest) => {
         vassert(rest.atEnd)
         expr
       }
@@ -135,14 +135,15 @@ class StatementTests extends FunSuite with Matchers with Collector {
         List(
           LookupPE(StringP(_, "row"),None),
           LambdaPE(_,
-            FunctionP(
-              _,None,List(),None,None,
-              Some(
-                ParamsP(_,
-                  List(
-                    PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cellI")),FinalP)),None,None,None),
-                    PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
-              None,
+            FunctionP(_,
+              FunctionHeaderP(_,
+                None,List(),None,None,
+                Some(
+                  ParamsP(_,
+                    List(
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cellI")),FinalP)),None,None,None),
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
+                None),
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
         BorrowP) =>
     }
@@ -155,14 +156,15 @@ class StatementTests extends FunSuite with Matchers with Collector {
         List(
           LendPE(_,LookupPE(StringP(_, "row"),None), BorrowP),
           LambdaPE(_,
-            FunctionP(
-              _,None,List(),None,None,
-              Some(
-                ParamsP(_,
-                  List(
-                    PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cellI")),FinalP)),None,None,None),
-                    PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
-              None,
+            FunctionP(_,
+              FunctionHeaderP(
+                _,None,List(),None,None,
+                Some(
+                  ParamsP(_,
+                    List(
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cellI")),FinalP)),None,None,None),
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
+                None),
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
         BorrowP) =>
     }

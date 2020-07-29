@@ -7,17 +7,11 @@ import net.verdagon.vale.{vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutParametersTests extends FunSuite with Matchers {
+
   private def compile(code: String): ProgramS = {
-    VParser.parse(VParser.program, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
-        fail();
-      }
-      case VParser.Success(program0, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        Scout.scoutProgram(program0)
-      }
+    Parser.runParser(code) match {
+      case ParseFailure(pos, msg) => fail(msg + " (" + pos + ")")
+      case ParseSuccess(program0) => Scout.scoutProgram(program0)
     }
   }
 

@@ -1,21 +1,14 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{FinalP, VParser, VaryingP}
+import net.verdagon.vale.parser.{CombinatorParsers, FinalP, ParseFailure, ParseSuccess, Parser, VaryingP}
 import net.verdagon.vale.{vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutVariableTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
-    VParser.parse(VParser.program, code.toCharArray()) match {
-      case VParser.NoSuccess(msg, input) => {
-        fail();
-      }
-      case VParser.Success(program0, rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
-        Scout.scoutProgram(program0)
-      }
+    Parser.runParser(code) match {
+      case ParseFailure(err) => fail(err.toString)
+      case ParseSuccess(program0) => Scout.scoutProgram(program0)
     }
   }
 

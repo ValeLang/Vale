@@ -275,11 +275,4 @@ object Templar {
       }
     }
   }
-
-  def runTemplar(code: String): Option[Temputs] = {
-    Astronomer.runAstronomer(code) match {
-      case None => None
-      case Some(program1) => Some(evaluate(program1))
-    }
-  }
 }

@@ -6,14 +6,9 @@ import org.scalatest.{FunSuite, Matchers}
 
 class HighlighterTests extends FunSuite with Matchers {
   private def highlight(code: String): String = {
-    VParser.runParser(code) match {
-      case VParser.NoSuccess(msg, input) => {
-        fail();
-      }
-      case VParser.Success((program0, commentRanges), rest) => {
-        if (!rest.atEnd) {
-          vfail(rest.pos.longString)
-        }
+    Parser.runParserForProgramAndCommentRanges(code) match {
+      case ParseFailure(err) => fail(err.toString)
+      case ParseSuccess((program0, commentRanges)) => {
         Highlighter.toHTML(code, Spanner.forProgram(program0), commentRanges)
       }
     }

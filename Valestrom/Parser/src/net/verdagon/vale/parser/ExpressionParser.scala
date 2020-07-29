@@ -34,13 +34,20 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     }
   }
 
+  case class LetBegin(begin: Pos, patternPP: PatternPP)
+
+  private[parser] def letBegin: Parser[LetBegin] = {
+    pos ~ (atomPattern <~ white <~ "=" <~ white) ^^ {
+      case begin ~ pattern => LetBegin(begin, pattern)
+    }
+  }
+
   private[parser] def let: Parser[LetPE] = {
 //    (opt(templateRulesPR) <~ optWhite) ~
-        pos ~
-        (atomPattern <~ white <~ "=" <~ white) ~
+      letBegin ~
         (expression) ~
         pos ^^ {
-      case begin ~ /*maybeTemplateRules ~*/ pattern ~ expr ~ end => {
+      case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
         LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List())*/List(), pattern, expr)
       }
@@ -101,7 +108,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def eachOrEachI: Parser[FunctionCallPE] = {
-    pos ~ (pstr("eachI") | pstr("each")) ~ (white ~> "(" ~> optWhite ~> postfixableExpressions <~ optWhite <~ ")" <~ white) ~ lambda ~ pos ^^ {
+    pos ~ (pstr("eachI") | pstr("each")) ~! (white ~> "(" ~> optWhite ~> postfixableExpressions <~ optWhite <~ ")" <~ white) ~ lambda ~ pos ^^ {
       case begin ~ eachI ~ collection ~ lam ~ end => {
         FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(eachI, None), List(collection, lam), BorrowP)
       }
@@ -109,7 +116,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def whiile: Parser[WhilePE] = {
-    pos ~ ("while" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> blockExprs <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
+    pos ~ ("while" ~>! optWhite ~> pos) ~ ("(" ~> optWhite ~> blockExprs <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
       case begin ~ condBegin ~ condExprs ~ condEnd ~ thenBlock ~ end => {
         WhilePE(Range(begin, end), BlockPE(Range(condBegin, condEnd), condExprs), thenBlock)
       }
@@ -178,6 +185,10 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     eachOrEachI |
     ifLadder |
     (expression <~ ";") |
+    blockStatement
+  }
+
+  private[parser] def blockStatement = {
     ("block" ~> optWhite ~> bracedBlock)
   }
 
@@ -451,9 +462,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 //  }
 
   private[parser] def lambda: Parser[LambdaPE] = {
-    pos ~ existsMW("[]") ~ opt(patternPrototypeParams) ~ bracedBlock ~ pos ^^ {
-      case begin ~ maybeCaptures ~ maybeParams ~ block ~ end => {
-        LambdaPE(maybeCaptures, FunctionP(Range(begin, end), None, List(), None, None, maybeParams, None, Some(block)))
+    pos ~ existsMW("[]") ~ opt(patternPrototypeParams) ~ pos ~ bracedBlock ~ pos ^^ {
+      case begin ~ maybeCaptures ~ maybeParams ~ headerEnd ~ block ~ end => {
+        LambdaPE(maybeCaptures, FunctionP(Range(begin, end), FunctionHeaderP(Range(begin, headerEnd), None, List(), None, None, maybeParams, None), Some(block)))
       }
     }
   }
@@ -473,7 +484,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   def caase: Parser[LambdaPE] = {
     pos ~ patternPrototypeParam ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
       case begin ~ param ~ paramsEnd ~ body ~ end => {
-        LambdaPE(None, FunctionP(Range(begin, end), None, List(), None, None, Some(ParamsP(Range(begin, paramsEnd), List(param))), None, Some(body)))
+        LambdaPE(None, FunctionP(Range(begin, end), FunctionHeaderP(Range(begin, paramsEnd), None, List(), None, None, Some(ParamsP(Range(begin, paramsEnd), List(param))), None), Some(body)))
       }
     }
   }

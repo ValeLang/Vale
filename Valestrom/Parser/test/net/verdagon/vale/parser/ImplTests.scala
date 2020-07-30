@@ -9,7 +9,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
     compile(
       CombinatorParsers.impl,
       """
-        |impl<T> SomeStruct<T> for MyInterface<T>;
+        |impl<T> MyInterface<T> for SomeStruct<T>;
       """.stripMargin) shouldHave {
       case ImplP(_,
       Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, StringP(_, "T"), List())))),
@@ -23,7 +23,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
     compile(
       CombinatorParsers.impl,
       """
-        |impl MyIntIdentity for IFunction1<mut, int, int>;
+        |impl IFunction1<mut, int, int> for MyIntIdentity;
         |""".stripMargin) shouldHave {
       case ImplP(_,
       None,

@@ -2,7 +2,7 @@
 struct Goblin { }
 
 struct GoblinMaker {}
-impl GoblinMaker for IFunction1<mut, int, Goblin>;
+impl IFunction1<mut, int, Goblin> for GoblinMaker;
 fn __call(this &GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
 fn main() {
   m = GoblinMaker();

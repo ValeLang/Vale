@@ -119,7 +119,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |struct SomeStruct<T> rules(T Ref) { }
         |fn doAThing<T>(s SomeStruct<T>) { }
-        |impl<T> SomeStruct<T> for MyInterface<T>;
+        |impl<T> MyInterface<T> for SomeStruct<T>;
         |
         |fn main(a SomeStruct<int>) {
         |  doAThing<int>(a);
@@ -157,10 +157,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct MySome {
         |  value MyList;
         |}
-        |impl MySome for MyOption;
+        |impl MyOption for MySome;
         |
         |struct MyNone { }
-        |impl MyNone for MyOption;
+        |impl MyOption for MyNone;
         |
         |
         |struct MyList {
@@ -253,7 +253,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |interface MyOption<T> rules(T Ref) { }
         |
         |struct MySome<T> rules(T Ref) {}
-        |impl<T> MySome<T> for MyOption<T>;
+        |impl<T> MyOption<T> for MySome<T>;
         |
         |fn doSomething(opt MyOption<int>) int {
         |  = 9;
@@ -334,7 +334,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |interface Opt { }
         |struct Some { value int; }
-        |impl Some for Opt;
+        |impl Opt for Some;
         |
         |fn doIt() Opt {
         |  Some(9)

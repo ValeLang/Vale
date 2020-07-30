@@ -130,9 +130,9 @@ fn println<A, B, C, D, E>(a A, b B, c C, d D, e E) {
 
 interface Opt<T> rules(T Ref) { }
 struct Some<T> rules(T Ref) { value T; }
-impl<T> Some<T> for Opt<T>;
+impl<T> Opt<T> for Some<T>;
 struct None<T> rules(T Ref) { }
-impl<T> None<T> for Opt<T>;
+impl<T> Opt<T> for None<T>;
 
 fn empty?<T>(virtual opt &Opt<T>) bool abstract;
 fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }

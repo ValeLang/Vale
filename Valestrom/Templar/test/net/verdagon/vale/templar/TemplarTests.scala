@@ -225,7 +225,7 @@ class TemplarTests extends FunSuite with Matchers {
         |interface MyInterface<X> rules(X Ref) { }
         |
         |struct SomeStruct<X> rules(X Ref) { x X; }
-        |impl<X> SomeStruct<X> for MyInterface<X>;
+        |impl<X> MyInterface<X> for SomeStruct<X>;
         |
         |fn doAThing<T>(t T) {
         |  SomeStruct<T>(t)
@@ -292,7 +292,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |interface MyInterface { }
         |struct MyStruct { }
-        |impl MyStruct for MyInterface;
+        |impl MyInterface for MyStruct;
         |fn main(a MyStruct) {}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -335,7 +335,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |interface MyOption<T> imm rules(T Ref) { }
         |struct MySome<T> export imm rules(T Ref) { value T; }
-        |impl<T> MySome<T> for MyOption<T>;
+        |impl<T> MyOption<T> for MySome<T>;
         |fn moo(a MySome<int>) { }
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -489,7 +489,7 @@ class TemplarTests extends FunSuite with Matchers {
         |interface MyOption<T> rules(T Ref) { }
         |
         |struct MySome<T> rules(T Ref) {}
-        |impl<T> MySome<T> for MyOption<T>;
+        |impl<T> MyOption<T> for MySome<T>;
         |
         |fn doSomething(opt MyOption<int>) int {
         |  = 9;
@@ -632,9 +632,9 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |interface IOption<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }
-        |impl<T> Some<T> for IOption<T>;
+        |impl<T> IOption<T> for Some<T>;
         |struct None<T> rules(T Ref) { }
-        |impl<T> None<T> for IOption<T>;
+        |impl<T> IOption<T> for None<T>;
         |
         |fn main() {
         |  m IOption<int> = None<int>();
@@ -654,9 +654,9 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |interface IOption<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }
-        |impl<T> Some<T> for IOption<T>;
+        |impl<T> IOption<T> for Some<T>;
         |struct None<T> rules(T Ref) { }
-        |impl<T> None<T> for IOption<T>;
+        |impl<T> IOption<T> for None<T>;
         |
         |struct Marine {
         |  weapon IOption<int>;

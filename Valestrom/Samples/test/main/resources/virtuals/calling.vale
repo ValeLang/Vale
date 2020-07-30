@@ -3,13 +3,13 @@ interface Car { }
 fn doCivicDance(virtual this Car) int abstract;
 
 struct Civic {}
-impl Civic for Car;
+impl Car for Civic;
 fn doCivicDance(civic Civic impl Car) int {
   = 4;
 }
 
 struct Toyota {}
-impl Toyota for Car;
+impl Car for Toyota;
 fn doCivicDance(toyota Toyota impl Car) int {
   = 7;
 }

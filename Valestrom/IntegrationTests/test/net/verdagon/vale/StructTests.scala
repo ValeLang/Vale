@@ -109,9 +109,9 @@ class StructTests extends FunSuite with Matchers {
       """
         |interface Opt<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }
-        |impl<T> Some<T> for Opt<T>;
+        |impl<T> Opt<T> for Some<T>;
         |struct None<T> rules(T Ref) { }
-        |impl<T> None<T> for Opt<T>;
+        |impl<T> Opt<T> for None<T>;
         |
         |fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
         |fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
@@ -130,7 +130,7 @@ class StructTests extends FunSuite with Matchers {
         |}
         |
         |struct GetMarineWeaponNameFunc { }
-        |impl GetMarineWeaponNameFunc for IFunction1<mut, &Marine, str>;
+        |impl IFunction1<mut, &Marine, str> for GetMarineWeaponNameFunc;
         |fn __call(this &GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, str>, m &Marine) str {
         |  m.weapon.name
         |}
@@ -176,9 +176,9 @@ class StructTests extends FunSuite with Matchers {
       """
         |interface Opt<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }
-        |impl<T> Some<T> for Opt<T>;
+        |impl<T> Opt<T> for Some<T>;
         |struct None<T> rules(T Ref) { }
-        |impl<T> None<T> for Opt<T>;
+        |impl<T> Opt<T> for None<T>;
         |
         |fn get<T>(virtual opt &Opt<T>) &T abstract;
         |fn get<T>(opt &None<T> impl Opt<T>) &T { panic() }

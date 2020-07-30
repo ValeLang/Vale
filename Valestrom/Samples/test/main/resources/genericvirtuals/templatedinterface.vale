@@ -4,7 +4,7 @@ interface MyIFunction1<P1, R> rules(P1 Ref, R Ref) {
 }
 
 struct MyFunc { }
-impl MyFunc for MyIFunction1<int, int>;
+impl MyIFunction1<int, int> for MyFunc;
 
 fn go(this &MyFunc impl MyIFunction1<int, int>, param int) int {
   param * 2

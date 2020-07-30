@@ -345,7 +345,7 @@ class InfererMatcher[Env, State](
         if (actualTemplata != expectedTemplata) {
           // Right here, thought about checking for subtypes, but I don't think we should.
           // For example, let's say we have this impl:
-          //   impl IMiddleInterface for ITopInterface;
+          //   impl ITopInterface for IMiddleInterface;
           // and a struct MyStruct that implements IMiddleInterface.
           //
           // If we search for all superinterfaces of IMiddleInterface, we'll be testing

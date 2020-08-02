@@ -38,9 +38,9 @@ class HammerTests extends FunSuite with Matchers {
       """
         |interface MyOption<T> imm rules(T Ref) { }
         |struct MyNone<T> imm rules(T Ref) { }
-        |impl<T> MyNone<T> for MyOption<T>;
+        |impl<T> MyOption<T> for MyNone<T>;
         |struct MySome<T> imm rules(T Ref) { value T; }
-        |impl<T> MySome<T> for MyOption<T>;
+        |impl<T> MyOption<T> for MySome<T>;
         |
         |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
@@ -62,7 +62,7 @@ class HammerTests extends FunSuite with Matchers {
         |interface Blark imm { }
         |fn wot(virtual b *Blark) int abstract;
         |struct MyStruct export imm {}
-        |impl MyStruct for Blark;
+        |impl Blark for MyStruct;
         |fn wot(b *MyStruct impl Blark) int { 9 }
       """.stripMargin)
     val hamuts = compile.getHamuts()

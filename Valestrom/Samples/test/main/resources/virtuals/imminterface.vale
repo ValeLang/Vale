@@ -4,10 +4,10 @@ interface MyOption imm { }
 struct MySome imm {
   value *MyList;
 }
-impl MySome for MyOption;
+impl MyOption for MySome;
 
 struct MyNone imm { }
-impl MyNone for MyOption;
+impl MyOption for MyNone;
 
 
 struct MyList imm {

@@ -53,6 +53,23 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     }
   }
 
+  test("Pure and default region") {
+    compile(
+      CombinatorParsers.topLevelFunction,
+      """fn findNearbyUnits() 'i int pure 'i { }
+        |""".stripMargin) match {
+      case FunctionP(_,
+        FunctionHeaderP(_,
+          Some(StringP(_,"findNearbyUnits")),
+          List(PureAttributeP(_)),
+          None,
+          None,
+          Some(ParamsP(_,List())),
+          Some(NameOrRunePT(StringP(_,"int")))),
+        Some(BlockPE(_,List(VoidPE(_))))) =>
+    }
+  }
+
   test("Attribute after return") {
     compile(CombinatorParsers.topLevelFunction, "fn sum() Int abstract;") match {
       case FunctionP(_,

@@ -163,7 +163,7 @@ object Parser {
       return ParseSuccess(FunctionP(Range(funcBegin, iter.getPos()), header, None))
     }
     val bodyBegin = iter.getPos()
-    if (!iter.tryConsume("^\\{".r)) {
+    if (!iter.tryConsume("^('\\w+\\s*)?\\{".r)) {
       return ParseFailure(BadFunctionBodyError(iter.position))
     }
     iter.consumeWhitespace()

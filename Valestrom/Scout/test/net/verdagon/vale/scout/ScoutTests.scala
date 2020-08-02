@@ -100,7 +100,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Impl") {
-    val program1 = compile("impl Moo for IMoo;")
+    val program1 = compile("impl IMoo for Moo;")
     val impl = program1.impls.head
     val structRune =
       impl.structKindRune match {

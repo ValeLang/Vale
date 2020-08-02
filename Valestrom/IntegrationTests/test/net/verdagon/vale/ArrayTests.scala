@@ -127,7 +127,7 @@ class ArrayTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |struct MyIntFunctor { x: Int; }
-//        |impl MyIntFunctor for IFunction1<mut, int, int>;
+//        |impl IFunction1<mut, int, int> for MyIntFunctor;
 //        |fn __call(this: &MyIntFunctor for IFunction1<mut, int, int>, i: Int) int { this.x + i }
 //        |fn main() {
 //        |  x = 7;
@@ -150,7 +150,7 @@ class ArrayTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |struct MyIntIdentity {}
-//        |impl MyIntIdentity for IFunction1<mut, int, int>;
+//        |impl IFunction1<mut, int, int> for MyIntIdentity;
 //        |fn __call(this: &MyIntIdentity for IFunction1<mut, int, int>, i: Int) int { i }
 //        |fn main() {
 //        |  m = MyIntIdentity();
@@ -192,12 +192,12 @@ class ArrayTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |struct MyInnerIntFunctor { x: Int; }
-//        |impl MyInnerIntFunctor for IFunction1<mut, int, int>;
+//        |impl IFunction1<mut, int, int> for MyInnerIntFunctor;
 //        |fn __call(this: &MyInnerIntFunctor for IFunction1<mut, int, int>, i: Int) int { this.x + i }
 //        |
 //        |
 //        |struct MyOuterIntFunctor {}
-//        |impl MyOuterIntFunctor for IFunction1:(mut, int, Array<imm, int>);
+//        |impl IFunction1:(mut, int, Array<imm, int>) for MyOuterIntFunctor;
 //        |fn __call(this: &MyOuterIntFunctor for IFunction1:(mut, int, Array<imm, int>, i: Int) Array<imm, int> {
 //        |  innerIntFunctor = MyInnerIntFunctor(i);
 //        |  = Array<imm>(20, &innerIntFunctor);
@@ -226,7 +226,7 @@ class ArrayTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |struct MyIntIdentity {}
-//        |impl MyIntIdentity for IFunction1<mut, int, int>;
+//        |impl IFunction1<mut, int, int> for MyIntIdentity;
 //        |fn __call(this: &MyIntIdentity for IFunction1<mut, int, int>, i: Int) int { i }
 //        |fn main() {
 //        |  m = MyIntIdentity();
@@ -243,7 +243,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = new Compilation(
       """
         |struct MyIntIdentity {}
-        |impl MyIntIdentity for IFunction1<mut, int, int>;
+        |impl IFunction1<mut, int, int> for MyIntIdentity;
         |fn __call(this &MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
         |fn main() {
         |  m = MyIntIdentity();
@@ -262,7 +262,7 @@ class ArrayTests extends FunSuite with Matchers {
         |struct Goblin { }
         |
         |struct GoblinMaker {}
-        |impl GoblinMaker for IFunction1<mut, int, Goblin>;
+        |impl IFunction1<mut, int, Goblin> for GoblinMaker;
         |fn __call(this &GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
         |fn main() {
         |  m = GoblinMaker();
@@ -302,13 +302,13 @@ class ArrayTests extends FunSuite with Matchers {
 //    val compile = new Compilation(
 //      """
 //        |struct MyIntIdentity {}
-//        |impl MyIntIdentity for IFunction1<mut, int, int>;
+//        |impl IFunction1<mut, int, int> for MyIntIdentity;
 //        |fn __call(this: &MyIntIdentity for IFunction1<mut, int, int>, i: Int) int { i }
 //        |
 //        |struct MyMappingFunctor {
 //        |  board: &Array<mut, int>;
 //        |}
-//        |impl MyMappingFunctor for IFunction1<mut, int, int>;
+//        |impl IFunction1<mut, int, int> for MyMappingFunctor;
 //        |fn __call(this: &MyMappingFunctor for IFunction1<mut, int, int>, i: Int) int {
 //        |  board = this.board;
 //        |  old = board.(i);

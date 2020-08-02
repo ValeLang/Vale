@@ -1,71 +1,28 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
+#![allow(dead_code)]
+#![allow(non_snake_case)]
+
 use std::iter::FromIterator;
 
 
 use rustc_hash::FxHashMap;
-let mut map: FxHashMap<u32, u32> = FxHashMap::default();
-map.insert(22, 44);
-https://docs.rs/rustc-hash/1.1.0/rustc_hash/
+use rustc_hash::FxHashSet;
 
 
 extern crate generational_arena;
-use generational_arena::Arena;
 use std::cmp;
 
 use crate::model;
-
-// same
-fn getPatternAdjacentLocations(
-  center: &model::Location,
-  considerCornersAdjacent: bool)
--> Vec<model::Location> {
-  let mut result = Vec::new();
-  result.push(model::Location{x: center.x - 1, y: center.y});
-  result.push(model::Location{x: center.x, y: center.y + 1});
-  result.push(model::Location{x: center.x, y: center.y - 1});
-  result.push(model::Location{x: center.x + 1, y: center.y});
-  if considerCornersAdjacent {
-    result.push(model::Location{x: center.x - 1, y: center.y - 1});
-    result.push(model::Location{x: center.x - 1, y: center.y + 1});
-    result.push(model::Location{x: center.x + 1, y: center.y - 1});
-    result.push(model::Location{x: center.x + 1, y: center.y + 1});
-  }
-  return result;
-}
-
-// same
-fn getPatternLocationsAdjacentToAny(
-  sourceLocs: &HashSet<model::Location>,
-  includeSourceLocs: bool,
-  considerCornersAdjacent: bool)
--> HashSet<model::Location> {
-  let mut result = HashSet::new();
-  for originalLocation in sourceLocs {
-    let mut adjacents = getPatternAdjacentLocations(originalLocation, considerCornersAdjacent);
-    if includeSourceLocs {
-      adjacents.push(originalLocation.clone());
-    }
-    for adjacentLocation in adjacents {
-      if !includeSourceLocs && sourceLocs.contains(&adjacentLocation) {
-        continue;
-      }
-      result.insert(adjacentLocation);
-    }
-  }
-  return result;
-}
 
 
 // same
 fn getAdjacentLocations(
   width: i32,
   height: i32,
-  center: &model::Location,
+  center: model::Location,
   considerCornersAdjacent: bool)
 -> Vec<model::Location> {
   let mut result = Vec::new();
-  for adjacent in getPatternAdjacentLocations(center, considerCornersAdjacent) {
+  for adjacent in model::getPatternAdjacentLocations(center, considerCornersAdjacent) {
     if adjacent.x >= 0 && adjacent.y >= 0 && adjacent.x < width && adjacent.y < height {
       result.push(adjacent)
     }
@@ -76,7 +33,7 @@ fn getAdjacentLocations(
 // same
 fn getAdjacentWalkableLocations(
   walkabilities: &Vec<Vec<bool>>,
-  center: &model::Location,
+  center: model::Location,
   considerCornersAdjacent: bool)
 -> Vec<model::Location> {
   let mut result = Vec::new();
@@ -102,19 +59,17 @@ pub fn make_level<'world, 'gen>(
 */
 
 pub fn make_level(
-    mut rand: &mut model::LCGRand,
-    units: &mut Arena<model::Unit>)
+  max_width: i32,
+  max_height: i32,
+  mut rand: &mut model::LCGRand)
 -> model::Level {
-  let max_width: i32 = 135;
-  let max_height: i32 = 50;
-
   let mut level =
 //    'world Level(
       model::Level {
           max_width: max_width as i32,
           max_height: max_height as i32,
-          terrain: model::Terrain { tiles: HashMap::new() },
-          unit_by_location: HashMap::new() };
+          terrain: model::Terrain { tiles: FxHashMap::default() },
+          unit_by_location: FxHashMap::default() };
 
   let mut walkabilities = Vec::with_capacity(max_width as usize);
   for x in 0..max_width {
@@ -138,7 +93,7 @@ pub fn make_level(
 
   for x in 0..max_width {
     for y in 0..max_height {
-      let loc = model::Location{ x: x as i32, y: y as i32 };
+      let loc = model::Location::new(x as i32, y as i32 );
       let walkable = walkabilities[x as usize][y as usize];
       let on_edge = x == 0 || y == 0 || x == max_width - 1 || y == max_height - 1;
       if walkable && !on_edge {
@@ -160,18 +115,6 @@ pub fn make_level(
         }
       }
     }
-  }
-
-  for _ in 0..(level.terrain.tiles.keys().len() / 10) {
-    let new_unit_location = level.find_random_walkable_unoccuped_location(&mut rand);
-    let unit =
-      units.insert(model::Unit {
-        hp: 10,
-        max_hp: 10,
-        loc: new_unit_location,
-        display_class: "goblin".to_string(),
-        components: Vec::new() });
-    level.unit_by_location.insert(new_unit_location, unit);
   }
 
   return level;
@@ -236,14 +179,14 @@ fn connectAllRooms(
 pub fn identifyRooms(
     walkabilities: &mut Vec<Vec<bool>>,
     considerCornersAdjacent: bool)
--> Vec<HashSet<model::Location>> {
-  let mut roomIndexByLocation = HashMap::new();//<model::Location, int>();
-  let mut rooms = Vec::new();//<HashSet<model::Location>>();
+-> Vec<FxHashSet<model::Location>> {
+  let mut roomIndexByLocation = FxHashMap::default();//<model::Location, int>();
+  let mut rooms = Vec::new();//<FxHashSet<model::Location>>();
 
   for x in 0..walkabilities.len() {
     for y in 0..walkabilities[x].len() {
       if walkabilities[x][y] {
-        let sparkLocation = model::Location{ x: x as i32, y: y as i32};
+        let sparkLocation = model::Location::new(x as i32, y as i32);
         if roomIndexByLocation.contains_key(&sparkLocation) {
           continue;
         }
@@ -266,9 +209,9 @@ pub fn findAllConnectedLocations(
   walkabilities: &Vec<Vec<bool>>,
   considerCornersAdjacent: bool,
   startLocation: model::Location)
--> HashSet<model::Location> {
-  let mut connectedWithUnexploredNeighbors = HashSet::new();//new HashSet<model::Location>();
-  let mut connectedWithExploredNeighbors = HashSet::<model::Location>::new();//new HashSet<model::Location>();
+-> FxHashSet<model::Location> {
+  let mut connectedWithUnexploredNeighbors = FxHashSet::default();//new FxHashSet<model::Location>();
+  let mut connectedWithExploredNeighbors = FxHashSet::<model::Location>::default();//new FxHashSet<model::Location>();
 
   connectedWithUnexploredNeighbors.insert(startLocation);
 
@@ -279,7 +222,7 @@ pub fn findAllConnectedLocations(
     connectedWithUnexploredNeighbors.remove(&current);
     connectedWithExploredNeighbors.insert(current);
 
-    for neighbor in getAdjacentWalkableLocations(walkabilities, &current, considerCornersAdjacent) {
+    for neighbor in getAdjacentWalkableLocations(walkabilities, current, considerCornersAdjacent) {
       if connectedWithExploredNeighbors.contains(&neighbor) {
         continue;
       }
@@ -296,16 +239,16 @@ pub fn findAllConnectedLocations(
 fn getVecRandomNth<'a, T>(rand: &mut model::LCGRand, vec: &'a Vec<T>) -> Option<&'a T> {
   return vec.iter().nth((rand.next() as usize) % vec.len());
 }
-fn getHashSetRandomNth<'a, T>(rand: &mut model::LCGRand, set: &'a HashSet<T>) -> Option<&'a T> {
+fn getFxHashSetRandomNth<'a, T>(rand: &mut model::LCGRand, set: &'a FxHashSet<T>) -> Option<&'a T> {
   return set.iter().nth((rand.next() as usize) % set.len());
 }
 
 pub fn connectRooms(
   mut rand: &mut model::LCGRand,
-  rooms: &mut Vec<HashSet<model::Location>>) {
+  rooms: &mut Vec<FxHashSet<model::Location>>) {
   // This function will be adding the corridors to roomByNumber.
 
-  let mut roomIndexByLocation = HashMap::<model::Location, usize>::new();
+  let mut roomIndexByLocation = FxHashMap::<model::Location, usize>::default();
 
   for roomIndex in 0..rooms.len() {
     let room = &rooms[roomIndex];
@@ -314,16 +257,16 @@ pub fn connectRooms(
     }
   }
 
-  let mut regions = HashSet::new();
+  let mut regions = FxHashSet::default();
 
-  let mut regionByRoomIndex = HashMap::new();
-  let mut roomIndicesByRegion = HashMap::new();//new SortedDictionary<String, SortedSet<int>>();
+  let mut regionByRoomIndex = FxHashMap::default();
+  let mut roomIndicesByRegion = FxHashMap::default();//new SortedDictionary<String, SortedSet<int>>();
 
   for roomIndex in 0..rooms.len() {
     // let room = rooms[roomIndex];
     let region = roomIndex;
     regionByRoomIndex.insert(roomIndex, region);
-    let mut roomIndicesInRegion = HashSet::new();
+    let mut roomIndicesInRegion = FxHashSet::default();
     roomIndicesInRegion.insert(roomIndex);
     roomIndicesByRegion.insert(region, roomIndicesInRegion);
     regions.insert(region);
@@ -331,7 +274,7 @@ pub fn connectRooms(
   }
 
   loop {
-    let distinctRegions = HashSet::<usize>::from_iter(regionByRoomIndex.values().cloned());
+    let distinctRegions = FxHashSet::<usize>::from_iter(regionByRoomIndex.values().cloned());
     //Logger.Info(distinctRegions.Count + " distinct regions!");
     if distinctRegions.len() < 2 {
       break;
@@ -341,13 +284,13 @@ pub fn connectRooms(
     let regionB = *twoRegionsIter.next().expect("wat");
     //Logger.Info("Will aim to connect regions " + regionA + " and " + regionB);
 
-    let regionARoomIndex = *getHashSetRandomNth(&mut rand, &roomIndicesByRegion[&regionA]).expect("wat");
+    let regionARoomIndex = *getFxHashSetRandomNth(&mut rand, &roomIndicesByRegion[&regionA]).expect("wat");
     let regionARoom = &rooms[regionARoomIndex];
-    let regionALocation = *getHashSetRandomNth(&mut rand, &regionARoom).expect("wat");
+    let regionALocation = *getFxHashSetRandomNth(&mut rand, &regionARoom).expect("wat");
 
-    let regionBRoomIndex = *getHashSetRandomNth(&mut rand, &roomIndicesByRegion[&regionB]).expect("wat");
+    let regionBRoomIndex = *getFxHashSetRandomNth(&mut rand, &roomIndicesByRegion[&regionB]).expect("wat");
     let regionBRoom = &rooms[regionBRoomIndex];
-    let regionBLocation = *getHashSetRandomNth(&mut rand, &regionBRoom).expect("wat");
+    let regionBLocation = *getFxHashSetRandomNth(&mut rand, &regionBRoom).expect("wat");
 
     // Now lets drive from regionALocation to regionBLocation, and see what happens on the
     // way there.
@@ -383,7 +326,7 @@ pub fn connectRooms(
     regions.insert(combinedRegion);
 
     let newRoomIndex = rooms.len();
-    rooms.push(HashSet::from_iter(path.iter().cloned()));
+    rooms.push(FxHashSet::from_iter(path.iter().cloned()));
     for pathLocation in &path {
       roomIndexByLocation.insert(*pathLocation, newRoomIndex);
     }
@@ -395,8 +338,8 @@ pub fn connectRooms(
     // us realizing it.
     // So now, figure out all the regions that this path touches.
 
-    let pathAdjacentLocations = getPatternLocationsAdjacentToAny(&HashSet::from_iter(path.iter().cloned()), true, false);
-    let mut pathAdjacentRegions = HashSet::new();
+    let pathAdjacentLocations = model::getPatternLocationsAdjacentToAny(&FxHashSet::from_iter(path.iter().cloned()), true, false);
+    let mut pathAdjacentRegions = FxHashSet::default();
     for pathAdjacentLocation in pathAdjacentLocations {
       if roomIndexByLocation.contains_key(&pathAdjacentLocation) {
         let roomIndex = roomIndexByLocation[&pathAdjacentLocation];
@@ -405,7 +348,7 @@ pub fn connectRooms(
       }
     }
 
-    let mut roomIndicesInCombinedRegion = HashSet::new();
+    let mut roomIndicesInCombinedRegion = FxHashSet::default();
     roomIndicesInCombinedRegion.insert(newRoomIndex);
     for pathAdjacentRegion in pathAdjacentRegions {
       if pathAdjacentRegion == combinedRegion {

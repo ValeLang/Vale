@@ -1,7 +1,7 @@
 
 interface Opt { }
 struct Some { value int; }
-impl Some for Opt;
+impl Opt for Some;
 
 fn doIt() Opt {
   ret Some(9);

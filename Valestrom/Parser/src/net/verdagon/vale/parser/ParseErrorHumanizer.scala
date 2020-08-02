@@ -27,7 +27,7 @@ class ParseErrorHumanizer(text: String) {
     err match {
       case CombinatorParseError(pos, msg) => lineAndCol(pos) + ": " + msg + " when trying to parse:\n" + nextThingAndRestOfLine(pos) + "\n"
       case UnrecognizedTopLevelThingError(pos) => lineAndCol(pos) + ": expected fn, struct, interface, or impl, but found:\n"  + nextThingAndRestOfLine(pos) + "\n"
-      case BadFunctionBodyError(pos) => lineAndCol(pos) + ": expected `;` to note no function body, or `{` to start a function body. Found:\n" + nextThingAndRestOfLine(pos) + "\n"
+      case BadFunctionBodyError(pos) => lineAndCol(pos) + ": expected a function body, or `;` to note there is none. Found:\n" + nextThingAndRestOfLine(pos) + "\n"
       case BadStartOfStatementError(pos) => lineAndCol(pos) + ": expected `}` to end the block, but found:\n" + nextThingAndRestOfLine(pos) + "\n"
       case StatementAfterResult(pos) => lineAndCol(pos) + ": result statement must be last in the block, but instead found:\n" + nextThingAndRestOfLine(pos) + "\n"
       case StatementAfterReturn(pos) => lineAndCol(pos) + ": return statement must be last in the block, but instead found:\n" + nextThingAndRestOfLine(pos) + "\n"

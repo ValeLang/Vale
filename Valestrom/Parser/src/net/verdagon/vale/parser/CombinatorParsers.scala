@@ -111,10 +111,12 @@ object CombinatorParsers
         opt(identifyingRunesPR <~ optWhite) ~
         (repsep(citizenAttribute, white) <~ optWhite) ~
         (opt("imm") <~ optWhite) ~
-        (opt(templateRulesPR) <~ optWhite <~ "{" <~ optWhite) ~
+        (opt(templateRulesPR) <~ optWhite) ~
+        // A hack to do region highlighting
+        (opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) <~ "{" <~ optWhite) ~
         repsep(topLevelFunction, optWhite) ~
         (optWhite ~> "}" ~> pos) ^^ {
-      case begin ~ name ~ maybeIdentifyingRunes ~ seealed ~ imm ~ maybeTemplateRules ~ members ~ end => {
+      case begin ~ name ~ maybeIdentifyingRunes ~ seealed ~ imm ~ maybeTemplateRules ~ defaultRegion ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP
         InterfaceP(Range(begin, end), name, seealed, mutability, maybeIdentifyingRunes, maybeTemplateRules, members)
       }
@@ -133,10 +135,12 @@ object CombinatorParsers
         (repsep(citizenAttribute, white) <~ optWhite) ~
         (opt("imm") <~ optWhite) ~
         (opt(templateRulesPR) <~ optWhite) ~
+        // A hack to do region highlighting
+        opt("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~
         (pos <~ "{" <~ optWhite) ~
         ("..." <~ optWhite ^^^ List() | repsep(structContent, optWhite)) ~
         (optWhite ~> "}" ~> pos) ^^ {
-      case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ membersBegin ~ members ~ end => {
+      case begin ~ name ~ identifyingRunes ~ attributes ~ imm ~ maybeTemplateRules ~ defaultRegion ~ membersBegin ~ members ~ end => {
         val mutability = if (imm == Some("imm")) ImmutableP else MutableP
         StructP(Range(begin, end), name, attributes, mutability, identifyingRunes, maybeTemplateRules, StructMembersP(Range(membersBegin, end), members))
       }
@@ -149,7 +153,7 @@ object CombinatorParsers
       opt(templateRulesPR) <~ optWhite) ~
       (templex <~ optWhite <~ "for" <~ optWhite) ~
       (templex <~ optWhite <~ ";")) ~ pos ^^ {
-      case begin ~ (maybeIdentifyingRunes ~ maybeTemplateRules ~ structType ~ interfaceType) ~ end => {
+      case begin ~ (maybeIdentifyingRunes ~ maybeTemplateRules ~ interfaceType ~ structType) ~ end => {
         ImplP(Range(begin, end), maybeIdentifyingRunes, maybeTemplateRules, structType, interfaceType)
       }
     }

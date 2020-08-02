@@ -113,7 +113,7 @@ class WeakTests extends FunSuite with Matchers {
         """
           |interface IUnit {}
           |struct Muta weakable { hp int; }
-          |impl Muta for IUnit;
+          |impl IUnit for Muta;
           |fn main(muta Muta) { 7 }
           |""".stripMargin)
 

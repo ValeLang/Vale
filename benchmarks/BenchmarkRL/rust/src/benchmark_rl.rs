@@ -14,88 +14,88 @@ use crate::model;
 use crate::make_level;
 use crate::unit;
 use crate::attack;
+use crate::screen;
+use crate::screen::*;
 use crate::items;
 use crate::wander;
 use crate::chase;
 use crate::seek;
 
-// struct LocationHasher { }
-// fn __call(this: &LocationHasher, loc: Location) {
-//   hash = 0;
-//   mut hash = 41 * hash + loc.groupX;
-//   mut hash = 41 * hash + loc.groupY;
-//   mut hash = 41 * hash + loc.indexInGroup;
-//   = hash;
-// }
-
-// struct LocationEquator { }
-// fn __call(this: &LocationEquator, a: Location, b: Location) {
-//   (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup)
-// }
-
-// struct Terrain {
-//   pattern: Pattern,
-//   elevationStepHeight: Float,
-//   tiles: HashMap<Location, Tile, LocationHasher, LocationEquator>,
-// }
-
-pub fn moveCursorTo(x: u16, y: u16) {
-  match stdout().execute(MoveTo(x, y)) {
-    Ok(_) => {}
-    Err(_) => { panic!("wat"); }
-  }
-}
-
-pub fn paintCell(
+// Returns whether we should probably re-display it next turn.
+// Will be false if its something static like terrain, or true
+// if it's something that moves around like a unit.
+pub fn setScreenCell(
+    screen: &mut Screen,
     game: &model::Game,
-    loc: &model::Location,
-    locsPlayerCanSee: &FxHashSet<model::Location>) {
+    playerVisibleLocs: &FxHashSet<model::Location>,
+    loc: model::Location) {
+  let mut foregroundColor = ScreenColor::LIGHTGRAY;
+  let mut backgroundColor = ScreenColor::BLACK;
+  let mut character = " ";
 
-  moveCursorTo(loc.x as u16, loc.y as u16);
-
-  let background =
-    if locsPlayerCanSee.contains(&loc) {
-      "\x1b[40m"
-    } else {
-      "\x1b[0m"
-    };
-
+  if let Some(tile) = game.getCurrentLevel().terrain.tiles.get(&loc) {
+    match tile.display_class.as_str() {
+      "dirt" => { character = "."; foregroundColor = ScreenColor::ORANGE; },
+      "grass" => { character = "."; foregroundColor = ScreenColor::GREEN; },
+      "wall" => { character = "#"; foregroundColor = ScreenColor::LIGHTGRAY; },
+      _ => panic!("unrecognized tile display class"),
+    }
+  }
 
   if let Some(unit_index) = game.getCurrentLevel().unit_by_location.get(&loc) {
     let unit = game.units.get(*unit_index).expect("no unit");
     match unit.display_class.as_str() {
-      "goblin" => print!("{}{}g\x1b[0m", background, "\x1b[1;31m"),
-      "chronomancer" => print!("{}{}@\x1b[0m", background, "\x1b[36m"),
+      "goblin" => { character = "g"; foregroundColor = ScreenColor::RED; },
+      "chronomancer" => { character = "@"; foregroundColor = ScreenColor::TURQUOISE; },
       _ => panic!("unrecognized unit display class"),
     }
-    return;
   }
-  if let Some(tile) = game.getCurrentLevel().terrain.tiles.get(&loc) {
-    match tile.display_class.as_str() {
-      "dirt" => print!("{}{}.\x1b[0m", background, "\x1b[33m"),
-      "grass" => print!("{}{}.\x1b[0m", background, "\x1b[32m"),
-      "wall" => print!("{}{}#\x1b[0m", background, "\x1b[37m"),
-      _ => panic!("unrecognized tile display class"),
-    }
-    return;
+
+  if playerVisibleLocs.contains(&loc) {
+    backgroundColor = ScreenColor::DARKGRAY;
   }
-  print!("{} \x1b[0m", background);
+
+  screen.setCell(
+      loc.x as usize,
+      loc.y as usize,
+      backgroundColor,
+      foregroundColor,
+      character.to_string());
 }
 
-pub fn benchmark_rl() {
-  // let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("wat").as_secs();
-  let now = 1596340300;
-  println!("Using seed: {}", now);
-  let mut rand = model::LCGRand { seed: now as u32 };
+pub fn ascend(mut rand: &mut model::LCGRand, game: &mut model::Game) -> bool {
+  let player_index = game.playerIndex.expect("wat");
+  let oldPlayerLoc = game.getPlayer().loc;
+  game.getCurrentLevelMut().unit_by_location.remove(&oldPlayerLoc);
+  let playerMut = &mut game.units[player_index];
+  let playerNewLevelIndex = playerMut.levelIndex + 1;
 
+  if playerNewLevelIndex >= game.levels.len() {
+    return false;
+  }
+
+  playerMut.levelIndex = playerNewLevelIndex;
+
+  let newPlayerLoc = game.levels[playerNewLevelIndex]
+      .find_random_walkable_unoccuped_location(&mut rand);
+  game.units[player_index].loc = newPlayerLoc;
+  game.getCurrentLevelMut().unit_by_location.insert(
+      newPlayerLoc, player_index);
+
+  return true;
+}
+
+pub fn setup(
+  mut rand: &mut model::LCGRand,
+  max_width: i32,
+  max_height: i32,
+  num_levels: i32)
+-> model::Game {
   let mut game =
     model::Game::new(
       Arena::new(), Vec::new(), None);
 
-  let num_levels = 2;
   for _ in 0..num_levels {
-    let max_width: i32 = 80;
-    let max_height: i32 = 30;
     let levelIndex = game.levels.len();
     game.levels.push(
         make_level::make_level(max_width, max_height, &mut rand));
@@ -125,7 +125,6 @@ pub fn benchmark_rl() {
     }
   }
 
-
   let playerLoc =
       game.levels[0].find_random_walkable_unoccuped_location(&mut rand);
   let player_index =
@@ -146,110 +145,80 @@ pub fn benchmark_rl() {
     player.components.insert(Box::new(items::IncendiumShortSword::new()));
   }
 
-  let mut dirty_tiles = Vec::new();
-  for x in 0..game.getCurrentLevel().max_width {
-    dirty_tiles.push(Vec::new());
-    for _ in 0..game.getCurrentLevel().max_height {
-      // All tiles start as dirty
-      dirty_tiles[x as usize].push(true);
+  return game;
+}
+
+pub fn turn(mut rand: &mut model::LCGRand, mut game: &mut model::Game) {
+  let units: Vec<generational_arena::Index> =
+      game.getCurrentLevel().unit_by_location.values().map(|&x| x).collect();
+  for &unit_index in units.iter() {
+    if game.units.contains(unit_index) {
+      unit::Unit::act(unit_index, &mut rand, &mut game);
     }
   }
+}
 
-  for _ in 0..game.getCurrentLevel().max_height {
-    println!("");
-  }
+pub fn display(seed: i32, maybeScreen: &mut Option<screen::Screen>, game: &model::Game) {
+  let playerVisibleLocs = 
+      match game.units.get(game.playerIndex.expect("wat")).map(|p| p.loc) {
+        None => { FxHashSet::default() }
+        Some(playerLoc) => {
+          game.getCurrentLevel().getLocationsWithinSight(
+              playerLoc, true, unit::DEFAULT_SIGHT_RANGE)
+        }
+      };
 
-  loop {
-    let units: Vec<generational_arena::Index> =
-        game.getCurrentLevel().unit_by_location.values().map(|&x| x).collect();
-    for &unit_index in units.iter() {
-      if game.units.contains(unit_index) {
-        unit::Unit::act(unit_index, &mut rand, &mut game);
+  if let Some(mut screen) = maybeScreen.as_mut() {
+    for x in 0..game.getCurrentLevel().max_width {
+      for y in 0..game.getCurrentLevel().max_height {
+        let loc = model::Location::new(x, y);
+        setScreenCell(&mut screen, &game, &playerVisibleLocs, loc);
       }
     }
+    if let Some(player) = game.units.get(game.playerIndex.expect("wat")) {
+      screen.setStatusLine(format!("Seed {}   Level {}   HP: {} / {}\nTo benchmark: --seed 1337 --width 40 --height 30 --numLevels 5 --turnDelay 0 --display 0", seed, player.levelIndex, player.hp, player.max_hp));
+    } else {
+      screen.setStatusLine("Dead!                                  ".to_string());
+    }
+    screen.paintScreen();
+  }
+}
+
+pub fn benchmark_rl(
+    seed: i32,
+    levelWidth: i32,
+    levelHeight: i32,
+    numLevels: i32,
+    shouldDisplay: bool,
+    turnDelay: i32) {
+  let mut rand = model::LCGRand { seed: seed as u32 };
+  let mut game = setup(&mut rand, levelWidth, levelHeight, numLevels);
+
+  let mut maybeScreen =
+      if shouldDisplay {
+        Some(
+            Screen::new(
+                game.getCurrentLevel().max_width as usize,
+                game.getCurrentLevel().max_height as usize))
+      } else {
+        None
+      };
+
+  loop {
+    turn(&mut rand, &mut game);
 
     let playerOldLevelIndex = game.getPlayer().levelIndex;
     if game.levels[playerOldLevelIndex].unit_by_location.keys().len() == 1 {
-      {
-        let level = game.getCurrentLevel();
-        for loc in level.terrain.tiles.keys() {
-          dirty_tiles[loc.x as usize][loc.y as usize] = true;
-        }
-      }
-
-      let oldPlayerLoc = game.getPlayer().loc;
-      game.getCurrentLevelMut().unit_by_location.remove(&oldPlayerLoc);
-      let playerMut = &mut game.units[player_index];
-      playerMut.levelIndex = playerMut.levelIndex + 1;
-
-      if (playerMut.levelIndex >= game.levels.len()) {
+      let keepRunning = ascend(&mut rand, &mut game);
+      if !keepRunning {
         return;
       }
-
-      {
-        let level = game.getCurrentLevel();
-        for loc in level.terrain.tiles.keys() {
-          dirty_tiles[loc.x as usize][loc.y as usize] = true;
-        }
-      }
-
-      let newPlayerLoc =
-          game.levels[game.units[player_index].levelIndex]
-          .find_random_walkable_unoccuped_location(&mut rand);
-      game.units[player_index].loc = newPlayerLoc;
-      game.getCurrentLevelMut().unit_by_location.insert(
-          newPlayerLoc, player_index);
     }
 
-    let locsPlayerCanSee =
-        match game.units.get(game.playerIndex.expect("wat")).map(|p| p.loc) {
-          None => { FxHashSet::default() }
-          Some(playerLoc) => {
-            game.getCurrentLevel().getLocationsWithinSight(
-                playerLoc, true, unit::DEFAULT_SIGHT_RANGE)
-          }
-        };
+    display(seed, &mut maybeScreen, &game);
 
-    let level = game.getCurrentLevel();
-
-    // Mark the current locations of all units as dirty, so we re-paint
-    // them below.
-    for unit_loc in level.unit_by_location.keys() {
-      dirty_tiles[unit_loc.x as usize][unit_loc.y as usize] = true;
+    if turnDelay > 0 {
+      sleep(Duration::new(0, turnDelay as u32));
     }
-
-    // let display_width = 200;
-    // let display_height = 200;
-    // let player = &units.get(player_index).expect("no player");
-    // for y in cmp::max(0, player.loc.y - display_height)..cmp::min(level.max_height, player.loc.y + display_height) {
-    //   for x in cmp::max(0, player.loc.x - display_width)..cmp::min(level.max_width, player.loc.x + display_width) {
-    for y in 0..level.max_height {
-      for x in 0..level.max_width {
-        let loc = model::Location::new(x, y);
-        if dirty_tiles[x as usize][y as usize] {
-          paintCell(&game, &loc, &locsPlayerCanSee);
-          dirty_tiles[x as usize][y as usize] = false;
-        }
-      }
-    }
-    moveCursorTo(0, level.max_height as u16);
-
-    if let Some(player) = game.units.get(game.playerIndex.expect("wat")) {
-      println!("Level {}   HP: {} / {}", player.levelIndex, player.hp, player.max_hp);
-    } else {
-      println!("Dead!                            ");
-    }
-
-    // Mark the current locations of all units as dirty, in case the unit
-    // moves off of that location. This will make sure we re-paint these
-    // spots next turn.
-    for unit_loc in level.unit_by_location.keys() {
-      dirty_tiles[unit_loc.x as usize][unit_loc.y as usize] = true;
-    }
-    for loc in locsPlayerCanSee {
-      dirty_tiles[loc.x as usize][loc.y as usize] = true;
-    }
-
-    sleep(Duration::new(0, 200));
   }
 }

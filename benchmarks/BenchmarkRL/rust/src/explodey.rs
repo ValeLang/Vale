@@ -17,7 +17,7 @@ impl IUnitComponent for ExplodeyUnitComponent {
         self_unit_index: generational_arena::Index,
         _self_unit_capability_index: generational_arena::Index,
         _attacker: generational_arena::Index,
-    ) -> Box<dyn Fn(&mut LCGRand, &mut Game)> {
+    ) -> GameMutator {
         // Look for all the enemies around us.
 
         let level = game.get_current_level();

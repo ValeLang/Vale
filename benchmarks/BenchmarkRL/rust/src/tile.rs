@@ -9,15 +9,15 @@ use crate::location::*;
 pub trait ITileComponent: Downcast {
     // Called on a component every turn. It must be registered with the level
     // as an acting tile for it to actually be called though.
-    // Returns a lambda with which it can modify the game.
+    // Returns a GameMutator lambda with which it can modify the game.
     fn on_turn(
         &self,
         _rand: &mut LCGRand,
         _game: &Game,
         _self_tile_loc: Location,
         _self_tile_component_index: generational_arena::Index,
-    ) -> Box<dyn Fn(&mut LCGRand, &mut Game)> {
-        return Box::new(|_rand, _game| {});
+    ) -> GameMutator {
+        return do_nothing_game_mutator();
     }
 }
 // We don't use an enum for tile components for the same reason as IUnitComponent.

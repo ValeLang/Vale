@@ -32,8 +32,8 @@ pub trait IUnitComponent: Downcast {
         _self_unit_index: generational_arena::Index,
         _self_unit_capability_index: generational_arena::Index,
         _attacker: generational_arena::Index,
-    ) -> Box<dyn Fn(&mut LCGRand, &mut Game)> {
-        return Box::new(|_rand, _game| {});
+    ) -> GameMutator {
+        return do_nothing_game_mutator();
     }
 
     // If this component is a capability, return a reference to itself.
@@ -78,7 +78,8 @@ pub trait IUnitComponent: Downcast {
 }
 // We don't use an enum for our components because:
 // - It's better architecture to have all of the code for a capability in one place,
-//   rather than a central list and central dispatching functions.
+//   rather than a central list and central dispatching functions (low coupling,
+//   high cohesion).
 // - There are one day going to be hundreds of them!
 impl_downcast!(IUnitComponent);
 

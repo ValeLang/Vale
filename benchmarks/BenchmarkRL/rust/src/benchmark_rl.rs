@@ -289,7 +289,7 @@ pub fn benchmark_rl(
         display(seed, &mut maybe_screen, &game);
 
         if turn_delay > 0 {
-            sleep(Duration::new(0, turn_delay as u32));
+            sleep(Duration::new(turn_delay as u64 / 1000, turn_delay as u32 % 1000 * 1000000));
         }
     }
 }

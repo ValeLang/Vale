@@ -1,44 +1,28 @@
-#![allow(dead_code)]
-#![allow(non_snake_case)]
-#![allow(unused_imports)]
+use generational_arena;
 
-use rustc_hash::FxHashMap;
-use rustc_hash::FxHashSet;
-// use std::collections::BinaryHeap;
-
-extern crate generational_arena;
-use generational_arena::Arena;
-
-use crate::astar;
-
-use std::num::Wrapping;
-use std::fmt;
-use std::iter::FromIterator;
-
-use crate::unit;
-use crate::model;
+use crate::game::*;
+use crate::unit::*;
 
 #[derive(new)]
-pub struct IncendiumShortSword { }
-impl unit::IUnitComponent for IncendiumShortSword {
-  fn modifyOutgoingAttack(
-    &self,
-    _game: &model::Game,
-    _selfUnit: generational_arena::Index)
-  -> unit::AttackModifier {
-    return unit::AttackModifier::new(700, 100, 200);
-  }
+pub struct IncendiumShortSword {}
+impl IUnitComponent for IncendiumShortSword {
+    fn modify_outgoing_attack(
+        &self,
+        _game: &Game,
+        _self_unit: generational_arena::Index,
+    ) -> AttackModifier {
+        return AttackModifier::new(700, 100, 200);
+    }
 }
 
-
 #[derive(new)]
-pub struct GoblinClaws { }
-impl unit::IUnitComponent for GoblinClaws {
-  fn modifyOutgoingAttack(
-    &self,
-    _game: &model::Game,
-    _selfUnit: generational_arena::Index)
-  -> unit::AttackModifier {
-    return unit::AttackModifier::new(150, 100, 0);
-  }
+pub struct GoblinClaws {}
+impl IUnitComponent for GoblinClaws {
+    fn modify_outgoing_attack(
+        &self,
+        _game: &Game,
+        _self_unit: generational_arena::Index,
+    ) -> AttackModifier {
+        return AttackModifier::new(150, 100, 0);
+    }
 }

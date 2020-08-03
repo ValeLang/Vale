@@ -21,8 +21,11 @@ impl ITileComponent for FireTileComponent {
             game.get_current_level().unit_by_location.get(&self_tile_loc).map(|&x| x);
 
         if self.num_turns_remaining == 0 {
+            // Remove the fire tile component, and unregister the tile as an acting tile.
+
+            // We can't modify game from in here because we're immutably borrowing it,
+            // so we return a lambda that will do the modification for us.
             return Box::new(move |_rand, inner_game| {
-                // Remove the fire tile component, and unregister the tile as an acting tile.
                 let tile = inner_game.get_current_level_mut().tiles.get_mut(&self_tile_loc).expect("");
                 tile.components.remove(self_tile_component_index);
                 // register/unregister use an int under the hood, so this won't unregister
@@ -31,6 +34,10 @@ impl ITileComponent for FireTileComponent {
             });
         }
 
+        // Now we decrement the num_turns_remaining, and damage any unit standing on us.
+
+        // We can't modify game from in here because we're immutably borrowing it,
+        // so we return a lambda that will do the modification for us.
         return Box::new(move |rand, inner_game| {
             // Let's reduce our num_turns_remaining by 1, and damage whatever unit is on here.
             let tile = inner_game.get_current_level_mut().tiles.get_mut(&self_tile_loc).expect("");

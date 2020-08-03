@@ -6,6 +6,7 @@ use generational_arena::Arena;
 use crate::unit::*;
 use crate::location::*;
 use crate::level::*;
+use crate::tile::*;
 
 use std::num::Wrapping;
 
@@ -22,6 +23,18 @@ impl LCGRand {
         return self.seed;
     }
 }
+
+
+// Used to modify the game. Functions that immutably borrow the world can return
+// one of these which will then be called with a mutable reference to the game.
+pub type GameMutator = Box<dyn Fn(&mut LCGRand, &mut Game)>;
+
+// Makes a GameMutator that does nothing.
+pub fn do_nothing_game_mutator() -> GameMutator {
+    return Box::new(|_rand, _game| {});
+}
+
+
 
 #[derive(new)]
 pub struct Game {
@@ -119,6 +132,16 @@ impl Game {
         let loc = self.units[unit_index].loc;
         self.get_current_level_mut().forget_unit(unit_index, loc);
         self.units.remove(unit_index);
+    }
+
+    pub fn get_tile_component_mut<T: ITileComponent>(
+            &mut self,
+            tile_loc: Location,
+            tile_component_index: generational_arena::Index)
+    -> &mut T {
+        let tile = self.get_current_level_mut().tiles.get_mut(&tile_loc).expect("");
+        let icomponent = tile.components.get_mut(tile_component_index).expect("wat");
+        return &mut *icomponent.downcast_mut::<T>().expect("");
     }
 }
 

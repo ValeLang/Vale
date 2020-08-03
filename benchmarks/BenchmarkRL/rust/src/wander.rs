@@ -1,45 +1,39 @@
-#![allow(dead_code)]
-#![allow(non_snake_case)]
-#![allow(unused_variables)]
-
-use crate::model;
-use crate::unit;
+use crate::game::*;
 use crate::unit::*;
+use crate::location::*;
 
-
+// A capability for a unit to randomly wander in some direction.
 #[derive(new)]
-pub struct WanderUnitCapability { }
+pub struct WanderUnitCapability {}
 impl IUnitComponent for WanderUnitCapability {
-  fn asCapability(&self) -> Option<&dyn IUnitCapability> {
-    return Some(self);
-  }
-  fn asCapabilityMut(&mut self) -> Option<&mut dyn IUnitCapability> {
-    return Some(self);
-  }
+    fn as_capability(&self) -> Option<&dyn IUnitCapability> {
+        return Some(self);
+    }
+    fn as_capability_mut(&mut self) -> Option<&mut dyn IUnitCapability> {
+        return Some(self);
+    }
 }
 impl IUnitCapability for WanderUnitCapability {
-  fn getDesire(
-    &self,
-    rand: &mut model::LCGRand,
-    selfUnit: &Unit,
-    game: &model::Game)
-  -> Box<dyn IUnitDesire> {
-    let level = game.getCurrentLevel();
-    let mut adjacentLocations = level.getAdjacentLocations(selfUnit.loc, true);
-    adjacentLocations =
-        adjacentLocations
-        .into_iter()
-        .filter(|&loc| level.locIsWalkable(loc, true))
-        .collect();
-    if adjacentLocations.len() == 0 {
-      return Box::new(DoNothingUnitDesire{});
-    } else {
-      return Box::new(
-        unit::MoveUnitDesire::new(
-          desire::MEH,
-          adjacentLocations[(rand.next() % (adjacentLocations.len() as u32)) as usize]
-        ));
+    fn get_desire(
+        &self,
+        rand: &mut LCGRand,
+        self_unit: &Unit,
+        game: &Game,
+    ) -> Box<dyn IUnitDesire> {
+        let level = game.get_current_level();
+        let adjacent_locations = level.get_adjacent_locations(self_unit.loc, true);
+        let walkable_adjacent_locations: Vec<Location> = adjacent_locations
+            .into_iter()
+            .filter(|&loc| level.loc_is_walkable(loc, true))
+            .collect();
+        if walkable_adjacent_locations.len() == 0 {
+            return Box::new(DoNothingUnitDesire {});
+        } else {
+            return Box::new(MoveUnitDesire::new(
+                desire::MEH,
+                walkable_adjacent_locations
+                    [(rand.next() % (walkable_adjacent_locations.len() as u32)) as usize],
+            ));
+        }
     }
-  }
 }
-

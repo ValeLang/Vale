@@ -27,23 +27,23 @@ pub fn set_screen_cell(
     player_visible_locs: &FxHashSet<Location>,
     loc: Location,
 ) {
-    let mut foreground_color = ScreenColor::LIGHTGRAY;
-    let mut background_color = ScreenColor::BLACK;
+    let mut foreground_color = ScreenColor::White;
+    let mut background_color = ScreenColor::Black;
     let mut character = " ";
 
     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
         match tile.display_class.as_str() {
             "dirt" => {
                 character = ".";
-                foreground_color = ScreenColor::ORANGE;
+                foreground_color = ScreenColor::Orange;
             }
             "grass" => {
                 character = ".";
-                foreground_color = ScreenColor::GREEN;
+                foreground_color = ScreenColor::Green;
             }
             "wall" => {
                 character = "#";
-                foreground_color = ScreenColor::LIGHTGRAY;
+                foreground_color = ScreenColor::Gray;
             }
             _ => panic!("unrecognized tile display class"),
         }
@@ -52,11 +52,12 @@ pub fn set_screen_cell(
     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
         if let Some(fire) = tile.get_first_component::<FireTileComponent>() {
             character = "^";
-            if fire.num_turns_remaining % 2 == 0 {
-                foreground_color = ScreenColor::RED;
-            } else {
-                foreground_color = ScreenColor::ORANGE;
-            }
+            foreground_color =
+                match fire.num_turns_remaining % 3 {
+                    0 => ScreenColor::Red,
+                    1 => ScreenColor::Orange,
+                    _ => ScreenColor::OrangeYellow,
+                };
         }
     }
 
@@ -65,18 +66,18 @@ pub fn set_screen_cell(
         match unit.display_class.as_str() {
             "goblin" => {
                 character = "g";
-                foreground_color = ScreenColor::GREEN;
+                foreground_color = ScreenColor::Green;
             }
             "chronomancer" => {
                 character = "@";
-                foreground_color = ScreenColor::TURQUOISE;
+                foreground_color = ScreenColor::Turquoise;
             }
             _ => panic!("unrecognized unit display class"),
         }
     }
 
     if player_visible_locs.contains(&loc) {
-        background_color = ScreenColor::DARKGRAY;
+        background_color = ScreenColor::DarkGray;
     }
 
     screen.set_cell(

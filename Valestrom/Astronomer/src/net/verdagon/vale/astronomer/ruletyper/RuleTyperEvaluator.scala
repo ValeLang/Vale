@@ -9,8 +9,8 @@ import net.verdagon.vale.vfail
 import scala.collection.immutable.List
 
 trait IRuleTyperEvaluatorDelegate[Env, State] {
-  def lookupType(state: State, env: Env, name: CodeTypeNameS): ITemplataType
-  def lookupType(state: State, env: Env, name: INameS): ITemplataType
+  def lookupType(state: State, env: Env, range: RangeS, name: CodeTypeNameS): ITemplataType
+  def lookupType(state: State, env: Env, range: RangeS, name: INameS): ITemplataType
 }
 
 // Given enough user specified template params and param inputs, we should be able to
@@ -256,8 +256,8 @@ class RuleTyperEvaluator[Env, State](
       case LocationST(value) => (RuleTyperEvaluateSuccess(LocationAT(value)))
       case OwnershipST(value) => (RuleTyperEvaluateSuccess(OwnershipAT(value)))
       case VariabilityST(value) => (RuleTyperEvaluateSuccess(VariabilityAT(value)))
-      case NameST(nameS) => {
-        delegate.lookupType(state, env, nameS) match {
+      case NameST(range, nameS) => {
+        delegate.lookupType(state, env, range, nameS) match {
           case (KindTemplataType) => {
             // The thing identified by `name` is a kind, but we don't know whether we're trying to access it
             // as a kind, or trying to access it like a coord.
@@ -752,12 +752,12 @@ class RuleTyperEvaluator[Env, State](
     new RuleTyperMatcher[Env, State](
       evaluateTemplex,
       new RuleTyperMatcherDelegate[Env, State] {
-        override def lookupType(state: State, env: Env, name: CodeTypeNameS): ITemplataType = {
-          delegate.lookupType(state, env, name)
+        override def lookupType(state: State, env: Env, range: RangeS, name: CodeTypeNameS): ITemplataType = {
+          delegate.lookupType(state, env, range, name)
         }
 
-        override def lookupType(state: State, env: Env, name: INameS): ITemplataType = {
-          delegate.lookupType(state, env, name)
+        override def lookupType(state: State, env: Env, range: RangeS, name: INameS): ITemplataType = {
+          delegate.lookupType(state, env, range, name)
         }
       })
   }

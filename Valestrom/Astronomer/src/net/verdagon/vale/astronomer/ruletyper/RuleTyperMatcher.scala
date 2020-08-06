@@ -9,8 +9,8 @@ import net.verdagon.vale.astronomer._
 import scala.collection.immutable.List
 
 trait RuleTyperMatcherDelegate[Env, State] {
-  def lookupType(state: State, env: Env, name: CodeTypeNameS): ITemplataType
-  def lookupType(state: State, env: Env, name: INameS): ITemplataType
+  def lookupType(state: State, env: Env, range: RangeS, name: CodeTypeNameS): ITemplataType
+  def lookupType(state: State, env: Env, range: RangeS, name: INameS): ITemplataType
 }
 
 class RuleTyperMatcher[Env, State](
@@ -163,8 +163,8 @@ class RuleTyperMatcher[Env, State](
       case (LocationST(value), LocationTemplataType) => (RuleTyperMatchSuccess(LocationAT(value)))
       case (OwnershipST(value), OwnershipTemplataType) => (RuleTyperMatchSuccess(OwnershipAT(value)))
       case (VariabilityST(value), VariabilityTemplataType) => (RuleTyperMatchSuccess(VariabilityAT(value)))
-      case (AbsoluteNameST(nameS), _) => {
-        val tyype = delegate.lookupType(state, env, nameS)
+      case (AbsoluteNameST(rangeS, nameS), _) => {
+        val tyype = delegate.lookupType(state, env, rangeS, nameS)
         val nameA = Astronomer.translateName(nameS)
         matchNameTypeAgainstTemplataType(conclusions, tyype, expectedType) match {
           case RuleTyperMatchSuccess(()) => RuleTyperMatchSuccess(AbsoluteNameAT(nameA, expectedType))
@@ -173,8 +173,8 @@ class RuleTyperMatcher[Env, State](
           }
         }
       }
-      case (NameST(nameS), _) => {
-        val tyype = delegate.lookupType(state, env, nameS)
+      case (NameST(rangeS, nameS), _) => {
+        val tyype = delegate.lookupType(state, env, rangeS, nameS)
         val nameA = Astronomer.translateImpreciseName(nameS)
         matchNameTypeAgainstTemplataType(conclusions, tyype, expectedType) match {
           case RuleTyperMatchSuccess(()) => RuleTyperMatchSuccess(NameAT(nameA, expectedType))

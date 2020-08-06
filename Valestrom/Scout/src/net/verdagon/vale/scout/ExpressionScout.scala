@@ -29,6 +29,7 @@ object ExpressionScout {
   (IScoutResult[BlockSE], VariableUses, VariableUses) = {
     val initialStackFrame =
       StackFrame(
+        parentStackFrame.file,
         parentStackFrame.name,
         parentStackFrame.parentEnv,
         Some(parentStackFrame),
@@ -147,7 +148,7 @@ object ExpressionScout {
         scoutExpression(stackFrame0, newExprP)
       }
       case MagicParamLookupPE(range) => {
-        val name = MagicParamNameS(Scout.evalPos(range.begin))
+        val name = MagicParamNameS(Scout.evalPos(stackFrame0.file, range.begin))
         val lookup = LocalLookupResult(name)
         // We dont declare it here, because then scoutBlock will think its a local and
         // hide it from those above.
@@ -181,7 +182,7 @@ object ExpressionScout {
           NormalResult(
             TemplateSpecifiedLookupSE(
               templateName,
-              templateArgs.map(TemplexScout.translateTemplex(stackFrame0.parentEnv.allUserDeclaredRunes(), _))))
+              templateArgs.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))))
         (stackFrame0, result, noVariableUses, noVariableUses)
       }
       case FunctionCallPE(_, inline, _, isMapCall, callablePE, args, borrowCallable) => {
@@ -236,7 +237,7 @@ object ExpressionScout {
         (stackFrame0, NormalResult(WhileSE(cond1, body1)), selfUses, childUses)
       }
       case let @ LetPE(range, rulesP, patternP, exprPE) => {
-        val codeLocation = Scout.evalPos(range.begin)
+        val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)
         val (stackFrame1, expr1, selfUses, childUses) =
           scoutExpressionAndCoerce(stackFrame0, exprPE, OwnP);
 
@@ -245,7 +246,7 @@ object ExpressionScout {
         val ruleState = RuleStateBox(LetRuleState(letFullName, codeLocation, 0))
         val userRulesS =
           RuleScout.translateRulexes(
-            ruleState, stackFrame1.parentEnv.allUserDeclaredRunes(), rulesP)
+            stackFrame0.parentEnv, ruleState, stackFrame1.parentEnv.allUserDeclaredRunes(), rulesP)
         val (implicitRulesS, patternS) =
           PatternScout.translatePattern(
             stackFrame1,
@@ -307,7 +308,7 @@ object ExpressionScout {
           }
         }
       }
-      case DotCallPE(_, containerExprPE, List(indexExprPE)) => {
+      case IndexPE(_, containerExprPE, List(indexExprPE)) => {
         val (stackFrame1, containerExpr1, containerSelfUses, containerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
         val (stackFrame2, indexExpr1, indexSelfUses, indexChildUses) =

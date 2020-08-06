@@ -299,7 +299,7 @@ object StructTemplarCore {
         Some(containingFunctionEnv),
         fullName,
         Map(
-          FunctionTemplateName2(CallTemplar.CALL_FUNCTION_NAME, CodeLocation2(0, 0)) -> List(FunctionEnvEntry(functionA)),
+          FunctionTemplateName2(CallTemplar.CALL_FUNCTION_NAME, CodeLocation2(-14, 0)) -> List(FunctionEnvEntry(functionA)),
           nearName -> List(TemplataEnvEntry(KindTemplata(structRef))),
           ClosureParamName2() -> List(TemplataEnvEntry(KindTemplata(structRef)))))
     // We return this from the function in case we want to eagerly compile it (which we do
@@ -444,7 +444,7 @@ object StructTemplarCore {
         .mapValues(_.map(_._2))
         .toMap ++
       Map(
-        ImplDeclareName2(CodeLocation2(0, 0)) -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))),
+        ImplDeclareName2(CodeLocation2(-15, 0)) -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))),
         // This is used later by the interface constructor generator to know what interface to impl.
         AnonymousSubstructParentInterfaceRune2() -> List(TemplataEnvEntry(KindTemplata(interfaceRef))),
         AnonymousSubstructImplName2() -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))))

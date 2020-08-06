@@ -1,0 +1,4 @@
+fn main() {
+  a Bork = 4;
+  ret 0;
+}

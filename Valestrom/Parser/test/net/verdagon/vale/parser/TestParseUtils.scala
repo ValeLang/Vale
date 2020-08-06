@@ -3,13 +3,13 @@ package net.verdagon.vale.parser
 import net.verdagon.vale.{vassert, vfail}
 
 trait TestParseUtils {
-  def compileProgramWithComments(code: String): Program0 = {
+  def compileProgramWithComments(code: String): FileP = {
     Parser.runParserForProgramAndCommentRanges(code) match {
       case ParseFailure(err) => vfail(err.toString)
       case ParseSuccess(result) => result._1
     }
   }
-  def compileProgram(code: String): Program0 = {
+  def compileProgram(code: String): FileP = {
     Parser.runParser(code) match {
       case ParseFailure(err) => vfail(err.toString)
       case ParseSuccess(result) => result

@@ -1,22 +1,26 @@
 use crossterm::{cursor::MoveTo, ExecutableCommand};
 use std::io::stdout;
 
+#[allow(dead_code)]
 #[derive(PartialEq)]
 pub enum ScreenColor {
-    BLACK,
-    DARKGRAY,
-    TURQUOISE,
-    RED,
-    LIGHTGRAY,
-    ORANGE,
-    GREEN,
-    WHITE,
+    Black,
+    DarkGray,
+    Turquoise,
+    Red,
+    LightGray,
+    Orange,
+    Yellow,
+    OrangeYellow,
+    Green,
+    White,
+    Gray,
 }
 
 #[derive(new)]
 struct ScreenCell {
-    foreground_color: ScreenColor,
-    background_color: ScreenColor,
+    fg_color: ScreenColor,
+    bg_color: ScreenColor,
     character: String,
     dirty: bool,
 }
@@ -37,8 +41,8 @@ impl Screen {
             cells.push(Vec::new());
             for _ in 0..height {
                 cells[x as usize].push(ScreenCell::new(
-                    ScreenColor::WHITE,
-                    ScreenColor::BLACK,
+                    ScreenColor::White,
+                    ScreenColor::Black,
                     " ".to_string(),
                     true, // All cells start as dirty, so we can display them all now
                 ));
@@ -61,19 +65,19 @@ impl Screen {
         &mut self,
         x: usize,
         y: usize,
-        background_color: ScreenColor,
-        foreground_color: ScreenColor,
+        bg_color: ScreenColor,
+        fg_color: ScreenColor,
         character: String,
     ) {
         let cell = &mut self.cells[x][y];
 
-        if background_color != cell.background_color {
-            cell.background_color = background_color;
+        if bg_color != cell.bg_color {
+            cell.bg_color = bg_color;
             cell.dirty = true;
         }
 
-        if foreground_color != cell.foreground_color {
-            cell.foreground_color = foreground_color;
+        if fg_color != cell.fg_color {
+            cell.fg_color = fg_color;
             cell.dirty = true;
         }
 
@@ -101,25 +105,33 @@ impl Screen {
     fn paint_cell(&self, x: usize, y: usize) {
         let cell = &self.cells[x][y];
 
+        // For precise colors:
+        // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal
+        // For standard colors:
         // https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
 
-        let background_color_str = match cell.background_color {
-            ScreenColor::DARKGRAY => "\x1b[40m",
-            ScreenColor::ORANGE => "\x1b[43m",
-            ScreenColor::RED => "\x1b[41m",
-            ScreenColor::BLACK => "\x1b[0m",
-            _ => panic!("Unimplemented"),
-        };
+        let (fg_red, fg_green, fg_blue) =
+            match cell.bg_color {
+                ScreenColor::DarkGray => (40, 40, 40),
+                ScreenColor::Orange => (255, 96, 0),
+                ScreenColor::Red => (255, 0, 0),
+                ScreenColor::Black => (0, 0, 0),
+                _ => panic!("Unimplemented"),
+            };
 
-        let foreground_color_str = match cell.foreground_color {
-            ScreenColor::RED => "\x1b[1;31m",
-            ScreenColor::TURQUOISE => "\x1b[36m",
-            ScreenColor::ORANGE => "\x1b[33m",
-            ScreenColor::GREEN => "\x1b[32m",
-            ScreenColor::LIGHTGRAY => "\x1b[37m",
-            ScreenColor::WHITE => "\x1b[39m",
-            _ => panic!("Unimplemented"),
-        };
+        let (bg_red, bg_green, bg_blue) =
+            match cell.fg_color {
+                ScreenColor::Red => (255, 0, 0),
+                ScreenColor::Turquoise => (0, 128, 255),
+                ScreenColor::Orange => (255, 96, 0),
+                ScreenColor::Green => (0, 196, 0),
+                ScreenColor::Yellow => (255, 255, 0),
+                ScreenColor::OrangeYellow => (255, 186, 0),
+                ScreenColor::LightGray => (224, 224, 224),
+                ScreenColor::Gray => (150, 150, 150),
+                ScreenColor::White => (255, 255, 255),
+                _ => panic!("Unimplemented"),
+            };
 
         let character = &cell.character;
 
@@ -127,9 +139,12 @@ impl Screen {
             Ok(_) => {}
             Err(_) => panic!("Couldn't move cursor!"),
         }
+
         println!(
-            "{}{}{}\x1b[0m",
-            background_color_str, foreground_color_str, character
-        )
+            "\x1b[38;2;{};{};{};48;2;{};{};{}m{}\x1b[0m",
+            bg_red, bg_green, bg_blue,
+            fg_red, fg_green, fg_blue,
+            character
+        );
     }
 }

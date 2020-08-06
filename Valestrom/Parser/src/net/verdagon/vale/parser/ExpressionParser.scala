@@ -34,7 +34,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     }
   }
 
-  case class LetBegin(begin: Pos, patternPP: PatternPP)
+  case class LetBegin(begin: Int, patternPP: PatternPP)
 
   private[parser] def letBegin: Parser[LetBegin] = {
     pos ~ (atomPattern <~ white <~ "=" <~ white) ^^ {
@@ -266,9 +266,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
           MethodCallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) OwnP else BorrowP, mapCall.nonEmpty, name, args)
         }
       }) |
-      ((pos <~ optWhite) ~ opt("^") ~ opt("*") ~ (pos <~ optWhite) ~ packExpr ~ pos ^^ {
-        case begin ~ moveContainer ~ mapCall ~ opEnd ~ pack ~ end => {
-          CallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) OwnP else BorrowP, mapCall.nonEmpty, pack)
+      (pos ~ opt("^") ~ pos ~ packExpr ~ pos ^^ {
+        case begin ~ moveContainer ~ opEnd ~ pack ~ end => {
+          CallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) OwnP else BorrowP, false, pack)
         }
       }) |
       ((pos <~ optWhite) ~ indexExpr ~ pos ^^ { case begin ~ i ~ end => IndexStep(Range(begin, end), i) })
@@ -293,7 +293,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
               (None, DotPE(Range(begin, stepRange.end), prev, operatorRange, isMapCall, name))
             }
             case ((None, prev), IndexStep(stepRange, args)) => {
-              (None, DotCallPE(Range(begin, stepRange.end), prev, args))
+              (None, IndexPE(Range(begin, stepRange.end), prev, args))
             }
           })
         expr

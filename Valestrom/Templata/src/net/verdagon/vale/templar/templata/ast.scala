@@ -199,12 +199,12 @@ case class Prototype2(
 }
 
 case class CodeLocation2(
-    line: Int,
-    char: Int
+  file: Int,
+  offset: Int
 ) extends Queriable2 {
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
   }
 
-  override def toString: String = line + ":" + char
+  override def toString: String = file + ":" + offset
 }

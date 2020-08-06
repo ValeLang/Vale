@@ -7,13 +7,17 @@ import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
 import net.verdagon.vale.vimpl
 
+import scala.util.parsing.input.OffsetPosition
+
 sealed trait IEnvironment {
+  def file: Int
   def name: INameS
   def allUserDeclaredRunes(): Set[IRuneS]
 }
 
 // Someday we might split this into NamespaceEnvironment and CitizenEnvironment
 case class Environment(
+    file: Int,
     parentEnv: Option[Environment],
     name: INameS,
     userDeclaredRunes: Set[IRuneS]
@@ -24,6 +28,7 @@ case class Environment(
 }
 
 case class FunctionEnvironment(
+    file: Int,
     name: IFunctionDeclarationNameS,
     parentEnv: Option[IEnvironment],
     userDeclaredRunes: Set[IRuneS],
@@ -37,12 +42,13 @@ case class FunctionEnvironment(
 }
 
 case class StackFrame(
+    file: Int,
     name: IFunctionDeclarationNameS,
     parentEnv: FunctionEnvironment,
     maybeParent: Option[StackFrame],
     locals: VariableDeclarations) {
   def ++(newVars: VariableDeclarations): StackFrame = {
-    StackFrame(name, parentEnv, maybeParent, locals ++ newVars)
+    StackFrame(file, name, parentEnv, maybeParent, locals ++ newVars)
   }
   def allDeclarations: VariableDeclarations = {
     locals ++ maybeParent.map(_.allDeclarations).getOrElse(Scout.noDeclarations)
@@ -68,22 +74,28 @@ object Scout {
 //  val unrunedParamOverrideRuneSuffix = "Override"
 //  val unnamedMemberNameSeparator = "_mem_"
 
-  def scoutProgram(program: Program0): ProgramS = {
-    val Program0(topLevelThings) = program;
-    val file = "in.vale"
-    val structsS = topLevelThings.collect({ case TopLevelStruct(s) => s }).map(scoutStruct(file, _));
-    val interfacesS = topLevelThings.collect({ case TopLevelInterface(i) => i }).map(scoutInterface(file, _));
-    val implsS = topLevelThings.collect({ case TopLevelImpl(i) => i }).map(scoutImpl(file, _))
-    val functionsS = topLevelThings.collect({ case TopLevelFunction(f) => f }).map(FunctionScout.scoutTopLevelFunction("in.vale", _))
-    ProgramS(structsS, interfacesS, implsS, functionsS)
+  def scoutProgram(files: List[FileP]): ProgramS = {
+    val programsS =
+      files.zipWithIndex.map({ case (FileP(topLevelThings), file) =>
+        val structsS = topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(file, _));
+        val interfacesS = topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(file, _));
+        val implsS = topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(file, _))
+        val functionsS = topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(file, _))
+        ProgramS(structsS, interfacesS, implsS, functionsS)
+      })
+    ProgramS(
+      programsS.flatMap(_.structs),
+      programsS.flatMap(_.interfaces),
+      programsS.flatMap(_.impls),
+      programsS.flatMap(_.implementedFunctions))
   }
 
-  private def scoutImpl(file: String, impl0: ImplP): ImplS = {
+  private def scoutImpl(file: Int, impl0: ImplP): ImplS = {
     val ImplP(range, identifyingRuneNames, maybeTemplateRulesP, struct, interface) = impl0
 
     val templateRulesP = maybeTemplateRulesP.toList.flatMap(_.rules)
 
-    val codeLocation = Scout.evalPos(range.begin)
+    val codeLocation = Scout.evalPos(file, range.begin)
     val nameS = ImplNameS(codeLocation)
 
     val identifyingRunes: List[IRuneS] =
@@ -96,11 +108,11 @@ object Scout {
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val userDeclaredRunes = identifyingRunes ++ runesFromRules
 
-    val implEnv = Environment(None, nameS, userDeclaredRunes.toSet)
+    val implEnv = Environment(file, None, nameS, userDeclaredRunes.toSet)
 
     val rate = RuleStateBox(RuleState(implEnv.name, 0))
     val userRulesS =
-      RuleScout.translateRulexes(rate, implEnv.allUserDeclaredRunes(), templateRulesP)
+      RuleScout.translateRulexes(implEnv, rate, implEnv.allUserDeclaredRunes(), templateRulesP)
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
     val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, userRulesS, List(), None)
@@ -110,14 +122,14 @@ object Scout {
 
     val (implicitRulesFromStruct, structRune) =
       PatternScout.translateMaybeTypeIntoRune(
-        userDeclaredRunes.toSet,
+        implEnv,
         rate,
         Some(struct),
         KindTypePR)
 
     val (implicitRulesFromInterface, interfaceRune) =
       PatternScout.translateMaybeTypeIntoRune(
-        userDeclaredRunes.toSet,
+        implEnv,
         rate,
         Some(interface),
         KindTypePR)
@@ -134,9 +146,9 @@ object Scout {
       interfaceRune)
   }
 
-  private def scoutStruct(file: String, head: StructP): StructS = {
+  private def scoutStruct(file: Int, head: StructP): StructS = {
     val StructP(range, StringP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
-    val codeLocation = Scout.evalPos(range.begin)
+    val codeLocation = Scout.evalPos(file, range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
 
     val templateRulesP = maybeTemplateRulesP.toList.flatMap(_.rules)
@@ -149,19 +161,19 @@ object Scout {
       RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(templateRulesP)
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val userDeclaredRunes = identifyingRunes ++ runesFromRules
-    val structEnv = Environment(None, structName, userDeclaredRunes.toSet)
+    val structEnv = Environment(file, None, structName, userDeclaredRunes.toSet)
 
     val memberRunes = members.indices.map(index => MemberRuneS(index))
     val memberRules =
       memberRunes.zip(members.collect({ case m @ StructMemberP(_, _, _, _) => m }).map(_.tyype)).map({ case (memberRune, memberType) =>
         EqualsSR(
           TypedSR(memberRune, CoordTypeSR),
-          TemplexSR(TemplexScout.translateTemplex(structEnv.allUserDeclaredRunes(), memberType)))
+          TemplexSR(TemplexScout.translateTemplex(structEnv, memberType)))
       })
 
     val rate = RuleStateBox(RuleState(structEnv.name, 0))
     val rulesWithoutMutabilityS =
-      RuleScout.translateRulexes(rate, structEnv.allUserDeclaredRunes(), templateRulesP) ++
+      RuleScout.translateRulexes(structEnv, rate, structEnv.allUserDeclaredRunes(), templateRulesP) ++
       memberRules
 
     val mutabilityRune = rate.newImplicitRune()
@@ -211,9 +223,9 @@ object Scout {
       membersS)
   }
 
-  private def scoutInterface(file: String, headP: InterfaceP): InterfaceS = {
+  private def scoutInterface(file: Int, headP: InterfaceP): InterfaceS = {
     val InterfaceP(range, StringP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
-    val codeLocation = Scout.evalPos(range.begin)
+    val codeLocation = Scout.evalPos(file, range.begin)
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
     val rulesP = maybeRulesP.toList.flatMap(_.rules)
 
@@ -225,11 +237,11 @@ object Scout {
       RulePUtils.getOrderedRuneDeclarationsFromRulexesWithDuplicates(rulesP)
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val userDeclaredRunes = (identifyingRunes ++ runesFromRules).toSet
-    val interfaceEnv = Environment(None, interfaceFullName, userDeclaredRunes.toSet)
+    val interfaceEnv = Environment(file, None, interfaceFullName, userDeclaredRunes.toSet)
 
     val ruleState = RuleStateBox(RuleState(interfaceEnv.name, 0))
 
-    val rulesWithoutMutabilityS = RuleScout.translateRulexes(ruleState, interfaceEnv.allUserDeclaredRunes(), rulesP)
+    val rulesWithoutMutabilityS = RuleScout.translateRulexes(interfaceEnv, ruleState, interfaceEnv.allUserDeclaredRunes(), rulesP)
 
     val mutabilityRune = ruleState.newImplicitRune()
     val rulesS =
@@ -278,8 +290,11 @@ object Scout {
     interfaceS
   }
 
-  def evalPos(pos: Pos): CodeLocationS = {
-    val Pos(line, col) = pos
-    CodeLocationS(line, col)
+  def evalRange(file: Int, range: Range): RangeS = {
+    RangeS(evalPos(file, range.begin), evalPos(file, range.end))
+  }
+
+  def evalPos(file: Int, pos: Int): CodeLocationS = {
+    CodeLocationS(file, pos)
   }
 }

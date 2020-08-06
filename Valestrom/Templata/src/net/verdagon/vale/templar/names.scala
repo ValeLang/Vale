@@ -290,9 +290,7 @@ case class AnonymousSubstructImplName2() extends IName2 {
 sealed trait IRune2 extends IName2
 case class CodeRune2(name: String) extends IRune2 { def order = 7; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class ImplicitRune2(parentName: IName2, name: Int) extends IRune2 { def order = 8; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
-case class LetImplicitRune2(codeLocation: CodeLocation2, name: Int) extends IRune2 { def order = 34; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) }
-  vassert(codeLocation.line > 0)
-}
+case class LetImplicitRune2(codeLocation: CodeLocation2, name: Int) extends IRune2 { def order = 34; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class MemberRune2(memberIndex: Int) extends IRune2 { def order = 9; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class MagicImplicitRune2(codeLocation: CodeLocation2) extends IRune2 { def order = 10; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class ReturnRune2() extends IRune2 { def order = 11; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }

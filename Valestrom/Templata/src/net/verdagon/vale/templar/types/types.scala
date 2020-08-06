@@ -518,13 +518,10 @@ object FullNameComparator extends Ordering[FullName2[IName2]] {
   }
 
   def compare(a: CodeLocation2, b: CodeLocation2): Int = {
-//    val fileDiff = a.file.compareTo(b.file)
-//    if (fileDiff != 0)
-//      return fileDiff
-    val lineDiff = a.line.compareTo(b.line)
-    if (lineDiff != 0)
-      return lineDiff
-    a.char.compareTo(b.char)
+    val fileDiff = a.file.compareTo(b.file)
+    if (fileDiff != 0)
+      return fileDiff
+    a.offset.compareTo(b.offset)
   }
 }
 

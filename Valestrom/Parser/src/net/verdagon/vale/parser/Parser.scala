@@ -23,7 +23,7 @@ object Parser {
       position = newPosition
     }
 
-    def getPos(): Pos = {
+    def getPos(): Int = {
       CombinatorParsers.parse(CombinatorParsers.pos, toReader()) match {
         case CombinatorParsers.NoSuccess(_, _) => vwat()
         case CombinatorParsers.Success(result, _) => result
@@ -87,7 +87,7 @@ object Parser {
     }
   }
 
-  def runParserForProgramAndCommentRanges(codeWithComments: String): IParseResult[(Program0, List[(Int, Int)])] = {
+  def runParserForProgramAndCommentRanges(codeWithComments: String): IParseResult[(FileP, List[(Int, Int)])] = {
     val regex = "(//[^\\r\\n]*|«\\w+»)".r
     val commentRanges = regex.findAllMatchIn(codeWithComments).map(mat => (mat.start, mat.end)).toList
     var code = codeWithComments
@@ -102,8 +102,8 @@ object Parser {
     }
   }
 
-  def runParser(codeWithoutComments: String): IParseResult[Program0] = {
-    val topLevelThings = new mutable.MutableList[ITopLevelThing]()
+  def runParser(codeWithoutComments: String): IParseResult[FileP] = {
+    val topLevelThings = new mutable.MutableList[ITopLevelThingP]()
 
     val iter = ParsingIterator(codeWithoutComments, 0)
     iter.consumeWhitespace()
@@ -112,22 +112,22 @@ object Parser {
       if (iter.peek("^struct\\b".r)) {
         parseStruct(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
-          case ParseSuccess(result) => topLevelThings += TopLevelStruct(result)
+          case ParseSuccess(result) => topLevelThings += TopLevelStructP(result)
         }
       } else if (iter.peek("^interface\\b".r)) {
         parseInterface(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
-          case ParseSuccess(result) => topLevelThings += TopLevelInterface(result)
+          case ParseSuccess(result) => topLevelThings += TopLevelInterfaceP(result)
         }
       } else if (iter.peek("^impl\\b".r)) {
         parseImpl(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
-          case ParseSuccess(result) => topLevelThings += TopLevelImpl(result)
+          case ParseSuccess(result) => topLevelThings += TopLevelImplP(result)
         }
       } else if (iter.peek("^fn\\b".r)) {
         parseFunction(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
-          case ParseSuccess(result) => topLevelThings += TopLevelFunction(result)
+          case ParseSuccess(result) => topLevelThings += TopLevelFunctionP(result)
         }
       } else {
         return ParseFailure(UnrecognizedTopLevelThingError(iter.position))
@@ -135,7 +135,7 @@ object Parser {
       iter.consumeWhitespace()
     }
 
-    val program0 = Program0(topLevelThings.toList)
+    val program0 = FileP(topLevelThings.toList)
     ParseSuccess(program0)
   }
 

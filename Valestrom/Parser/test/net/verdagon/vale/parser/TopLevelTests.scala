@@ -13,8 +13,8 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
         |
         |struct mork { }
         |""".stripMargin)
-    program.topLevelThings(0) match { case TopLevelFunction(_) => }
-    program.topLevelThings(1) match { case TopLevelStruct(_) => }
+    program.topLevelThings(0) match { case TopLevelFunctionP(_) => }
+    program.topLevelThings(1) match { case TopLevelStructP(_) => }
   }
 
 
@@ -27,9 +27,5 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
     err match {
       case UnrecognizedTopLevelThingError(12) =>
     }
-    new ParseErrorHumanizer(code).humanize(err) shouldEqual
-      """2:2: expected fn, struct, interface, or impl, but found:
-        |blort
-        |""".stripMargin
   }
 }

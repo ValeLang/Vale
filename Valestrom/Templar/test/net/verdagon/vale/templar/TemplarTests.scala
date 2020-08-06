@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, Program0}
+import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, FileP}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
@@ -21,12 +21,12 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   class Compilation(code: String) {
-    var parsedCache: Option[Program0] = None
+    var parsedCache: Option[FileP] = None
     var scoutputCache: Option[ProgramS] = None
     var astroutsCache: Option[ProgramA] = None
     var temputsCache: Option[Temputs] = None
 
-    def getParsed(): Program0 = {
+    def getParsed(): FileP = {
       parsedCache match {
         case Some(parsed) => parsed
         case None => {
@@ -45,7 +45,7 @@ class TemplarTests extends FunSuite with Matchers {
       scoutputCache match {
         case Some(scoutput) => scoutput
         case None => {
-          val scoutput = Scout.scoutProgram(getParsed())
+          val scoutput = Scout.scoutProgram(List(getParsed()))
           scoutputCache = Some(scoutput)
           scoutput
         }
@@ -56,9 +56,13 @@ class TemplarTests extends FunSuite with Matchers {
       astroutsCache match {
         case Some(astrouts) => astrouts
         case None => {
-          val astrouts = Astronomer.runAstronomer(getScoutput())
-          astroutsCache = Some(astrouts)
-          astrouts
+          Astronomer.runAstronomer(getScoutput()) match {
+            case Right(err) => vfail(err.toString)
+            case Left(astrouts) => {
+              astroutsCache = Some(astrouts)
+              astrouts
+            }
+          }
         }
       }
     }
@@ -329,7 +333,7 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
-  // Known failure 2020-07-18
+  // Known failure 2020-08-05
   test("Tests stamping a struct and its implemented interface from a function param") {
     val compile = new Compilation(
       """

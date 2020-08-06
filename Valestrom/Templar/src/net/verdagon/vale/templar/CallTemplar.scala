@@ -127,7 +127,7 @@ object CallTemplar {
         List(),
         exact = false) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-          vfail("Couldn't find function to call!\n" + seff.toString)
+          ErrorReporter.report(CouldntFindFunctionToCallT(seff))
         }
         case (ScoutExpectedFunctionSuccess(p)) => (p)
       }

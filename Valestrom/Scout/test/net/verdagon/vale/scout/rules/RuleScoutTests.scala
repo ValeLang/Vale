@@ -10,7 +10,7 @@ class RuleScoutTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        val programS = Scout.scoutProgram(program0)
+        val programS = Scout.scoutProgram(List(program0))
         programS.lookupFunction("main").templateRules
       }
     }
@@ -21,10 +21,10 @@ class RuleScoutTests extends FunSuite with Matchers {
       List(
         EqualsSR(
           TypedSR(CodeRuneS("B"),CoordTypeSR),
-          TemplexSR(CallST(NameST(CodeTypeNameS("List")),List(RuneST(CodeRuneS("A")))))),
+          TemplexSR(CallST(NameST(RangeS.zero, CodeTypeNameS("List")),List(RuneST(CodeRuneS("A")))))),
         EqualsSR(
           TypedSR(CodeRuneS("C"),CoordTypeSR),
-          OrSR(List(TemplexSR(RuneST(CodeRuneS("B"))), TemplexSR(RuneST(CodeRuneS("A"))), TemplexSR(NameST(CodeTypeNameS("int")))))),
+          OrSR(List(TemplexSR(RuneST(CodeRuneS("B"))), TemplexSR(RuneST(CodeRuneS("A"))), TemplexSR(NameST(RangeS.zero, CodeTypeNameS("int")))))),
         TypedSR(CodeRuneS("A"),CoordTypeSR))
     RuleSUtils.getDistinctOrderedRunesForRulexes(expectedRulesS) shouldEqual
       List(CodeRuneS("B"), CodeRuneS("A"), CodeRuneS("C"))
@@ -41,10 +41,10 @@ class RuleScoutTests extends FunSuite with Matchers {
       case List(
         EqualsSR(
           TypedSR(br1 @ CodeRuneS("B"),CoordTypeSR),
-          TemplexSR(CallST(NameST(CodeTypeNameS("List")),List(RuneST(ar1 @ CodeRuneS("A")))))),
+          TemplexSR(CallST(NameST(_, CodeTypeNameS("List")),List(RuneST(ar1 @ CodeRuneS("A")))))),
         EqualsSR(
           TypedSR(CodeRuneS("C"),CoordTypeSR),
-          OrSR(List(TemplexSR(RuneST(br2)), TemplexSR(RuneST(ar3)), TemplexSR(NameST(CodeTypeNameS("int")))))),
+          OrSR(List(TemplexSR(RuneST(br2)), TemplexSR(RuneST(ar3)), TemplexSR(NameST(_, CodeTypeNameS("int")))))),
         TypedSR(ar2,CoordTypeSR)) => {
         vassert(br1 == br2)
         vassert(ar1 == ar2)

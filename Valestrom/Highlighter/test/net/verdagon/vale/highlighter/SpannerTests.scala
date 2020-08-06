@@ -5,7 +5,7 @@ import net.verdagon.vale.vfail
 import org.scalatest.{FunSuite, Matchers}
 
 class SpannerTests extends FunSuite with Matchers {
-  private def compile(code: String): Program0 = {
+  private def compile(code: String): FileP = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => program0
@@ -16,11 +16,11 @@ class SpannerTests extends FunSuite with Matchers {
     val program1 = compile("fn main() { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,Range(Pos(1,1),Pos(1,16)),List(
-        Span(FnName,Range(Pos(1,4),Pos(1,8)),List()),
-        Span(Params,Range(Pos(1,8),Pos(1,10)),List()),
-        Span(Block,Range(Pos(1,11),Pos(1,16)),List(
-          Span(Num,Range(Pos(1,13),Pos(1,14)),List())))))
+      Span(Fn,Range(0,15),List(
+        Span(FnName,Range(3,7),List()),
+        Span(Params,Range(7,9),List()),
+        Span(Block,Range(10,15),List(
+          Span(Num,Range(12,13),List())))))
   }
 
 

@@ -49,16 +49,16 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("Method on member") {
     compile(CombinatorParsers.expression,"x.moo.shout()") shouldHave {
-      case MethodCallPE(Range(Pos(1,1),Pos(1,14)),
-        DotPE(Range(Pos(1,1),Pos(1,6)),
-          LookupPE(StringP(Range(Pos(1,1),Pos(1,2)),x),None),
-          Range(Pos(1,2),Pos(1,3)),
+      case MethodCallPE(_,
+        DotPE(_,
+          LookupPE(StringP(_,x),None),
+          _,
           false,
-          LookupPE(StringP(Range(Pos(1,3),Pos(1,6)),"moo"),None)),
-        Range(Pos(1,6),Pos(1,7)),
+          LookupPE(StringP(_,"moo"),None)),
+        _,
         BorrowP,
         false,
-        LookupPE(StringP(Range(Pos(1,7),Pos(1,12)),"shout"),None),List()) =>
+        LookupPE(StringP(_,"shout"),None),List()) =>
     }
   }
 
@@ -151,7 +151,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("Indexing") {
     compile(CombinatorParsers.expression,"arr [4]") shouldHave {
-      case DotCallPE(_,LookupPE(StringP(_,arr),None),List(IntLiteralPE(_,4))) =>
+      case IndexPE(_,LookupPE(StringP(_,arr),None),List(IntLiteralPE(_,4))) =>
     }
   }
 
@@ -222,10 +222,29 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     }
   }
 
-  // debt: fix
-//  test("Array index") {
-//    compile("board.(i)") shouldEqual DotCallPE(LookupPE(StringP(_, "board"), None),PackPE(List(LookupPE(StringP(_, "i"), None))),true)
-//    compile("this.board.(i)") shouldEqual
-//      DotCallPE(DotPE(_,LookupPE(StringP(_, "this"), None), "board", true),PackPE(List(LookupPE(StringP(_, "i"), None))),true)
-//  }
+  test("parens") {
+    compile(CombinatorParsers.expression,
+      "2 * (5 - 7)") shouldHave {
+        case FunctionCallPE(_,None,_,false,
+          LookupPE(StringP(_,"*"),None),
+          List(
+            IntLiteralPE(_,2),
+            FunctionCallPE(_,None,_,false,
+              LookupPE(StringP(_,"-"),None),
+              List(IntLiteralPE(_,5), IntLiteralPE(_,7)),
+              BorrowP)),
+          BorrowP) =>
+    }
+  }
+
+  test("Array indexing") {
+    compile(CombinatorParsers.expression,
+      "board[i]") shouldHave {
+      case IndexPE(_,LookupPE(StringP(_,"board"),None),List(LookupPE(StringP(_,"i"),None))) =>
+    }
+    compile(CombinatorParsers.expression,
+      "this.board[i]") shouldHave {
+      case IndexPE(_,DotPE(_,LookupPE(StringP(_,"this"),None),_,false,LookupPE(StringP(_,"board"),None)),List(LookupPE(StringP(_,"i"),None))) =>
+    }
+  }
 }

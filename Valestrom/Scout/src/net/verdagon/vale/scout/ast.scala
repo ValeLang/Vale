@@ -62,7 +62,16 @@ case class ProgramS(
   }
 }
 
-case class CodeLocationS(line: Int, char: Int)
+object CodeLocationS {
+  val zero = CodeLocationS(-1, 0)
+}
+
+object RangeS {
+  val zero = RangeS(CodeLocationS.zero, CodeLocationS.zero)
+}
+
+case class CodeLocationS(file: Int, offset: Int)
+case class RangeS(begin: CodeLocationS, end: CodeLocationS)
 
 case class StructS(
     name: TopLevelCitizenDeclarationNameS,

@@ -5,7 +5,7 @@ import net.verdagon.vale.astronomer.ruletyper.{IRuleTyperEvaluatorDelegate, Rule
 import net.verdagon.vale.scout.rules.{EqualsSR, TemplexSR, TypedSR}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata.{IPotentialBanner, _}
-import net.verdagon.vale.scout.{CodeRuneS, CodeTypeNameS, ExplicitTemplateArgRuneS, INameS, ITemplexS}
+import net.verdagon.vale.scout.{CodeRuneS, CodeTypeNameS, ExplicitTemplateArgRuneS, INameS, ITemplexS, RangeS}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
@@ -209,7 +209,7 @@ object OverloadTemplar {
                       val ruleTyper =
                         new RuleTyperEvaluator[IEnvironment, TemputsBox](
                           new IRuleTyperEvaluatorDelegate[IEnvironment, TemputsBox] {
-                            override def lookupType(state: TemputsBox, env: IEnvironment, name: INameS): ITemplataType = {
+                            override def lookupType(state: TemputsBox, env: IEnvironment, rangeS: RangeS, name: INameS): ITemplataType = {
                               val templata =
                                 env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateNameStep(Astronomer.translateName(name)), Set[ILookupContext](TemplataLookupContext)) match {
                                   case None => vfail("Nothing found with name " + name)
@@ -217,7 +217,7 @@ object OverloadTemplar {
                                 }
                               (templata.tyype)
                             }
-                            override def lookupType(state: TemputsBox, env: IEnvironment, name: CodeTypeNameS): ITemplataType = {
+                            override def lookupType(state: TemputsBox, env: IEnvironment, rangeS: RangeS, name: CodeTypeNameS): ITemplataType = {
                               val templata =
                                 env.getNearestTemplataWithName(Astronomer.translateImpreciseName(name), Set(TemplataLookupContext)) match {
                                   case None => vfail("Nothing found with name " + name)

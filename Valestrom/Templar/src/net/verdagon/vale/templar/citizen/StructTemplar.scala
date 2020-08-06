@@ -256,7 +256,7 @@ object StructTemplar {
     temputs: TemputsBox,
     prototype: Prototype2):
   StructRef2 = {
-    val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2(0, 0)))
+    val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2(-13, 0)))
 
     temputs.structDeclared(structFullName) match {
       case Some(structRef2) => return structRef2

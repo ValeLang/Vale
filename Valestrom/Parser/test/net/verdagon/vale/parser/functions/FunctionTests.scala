@@ -13,8 +13,8 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
         |
         |struct mork { }
         |""".stripMargin)
-    program.topLevelThings(0) match { case TopLevelFunction(_) => }
-    program.topLevelThings(1) match { case TopLevelStruct(_) => }
+    program.topLevelThings(0) match { case TopLevelFunctionP(_) => }
+    program.topLevelThings(1) match { case TopLevelStructP(_) => }
   }
 
   test("Simple function") {

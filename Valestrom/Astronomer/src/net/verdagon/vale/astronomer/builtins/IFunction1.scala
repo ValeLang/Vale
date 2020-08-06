@@ -10,7 +10,7 @@ import scala.collection.immutable.{List, Map}
 object IFunction1 {
   val interface =
     InterfaceA(
-      TopLevelCitizenDeclarationNameA("IFunction1", CodeLocationS(1, 1)),
+      TopLevelCitizenDeclarationNameA("IFunction1", CodeLocationS(-7, 0)),
       false,
       CodeRuneA("M"),
       None,
@@ -28,7 +28,7 @@ object IFunction1 {
         TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType))),
       List(
         FunctionA(
-          FunctionNameA("__call", CodeLocationS(1, 0)),
+          FunctionNameA("__call", CodeLocationS(-8, 0)),
           true,
           FunctionTemplataType,
           Set(),

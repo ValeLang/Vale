@@ -55,7 +55,7 @@ class HammerTests extends FunSuite with Matchers {
     vassert(myNone.members.isEmpty);
   }
 
-  // Known failure 2020-07-18
+  // Known failure 2020-08-05
   test("Virtual and override functions make it into hamuts") {
     val compile = new Compilation(
       """

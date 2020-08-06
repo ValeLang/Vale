@@ -82,8 +82,8 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def callableRulePR: Parser[ITemplexPRT] = {
-    ("fn" ~> optWhite ~> opt(":" ~> optWhite ~> ruleTemplexPR) ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ (optWhite ~> ruleTemplexPR)) ^^ {
-      case mutability ~ params ~ ret => FunctionPRT(mutability, PackPRT(params), ret)
+    pos ~ ("fn" ~> optWhite ~> opt(":" ~> optWhite ~> ruleTemplexPR) ~ ("(" ~> optWhite ~> repsep(ruleTemplexPR, optWhite ~ "," ~ optWhite) <~ optWhite <~ ")") ~ (optWhite ~> ruleTemplexPR)) ~ pos ^^ {
+      case begin ~ (mutability ~ params ~ ret) ~ end => FunctionPRT(Range(begin, end), mutability, PackPRT(params), ret)
     }
   }
 

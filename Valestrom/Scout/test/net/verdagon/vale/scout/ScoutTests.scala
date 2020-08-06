@@ -10,7 +10,7 @@ class ScoutTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => Scout.scoutProgram(program0)
+      case ParseSuccess(program0) => Scout.scoutProgram(List(program0))
     }
   }
 
@@ -28,13 +28,10 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("struct Moo { x int; }")
     val imoo = program1.lookupStruct("Moo")
 
-    val mooName =
-        TopLevelCitizenDeclarationNameS("Moo",CodeLocationS(1,1))
-
     val memberRune = MemberRuneS(0)
     imoo.rules match {
       case List(
-        EqualsSR(TypedSR(memberRune, CoordTypeSR), TemplexSR(NameST(CodeTypeNameS("int")))),
+        EqualsSR(TypedSR(memberRune, CoordTypeSR), TemplexSR(NameST(_, CodeTypeNameS("int")))),
         EqualsSR(TemplexSR(RuneST(ImplicitRuneS(_, _))), TemplexSR(MutabilityST(MutableP)))) =>
     }
     imoo.members shouldEqual List(StructMemberS("x",FinalP,memberRune))
@@ -68,10 +65,10 @@ class ScoutTests extends FunSuite with Matchers {
         case List(
           EqualsSR(
             TypedSR(actualParamRune, CoordTypeSR),
-            TemplexSR(NameST(CodeTypeNameS("bool")))),
+            TemplexSR(NameST(_, CodeTypeNameS("bool")))),
           EqualsSR(
             TypedSR(actualRetRune, CoordTypeSR),
-            TemplexSR(NameST(CodeTypeNameS("void"))))) => {
+            TemplexSR(NameST(_, CodeTypeNameS("void"))))) => {
           actualParamRune match {
             case ImplicitRuneS(_, 0) =>
           }
@@ -112,8 +109,8 @@ class ScoutTests extends FunSuite with Matchers {
       }
     impl.rules match {
       case List(
-          EqualsSR(TypedSR(a,KindTypeSR), TemplexSR(NameST(CodeTypeNameS("Moo")))),
-          EqualsSR(TypedSR(b,KindTypeSR), TemplexSR(NameST(CodeTypeNameS("IMoo"))))) => {
+          EqualsSR(TypedSR(a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo")))),
+          EqualsSR(TypedSR(b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo"))))) => {
         vassert(a == structRune)
         vassert(b == interfaceRune)
       }

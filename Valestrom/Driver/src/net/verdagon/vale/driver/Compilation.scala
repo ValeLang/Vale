@@ -5,22 +5,22 @@ import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, VonHammer}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, Program0}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{CompleteProgram2, Templar, Temputs}
-import net.verdagon.vale.{vassert, vwat}
+import net.verdagon.vale.{vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData
 
 class Compilation(code: String, useCommonEnv: Boolean = true) {
-  var parsedCache: Option[Program0] = None
+  var parsedCache: Option[FileP] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None
   var temputsCache: Option[Temputs] = None
   var hinputsCache: Option[Hinputs] = None
   var hamutsCache: Option[ProgramH] = None
 
-  def getParsed(): Program0 = {
+  def getParsed(): FileP = {
     parsedCache match {
       case Some(parsed) => parsed
       case None => {
@@ -39,7 +39,7 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
     scoutputCache match {
       case Some(scoutput) => scoutput
       case None => {
-        val scoutput = Scout.scoutProgram(getParsed())
+        val scoutput = Scout.scoutProgram(List(getParsed()))
         scoutputCache = Some(scoutput)
         scoutput
       }
@@ -50,9 +50,13 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
     astroutsCache match {
       case Some(astrouts) => astrouts
       case None => {
-        val astrouts = Astronomer.runAstronomer(getScoutput())
-        astroutsCache = Some(astrouts)
-        astrouts
+        Astronomer.runAstronomer(getScoutput()) match {
+          case Right(err) => vfail(err.toString)
+          case Left(astrouts) => {
+            astroutsCache = Some(astrouts)
+            astrouts
+          }
+        }
       }
     }
   }

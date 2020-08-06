@@ -55,15 +55,15 @@ case object Match extends IClass
 case class Span(classs: IClass, range: Range, children: List[Span])
 
 object Spanner {
-  def forProgram(program: Program0): Span = {
+  def forProgram(program: FileP): Span = {
     makeSpan(
       Prog,
-      Range(Pos(1, 1), Pos(Int.MaxValue, Int.MaxValue)),
+      Range(0, Int.MaxValue),
       program.topLevelThings.map({
-        case TopLevelFunction(f) => forFunction(f)
-        case TopLevelInterface(i) => forInterface(i)
-        case TopLevelStruct(s) => forStruct(s)
-        case TopLevelImpl(i) => forImpl(i)
+        case TopLevelFunctionP(f) => forFunction(f)
+        case TopLevelInterfaceP(i) => forInterface(i)
+        case TopLevelStructP(s) => forStruct(s)
+        case TopLevelImplP(i) => forImpl(i)
       }))
   }
 
@@ -192,7 +192,7 @@ object Spanner {
           range,
           List(forExpression(expr)))
       }
-      case DotCallPE(range, callableExpr, argExprs) => {
+      case IndexPE(range, callableExpr, argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (callableSpan :: argSpans)

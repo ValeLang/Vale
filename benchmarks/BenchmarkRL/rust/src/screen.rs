@@ -112,7 +112,7 @@ impl Screen {
 
         let (fg_red, fg_green, fg_blue) =
             match cell.bg_color {
-                ScreenColor::DarkGray => (16, 16, 16),
+                ScreenColor::DarkGray => (40, 40, 40),
                 ScreenColor::Orange => (255, 96, 0),
                 ScreenColor::Red => (255, 0, 0),
                 ScreenColor::Black => (0, 0, 0),

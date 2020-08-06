@@ -158,7 +158,7 @@ class InfererTests extends FunSuite with Matchers {
       CitizenName2("ImmInterface", List()) ->
         InterfaceEnvEntry(
           InterfaceA(
-            TopLevelCitizenDeclarationNameA("ImmInterface", CodeLocationS(0, 0)),
+            TopLevelCitizenDeclarationNameA("ImmInterface", CodeLocationS(-24, 0)),
             false,
             CodeRuneA("M"),
             Some(ImmutableP),
@@ -171,10 +171,10 @@ class InfererTests extends FunSuite with Matchers {
             List())))
     entries = entries ++ Map(PrimitiveName2("Array") -> TemplataEnvEntry(ArrayTemplateTemplata()))
     entries = entries ++ Map(
-        CitizenTemplateName2("MutTStruct", CodeLocation2(0, 0)) ->
+        CitizenTemplateName2("MutTStruct", CodeLocation2(-25, 0)) ->
           StructEnvEntry(
             StructA(
-              TopLevelCitizenDeclarationNameA("MutTStruct", CodeLocationS(0, 0)),
+              TopLevelCitizenDeclarationNameA("MutTStruct", CodeLocationS(-26, 0)),
               false,
               false,
               CodeRuneA("M"),
@@ -186,10 +186,10 @@ class InfererTests extends FunSuite with Matchers {
               Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
               List(EqualsAR(TemplexAR(RuneAT(CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(MutableP)))),
               List())))
-    entries = entries ++ Map(CitizenTemplateName2("MutTInterface", CodeLocation2(0, 0)) ->
+    entries = entries ++ Map(CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)) ->
       InterfaceEnvEntry(
         InterfaceA(
-          TopLevelCitizenDeclarationNameA("MutTInterface", CodeLocationS(0, 0)),
+          TopLevelCitizenDeclarationNameA("MutTInterface", CodeLocationS(-28, 0)),
           false,
           CodeRuneA("M"),
           Some(MutableP),
@@ -200,10 +200,10 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(TemplexAR(RuneAT(CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(MutableP)))),
           List())))
-    entries = entries ++ Map(CitizenTemplateName2("MutStruct", CodeLocation2(0, 0)) ->
+    entries = entries ++ Map(CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)) ->
       StructEnvEntry(
         StructA(
-          TopLevelCitizenDeclarationNameA("MutStruct", CodeLocationS(0, 0)),
+          TopLevelCitizenDeclarationNameA("MutStruct", CodeLocationS(-30, 0)),
           false,
           false,
           CodeRuneA("M"),
@@ -215,10 +215,10 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(TemplexAR(RuneAT(CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(MutableP)))),
           List())))
-    entries = entries ++ Map(CitizenTemplateName2("MutInterface", CodeLocation2(0, 0)) ->
+    entries = entries ++ Map(CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)) ->
       InterfaceEnvEntry(
         InterfaceA(
-          TopLevelCitizenDeclarationNameA("MutInterface", CodeLocationS(0, 0)),
+          TopLevelCitizenDeclarationNameA("MutInterface", CodeLocationS(-32, 0)),
           false,
           CodeRuneA("M"),
           Some(MutableP),

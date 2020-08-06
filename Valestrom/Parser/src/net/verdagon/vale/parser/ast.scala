@@ -4,43 +4,33 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.vassert
 
-case class Pos(line: Int, col: Int) {
-  def <(that: Pos): Boolean = {
-    if (this.line < that.line) { true }
-    else if (that.line < this.line) { false }
-    else if (this.col < that.col) { true }
-    else if (that.col < this.col) { false }
-    else { false }
-  }
-}
-
-case class Range(begin: Pos, end: Pos) {
-  vassert(begin == end || begin < end)
+case class Range(begin: Int, end: Int) {
+  vassert(begin == end || begin <= end)
 }
 object Range {
-  val zero = Range(Pos(0, 0), Pos(0, 0))
+  val zero = Range(0, 0)
 }
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
 // because it also contains the range it was found.
 case class UnitP(range: Range)
 case class StringP(range: Range, str: String)
 
-case class Program0(topLevelThings: List[ITopLevelThing]) {
+case class FileP(topLevelThings: List[ITopLevelThingP]) {
   def lookupFunction(name: String) = {
     val results =
       topLevelThings.collect({
-        case TopLevelFunction(f) if f.header.name.exists(_.str == name) => f
+        case TopLevelFunctionP(f) if f.header.name.exists(_.str == name) => f
       })
     vassert(results.size == 1)
     results.head
   }
 }
 
-sealed trait ITopLevelThing
-case class TopLevelFunction(function: FunctionP) extends ITopLevelThing
-case class TopLevelStruct(struct: StructP) extends ITopLevelThing
-case class TopLevelInterface(interface: InterfaceP) extends ITopLevelThing
-case class TopLevelImpl(impl: ImplP) extends ITopLevelThing
+sealed trait ITopLevelThingP
+case class TopLevelFunctionP(function: FunctionP) extends ITopLevelThingP
+case class TopLevelStructP(struct: StructP) extends ITopLevelThingP
+case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP
+case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP
 
 case class ImplP(
   range: Range,

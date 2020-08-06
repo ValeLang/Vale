@@ -56,6 +56,7 @@ case class CallPRT(template: ITemplexPRT, args: List[ITemplexPRT]) extends ITemp
 // This is for example fn(Int)Bool, fn:imm(Int, Int)Str, fn:mut()(Str, Bool)
 // It's shorthand for IFunction:(mut, (Int), Bool), IFunction:(mut, (Int, Int), Str), IFunction:(mut, (), (Str, Bool))
 case class FunctionPRT(
+    range: Range,
     // This is Optional because they can leave it out, and mut will be assumed.
     mutability: Option[ITemplexPRT],
     parameters: PackPRT,
@@ -118,7 +119,7 @@ object RulePUtils {
       case TypedRunePRT(name, tyype) => List(name.str)
       case AnonymousRunePRT() => List()
       case CallPRT(template, args) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates((template :: args))
-      case FunctionPRT(mutability, parameters, returnType) => {
+      case FunctionPRT(range, mutability, parameters, returnType) => {
         getOrderedRuneDeclarationsFromTemplexesWithDuplicates(mutability.toList) ++
           getOrderedRuneDeclarationsFromTemplexWithDuplicates(parameters) ++
           getOrderedRuneDeclarationsFromTemplexWithDuplicates(returnType)

@@ -2,7 +2,7 @@ package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.RuleStateBox
-import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.scout.{IEnvironment, Environment => _, FunctionEnvironment => _, _}
 import net.verdagon.vale.{vassert, vassertSome}
 
 object RuleScout {
@@ -10,37 +10,39 @@ object RuleScout {
   // - new rules produced on the side while translating the given rules
   // - the translated versions of the given rules
   def translateRulexes(
+    env: IEnvironment,
     ruleState: RuleStateBox,
     userDeclaredRunes: Set[IRuneS],
     rulesP: List[IRulexPR]):
   List[IRulexSR] = {
-    rulesP.map(translateRulex(ruleState, userDeclaredRunes, _))
+    rulesP.map(translateRulex(env, ruleState, userDeclaredRunes, _))
   }
   def translateRulex(
+    env: IEnvironment,
     ruleState: RuleStateBox,
     userDeclaredRunes: Set[IRuneS],
     rulex: IRulexPR):
   IRulexSR = {
     rulex match {
 //      case PackPR(elements) => {
-//        PackSR(translateRulexes(ruleState, userDeclaredRunes, elements))
+//        PackSR(translateRulexes(env, ruleState, userDeclaredRunes, elements))
 //      }
       case EqualsPR(leftP, rightP) => {
-        EqualsSR(translateRulex(ruleState, userDeclaredRunes, leftP), translateRulex(ruleState, userDeclaredRunes, rightP))
+        EqualsSR(translateRulex(env, ruleState, userDeclaredRunes, leftP), translateRulex(env, ruleState, userDeclaredRunes, rightP))
       }
       case OrPR(possibilitiesP) => {
-        OrSR(translateRulexes(ruleState, userDeclaredRunes, possibilitiesP))
+        OrSR(translateRulexes(env, ruleState, userDeclaredRunes, possibilitiesP))
       }
       case ComponentsPR(TypedPR(None, tyype), componentsP) => {
         val rune = ruleState.newImplicitRune()
-        ComponentsSR(TypedSR(rune, translateType(tyype)), translateRulexes(ruleState, userDeclaredRunes, componentsP))
+        ComponentsSR(TypedSR(rune, translateType(tyype)), translateRulexes(env, ruleState, userDeclaredRunes, componentsP))
       }
       case ComponentsPR(TypedPR(Some(StringP(_, rune)), tyype), componentsP) => {
         ComponentsSR(
           TypedSR(
             CodeRuneS(rune),
             translateType(tyype)),
-          translateRulexes(ruleState, userDeclaredRunes, componentsP))
+          translateRulexes(env, ruleState, userDeclaredRunes, componentsP))
       }
       case TypedPR(None, tyype) => {
         val rune = ruleState.newImplicitRune()
@@ -50,8 +52,8 @@ object RuleScout {
         vassert(userDeclaredRunes.contains(CodeRuneS(runeName)))
         TypedSR(CodeRuneS(runeName), translateType(tyype))
       }
-      case TemplexPR(templex) => TemplexSR(translateTemplex(ruleState, userDeclaredRunes, templex))
-      case CallPR(StringP(_, name), args) => CallSR(name, args.map(translateRulex(ruleState, userDeclaredRunes, _)))
+      case TemplexPR(templex) => TemplexSR(translateTemplex(env, ruleState, userDeclaredRunes, templex))
+      case CallPR(StringP(_, name), args) => CallSR(name, args.map(translateRulex(env, ruleState, userDeclaredRunes, _)))
     }
   }
   def translateType(tyype: ITypePR): ITypeSR = {
@@ -74,6 +76,7 @@ object RuleScout {
   }
 
   def translateTemplex(
+    env: IEnvironment,
     ruleState: RuleStateBox,
     userDeclaredRunes: Set[IRuneS],
     templex: ITemplexPRT):
@@ -87,31 +90,31 @@ object RuleScout {
       case OwnershipPRT(ownership) => OwnershipST(ownership)
       case VariabilityPRT(variability) => VariabilityST(variability)
       case BoolPRT(value) => BoolST(value)
-      case NameOrRunePRT(StringP(_, name)) => {
+      case NameOrRunePRT(StringP(range, name)) => {
         if (userDeclaredRunes.contains(CodeRuneS(name))) {
           RuneST(CodeRuneS(name))
         } else {
-          NameST(CodeTypeNameS(name))
+          NameST(Scout.evalRange(env.file, range), CodeTypeNameS(name))
         }
       }
       case AnonymousRunePRT() => {
         val rune = ruleState.newImplicitRune()
         RuneST(rune)
       }
-      case CallPRT(template, args) => CallST(translateTemplex(ruleState, userDeclaredRunes, template), args.map(translateTemplex(ruleState, userDeclaredRunes, _)))
-      case FunctionPRT(mutability, paramsPack, returnType) => {
+      case CallPRT(template, args) => CallST(translateTemplex(env, ruleState, userDeclaredRunes, template), args.map(translateTemplex(env, ruleState, userDeclaredRunes, _)))
+      case FunctionPRT(range, mutability, paramsPack, returnType) => {
         CallST(
-          NameST(CodeTypeNameS("IFunction")),
+          NameST(Scout.evalRange(env.file, range), CodeTypeNameS("IFunction")),
           List(
-            mutability match { case None => MutabilityST(MutableP) case Some(m) => translateTemplex(ruleState, userDeclaredRunes, m) },
-            translateTemplex(ruleState, userDeclaredRunes, paramsPack),
-            translateTemplex(ruleState, userDeclaredRunes, returnType)))
+            mutability match { case None => MutabilityST(MutableP) case Some(m) => translateTemplex(env, ruleState, userDeclaredRunes, m) },
+            translateTemplex(env, ruleState, userDeclaredRunes, paramsPack),
+            translateTemplex(env, ruleState, userDeclaredRunes, returnType)))
       }
-      case PrototypePRT(StringP(_, name), parameters, returnType) => PrototypeST(name, parameters.map(translateTemplex(ruleState, userDeclaredRunes, _)), translateTemplex(ruleState, userDeclaredRunes, returnType))
-      case PackPRT(members) => PackST(members.map(translateTemplex(ruleState, userDeclaredRunes, _)))
-      case BorrowPRT(inner) => BorrowST(translateTemplex(ruleState, userDeclaredRunes, inner))
-      case RepeaterSequencePRT(mutability, size, element) => RepeaterSequenceST(translateTemplex(ruleState, userDeclaredRunes, mutability), translateTemplex(ruleState, userDeclaredRunes, size), translateTemplex(ruleState, userDeclaredRunes, element))
-      case ManualSequencePRT(elements) => ManualSequenceST(elements.map(translateTemplex(ruleState, userDeclaredRunes, _)))
+      case PrototypePRT(StringP(_, name), parameters, returnType) => PrototypeST(name, parameters.map(translateTemplex(env, ruleState, userDeclaredRunes, _)), translateTemplex(env, ruleState, userDeclaredRunes, returnType))
+      case PackPRT(members) => PackST(members.map(translateTemplex(env, ruleState, userDeclaredRunes, _)))
+      case BorrowPRT(inner) => BorrowST(translateTemplex(env, ruleState, userDeclaredRunes, inner))
+      case RepeaterSequencePRT(mutability, size, element) => RepeaterSequenceST(translateTemplex(env, ruleState, userDeclaredRunes, mutability), translateTemplex(env, ruleState, userDeclaredRunes, size), translateTemplex(env, ruleState, userDeclaredRunes, element))
+      case ManualSequencePRT(elements) => ManualSequenceST(elements.map(translateTemplex(env, ruleState, userDeclaredRunes, _)))
     }
   }
 }

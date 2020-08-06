@@ -179,7 +179,7 @@ object Astronomer {
     }
   }
 
-  def lookupType(astrouts: AstroutsBox, env: Environment, name: INameS): ITemplataType = {
+  def lookupType(astrouts: AstroutsBox, env: Environment, range: RangeS, name: INameS): ITemplataType = {
     // When the scout comes across a lambda, it doesn't put the e.g. main:lam1:__Closure struct into
     // the environment or anything, it lets templar to do that (because templar knows the actual types).
     // However, this means that when the lambda function gets to the astronomer, the astronomer doesn't
@@ -224,7 +224,7 @@ object Astronomer {
     } else vfail()
   }
 
-  def lookupType(astrouts: AstroutsBox, env: Environment, name: CodeTypeNameS): ITemplataType = {
+  def lookupType(astrouts: AstroutsBox, env: Environment, range: RangeS, name: CodeTypeNameS): ITemplataType = {
     // When the scout comes across a lambda, it doesn't put the e.g. __Closure<main>:lam1 struct into
     // the environment or anything, it lets templar to do that (because templar knows the actual types).
     // However, this means that when the lambda function gets to the astronomer, the astronomer doesn't
@@ -233,7 +233,7 @@ object Astronomer {
     val (primitivesS, structsS, interfacesS) = env.lookupType(name)
 
     if (primitivesS.isEmpty && structsS.isEmpty && interfacesS.isEmpty) {
-      vfail("Nothing found with name " + name)
+      ErrorReporter.report(CouldntFindType(range, name.name))
     }
     if (primitivesS.size.signum + structsS.size.signum + interfacesS.size.signum > 1) {
       vfail("Name doesn't correspond to only one of primitive or struct or interface: " + name)
@@ -262,12 +262,12 @@ object Astronomer {
   def makeRuleTyper(): RuleTyperEvaluator[Environment, AstroutsBox] = {
     new RuleTyperEvaluator[Environment, AstroutsBox](
       new IRuleTyperEvaluatorDelegate[Environment, AstroutsBox] {
-        override def lookupType(state: AstroutsBox, env: Environment, name: CodeTypeNameS): (ITemplataType) = {
-          Astronomer.lookupType(state, env, name)
+        override def lookupType(state: AstroutsBox, env: Environment, range: RangeS, name: CodeTypeNameS): (ITemplataType) = {
+          Astronomer.lookupType(state, env, range, name)
         }
 
-        override def lookupType(state: AstroutsBox, env: Environment, name: INameS): ITemplataType = {
-          Astronomer.lookupType(state, env, name)
+        override def lookupType(state: AstroutsBox, env: Environment, range: RangeS, name: INameS): ITemplataType = {
+          Astronomer.lookupType(state, env, range, name)
         }
       })
   }
@@ -634,17 +634,23 @@ object Astronomer {
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 
-  def runAstronomer(programS: ProgramS): ProgramA = {
-    val suppliedFunctions = stlFunctions ++ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
-    val suppliedInterfaces = List(IFunction1.interface)
-    val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS) =
-      Astronomer.translateProgram(programS, primitives, suppliedFunctions, suppliedInterfaces)
-    val programA =
-      ProgramA(
-        originalStructs,
-        originalInterfaces,
-        originalImpls,
-        originalImplementedFunctionsS)
-    programA
+  def runAstronomer(programS: ProgramS): Either[ProgramA, ICompileErrorA] = {
+    try {
+      val suppliedFunctions = stlFunctions ++ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
+      val suppliedInterfaces = List(IFunction1.interface)
+      val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS) =
+        Astronomer.translateProgram(programS, primitives, suppliedFunctions, suppliedInterfaces)
+      val programA =
+        ProgramA(
+          originalStructs,
+          originalInterfaces,
+          originalImpls,
+          originalImplementedFunctionsS)
+      Left(programA)
+    } catch {
+      case CompileErrorExceptionA(err) => {
+        Right(err)
+      }
+    }
   }
 }

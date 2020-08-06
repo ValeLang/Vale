@@ -1,0 +1,34 @@
+fn getAdjacentLocations(
+  width i32,
+  height i32,
+  center Location,
+  consider_corners_adjacent bool)
+-> List<Location> {
+  result = List<Location>();
+  for adjacent in get_pattern_adjacent_locations(center, consider_corners_adjacent) {
+    if adjacent.x >= 0 and adjacent.y >= 0 and adjacent.x < width and adjacent.y < height {
+      result.push(adjacent);
+    }
+  }
+  return result;
+}
+
+fn getAdjacentWalkableLocations(
+  walkabilities &List<List<bool>>,
+  center Location,
+  consider_corners_adjacent bool)
+-> List<Location> {
+  result = List<Location>();
+  adjacents = 
+      getAdjacentLocations(
+          walkabilities.len() as i32,
+          walkabilities[0].len() as i32,
+          center,
+          consider_corners_adjacent);
+  for neighbor in adjacents {
+    if walkabilities[neighbor.x][neighbor.y] {
+      result.push(neighbor);
+    }
+  }
+  ret result;
+}

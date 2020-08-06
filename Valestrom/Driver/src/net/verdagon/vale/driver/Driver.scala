@@ -3,12 +3,12 @@ package net.verdagon.vale.driver
 import java.io.{BufferedWriter, File, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
 
-import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
+import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, ProgramA}
 import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Program0, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Vonifier}
 import net.verdagon.vale.scout.Scout
 import net.verdagon.vale.templar.Templar
 import net.verdagon.vale.vivem.Vivem
@@ -91,14 +91,22 @@ object Driver {
     val parsed =
       Parser.runParserForProgramAndCommentRanges(code) match {
         case ParseFailure(error) => {
-          println(new ParseErrorHumanizer(code).humanize(error))
+          println(ParseErrorHumanizer.humanize(code, error))
           System.exit(22)
           vfail()
         }
         case ParseSuccess(program0) => program0._1
       }
-    val scoutput = Scout.scoutProgram(parsed)
-    val astrouts = Astronomer.runAstronomer(scoutput)
+    val scoutput = Scout.scoutProgram(List(parsed))
+    val astrouts =
+      Astronomer.runAstronomer(scoutput) match {
+        case Right(error) => {
+          println(AstronomerErrorHumanizer.humanize(code, error))
+          System.exit(22)
+          vfail()
+        }
+        case Left(result) => result
+      }
     val temputs = Templar.evaluate(astrouts)
     val hinputs = Carpenter.translate(temputs)
     val programH = Hammer.translate(hinputs)
@@ -111,7 +119,7 @@ object Driver {
     programH
   }
 
-  def outputParseds(outputFile: String, program0: Program0): Unit = {
+  def outputParseds(outputFile: String, program0: FileP): Unit = {
     val program0J = Vonifier.vonifyProgram(program0)
     val json = new VonPrinter(JsonSyntax, 120).print(program0J)
     println("Wrote to file " + outputFile)
@@ -161,7 +169,7 @@ object Driver {
           val (parsed, commentRanges) =
             Parser.runParserForProgramAndCommentRanges(code) match {
               case ParseFailure(err) => {
-                println(new ParseErrorHumanizer(code).humanize(err))
+                println(ParseErrorHumanizer.humanize(code, err))
                 System.exit(22)
                 vfail()
               }

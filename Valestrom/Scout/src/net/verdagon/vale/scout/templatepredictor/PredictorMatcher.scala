@@ -18,8 +18,8 @@ object PredictorMatcher {
       case LocationST(_) =>
       case OwnershipST(_) =>
       case VariabilityST(_) =>
-      case NameST(_) =>
-      case AbsoluteNameST(_) =>
+      case NameST(_, _) =>
+      case AbsoluteNameST(_, _) =>
       case RuneST(rune) => conclusions.markRuneValueKnowable(rune)
       case CallST(template, args) => {
         matchAgainstTemplexSR(conclusions, template)

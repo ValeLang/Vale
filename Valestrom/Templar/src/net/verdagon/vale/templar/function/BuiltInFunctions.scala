@@ -45,7 +45,7 @@ object BuiltInFunctions {
       .addUnevaluatedFunction(
           FunctionA(
             if (mutability == Mutable) {
-              FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, s.CodeLocationS(1, 1))
+              FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, s.CodeLocationS(-16, 0))
             } else {
               ImmConcreteDestructorNameA()
             },
@@ -128,7 +128,7 @@ object BuiltInFunctions {
       .addUnevaluatedFunction(
         FunctionA(
           if (mutability == Mutable) {
-            FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(1, 1))
+            FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(-17, 0))
           } else {
             ImmInterfaceDestructorNameA()
           },
@@ -202,7 +202,7 @@ object BuiltInFunctions {
       .addUnevaluatedFunction(
         FunctionA(
           if (mutability == Mutable) {
-            FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(1, 1))
+            FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(-18, 0))
           } else {
             ImmInterfaceDestructorNameA()
           },
@@ -289,7 +289,7 @@ object BuiltInFunctions {
         .addUnevaluatedFunction(
           FunctionA(
             if (mutability == Mutable) {
-              FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS(1, 1))
+              FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS(-19, 0))
             } else {
               ImmDropNameA()
             },
@@ -344,7 +344,7 @@ object BuiltInFunctions {
     currentlyConstructingEnv
       .addUnevaluatedFunction(
         FunctionA(
-          FunctionNameA("len", s.CodeLocationS(1, 1)),
+          FunctionNameA("len", s.CodeLocationS(-20, 0)),
           true,
           TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
           Set(CodeRuneA("I")),
@@ -385,7 +385,7 @@ object BuiltInFunctions {
                     LocalLoadAE(CodeVarNameA("arr"), OwnP))))))))
       .addUnevaluatedFunction(
         FunctionA(
-          FunctionNameA("len", s.CodeLocationS(0, 1)),
+          FunctionNameA("len", s.CodeLocationS(-21, 0)),
           true,
           TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
           Set(CodeRuneA("I")),
@@ -429,7 +429,7 @@ object BuiltInFunctions {
     currentlyConstructingEnv
       .addUnevaluatedFunction(
         FunctionA(
-          FunctionNameA("panic", s.CodeLocationS(1, 1)),
+          FunctionNameA("panic", s.CodeLocationS(-22, 0)),
           true,
           FunctionTemplataType,
           Set(),
@@ -451,7 +451,7 @@ object BuiltInFunctions {
     currentlyConstructingEnv
       .addUnevaluatedFunction(
         FunctionA(
-          FunctionNameA("lock", s.CodeLocationS(1, 1)),
+          FunctionNameA("lock", s.CodeLocationS(-23, 0)),
           true,
           TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
           Set(),

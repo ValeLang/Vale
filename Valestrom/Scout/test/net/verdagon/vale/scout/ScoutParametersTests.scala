@@ -11,7 +11,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => Scout.scoutProgram(program0)
+      case ParseSuccess(program0) => Scout.scoutProgram(List(program0))
     }
   }
 
@@ -86,7 +86,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       case List(
         EqualsSR(
           TypedSR(pr,CoordTypeSR),
-          TemplexSR(NameST(CodeTypeNameS("int"))))) => {
+          TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
         vassert(pr == paramRune)
       }
     }
@@ -147,7 +147,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
         TypedSR(tr,CoordTypeSR),
         EqualsSR(
           TypedSR(ar,CoordTypeSR),
-          TemplexSR(NameST(CodeTypeNameS("int"))))) => {
+          TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
         vassert(tr == tRune)
         vassert(ar == aRune)
       }

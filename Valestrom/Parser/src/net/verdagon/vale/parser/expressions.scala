@@ -55,7 +55,7 @@ case class DotPE(
   isMapAccess: Boolean,
   member: LookupPE) extends IExpressionPE
 
-case class DotCallPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE
+case class IndexPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE
 
 case class FunctionCallPE(
   range: Range,

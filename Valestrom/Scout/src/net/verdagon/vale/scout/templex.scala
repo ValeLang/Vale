@@ -87,8 +87,8 @@ case class LocationST(location: LocationP) extends ITemplexS
 case class OwnershipST(ownership: OwnershipP) extends ITemplexS
 case class VariabilityST(variability: VariabilityP) extends ITemplexS
 case class BoolST(value: Boolean) extends ITemplexS
-case class AbsoluteNameST(name: INameS) extends ITemplexS
-case class NameST(name: CodeTypeNameS) extends ITemplexS
+case class AbsoluteNameST(range: RangeS, name: INameS) extends ITemplexS
+case class NameST(range: RangeS, name: CodeTypeNameS) extends ITemplexS
 case class RuneST(rune: IRuneS) extends ITemplexS
 case class OwnershippedST(ownership: OwnershipP, inner: ITemplexS) extends ITemplexS
 case class NullableST(inner: ITemplexS) extends ITemplexS
@@ -132,8 +132,8 @@ object TemplexSUtils {
       case OwnershipST(_) => List()
       case VariabilityST(_) => List()
       case BoolST(_) => List()
-      case NameST(_) => List()
-      case AbsoluteNameST(_) => List()
+      case NameST(_, _) => List()
+      case AbsoluteNameST(_, _) => List()
       case RuneST(rune) => List(rune)
       case OwnershippedST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
       case BorrowST(inner) => getDistinctOrderedRunesForTemplex(inner)

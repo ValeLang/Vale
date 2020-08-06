@@ -6,8 +6,8 @@ import net.verdagon.von.{IVonData, VonArray, VonBool, VonMember, VonObject, VonS
 import scala.util.parsing.input.Position
 
 object Vonifier {
-  def vonifyProgram(program: Program0): IVonData = {
-    val Program0(topLevelThings) = program
+  def vonifyProgram(program: FileP): IVonData = {
+    val FileP(topLevelThings) = program
 //    VonObject(
 //      "Program",
 //      None,

@@ -46,7 +46,7 @@ object Externs {
 
   def makeExtern(functionName: String, params: List[(String, String)], retType: String): FunctionA = {
     makeSimpleFunction(
-      FunctionNameA(functionName, CodeLocationS(1, 1)),
+      FunctionNameA(functionName, CodeLocationS(-6, 0)),
       params,
       retType,
       ExternBodyA)

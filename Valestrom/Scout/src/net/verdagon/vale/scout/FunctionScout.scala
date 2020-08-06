@@ -41,7 +41,7 @@ object FunctionScout {
 //  // Name of anonymous substructs. They're more identified by their CodeLocation though.
 //  val ANONYMOUS_SUBSTRUCT_NAME = "__AnonymousSubstruct"
 
-  def scoutTopLevelFunction(file: String, functionP: FunctionP): FunctionS = {
+  def scoutTopLevelFunction(file: Int, functionP: FunctionP): FunctionS = {
     val FunctionP(
       range,
       FunctionHeaderP(_,
@@ -53,7 +53,7 @@ object FunctionScout {
         maybeRetPT),
       maybeBody0
     ) = functionP
-    val codeLocation = Scout.evalPos(range.begin)
+    val codeLocation = Scout.evalPos(file, range.begin)
     val name = FunctionNameS(codeName, codeLocation)
 
     val userSpecifiedIdentifyingRunes =
@@ -68,14 +68,14 @@ object FunctionScout {
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val userDeclaredRunes = userSpecifiedIdentifyingRunes ++ userRunesFromRules
 
-    val functionEnv = FunctionEnvironment(name, None, userDeclaredRunes.toSet, paramsP.size)
+    val functionEnv = FunctionEnvironment(file, name, None, userDeclaredRunes.toSet, paramsP.size)
 
     val rate = RuleStateBox(RuleState(name, 0))
     val userRulesS =
       RuleScout.translateRulexes(
-        rate, functionEnv.allUserDeclaredRunes(), templateRulesP.toList.flatMap(_.rules))
+        functionEnv, rate, functionEnv.allUserDeclaredRunes(), templateRulesP.toList.flatMap(_.rules))
 
-    val myStackFrameWithoutParams = StackFrame(name, functionEnv, None, noDeclarations)
+    val myStackFrameWithoutParams = StackFrame(file, name, functionEnv, None, noDeclarations)
     val (implicitRulesFromPatterns, explicitParamsPatterns1) =
       PatternScout.scoutPatterns(myStackFrameWithoutParams, rate, paramsP.toList.flatMap(_.patterns))
 
@@ -84,11 +84,11 @@ object FunctionScout {
       explicitParams1
         .map(explicitParam1 => VariableDeclarations(PatternScout.getParameterCaptures(explicitParam1.pattern)))
         .foldLeft(noDeclarations)(_ ++ _)
-    val myStackFrame = StackFrame(name, functionEnv, None, noDeclarations)
+    val myStackFrame = StackFrame(file, name, functionEnv, None, noDeclarations)
 
     val (implicitRulesFromRet, maybeRetCoordRune) =
       PatternScout.translateMaybeTypeIntoMaybeRune(
-        userDeclaredRunes.toSet,
+        functionEnv,
         rate,
         maybeRetPT,
         CoordTypePR)
@@ -190,7 +190,7 @@ object FunctionScout {
       FunctionHeaderP(_,
         _, List(), userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT),
       Some(body0)) = lambdaFunction0;
-    val codeLocation = Scout.evalPos(range.begin)
+    val codeLocation = Scout.evalPos(parentStackFrame.file, range.begin)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
       userSpecifiedIdentifyingRuneNames
         .toList
@@ -205,12 +205,13 @@ object FunctionScout {
 
     val functionEnv =
       FunctionEnvironment(
+        parentStackFrame.file,
         lambdaName,
         Some(parentStackFrame.parentEnv),
         userSpecifiedIdentifyingRunes.toSet,
         paramsP.size)
 
-    val myStackFrameWithoutParams = StackFrame(lambdaName, functionEnv, None, noDeclarations)
+    val myStackFrameWithoutParams = StackFrame(parentStackFrame.file, lambdaName, functionEnv, None, noDeclarations)
 
     val (implicitRulesFromParams, explicitParamPatterns1) =
       PatternScout.scoutPatterns(
@@ -230,7 +231,7 @@ object FunctionScout {
         .map(pattern1 => VariableDeclarations(PatternScout.getParameterCaptures(pattern1)))
         .foldLeft(closureDeclaration)(_ ++ _)
 
-    val myStackFrame = StackFrame(lambdaName, parentStackFrame.parentEnv, Some(parentStackFrame), noDeclarations)
+    val myStackFrame = StackFrame(parentStackFrame.file, lambdaName, parentStackFrame.parentEnv, Some(parentStackFrame), noDeclarations)
 
     val (body1, variableUses, lambdaMagicParamNames) =
       scoutBody(
@@ -249,7 +250,7 @@ object FunctionScout {
       List(
         EqualsSR(
           TypedSR(closureParamTypeRune,CoordTypeSR),
-          TemplexSR(OwnershippedST(BorrowP,AbsoluteNameST(closureStructName)))))
+          TemplexSR(OwnershippedST(BorrowP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
     val closureParamS = ParameterS(AtomSP(CaptureS(closureParamName,FinalP),None,closureParamTypeRune,None))
 
     val (magicParamsRules, magicParams) =
@@ -276,7 +277,7 @@ object FunctionScout {
 
     val (implicitRulesFromReturn, maybeRetCoordRune) =
       PatternScout.translateMaybeTypeIntoMaybeRune(
-        parentStackFrame.parentEnv.allUserDeclaredRunes(),
+        parentStackFrame.parentEnv,
         rate,
         maybeRetPT,
         CoordTypePR)
@@ -457,7 +458,7 @@ object FunctionScout {
         paramsP,
         maybeReturnType),
       None) = functionP;
-    val codeLocation = Scout.evalPos(range.begin)
+    val codeLocation = Scout.evalPos(interfaceEnv.file, range.begin)
     val funcName = FunctionNameS(codeName, codeLocation)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
       userSpecifiedIdentifyingRuneNames
@@ -467,10 +468,10 @@ object FunctionScout {
 
     val rate = RuleStateBox(RuleState(funcName, 0))
 
-    val userRulesS = RuleScout.translateRulexes(rate, interfaceEnv.allUserDeclaredRunes(), templateRulesP.toList.flatMap(_.rules))
+    val userRulesS = RuleScout.translateRulexes(interfaceEnv, rate, interfaceEnv.allUserDeclaredRunes(), templateRulesP.toList.flatMap(_.rules))
 
-    val functionEnv = FunctionEnvironment(funcName, Some(interfaceEnv), userSpecifiedIdentifyingRunes.toSet, paramsP.size)
-    val myStackFrame = StackFrame(funcName, functionEnv, None, noDeclarations)
+    val functionEnv = FunctionEnvironment(interfaceEnv.file, funcName, Some(interfaceEnv), userSpecifiedIdentifyingRunes.toSet, paramsP.size)
+    val myStackFrame = StackFrame(interfaceEnv.file, funcName, functionEnv, None, noDeclarations)
     val (implicitRulesFromParams, patternsS) =
       PatternScout.scoutPatterns(myStackFrame, rate, paramsP.toList.flatMap(_.patterns))
 
@@ -478,7 +479,7 @@ object FunctionScout {
 
     val (implicitRulesFromRet, maybeReturnRune) =
       PatternScout.translateMaybeTypeIntoMaybeRune(
-        interfaceEnv.allUserDeclaredRunes(),
+        interfaceEnv,
         rate,
         maybeReturnType,
         CoordTypePR)

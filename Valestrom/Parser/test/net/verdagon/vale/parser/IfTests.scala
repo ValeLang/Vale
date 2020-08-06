@@ -6,13 +6,13 @@ import org.scalatest.{FunSuite, Matchers}
 
 
 class BiggerTests extends FunSuite with Matchers with Collector {
-  private def compileProgramWithComments(code: String): Program0 = {
+  private def compileProgramWithComments(code: String): FileP = {
     Parser.runParserForProgramAndCommentRanges(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(result) => result._1
     }
   }
-  private def compileProgram(code: String): Program0 = {
+  private def compileProgram(code: String): FileP = {
     // The strip is in here because things inside the parser don't expect whitespace before and after
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)

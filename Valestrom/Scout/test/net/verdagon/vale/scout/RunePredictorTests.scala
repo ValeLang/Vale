@@ -14,7 +14,7 @@ import scala.collection.immutable.List
 class RunePredictorTests extends FunSuite with Matchers {
   test("Predict doesnt crash for simple templex") {
     val conclusions =
-      PredictorEvaluator.solve(Set(), List(TemplexSR(NameST(CodeTypeNameS("int")))), List())
+      PredictorEvaluator.solve(Set(), List(TemplexSR(NameST(RangeS.zero, CodeTypeNameS("int")))), List())
     conclusions shouldEqual Conclusions(Set(), Map())
   }
 
@@ -23,7 +23,7 @@ class RunePredictorTests extends FunSuite with Matchers {
       PredictorEvaluator.solve(
         Set(),
         List(
-          EqualsSR(TemplexSR(RuneST(CodeRuneS("T"))), TemplexSR(NameST(CodeTypeNameS("int"))))),
+          EqualsSR(TemplexSR(RuneST(CodeRuneS("T"))), TemplexSR(NameST(RangeS.zero, CodeTypeNameS("int"))))),
         List())
     conclusions shouldEqual Conclusions(Set(CodeRuneS("T")), Map())
   }
@@ -36,7 +36,7 @@ class RunePredictorTests extends FunSuite with Matchers {
           TypedSR(CodeRuneS("Z"),CoordTypeSR),
           EqualsSR(
             TemplexSR(RuneST(CodeRuneS("Z"))),
-            TemplexSR(CallST(NameST(CodeTypeNameS("MyOption")),List(OwnershippedST(ShareP, NameST(CodeTypeNameS("int")))))))),
+            TemplexSR(CallST(NameST(RangeS.zero, CodeTypeNameS("MyOption")),List(OwnershippedST(ShareP, NameST(RangeS.zero, CodeTypeNameS("int")))))))),
         List())
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }
@@ -73,7 +73,7 @@ class RunePredictorTests extends FunSuite with Matchers {
           List(
             OrSR(List(TemplexSR(OwnershipST(OwnP)), TemplexSR(OwnershipST(ShareP)))),
             CallSR("passThroughIfConcrete",List(TemplexSR(RuneST(CodeRuneS("Z"))))))),
-        EqualsSR(TypedSR(CodeRuneS("V"),CoordTypeSR),CallSR("toRef",List(TemplexSR(NameST(CodeTypeNameS("void"))))))),
+        EqualsSR(TypedSR(CodeRuneS("V"),CoordTypeSR),CallSR("toRef",List(TemplexSR(NameST(RangeS.zero, CodeTypeNameS("void"))))))),
       List())
     conclusions shouldEqual
       Conclusions(
@@ -94,7 +94,7 @@ class RunePredictorTests extends FunSuite with Matchers {
         TypedSR(CodeRuneS("Z"),CoordTypeSR),
         EqualsSR(
           TemplexSR(RuneST(CodeRuneS("Z"))),
-          TemplexSR(RepeaterSequenceST(MutabilityST(MutableP), IntST(5),OwnershippedST(ShareP,NameST(CodeTypeNameS("int"))))))),
+          TemplexSR(RepeaterSequenceST(MutabilityST(MutableP), IntST(5),OwnershippedST(ShareP,NameST(RangeS.zero, CodeTypeNameS("int"))))))),
       List())
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }
@@ -112,7 +112,7 @@ class RunePredictorTests extends FunSuite with Matchers {
           List(
             OrSR(List(TemplexSR(OwnershipST(OwnP)), TemplexSR(OwnershipST(ShareP)))),
             CallSR("passThroughIfInterface",List(TemplexSR(RuneST(CodeRuneS("Z"))))))),
-        EqualsSR(TypedSR(CodeRuneS("V"),CoordTypeSR),CallSR("toRef",List(TemplexSR(NameST(CodeTypeNameS("void"))))))),
+        EqualsSR(TypedSR(CodeRuneS("V"),CoordTypeSR),CallSR("toRef",List(TemplexSR(NameST(RangeS.zero, CodeTypeNameS("void"))))))),
       List())
     conclusions shouldEqual
       Conclusions(
@@ -153,7 +153,7 @@ class RunePredictorTests extends FunSuite with Matchers {
               OwnershippedST(
                 BorrowP,
                 CallST(
-                  NameST(CodeTypeNameS("MyIFunction1")),
+                  NameST(RangeS.zero, CodeTypeNameS("MyIFunction1")),
                   List(
                     RuneST(CodeRuneS("P1")),
                     RuneST(CodeRuneS("R"))))))),

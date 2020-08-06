@@ -142,8 +142,8 @@ object PredictorEvaluator {
       case LocationST(_) => true
       case OwnershipST(_) => true
       case VariabilityST(_) => true
-      case NameST(_) => true
-      case AbsoluteNameST(_) => true
+      case NameST(_, _) => true
+      case AbsoluteNameST(_, _) => true
       case BorrowST(inner) => evaluateTemplex(conclusions, inner)
       case RuneST(rune) => {
         conclusions.knowableValueRunes.contains(rune)

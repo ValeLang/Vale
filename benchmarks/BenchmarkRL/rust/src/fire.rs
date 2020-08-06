@@ -12,15 +12,16 @@ impl ITileComponent for FireTileComponent {
     fn on_turn(
         &self,
         _rand: &mut LCGRand,
-        game: &Game,
+        _game: &Game,
         self_tile_loc: Location,
         self_tile_component_index: generational_arena::Index,
     ) -> GameMutator {
-        let maybe_unit_index =
-            game.get_current_level().unit_by_location.get(&self_tile_loc).map(|&x| x);
-
-        // Return a lambda that uses a &mut game to do the modification for us.
+        // We can't modify the &Game from here, so we return a lambda that takes
+        // a &mut Game to do the modification for us, kind of like a state monad.
         return Box::new(move |rand, inner_game| {
+            let maybe_unit_index =
+                inner_game.get_current_level().unit_by_location.get(&self_tile_loc).map(|&x| x);
+
             // Get a mutable reference to our containing component
             let component =
                 inner_game.get_tile_component_mut::<FireTileComponent>(

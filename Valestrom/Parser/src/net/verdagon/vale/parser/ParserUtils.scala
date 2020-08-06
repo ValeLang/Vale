@@ -3,13 +3,13 @@ package net.verdagon.vale.parser
 import net.verdagon.vale.parser.CombinatorParsers.opt
 
 import scala.util.parsing.combinator.RegexParsers
-import scala.util.parsing.input.{Position, Positional}
+import scala.util.parsing.input.{OffsetPosition, Position, Positional}
 
 trait ParserUtils extends RegexParsers {
 
   case class PosWrapper(u: Unit) extends Positional
-  private[parser] def pos: Parser[Pos] = {
-    positioned(success() ^^ PosWrapper) ^^ (x => Pos(x.pos.line, x.pos.column))
+  private[parser] def pos: Parser[Int] = {
+    positioned(success() ^^ PosWrapper) ^^ (x => x.pos.asInstanceOf[OffsetPosition].offset)
   }
 
   private[parser] def existsW(str: String): Parser[Option[UnitP]] = {

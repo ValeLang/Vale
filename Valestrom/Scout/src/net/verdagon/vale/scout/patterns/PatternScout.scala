@@ -2,7 +2,7 @@ package net.verdagon.vale.scout.patterns
 
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, _}
 import net.verdagon.vale.{vassert, vassertSome, vfail, vwat}
 
 import scala.collection.immutable.List
@@ -90,7 +90,7 @@ object PatternScout {
         case Some(OverrideP(typeP)) => {
           val (newRulesFromVirtuality, rune) =
             translateMaybeTypeIntoRune(
-              declaredRunes,
+              stackFrame.parentEnv,
               ruleState, Some(typeP), KindTypePR)
           (newRulesFromVirtuality, Some(OverrideSP(rune)))
         }
@@ -98,7 +98,7 @@ object PatternScout {
 
     val (newRulesFromType, coordRune) =
       translateMaybeTypeIntoRune(
-        declaredRunes, ruleState, maybeTypeP, CoordTypePR)
+        stackFrame.parentEnv, ruleState, maybeTypeP, CoordTypePR)
 
     val (newRulesFromDestructures, maybePatternsS) =
       maybeDestructureP match {
@@ -119,7 +119,7 @@ object PatternScout {
     val captureS =
       maybeCaptureP match {
         case None => {
-          val codeLocation = CodeLocationS(patternPP.pos.line, patternPP.pos.column)
+          val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
           CaptureS(UnnamedLocalNameS(codeLocation), FinalP)
         }
         case Some(CaptureP(_,LocalNameP(StringP(_, name)), variability)) => {
@@ -135,7 +135,7 @@ object PatternScout {
   }
 
   def translateMaybeTypeIntoRune(
-      declaredRunes: Set[IRuneS],
+      env: IEnvironment,
       rulesS: RuleStateBox,
       maybeTypeP: Option[ITemplexPT],
       runeType: ITypePR):
@@ -146,14 +146,14 @@ object PatternScout {
         val newRule = TypedSR(rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
       }
-      case Some(NameOrRunePT(StringP(_, nameOrRune))) if declaredRunes.contains(CodeRuneS(nameOrRune)) => {
+      case Some(NameOrRunePT(StringP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
         val rune = CodeRuneS(nameOrRune)
         val newRule = TypedSR(rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
       }
       case Some(nonRuneTemplexP) => {
         val (newRulesFromInner, templexS, maybeRune) =
-          translatePatternTemplex(declaredRunes, rulesS, nonRuneTemplexP)
+          translatePatternTemplex(env, rulesS, nonRuneTemplexP)
         maybeRune match {
           case Some(rune) => (newRulesFromInner, rune)
           case None => {
@@ -166,7 +166,7 @@ object PatternScout {
     }
   }
   def translateMaybeTypeIntoMaybeRune(
-    declaredRunes: Set[IRuneS],
+    env: IEnvironment,
     rulesS: RuleStateBox,
     maybeTypeP: Option[ITemplexPT],
     runeType: ITypePR):
@@ -176,7 +176,7 @@ object PatternScout {
     } else {
       val (newRules, rune) =
         translateMaybeTypeIntoRune(
-          declaredRunes, rulesS, maybeTypeP, runeType)
+          env, rulesS, maybeTypeP, runeType)
       (newRules, Some(rune))
     }
   }
@@ -194,15 +194,15 @@ object PatternScout {
 //  }
 
   private def translatePatternTemplexes(
-    declaredRunes: Set[IRuneS],
+    env: IEnvironment,
     rulesS: RuleStateBox,
     templexesP: List[ITemplexPT]):
   (List[IRulexSR], List[ITemplexS]) = {
     templexesP match {
       case Nil => (Nil, Nil)
       case headTemplexP :: tailTemplexesP => {
-        val (newRulesFromHead, headTemplexS, _) = translatePatternTemplex(declaredRunes, rulesS, headTemplexP)
-        val (newRulesFromTail, tailTemplexesS) = translatePatternTemplexes(declaredRunes, rulesS, tailTemplexesP)
+        val (newRulesFromHead, headTemplexS, _) = translatePatternTemplex(env, rulesS, headTemplexP)
+        val (newRulesFromTail, tailTemplexesS) = translatePatternTemplexes(env, rulesS, tailTemplexesP)
         (newRulesFromHead ++ newRulesFromTail, headTemplexS :: tailTemplexesS)
       }
     }
@@ -213,7 +213,7 @@ object PatternScout {
   // - A templex that represents the result
   // - If any, the rune associated with this exact result.
   def translatePatternTemplex(
-      declaredRunes: Set[IRuneS],
+      env: IEnvironment,
       rulesS: RuleStateBox,
       templexP: ITemplexPT):
   (List[IRulexSR], ITemplexS, Option[IRuneS]) = {
@@ -224,16 +224,16 @@ object PatternScout {
       }
       case IntPT(_,value) => (List(), IntST(value), None)
       case BoolPT(value) => (List(), BoolST(value), None)
-      case NameOrRunePT(StringP(_, nameOrRune)) => {
-        if (declaredRunes.contains(CodeRuneS(nameOrRune))) {
+      case NameOrRunePT(StringP(range, nameOrRune)) => {
+        if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
           (List(), RuneST(CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
         } else {
-          (List(), NameST(CodeTypeNameS(nameOrRune)), None)
+          (List(), NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune)), None)
         }
       }
       case MutabilityPT(mutability) => (List(), MutabilityST(mutability), None)
-      case OwnershippedPT(_,ownership @ (BorrowP|WeakP), NameOrRunePT(StringP(_, ownedCoordRuneName))) if declaredRunes.contains(CodeRuneS(ownedCoordRuneName)) => {
-        vassert(declaredRunes.contains(CodeRuneS(ownedCoordRuneName)))
+      case OwnershippedPT(_,ownership @ (BorrowP|WeakP), NameOrRunePT(StringP(_, ownedCoordRuneName))) if env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)) => {
+        vassert(env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)))
         val ownedCoordRune = CodeRuneS(ownedCoordRuneName)
         val kindRune = rulesS.newImplicitRune()
         val borrowedCoordRune = rulesS.newImplicitRune()
@@ -257,28 +257,28 @@ object PatternScout {
       }
       case OwnershippedPT(_,ownership, innerP) => {
         val (newRules, innerS, _) =
-          translatePatternTemplex(declaredRunes, rulesS, innerP)
+          translatePatternTemplex(env, rulesS, innerP)
         (newRules, OwnershippedST(ownership, innerS), None)
       }
       case CallPT(_,maybeTemplateP, argsMaybeTemplexesP) => {
-        val (newRulesFromTemplate, maybeTemplateS, _) = translatePatternTemplex(declaredRunes, rulesS, maybeTemplateP)
-        val (newRulesFromArgs, argsMaybeTemplexesS) = translatePatternTemplexes(declaredRunes, rulesS, argsMaybeTemplexesP)
+        val (newRulesFromTemplate, maybeTemplateS, _) = translatePatternTemplex(env, rulesS, maybeTemplateP)
+        val (newRulesFromArgs, argsMaybeTemplexesS) = translatePatternTemplexes(env, rulesS, argsMaybeTemplexesP)
         (newRulesFromTemplate ++ newRulesFromArgs, CallST(maybeTemplateS, argsMaybeTemplexesS), None)
       }
       case RepeaterSequencePT(_,mutabilityP, sizeP, elementP) => {
-        val (newRulesFromMutability, mutabilityS, _) = translatePatternTemplex(declaredRunes, rulesS, mutabilityP)
-        val (newRulesFromSize, sizeS, _) = translatePatternTemplex(declaredRunes, rulesS, sizeP)
-        val (newRulesFromElement, elementS, _) = translatePatternTemplex(declaredRunes, rulesS, elementP)
+        val (newRulesFromMutability, mutabilityS, _) = translatePatternTemplex(env, rulesS, mutabilityP)
+        val (newRulesFromSize, sizeS, _) = translatePatternTemplex(env, rulesS, sizeP)
+        val (newRulesFromElement, elementS, _) = translatePatternTemplex(env, rulesS, elementP)
         (newRulesFromMutability ++ newRulesFromSize ++ newRulesFromElement, RepeaterSequenceST(mutabilityS, sizeS, elementS), None)
       }
       case ManualSequencePT(_,maybeMembersP) => {
-        val (newRules, maybeMembersS) = translatePatternTemplexes(declaredRunes, rulesS, maybeMembersP)
+        val (newRules, maybeMembersS) = translatePatternTemplexes(env, rulesS, maybeMembersP)
         (newRules, ManualSequenceST(maybeMembersS), None)
       }
 //      case FunctionPT(mutableP, paramsP, retP) => {
 //        val (mutableS, _) = translatePatternMaybeTemplex(declaredRunes, rulesS, mutableP, None)
 //        val paramsS = translatePatternTemplexes(declaredRunes, rulesS, paramsP)
-//        val (retS, _) = translatePatternTemplex(declaredRunes, rulesS, retP)
+//        val (retS, _) = translatePatternTemplex(env, rulesS, retP)
 
 //        vfail("impl!")
 //        CallST(

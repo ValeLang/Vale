@@ -12,7 +12,13 @@ import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
 
-object FunctionTemplarMiddleLayer {
+class FunctionTemplarMiddleLayer(
+    opts: TemplarOptions,
+  templataTemplar: TemplataTemplar,
+  convertHelper: ConvertHelper,
+    structTemplar: StructTemplar,
+    delegate: IFunctionTemplarDelegate) {
+  val core = new FunctionTemplarCore(opts, templataTemplar, convertHelper, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -56,7 +62,7 @@ object FunctionTemplarMiddleLayer {
           case Some(KindTemplata(ir @ InterfaceRef2(_))) => (Some(Override2(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
-              StructTemplar.getInterfaceRef(temputs, it, List())
+              structTemplar.getInterfaceRef(temputs, it, List())
             (Some(Override2(ir)))
           }
         }
@@ -95,13 +101,13 @@ object FunctionTemplarMiddleLayer {
       temputs.declareFunctionSignature(signature, Some(namedEnv))
       val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
       val header =
-        FunctionTemplarCore.evaluateFunctionForHeader(namedEnv, temputs, params2)
+        core.evaluateFunctionForHeader(namedEnv, temputs, params2)
       if (header.toBanner != banner) {
         val bannerFromHeader = header.toBanner
         vfail("wut\n" + bannerFromHeader + "\n" + banner)
       }
 
-      VirtualTemplar.evaluateParent(namedEnv, temputs, header)
+      delegate.evaluateParent(namedEnv, temputs, header)
 
       (header.toBanner)
     }
@@ -143,7 +149,7 @@ object FunctionTemplarMiddleLayer {
         temputs.declareFunctionSignature(needleSignature, Some(namedEnv))
 
         val header =
-          FunctionTemplarCore.evaluateFunctionForHeader(
+          core.evaluateFunctionForHeader(
             namedEnv, temputs, params2)
         vassert(header.toSignature == needleSignature)
         (header)
@@ -163,7 +169,7 @@ object FunctionTemplarMiddleLayer {
 //
 //    val newEnv = makeNamedEnv(env, params2.map(_.tyype), Some(returnType))
 //
-//    FunctionTemplarCore.makeInterfaceFunction(newEnv, temputs, Some(env.function), params2, returnType)
+//    core.makeInterfaceFunction(newEnv, temputs, Some(env.function), params2, returnType)
 //  }
 
   // We would want only the prototype instead of the entire header if, for example,
@@ -202,10 +208,10 @@ object FunctionTemplarMiddleLayer {
         temputs.declareFunctionSignature(needleSignature, Some(namedEnv))
         val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
         val header =
-          FunctionTemplarCore.evaluateFunctionForHeader(
+          core.evaluateFunctionForHeader(
             namedEnv, temputs, params2)
 
-        VirtualTemplar.evaluateParent(namedEnv, temputs, header)
+        delegate.evaluateParent(namedEnv, temputs, header)
 
         vassert(header.toSignature == needleSignature)
         (header.toPrototype)
@@ -273,7 +279,7 @@ object FunctionTemplarMiddleLayer {
 //    temputs.declareFunctionSignature(signature2)
 //
 //    val header =
-//      FunctionTemplarCore.makeImplDestructor(
+//      core.makeImplDestructor(
 //        env, temputs, structDef2, interfaceRef2)
 //
 //

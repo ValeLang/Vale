@@ -262,8 +262,6 @@ case class CitizenTemplateName2(
   }
 }
 case class AnonymousSubstructName2(callables: List[Coord]) extends ICitizenName2 {
-  println("moo")
-
   def order = 27;
   def templateArgs: List[ITemplata] = callables.map(CoordTemplata)
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -294,9 +292,7 @@ case class LetImplicitRune2(codeLocation: CodeLocation2, name: Int) extends IRun
 case class MemberRune2(memberIndex: Int) extends IRune2 { def order = 9; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class MagicImplicitRune2(codeLocation: CodeLocation2) extends IRune2 { def order = 10; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class ReturnRune2() extends IRune2 { def order = 11; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
-case class SolverKindRune2(paramRune: IRune2) extends IRune2 { def order = 12; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ paramRune.all(func) }
-  println("gorp")
-}
+case class SolverKindRune2(paramRune: IRune2) extends IRune2 { def order = 12; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ paramRune.all(func) } }
 case class ExplicitTemplateArgRune2(index: Int) extends IRune2 { def order = 34; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 
 case class AnonymousSubstructParentInterfaceRune2() extends IRune2 {

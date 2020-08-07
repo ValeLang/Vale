@@ -1,10 +1,10 @@
 package net.verdagon.vale.scout.templatepredictor
 
-import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AtomSP, PatternSUtils}
 import net.verdagon.vale.scout.predictor.{Conclusions, ConclusionsBox}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{vfail, vimpl}
 
 import scala.collection.immutable.List
 

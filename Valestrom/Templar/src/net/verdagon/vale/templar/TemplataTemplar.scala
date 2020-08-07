@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.templata
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.citizen.{ImplTemplar, StructTemplar}
+import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox, TemplataLookupContext}
 import net.verdagon.vale.{vassertSome, vfail}
 import net.verdagon.vale.templar.types._
@@ -11,7 +11,36 @@ import net.verdagon.vale.templar.templata._
 
 import scala.collection.immutable.{List, Map, Set}
 
-object TemplataTemplar {
+trait ITemplataTemplarDelegate {
+
+  def getAncestorInterfaceDistance(
+    temputs: TemputsBox,
+    descendantCitizenRef: CitizenRef2,
+    ancestorInterfaceRef: InterfaceRef2):
+  Option[Int]
+
+  def getStructRef(
+    temputs: TemputsBox,
+    structTemplata: StructTemplata,
+    uncoercedTemplateArgs: List[ITemplata]):
+  StructRef2
+
+  def getInterfaceRef(
+    temputs: TemputsBox,
+    // We take the entire templata (which includes environment and parents) so we can incorporate
+    // their rules as needed
+    interfaceTemplata: InterfaceTemplata,
+    uncoercedTemplateArgs: List[ITemplata]):
+  InterfaceRef2
+
+  def makeArraySequenceType(
+    env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord):
+  KnownSizeArrayT2
+}
+
+class TemplataTemplar(
+    opts: TemplarOptions,
+    delegate: ITemplataTemplarDelegate) {
 
   def getTypeDistance(
     temputs: TemputsBox,
@@ -151,19 +180,19 @@ object TemplataTemplar {
           Templar.getMutability(temputs, kind)
         }
 
-        override def getPackKind(env: IEnvironment, temputs: TemputsBox, types2: List[Coord]):
-        (PackT2, Mutability) = {
-          PackTemplar.makePackType(env.globalEnv, temputs, types2)
-        }
+//        override def getPackKind(env: IEnvironment, temputs: TemputsBox, types2: List[Coord]):
+//        (PackT2, Mutability) = {
+//          PackTemplar.makePackType(env.globalEnv, temputs, types2)
+//        }
 
         override def evaluateInterfaceTemplata(state: TemputsBox, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
         (Kind) = {
-          StructTemplar.getInterfaceRef(state, templata, templateArgs)
+          delegate.getInterfaceRef(state, templata, templateArgs)
         }
 
         override def evaluateStructTemplata(state: TemputsBox, templata: StructTemplata, templateArgs: List[ITemplata]):
         (Kind) = {
-          StructTemplar.getStructRef(state, templata, templateArgs)
+          delegate.getStructRef(state, templata, templateArgs)
         }
 
         //val elementCoord =
@@ -184,11 +213,11 @@ object TemplataTemplar {
           descendantCitizenRef: CitizenRef2,
           ancestorInterfaceRef: InterfaceRef2):
         (Option[Int]) = {
-          ImplTemplar.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
+          delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
         override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-          ArrayTemplar.makeArraySequenceType(env, state, mutability, size, element)
+          delegate.makeArraySequenceType(env, state, mutability, size, element)
         }
 
         override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {

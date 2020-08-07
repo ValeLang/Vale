@@ -344,7 +344,7 @@ class InfererEvaluator[Env, State](
       inferences.possibilitiesByRune.keySet.headOption match {
         case Some(rune) => {
           val possibilities = inferences.pop(rune)
-          println("possibilities to try:\n" + possibilities.mkString("\n"))
+//          println("possibilities to try:\n" + possibilities.mkString("\n"))
 
           possibilities match {
             case List() => vwat()
@@ -367,16 +367,16 @@ class InfererEvaluator[Env, State](
                     // but a little nerve-wracking because if something in the language design
                     // causes compilation to be non-idempotent, an alternate universe can put something
                     // weird into the Temputs forever.
-                    println("trying universe for " + rune + ": " + possibility)
+//                    println("trying universe for " + rune + ": " + possibility)
                     val alternateUniverseInferencesBox = InferencesBox(inferences.inferences)
                     alternateUniverseInferencesBox.addConclusion(rune, possibility)
                     solveUntilSettled(env, state, rules, typeByRune, localRunes, alternateUniverseInferencesBox) match {
                       case (isf @ InferEvaluateConflict(_, _, _)) => {
-                        println("it didnt work! reason: " + isf)
+//                        println("it didnt work! reason: " + isf)
                         (isf :: previousFailures, None)
                       }
                       case (iss @ InferEvaluateSuccess(_, _)) => {
-                        println("it worked!")
+//                        println("it worked!")
                         inferences.inferences = alternateUniverseInferencesBox.inferences
                         (List(), Some(iss))
                       }

@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.FinalP
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.DestructorTemplar
+import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.{vassert, vcurious}
 
 import scala.collection.immutable.{List, Set}
@@ -20,7 +20,7 @@ trait IBlockTemplarDelegate {
 
 class BlockTemplar(
     opts: TemplarOptions,
-    destructorTemplar: DestructorTemplar,
+  dropHelper: DropHelper,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {
   // This is NOT USED FOR EVERY BLOCK!
@@ -153,7 +153,7 @@ class BlockTemplar(
             // This isn't the last expression
             perhapsUndestructedFirstExpr2.resultRegister.referend match {
               case Void2() => perhapsUndestructedFirstExpr2
-              case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
+              case _ => dropHelper.drop(fate, temputs, perhapsUndestructedFirstExpr2)
             }
           }
 

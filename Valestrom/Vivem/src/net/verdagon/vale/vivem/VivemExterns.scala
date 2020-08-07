@@ -232,6 +232,12 @@ object VivemExterns {
     memory.addAllocationForReturn(ShareH, YonderH, StrV(value.toString))
   }
 
+  def castBoolStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 1)
+    val BoolV(value) = memory.dereference(args(0))
+    memory.addAllocationForReturn(ShareH, YonderH, StrV(if (value) "true" else "false"))
+  }
+
   def castFloatInt(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))

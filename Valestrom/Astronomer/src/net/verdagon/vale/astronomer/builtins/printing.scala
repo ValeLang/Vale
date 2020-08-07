@@ -69,6 +69,37 @@ object Printing {
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
+  val printlnBoolName = FunctionNameA("println", CodeLocationS(-34, 0))
+  val printlnBool =
+    FunctionA(
+      printlnBoolName,
+      false,
+      FunctionTemplataType,
+      Set(CodeRuneA("R"), CodeRuneA("I")),
+      List(),
+      Set(CodeRuneA("R"), CodeRuneA("I")),
+      Map(
+        CodeRuneA("R") -> CoordTemplataType,
+        CodeRuneA("I") -> CoordTemplataType),
+      List(
+        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
+      Some(CodeRuneA("R")),
+      List(
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+      CodeBodyA(
+        BodyAE(
+          List(),
+          BlockAE(
+            List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+            List(FunctionCallAE(
+              FunctionLoadAE(GlobalFunctionFamilyNameA("println")),
+              List(
+                FunctionCallAE(
+                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
+                  List(
+                    LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
+
   val printIntName = FunctionNameA("print", CodeLocationS(-12, 0))
   val printInt =
     FunctionA(
@@ -87,6 +118,38 @@ object Printing {
       Some(CodeRuneA("R")),
       List(
         EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+      CodeBodyA(
+        BodyAE(
+          List(),
+          BlockAE(
+            List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+            List(FunctionCallAE(
+              FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
+              List(
+                FunctionCallAE(
+                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
+                  List(
+                    LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
+
+  val printBoolName = FunctionNameA("print", CodeLocationS(-12, 0))
+  val printBool =
+    FunctionA(
+      printBoolName,
+      false,
+      FunctionTemplataType,
+      Set(CodeRuneA("I"), CodeRuneA("R")),
+      List(),
+      Set(CodeRuneA("I"), CodeRuneA("R")),
+      Map(
+        CodeRuneA("I") -> CoordTemplataType,
+        CodeRuneA("R") -> CoordTemplataType,
+      ),
+      List(
+        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
+      Some(CodeRuneA("R")),
+      List(
+        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType))),
         EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(

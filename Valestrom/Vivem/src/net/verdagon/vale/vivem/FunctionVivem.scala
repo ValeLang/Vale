@@ -83,6 +83,7 @@ object FunctionVivem {
 //        VivemExterns.castFloatStr
       case """F("__and",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.and
       case """F("__mod",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.mod
+      case """F("__castBoolStr",[],[R(*,<,b)])""" => VivemExterns.castBoolStr
       case _ => vimpl(ref.fullName.toString)
     }
   }

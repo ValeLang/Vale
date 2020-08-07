@@ -14,4 +14,15 @@ class PrintTests extends FunSuite with Matchers {
 
     compile.evalForStdout(Vector()) shouldEqual "6\n"
   }
+
+  test("Println'ing a bool") {
+    val compile = new Compilation(
+      """
+        |fn main() {
+        |  println(true);
+        |}
+      """.stripMargin)
+
+    compile.evalForStdout(Vector()) shouldEqual "true\n"
+  }
 }

@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.{FinalP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
-import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
+import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionResult, ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, FunctionTemplarCore, FunctionTemplarMiddleLayer, FunctionTemplarOrdinaryOrTemplatedLayer}
@@ -13,7 +13,10 @@ import net.verdagon.vale._
 
 import scala.collection.immutable.List
 
-object StructTemplarCore {
+class StructTemplarCore(
+    opts: TemplarOptions,
+    ancestorHelper: AncestorHelper,
+    delegate: IStructTemplarDelegate) {
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): StructRef2 = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
     val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, Map())
@@ -75,19 +78,19 @@ object StructTemplarCore {
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, structDef2.getRef)
+      delegate.makeImmConcreteDestructor(temputs, structInnerEnv, structDef2.getRef)
     }
 
 
     val implementedInterfaceRefs2 =
-      ImplTemplar.getParentInterfaces(temputs, structDef2.getRef);
+      ancestorHelper.getParentInterfaces(temputs, structDef2.getRef);
 
     implementedInterfaceRefs2.foreach({
       case (implementedInterfaceRefT) => {
         structDef2.mutability match {
           case Mutable => {
             val sefResult =
-              OverloadTemplar.scoutExpectedFunctionForPrototype(
+              delegate.scoutExpectedFunctionForPrototype(
                 structInnerEnv,
                 temputs,
                 GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
@@ -104,14 +107,14 @@ object StructTemplarCore {
           }
           case Immutable => {
             // If it's immutable, make sure there's a zero-arg destructor.
-            DestructorTemplar.getImmInterfaceDestructorOverride(temputs, structInnerEnv, structDef2.getRef, implementedInterfaceRefT)
+            delegate.getImmInterfaceDestructorOverride(temputs, structInnerEnv, structDef2.getRef, implementedInterfaceRefT)
           }
         }
       }
     })
 
     val ancestorInterfaces =
-      ImplTemplar.getAncestorInterfaces(temputs, temporaryStructRef)
+      ancestorHelper.getAncestorInterfaces(temputs, temporaryStructRef)
 
     ancestorInterfaces.foreach({
       case (ancestorInterface) => {
@@ -168,7 +171,7 @@ object StructTemplarCore {
 
     val internalMethods2 =
       interfaceA.internalMethods.map(internalMethod => {
-        FunctionTemplar.evaluateOrdinaryFunctionFromNonCallForHeader(
+        delegate.evaluateOrdinaryFunctionFromNonCallForHeader(
           temputs,
           FunctionTemplata(
             interfaceInnerEnv,
@@ -194,10 +197,10 @@ object StructTemplarCore {
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      DestructorTemplar.getImmInterfaceDestructor(temputs, interfaceInnerEnv, interfaceDef2.getRef)
+      delegate.getImmInterfaceDestructor(temputs, interfaceInnerEnv, interfaceDef2.getRef)
     }
 
-    val _ = ImplTemplar.getParentInterfaces(temputs, temporaryInferfaceRef)
+    val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
 
     //
     //      interface1.internalMethods.foldLeft(temputs)({
@@ -283,7 +286,7 @@ object StructTemplarCore {
     members: List[StructMember2]):
   (StructRef2, Mutability, FunctionTemplata) = {
     val mutability =
-      getCompoundTypeMutability(temputs, members.map(_.tyype.reference))
+      StructTemplar.getCompoundTypeMutability(members.map(_.tyype.reference))
 
     val nearName = LambdaCitizenName2(NameTranslator.translateCodeLocation(name.codeLocation))
     val fullName = containingFunctionEnv.fullName.addStep(nearName)
@@ -318,7 +321,7 @@ object StructTemplarCore {
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      DestructorTemplar.getImmConcreteDestructor(temputs, structEnv, closureStructDefinition.getRef)
+      delegate.getImmConcreteDestructor(temputs, structEnv, closureStructDefinition.getRef)
     }
 
     val closuredVarsStructRef = closureStructDefinition.getRef;
@@ -337,7 +340,7 @@ object StructTemplarCore {
       case Some(structRef2) => return (structRef2, temputs.lookupStruct(structRef2).mutability)
       case None =>
     }
-    val packMutability = getCompoundTypeMutability(temputs, memberCoords)
+    val packMutability = StructTemplar.getCompoundTypeMutability(memberCoords)
     val members =
       memberCoords.zipWithIndex.map({
         case (pointerType, index) => StructMember2(CodeVarName2(index.toString), Final, ReferenceMemberType2(pointerType))
@@ -361,19 +364,12 @@ object StructTemplarCore {
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (packMutability == Immutable) {
-      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, newStructDef.getRef)
+      delegate.getImmConcreteDestructor(temputs, structInnerEnv, newStructDef.getRef)
     }
 
     temputs.declarePack(memberCoords, newStructDef.getRef);
 
     (newStructDef.getRef, packMutability)
-  }
-
-  def getCompoundTypeMutability(temputs: TemputsBox, memberTypes2: List[Coord])
-  : Mutability = {
-    val membersOwnerships = memberTypes2.map(_.ownership)
-    val allMembersImmutable = membersOwnerships.isEmpty || membersOwnerships.toSet == Set(Share)
-    if (allMembersImmutable) Immutable else Mutable
   }
 
   // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
@@ -399,7 +395,7 @@ object StructTemplarCore {
 
     // Dont want any mutables in our immutable interface's substruct
     if (mutability == Immutable) {
-      if (getCompoundTypeMutability(temputs, callables) == Mutable) {
+      if (StructTemplar.getCompoundTypeMutability(callables) == Mutable) {
         vfail()
       }
     }
@@ -477,7 +473,7 @@ object StructTemplarCore {
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
+      delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
     }
 
     forwarderFunctionHeaders.zip(callables).zipWithIndex.foreach({
@@ -498,7 +494,7 @@ object StructTemplarCore {
         // maybe imms have drops?
 
         val lambdaFunctionPrototype =
-          OverloadTemplar.scoutExpectedFunctionForPrototype(
+          delegate.scoutExpectedFunctionForPrototype(
             interfaceEnv, // Shouldnt matter here, because the callables themselves should have a __call
             temputs,
             GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
@@ -588,7 +584,7 @@ object StructTemplarCore {
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      DestructorTemplar.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
+      delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
     }
 
     val forwarderFunction =

@@ -71,7 +71,11 @@ object RangeS {
 }
 
 case class CodeLocationS(file: Int, offset: Int)
-case class RangeS(begin: CodeLocationS, end: CodeLocationS)
+case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
+  vassert(begin.file == end.file)
+  vassert(begin.offset <= end.offset)
+  def file: Int = begin.file
+}
 
 case class StructS(
     name: TopLevelCitizenDeclarationNameS,

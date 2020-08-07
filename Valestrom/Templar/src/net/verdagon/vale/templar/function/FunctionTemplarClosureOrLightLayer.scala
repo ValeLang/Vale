@@ -5,6 +5,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.CodeBody1
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.IEvaluateFunctionResult
 import net.verdagon.vale.{vassert, vfail, vimpl}
@@ -17,7 +18,14 @@ import scala.collection.immutable.{List, Map}
 // - Incorporate any template arguments into the environment
 // There's a layer to take care of each of these things.
 // This file is the outer layer, which spawns a local environment for the function.
-object FunctionTemplarClosureOrLightLayer {
+class FunctionTemplarClosureOrLightLayer(
+    opts: TemplarOptions,
+  templataTemplar: TemplataTemplar,
+    inferTemplar: InferTemplar,
+  convertHelper: ConvertHelper,
+    structTemplar: StructTemplar,
+    delegate: IFunctionTemplarDelegate) {
+  val ordinaryOrTemplatedLayer = new FunctionTemplarOrdinaryOrTemplatedLayer(opts, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -30,7 +38,7 @@ object FunctionTemplarClosureOrLightLayer {
     vassert(!function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(outerEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.predictOrdinaryFunctionBanner(
+    ordinaryOrTemplatedLayer.predictOrdinaryFunctionBanner(
       newEnv, temputs)
   }
 
@@ -44,7 +52,7 @@ object FunctionTemplarClosureOrLightLayer {
     vassert(!function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(outerEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForBanner(
+    ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForBanner(
       newEnv, temputs)
   }
 
@@ -62,7 +70,7 @@ object FunctionTemplarClosureOrLightLayer {
     val name = makeNameWithClosureds(outerEnv, function.name)
     val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
 
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
+    ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
       newEnv, temputs, alreadySpecifiedTemplateArgs, argTypes2)
   }
 
@@ -79,7 +87,7 @@ object FunctionTemplarClosureOrLightLayer {
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
     val name = makeNameWithClosureds(outerEnv, function.name)
     val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForPrototype(
+    ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForPrototype(
       newEnv, temputs, alreadySpecifiedTemplateArgs, argTypes2)
   }
 
@@ -94,7 +102,7 @@ object FunctionTemplarClosureOrLightLayer {
     checkNotClosure(function)
 
     val newEnv = makeEnvWithoutClosureStuff(ourEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateTemplatedFunctionFromNonCallForHeader(
+    ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromNonCallForHeader(
       newEnv, temputs)
   }
 
@@ -109,7 +117,7 @@ object FunctionTemplarClosureOrLightLayer {
     vassert(function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(ourEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForPrototype(
+    ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForPrototype(
       newEnv, temputs, explicitTemplateArgs, args)
   }
 
@@ -121,7 +129,7 @@ object FunctionTemplarClosureOrLightLayer {
     vassert(!function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(outerEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForHeader(
+    ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForHeader(
       newEnv, temputs)
   }
 
@@ -138,7 +146,7 @@ object FunctionTemplarClosureOrLightLayer {
 
     val name = makeNameWithClosureds(outerEnv, function.name)
     val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), Map())
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForPrototype(
+    ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForPrototype(
       newEnv, temputs)
   }
 
@@ -153,7 +161,7 @@ object FunctionTemplarClosureOrLightLayer {
     val name = makeNameWithClosureds(outerEnv, function.name)
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
     val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForBanner(
+    ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForBanner(
       newEnv, temputs)
   }
 
@@ -171,7 +179,7 @@ object FunctionTemplarClosureOrLightLayer {
     val name = makeNameWithClosureds(outerEnv, function.name)
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
     val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForHeader(
+    ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForHeader(
       newEnv, temputs)
   }
 
@@ -189,7 +197,7 @@ object FunctionTemplarClosureOrLightLayer {
     vassert(function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(functionOuterEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateTemplatedLightBannerFromCall(
+    ordinaryOrTemplatedLayer.evaluateTemplatedLightBannerFromCall(
         newEnv, temputs, explicitTemplateArgs, args)
   }
 
@@ -203,7 +211,7 @@ object FunctionTemplarClosureOrLightLayer {
     vassert(function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(outerEnv, function)
-    FunctionTemplarOrdinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
+    ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
         newEnv, temputs, alreadySpecifiedTemplateArgs, paramFilters)
   }
 
@@ -217,7 +225,7 @@ object FunctionTemplarClosureOrLightLayer {
 //    vassert(!function.isTemplate)
 //
 //    val newEnv = makeEnvWithoutClosureStuff(env1, function)
-//    FunctionTemplarOrdinaryOrTemplatedLayer.scanOrdinaryInterfaceMember(
+//    ordinaryOrTemplatedLayer.scanOrdinaryInterfaceMember(
 //      newEnv, temputs, interfaceExplicitTemplateArgs)
 //  }
 

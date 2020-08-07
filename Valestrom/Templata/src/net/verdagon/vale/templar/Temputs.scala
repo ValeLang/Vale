@@ -28,8 +28,6 @@ case class Impl2(
 }
 
 case class Temputs(
-    functionGeneratorByName: Map[String, IFunctionGenerator],
-
     // Signatures that have already started to be compiled.
     declaredSignatures: Set[Signature2],
 
@@ -87,7 +85,6 @@ case class Temputs(
       vfail("wat")
     }
     Temputs(
-      functionGeneratorByName,
       declaredSignatures + signature,
       returnTypesBySignature,
       functions,
@@ -115,7 +112,6 @@ case class Temputs(
     }
 
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature + (signature -> returnType2),
       functions,
@@ -141,7 +137,6 @@ case class Temputs(
     }
 
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       function :: functions,
@@ -166,7 +161,6 @@ case class Temputs(
   ): Temputs = {
     vassert(!declaredStructs.contains(structRef))
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -191,7 +185,6 @@ case class Temputs(
     vassert(declaredStructs.contains(structRef))
     vassert(!mutabilitiesByCitizenRef.contains(structRef))
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -216,7 +209,6 @@ case class Temputs(
     vassert(declaredStructs.contains(structRef))
     vassert(!envByStructRef.contains(structRef))
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -238,7 +230,6 @@ case class Temputs(
     vassert(!declaredInterfaces.contains(interfaceRef))
     val newTemputs =
       Temputs(
-        functionGeneratorByName,
         declaredSignatures,
         returnTypesBySignature,
         functions,
@@ -265,7 +256,6 @@ case class Temputs(
     vassert(!mutabilitiesByCitizenRef.contains(interfaceRef))
     val newTemputs =
       Temputs(
-        functionGeneratorByName,
         declaredSignatures,
         returnTypesBySignature,
         functions,
@@ -292,7 +282,6 @@ case class Temputs(
     vassert(!envByInterfaceRef.contains(interfaceRef))
     val newTemputs =
       Temputs(
-        functionGeneratorByName,
         declaredSignatures,
         returnTypesBySignature,
         functions,
@@ -315,7 +304,6 @@ case class Temputs(
   Temputs = {
     val newTemputs =
       Temputs(
-        functionGeneratorByName,
         declaredSignatures,
         returnTypesBySignature,
         functions,
@@ -343,7 +331,6 @@ case class Temputs(
     vassert(!structDefsByRef.contains(structDef.getRef))
 
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -366,7 +353,6 @@ case class Temputs(
     vassert(!interfaceDefsByRef.contains(interfaceDef.getRef))
 
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -386,7 +372,6 @@ case class Temputs(
 
   def addArraySequence(size: Int, array2: KnownSizeArrayT2): Temputs = {
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -406,7 +391,6 @@ case class Temputs(
 
   def addUnknownSizeArray(array2: UnknownSizeArrayT2): Temputs = {
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -426,7 +410,6 @@ case class Temputs(
 
   def addImpl(structRef2: StructRef2, interfaceRef2: InterfaceRef2): Temputs = {
     Temputs(
-      functionGeneratorByName,
       declaredSignatures,
       returnTypesBySignature,
       functions,
@@ -588,7 +571,6 @@ case class Temputs(
 }
 
 case class TemputsBox(var temputs: Temputs) {
-  def functionGeneratorByName: Map[String, IFunctionGenerator] = temputs.functionGeneratorByName
   def declaredSignatures: Set[Signature2] = temputs.declaredSignatures
   def returnTypesBySignature: Map[Signature2, Coord] = temputs.returnTypesBySignature
   def functions: List[Function2] = temputs.functions
@@ -851,15 +833,4 @@ case class Function2(
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ header.all(func) ++ variables.flatMap(_.all(func)) ++ body.all(func)
   }
-}
-
-trait IFunctionGenerator {
-  def generate(
-    env: FunctionEnvironment,
-    temputs: TemputsBox,
-    // We might be able to move these all into the function environment... maybe....
-    originFunction: Option[FunctionA],
-    paramCoords: List[Parameter2],
-    maybeRetCoord: Option[Coord]):
-  (FunctionHeader2)
 }

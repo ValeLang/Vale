@@ -96,7 +96,6 @@ case class RepeaterBlockAE(expression: IExpressionAE) extends IExpressionAE
 // Results in a pack, represents the differences between the expressions
 case class RepeaterBlockIteratorAE(expression: IExpressionAE) extends IExpressionAE
 
-case class PackAE(elements: List[IExpressionAE]) extends IExpressionAE
 case class VoidAE() extends IExpressionAE {}
 
 case class SequenceEAE(elements: List[IExpressionAE]) extends IExpressionAE
@@ -139,9 +138,9 @@ case class ArrayLengthAE(arrayExpr: IExpressionAE) extends IExpressionAE
 case class LocalVariableA(
   varName: IVarNameA,
   variability: VariabilityP,
-  selfBorrowed: IVariableUseCertainty,
-  selfMoved: IVariableUseCertainty,
-  selfMutated: IVariableUseCertainty,
-  childBorrowed: IVariableUseCertainty,
-  childMoved: IVariableUseCertainty,
-  childMutated: IVariableUseCertainty)
+  selfBorrowed: IVariableUseCertainty, // unused
+  selfMoved: IVariableUseCertainty, // used to know whether to box, if we have branching.
+  selfMutated: IVariableUseCertainty, // unused
+  childBorrowed: IVariableUseCertainty, // unused
+  childMoved: IVariableUseCertainty, // used to know whether to box
+  childMutated: IVariableUseCertainty) // used to know whether to box

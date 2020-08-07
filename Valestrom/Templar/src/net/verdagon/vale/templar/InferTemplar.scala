@@ -3,9 +3,9 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.ITemplexS
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
-import net.verdagon.vale.templar.citizen.{ImplTemplar, StructTemplar}
+import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, ILookupContext, TemplataLookupContext}
-import net.verdagon.vale.templar.infer._
+import net.verdagon.vale.templar.infer.{IInfererDelegate, _}
 import net.verdagon.vale.templar.infer.infer.{IInferSolveResult, InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -13,7 +13,9 @@ import net.verdagon.vale.{vassertSome, vfail, vimpl}
 
 import scala.collection.immutable.List
 
-object InferTemplar {
+class InferTemplar(
+    opts: TemplarOptions,
+    delegate: IInfererDelegate[IEnvironment, TemputsBox]) {
   private def solve(
     env: IEnvironment,
     state: TemputsBox,
@@ -26,7 +28,7 @@ object InferTemplar {
     checkAllRunesPresent: Boolean,
   ): (IInferSolveResult) = {
     Inferer.solve[IEnvironment, TemputsBox](
-      makeEvaluateDelegate(),
+      delegate,
       env,
       state,
       translateRules(rules),
@@ -36,125 +38,6 @@ object InferTemplar {
       paramAtoms,
       maybeParamInputs,
       checkAllRunesPresent)
-  }
-
-  private def makeEvaluateDelegate(): IInfererDelegate[IEnvironment, TemputsBox] = {
-    new IInfererDelegate[IEnvironment, TemputsBox] {
-      override def evaluateType(
-        env: IEnvironment,
-        temputs: TemputsBox,
-        type1: ITemplexA
-      ): (ITemplata) = {
-        TemplataTemplar.evaluateTemplex(env, temputs, type1)
-      }
-
-      override def lookupMemberTypes(state: TemputsBox, kind: Kind, expectedNumMembers: Int): Option[List[Coord]] = {
-        val underlyingStructRef2 =
-          kind match {
-            case sr @ StructRef2(_) => sr
-            case TupleT2(_, underlyingStruct) => underlyingStruct
-            case PackT2(_, underlyingStruct) => underlyingStruct
-            case _ => return None
-          }
-        val structDef2 = state.lookupStruct(underlyingStructRef2)
-        val structMemberTypes = structDef2.members.map(_.tyype.reference)
-        Some(structMemberTypes)
-      }
-
-      override def getMutability(state: TemputsBox, kind: Kind): Mutability = {
-        Templar.getMutability(state, kind)
-      }
-
-      override def lookupTemplata(env: IEnvironment, name: IName2): ITemplata = {
-        // We can only ever lookup types by name in expression context,
-        // otherwise we have no idea what List<Str> means; it could
-        // mean a list of strings or a list of the Str(:Int)Str function.
-        env.getNearestTemplataWithAbsoluteName2(name, Set[ILookupContext](TemplataLookupContext)) match {
-          case None => vfail("Couldn't find anything with name: " + name)
-          case Some(x) => x
-        }
-      }
-
-      override def lookupTemplataImprecise(env: IEnvironment, name: IImpreciseNameStepA): ITemplata = {
-        env.getNearestTemplataWithName(name, Set[ILookupContext](TemplataLookupContext)) match {
-          case None => vfail("Couldn't find anything with name: " + name)
-          case Some(x) => x
-        }
-      }
-
-      override def getPackKind(env: IEnvironment, state: TemputsBox, members: List[Coord]): (PackT2, Mutability) = {
-        PackTemplar.makePackType(env.globalEnv, state, members)
-      }
-
-      override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-        ArrayTemplar.makeArraySequenceType(env, state, mutability, size, element)
-      }
-
-      override def evaluateInterfaceTemplata(
-        state: TemputsBox,
-        templata: InterfaceTemplata,
-        templateArgs: List[ITemplata]):
-      (Kind) = {
-        StructTemplar.getInterfaceRef(state, templata, templateArgs)
-      }
-
-      override def evaluateStructTemplata(
-        state: TemputsBox,
-        templata: StructTemplata,
-        templateArgs: List[ITemplata]):
-      (Kind) = {
-        StructTemplar.getStructRef(state, templata, templateArgs)
-      }
-
-      override def getAncestorInterfaceDistance(temputs: TemputsBox, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2):
-      (Option[Int]) = {
-        ImplTemplar.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
-      }
-
-      override def getAncestorInterfaces(temputs: TemputsBox, descendantCitizenRef: CitizenRef2): (Set[InterfaceRef2]) = {
-        ImplTemplar.getAncestorInterfaces(temputs, descendantCitizenRef)
-      }
-
-      override def getMemberCoords(state: TemputsBox, structRef: StructRef2): List[Coord] = {
-        StructTemplar.getMemberCoords(state, structRef)
-      }
-
-      override def citizenIsFromTemplate(state: TemputsBox, citizen: CitizenRef2, template: ITemplata): (Boolean) = {
-        StructTemplar.citizenIsFromTemplate(state, citizen, template)
-      }
-
-
-      override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {
-        it.originInterface.tyype
-      }
-
-      override def getStructTemplataType(st: StructTemplata): ITemplataType = {
-        st.originStruct.tyype
-      }
-
-      override def structIsClosure(state: TemputsBox, structRef: StructRef2): Boolean = {
-        val structDef = state.structDefsByRef(structRef)
-        structDef.isClosure
-      }
-
-      // A simple interface is one that has only one method
-      def getSimpleInterfaceMethod(state: TemputsBox, interfaceRef: InterfaceRef2): Prototype2 = {
-        val interfaceDef2 = state.lookupInterface(interfaceRef)
-        if (interfaceDef2.internalMethods.size != 1) {
-          vfail("Interface is not simple!")
-        }
-        interfaceDef2.internalMethods.head.toPrototype
-      }
-
-      override def resolveExactSignature(env: IEnvironment, state: TemputsBox, name: String, coords: List[Coord]): Prototype2 = {
-        OverloadTemplar.scoutExpectedFunctionForPrototype(env, state, GlobalFunctionFamilyNameA(name), List(), coords.map(ParamFilter(_, None)), List(), true) match {
-          case sef @ ScoutExpectedFunctionFailure(humanName, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
-            vfail(sef.toString)
-          }
-          case ScoutExpectedFunctionSuccess(prototype) => prototype
-        }
-      }
-    }
   }
 
   // No incoming types needed (like manually specified template args, or argument coords from a call).

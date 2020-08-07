@@ -90,7 +90,6 @@ object ExpressionAstronomer {
         val exprA = translateExpression(env, astrouts, exprS)
         (RepeaterBlockIteratorAE(exprA))
       }
-      case packS @ PackSE(_) => translatePack(astrouts, env, packS)
       case VoidSE() => VoidAE()
       case SequenceESE(elementsS) => {
         val elementsA = elementsS.map(translateExpression(env, astrouts, _))
@@ -144,11 +143,5 @@ object ExpressionAstronomer {
       }
       case UnletSE(name) => UnletAE(name)
     }
-  }
-
-  private def translatePack(astrouts: AstroutsBox, env: Environment, packS: PackSE):
-  PackAE = {
-    val elementsA = packS.elements.map(translateExpression(env, astrouts, _))
-    PackAE(elementsA)
   }
 }

@@ -41,7 +41,7 @@ trait IInfererDelegate[Env, State] {
     templateArgs: List[ITemplata]):
   (Kind)
 
-  def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability)
+//  def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability)
 
   def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2)
 
@@ -109,9 +109,9 @@ object Inferer {
         delegate.getMutability(state, kind)
       }
 
-      override def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability) = {
-        delegate.getPackKind(env, state, members)
-      }
+//      override def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability) = {
+//        delegate.getPackKind(env, state, members)
+//      }
 
       override def lookupTemplata(env: Env, name: IName2): ITemplata = {
         delegate.lookupTemplata(env, name)

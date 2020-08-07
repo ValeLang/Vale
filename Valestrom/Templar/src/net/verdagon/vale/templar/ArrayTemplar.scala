@@ -9,7 +9,15 @@ import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 
-object ArrayTemplar {
+trait IArrayTemplarDelegate {
+  def getArrayDestructor(
+    env: IEnvironment,
+    temputs: TemputsBox,
+    type2: Coord):
+  (Prototype2)
+}
+
+class ArrayTemplar(opts: TemplarOptions, delegate: IArrayTemplarDelegate) {
 
   def makeArraySequenceType(env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord):
   (KnownSizeArrayT2) = {
@@ -27,7 +35,7 @@ object ArrayTemplar {
             if (tupleMutability == Mutable) Own else Share,
             arraySeqType)
         val _ =
-          DestructorTemplar.getArrayDestructor(
+          delegate.getArrayDestructor(
             env,
             temputs,
             arraySequenceRefType2)
@@ -49,7 +57,7 @@ object ArrayTemplar {
             if (arrayMutability == Mutable) Own else Share,
             runtimeArrayType)
         val _ =
-          DestructorTemplar.getArrayDestructor(
+          delegate.getArrayDestructor(
             env, temputs, runtimeArrayRefType2)
         (runtimeArrayType)
       }

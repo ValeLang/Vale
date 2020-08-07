@@ -65,7 +65,7 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
     temputsCache match {
       case Some(temputs) => temputs
       case None => {
-        val temputs = Templar.evaluate(getAstrouts())
+        val temputs = new Templar(println).evaluate(getAstrouts())
         temputsCache = Some(temputs)
         temputs
       }
@@ -76,7 +76,7 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
     hinputsCache match {
       case Some(hinputs) => hinputs
       case None => {
-        val hinputs = Carpenter.translate(getTemputs())
+        val hinputs = Carpenter.translate((_) => {}, getTemputs())
         hinputsCache = Some(hinputs)
         hinputs
       }

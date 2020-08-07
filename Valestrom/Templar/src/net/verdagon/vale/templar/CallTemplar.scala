@@ -5,7 +5,6 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.MutableP
 import net.verdagon.vale.scout.ITemplexS
-import net.verdagon.vale.templar.ExpressionTemplar.makeTemporaryLocal
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, IEnvironment}
 import net.verdagon.vale.templar.function.FunctionTemplar
@@ -21,6 +20,14 @@ object CallTemplar {
   val MUT_DESTRUCTOR_NAME = "destructor"
 
   val MUT_DROP_FUNCTION_NAME = "drop"
+}
+
+class CallTemplar(
+    opts: TemplarOptions,
+    templataTemplar: TemplataTemplar,
+    convertHelper: ConvertHelper,
+    localHelper: LocalHelper,
+    overloadTemplar: OverloadTemplar) {
 
   private def evaluateCall(
       temputs: TemputsBox,
@@ -55,7 +62,7 @@ object CallTemplar {
           })
 
         val prototype =
-          OverloadTemplar.scoutExpectedFunctionForPrototype(
+          overloadTemplar.scoutExpectedFunctionForPrototype(
               fate.snapshot,
               temputs,
               functionName,
@@ -69,10 +76,10 @@ object CallTemplar {
             case (ScoutExpectedFunctionSuccess(p)) => (p)
           }
         val argsExprs2 =
-          TypeTemplar.convertExprs(
+          convertHelper.convertExprs(
             fate.snapshot, temputs, givenArgsExprs2, prototype.paramTypes)
 
-        CallTemplar.checkTypes(
+        checkTypes(
           temputs,
           prototype.paramTypes,
           argsExprs2.map(a => a.resultRegister.reference),
@@ -84,7 +91,7 @@ object CallTemplar {
 //        vcurious() // do we ever use this? do we ever deal with function pointers?
 //
 //        val argsExprs2 =
-//          TypeTemplar.convertExprs(
+//          convertHelper.convertExprs(
 //            fate.snapshot, temputs, givenArgsExprs2, ft.paramTypes)
 //
 //        val argsPointerTypes2 = argsExprs2.map(_.resultRegister.expectReference().reference)
@@ -118,7 +125,7 @@ object CallTemplar {
       })
 
     val prototype =
-      OverloadTemplar.scoutExpectedFunctionForPrototype(
+      overloadTemplar.scoutExpectedFunctionForPrototype(
         fate,
         temputs,
         functionName,
@@ -132,10 +139,10 @@ object CallTemplar {
         case (ScoutExpectedFunctionSuccess(p)) => (p)
       }
     val argsExprs2 =
-      TypeTemplar.convertExprs(
+      convertHelper.convertExprs(
         fate, temputs, givenArgsExprs2, prototype.paramTypes)
 
-    CallTemplar.checkTypes(
+    checkTypes(
       temputs,
       prototype.paramTypes,
       argsExprs2.map(a => a.resultRegister.reference),
@@ -174,10 +181,10 @@ object CallTemplar {
 
     val argsTypes2 = givenArgsExprs2.map(_.resultRegister.reference)
     val paramFilters =
-      ParamFilter(TemplataTemplar.pointifyReferend(temputs, citizenRef, Borrow), None) ::
+      ParamFilter(templataTemplar.pointifyReferend(temputs, citizenRef, Borrow), None) ::
         argsTypes2.map(argType => ParamFilter(argType, None))
     val (maybePrototype, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunctionS) =
-      OverloadTemplar.scoutMaybeFunctionForPrototype(
+      overloadTemplar.scoutMaybeFunctionForPrototype(
         env, temputs, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false)
     val prototype2 =
       maybePrototype match {
@@ -209,7 +216,7 @@ object CallTemplar {
         case Coord(Borrow, _) => (givenCallableUnborrowedExpr2)
         case Coord(Share, _) => (givenCallableUnborrowedExpr2)
         case Coord(Own, _) => {
-          ExpressionTemplar.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
+          localHelper.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
         }
       }
 
@@ -225,7 +232,7 @@ object CallTemplar {
       vfail("arg param type mismatch. params: " + prototype2.paramTypes + " args: " + argTypes)
     }
 
-    CallTemplar.checkTypes(temputs, prototype2.paramTypes, argTypes, exact = true)
+    checkTypes(temputs, prototype2.paramTypes, argTypes, exact = true)
 
     val resultingExpr2 = FunctionCall2(prototype2, actualArgsExprs2);
 
@@ -247,7 +254,7 @@ object CallTemplar {
 
           } else {
             if (!exact) {
-              TemplataTemplar.isTypeConvertible(temputs, argsHead, paramsHead) match {
+              templataTemplar.isTypeConvertible(temputs, argsHead, paramsHead) match {
                 case (true) => {
 
                 }
@@ -277,12 +284,10 @@ object CallTemplar {
   def evaluatePrefixCall(
       temputs: TemputsBox,
       fate: FunctionEnvironmentBox,
-      callableExpr2: Expression2,
+      callableReferenceExpr2: ReferenceExpression2,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       argsExprs2: List[ReferenceExpression2]):
   (FunctionCall2) = {
-    val callableReferenceExpr2 =
-      ExpressionTemplar.coerceToReferenceExpression(fate, callableExpr2)
     val callExpr =
       evaluateCall(temputs, fate, callableReferenceExpr2, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
     (callExpr)

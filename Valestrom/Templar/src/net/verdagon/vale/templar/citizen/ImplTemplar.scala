@@ -10,7 +10,20 @@ import net.verdagon.vale.{vassertSome, vfail, vwat}
 
 import scala.collection.immutable.List
 
-object ImplTemplar {
+trait IAncestorHelperDelegate {
+  def getInterfaceRef(
+    temputs: TemputsBox,
+    // We take the entire templata (which includes environment and parents) so we can incorporate
+    // their rules as needed
+    interfaceTemplata: InterfaceTemplata,
+    uncoercedTemplateArgs: List[ITemplata]):
+  InterfaceRef2
+}
+
+class AncestorHelper(
+    opts: TemplarOptions,
+    inferTemplar: InferTemplar,
+    delegate: IAncestorHelperDelegate) {
 
   private def getMaybeImplementedInterface(
     temputs: TemputsBox,
@@ -21,7 +34,7 @@ object ImplTemplar {
     val ImplA(codeLocation, rules, typeByRune, localRunes, structKindRune, interfaceKindRune) = impl
 
     val result =
-      InferTemplar.inferFromExplicitTemplateArgs(
+      inferTemplar.inferFromExplicitTemplateArgs(
         env,
         temputs,
         List(structKindRune),
@@ -44,7 +57,7 @@ object ImplTemplar {
           }
           case it @ InterfaceTemplata(_, _) => {
             val interfaceRef =
-              StructTemplar.getInterfaceRef(temputs, it, List())
+              delegate.getInterfaceRef(temputs, it, List())
             (Some(interfaceRef))
           }
         }

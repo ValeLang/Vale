@@ -7,7 +7,7 @@ import net.verdagon.vale.parser.CaptureP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.DestructorTemplar
+import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.templar.templata.TemplataTemplar
 import net.verdagon.vale.vfail
@@ -23,7 +23,7 @@ class PatternTemplar(
     opts: TemplarOptions,
     inferTemplar: InferTemplar,
     convertHelper: ConvertHelper,
-    destructorTemplar: DestructorTemplar,
+  dropHelper: DropHelper,
     localHelper: LocalHelper) {
   // Note: This will unlet/drop the input expressions. Be warned.
   // patternInputExprs2 is a list of reference expression because they're coming in from
@@ -361,7 +361,7 @@ class PatternTemplar(
 
         val packUnlet = localHelper.unletLocal(fate, arrSeqLocalVariable)
         val dropExpr =
-          destructorTemplar.drop(fate, temputs, packUnlet)
+          dropHelper.drop(fate, temputs, packUnlet)
 
         ((arrSeqLet :: innerLets) :+ dropExpr)
       }
@@ -422,7 +422,7 @@ class PatternTemplar(
 
         val packUnlet = localHelper.unletLocal(fate, packLocalVariable)
         val dropExpr =
-          destructorTemplar.drop(fate, temputs, packUnlet)
+          dropHelper.drop(fate, temputs, packUnlet)
 
         ((packLet :: innerLets) :+ dropExpr)
       }

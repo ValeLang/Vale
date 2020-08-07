@@ -7,7 +7,11 @@ import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBo
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar}
 import net.verdagon.vale.vassert
 
-object SequenceTemplar {
+class SequenceTemplar(
+  opts: TemplarOptions,
+    arrayTemplar: ArrayTemplar,
+    structTemplar: StructTemplar,
+    destructorTemplar: DestructorTemplar) {
   def evaluate(
     env: FunctionEnvironmentBox,
     temputs: TemputsBox,
@@ -18,8 +22,8 @@ object SequenceTemplar {
     if (types2.toSet.size == 1) {
       val memberType = types2.toSet.head
       // Theyre all the same type, so make it an array.
-      val mutability = StructTemplarCore.getCompoundTypeMutability(temputs, List(memberType))
-      val arraySequenceType = ArrayTemplar.makeArraySequenceType(env.snapshot, temputs, mutability, types2.size, memberType)
+      val mutability = StructTemplar.getCompoundTypeMutability(List(memberType))
+      val arraySequenceType = arrayTemplar.makeArraySequenceType(env.snapshot, temputs, mutability, types2.size, memberType)
       val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
       val finalExpr = ArraySequenceE2(exprs2, Coord(ownership, arraySequenceType), arraySequenceType)
       (finalExpr)
@@ -37,7 +41,7 @@ object SequenceTemplar {
     types2: List[Coord]):
   (TupleT2, Mutability) = {
     val (structRef, mutability) =
-      StructTemplar.makeSeqOrPackUnderstruct(env, temputs, types2, TupleName2(types2))
+      structTemplar.makeSeqOrPackUnderstruct(env, temputs, types2, TupleName2(types2))
 
     if (types2.isEmpty)
       vassert(temputs.lookupStruct(structRef).mutability == Immutable)
@@ -50,7 +54,7 @@ object SequenceTemplar {
         structRef)
 
     val _ =
-      DestructorTemplar.getCitizenDestructor(env, temputs, reference)
+      destructorTemplar.getCitizenDestructor(env, temputs, reference)
 
     (TupleT2(types2, structRef), mutability)
   }

@@ -124,9 +124,9 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
   override def getMutability(state: FakeState, kind: Kind): Mutability = {
     InfererTestUtils.getMutability(kind)
   }
-  override def getPackKind(env: SimpleEnvironment, state: FakeState, types2: List[Coord]): (PackT2, Mutability) = {
-    vfail()
-  }
+//  override def getPackKind(env: SimpleEnvironment, state: FakeState, types2: List[Coord]): (PackT2, Mutability) = {
+//    vfail()
+//  }
   override def lookupTemplata(env: SimpleEnvironment, name: IName2): ITemplata = {
     vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
   }

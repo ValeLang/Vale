@@ -5,14 +5,28 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.citizen.{ImplTemplar, StructTemplar}
+import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata.TemplataTemplar
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
-object FunctionTemplarCore {
+class FunctionTemplarCore(
+    opts: TemplarOptions,
+  templataTemplar: TemplataTemplar,
+    convertHelper: ConvertHelper,
+    delegate: IFunctionTemplarDelegate) {
+  val bodyTemplar = new BodyTemplar(opts, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+    override def evaluateBlockStatements(temputs: TemputsBox, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
+      delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
+    }
+
+    override def nonCheckingTranslateList(temputs: TemputsBox, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]): List[ReferenceExpression2] = {
+      delegate.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
+    }
+  })
+
   // Preconditions:
   // - already spawned local env
   // - either no template args, or they were already added to the env.
@@ -24,7 +38,8 @@ object FunctionTemplarCore {
   (FunctionHeader2) = {
     val fullEnv = FunctionEnvironmentBox(startingFullEnv)
 
-    println("Evaluating function " + fullEnv.fullName)
+
+    opts.debugOut("Evaluating function " + fullEnv.fullName)
 
     val isDestructor =
       params2.nonEmpty &&
@@ -37,7 +52,7 @@ object FunctionTemplarCore {
     startingFullEnv.function.body match {
       case CodeBodyA(body) => {
         val (header, body2) =
-          BodyTemplar.declareAndEvaluateFunctionBody(
+          bodyTemplar.declareAndEvaluateFunctionBody(
             fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
 
         // Funny story... let's say we're current instantiating a constructor,
@@ -133,17 +148,16 @@ object FunctionTemplarCore {
         // That's what we were originally here for, and evaluating the body above
         // just did it for us O_o
         // So, here we check to see if we accidentally already did it.
-        println("doesnt this mean we have to do this in every single generated function?")
+        opts.debugOut("doesnt this mean we have to do this in every single generated function?")
 
         temputs.lookupFunction(signature2) match {
           case Some(function2) => {
             (function2.header)
           }
           case None => {
-            val generator = temputs.functionGeneratorByName(generatorId)
+            val generator = opts.functionGeneratorByName(generatorId)
             val header =
-              generator.generate(
-                fullEnv.snapshot, temputs, Some(startingFullEnv.function), params2, maybeRetCoord)
+              delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, Some(startingFullEnv.function), params2, maybeRetCoord)
             if (header.toSignature != signature2) {
               vfail("Generator made a function whose signature doesn't match the expected one!\n" +
               "Expected:  " + signature2 + "\n" +
@@ -219,14 +233,13 @@ object FunctionTemplarCore {
     temputs: TemputsBox,
     maybeOriginFunction1: Option[FunctionA],
     structDef2: StructDefinition2,
-    interfaceRef2: InterfaceRef2):
+    interfaceRef2: InterfaceRef2,
+    structDestructor: Prototype2,
+  ):
   (FunctionHeader2) = {
     val ownership = if (structDef2.mutability == Mutable) Own else Share
     val structRef2 = structDef2.getRef
     val structType2 = Coord(ownership, structRef2)
-
-    val structDestructor =
-      DestructorTemplar.getCitizenDestructor(env, temputs, structType2)
 
     val destructor2 =
       Function2(

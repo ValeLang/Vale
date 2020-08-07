@@ -11,7 +11,25 @@ import net.verdagon.vale.{vfail, vimpl}
 
 import scala.collection.immutable.List
 
-object StructTemplarMiddle {
+class StructTemplarMiddle(
+    opts: TemplarOptions,
+    ancestorHelper: AncestorHelper,
+    delegate: IStructTemplarDelegate) {
+  val core = new StructTemplarCore(opts, ancestorHelper, delegate)
+
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): (StructRef2) = {
+    core.addBuiltInStructs(env, temputs)
+  }
+
+  def makeStructConstructor(
+    temputs: TemputsBox,
+    maybeConstructorOriginFunctionA: Option[FunctionA],
+    structDef: StructDefinition2,
+    constructorFullName: FullName2[IFunctionName2]):
+  FunctionHeader2 = {
+    core.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
+  }
+
   def getStructRef(
     structOuterEnv: NamespaceEnvironment[IName2],
     temputs: TemputsBox,
@@ -24,7 +42,7 @@ object StructTemplarMiddle {
       structOuterEnv.addEntries(
         templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
     val structDefinition2 =
-      StructTemplarCore.maakeStruct(
+      core.maakeStruct(
         localEnv, temputs, structS, coercedFinalTemplateArgs2);
 
     (structDefinition2.getRef)
@@ -42,7 +60,7 @@ object StructTemplarMiddle {
       interfaceOuterEnv.addEntries(
         templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
     val interfaceDefinition2 =
-      StructTemplarCore.makeInterface(
+      core.makeInterface(
         localEnv, temputs, interfaceA, coercedFinalTemplateArgs2);
 
 // Now that we have an env, we can use it for the internal methods.
@@ -64,7 +82,7 @@ object StructTemplarMiddle {
     functionS: FunctionA,
     members: List[StructMember2]):
   (StructRef2, Mutability, FunctionTemplata) = {
-    StructTemplarCore.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
+    core.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
@@ -74,7 +92,7 @@ object StructTemplarMiddle {
     memberTypes2: List[Coord],
     name: ICitizenName2):
   (StructRef2, Mutability) = {
-    StructTemplarCore.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
+    core.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
   // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
@@ -92,7 +110,7 @@ object StructTemplarMiddle {
     // actually thats probably fine. we would just reuse the existing one.
     // ...we best write a doc section on this.
 
-    StructTemplarCore.makeAnonymousSubstruct(
+    core.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
       substructName,
@@ -106,7 +124,7 @@ object StructTemplarMiddle {
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {
-    StructTemplarCore.prototypeToAnonymousStruct(
+    core.prototypeToAnonymousStruct(
       outerEnv, temputs, prototype, structFullName)
   }
 }

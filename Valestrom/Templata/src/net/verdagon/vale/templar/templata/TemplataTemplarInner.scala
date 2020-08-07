@@ -26,7 +26,7 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
 
   def getMutability(state: State, kind: Kind): Mutability
 
-  def getPackKind(env: Env, temputs: State, types2: List[Coord]): (PackT2, Mutability)
+//  def getPackKind(env: Env, temputs: State, types2: List[Coord]): (PackT2, Mutability)
 
   def evaluateStructTemplata(
     state: State,
@@ -131,7 +131,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       }
       case NullableAT(_) => {
         //        val innerValueType2 = evaluateTemplex(env, state, innerType1)
-        //        val innerPointerType2 = TypeTemplar.pointify(innerValueType2)
+        //        val innerPointerType2 = ConvertHelper.pointify(innerValueType2)
         //        env.lookupType("Option") match {
         //          case TemplataStructTemplate(_) => {
         //            StructTemplar.getStructRef(env.globalEnv, state, "Option", List(TemplataType(innerPointerType2)))
@@ -166,7 +166,6 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 //        coerce(state, KindTemplata(packKind), resultType)
 //      }
       case x => {
-        println(x)
         vfail("not yet " + x)
       }
     }
@@ -414,18 +413,18 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     (templata)
   }
 
-  def getPackKind(
-    env: Env,
-    state: State,
-    members: List[Coord],
-    expectedType: ITemplataType):
-  (ITemplata) = {
-    val (uncoercedTemplata, _) =
-      delegate.getPackKind(env, state, members)
-    val templata =
-      coerce(state, KindTemplata(uncoercedTemplata), expectedType)
-    (templata)
-  }
+//  def getPackKind(
+//    env: Env,
+//    state: State,
+//    members: List[Coord],
+//    expectedType: ITemplataType):
+//  (ITemplata) = {
+//    val (uncoercedTemplata, _) =
+//      delegate.getPackKind(env, state, members)
+//    val templata =
+//      coerce(state, KindTemplata(uncoercedTemplata), expectedType)
+//    (templata)
+//  }
 
   def getArraySequenceKind(
     env: Env,

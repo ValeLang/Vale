@@ -6,7 +6,9 @@ import net.verdagon.vale.templar.{CompleteProgram2, Edge2, EdgeTemplar, Program2
 import net.verdagon.vale.{vassert, vwat}
 
 object Carpenter {
-  def translate(program2: Temputs): Hinputs = {
+  def translate(
+    debugOut: (String => Unit),
+    program2: Temputs): Hinputs = {
     val edgeBlueprints =
       EdgeTemplar.makeInterfaceEdgeBlueprints(program2.functions, program2.getAllInterfaces())
     val partialEdges =
@@ -38,26 +40,26 @@ object Carpenter {
     val categorizedFunctions = program2.functions.groupBy(f => reachables.functions.contains(f.header.toSignature))
     val reachableFunctions = categorizedFunctions.getOrElse(true, List())
     val unreachableFunctions = categorizedFunctions.getOrElse(false, List())
-    unreachableFunctions.foreach(f => println("Shaking out unreachable: " + f.header.fullName))
-    reachableFunctions.foreach(f => println("Including: " + f.header.fullName))
+    unreachableFunctions.foreach(f => debugOut("Shaking out unreachable: " + f.header.fullName))
+    reachableFunctions.foreach(f => debugOut("Including: " + f.header.fullName))
 
     val categorizedStructs = program2.getAllStructs().groupBy(f => reachables.structs.contains(f.getRef))
     val reachableStructs = categorizedStructs.getOrElse(true, List())
     val unreachableStructs = categorizedStructs.getOrElse(false, List())
-    unreachableStructs.foreach(f => println("Shaking out unreachable: " + f.fullName))
-    reachableStructs.foreach(f => println("Including: " + f.fullName))
+    unreachableStructs.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
+    reachableStructs.foreach(f => debugOut("Including: " + f.fullName))
 
     val categorizedInterfaces = program2.getAllInterfaces().groupBy(f => reachables.interfaces.contains(f.getRef))
     val reachableInterfaces = categorizedInterfaces.getOrElse(true, List())
     val unreachableInterfaces = categorizedInterfaces.getOrElse(false, List())
-    unreachableInterfaces.foreach(f => println("Shaking out unreachable: " + f.fullName))
-    reachableInterfaces.foreach(f => println("Including: " + f.fullName))
+    unreachableInterfaces.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
+    reachableInterfaces.foreach(f => debugOut("Including: " + f.fullName))
 
     val categorizedEdges = edges.groupBy(f => reachables.edges.contains(f))
     val reachableEdges = categorizedEdges.getOrElse(true, List())
     val unreachableEdges = categorizedEdges.getOrElse(false, List())
-    unreachableEdges.foreach(f => println("Shaking out unreachable: " + f))
-    reachableEdges.foreach(f => println("Including: " + f))
+    unreachableEdges.foreach(f => debugOut("Shaking out unreachable: " + f))
+    reachableEdges.foreach(f => debugOut("Including: " + f))
 
     Hinputs(
       reachableInterfaces,

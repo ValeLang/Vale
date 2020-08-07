@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.function
 
 
-import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, CaptureA, ParameterA}
+import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, CaptureA, IExpressionAE, ParameterA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.CaptureP
@@ -14,7 +14,27 @@ import net.verdagon.vale.templar.templata.TemplataTemplar
 
 import scala.collection.immutable.{List, Nil, Set}
 
-object BodyTemplar {
+trait IBodyTemplarDelegate {
+  def evaluateBlockStatements(
+    temputs: TemputsBox,
+    startingFate: FunctionEnvironment,
+    fate: FunctionEnvironmentBox,
+    exprs: List[IExpressionAE]):
+  (List[ReferenceExpression2], Set[Coord])
+
+  def nonCheckingTranslateList(
+    temputs: TemputsBox,
+    fate: FunctionEnvironmentBox,
+    patterns1: List[AtomAP],
+    patternInputExprs2: List[ReferenceExpression2]):
+  (List[ReferenceExpression2])
+}
+
+class BodyTemplar(
+  opts: TemplarOptions,
+    templataTemplar: TemplataTemplar,
+    convertHelper: ConvertHelper,
+    delegate: IBodyTemplarDelegate) {
 
   def declareAndEvaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
@@ -112,7 +132,7 @@ object BodyTemplar {
       evaluateLets(funcOuterEnv, temputs, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      BlockTemplar.evaluateBlockStatements(temputs, startingFuncOuterEnv, funcOuterEnv, body1.block.exprs);
+      delegate.evaluateBlockStatements(temputs, startingFuncOuterEnv, funcOuterEnv, body1.block.exprs);
 
     vassert(statementsFromBlock.nonEmpty)
 
@@ -125,17 +145,14 @@ object BodyTemplar {
       maybeExpectedResultType match {
         case None => lastUnconvertedUnreturnedExpr
         case Some(expectedResultType) => {
-          TemplataTemplar.isTypeTriviallyConvertible(temputs, lastUnconvertedUnreturnedExpr.resultRegister.reference, expectedResultType) match {
-            case (false) => {
-              return Failure(ResultTypeMismatchError(expectedResultType, lastUnconvertedUnreturnedExpr.resultRegister.reference))
+          if (templataTemplar.isTypeTriviallyConvertible(temputs, lastUnconvertedUnreturnedExpr.resultRegister.reference, expectedResultType)) {
+            if (lastUnconvertedUnreturnedExpr.referend == Never2()) {
+              lastUnconvertedUnreturnedExpr
+            } else {
+              convertHelper.convert(funcOuterEnv.snapshot, temputs, lastUnconvertedUnreturnedExpr, expectedResultType);
             }
-            case (true) => {
-              if (lastUnconvertedUnreturnedExpr.referend == Never2()) {
-                lastUnconvertedUnreturnedExpr
-              } else {
-                TypeTemplar.convert(funcOuterEnv.snapshot, temputs, lastUnconvertedUnreturnedExpr, expectedResultType);
-              }
-            }
+          } else {
+            return Failure(ResultTypeMismatchError(expectedResultType, lastUnconvertedUnreturnedExpr.resultRegister.reference))
           }
         }
       }
@@ -183,7 +200,7 @@ object BodyTemplar {
     val paramLookups2 =
       params2.zipWithIndex.map({ case (p, index) => ArgLookup2(index, p.tyype) })
     val letExprs2 =
-      PatternTemplar.nonCheckingTranslateList(
+      delegate.nonCheckingTranslateList(
         temputs, fate, params1.map(_.pattern), paramLookups2);
 
     // todo: at this point, to allow for recursive calls, add a callable type to the environment

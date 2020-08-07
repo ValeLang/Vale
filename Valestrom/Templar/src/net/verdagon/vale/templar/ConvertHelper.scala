@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer.ITemplexA
-import net.verdagon.vale.templar.citizen.{ImplTemplar, StructTemplar}
+import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, IEnvironmentBox}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -11,7 +11,17 @@ import scala.collection.immutable.List
 //import net.verdagon.vale.carpenter.CovarianceCarpenter
 import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
 
-object TypeTemplar {
+trait IConvertHelperDelegate {
+  def isAncestor(
+    temputs: TemputsBox,
+    descendantCitizenRef: CitizenRef2,
+    ancestorInterfaceRef: InterfaceRef2):
+  Boolean
+}
+
+class ConvertHelper(
+    opts: TemplarOptions,
+    delegate: IConvertHelperDelegate) {
   def convertExprs(
       env: IEnvironment,
       temputs: TemputsBox,
@@ -81,12 +91,26 @@ object TypeTemplar {
       } else {
         (sourceType, targetType) match {
           case (s @ StructRef2(_), i : InterfaceRef2) => {
-            StructTemplar.convert(env.globalEnv, temputs, sourceExprDecayedOwnershipped, s, i)
+            convert(env.globalEnv, temputs, sourceExprDecayedOwnershipped, s, i)
           }
           case _ => vfail()
         }
       };
 
     (sourceExprDecayedOwnershippedConverted)
+  }
+
+  def convert(
+    env: IEnvironment,
+    temputs: TemputsBox,
+    sourceExpr: ReferenceExpression2,
+    sourceStructRef: StructRef2,
+    targetInterfaceRef: InterfaceRef2):
+  (ReferenceExpression2) = {
+    if (delegate.isAncestor(temputs, sourceStructRef, targetInterfaceRef)) {
+      StructToInterfaceUpcast2(sourceExpr, targetInterfaceRef)
+    } else {
+      vfail("Can't upcast a " + sourceStructRef + " to a " + targetInterfaceRef)
+    }
   }
 }

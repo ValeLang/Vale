@@ -12,7 +12,25 @@ import net.verdagon.vale.{vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
-object StructTemplarTemplateArgsLayer {
+class StructTemplarTemplateArgsLayer(
+    opts: TemplarOptions,
+    inferTemplar: InferTemplar,
+    ancestorHelper: AncestorHelper,
+    delegate: IStructTemplarDelegate) {
+  val middle = new StructTemplarMiddle(opts, ancestorHelper, delegate)
+
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): (StructRef2) = {
+    middle.addBuiltInStructs(env, temputs)
+  }
+
+  def makeStructConstructor(
+    temputs: TemputsBox,
+    maybeConstructorOriginFunctionA: Option[FunctionA],
+    structDef: StructDefinition2,
+    constructorFullName: FullName2[IFunctionName2]):
+  FunctionHeader2 = {
+    middle.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
+  }
 
   def getStructRef(
     temputs: TemputsBox,
@@ -42,7 +60,7 @@ object StructTemplarTemplateArgsLayer {
           case Some(predictedMutability) => temputs.declareStructMutability(temporaryStructRef, Conversions.evaluateMutability(predictedMutability))
         }
         val result =
-          InferTemplar.inferFromExplicitTemplateArgs(
+          inferTemplar.inferFromExplicitTemplateArgs(
             env,
             temputs,
             structA.identifyingRunes,
@@ -69,7 +87,7 @@ object StructTemplarTemplateArgsLayer {
           case Some(_) =>
         }
 
-        StructTemplarMiddle.getStructRef(env, temputs, structA, inferences.templatasByRune)
+        middle.getStructRef(env, temputs, structA, inferences.templatasByRune)
       }
     }
   }
@@ -104,7 +122,7 @@ object StructTemplarTemplateArgsLayer {
         }
 
         val result =
-          InferTemplar.inferFromExplicitTemplateArgs(
+          inferTemplar.inferFromExplicitTemplateArgs(
             env,
             temputs,
             interfaceS.identifyingRunes,
@@ -131,7 +149,7 @@ object StructTemplarTemplateArgsLayer {
           case Some(_) =>
         }
 
-        StructTemplarMiddle.getInterfaceRef(env, temputs, interfaceS, inferences.templatasByRune)
+        middle.getInterfaceRef(env, temputs, interfaceS, inferences.templatasByRune)
       }
     }
   }
@@ -144,13 +162,13 @@ object StructTemplarTemplateArgsLayer {
     functionS: FunctionA,
     members: List[StructMember2]):
   (StructRef2, Mutability, FunctionTemplata) = {
-    StructTemplarMiddle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
+    middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnerstruct(env: NamespaceEnvironment[IName2], temputs: TemputsBox, memberTypes2: List[Coord], name: ICitizenName2):
   (StructRef2, Mutability) = {
-    StructTemplarMiddle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
+    middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
   // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
@@ -160,7 +178,7 @@ object StructTemplarTemplateArgsLayer {
     interfaceRef: InterfaceRef2,
     substructName: FullName2[AnonymousSubstructName2]):
   (StructRef2, Mutability) = {
-    StructTemplarMiddle.makeAnonymousSubstruct(
+    middle.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
       interfaceRef,
@@ -174,7 +192,7 @@ object StructTemplarTemplateArgsLayer {
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {
-    StructTemplarMiddle.prototypeToAnonymousStruct(
+    middle.prototypeToAnonymousStruct(
       outerEnv, temputs, prototype, structFullName)
   }
 }

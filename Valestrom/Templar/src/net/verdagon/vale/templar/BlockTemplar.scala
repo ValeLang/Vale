@@ -8,7 +8,21 @@ import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.{vassert, vcurious}
 
-object BlockTemplar {
+import scala.collection.immutable.{List, Set}
+
+trait IBlockTemplarDelegate {
+  def evaluateAndCoerceToReferenceExpression(
+    temputs: TemputsBox,
+    fate: FunctionEnvironmentBox,
+    expr1: IExpressionAE):
+  (ReferenceExpression2, Set[Coord])
+}
+
+class BlockTemplar(
+    opts: TemplarOptions,
+    destructorTemplar: DestructorTemplar,
+    localHelper: LocalHelper,
+    delegate: IBlockTemplarDelegate) {
   // This is NOT USED FOR EVERY BLOCK!
   // This is just for the simplest kind of block.
   // This can serve as an example for how we can use together all the tools provided by BlockTemplar.
@@ -65,13 +79,13 @@ object BlockTemplar {
         unresultifiedUndestructedExpressions ++ moots
       } else {
         val (resultifiedExpressions, resultLocalVariable) =
-          BlockTemplar.resultifyExpressions(fate, unresultifiedUndestructedExpressions)
+          resultifyExpressions(fate, unresultifiedUndestructedExpressions)
 
         val reversedVariablesToDestruct = unreversedVariablesToDestruct.reverse
         // Dealiasing should be done by hammer. But destructors are done here
-        val destroyExpressions = unletAll(temputs, fate, reversedVariablesToDestruct)
+        val destroyExpressions = localHelper.unletAll(temputs, fate, reversedVariablesToDestruct)
 
-        (resultifiedExpressions ++ destroyExpressions) :+ ExpressionTemplar.unletLocal(fate, resultLocalVariable)
+        (resultifiedExpressions ++ destroyExpressions) :+ localHelper.unletLocal(fate, resultLocalVariable)
       }
 
     (newExpressionsList, returnsFromExprs)
@@ -127,7 +141,7 @@ object BlockTemplar {
       case Nil => (List(), Set())
       case first1 :: rest1 => {
         val (perhapsUndestructedFirstExpr2, returnsFromFirst) =
-          ExpressionTemplar.evaluateAndCoerceToReferenceExpression(
+          delegate.evaluateAndCoerceToReferenceExpression(
             temputs, fate, first1);
 
         val destructedFirstExpr2 =
@@ -139,7 +153,7 @@ object BlockTemplar {
             // This isn't the last expression
             perhapsUndestructedFirstExpr2.resultRegister.referend match {
               case Void2() => perhapsUndestructedFirstExpr2
-              case _ => DestructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
+              case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
             }
           }
 
@@ -147,24 +161,6 @@ object BlockTemplar {
           evaluateBlockStatementsInner(temputs, fate, rest1)
 
         (destructedFirstExpr2 +: restExprs2, returnsFromFirst ++ returnsFromRest)
-      }
-    }
-  }
-
-  def unletAll(
-    temputs: TemputsBox,
-    fate: FunctionEnvironmentBox,
-    variables: List[ILocalVariable2]):
-  (List[ReferenceExpression2]) = {
-    variables match {
-      case Nil => (List())
-      case head :: tail => {
-        val unlet = ExpressionTemplar.unletLocal(fate, head)
-        val maybeHeadExpr2 =
-          DestructorTemplar.drop(fate, temputs, unlet)
-        val tailExprs2 =
-          unletAll(temputs, fate, tail)
-        (maybeHeadExpr2 :: tailExprs2)
       }
     }
   }
@@ -177,7 +173,7 @@ object BlockTemplar {
     variables match {
       case Nil => (List())
       case head :: tail => {
-        val unlet = UnreachableMootE2(ExpressionTemplar.unletLocal(fate, head))
+        val unlet = UnreachableMootE2(localHelper.unletLocal(fate, head))
         val tailExprs2 = mootAll(temputs, fate, tail)
         (unlet :: tailExprs2)
       }

@@ -19,7 +19,12 @@ import scala.collection.immutable.List
 // 2. (checking) thing that checks it matches, returns None if not, otherwise returns
 //    a struct containing it all (for signatures)
 
-object PatternTemplar {
+class PatternTemplar(
+    opts: TemplarOptions,
+    inferTemplar: InferTemplar,
+    convertHelper: ConvertHelper,
+    destructorTemplar: DestructorTemplar,
+    localHelper: LocalHelper) {
   // Note: This will unlet/drop the input expressions. Be warned.
   // patternInputExprs2 is a list of reference expression because they're coming in from
   // god knows where... arguments, the right side of a let, a variable, don't know!
@@ -44,7 +49,7 @@ object PatternTemplar {
       case Nil => (Nil)
       case (pattern1, patternInputExpr2) :: _ => {
         val headLets =
-          PatternTemplar.innerNonCheckingTranslate(
+          innerNonCheckingTranslate(
             temputs, fate, pattern1, patternInputExpr2);
         val tailLets =
           nonCheckingTranslateList(
@@ -67,7 +72,7 @@ object PatternTemplar {
   (List[ReferenceExpression2]) = {
 
     val templatasByRune =
-      InferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
+      inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
         case (isf @ InferSolveFailure(_, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
         case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
       }
@@ -121,13 +126,13 @@ object PatternTemplar {
     // Now we convert m to a Marine. This also checks that it *can* be
     // converted to a Marine.
     val inputExpr =
-      TypeTemplar.convert(fate.snapshot, temputs, unconvertedInputExpr, expectedCoord);
+      convertHelper.convert(fate.snapshot, temputs, unconvertedInputExpr, expectedCoord);
 
     val CaptureA(name, variability) = maybeCapture
     val variableId = NameTranslator.translateVarNameStep(name)
 
     val export =
-      ExpressionTemplar.makeUserLocalVariable(
+      localHelper.makeUserLocalVariable(
         temputs, fate, variableId, Conversions.evaluateVariability(variability), expectedCoord)
     val let = LetNormal2(export, inputExpr);
 
@@ -142,7 +147,7 @@ object PatternTemplar {
       case Some(listOfMaybeDestructureMemberPatterns) => {
         // This will mark the variable as moved
         val localLookupExpr =
-          ExpressionTemplar.softLoad(
+          localHelper.softLoad(
             fate, LocalLookup2(export, inputExpr.resultRegister.reference), Own)
 
         expectedCoord.referend match {
@@ -193,7 +198,7 @@ object PatternTemplar {
 //    pattern match {
 //      case TypeOfSP(TemplateCallT1(templateName, templateArgTypes1)) => {
 //        val expectedCitizenRef2 =
-//          TypeTemplar.callTemplate(env, temputs, templateName, templateArgTypes1)
+//          ConvertHelper.callTemplate(env, temputs, templateName, templateArgTypes1)
 //
 //        // Our resulting variable will have this ownership
 //        val expectedCitizenDef2 =
@@ -213,13 +218,13 @@ object PatternTemplar {
 //        val expectedPointerType = Coord(expectedOwnership, expectedCitizenDef2.getRef)
 //
 //        // Don't need output, since we're just doing a compile time check here
-//        TypeTemplar.convert(env, temputs, inputExpr, expectedPointerType)
+//        ConvertHelper.convert(env, temputs, inputExpr, expectedPointerType)
 //
 //        (temputs, fate, List(), List())
 //      }
 //      case TypeOfSP(type1) => {
 //        val unborrowedTargetReference =
-//          TypeTemplar.evaluateAndReferencifyType(
+//          ConvertHelper.evaluateAndReferencifyType(
 //            env, temputs, type1, Own)
 //        // If we expect a borrow, then here we make a targetReference that reflects that
 //        val targetReference =
@@ -234,7 +239,7 @@ object PatternTemplar {
 //          }
 //
 //        // Don't need output, since we're just doing a compile time check here
-//        TypeTemplar.convert(env, temputs, inputExpr, targetReference)
+//        ConvertHelper.convert(env, temputs, inputExpr, targetReference)
 //
 //        (temputs, fate, List(), List())
 //      }
@@ -249,12 +254,12 @@ object PatternTemplar {
 //        val variableId = FullName2(env.currentFunction1.get.lambdaNumber, name)
 //        // This is where we figure out that b should be an owning Bork
 //        val expectedPointerType =
-//          TypeTemplar.evaluateAndReferencifyType(
+//          ConvertHelper.evaluateAndReferencifyType(
 //            env, temputs, expectedType1, Own)
 //        // Now we convert Marine's first member to a Bork. This also checks that
 //        // it *can* be converted to a Bork.
 //        val convertedInputLookupExpr =
-//          TypeTemplar.convert(env, temputs, inputExpr, expectedPointerType);
+//          ConvertHelper.convert(env, temputs, inputExpr, expectedPointerType);
 //        // Now we make the local variable b
 //        val newExport =
 //          ExpressionTemplar.makeUserLocalVariable(
@@ -277,12 +282,12 @@ object PatternTemplar {
 //        val variableId = FullName2(env.currentFunction1.get.lambdaNumber, name)
 //        // This is where we figure out that m should be an owning Marine
 //        val (expectedPointerType @ Coord(_, StructRef2(_))) =
-//          TypeTemplar.evaluateAndReferencifyType(
+//          ConvertHelper.evaluateAndReferencifyType(
 //            env, temputs, expectedStructType1, Own)
 //        // Now we convert inMarine to a Marine. This also checks that
 //        // it *can* be converted to a Marine.
 //        val convertedInputLookupExpr =
-//          TypeTemplar.convert(env, temputs, inputExpr, expectedPointerType);
+//          ConvertHelper.convert(env, temputs, inputExpr, expectedPointerType);
 //        // Now we make the local variable m
 //        val newExport =
 //          ExpressionTemplar.makeUserLocalVariable(
@@ -354,9 +359,9 @@ object PatternTemplar {
               }
             })
 
-        val packUnlet = ExpressionTemplar.unletLocal(fate, arrSeqLocalVariable)
+        val packUnlet = localHelper.unletLocal(fate, arrSeqLocalVariable)
         val dropExpr =
-          DestructorTemplar.drop(fate, temputs, packUnlet)
+          destructorTemplar.drop(fate, temputs, packUnlet)
 
         ((arrSeqLet :: innerLets) :+ dropExpr)
       }
@@ -415,9 +420,9 @@ object PatternTemplar {
               }
             })
 
-        val packUnlet = ExpressionTemplar.unletLocal(fate, packLocalVariable)
+        val packUnlet = localHelper.unletLocal(fate, packLocalVariable)
         val dropExpr =
-          DestructorTemplar.drop(fate, temputs, packUnlet)
+          destructorTemplar.drop(fate, temputs, packUnlet)
 
         ((packLet :: innerLets) :+ dropExpr)
       }
@@ -433,7 +438,7 @@ object PatternTemplar {
 //  def getParameterType2(env: IEnvironmentBox, temputs: TemputsBox, param1: AtomAP):
 //  (Temputs, Coord) = {
 //    val type1 = getPatternType1(param1)
-//    val type2 = TypeTemplar.evaluateType(env, temputs, type1)
+//    val type2 = ConvertHelper.evaluateType(env, temputs, type1)
 //    (temputs, TemplataTemplar.coerceTemplataToReference(temputs, type2, Own))
 //  }
 //
@@ -442,7 +447,7 @@ object PatternTemplar {
 //  (Temputs, Coord) = {
 //    val type1 = getPatternType1(pattern1)
 //    val type2 =
-//      TypeTemplar.evaluateType(env, temputs, type1)
+//      ConvertHelper.evaluateType(env, temputs, type1)
 //    (temputs, TemplataTemplar.coerceTemplataToReference(temputs, type2, Own))
 //  }
 //
@@ -509,8 +514,7 @@ object PatternTemplar {
   ): List[ReferenceExpression2] = {
     innerPatternMaybes.zip(memberLocalVariables).flatMap({
       case ((innerPattern, localVariable)) => {
-        val unletExpr =
-          ExpressionTemplar.unletLocal(fate, localVariable)
+        val unletExpr = localHelper.unletLocal(fate, localVariable)
         innerNonCheckingTranslate(temputs, fate, innerPattern, unletExpr)
       }
     })

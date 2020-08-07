@@ -37,7 +37,6 @@ case class LetPE(
 case class RepeaterBlockPE(expression: IExpressionPE) extends IExpressionPE
 
 case class RepeaterBlockIteratorPE(expression: IExpressionPE) extends IExpressionPE
-case class PackPE(elements: List[IExpressionPE]) extends IExpressionPE
 case class SequencePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
 
 case class RepeaterPackPE(expression: IExpressionPE) extends IExpressionPE

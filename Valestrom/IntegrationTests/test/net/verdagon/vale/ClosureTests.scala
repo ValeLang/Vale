@@ -22,12 +22,12 @@ class ClosureTests extends FunSuite with Matchers {
         childMoved: IVariableUseCertainty,
         childMutated: IVariableUseCertainty) = {
       val addressibleIfMutable =
-        ExpressionTemplar.determineIfLocalIsAddressible(
+        LocalHelper.determineIfLocalIsAddressible(
           Mutable,
           LocalVariableA(
             CodeVarNameA("x"), VaryingP, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       val addressibleIfImmutable =
-        ExpressionTemplar.determineIfLocalIsAddressible(
+        LocalHelper.determineIfLocalIsAddressible(
           Immutable,
           LocalVariableA(
             CodeVarNameA("x"), VaryingP, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))

@@ -26,6 +26,7 @@ object Driver {
     parsedsOutputFile: Option[String],
     highlightOutputFile: Option[String],
     mode: Option[String], // build v run etc
+    verbose: Boolean,
   )
 
   def parseOpts(opts: Options, list: List[String]) : Options = {
@@ -40,12 +41,11 @@ object Driver {
         parseOpts(opts.copy(parsedsOutputFile = Some(value)), tail)
       }
       case "-oh" :: value :: tail => {
-        vcheck(opts.parsedsOutputFile.isEmpty, "Multiple highlight output files specified!", InputException)
+        vcheck(opts.highlightOutputFile.isEmpty, "Multiple highlight output files specified!", InputException)
         parseOpts(opts.copy(highlightOutputFile = Some(value)), tail)
       }
-      case "-ph" :: tail => {
-        vcheck(opts.outputFile.isEmpty, "Multiple highlight output files specified!", InputException)
-        parseOpts(opts.copy(highlightOutputFile = Some("")), tail)
+      case "-v" :: tail => {
+        parseOpts(opts.copy(verbose = true), tail)
       }
       //          case "--min-size" :: value :: tail =>
       //            parseOpts(opts ++ Map('minsize -> value.toInt), tail)
@@ -87,28 +87,37 @@ object Driver {
   }
 
   def build(opts: Options): ProgramH = {
-    val code = opts.inputFiles.map(readCode).mkString("\n\n\n")
-    val parsed =
-      Parser.runParserForProgramAndCommentRanges(code) match {
-        case ParseFailure(error) => {
-          println(ParseErrorHumanizer.humanize(code, error))
-          System.exit(22)
-          vfail()
-        }
-        case ParseSuccess(program0) => program0._1
+    val debugOut =
+      if (opts.verbose) {
+        (string: String) => { println(string) }
+      } else {
+        (string: String) => {}
       }
-    val scoutput = Scout.scoutProgram(List(parsed))
+
+    val sources = opts.inputFiles.map(readCode)
+    val parseds =
+      sources.map(sourceCode => {
+        Parser.runParserForProgramAndCommentRanges(sourceCode) match {
+          case ParseFailure(error) => {
+            println(ParseErrorHumanizer.humanize(sourceCode, error))
+            System.exit(22)
+            vfail()
+          }
+          case ParseSuccess((program0, _)) => program0
+        }
+      })
+    val scoutput = Scout.scoutProgram(parseds)
     val astrouts =
       Astronomer.runAstronomer(scoutput) match {
         case Right(error) => {
-          println(AstronomerErrorHumanizer.humanize(code, error))
+          println(AstronomerErrorHumanizer.humanize(sources, error))
           System.exit(22)
           vfail()
         }
         case Left(result) => result
       }
-    val temputs = Templar.evaluate(astrouts)
-    val hinputs = Carpenter.translate(temputs)
+    val temputs = new Templar(println).evaluate(astrouts)
+    val hinputs = Carpenter.translate(debugOut, temputs)
     val programH = Hammer.translate(hinputs)
 
     val programV = VonHammer.vonifyProgram(programH)
@@ -157,7 +166,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), None, None, None, None), args.toList)
+      val opts = parseOpts(Options(List(), None, None, None, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputFiles.nonEmpty, "No input files!", InputException)
       vcheck(opts.outputFile.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputFile.nonEmpty, "No output file!", InputException)

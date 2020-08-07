@@ -125,11 +125,6 @@ object ExpressionScout {
           scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
         (stackFrame1, NormalResult(ReturnSE(inner1)), innerSelfUses, innerChildUses)
       }
-      case PackPE(elements) => {
-        val (stackFrame1, elements1, selfUses, childUses) =
-          scoutElementsAsExpressions(stackFrame0, elements)
-        (stackFrame1, NormalResult(PackSE(elements1)), selfUses, childUses)
-      }
       case IntLiteralPE(_, value) => (stackFrame0, NormalResult(IntLiteralSE(value)), noVariableUses, noVariableUses)
       case BoolLiteralPE(_,value) => (stackFrame0, NormalResult(BoolLiteralSE(value)), noVariableUses, noVariableUses)
       case StrLiteralPE(StringP(_, value)) => (stackFrame0, NormalResult(StrLiteralSE(value)), noVariableUses, noVariableUses)

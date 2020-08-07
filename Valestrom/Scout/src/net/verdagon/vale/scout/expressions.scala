@@ -97,7 +97,6 @@ case class RepeaterBlockSE(expression: IExpressionSE) extends IExpressionSE
 // Results in a pack, represents the differences between the expressions
 case class RepeaterBlockIteratorSE(expression: IExpressionSE) extends IExpressionSE
 
-case class PackSE(elements: List[IExpressionSE]) extends IExpressionSE
 case class ReturnSE(inner: IExpressionSE) extends IExpressionSE
 case class VoidSE() extends IExpressionSE {}
 

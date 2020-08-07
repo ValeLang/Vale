@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.astronomer.LocalVariableA
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
-import net.verdagon.vale.templar.function.DestructorTemplar
+import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
 import net.verdagon.vale.{vassert, vfail}
 
@@ -11,7 +11,7 @@ import scala.collection.immutable.List
 
 class LocalHelper(
     opts: TemplarOptions,
-    destructorTemplar: DestructorTemplar) {
+  dropHelper: DropHelper) {
 
   def makeTemporaryLocal(
     temputs: TemputsBox,
@@ -37,7 +37,7 @@ class LocalHelper(
 
     val unlet = unletLocal(fate, rlv)
     val destructExpr2 =
-      destructorTemplar.drop(fate, temputs, unlet)
+      dropHelper.drop(fate, temputs, unlet)
     vassert(destructExpr2.referend == Void2())
 
     // No Discard here because the destructor already returns void.
@@ -61,7 +61,7 @@ class LocalHelper(
       case head :: tail => {
         val unlet = unletLocal(fate, head)
         val maybeHeadExpr2 =
-          destructorTemplar.drop(fate, temputs, unlet)
+          dropHelper.drop(fate, temputs, unlet)
         val tailExprs2 =
           unletAll(temputs, fate, tail)
         (maybeHeadExpr2 :: tailExprs2)

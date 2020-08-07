@@ -231,8 +231,7 @@ object PredictorEvaluator {
   ): Boolean = {
     val possibilitiesKnowns =
       evaluateRules(conclusions, rule.alternatives)
-    println("is this right?")
-    // Just took a guess, really. Maybe we return true if one is known?
+    // This is a conservative guess. We might be able to return true if only one is known.
     possibilitiesKnowns.forall(_ == true)
   }
 

@@ -10,7 +10,7 @@ import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, 
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar}
+import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper, FunctionTemplar}
 import net.verdagon.vale.templar.templata.TemplataTemplar
 import net.verdagon.vale.{vassert, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
 
@@ -43,13 +43,13 @@ class ExpressionTemplar(
     packTemplar: PackTemplar,
     sequenceTemplar: SequenceTemplar,
     overloadTemplar: OverloadTemplar,
-    destructorTemplar: DestructorTemplar,
+  dropHelper: DropHelper,
     convertHelper: ConvertHelper,
     delegate: IExpressionTemplarDelegate) {
-  val localHelper = new LocalHelper(opts, destructorTemplar)
+  val localHelper = new LocalHelper(opts, dropHelper)
   val callTemplar = new CallTemplar(opts, templataTemplar, convertHelper, localHelper, overloadTemplar)
-  val patternTemplar = new PatternTemplar(opts, inferTemplar, convertHelper, destructorTemplar, localHelper)
-  val blockTemplar = new BlockTemplar(opts, destructorTemplar, localHelper, new IBlockTemplarDelegate {
+  val patternTemplar = new PatternTemplar(opts, inferTemplar, convertHelper, dropHelper, localHelper)
+  val blockTemplar = new BlockTemplar(opts, dropHelper, localHelper, new IBlockTemplarDelegate {
     override def evaluateAndCoerceToReferenceExpression(
         temputs: TemputsBox, fate: FunctionEnvironmentBox, expr1: IExpressionAE):
     (ReferenceExpression2, Set[Coord]) = {

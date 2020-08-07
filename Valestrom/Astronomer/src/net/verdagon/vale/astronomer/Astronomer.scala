@@ -625,6 +625,8 @@ object Astronomer {
       NotEquals.function,
       Printing.printInt,
       Printing.printlnInt,
+      Printing.printBool,
+      Printing.printlnBool,
       Printing.printlnStr)
 
   val wrapperFunctions =

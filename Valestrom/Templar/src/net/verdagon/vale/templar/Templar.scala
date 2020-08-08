@@ -34,10 +34,11 @@ trait IFunctionGenerator {
 case class TemplarOptions(
   functionGeneratorByName: Map[String, IFunctionGenerator],
 
-  debugOut: String => Unit
+  debugOut: String => Unit,
+  verboseErrors: Boolean
 )
 
-class Templar(debugOut: (String) => Unit) {
+class Templar(debugOut: (String) => Unit, verbose: Boolean) {
   val generatedFunctions =
     List(
       DestructorTemplar.addConcreteDestructor(Mutable),
@@ -59,7 +60,7 @@ class Templar(debugOut: (String) => Unit) {
       (id, generator)
     }).toMap
 
-  val opts = TemplarOptions(generatorsById, debugOut)
+  val opts = TemplarOptions(generatorsById, debugOut, verbose)
 
 
 
@@ -314,150 +315,103 @@ class Templar(debugOut: (String) => Unit) {
         }
       })
 
-  def evaluate(program: ProgramA):
-  Temputs = {
+  def evaluate(program: ProgramA): Result[Temputs, ICompileErrorT] = {
+    try {
+      val ProgramA(structsA, interfacesA, impls1, functions1) = program;
 
-    val ProgramA(structsA, interfacesA, impls1, functions1) = program;
+      val env0 =
+        NamespaceEnvironment(
+          None,
+          FullName2(List(), GlobalNamespaceName2()),
+          Map(
+            PrimitiveName2("int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
+            PrimitiveName2("Array") -> List(TemplataEnvEntry(ArrayTemplateTemplata())),
+            PrimitiveName2("bool") -> List(TemplataEnvEntry(KindTemplata(Bool2()))),
+            PrimitiveName2("float") -> List(TemplataEnvEntry(KindTemplata(Float2()))),
+            PrimitiveName2("__Never") -> List(TemplataEnvEntry(KindTemplata(Never2()))),
+            PrimitiveName2("str") -> List(TemplataEnvEntry(KindTemplata(Str2()))),
+            PrimitiveName2("void") -> List(TemplataEnvEntry(KindTemplata(Void2())))))
+      val env1b =
+        BuiltInFunctions.builtIns.foldLeft(env0)({
+          case (env1a, builtIn) => {
+            env1a.addUnevaluatedFunction(builtIn)
+          }
+        })
+      val env3 =
+        generatedFunctions.foldLeft(env1b)({
+          case (env2, (generatedFunction, generator)) => {
+            env2.addUnevaluatedFunction(generatedFunction)
+          }
+        })
 
-    val env0 =
-      NamespaceEnvironment(
-        None,
-        FullName2(List(), GlobalNamespaceName2()),
-        Map(
-          PrimitiveName2("int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
-          PrimitiveName2("Array") -> List(TemplataEnvEntry(ArrayTemplateTemplata())),
-          PrimitiveName2("bool") -> List(TemplataEnvEntry(KindTemplata(Bool2()))),
-          PrimitiveName2("float") -> List(TemplataEnvEntry(KindTemplata(Float2()))),
-          PrimitiveName2("__Never") -> List(TemplataEnvEntry(KindTemplata(Never2()))),
-          PrimitiveName2("str") -> List(TemplataEnvEntry(KindTemplata(Str2()))),
-          PrimitiveName2("void") -> List(TemplataEnvEntry(KindTemplata(Void2())))))
-    val env1b =
-      BuiltInFunctions.builtIns.foldLeft(env0)({
-        case (env1a, builtIn) => {
-          env1a.addUnevaluatedFunction(builtIn)
-        }
+      // This has to come before the structs and interfaces because part of evaluating a
+      // struct or interface is figuring out what it extends.
+      val env5 =
+      impls1.foldLeft(env3)({
+        case (env4, impl1) => env4.addEntry(NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
       })
-    val env3 =
-      generatedFunctions.foldLeft(env1b)({
-        case (env2, (generatedFunction, generator)) => {
-          env2.addUnevaluatedFunction(generatedFunction)
-        }
-      })
+      val env7 =
+        structsA.foldLeft(env5)({
+          case (env6, s) => env6.addEntries(makeStructEnvironmentEntries(s))
+        })
+      val env9 =
+        interfacesA.foldLeft(env7)({
+          case (env8, interfaceA) => env8.addEntries(makeInterfaceEnvironmentEntries(interfaceA))
+        })
 
-    // This has to come before the structs and interfaces because part of evaluating a
-    // struct or interface is figuring out what it extends.
-    val env5 =
-    impls1.foldLeft(env3)({
-      case (env4, impl1) => env4.addEntry(NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
-    })
-    val env7 =
-      structsA.foldLeft(env5)({
-        case (env6, s) => env6.addEntries(makeStructEnvironmentEntries(s))
-      })
-    val env9 =
-      interfacesA.foldLeft(env7)({
-        case (env8, interfaceA) => env8.addEntries(makeInterfaceEnvironmentEntries(interfaceA))
-      })
+      val env11 =
+        functions1.foldLeft(env9)({
+          case (env10, functionS) => {
+            env10.addUnevaluatedFunction(functionS)
+          }
+        })
 
-    val env11 =
-      functions1.foldLeft(env9)({
-        case (env10, functionS) => {
-          env10.addUnevaluatedFunction(functionS)
-        }
-      })
+      val temputs =
+        TemputsBox(
+          Temputs(
+            Set(),
+            Map(),
+            List(),
+            ListMap(),
+            Map(),
+            Set(),
+            ListMap(),
+            Map(),
+            Set(),
+            ListMap(),
+            Map(),
+            List(),
+            Map(),
+            Map(),
+            Map()))
 
-    val temputs =
-      TemputsBox(
-        Temputs(
-          Set(),
-          Map(),
-          List(),
-          ListMap(),
-          Map(),
-          Set(),
-          ListMap(),
-          Map(),
-          Set(),
-          ListMap(),
-          Map(),
-          List(),
-          Map(),
-          Map(),
-          Map()))
+      structTemplar.addBuiltInStructs(env11, temputs)
 
-    val emptyPackStructRef = structTemplar.addBuiltInStructs(env11, temputs)
-
-    //    structsA.foreach({
-    //      case (structS @ StructA(_, _, _, _, _, _, _, _, _, _)) => {
-    //        if (structS.isTemplate) {
-    //          // Do nothing, it's a template
-    //        } else {
-    //          val structTemplata = StructTemplata(env11, structS)
-    //          val _ = structTemplar.getStructRef(temputs, structTemplata, List())
-    //        }
-    //      }
-    //    })
-    //
-    //    interfacesA.foreach({
-    //      case (interfaceS @ InterfaceA(_, _, _, _, _, _, _, _, _, _)) => {
-    //        if (interfaceS.isTemplate) {
-    //          // Do nothing, it's a template
-    //        } else {
-    //          val _ =
-    //            structTemplar.getInterfaceRef(
-    //              temputs, InterfaceTemplata(env11, interfaceS), List())
-    //        }
-    //      }
-    //    })
-
-    functions1.foreach({
-      case (functionS) => {
-        if (functionS.isTemplate) {
-          // Do nothing, it's a template
-        } else {
-          functionS.name match {
-            case FunctionNameA("main", _) => {
-              val _ =
-                functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
-                  temputs, FunctionTemplata(env11, functionS))
-            }
-            case _ => {
-              // Do nothing. We only eagerly create main.
+      functions1.foreach({
+        case (functionS) => {
+          if (functionS.isTemplate) {
+            // Do nothing, it's a template
+          } else {
+            functionS.name match {
+              case FunctionNameA("main", _) => {
+                val _ =
+                  functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
+                    temputs, FunctionTemplata(env11, functionS))
+              }
+              case _ => {
+                // Do nothing. We only eagerly create main.
+              }
             }
           }
         }
-      }
-    })
+      })
 
-    //    // We already stamped the structs, this is just to get the constructors.
-    //    structsA.foreach({
-    //      case (structS @ StructA(_, _, _, _, _, _, _, _, _, _)) => {
-    //        if (structS.isTemplate) {
-    //          // Do nothing, it's a template
-    //        } else {
-    //          val structTemplata = StructTemplata(env11, structS)
-    //          val structRef2 = structTemplar.getStructRef(temputs, structTemplata, List())
-    //          val structDef2 = temputs.lookupStruct(structRef2)
-    //          val memberCoords = structDef2.members.map(_.tyype).collect({ case ReferenceMemberType2(c) => c })
-    //          val TopLevelCitizenDeclarationNameA(name, _) = structS.name
-    //          OverloadTemplar.scoutExpectedFunctionForPrototype(
-    //            env11, temputs, GlobalFunctionFamilyNameA(name), List(), memberCoords.map(ParamFilter(_, None)), List(), true)
-    //        }
-    //      }
-    //    })
+      stampNeededOverridesUntilSettled(env11, temputs)
 
-    stampNeededOverridesUntilSettled(env11, temputs)
-
-    temputs.temputs
-    //    val result =
-    //      CompleteProgram2(
-    //        temputs.getAllInterfaces(),
-    //        temputs.getAllStructs(),
-    //        temputs.impls,
-    //        emptyPackStructRef,
-    //        temputs.getAllFunctions())
-    //
-    //    result
+      Ok(temputs.temputs)
+    } catch {
+      case CompileErrorExceptionT(err) => Err(err)
+    }
   }
 
   // (Once we add namespaces, this will probably change)
@@ -476,20 +430,10 @@ class Templar(debugOut: (String) => Unit) {
         env1,
         structTemplar.getInterfaceConstructor(interfaceA))
 
-    val env4 = env2
-    //    val env4 =
-    //      interfaceA.internalMethods.foldLeft(env2)({
-    //        case (env3, internalMethodA) => {
-    //          EnvironmentUtils.addUnevaluatedFunction(
-    //            env3,
-    //            internalMethodA)
-    //        }
-    //      })
-
     // Once we have sub-interfaces and sub-structs, we could recursively call this function.
     // We'll put our interfaceA onto the top of the list of every entry from the sub-struct/sub-interface.
 
-    env4
+    env2
   }
 
   // (Once we add namespaces, this will probably change)

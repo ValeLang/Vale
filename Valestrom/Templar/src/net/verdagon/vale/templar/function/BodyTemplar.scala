@@ -52,10 +52,10 @@ class BodyTemplar(
         val (body2, returns) =
           evaluateFunctionBody(
               funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
-            case Failure(ResultTypeMismatchError(expectedType, actualType)) => {
+            case Err(ResultTypeMismatchError(expectedType, actualType)) => {
               vfail("Function " + function1.name + "(:" + params2.mkString(", :") + ")\nreturn type:\n" + expectedType + "\ndoesn't match body's result:\n" + actualType)
             }
-            case Success((body, returns)) => (body, returns)
+            case Ok((body, returns)) => (body, returns)
           }
 
         vassert(returns.nonEmpty)
@@ -90,10 +90,10 @@ class BodyTemplar(
               bfunction1.body,
               isDestructor,
               Some(expectedRetCoord)) match {
-            case Failure(ResultTypeMismatchError(expectedType, actualType)) => {
+            case Err(ResultTypeMismatchError(expectedType, actualType)) => {
               vfail("Function " + function1.name + "(:" + params2.mkString(", :") + ")\nreturn type:\n" + expectedType + "\ndoesn't match body's result:\n" + actualType)
             }
-            case Success((body, returns)) => (body, returns)
+            case Ok((body, returns)) => (body, returns)
           }
 
         if (returns == Set(expectedRetCoord)) {
@@ -108,10 +108,6 @@ class BodyTemplar(
       }
     }
   }
-
-  sealed trait Result[T, E]
-  case class Success[T, E](t: T) extends Result[T, E]
-  case class Failure[T, E](e: E) extends Result[T, E]
 
   case class ResultTypeMismatchError(expectedType: Coord, actualType: Coord)
 
@@ -152,7 +148,7 @@ class BodyTemplar(
               convertHelper.convert(funcOuterEnv.snapshot, temputs, lastUnconvertedUnreturnedExpr, expectedResultType);
             }
           } else {
-            return Failure(ResultTypeMismatchError(expectedResultType, lastUnconvertedUnreturnedExpr.resultRegister.reference))
+            return Err(ResultTypeMismatchError(expectedResultType, lastUnconvertedUnreturnedExpr.resultRegister.reference))
           }
         }
       }
@@ -187,7 +183,7 @@ class BodyTemplar(
 
     val block2 = Block2(initExprs :+ lastExpr)
 
-    Success((block2, returns))
+    Ok((block2, returns))
   }
 
   // Produce the lets at the start of a function.

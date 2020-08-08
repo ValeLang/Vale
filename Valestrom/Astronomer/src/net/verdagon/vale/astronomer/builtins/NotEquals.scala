@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnv
 import net.verdagon.vale.scout.patterns.AtomSP
 
 object NotEquals {
-  val name = FunctionNameA("!=", CodeLocationS(-2, 0))
+  val name = FunctionNameA("!=", CodeLocationS.internal(-2))
   val function =
     FunctionA(
       name,
@@ -31,9 +31,11 @@ object NotEquals {
               LocalVariableA(CodeVarNameA("left"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
               LocalVariableA(CodeVarNameA("right"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
+              RangeS.internal(-36),
               FunctionLoadAE(GlobalFunctionFamilyNameA("not")),
               List(
                 FunctionCallAE(
+                  RangeS.internal(-37),
                   FunctionLoadAE(GlobalFunctionFamilyNameA("==")),
                   List(
                     LocalLoadAE(CodeVarNameA("left"), OwnP),

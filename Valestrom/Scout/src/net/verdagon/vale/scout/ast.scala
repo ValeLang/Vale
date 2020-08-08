@@ -63,14 +63,26 @@ case class ProgramS(
 }
 
 object CodeLocationS {
-  val zero = CodeLocationS(-1, 0)
+  val zero = CodeLocationS.internal(-1)
+  def internal(internalNum: Int): CodeLocationS = {
+    vassert(internalNum < 0)
+    CodeLocationS(internalNum, 0)
+  }
 }
 
 object RangeS {
   val zero = RangeS(CodeLocationS.zero, CodeLocationS.zero)
+  def internal(internalNum: Int): RangeS = {
+    vassert(internalNum < 0)
+    RangeS(CodeLocationS.internal(internalNum), CodeLocationS.internal(internalNum))
+  }
 }
 
-case class CodeLocationS(file: Int, offset: Int)
+case class CodeLocationS(
+  // The index in the original source code files list.
+  // If negative, it means it came from some internal non-file code.
+  file: Int,
+  offset: Int)
 case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
   vassert(begin.file == end.file)
   vassert(begin.offset <= end.offset)

@@ -19,7 +19,7 @@ class StructTemplarTemplateArgsLayer(
     delegate: IStructTemplarDelegate) {
   val middle = new StructTemplarMiddle(opts, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): (StructRef2) = {
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     middle.addBuiltInStructs(env, temputs)
   }
 

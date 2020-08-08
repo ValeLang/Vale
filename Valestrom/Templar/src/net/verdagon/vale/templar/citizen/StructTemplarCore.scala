@@ -17,7 +17,7 @@ class StructTemplarCore(
     opts: TemplarOptions,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): StructRef2 = {
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
     val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, Map())
     val structDef2 = StructDefinition2(emptyTupleFullName, false, false, Immutable, List(), false)
@@ -29,7 +29,6 @@ class StructTemplarCore(
     // have a destructor for.
 
     temputs.declarePack(List(), structDef2.getRef)
-    (structDef2.getRef)
   }
 
   def maakeStruct(

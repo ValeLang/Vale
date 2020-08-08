@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.rules.{EqualsSR, TemplexSR, TypedSR}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata.{IPotentialBanner, _}
 import net.verdagon.vale.scout.{CodeRuneS, CodeTypeNameS, ExplicitTemplateArgRuneS, INameS, ITemplexS, RangeS}
-import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionResult, ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
+import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, IScoutExpectedFunctionResult, InferFailure, Outscored, ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
@@ -16,20 +16,30 @@ import net.verdagon.vale.{vassert, vfail}
 import scala.collection.immutable.List
 
 object OverloadTemplar {
+
+  sealed trait IScoutExpectedFunctionFailureReason
+  case class WrongNumberOfArguments(supplied: Int, expected: Int) extends IScoutExpectedFunctionFailureReason
+  case class WrongNumberOfTemplateArguments(supplied: Int, expected: Int) extends IScoutExpectedFunctionFailureReason
+  case class SpecificParamDoesntMatch(index: Int, reason: String) extends IScoutExpectedFunctionFailureReason
+  case class SpecificParamVirtualityDoesntMatch(index: Int) extends IScoutExpectedFunctionFailureReason
+  case class Outscored() extends IScoutExpectedFunctionFailureReason
+  case class InferFailure(reason: InferSolveFailure) extends IScoutExpectedFunctionFailureReason
+
+
   sealed trait IScoutExpectedFunctionResult
   case class ScoutExpectedFunctionSuccess(prototype: Prototype2) extends IScoutExpectedFunctionResult
   case class ScoutExpectedFunctionFailure(
-    humanName: IImpreciseNameStepA,
+    name: IImpreciseNameStepA,
     args: List[ParamFilter],
     // All the ones that could have worked, but were outscored by the best match
-    outscoredReasonByPotentialBanner: Map[IPotentialBanner, String],
+    outscoredReasonByPotentialBanner: Map[IPotentialBanner, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
-    rejectedReasonByBanner: Map[FunctionBanner2, String],
+    rejectedReasonByBanner: Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
     // All the FunctionA we rejected, and the reason why
-    rejectedReasonByFunction: Map[FunctionA, String]
+    rejectedReasonByFunction: Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) extends IScoutExpectedFunctionResult {
     override def toString = {
-      "Couldn't find a fn " + humanName + "(" + args.map(TemplataNamer.getIdentifierName(_)).mkString(", ") + ")\n" +
+      "Couldn't find a fn " + name + "(" + args.map(TemplataNamer.getIdentifierName(_)).mkString(", ") + ")\n" +
         "Outscored:\n" + outscoredReasonByPotentialBanner.map({
         case (potentialBanner, outscoredReason) => TemplataNamer.getFullNameIdentifierName(potentialBanner.banner.fullName) + ":\n  " + outscoredReason
       }).mkString("\n") + "\n" +
@@ -60,11 +70,11 @@ class OverloadTemplar(
   (
     Option[Prototype2],
     // All the ones that could have worked, but were outscored by the best match
-    Map[IPotentialBanner, String],
+    Map[IPotentialBanner, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
-    Map[FunctionBanner2, String],
+    Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
     // All the FunctionA we rejected, and the reason why
-    Map[FunctionA, String]
+    Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
     val (maybePotentialBanner, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) =
       scoutPotentialFunction(
@@ -133,10 +143,10 @@ class OverloadTemplar(
     exact: Boolean):
   (
     // Rejection reason, if any. None means it matches.
-    Option[String]
+    Option[IScoutExpectedFunctionFailureReason]
   ) = {
     if (desiredParams.size != candidateParams.size) {
-      return (Some("Number of params doesn't match! Supplied " + desiredParams.size + " but function takes " + candidateParams.size))
+      return (Some(WrongNumberOfArguments(desiredParams.size, candidateParams.size)))
     }
     desiredParams.zip(candidateParams).zipWithIndex.foreach({
       case (((desiredParam, candidateParam), paramIndex)) => {
@@ -144,7 +154,7 @@ class OverloadTemplar(
         val Parameter2(_, candidateMaybeVirtuality, candidateType) = candidateParam
         paramMatches(temputs, desiredTemplata, candidateType, exact) match {
           case (Some(rejectionReason)) => {
-            return (Some("Param at index " + paramIndex + " doesn't match: " + rejectionReason))
+            return (Some(SpecificParamDoesntMatch(paramIndex, rejectionReason)))
           }
           case (None) => temputs
         }
@@ -152,7 +162,7 @@ class OverloadTemplar(
           case (None, _) =>
           case (desiredVirtuality, candidateVirtuality) => {
             if (desiredVirtuality != candidateVirtuality) {
-              return (Some("Virtualities don't match at index " + paramIndex))
+              return (Some(SpecificParamVirtualityDoesntMatch(paramIndex)))
             }
           }
         })
@@ -173,14 +183,14 @@ class OverloadTemplar(
   (
     Set[IPotentialBanner],
     // rejection reason by banner
-    Map[FunctionBanner2, String],
+    Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
     // rejection reason by function
-    Map[FunctionA, String]
+    Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
     val hayTemplatas = findHayTemplatas(env, temputs, functionName, paramFilters, extraEnvsToLookIn)
 
     val (allPotentialBanners, allRejectionReasonByBanner, allRejectionReasonByFunction) =
-      hayTemplatas.foldLeft((Set[IPotentialBanner](), Map[FunctionBanner2, String](), Map[FunctionA, String]()))({
+      hayTemplatas.foldLeft((Set[IPotentialBanner](), Map[FunctionBanner2, IScoutExpectedFunctionFailureReason](), Map[FunctionA, IScoutExpectedFunctionFailureReason]()))({
         case ((previousPotentials, previousRejectionReasonByBanner, previousRejectionReasonByFunction), templata) => {
           val (potentialBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
             templata match {
@@ -261,7 +271,10 @@ class OverloadTemplar(
                       // run these template argument templexes through the solver so it can evaluate them in
                       // context of the current environment and spit out some templatas.
                       ruleTyper.solve(temputs, env, equalsRules, List(), Some(templateArgRuneNamesA.toSet)) match {
-                        case (_, rtsf @ RuleTyperSolveFailure(_, _, _)) => (List(), Map(), Map(function -> ("Specified template args don't match expected types!\nExpected types: (" + identifyingRuneTemplataTypes.mkString(",") + ")\nSpecified template args: " + explicitlySpecifiedTemplateArgTemplexesS + "\nCause: " + rtsf.toString)))
+                        case (_, rtsf @ RuleTyperSolveFailure(_, _, _)) => {
+                          val reason = WrongNumberOfTemplateArguments(identifyingRuneTemplataTypes.size, explicitlySpecifiedTemplateArgTemplexesS.size)
+                          (List(), Map(), Map(function -> reason))
+                        }
                         case (runeTypeConclusions, RuleTyperSolveSuccess(rulesA)) => {
                           // rulesA is the equals rules, but rule typed. Now we'll run them through the solver to get
                           // some actual templatas.
@@ -272,7 +285,7 @@ class OverloadTemplar(
                           inferTemplar.inferFromExplicitTemplateArgs(
                               env, temputs, List(), rulesA, runeTypeConclusions.typeByRune, templateArgRuneNamesA.toSet, List(), None, List()) match {
                             case (isf @ InferSolveFailure(_, _, _, _, _, _)) => {
-                              (List(), Map(), Map(function -> ("Couldn't evaluate template args: " + isf.toString)))
+                              (List(), Map(), Map(function -> InferFailure(isf)))
                             }
                             case (InferSolveSuccess(inferences)) => {
                               val explicitlySpecifiedTemplateArgTemplatas = templateArgRuneNames2.map(inferences.templatasByRune)
@@ -388,11 +401,11 @@ class OverloadTemplar(
     // Best match, if any
     Option[IPotentialBanner],
     // All the ones that could have worked, but were outscored by the best match
-    Map[IPotentialBanner, String],
+    Map[IPotentialBanner, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
-    Map[FunctionBanner2, String],
+    Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
     // All the FunctionA we rejected, and the reason why
-    Map[FunctionA, String]
+    Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
     val (candidateBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
       getCandidateBanners(env, temputs, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact);
@@ -430,7 +443,7 @@ class OverloadTemplar(
   (
     IPotentialBanner,
     // Rejection reason by banner
-    Map[IPotentialBanner, String]) = {
+    Map[IPotentialBanner, IScoutExpectedFunctionFailureReason]) = {
 
     // Sometimes a banner might come from many different environments (remember,
     // when we do a call, we look in the environments of all the arguments' types).
@@ -503,7 +516,7 @@ class OverloadTemplar(
     val rejectedBanners =
       bannerByIsBestScore.getOrElse(false, List()).map(_._1)
     val rejectionReasonByBanner =
-      rejectedBanners.map((_, "TODO: rejection reason here")).toMap
+      rejectedBanners.map((_, Outscored())).toMap
 
     (bannerWithBestScore, rejectionReasonByBanner)
   }

@@ -180,12 +180,12 @@ object ExpressionScout {
               templateArgs.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))))
         (stackFrame0, result, noVariableUses, noVariableUses)
       }
-      case FunctionCallPE(_, inline, _, isMapCall, callablePE, args, borrowCallable) => {
+      case FunctionCallPE(range, inline, _, isMapCall, callablePE, args, borrowCallable) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
           scoutExpressionAndCoerce(stackFrame0, callablePE, borrowCallable)
         val (stackFrame2, args1, argsSelfUses, argsChildUses) =
           scoutElementsAsExpressions(stackFrame1, args)
-        val result = NormalResult(FunctionCallSE(callable1, args1))
+        val result = NormalResult(FunctionCallSE(Scout.evalRange(stackFrame0.file, range), callable1, args1))
         (stackFrame2, result, callableSelfUses.thenMerge(argsSelfUses), callableChildUses.thenMerge(argsChildUses))
       }
       case SequencePE(_, elementsPE) => {

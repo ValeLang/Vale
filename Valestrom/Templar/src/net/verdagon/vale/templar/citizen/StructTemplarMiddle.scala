@@ -17,7 +17,7 @@ class StructTemplarMiddle(
     delegate: IStructTemplarDelegate) {
   val core = new StructTemplarCore(opts, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): (StructRef2) = {
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     core.addBuiltInStructs(env, temputs)
   }
 

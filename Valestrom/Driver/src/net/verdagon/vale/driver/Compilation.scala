@@ -12,7 +12,7 @@ import net.verdagon.vale.{vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData
 
-class Compilation(code: String, useCommonEnv: Boolean = true) {
+class Compilation(code: String, verbose: Boolean = true) {
   var parsedCache: Option[FileP] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None
@@ -65,7 +65,7 @@ class Compilation(code: String, useCommonEnv: Boolean = true) {
     temputsCache match {
       case Some(temputs) => temputs
       case None => {
-        val temputs = new Templar(println).evaluate(getAstrouts())
+        val temputs = new Templar(println, verbose).evaluate(getAstrouts()).getOrDie()
         temputsCache = Some(temputs)
         temputs
       }

@@ -1,10 +1,10 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA}
+import net.verdagon.vale.astronomer.GlobalFunctionFamilyNameA
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.MutableP
-import net.verdagon.vale.scout.ITemplexS
+import net.verdagon.vale.scout.{ITemplexS, RangeS}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, IEnvironment}
 import net.verdagon.vale.templar.function.FunctionTemplar
@@ -32,6 +32,7 @@ class CallTemplar(
   private def evaluateCall(
       temputs: TemputsBox,
       fate: FunctionEnvironmentBox,
+      range: RangeS,
       callableExpr: ReferenceExpression2,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       givenArgsExprs2: List[ReferenceExpression2]):
@@ -71,7 +72,8 @@ class CallTemplar(
               List(),
               exact = false) match {
             case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-              vfail("Couldn't find function to call!\n" + seff.toString)
+              throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
+//              vfail("Couldn't find function to call!\n" + seff.toString)
             }
             case (ScoutExpectedFunctionSuccess(p)) => (p)
           }
@@ -108,6 +110,7 @@ class CallTemplar(
   private def evaluateNamedCall(
     temputs: TemputsBox,
     fate: FunctionEnvironment,
+    range: RangeS,
     functionName: GlobalFunctionFamilyNameA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
     givenArgsExprs2: List[ReferenceExpression2]):
@@ -134,7 +137,7 @@ class CallTemplar(
         List(),
         exact = false) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-          ErrorReporter.report(CouldntFindFunctionToCallT(seff))
+          ErrorReporter.report(CouldntFindFunctionToCallT(range, seff))
         }
         case (ScoutExpectedFunctionSuccess(p)) => (p)
       }
@@ -284,22 +287,24 @@ class CallTemplar(
   def evaluatePrefixCall(
       temputs: TemputsBox,
       fate: FunctionEnvironmentBox,
+    range: RangeS,
       callableReferenceExpr2: ReferenceExpression2,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       argsExprs2: List[ReferenceExpression2]):
   (FunctionCall2) = {
     val callExpr =
-      evaluateCall(temputs, fate, callableReferenceExpr2, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
+      evaluateCall(temputs, fate, range, callableReferenceExpr2, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
     (callExpr)
   }
 
   def evaluateNamedPrefixCall(
     temputs: TemputsBox,
     fate: FunctionEnvironmentBox,
+    rangeS: RangeS,
     functionName: GlobalFunctionFamilyNameA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
     argsExprs2: List[ReferenceExpression2]):
   (FunctionCall2) = {
-    evaluateNamedCall(temputs, fate.snapshot, functionName, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
+    evaluateNamedCall(temputs, fate.snapshot, rangeS, functionName, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
   }
 }

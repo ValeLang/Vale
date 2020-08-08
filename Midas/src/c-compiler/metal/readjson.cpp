@@ -57,10 +57,17 @@ StructReferend* readStructReferend(MetalCache* cache, const json& referend) {
 
   auto structName = readName(cache, referend["name"]);
 
-  return makeIfNotPresent(
-      &cache->structReferends,
-      structName,
-      [&](){ return new StructReferend(structName); });
+  auto result =
+      makeIfNotPresent(
+          &cache->structReferends,
+          structName,
+          [&]() { return new StructReferend(structName); });
+
+  if (structName->name == "Tup") {
+    cache->emptyTupleStructReferend = result;
+  }
+
+  return result;
 }
 
 InterfaceReferend* readInterfaceReferend(MetalCache* cache, const json& referend) {

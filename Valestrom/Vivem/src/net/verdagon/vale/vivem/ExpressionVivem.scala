@@ -87,12 +87,6 @@ object ExpressionVivem {
         discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceRef)
         NodeContinue(makeVoid(programH, heap, callId))
       }
-      case ReinterpretH(sourceExpr, resultType) => {
-        executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
-          case r @ NodeReturn(_) => return r
-          case NodeContinue(r) => vfail()
-        }
-      }
       case ConstantI64H(value) => {
         val ref = makePrimitive(heap, callId, InlineH, IntV(value))
         NodeContinue(ref)

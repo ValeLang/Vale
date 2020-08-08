@@ -141,6 +141,17 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
+  } else if (name == "F(\"__lessThanOrEqInt\",[],[R(*,<,i),R(*,<,i)])") {
+    assert(call->argExprs.size() == 2);
+    auto result = LLVMBuildICmp(
+        builder,
+        LLVMIntSLE,
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[1]),
+        "");
+    return result;
   } else if (name == "F(\"__eqIntInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(

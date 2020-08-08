@@ -141,29 +141,6 @@ case class RawArrayTH(
   mutability: Mutability,
   elementType: ReferenceH[ReferendH])
 
-
-// These are a lowered form of template arguments, they're only preserved by the hammer so that
-// we can uniquely identify things. For example, we don't want sum(Int, Int)Int and
-// sum(Float, Float)Float to have the same name, and we don't want List<Bool> and List<Str> to
-// collide, so we include the arguments and template arguments in FullName.
-//sealed trait ITemplataH
-//case class CoordTemplataH(reference: ReferenceH[ReferendH]) extends ITemplataH
-//case class KindTemplataH(referend: ReferendH) extends ITemplataH
-//case class ArrayTemplateTemplataH() extends ITemplataH
-//case class FunctionTemplataH(envName: FullNameH, unevaluatedContainers: List[ContainerH], humanName: String, location: CodeLocation) extends ITemplataH
-//case class StructTemplataH(envName: FullNameH, humanName: String, location: CodeLocation) extends ITemplataH
-//case class InterfaceTemplataH(envName: FullNameH, humanName: String, location: CodeLocation) extends ITemplataH
-//case class ImplTemplataH(envName: FullNameH, location: CodeLocation) extends ITemplataH
-//case class ExternFunctionTemplataH(fullName: FullNameH) extends ITemplataH
-//case class OwnershipTemplataH(ownership: Ownership) extends ITemplataH
-//case class VariabilityTemplataH(variability: Variability) extends ITemplataH
-//case class MutabilityTemplataH(mutability: Mutability) extends ITemplataH
-//case class PermissionTemplataH(mutability: Permission) extends ITemplataH
-//case class LocationTemplataH(mutability: Location) extends ITemplataH
-//case class BooleanTemplataH(value: Boolean) extends ITemplataH
-//case class IntegerTemplataH(value: Integer) extends ITemplataH
-//case class ContainerH(humanName: String, location: CodeLocation)
-
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.
 case class CodeLocation(
@@ -254,7 +231,3 @@ case object Mutable extends Mutability
 sealed trait Variability
 case object Final extends Variability
 case object Varying extends Variability
-
-sealed trait Virtuality
-case object Normal extends Virtuality
-case object Abstract extends Virtuality

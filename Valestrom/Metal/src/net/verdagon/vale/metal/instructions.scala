@@ -7,6 +7,8 @@ import net.verdagon.vale.{vassert, vcurious, vfail, vwat}
 sealed trait ExpressionH[+T <: ReferendH] {
   def resultType: ReferenceH[T]
 
+  // Convenience functions for accessing this expression as the kind returning
+  // a certain type.
   def expectStructAccess(): ExpressionH[StructRefH] = {
     resultType match {
       case ReferenceH(_, _, x @ StructRefH(_)) => {
@@ -52,7 +54,7 @@ sealed trait ExpressionH[+T <: ReferendH] {
   }
 }
 
-// Creates an integer and puts it into a register.
+// Produces an integer.
 case class ConstantI64H(
   // The value of the integer.
   value: Int
@@ -60,7 +62,7 @@ case class ConstantI64H(
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH())
 }
 
-// Creates a boolean and puts it into a register.
+// Produces a boolean.
 case class ConstantBoolH(
   // The value of the boolean.
   value: Boolean
@@ -68,7 +70,7 @@ case class ConstantBoolH(
   override def resultType: ReferenceH[BoolH] = ReferenceH(ShareH, InlineH, BoolH())
 }
 
-// Creates a string and puts it into a register.
+// Produces a string.
 case class ConstantStrH(
   // The value of the string.
   value: String
@@ -76,7 +78,7 @@ case class ConstantStrH(
   override def resultType: ReferenceH[StrH] = ReferenceH(ShareH, YonderH, StrH())
 }
 
-// Creates a float and puts it into a register.
+// Produces a float.
 case class ConstantF64H(
   // The value of the float.
   value: Float
@@ -84,20 +86,19 @@ case class ConstantF64H(
   override def resultType: ReferenceH[FloatH] = ReferenceH(ShareH, InlineH, FloatH())
 }
 
-// Grabs the argument and puts it into a register.
+// Produces the value from an argument.
 // There can only be one of these per argument; this conceptually destroys
-// the containing argument and puts its value into the register.
+// the containing argument and produces its value.
 case class ArgumentH(
   resultType: ReferenceH[ReferendH],
   // The index of the argument, starting at 0.
   argumentIndex: Int
 ) extends ExpressionH[ReferendH]
 
-// Takes a value from a register (the "source" register) and puts it into a local
+// Takes a value from the source expression and puts it into a local
 // variable on the stack.
 case class StackifyH(
-  // The register to read a value from.
-  // As with any read from a register, this will invalidate the register.
+  // The expressions to read a value from.
   sourceExpr: ExpressionH[ReferendH],
   // Describes the local we're making.
   local: Local,
@@ -110,16 +111,13 @@ case class StackifyH(
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 
-// Takes a value from a local variable on the stack, and moves it into a register.
+// Takes a value from a local variable on the stack, and produces it.
 // The local variable is now invalid, since its value has been taken out.
 // See LocalLoadH for a similar instruction that *doesnt* invalidate the local var.
 case class UnstackifyH(
   // Describes the local we're pulling from. This is equal to the corresponding
   // StackifyH's `local` member.
-  local: Local,
-//  // The type we expect to get out of the local. Should be equal to local.
-//  // TODO: If the vcurious below doesn't panic, then let's get rid of this redundant member.
-//  resultType: ReferenceH[ReferendH]
+  local: Local
 ) extends ExpressionH[ReferendH] {
   // Panics if this is ever not the case.
   vcurious(local.typeH == resultType)
@@ -127,15 +125,14 @@ case class UnstackifyH(
   override def resultType: ReferenceH[ReferendH] = local.typeH
 }
 
-// Takes a struct from the given register, and destroys it.
+// Takes a struct from the given expressions, and destroys it.
 // All of its members are saved from the jaws of death, and put into the specified
 // local variables.
 // This creates those local variables, much as a StackifyH would, and puts into them
 // the values from the dying struct instance.
 case class DestroyH(
-  // The register to take the struct from.
-  // As with any read from a register, this will invalidate the register.
-  structRegister: ExpressionH[StructRefH],
+  // The expressions to take the struct from.
+  structExpression: ExpressionH[StructRefH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
   localTypes: List[ReferenceH[ReferendH]],
@@ -148,15 +145,14 @@ localIndices: Vector[Local],
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 
-// Takes a struct from the given register, and destroys it.
+// Takes a struct from the given expressions, and destroys it.
 // All of its members are saved from the jaws of death, and put into the specified
 // local variables.
 // This creates those local variables, much as a StackifyH would, and puts into them
 // the values from the dying struct instance.
 case class DestroyKnownSizeArrayIntoLocalsH(
-  // The register to take the struct from.
-  // As with any read from a register, this will invalidate the register.
-  structRegister: ExpressionH[KnownSizeArrayTH],
+  // The expressions to take the struct from.
+  structExpression: ExpressionH[KnownSizeArrayTH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
   localTypes: List[ReferenceH[ReferendH]],
@@ -169,63 +165,50 @@ case class DestroyKnownSizeArrayIntoLocalsH(
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 
-// Takes a struct reference from the "source" register, and makes an interface reference
-// to it, as the "target" reference, and puts it into another register.
+// Takes a struct reference from the "source" expressions, and makes an interface reference
+// to it, as the "target" reference, and puts it into another expressions.
 case class StructToInterfaceUpcastH(
-  // The register to get the struct reference from.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[StructRefH],
+  // The expressions to get the struct reference from.
+  sourceExpression: ExpressionH[StructRefH],
   // The type of interface to cast to.
   targetInterfaceRef: InterfaceRefH
 ) extends ExpressionH[InterfaceRefH] {
-  // The resulting type will have the same ownership as the source register had.
-  def resultType = ReferenceH(sourceRegister.resultType.ownership, sourceRegister.resultType.location, targetInterfaceRef)
+  // The resulting type will have the same ownership as the source expressions had.
+  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterfaceRef)
 }
 
-// Takes an interface reference from the "source" register, and makes another reference
-// to it, as the "target" inference, and puts it into another register.
+// Takes an interface reference from the "source" expressions, and makes another reference
+// to it, as the "target" inference, and puts it into another expressions.
 case class InterfaceToInterfaceUpcastH(
-  // The register to get the source interface reference from.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[InterfaceRefH],
+  // The expressions to get the source interface reference from.
+  sourceExpression: ExpressionH[InterfaceRefH],
   // The type of interface to cast to.
   targetInterfaceRef: InterfaceRefH
 ) extends ExpressionH[InterfaceRefH] {
-  // The resulting type will have the same ownership as the source register had.
-  def resultType = ReferenceH(sourceRegister.resultType.ownership, sourceRegister.resultType.location, targetInterfaceRef)
+  // The resulting type will have the same ownership as the source expressions had.
+  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterfaceRef)
 }
 
-case class ReinterpretH(
-  sourceExpr: ExpressionH[ReferendH],
-  resultType: ReferenceH[ReferendH]
-) extends ExpressionH[ReferendH] {
-  // We shouldn't abuse ReinterpretH, it was originally only added for NeverH.
-  // Templar's reinterpret is much more flexible, but they don't necessarily
-  // mean the hammer should do lots of reinterprets.
-  vassert(sourceExpr.resultType.kind == NeverH())
-}
-
-// Takes a reference from the given "source" register, and puts it into an *existing*
+// Takes a reference from the given "source" expressions, and puts it into an *existing*
 // local variable.
 case class LocalStoreH(
   // The existing local to store into.
   local: Local,
-  // The register to get the source reference from.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[ReferendH],
+  // The expressions to get the source reference from.
+  sourceExpression: ExpressionH[ReferendH],
   // Name of the local variable, for debug purposes.
   localName: FullNameH
 ) extends ExpressionH[ReferendH] {
   override def resultType: ReferenceH[ReferendH] = local.typeH
 }
 
-// Takes a reference from the given local variable, and puts it into a new register.
+// Takes a reference from the given local variable, and puts it into a new expressions.
 // This can never move a reference, only alias it. The instruction which can move a
 // reference is UnstackifyH.
 case class LocalLoadH(
   // The existing local to load from.
   local: Local,
-  // The ownership of the reference to put into the register. This doesn't have to
+  // The ownership of the reference to put into the expressions. This doesn't have to
   // match the ownership of the reference from the local. For example, we might want
   // to load a constraint reference from an owning local.
   targetOwnership: OwnershipH,
@@ -244,27 +227,25 @@ case class LocalLoadH(
   }
 }
 
-// Takes a reference from the given "source" register, and swaps it into the given
-// struct's member. The member's old reference is put into a new register.
+// Takes a reference from the given "source" expressions, and swaps it into the given
+// struct's member. The member's old reference is put into a new expressions.
 case class MemberStoreH(
   resultType: ReferenceH[ReferendH],
-  // Register containing a reference to the struct whose member we will swap.
-  structRegister: ExpressionH[StructRefH],
+  // Expression containing a reference to the struct whose member we will swap.
+  structExpression: ExpressionH[StructRefH],
   // Which member to swap out, starting at 0.
   memberIndex: Int,
-  // Register containing the new value for the struct's member.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[ReferendH],
+  // Expression containing the new value for the struct's member.
+  sourceExpression: ExpressionH[ReferendH],
   // Name of the member, for debug purposes.
   memberName: FullNameH
 ) extends ExpressionH[ReferendH]
 
-// Takes a reference from the given "struct" register, and copies it into a new
-// register. This can never move a reference, only alias it.
+// Takes a reference from the given "struct" expressions, and copies it into a new
+// expressions. This can never move a reference, only alias it.
 case class MemberLoadH(
-  // Register containing a reference to the struct whose member we will read.
-  // As with any read from a register, this will invalidate the register.
-  structRegister: ExpressionH[StructRefH],
+  // Expression containing a reference to the struct whose member we will read.
+  structExpression: ExpressionH[StructRefH],
   // Which member to read from, starting at 0.
   memberIndex: Int,
   // The ownership to load as. For example, we might load a constraint reference from a
@@ -291,69 +272,60 @@ case class MemberLoadH(
   }
 }
 
-// Creates an array whose size is fixed and known at compile time, and puts it into
-// a register.
+// Produces an array whose size is fixed and known at compile time, and puts it into
+// a expressions.
 case class NewArrayFromValuesH(
   // The resulting type of the array.
-  // TODO: See if we can infer this from the types in the registers.
+  // TODO: See if we can infer this from the types in the expressions.
   resultType: ReferenceH[KnownSizeArrayTH],
-  // The registers from which we'll get the values to put into the array.
-  // As with any read from a register, this will invalidate the registers.
-  sourceRegisters: List[ExpressionH[ReferendH]]
+  // The expressions from which we'll get the values to put into the array.
+  sourceExpressions: List[ExpressionH[ReferendH]]
 ) extends ExpressionH[KnownSizeArrayTH]
 
-// Loads from the "source" register and swaps it into the array from arrayRegister at
-// the position specified by the integer in indexRegister. The old value from the
-// array is moved out into registerId.
+// Loads from the "source" expressions and swaps it into the array from arrayExpression at
+// the position specified by the integer in indexExpression. The old value from the
+// array is moved out into expressionsId.
 // This is for the kind of array whose size we know at compile time, the kind that
 // doesn't need to carry around a size. For the corresponding instruction for the
 // unknown-size-at-compile-time array, see UnknownSizeArrayStoreH.
 case class KnownSizeArrayStoreH(
-                                 // Register containing the array whose element we'll swap out.
-                                 // As with any read from a register, this will invalidate the register.
-                                 arrayRegister: ExpressionH[KnownSizeArrayTH],
-                                 // Register containing the index of the element we'll swap out.
-                                 // As with any read from a register, this will invalidate the register.
-                                 indexRegister: ExpressionH[IntH],
-                                 // Register containing the value we'll swap into the array.
-                                 // As with any read from a register, this will invalidate the register.
-                                 sourceRegister: ExpressionH[ReferendH]
+                                 // Expression containing the array whose element we'll swap out.
+                                 arrayExpression: ExpressionH[KnownSizeArrayTH],
+                                 // Expression containing the index of the element we'll swap out.
+                                 indexExpression: ExpressionH[IntH],
+                                 // Expression containing the value we'll swap into the array.
+                                 sourceExpression: ExpressionH[ReferendH]
 ) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = arrayRegister.resultType.kind.rawArray.elementType
+  override def resultType: ReferenceH[ReferendH] = arrayExpression.resultType.kind.rawArray.elementType
 }
 
-// Loads from the "source" register and swaps it into the array from arrayRegister at
-// the position specified by the integer in indexRegister. The old value from the
-// array is moved out into registerId.
+// Loads from the "source" expressions and swaps it into the array from arrayExpression at
+// the position specified by the integer in indexExpression. The old value from the
+// array is moved out into expressionsId.
 // This is for the kind of array whose size we don't know at compile time, the kind
 // that needs to carry around a size. For the corresponding instruction for the
 // known-size-at-compile-time array, see KnownSizeArrayStoreH.
 case class UnknownSizeArrayStoreH(
-                                   // Register containing the array whose element we'll swap out.
-                                   // As with any read from a register, this will invalidate the register.
-                                   arrayRegister: ExpressionH[UnknownSizeArrayTH],
-                                   // Register containing the index of the element we'll swap out.
-                                   // As with any read from a register, this will invalidate the register.
-                                   indexRegister: ExpressionH[IntH],
-                                   // Register containing the value we'll swap into the array.
-                                   // As with any read from a register, this will invalidate the register.
-                                   sourceRegister: ExpressionH[ReferendH]
+                                   // Expression containing the array whose element we'll swap out.
+                                   arrayExpression: ExpressionH[UnknownSizeArrayTH],
+                                   // Expression containing the index of the element we'll swap out.
+                                   indexExpression: ExpressionH[IntH],
+                                   // Expression containing the value we'll swap into the array.
+                                   sourceExpression: ExpressionH[ReferendH]
 ) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = arrayRegister.resultType.kind.rawArray.elementType
+  override def resultType: ReferenceH[ReferendH] = arrayExpression.resultType.kind.rawArray.elementType
 }
 
-// Loads from the array in arrayRegister at the index in indexRegister, and stores
-// the result in registerId. This can never move a reference, only alias it.
+// Loads from the array in arrayExpression at the index in indexExpression, and stores
+// the result in expressionsId. This can never move a reference, only alias it.
 // This is for the kind of array whose size we don't know at compile time, the kind
 // that needs to carry around a size. For the corresponding instruction for the
 // known-size-at-compile-time array, see KnownSizeArrayLoadH.
 case class UnknownSizeArrayLoadH(
-  // Register containing the array whose element we'll read.
-  // As with any read from a register, this will invalidate the register.
-  arrayRegister: ExpressionH[UnknownSizeArrayTH],
-  // Register containing the index of the element we'll read.
-  // As with any read from a register, this will invalidate the register.
-  indexRegister: ExpressionH[IntH],
+  // Expression containing the array whose element we'll read.
+  arrayExpression: ExpressionH[UnknownSizeArrayTH],
+  // Expression containing the index of the element we'll read.
+  indexExpression: ExpressionH[IntH],
   // The ownership to load as. For example, we might load a constraint reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH
@@ -361,27 +333,25 @@ case class UnknownSizeArrayLoadH(
 
   override def resultType: ReferenceH[ReferendH] = {
     val location =
-      (targetOwnership, arrayRegister.resultType.kind.rawArray.elementType.location) match {
+      (targetOwnership, arrayExpression.resultType.kind.rawArray.elementType.location) match {
         case (BorrowH, _) => YonderH
         case (OwnH, location) => location
         case (ShareH, location) => location
       }
-    ReferenceH(targetOwnership, location, arrayRegister.resultType.kind.rawArray.elementType.kind)
+    ReferenceH(targetOwnership, location, arrayExpression.resultType.kind.rawArray.elementType.kind)
   }
 }
 
-// Loads from the array in arrayRegister at the index in indexRegister, and stores
-// the result in registerId. This can never move a reference, only alias it.
+// Loads from the array in arrayExpression at the index in indexExpression, and stores
+// the result in expressionsId. This can never move a reference, only alias it.
 // This is for the kind of array whose size we know at compile time, the kind that
 // doesn't need to carry around a size. For the corresponding instruction for the
 // known-size-at-compile-time array, see KnownSizeArrayStoreH.
 case class KnownSizeArrayLoadH(
-  // Register containing the array whose element we'll read.
-  // As with any read from a register, this will invalidate the register.
-  arrayRegister: ExpressionH[KnownSizeArrayTH],
-  // Register containing the index of the element we'll read.
-  // As with any read from a register, this will invalidate the register.
-  indexRegister: ExpressionH[IntH],
+  // Expression containing the array whose element we'll read.
+  arrayExpression: ExpressionH[KnownSizeArrayTH],
+  // Expression containing the index of the element we'll read.
+  indexExpression: ExpressionH[IntH],
   // The ownership to load as. For example, we might load a constraint reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH
@@ -389,12 +359,12 @@ case class KnownSizeArrayLoadH(
 
   override def resultType: ReferenceH[ReferendH] = {
     val location =
-      (targetOwnership, arrayRegister.resultType.kind.rawArray.elementType.location) match {
+      (targetOwnership, arrayExpression.resultType.kind.rawArray.elementType.location) match {
         case (BorrowH, _) => YonderH
         case (OwnH, location) => location
         case (ShareH, location) => location
       }
-    ReferenceH(targetOwnership, location, arrayRegister.resultType.kind.rawArray.elementType.kind)
+    ReferenceH(targetOwnership, location, arrayExpression.resultType.kind.rawArray.elementType.kind)
   }
 }
 
@@ -402,9 +372,8 @@ case class KnownSizeArrayLoadH(
 case class CallH(
   // Identifies which function to call.
   function: PrototypeH,
-  // Registers containing the arguments to pass to the function.
-  // As with any read from a register, this will invalidate the registers.
-  argsRegisters: List[ExpressionH[ReferendH]]
+  // Expressions containing the arguments to pass to the function.
+  argsExpressions: List[ExpressionH[ReferendH]]
 ) extends ExpressionH[ReferendH] {
   override def resultType: ReferenceH[ReferendH] = function.returnType
 }
@@ -413,22 +382,20 @@ case class CallH(
 case class ExternCallH(
   // Identifies which function to call.
   function: PrototypeH,
-  // Registers containing the arguments to pass to the function.
-  // As with any read from a register, this will invalidate the registers.
-  argsRegisters: List[ExpressionH[ReferendH]]
+  // Expressions containing the arguments to pass to the function.
+  argsExpressions: List[ExpressionH[ReferendH]]
 ) extends ExpressionH[ReferendH] {
   override def resultType: ReferenceH[ReferendH] = function.returnType
 }
 
 // Calls a function on an interface.
 case class InterfaceCallH(
-  // Registers containing the arguments to pass to the function.
-  // As with any read from a register, this will invalidate the registers.
-  argsRegisters: List[ExpressionH[ReferendH]],
+  // Expressions containing the arguments to pass to the function.
+  argsExpressions: List[ExpressionH[ReferendH]],
   // Which parameter has the interface whose table we'll read to get the function.
   virtualParamIndex: Int,
   // The type of the interface.
-  // TODO: Take this out, it's redundant, can get it from argsRegisters[virtualParamIndex]
+  // TODO: Take this out, it's redundant, can get it from argsExpressions[virtualParamIndex]
   interfaceRefH: InterfaceRefH,
   // The index in the vtable for the function.
   indexInEdge: Int,
@@ -444,16 +411,16 @@ case class InterfaceCallH(
 
 // An if-statement. It will get a boolean from running conditionBlock, and use it to either
 // call thenBlock or elseBlock. The result of the thenBlock or elseBlock will be put into
-// registerId.
+// expressionsId.
 case class IfH(
   // The block for the condition. If this results in a true, we'll run thenBlock, otherwise
   // we'll run elseBlock.
   conditionBlock: ExpressionH[BoolH],
   // The block to run if conditionBlock results in a true. The result of this block will be
-  // put into registerId.
+  // put into expressionsId.
   thenBlock: ExpressionH[ReferendH],
   // The block to run if conditionBlock results in a false. The result of this block will be
-  // put into registerId.
+  // put into expressionsId.
   elseBlock: ExpressionH[ReferendH],
 
   commonSupertype: ReferenceH[ReferendH],
@@ -507,102 +474,92 @@ case class BlockH(
 // Ends the current function and returns a reference. A function will always end
 // with a return statement.
 case class ReturnH(
-  // The register to read from, whose value we'll return from the function.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[ReferendH]
+  // The expressions to read from, whose value we'll return from the function.
+  sourceExpression: ExpressionH[ReferendH]
 ) extends ExpressionH[NeverH] {
   override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, NeverH())
 }
 
-// Constructs an unknown-size array, whose length is the integer from sizeRegister,
-// whose values are generated from the function from generatorRegister. Puts the
-// result in a new register.
+// Constructs an unknown-size array, whose length is the integer from sizeExpression,
+// whose values are generated from the function from generatorExpression. Puts the
+// result in a new expressions.
 case class ConstructUnknownSizeArrayH(
-  // Register containing the size of the new array.
-  // As with any read from a register, this will invalidate the register.
-  sizeRegister: ExpressionH[IntH],
-  // Register containing the IFunction<int, T> interface reference which we'll
+  // Expression containing the size of the new array.
+  sizeExpression: ExpressionH[IntH],
+  // Expression containing the IFunction<int, T> interface reference which we'll
   // call to generate each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  // As with any read from a register, this will invalidate the register.
-  generatorRegister: ExpressionH[InterfaceRefH],
+  generatorExpression: ExpressionH[InterfaceRefH],
   // The resulting type of the array.
-  // TODO: Remove this, it's redundant with the generatorRegister's interface's
+  // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
   resultType: ReferenceH[UnknownSizeArrayTH]
 ) extends ExpressionH[UnknownSizeArrayTH] {
   vassert(
-    generatorRegister.resultType.ownership == BorrowH ||
-      generatorRegister.resultType.ownership == ShareH)
+    generatorExpression.resultType.ownership == BorrowH ||
+      generatorExpression.resultType.ownership == ShareH)
 }
 
 // Destroys an array previously created with NewArrayFromValuesH.
 case class DestroyKnownSizeArrayIntoFunctionH(
-  // Register containing the array we'll destroy.
+  // Expression containing the array we'll destroy.
   // This is an owning reference.
-  // As with any read from a register, this will invalidate the register.
-  arrayRegister: ExpressionH[KnownSizeArrayTH],
-  // Register containing the IFunction<T, Void> interface reference which we'll
+  arrayExpression: ExpressionH[KnownSizeArrayTH],
+  // Expression containing the IFunction<T, Void> interface reference which we'll
   // call to destroy each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  // As with any read from a register, this will invalidate the register.
-  consumerRegister: ExpressionH[InterfaceRefH]
+  consumerExpression: ExpressionH[InterfaceRefH]
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 
 // Destroys an array previously created with ConstructUnknownSizeArrayH.
 case class DestroyUnknownSizeArrayH(
-  // Register containing the array we'll destroy.
+  // Expression containing the array we'll destroy.
   // This is an owning reference.
-  // As with any read from a register, this will invalidate the register.
-  arrayRegister: ExpressionH[UnknownSizeArrayTH],
-  // Register containing the IFunction<T, Void> interface reference which we'll
+  arrayExpression: ExpressionH[UnknownSizeArrayTH],
+  // Expression containing the IFunction<T, Void> interface reference which we'll
   // call to destroy each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  // As with any read from a register, this will invalidate the register.
-  consumerRegister: ExpressionH[InterfaceRefH]
+  consumerExpression: ExpressionH[InterfaceRefH]
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 
 // Creates a new struct instance.
 case class NewStructH(
-  // Registers containing the values we'll use as members of the new struct.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegisters: List[ExpressionH[ReferendH]],
+  // Expressions containing the values we'll use as members of the new struct.
+  sourceExpressions: List[ExpressionH[ReferendH]],
   // The type of struct we'll create.
   resultType: ReferenceH[StructRefH]
 ) extends ExpressionH[StructRefH]
 
 // Gets the length of an unknown-sized array.
 case class ArrayLengthH(
-  // Register containing the array whose length we'll get.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[ReferendH],
+  // Expression containing the array whose length we'll get.
+  sourceExpression: ExpressionH[ReferendH],
 ) extends ExpressionH[IntH] {
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH())
 }
 
 // Turns a constraint ref into a weak ref.
 case class WeakAliasH(
-  // Register containing the constraint reference to turn into a weak ref.
-  refRegister: ExpressionH[ReferendH],
+  // Expression containing the constraint reference to turn into a weak ref.
+  refExpression: ExpressionH[ReferendH],
 ) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refRegister.resultType.kind)
+  override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refExpression.resultType.kind)
 }
 
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(
-  // Register containing the array whose length we'll get.
-  // As with any read from a register, this will invalidate the register.
-  sourceRegister: ExpressionH[ReferendH],
+  // Expression containing the array whose length we'll get.
+  sourceExpression: ExpressionH[ReferendH],
   // Should be an owned ref to optional of borrow ref of something
   resultType: ReferenceH[InterfaceRefH],
   // Function to give a borrow ref to to make a Some(borrow ref)
@@ -615,13 +572,13 @@ case class LockWeakH(
 // is as we expected.
 // This instruction can be safely ignored, it's mainly here for tests.
 case class CheckRefCountH(
-  // Register containing the reference whose ref count we'll measure.
-  refRegister: ExpressionH[ReferendH],
+  // Expression containing the reference whose ref count we'll measure.
+  refExpression: ExpressionH[ReferendH],
   // The type of ref count to check.
   category: RefCountCategory,
-  // Register containing a number, so we can assert it's equal to the object's
+  // Expression containing a number, so we can assert it's equal to the object's
   // ref count.
-  numRegister: ExpressionH[IntH]
+  numExpression: ExpressionH[IntH]
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
@@ -639,29 +596,29 @@ case object RegisterRefCount extends RefCountCategory
 
 // See DINSIE for why this isn't three instructions, and why we don't have the
 // destructor prototype in it.
-case class DiscardH(sourceRegister: ExpressionH[ReferendH]) extends ExpressionH[StructRefH] {
-  sourceRegister.resultType.ownership match {
+case class DiscardH(sourceExpression: ExpressionH[ReferendH]) extends ExpressionH[StructRefH] {
+  sourceExpression.resultType.ownership match {
     case BorrowH | ShareH | WeakH =>
   }
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
 
-trait IRegisterH {
-  def expectReferenceRegister(): ReferenceRegisterH = {
+trait IExpressionH {
+  def expectReferenceExpression(): ReferenceExpressionH = {
     this match {
-      case r @ ReferenceRegisterH(_) => r
-      case AddressRegisterH(_) => vfail("Expected a reference as a result, but got an address!")
+      case r @ ReferenceExpressionH(_) => r
+      case AddressExpressionH(_) => vfail("Expected a reference as a result, but got an address!")
     }
   }
-  def expectAddressRegister(): AddressRegisterH = {
+  def expectAddressExpression(): AddressExpressionH = {
     this match {
-      case a @ AddressRegisterH(_) => a
-      case ReferenceRegisterH(_) => vfail("Expected an address as a result, but got a reference!")
+      case a @ AddressExpressionH(_) => a
+      case ReferenceExpressionH(_) => vfail("Expected an address as a result, but got a reference!")
     }
   }
 }
-case class ReferenceRegisterH(reference: ReferenceH[ReferendH]) extends IRegisterH
-case class AddressRegisterH(reference: ReferenceH[ReferendH]) extends IRegisterH
+case class ReferenceExpressionH(reference: ReferenceH[ReferendH]) extends IExpressionH
+case class AddressExpressionH(reference: ReferenceH[ReferendH]) extends IExpressionH
 
 // Identifies a local variable.
 case class Local(

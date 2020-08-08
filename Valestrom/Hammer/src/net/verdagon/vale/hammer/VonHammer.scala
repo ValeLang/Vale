@@ -810,17 +810,6 @@ object VonHammer {
         VonMember("char", VonInt(char))))
   }
 
-  def vonifyCodeLocationH(codeLocation: CodeLocationH): IVonData = {
-    val CodeLocationH(file, line, char) = codeLocation
-    VonObject(
-      "CodeLocation",
-      None,
-      Vector(
-        VonMember("file", VonStr(file)),
-        VonMember("line", VonInt(line)),
-        VonMember("char", VonInt(char))))
-  }
-
   def vonifyCodeLocation2(codeLocation: CodeLocation2): IVonData = {
     val CodeLocation2(line, char) = codeLocation
     VonObject(

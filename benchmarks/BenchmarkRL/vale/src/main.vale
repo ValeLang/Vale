@@ -1,4 +1,4 @@
 fn main() {
-  Location(4, 5).next_to(Location(7, 8));
-  ret 0;
+  x = Location(4, 5).next_to(Location(7, 8), true, true);
+  = if (x) { 0 } else { 1 }
 }

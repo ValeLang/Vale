@@ -288,7 +288,8 @@ object ExpressionHammer {
         // an Int for example when one branch of an If panics or returns.
 
         if (innerExprResultTypeH.kind == NeverH() || resultTypeH.kind == NeverH()) {
-          (ReinterpretH(innerExprResultLine, resultTypeH), deferreds)
+          vfail()
+//          (ReinterpretH(innerExprResultLine, resultTypeH), deferreds)
         } else {
           (innerExprResultLine, deferreds)
         }

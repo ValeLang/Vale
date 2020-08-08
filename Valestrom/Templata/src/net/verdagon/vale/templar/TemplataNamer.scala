@@ -13,9 +13,9 @@ object TemplataNamer {
     val Coord(ownership, referend) = reference;
     val ownershipString =
       ownership match {
-        case Share => "*"
+        case Share => ""//"*"
         case Borrow => "&"
-        case Own => "^"
+        case Own => ""//"^"
       }
     ownershipString + getReferendIdentifierName(referend)
   }
@@ -59,11 +59,11 @@ object TemplataNamer {
 
   def getReferendIdentifierName(tyype: Kind): String = {
     tyype match {
-      case Int2() => "𝒾"
-      case Float2() => "𝒻"
-      case Bool2() => "𝒷"
-      case Str2() => "𝓈"
-      case Void2() => "∅"
+      case Int2() => "int"//"𝒾"
+      case Float2() => "float"//"𝒻"
+      case Bool2() => "bool"// "𝒷"
+      case Str2() => "str"// "𝓈"
+      case Void2() => "void" // "∅"
       case UnknownSizeArrayT2(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
       case KnownSizeArrayT2(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
       case PackT2(_, underlyingStruct) => {

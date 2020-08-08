@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{BorrowP, MutabilityP, OwnershipP, VariabilityP, WeakP}
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RefCountCategory}
+import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RangeS, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.vassert
@@ -120,7 +120,7 @@ case class DotAE(left: IExpressionAE, member: String, borrowContainer: Boolean) 
 
 case class DotCallAE(left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE
 
-case class FunctionCallAE(callableExpr: IExpressionAE, argsExprs1: List[IExpressionAE]) extends IExpressionAE
+case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1: List[IExpressionAE]) extends IExpressionAE
 
 //case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0
 

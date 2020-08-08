@@ -3,7 +3,7 @@ package net.verdagon.vale.astronomer.builtins
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.astronomer.externs.Externs.makeExtern
 import net.verdagon.vale.parser.{FinalP, OwnP}
-import net.verdagon.vale.scout.{CodeLocationS, LocalVariable1, NotUsed, Used}
+import net.verdagon.vale.scout.{CodeLocationS, LocalVariable1, NotUsed, RangeS, Used}
 
 import scala.collection.immutable.List
 
@@ -41,7 +41,7 @@ object Forwarders {
       makeForwarder(">=", List(("left", "int"), ("right", "int")), "bool", "__greaterThanOrEqInt"))
 
   def makeForwarder(functionName: String, params: List[(String, String)], ret: String, callee: String): FunctionA = {
-    val name = FunctionNameA(functionName, CodeLocationS(-33, 0))
+    val name = FunctionNameA(functionName, CodeLocationS.internal(-33))
     makeSimpleFunction(
       name,
       params,
@@ -55,6 +55,7 @@ object Forwarders {
             }),
             List(
               FunctionCallAE(
+                RangeS.internal(-35),
                 FunctionLoadAE(GlobalFunctionFamilyNameA(callee)),
                 params.map(param => LocalLoadAE(CodeVarNameA(param._1), OwnP))))))))
   }

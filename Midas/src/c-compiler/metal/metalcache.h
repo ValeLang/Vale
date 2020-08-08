@@ -47,6 +47,7 @@ public:
   Str* str = new Str();
   Void* vooid = new Void();
   Never* never = new Never();
+  StructReferend* emptyTupleStructReferend = nullptr;
 
   std::unordered_map<Name*, StructReferend*> structReferends;
   std::unordered_map<Name*, InterfaceReferend*> interfaceReferends;

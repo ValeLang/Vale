@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnv
 import net.verdagon.vale.scout.patterns.AtomSP
 
 object Printing {
-  val printlnStrName = FunctionNameA("println", CodeLocationS(-9, 0))
+  val printlnStrName = FunctionNameA("println", CodeLocationS.internal(-9))
   val printlnStr =
     FunctionA(
       printlnStrName,
@@ -30,15 +30,17 @@ object Printing {
           BlockAE(
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
+              RangeS.internal(-38),
               FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
+                  RangeS.internal(-43),
                   FunctionLoadAE(GlobalFunctionFamilyNameA("+")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP),
                     StrLiteralAE("\n"))))))))))
 
-  val printlnIntName = FunctionNameA("println", CodeLocationS(-10, 0))
+  val printlnIntName = FunctionNameA("println", CodeLocationS.internal(-10))
   val printlnInt =
     FunctionA(
       printlnIntName,
@@ -62,14 +64,16 @@ object Printing {
           BlockAE(
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
+              RangeS.internal(-39),
               FunctionLoadAE(GlobalFunctionFamilyNameA("println")),
               List(
                 FunctionCallAE(
+                  RangeS.internal(-44),
                   FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
-  val printlnBoolName = FunctionNameA("println", CodeLocationS(-34, 0))
+  val printlnBoolName = FunctionNameA("println", CodeLocationS.internal(-34))
   val printlnBool =
     FunctionA(
       printlnBoolName,
@@ -93,14 +97,16 @@ object Printing {
           BlockAE(
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
+              RangeS.internal(-39),
               FunctionLoadAE(GlobalFunctionFamilyNameA("println")),
               List(
                 FunctionCallAE(
+                  RangeS.internal(-45),
                   FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
-  val printIntName = FunctionNameA("print", CodeLocationS(-12, 0))
+  val printIntName = FunctionNameA("print", CodeLocationS.internal(-12))
   val printInt =
     FunctionA(
       printIntName,
@@ -125,14 +131,16 @@ object Printing {
           BlockAE(
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
+              RangeS.internal(-40),
               FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
+                  RangeS.internal(-46),
                   FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
-  val printBoolName = FunctionNameA("print", CodeLocationS(-12, 0))
+  val printBoolName = FunctionNameA("print", CodeLocationS.internal(-12))
   val printBool =
     FunctionA(
       printBoolName,
@@ -157,9 +165,11 @@ object Printing {
           BlockAE(
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
+              RangeS.internal(-41),
               FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
+                  RangeS.internal(-47),
                   FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))

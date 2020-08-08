@@ -8,6 +8,7 @@ import net.verdagon.vale.{scout, vassert, vassertSome, vimpl, vwat}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.rules._
+import net.verdagon.vale.templar.OverloadTemplar.IScoutExpectedFunctionFailureReason
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
@@ -46,7 +47,7 @@ trait IFunctionTemplarDelegate {
 object FunctionTemplar {
   trait IEvaluateFunctionResult[T]
   case class EvaluateFunctionSuccess[T](function: T) extends IEvaluateFunctionResult[T]
-  case class EvaluateFunctionFailure[T](reason: String) extends IEvaluateFunctionResult[T]
+  case class EvaluateFunctionFailure[T](reason: IScoutExpectedFunctionFailureReason) extends IEvaluateFunctionResult[T]
 }
 
 // When templaring a function, these things need to happen:

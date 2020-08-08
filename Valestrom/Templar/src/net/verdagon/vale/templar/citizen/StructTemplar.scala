@@ -65,7 +65,7 @@ class StructTemplar(
     delegate: IStructTemplarDelegate) {
   val templateArgsLayer = new StructTemplarTemplateArgsLayer(opts, inferTemplar, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): (StructRef2) = {
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     templateArgsLayer.addBuiltInStructs(env, temputs)
   }
 

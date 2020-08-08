@@ -316,33 +316,34 @@ class ExpressionTemplar(
         val CoordTemplata(paramCoord) = paramCoordTemplata
         (ArgLookup2(index, paramCoord), Set())
       }
-      case FunctionCallAE(TemplateSpecifiedLookupAE(name, templateArgTemplexesS), argsExprs1) => {
+      case FunctionCallAE(range, TemplateSpecifiedLookupAE(name, templateArgTemplexesS), argsExprs1) => {
         val (argsExprs2, returnsFromArgs) =
           evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
         val callExpr2 =
           callTemplar.evaluatePrefixCall(
             temputs,
             fate,
+            range,
             newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name)),
             templateArgTemplexesS,
             argsExprs2)
         (callExpr2, returnsFromArgs)
       }
-      case FunctionCallAE(TemplateSpecifiedLookupAE(name, templateArgTemplexesS), argsExprs1) => {
+      case FunctionCallAE(range, TemplateSpecifiedLookupAE(name, templateArgTemplexesS), argsExprs1) => {
         val (argsExprs2, returnsFromArgs) =
           evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
         val callExpr2 =
-          callTemplar.evaluateNamedPrefixCall(temputs, fate, GlobalFunctionFamilyNameA(name), templateArgTemplexesS, argsExprs2)
+          callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), templateArgTemplexesS, argsExprs2)
         (callExpr2, returnsFromArgs)
       }
-      case FunctionCallAE(FunctionLoadAE(name), argsPackExpr1) => {
+      case FunctionCallAE(range, FunctionLoadAE(name), argsPackExpr1) => {
         val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
         val callExpr2 =
-          callTemplar.evaluateNamedPrefixCall(temputs, fate, name, List(), argsExprs2)
+          callTemplar.evaluateNamedPrefixCall(temputs, fate, range, name, List(), argsExprs2)
         (callExpr2, returnsFromArgs)
       }
-      case FunctionCallAE(callableExpr1, argsExprs1) => {
+      case FunctionCallAE(range, callableExpr1, argsExprs1) => {
         val (undecayedCallableExpr2, returnsFromCallable) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, callableExpr1);
         val decayedCallableExpr2 =
@@ -352,7 +353,7 @@ class ExpressionTemplar(
         val (argsExprs2, returnsFromArgs) =
           evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
         val functionPointerCall2 =
-          callTemplar.evaluatePrefixCall(temputs, fate, decayedCallableReferenceExpr2, List(), argsExprs2)
+          callTemplar.evaluatePrefixCall(temputs, fate, range, decayedCallableReferenceExpr2, List(), argsExprs2)
         (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
       }
 

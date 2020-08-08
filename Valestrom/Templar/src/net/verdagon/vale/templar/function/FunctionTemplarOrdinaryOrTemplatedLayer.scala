@@ -4,6 +4,7 @@ import net.verdagon.vale.astronomer.{CodeBodyA, FunctionA, IRulexAR, IRuneA, ITe
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.templar.OverloadTemplar.InferFailure
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
@@ -135,7 +136,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
           explicitTemplateArgs,
           args) match {
         case (isf @ InferSolveFailure(_, _, _, _, _, _)) => {
-          return (EvaluateFunctionFailure(isf.toString))
+          return (EvaluateFunctionFailure(InferFailure(isf)))
         }
         case (InferSolveSuccess(i)) => (i)
       }
@@ -176,7 +177,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
         alreadySpecifiedTemplateArgs,
         paramFilters) match {
       case (isf @ InferSolveFailure(_, _, _, _, _, _)) => {
-        return (EvaluateFunctionFailure(isf.toString))
+        return (EvaluateFunctionFailure(InferFailure(isf)))
       }
       case (InferSolveSuccess(i)) => (i)
     }
@@ -306,7 +307,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
         explicitTemplateArgs,
         args) match {
       case (isc @ InferSolveFailure(_, _, _, _, _, _)) => {
-        return (EvaluateFunctionFailure[FunctionBanner2](isc.toString))
+        return (EvaluateFunctionFailure[FunctionBanner2](InferFailure(isc)))
       }
       case (InferSolveSuccess(inferredTemplatas)) => (inferredTemplatas.templatasByRune)
     }

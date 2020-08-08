@@ -22,7 +22,7 @@ class ValeCompiler(unittest.TestCase):
     def valestrom(self, vale_files: List[str],
                   vir_file: str) -> subprocess.CompletedProcess:
         driver = os.path.dirname(os.path.realpath(__file__)) + "/test/Driver.jar"
-        print(driver)
+        # print(driver)
         driver_class = "net.verdagon.vale.driver.Driver"
         return procrun(
             [

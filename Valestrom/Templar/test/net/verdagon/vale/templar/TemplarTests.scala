@@ -74,7 +74,7 @@ class TemplarTests extends FunSuite with Matchers {
 
           val debugOut = (string: String) => { println(string) }
 
-          val temputs = new Templar(debugOut).evaluate(getAstrouts())
+          val temputs = new Templar(debugOut, true).evaluate(getAstrouts()).getOrDie()
           temputsCache = Some(temputs)
           temputs
         }

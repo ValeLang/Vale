@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.function
 
 import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CaptureA, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, RuneAT, TemplateTemplataType, TemplexAR}
 import net.verdagon.vale.parser.{FinalP, OwnP, ShareP}
-import net.verdagon.vale.scout.CodeLocationS
+import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
@@ -385,7 +385,7 @@ class DestructorTemplar(
       List(),
       true) match {
       case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-        vfail("Couldn't find function to call!\n" + seff.toString)
+        throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-49), seff))
       }
       case (ScoutExpectedFunctionSuccess(p)) => (p)
     }
@@ -408,7 +408,7 @@ class DestructorTemplar(
         List(),
         true) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-          vfail("Couldn't find function to call!\n" + seff.toString)
+          throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-48), seff))
         }
         case (ScoutExpectedFunctionSuccess(p)) => (p)
       }
@@ -450,7 +450,7 @@ object DestructorTemplar {
     val unevaluatedFunction =
     FunctionA(
       if (mutability == Mutable) {
-        FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, CodeLocationS(-16, 0))
+        FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, CodeLocationS.internal(-16))
       } else {
         ImmConcreteDestructorNameA()
       },
@@ -529,7 +529,7 @@ object DestructorTemplar {
     val unevaluatedFunctionA =
       FunctionA(
         if (mutability == Mutable) {
-          FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(-17, 0))
+          FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS.internal(-17))
         } else {
           ImmInterfaceDestructorNameA()
         },
@@ -602,7 +602,7 @@ object DestructorTemplar {
     val unevaluatedFunctionA =
       FunctionA(
         if (mutability == Mutable) {
-          FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS(-18, 0))
+          FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS.internal(-18))
         } else {
           ImmInterfaceDestructorNameA()
         },
@@ -692,7 +692,7 @@ object DestructorTemplar {
     val unevaluatedFunctionA =
     FunctionA(
       if (mutability == Mutable) {
-        FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS(-19, 0))
+        FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS.internal(-19))
       } else {
         ImmDropNameA()
       },

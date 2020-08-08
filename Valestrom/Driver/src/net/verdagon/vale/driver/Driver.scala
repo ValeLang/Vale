@@ -10,9 +10,9 @@ import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Vonifier}
 import net.verdagon.vale.scout.Scout
-import net.verdagon.vale.templar.Templar
+import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Terrain, vassert, vassertSome, vcheck, vfail}
+import net.verdagon.vale.{Err, Ok, Terrain, vassert, vassertSome, vcheck, vfail}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
@@ -116,7 +116,15 @@ object Driver {
         }
         case Left(result) => result
       }
-    val temputs = new Templar(println).evaluate(astrouts)
+    val temputs =
+      new Templar(if (opts.verbose) println else (_), opts.verbose).evaluate(astrouts) match {
+        case Err(error) => {
+          println(TemplarErrorHumanizer.humanize(opts.verbose, sources, error))
+          System.exit(22)
+          vfail()
+        }
+        case Ok(x) => x
+      }
     val hinputs = Carpenter.translate(debugOut, temputs)
     val programH = Hammer.translate(hinputs)
 

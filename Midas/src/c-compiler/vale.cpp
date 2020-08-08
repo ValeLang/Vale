@@ -175,6 +175,7 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
   auto programJ = json::parse(str.c_str());
   auto program = readProgram(&globalState->metalCache, programJ);
 
+  assert(globalState->metalCache.emptyTupleStructReferend != nullptr);
 
 
   // Start making the entry function. We make it up here because we want its
@@ -251,6 +252,7 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
     }
   }
 
+  Prototype* mainM = nullptr;
   LLVMValueRef mainL = nullptr;
   int numFuncs = program->functions.size();
   for (auto p : program->functions) {
@@ -258,10 +260,12 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
     auto function = p.second;
     LLVMValueRef entryFunctionL = declareFunction(globalState, function);
     if (function->prototype->name->name == "F(\"main\")") {
+      mainM = function->prototype;
       mainL = entryFunctionL;
     }
   }
   assert(mainL != nullptr);
+  assert(mainM != nullptr);
 
   // We translate the edges after the functions are declared because the
   // functions have to exist for the itables to point to them.
@@ -283,7 +287,7 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
 
   LLVMValueRef emptyValues[1] = {};
   LLVMValueRef mainResult =
-      LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "valeMainCall");
+      LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
   {
     LLVMValueRef args[2] = {
@@ -302,7 +306,15 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
     LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
   }
 
-  LLVMBuildRet(entryBuilder, mainResult);
+  if (mainM->returnType->referend == globalState->metalCache.vooid) {
+    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
+  } else if (mainM->returnType->referend == globalState->metalCache.emptyTupleStructReferend) {
+    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
+  } else if (mainM->returnType->referend == globalState->metalCache.innt) {
+    LLVMBuildRet(entryBuilder, mainResult);
+  } else {
+    assert(false);
+  }
   LLVMDisposeBuilder(entryBuilder);
 }
 

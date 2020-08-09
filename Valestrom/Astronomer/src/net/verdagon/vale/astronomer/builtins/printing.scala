@@ -9,6 +9,7 @@ object Printing {
   val printlnStrName = FunctionNameA("println", CodeLocationS.internal(-9))
   val printlnStr =
     FunctionA(
+      RangeS.internal(-58),
       printlnStrName,
       false,
       FunctionTemplataType,
@@ -43,6 +44,7 @@ object Printing {
   val printlnIntName = FunctionNameA("println", CodeLocationS.internal(-10))
   val printlnInt =
     FunctionA(
+      RangeS.internal(-54),
       printlnIntName,
       false,
       FunctionTemplataType,
@@ -76,6 +78,7 @@ object Printing {
   val printlnBoolName = FunctionNameA("println", CodeLocationS.internal(-34))
   val printlnBool =
     FunctionA(
+      RangeS.internal(-55),
       printlnBoolName,
       false,
       FunctionTemplataType,
@@ -109,6 +112,7 @@ object Printing {
   val printIntName = FunctionNameA("print", CodeLocationS.internal(-12))
   val printInt =
     FunctionA(
+      RangeS.internal(-51),
       printIntName,
       false,
       FunctionTemplataType,
@@ -143,6 +147,7 @@ object Printing {
   val printBoolName = FunctionNameA("print", CodeLocationS.internal(-12))
   val printBool =
     FunctionA(
+      RangeS.internal(-52),
       printBoolName,
       false,
       FunctionTemplataType,

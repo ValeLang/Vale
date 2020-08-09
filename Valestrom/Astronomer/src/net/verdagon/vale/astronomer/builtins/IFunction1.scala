@@ -2,7 +2,7 @@ package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, MutableP}
-import net.verdagon.vale.scout.{CodeLocationS, ParameterS}
+import net.verdagon.vale.scout.{CodeLocationS, ParameterS, RangeS}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP}
 
 import scala.collection.immutable.{List, Map}
@@ -10,6 +10,7 @@ import scala.collection.immutable.{List, Map}
 object IFunction1 {
   val interface =
     InterfaceA(
+      RangeS.internal(-69),
       TopLevelCitizenDeclarationNameA("IFunction1", CodeLocationS.internal(-7)),
       false,
       CodeRuneA("M"),
@@ -28,6 +29,7 @@ object IFunction1 {
         TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType))),
       List(
         FunctionA(
+          RangeS.internal(-56),
           FunctionNameA("__call", CodeLocationS.internal(-8)),
           true,
           FunctionTemplataType,

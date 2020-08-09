@@ -135,15 +135,15 @@ class RuleTyperMatcher[Env, State](
         case ((expectedType, rule), index) => {
           matchTypeAgainstTemplexS(state, env, conclusions, expectedType, rule) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Failed evaluating templex " + index, List(rtmc)))
-            case (RuleTyperMatchUnknown()) => Nil
+            case RuleTyperMatchUnknown() => Nil
             case (RuleTyperMatchSuccess(templexT)) => List(templexT)
           }
         }
       })
     if (resultTemplexesT.size == rules.size) {
-      (RuleTyperMatchSuccess(resultTemplexesT))
+      RuleTyperMatchSuccess(resultTemplexesT)
     } else {
-      (RuleTyperMatchUnknown())
+      RuleTyperMatchUnknown()
     }
   }
 
@@ -223,7 +223,7 @@ class RuleTyperMatcher[Env, State](
                 }
               }
             })
-            (RuleTyperMatchUnknown())
+            RuleTyperMatchUnknown()
           }
           case Some(templateTemplexT) => {
             val templexTemplateType =
@@ -240,8 +240,8 @@ class RuleTyperMatcher[Env, State](
             }
             matchTypeAgainstTemplexesS(state, env, conclusions, templexTemplateType.paramTypes, templateArgs) match {
               case (rtec @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Couldn't evaluate template call args!", List(rtec)))
-              case (RuleTyperMatchUnknown()) => {
-                (RuleTyperMatchUnknown())
+              case RuleTyperMatchUnknown() => {
+                RuleTyperMatchUnknown()
               }
               case (RuleTyperMatchSuccess(argTemplexesT)) => {
                 (RuleTyperMatchSuccess(CallAT(templateTemplexT, argTemplexesT, expectedType)))
@@ -253,8 +253,8 @@ class RuleTyperMatcher[Env, State](
       case (PackST(elements), PackTemplataType(CoordTemplataType)) => {
         matchTypeAgainstTemplexesS(state, env, conclusions, elements.indices.toList.map(_ => CoordTemplataType), elements) match {
           case (rtec @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Couldn't evaluate template call args!", List(rtec)))
-          case (RuleTyperMatchUnknown()) => {
-            (RuleTyperMatchUnknown())
+          case RuleTyperMatchUnknown() => {
+            RuleTyperMatchUnknown()
           }
           case (RuleTyperMatchSuccess(coordTemplexesT)) => {
             (RuleTyperMatchSuccess(CoordListAT(coordTemplexesT)))
@@ -292,7 +292,7 @@ class RuleTyperMatcher[Env, State](
       case (OwnershippedST(ownership, coordTemplex), CoordTemplataType) => {
         matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, coordTemplex) match {
           case (rtec @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Couldn't evaluate ownershipped's kind!", List(rtec)))
-          case (RuleTyperMatchUnknown()) => (RuleTyperMatchUnknown())
+          case RuleTyperMatchUnknown() => RuleTyperMatchUnknown()
           case (RuleTyperMatchSuccess(innerCoordRuleT)) => {
             (RuleTyperMatchSuccess(OwnershippedAT(ownership, innerCoordRuleT)))
           }
@@ -302,32 +302,50 @@ class RuleTyperMatcher[Env, State](
         val maybeMutabilityTemplexT =
           matchTypeAgainstTemplexS(state, env, conclusions, MutabilityTemplataType, mutabilityTemplexS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Conflict in mutability part!", List(rtmc)))
-            case (RuleTyperMatchUnknown()) => (None)
+            case RuleTyperMatchUnknown() => (None)
             case (RuleTyperMatchSuccess(sizeTemplexT)) => (Some(sizeTemplexT))
           }
         val maybeSizeTemplexT =
           matchTypeAgainstTemplexS(state, env, conclusions, IntegerTemplataType, sizeTemplexS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Conflict in size part!", List(rtmc)))
-            case (RuleTyperMatchUnknown()) => (None)
+            case RuleTyperMatchUnknown() => (None)
             case (RuleTyperMatchSuccess(sizeTemplexT)) => (Some(sizeTemplexT))
           }
         val maybeElementTemplexT =
           matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, elementTemplexS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Conflict in element part!", List(rtmc)))
-            case (RuleTyperMatchUnknown()) => (None)
+            case RuleTyperMatchUnknown() => (None)
             case (RuleTyperMatchSuccess(elementTemplexT)) => (Some(elementTemplexT))
           }
         (maybeMutabilityTemplexT, maybeSizeTemplexT, maybeElementTemplexT) match {
           case (Some(mutabilityTemplexT), Some(sizeTemplexT), (Some(elementTemplexT))) => {
             (RuleTyperMatchSuccess(RepeaterSequenceAT(mutabilityTemplexT, sizeTemplexT, elementTemplexT, expectedType)))
           }
-          case (_, _, _) => (RuleTyperMatchUnknown())
+          case (_, _, _) => {
+            RuleTyperMatchUnknown()
+          }
+        }
+      }
+      case (ManualSequenceST(elementTemplexesS), KindTemplataType | CoordTemplataType) => {
+        val templexMaybesA =
+          elementTemplexesS.map(elementTemplexS => {
+            matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, elementTemplexS) match {
+              case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Conflict in element part!", List(rtmc)))
+              case (RuleTyperMatchUnknown()) => None
+              case (RuleTyperMatchSuccess(templexA)) => Some(templexA)
+            }
+          })
+        if (templexMaybesA.contains(None)) {
+          RuleTyperMatchUnknown()
+        } else {
+          val templexesA = templexMaybesA.flatten
+          RuleTyperMatchSuccess(ManualSequenceAT(templexesA, expectedType))
         }
       }
       case (BorrowST(inner), CoordTemplataType) => {
         matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, inner)
       }
-      case _ => vfail("Can't match " + rule + " against type " + expectedType)
+      case _ => vfail("Can't match! Expected type " + expectedType + ", rule " + rule)
     }
   }
 
@@ -439,7 +457,7 @@ class RuleTyperMatcher[Env, State](
       case TemplexSR(itemplexST) => {
         matchTypeAgainstTemplexS(state, env, conclusions, expectedType, itemplexST) match {
           case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "", List(rtmc)))
-          case (RuleTyperMatchUnknown()) => (RuleTyperMatchUnknown())
+          case RuleTyperMatchUnknown() => RuleTyperMatchUnknown()
           case (RuleTyperMatchSuccess(templexT)) => (RuleTyperMatchSuccess(TemplexAR(templexT)))
         }
       }
@@ -570,11 +588,11 @@ class RuleTyperMatcher[Env, State](
             val maybeMutabilityRuleT =
               matchTypeAgainstRulexSR(state, env, conclusions, MutabilityTemplataType, mutabilityRuleS) match {
                 case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, "Couldn't match against mutability rule of kind components rule", List(rtmc)))
-                case (RuleTyperMatchUnknown()) => (None)
+                case RuleTyperMatchUnknown() => (None)
                 case (RuleTyperMatchSuccess(mutabilityRuleT)) => (Some(mutabilityRuleT))
               }
             maybeMutabilityRuleT match {
-              case None => (RuleTyperMatchUnknown())
+              case None => RuleTyperMatchUnknown()
               case Some(mutabilityRuleT) => {
                 val componentsRuleT =
                   EqualsAR(
@@ -609,7 +627,7 @@ class RuleTyperMatcher[Env, State](
                     ComponentsAR(containerTypeAndRuneRuleT.resultType, List(ownershipRuleT, kindRuleT)))
                 (RuleTyperMatchSuccess(componentsRuleT))
               }
-              case (_, _) => (RuleTyperMatchUnknown())
+              case (_, _) => RuleTyperMatchUnknown()
             }
           }
           case _ => vfail("Wrong number of components for kind")

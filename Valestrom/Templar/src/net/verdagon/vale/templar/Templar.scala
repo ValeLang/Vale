@@ -83,6 +83,11 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
         override def makeArraySequenceType(env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord): KnownSizeArrayT2 = {
           arrayTemplar.makeArraySequenceType(env, temputs, mutability, size, type2)
         }
+
+        override def getTupleKind(env: IEnvironment, state: TemputsBox, elements: List[Coord]): TupleT2 = {
+          val (tuple, mutability) = sequenceTemplar.makeTupleType(env, state, elements)
+          tuple
+        }
       })
   val inferTemplar: InferTemplar =
     new InferTemplar(
@@ -136,6 +141,11 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
 
         override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
           arrayTemplar.makeArraySequenceType(env, state, mutability, size, element)
+        }
+
+        override def getTupleKind(env: IEnvironment, state: TemputsBox, elements: List[Coord]): TupleT2 = {
+          val (tuple, mutability) = sequenceTemplar.makeTupleType(env, state, elements)
+          tuple
         }
 
         override def evaluateInterfaceTemplata(

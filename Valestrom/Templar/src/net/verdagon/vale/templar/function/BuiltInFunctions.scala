@@ -18,6 +18,7 @@ object BuiltInFunctions {
   val builtIns =
     List(
       FunctionA(
+        RangeS.internal(-61),
         FunctionNameA("len", s.CodeLocationS.internal(-20)),
         true,
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
@@ -58,6 +59,7 @@ object BuiltInFunctions {
                 ArrayLengthAE(
                   LocalLoadAE(CodeVarNameA("arr"), OwnP))))))),
       FunctionA(
+        RangeS.internal(-62),
         FunctionNameA("len", s.CodeLocationS.internal(-21)),
         true,
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
@@ -97,6 +99,7 @@ object BuiltInFunctions {
               List(
                 RuneLookupAE(CodeRuneA("N"), IntegerTemplataType)))))),
       FunctionA(
+        RangeS.internal(-67),
         FunctionNameA("panic", s.CodeLocationS.internal(-22)),
         true,
         FunctionTemplataType,
@@ -112,6 +115,7 @@ object BuiltInFunctions {
             TemplexAR(NameAT(CodeTypeNameA("__Never"), CoordTemplataType)))),
         ExternBodyA),
       FunctionA(
+        RangeS.internal(-63),
         FunctionNameA("lock", s.CodeLocationS.internal(-23)),
         true,
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),

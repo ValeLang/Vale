@@ -45,6 +45,8 @@ trait IInfererDelegate[Env, State] {
 
   def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2)
 
+  def getTupleKind(env: Env, state: State, elements: List[Coord]): TupleT2
+
   def getAncestorInterfaceDistance(temputs: State, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2): (Option[Int])
 
   def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2):
@@ -131,6 +133,10 @@ object Inferer {
 
       override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
         delegate.getArraySequenceKind(env, state, mutability, size, element)
+      }
+
+      override def getTupleKind(env: Env, state: State, elements: List[Coord]): TupleT2 = {
+        delegate.getTupleKind(env, state, elements)
       }
 
       override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {

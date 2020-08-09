@@ -8,6 +8,7 @@ import net.verdagon.vale.scout.patterns.AtomSP
 object RefCounting {
   val checkvarrc =
     FunctionA(
+      RangeS.internal(-60),
       FunctionNameA("__checkvarrc", CodeLocationS.internal(-11)),
       false,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
@@ -51,6 +52,7 @@ object RefCounting {
   val checkMemberRcName = FunctionNameA("__checkmemberrc", CodeLocationS.internal(-5))
   val checkmemberrc =
     FunctionA(
+      RangeS.internal(-59),
       checkMemberRcName,
       false,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),

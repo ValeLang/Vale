@@ -1,3 +1,13 @@
+// Added
+fn abs(i int) int {
+  = if (i >= 0) { i } else { -1 * i }
+}
+
+// Added
+fn min(a int, b int) int {
+  = if (a <= b) { a } else { b }
+}
+
 struct Location imm {
     x int;
     y int;

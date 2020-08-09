@@ -54,6 +54,12 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
     element: Coord):
   (KnownSizeArrayT2)
 
+  def getTupleKind(
+    env: Env,
+    state: State,
+    elements: List[Coord]):
+  (TupleT2)
+
   def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType
   def getStructTemplataType(st: StructTemplata): ITemplataType
 }
@@ -436,6 +442,19 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
   (ITemplata) = {
     val uncoercedTemplata =
       delegate.getArraySequenceKind(env, state, mutability, size, element)
+    val templata =
+      coerce(state, KindTemplata(uncoercedTemplata), expectedType)
+    (templata)
+  }
+
+  def getTupleKind(
+    env: Env,
+    state: State,
+    elements: List[Coord],
+    expectedType: ITemplataType):
+  (ITemplata) = {
+    val uncoercedTemplata =
+      delegate.getTupleKind(env, state, elements)
     val templata =
       coerce(state, KindTemplata(uncoercedTemplata), expectedType)
     (templata)

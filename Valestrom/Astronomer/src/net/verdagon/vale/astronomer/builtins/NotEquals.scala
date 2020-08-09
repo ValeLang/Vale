@@ -9,6 +9,7 @@ object NotEquals {
   val name = FunctionNameA("!=", CodeLocationS.internal(-2))
   val function =
     FunctionA(
+      RangeS.internal(-50),
       name,
       false,
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),

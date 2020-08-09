@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.scout.{CodeLocationS, CodeRuneS, ParameterS}
+import net.verdagon.vale.scout.{CodeLocationS, CodeRuneS, ParameterS, RangeS}
 import net.verdagon.vale.astronomer.externs.Externs._
 import net.verdagon.vale.parser.{CaptureP, FinalP}
 import net.verdagon.vale.scout.patterns.AtomSP
@@ -31,6 +31,7 @@ object makeSimpleFunction {
     val localRunes = runeByType.values.toSet[IRuneA] + returnRune
 
     FunctionA(
+      RangeS.internal(-53),
       name,
       false,
       FunctionTemplataType,

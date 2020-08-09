@@ -109,6 +109,7 @@ class StructTemplar(
     val isTemplate = struct1.tyype != KindTemplataType
 
     FunctionA(
+      struct1.range,
       ConstructorNameA(struct1.name),
       true,
       struct1.tyype match {
@@ -173,6 +174,7 @@ class StructTemplar(
 
     val TopLevelCitizenDeclarationNameA(name, codeLocation) = interfaceA.name
     FunctionA(
+      interfaceA.range,
       FunctionNameA(name, codeLocation),
       true,
       interfaceA.tyype match {

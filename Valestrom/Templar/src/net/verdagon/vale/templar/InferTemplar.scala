@@ -142,6 +142,7 @@ class InferTemplar(
       case AbsoluteNameAT(name, resultType) => AbsoluteNameTT(name, resultType)
       case CallAT(template, args, resultType) => CallTT(translateTemplex(template), args.map(translateTemplex), resultType)
       case MutabilityAT(m) => MutabilityTT(m)
+      case ManualSequenceAT(m, resultType) => ManualSequenceTT(m.map(translateTemplex), resultType)
       case RepeaterSequenceAT(mutability, size, element, resultType) => RepeaterSequenceTT(translateTemplex(mutability), translateTemplex(size), translateTemplex(element), resultType)
 //      case PackAT(members, resultType) => PackTT(members.map(translateTemplex), resultType)
       case IntAT(value) => IntTT(value)

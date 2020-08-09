@@ -31,7 +31,10 @@ object PredictorMatcher {
         matchAgainstTemplexSR(conclusions, sizeRule)
         matchAgainstTemplexSR(conclusions, elementRule)
       }
-      case _ => vimpl()
+      case ManualSequenceST(elements) => {
+        elements.foreach(matchAgainstTemplexSR(conclusions, _))
+      }
+      case x => vimpl(x.toString)
     }
   }
 

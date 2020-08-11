@@ -221,8 +221,8 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
 
   int number = variable["number"];
   std::string maybeName;
-  if (variable["name"]["__type"] == "Some") {
-    maybeName = variable["name"]["value"];
+  if (variable["optName"]["__type"] == "Some") {
+    maybeName = variable["optName"]["value"];
   }
 
   return makeIfNotPresent(

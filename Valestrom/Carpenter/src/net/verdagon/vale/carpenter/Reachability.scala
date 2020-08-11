@@ -19,9 +19,12 @@ class Reachables(
 object Reachability {
   def findReachables(temputs: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[Edge2]): Reachables = {
     val exposedFunctions =
-      temputs.functions.filter(_.header.fullName.last match {
-        case FunctionName2("main", _, _) => true
-        case _ => false
+      temputs.functions.filter(func => {
+        (func.header.fullName.last match {
+          case FunctionName2("main", _, _) => true
+          case _ => false
+        }) ||
+        func.header.isExport
       })
     val reachables = new Reachables(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     var sizeBefore = 0

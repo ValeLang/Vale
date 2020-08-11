@@ -169,9 +169,12 @@ object FunctionScout {
         Some(FunctionTypeSR)
       }
 
+    val attrsS = translateFunctionAttributes(attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
+
     FunctionS(
       Scout.evalRange(file, range),
       name,
+      attrsS,
       knowableValueRunes,
       identifyingRunes,
       localRunes,
@@ -183,13 +186,21 @@ object FunctionScout {
       body1)
   }
 
+  def translateFunctionAttributes(attrsP: List[IFunctionAttributeP]): List[IFunctionAttributeS] = {
+    attrsP.map({
+      case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
+      case ExportAttributeP(_) => ExportS
+      case x => vimpl(x.toString)
+    })
+  }
+
   def scoutLambda(
       parentStackFrame: StackFrame,
       lambdaFunction0: FunctionP):
   (FunctionS, VariableUses) = {
     val FunctionP(range,
       FunctionHeaderP(_,
-        _, List(), userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT),
+        _, attrsP, userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT),
       Some(body0)) = lambdaFunction0;
     val codeLocation = Scout.evalPos(parentStackFrame.file, range.begin)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
@@ -351,6 +362,7 @@ object FunctionScout {
       FunctionS(
         Scout.evalRange(parentStackFrame.file, range),
         lambdaName,
+        translateFunctionAttributes(attrsP),
         knowableValueRunes,
         identifyingRunes,
         localRunes,
@@ -454,7 +466,7 @@ object FunctionScout {
       range,
       FunctionHeaderP(_,
         Some(StringP(_, codeName)),
-        attributes,
+        attrsP,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
         paramsP,
@@ -523,9 +535,14 @@ object FunctionScout {
         Some(FunctionTypeSR)
       }
 
+    if (attrsP.collect({ case AbstractAttributeP(_) => true  }).nonEmpty) {
+      vfail("Dont need abstract here")
+    }
+
     FunctionS(
       Scout.evalRange(functionEnv.file, range),
       funcName,
+      translateFunctionAttributes(attrsP),
       knowableValueRunes,
       identifyingRunes,
       localRunes,

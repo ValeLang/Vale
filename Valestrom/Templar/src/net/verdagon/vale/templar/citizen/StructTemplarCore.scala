@@ -20,7 +20,7 @@ class StructTemplarCore(
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
     val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, Map())
-    val structDef2 = StructDefinition2(emptyTupleFullName, false, false, Immutable, List(), false)
+    val structDef2 = StructDefinition2(emptyTupleFullName, List(), false, Immutable, List(), false)
     temputs.declareStruct(structDef2.getRef)
     temputs.declareStructMutability(structDef2.getRef, Immutable)
     temputs.declareStructEnv(structDef2.getRef, emptyTupleEnv)
@@ -39,7 +39,6 @@ class StructTemplarCore(
     coercedFinalTemplateArgs: List[ITemplata]):
   (StructDefinition2) = {
     val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = struct1.name
-    val export = struct1.`export`
     val fullName = structRunesEnv.fullName.addStep(CitizenName2(humanName, coercedFinalTemplateArgs))
     val temporaryStructRef = StructRef2(fullName)
 
@@ -71,7 +70,14 @@ class StructTemplarCore(
         case None => vwat()
       }
 
-    val structDef2 = StructDefinition2(fullName, export, struct1.weakable, mutability, members, false)
+    val structDef2 =
+      StructDefinition2(
+        fullName,
+        translateCitizenAttributes(struct1.attributes),
+        struct1.weakable,
+        mutability,
+        members,
+        false)
 
     temputs.add(structDef2);
 
@@ -126,6 +132,13 @@ class StructTemplarCore(
     })
 
     structDef2
+  }
+
+  def translateCitizenAttributes(attrs: List[ICitizenAttributeA]): List[ICitizenAttribute2] = {
+    attrs.map({
+      case ExportA => Export2
+      case x => vimpl(x.toString)
+    })
   }
 
   // Takes a IEnvironment because we might be inside a:
@@ -189,6 +202,7 @@ class StructTemplarCore(
     val interfaceDef2 =
       InterfaceDefinition2(
         fullName,
+        translateCitizenAttributes(interfaceA.attributes),
         interfaceA.weakable,
         mutability,
         internalMethods2)
@@ -315,7 +329,7 @@ class StructTemplarCore(
     temputs.declareStructMutability(structRef, mutability)
     temputs.declareStructEnv(structRef, structEnv);
 
-    val closureStructDefinition = StructDefinition2(fullName, false, false, mutability, members, true);
+    val closureStructDefinition = StructDefinition2(fullName, List(), false, mutability, members, true);
     temputs.add(closureStructDefinition)
 
     // If it's immutable, make sure there's a zero-arg destructor.
@@ -352,7 +366,7 @@ class StructTemplarCore(
         fullName,
         Map())
 
-    val newStructDef = StructDefinition2(structInnerEnv.fullName, false, false, packMutability, members, false);
+    val newStructDef = StructDefinition2(structInnerEnv.fullName, List(), false, packMutability, members, false);
     if (memberCoords.isEmpty && packMutability != Immutable)
       vfail("curiosity")
 
@@ -403,7 +417,7 @@ class StructTemplarCore(
 
     val forwarderFunctionHeaders =
       interfaceDef.internalMethods.zipWithIndex.map({
-        case (FunctionHeader2(superFunctionName, _, _, superParams, superReturnType, _), index) => {
+        case (FunctionHeader2(superFunctionName, _, superParams, superReturnType, _), index) => {
           val params =
             superParams.map({
               case Parameter2(name, Some(Abstract2), Coord(ownership, ir)) => {
@@ -419,8 +433,7 @@ class StructTemplarCore(
           val forwarderHeader =
             FunctionHeader2(
               fowarderName,
-              false,
-              false,
+              List(),
               params,
               superReturnType,
               None)
@@ -461,7 +474,7 @@ class StructTemplarCore(
     val structDef =
       StructDefinition2(
         anonymousSubstructName,
-        false,
+        List(),
         interfaceDef.weakable,
         mutability,
         callables.zipWithIndex.map({ case (lambda, index) =>
@@ -557,8 +570,7 @@ class StructTemplarCore(
     val forwarderHeader =
       FunctionHeader2(
         structFullName.addStep(FunctionName2(CallTemplar.CALL_FUNCTION_NAME, List(), forwarderParams.map(_.tyype))),
-        false,
-        false,
+        List(),
         forwarderParams,
         prototype.returnType,
         None)
@@ -574,7 +586,7 @@ class StructTemplarCore(
     val structDef =
       StructDefinition2(
         structFullName,
-        false,
+        List(),
         false,
         mutability,
         List(),
@@ -623,7 +635,7 @@ class StructTemplarCore(
       Function2(
         FunctionHeader2(
           constructorFullName,
-          false, false,
+          List(),
           constructorParams,
           constructorReturnType,
           maybeConstructorOriginFunctionA),

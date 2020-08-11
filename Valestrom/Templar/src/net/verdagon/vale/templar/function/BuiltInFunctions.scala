@@ -20,7 +20,7 @@ object BuiltInFunctions {
       FunctionA(
         RangeS.internal(-61),
         FunctionNameA("len", s.CodeLocationS.internal(-20)),
-        true,
+        List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("I")),
         List(CodeRuneA("T")),
@@ -61,7 +61,7 @@ object BuiltInFunctions {
       FunctionA(
         RangeS.internal(-62),
         FunctionNameA("len", s.CodeLocationS.internal(-21)),
-        true,
+        List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("I")),
         List(CodeRuneA("N"), CodeRuneA("T")),
@@ -101,7 +101,7 @@ object BuiltInFunctions {
       FunctionA(
         RangeS.internal(-67),
         FunctionNameA("panic", s.CodeLocationS.internal(-22)),
-        true,
+        List(UserFunctionA),
         FunctionTemplataType,
         Set(),
         List(),
@@ -117,7 +117,7 @@ object BuiltInFunctions {
       FunctionA(
         RangeS.internal(-63),
         FunctionNameA("lock", s.CodeLocationS.internal(-23)),
-        true,
+        List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
         Set(),
         List(CodeRuneA("OwningRune")),

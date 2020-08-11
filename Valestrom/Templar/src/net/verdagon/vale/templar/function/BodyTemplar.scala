@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.function
 
 
-import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, CaptureA, IExpressionAE, ParameterA}
+import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, CaptureA, ExportA, IExpressionAE, IFunctionAttributeA, ParameterA, UserFunctionA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.CaptureP
@@ -66,7 +66,8 @@ class BodyTemplar(
         val returnType2 = returns.head
 
         temputs.declareFunctionReturnType(banner.toSignature, returnType2)
-        val header = FunctionHeader2(functionFullName, false, function1.isUserFunction, params2, returnType2, Some(function1));
+        val attributesA = translateAttributes(function1.attributes)
+        val header = FunctionHeader2(functionFullName, attributesA, params2, returnType2, Some(function1));
 
         (header, body2)
       }
@@ -76,7 +77,7 @@ class BodyTemplar(
             funcOuterEnv.getNearestTemplataWithAbsoluteName2(
               NameTranslator.translateRune(expectedRetCoordRune),
               Set(TemplataLookupContext)))
-        val header = FunctionHeader2(functionFullName, false, function1.isUserFunction, params2, expectedRetCoord, Some(function1));
+        val header = FunctionHeader2(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
         temputs.declareFunctionReturnType(header.toSignature, expectedRetCoord)
 
         funcOuterEnv.setReturnType(Some(expectedRetCoord))
@@ -108,6 +109,13 @@ class BodyTemplar(
         (header, body2)
       }
     }
+  }
+
+  def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
+    attributesA.map({
+      case ExportA => Export2
+      case UserFunctionA => UserFunction2
+    })
   }
 
   case class ResultTypeMismatchError(expectedType: Coord, actualType: Coord)

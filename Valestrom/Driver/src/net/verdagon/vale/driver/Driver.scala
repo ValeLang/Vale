@@ -12,7 +12,7 @@ import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, 
 import net.verdagon.vale.scout.Scout
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Err, Ok, Terrain, vassert, vassertSome, vcheck, vfail}
+import net.verdagon.vale.{Err, Ok, Result, Terrain, vassert, vassertSome, vcheck, vfail}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
@@ -26,6 +26,11 @@ object Driver {
     parsedsOutputFile: Option[String],
     highlightOutputFile: Option[String],
     mode: Option[String], // build v run etc
+    verbose: Boolean,
+  )
+
+  case class BuildInputs(
+    sources: Array[String],
     verbose: Boolean,
   )
 
@@ -86,54 +91,70 @@ object Driver {
     }
   }
 
-  def build(opts: Options): ProgramH = {
+  def build(opts: Options): Result[ProgramH, String] = {
+    val sources = opts.inputFiles.map(readCode)
+    build(BuildInputs(sources.toArray, opts.verbose))
+  }
+
+  def build(inputs: BuildInputs): Result[ProgramH, String] = {
     val debugOut =
-      if (opts.verbose) {
+      if (inputs.verbose) {
         (string: String) => { println(string) }
       } else {
         (string: String) => {}
       }
 
-    val sources = opts.inputFiles.map(readCode)
+    val sources = inputs.sources.toList
     val parseds =
       sources.map(sourceCode => {
         Parser.runParserForProgramAndCommentRanges(sourceCode) match {
-          case ParseFailure(error) => {
-            println(ParseErrorHumanizer.humanize(sourceCode, error))
-            System.exit(22)
-            vfail()
-          }
+          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(sourceCode, error))
           case ParseSuccess((program0, _)) => program0
         }
       })
     val scoutput = Scout.scoutProgram(parseds)
     val astrouts =
       Astronomer.runAstronomer(scoutput) match {
-        case Right(error) => {
-          println(AstronomerErrorHumanizer.humanize(sources, error))
-          System.exit(22)
-          vfail()
-        }
+        case Right(error) => return Err(AstronomerErrorHumanizer.humanize(sources, error))
         case Left(result) => result
       }
     val temputs =
-      new Templar(if (opts.verbose) println else (_), opts.verbose).evaluate(astrouts) match {
-        case Err(error) => {
-          println(TemplarErrorHumanizer.humanize(opts.verbose, sources, error))
-          System.exit(22)
-          vfail()
-        }
+      new Templar(if (inputs.verbose) println else (_), inputs.verbose).evaluate(astrouts) match {
+        case Err(error) => return Err(TemplarErrorHumanizer.humanize(inputs.verbose, sources, error))
         case Ok(x) => x
       }
     val hinputs = Carpenter.translate(debugOut, temputs)
     val programH = Hammer.translate(hinputs)
+    Ok(programH)
+  }
 
+  def jsonifyProgram(programH: ProgramH): String = {
     val programV = VonHammer.vonifyProgram(programH)
     val json = new VonPrinter(JsonSyntax, 120).print(programV)
-    println("Wrote to file " + opts.outputFile.get)
-    writeFile(opts.outputFile.get, json)
+    json
+  }
 
-    programH
+  def buildAndOutput(opts: Options): String = {
+    val programH =
+      build(opts) match {
+        case Ok(programH) => programH
+        case Err(error) => {
+          System.err.println(error)
+          System.exit(22)
+          vfail()
+        }
+      }
+    val json = jsonifyProgram(programH)
+
+    opts.outputFile match {
+      case None =>
+      case Some(outputFile) => {
+        println("Wrote to file " + opts.outputFile.get)
+        writeFile(opts.outputFile.get, json)
+      }
+    }
+
+    json
   }
 
   def outputParseds(outputFile: String, program0: FileP): Unit = {
@@ -204,11 +225,19 @@ object Driver {
           }
         }
         case "build" => {
-          build(opts)
+          buildAndOutput(opts)
         }
         case "run" => {
           vcheck(args.size >= 2, "Need name!", InputException)
-          val program = build(opts)
+          val program =
+            build(opts) match {
+              case Ok(programH) => programH
+              case Err(error) => {
+                System.err.println(error)
+                System.exit(22)
+                vfail()
+              }
+            }
 
           val verbose = args.slice(2, args.length).contains("--verbose")
           val result =

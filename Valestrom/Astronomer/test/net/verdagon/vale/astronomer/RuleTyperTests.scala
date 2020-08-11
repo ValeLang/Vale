@@ -441,6 +441,25 @@ class RuleTyperTests extends FunSuite with Matchers {
     conclusions.typeByRune(CodeRuneA("Z")) shouldEqual CoordTemplataType
   }
 
+  test("Test manual sequence") {
+    val (conclusions, RuleTyperSolveSuccess(_)) =
+      makeCannedRuleTyper().solve(
+        FakeState(),
+        makeCannedEnvironment(),
+        List(
+          TypedSR(CodeRuneS("Z"),CoordTypeSR),
+          EqualsSR(
+            TemplexSR(RuneST(CodeRuneS("Z"))),
+            TemplexSR(
+              ManualSequenceST(
+                List(
+                  OwnershippedST(ShareP, NameST(RangeS.zero, CodeTypeNameS("int"))),
+                  OwnershippedST(ShareP, NameST(RangeS.zero, CodeTypeNameS("int")))))))),
+        List(),
+        None)
+    conclusions.typeByRune(CodeRuneA("Z")) shouldEqual CoordTemplataType
+  }
+
   test("Test array") {
     val (conclusions, RuleTyperSolveSuccess(_)) =
       makeCannedRuleTyper().solve(

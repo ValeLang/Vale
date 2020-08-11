@@ -22,14 +22,14 @@ case class ProgramA(
     val matches = interfaces.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
   def lookupStruct(name: INameA) = {
     val matches = structs.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ StructA(_, _, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
 }
@@ -40,6 +40,7 @@ trait TypeDefinitionA {
 }
 
 case class StructA(
+    range: RangeS,
     name: TopLevelCitizenDeclarationNameA,
     export: Boolean,
     weakable: Boolean,
@@ -89,6 +90,7 @@ case class ImplA(
 //  aliaseeRune: String)
 
 case class InterfaceA(
+    range: RangeS,
     name: TopLevelCitizenDeclarationNameA,
     weakable: Boolean,
     mutabilityRune: IRuneA,
@@ -150,6 +152,7 @@ object structName {
 
 // Underlying class for all XYZFunctionS types
 case class FunctionA(
+    range: RangeS,
     name: IFunctionDeclarationNameA,
     isUserFunction: Boolean,
 

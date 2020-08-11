@@ -36,6 +36,8 @@ trait ITemplataTemplarDelegate {
   def makeArraySequenceType(
     env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord):
   KnownSizeArrayT2
+
+  def getTupleKind(env: IEnvironment, state: TemputsBox, elements: List[Coord]): TupleT2
 }
 
 class TemplataTemplar(
@@ -218,6 +220,10 @@ class TemplataTemplar(
 
         override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
           delegate.makeArraySequenceType(env, state, mutability, size, element)
+        }
+
+        override def getTupleKind(env: IEnvironment, state: TemputsBox, elements: List[Coord]): TupleT2 = {
+          delegate.getTupleKind(env, state, elements)
         }
 
         override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {

@@ -278,7 +278,7 @@ trait CitizenDefinition2 {
 // We include templateArgTypes to aid in looking this up... same reason we have name
 case class StructDefinition2(
   fullName: FullName2[ICitizenName2],
-  export: Boolean,
+  attributes: List[ICitizenAttribute2],
   weakable: Boolean,
   mutability: Mutability,
   members: List[StructMember2],
@@ -323,6 +323,7 @@ case class StructDefinition2(
 
 case class InterfaceDefinition2(
     fullName: FullName2[CitizenName2],
+    attributes: List[ICitizenAttribute2],
     weakable: Boolean,
     mutability: Mutability,
     // This does not include abstract functions declared outside the interface.

@@ -33,7 +33,7 @@ object makeSimpleFunction {
     FunctionA(
       RangeS.internal(-53),
       name,
-      false,
+      List(),
       FunctionTemplataType,
       knowableRunes,
       List(),

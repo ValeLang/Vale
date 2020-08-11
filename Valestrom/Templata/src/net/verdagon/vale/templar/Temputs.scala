@@ -544,6 +544,36 @@ case class Temputs(
     matches.head
   }
 
+  def lookupStruct(humanName: String): StructDefinition2 = {
+    val matches = getAllStructs().filter(s => {
+      s.fullName.last match {
+        case CitizenName2(n, _) if n == humanName => true
+        case _ => false
+      }
+    })
+    if (matches.size == 0) {
+      vfail("Struct \"" + humanName + "\" not found!")
+    } else if (matches.size > 1) {
+      vfail("Multiple found!")
+    }
+    matches.head
+  }
+
+  def lookupInterface(humanName: String): InterfaceDefinition2 = {
+    val matches = getAllInterfaces().filter(s => {
+      s.fullName.last match {
+        case CitizenName2(n, _) if n == humanName => true
+        case _ => false
+      }
+    })
+    if (matches.size == 0) {
+      vfail("Interface \"" + humanName + "\" not found!")
+    } else if (matches.size > 1) {
+      vfail("Multiple found!")
+    }
+    matches.head
+  }
+
   def nameIsLambdaIn(name: FullName2[IFunctionName2], needleFunctionHumanName: String): Boolean = {
     val lastThree = name.steps.slice(name.steps.size - 3, name.steps.size)
     lastThree match {

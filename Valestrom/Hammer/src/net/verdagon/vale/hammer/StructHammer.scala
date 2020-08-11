@@ -1,10 +1,10 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
-import net.verdagon.vale.metal.{Mutable => _, Immutable => _, Variability => _, Varying => _, _}
+import net.verdagon.vale.metal.{Immutable => _, Mutable => _, Variability => _, Varying => _, _}
 import net.verdagon.vale.{vassert, vassertSome, metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.CoordTemplata
+import net.verdagon.vale.templar.templata.{CoordTemplata, Export2}
 import net.verdagon.vale.templar.types._
 
 import scala.collection.immutable.ListMap
@@ -110,7 +110,7 @@ object StructHammer {
         val structDefH =
           StructDefinitionH(
             fullNameH,
-            structDef2.`export`,
+            structDef2.attributes.contains(Export2),
             structDef2.weakable,
             Conversions.evaluateMutability(structDef2.mutability),
             edgesH,

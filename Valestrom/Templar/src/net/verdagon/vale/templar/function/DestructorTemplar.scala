@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CaptureA, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, RuneAT, TemplateTemplataType, TemplexAR}
+import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CaptureA, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, RuneAT, TemplateTemplataType, TemplexAR, UserFunctionA}
 import net.verdagon.vale.parser.{FinalP, OwnP, ShareP}
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.types._
@@ -126,8 +126,7 @@ class DestructorTemplar(
     val header =
       FunctionHeader2(
         bodyEnv.fullName,
-        isExtern = false,
-        isUserFunction = false,
+        List(),
         List(Parameter2(CodeVarName2("x"), None, type2)),
         Coord(Share, Void2()),
         Some(originFunction1))
@@ -241,7 +240,7 @@ class DestructorTemplar(
     val header =
       FunctionHeader2(
         destructorFullName,
-        false, false,
+        List(),
         params2,
         Coord(Share, Void2()),
         Some(originFunction1));
@@ -309,7 +308,7 @@ class DestructorTemplar(
       Function2(
         FunctionHeader2(
           env.fullName,
-          false, false,
+          List(),
           List(Parameter2(CodeVarName2("this"), None, arrayRefType)),
           Coord(Share, Void2()),
           maybeOriginFunction1),
@@ -351,7 +350,7 @@ class DestructorTemplar(
       Function2(
         FunctionHeader2(
           env.fullName,
-          false, false,
+          List(),
           List(Parameter2(CodeVarName2("this"), None, arrayRefType2)),
           Coord(Share, Void2()),
           maybeOriginFunction1),
@@ -455,7 +454,7 @@ object DestructorTemplar {
       } else {
         ImmConcreteDestructorNameA()
       },
-      true,
+      List(UserFunctionA),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V")),
       List(CodeRuneA("T")),
@@ -535,7 +534,7 @@ object DestructorTemplar {
         } else {
           ImmInterfaceDestructorNameA()
         },
-        true,
+        List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("V")),
         List(CodeRuneA("T")),
@@ -609,7 +608,7 @@ object DestructorTemplar {
         } else {
           ImmInterfaceDestructorNameA()
         },
-        true,
+        List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType, KindTemplataType), FunctionTemplataType),
         Set(CodeRuneA("V")),
         List(CodeRuneA("T"), CodeRuneA("I")),
@@ -700,7 +699,7 @@ object DestructorTemplar {
       } else {
         ImmDropNameA()
       },
-      true,
+      List(UserFunctionA),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("O")),
       List(CodeRuneA("T")),

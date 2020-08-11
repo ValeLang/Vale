@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="com.google.cloud.functions:functions-framework-api:1.0.1" type="repository">
+    <properties maven-id="com.google.cloud.functions:functions-framework-api:1.0.1" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/functions-framework-api-1.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

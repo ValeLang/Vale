@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Astronomer/Astronomer.iml" filepath="$PROJECT_DIR$/Astronomer/Astronomer.iml" />
       <module fileurl="file://$PROJECT_DIR$/Carpenter/Carpenter.iml" filepath="$PROJECT_DIR$/Carpenter/Carpenter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CompileServer/CompileServer.iml" filepath="$PROJECT_DIR$/CompileServer/CompileServer.iml" />
       <module fileurl="file://$PROJECT_DIR$/Driver/Driver.iml" filepath="$PROJECT_DIR$/Driver/Driver.iml" />
       <module fileurl="file://$PROJECT_DIR$/Hammer/Hammer.iml" filepath="$PROJECT_DIR$/Hammer/Hammer.iml" />
       <module fileurl="file://$PROJECT_DIR$/Highlighter/Highlighter.iml" filepath="$PROJECT_DIR$/Highlighter/Highlighter.iml" />

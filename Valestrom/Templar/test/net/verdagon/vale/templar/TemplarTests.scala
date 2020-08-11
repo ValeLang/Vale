@@ -338,7 +338,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Tests exporting function") {
     val compile = new Compilation(
       """
-        |fn moo(a int) export { }
+        |fn moo() export { }
         |""".stripMargin)
     val temputs = compile.getTemputs()
     val moo = temputs.lookupFunction("moo")

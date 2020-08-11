@@ -231,7 +231,7 @@ class FunctionTemplarCore(
         .declareFunctionReturnType(header.toSignature, returnReferenceType2)
       temputs.addFunction(function2)
     vassert(temputs.exactDeclaredSignatureExists(env.fullName))
-    (header)
+    header
   }
 
   def makeImplDestructor(

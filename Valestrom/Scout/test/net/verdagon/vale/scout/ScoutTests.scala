@@ -20,7 +20,7 @@ class ScoutTests extends FunSuite with Matchers {
     
     val CodeBody1(BodySE(_, block)) = main.body
     block match {
-      case BlockSE(_, List(FunctionCallSE(FunctionLoadSE(GlobalFunctionFamilyNameS("+")), _))) =>
+      case BlockSE(_, List(FunctionCallSE(_, FunctionLoadSE(GlobalFunctionFamilyNameS("+")), _))) =>
     }
   }
 
@@ -41,7 +41,7 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("fn main() { {_ + _}(4, 6) }")
 
     val CodeBody1(BodySE(_, BlockSE(_, List(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(FunctionSE(lambda @ FunctionS(_, _, _, _, _, _,_, _, _, _)), _) = expr
+    val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _,_, _, _, _)), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
         vassert(mp1 != mp2)
@@ -123,7 +123,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, block)) = main.body
     block match {
-      case BlockSE(_, List(_, FunctionCallSE(FunctionLoadSE(GlobalFunctionFamilyNameS("shout")), List(LendSE(LocalLoadSE(name, BorrowP), BorrowP))))) => {
+      case BlockSE(_, List(_, FunctionCallSE(_, FunctionLoadSE(GlobalFunctionFamilyNameS("shout")), List(LendSE(LocalLoadSE(name, BorrowP), BorrowP))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -137,7 +137,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, block)) = main.body
     block match {
-      case BlockSE(_, List(_, FunctionCallSE(FunctionLoadSE(GlobalFunctionFamilyNameS("shout")), List(LocalLoadSE(_, OwnP))))) =>
+      case BlockSE(_, List(_, FunctionCallSE(_, FunctionLoadSE(GlobalFunctionFamilyNameS("shout")), List(LocalLoadSE(_, OwnP))))) =>
     }
   }
 
@@ -192,7 +192,7 @@ class ScoutTests extends FunSuite with Matchers {
             _,
             AtomSP(CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             BoolLiteralSE(true)),
-          FunctionCallSE(
+          FunctionCallSE(_,
             FunctionLoadSE(GlobalFunctionFamilyNameS("MyStruct")),
             List(
               LocalLoadSE(ConstructingMemberNameS("x"),OwnP),
@@ -222,7 +222,7 @@ class ScoutTests extends FunSuite with Matchers {
           LetSE(_,_,_,
             AtomSP(CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             LendSE(LocalLoadSE(ConstructingMemberNameS("x"),BorrowP), BorrowP)),
-          FunctionCallSE(
+          FunctionCallSE(_,
             FunctionLoadSE(GlobalFunctionFamilyNameS("MyStruct")),
             List(
               LocalLoadSE(ConstructingMemberNameS("x"),OwnP),
@@ -245,7 +245,7 @@ class ScoutTests extends FunSuite with Matchers {
           BlockSE(
             List(LocalVariable1(CodeVarNameS("this"),FinalP,Used,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed)),
             List(
-              FunctionCallSE(
+              FunctionCallSE(_,
                 FunctionLoadSE(GlobalFunctionFamilyNameS("println")),
                 List(DotSE(LocalLoadSE(CodeVarNameS("this"),BorrowP),"x",true))),
               VoidSE())))) =>

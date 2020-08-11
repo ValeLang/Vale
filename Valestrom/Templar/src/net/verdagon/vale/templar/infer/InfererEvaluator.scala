@@ -709,7 +709,7 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case CallTT(templateRule, listOfMaybeArgRules, callResultType) => {
+      case CallTT(templateRule, templexesT, callResultType) => {
 
         // it should be a template that results in a `tyype`
 
@@ -721,7 +721,7 @@ class InfererEvaluator[Env, State](
           }
 
         val (maybeArgTemplatas, argsDeeplySatisfied) =
-          evaluateTemplexes(env, state, typeByRune, localRunes, inferences, listOfMaybeArgRules) match {
+          evaluateTemplexes(env, state, typeByRune, localRunes, inferences, templexesT) match {
             case (iec @ InferEvaluateConflict(_, _, _)) => {
               return (InferEvaluateConflict(inferences.inferences, "Failed to evaluate CallAT arguments", List(iec)))
             }
@@ -818,8 +818,33 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case ManualSequenceTT(_, _) => {
-        vfail("Unimplemented")
+      case ManualSequenceTT(elements, resultType) => {
+        val (maybeTemplatas, elementsDeeplySatisfied) =
+          evaluateTemplexes(env, state, typeByRune, localRunes, inferences, elements) match {
+            case (iec @ InferEvaluateConflict(_, _, _)) => {
+              return (InferEvaluateConflict(inferences.inferences, "Failed to evaluate CallAT arguments", List(iec)))
+            }
+            case (InferEvaluateUnknown(ds)) => {
+              (None, ds)
+            }
+            case (InferEvaluateSuccess(argTemplatas, ds)) => {
+              (Some(argTemplatas), ds)
+            }
+          }
+        maybeTemplatas match {
+          case None => {
+            val deeplySatisfied = false
+            InferEvaluateUnknown(deeplySatisfied)
+          }
+          case Some(templatas) => {
+            val coords = templatas.collect({ case CoordTemplata(coord) => coord })
+            if (coords.size != templatas.size) {
+              vfail("Not all templatas given to tuple were coords!")
+            }
+            val tuple = templataTemplar.getTupleKind(env, state, coords, resultType)
+            (InferEvaluateSuccess(tuple, elementsDeeplySatisfied))
+          }
+        }
       }
     }
   }

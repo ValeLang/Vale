@@ -1,4 +1,3 @@
 fn main() {
-  x = Location(4, 5).next_to(Location(7, 8), true, true);
-  = if (x) { 0 } else { 1 }
+  Location(5, 3).diagonal_manhattan_distance_100(Location(6, 4))
 }

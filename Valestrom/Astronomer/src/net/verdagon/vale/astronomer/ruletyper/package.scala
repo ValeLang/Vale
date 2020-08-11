@@ -64,6 +64,7 @@ package object ruletyper {
       "RuleTyperMatchConflict#(" + message + ", " + causes + ", " + conclusions + ")"
     }
   }
+  // This means that we don't deeply know the entire subtree.
   case class RuleTyperMatchUnknown[+T](
   ) extends IRuleTyperMatchResult[T]
   case class RuleTyperMatchSuccess[+T](

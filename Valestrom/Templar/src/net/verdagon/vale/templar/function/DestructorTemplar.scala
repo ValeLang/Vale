@@ -449,6 +449,7 @@ object DestructorTemplar {
     // to structs and not interfaces. We use a different template for interface destructors.
     val unevaluatedFunction =
     FunctionA(
+      RangeS.internal(-68),
       if (mutability == Mutable) {
         FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, CodeLocationS.internal(-16))
       } else {
@@ -528,6 +529,7 @@ object DestructorTemplar {
   (FunctionA, IFunctionGenerator) = {
     val unevaluatedFunctionA =
       FunctionA(
+        RangeS.internal(-64),
         if (mutability == Mutable) {
           FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS.internal(-17))
         } else {
@@ -601,6 +603,7 @@ object DestructorTemplar {
   (FunctionA, IFunctionGenerator) = {
     val unevaluatedFunctionA =
       FunctionA(
+        RangeS.internal(-65),
         if (mutability == Mutable) {
           FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS.internal(-18))
         } else {
@@ -691,6 +694,7 @@ object DestructorTemplar {
     // Conceptually it's "drop the reference", as opposed to destructor which is "drop the object"
     val unevaluatedFunctionA =
     FunctionA(
+      RangeS.internal(-66),
       if (mutability == Mutable) {
         FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS.internal(-19))
       } else {

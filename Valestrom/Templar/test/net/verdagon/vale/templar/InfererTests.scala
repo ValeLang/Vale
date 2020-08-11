@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{FakeState => _, SimpleEnvironment => _, _}
 import net.verdagon.vale.astronomer.ruletyper.IRuleTyperEvaluatorDelegate
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{IEnvironment => _, _}
-import net.verdagon.vale.templar.{CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2}
+import net.verdagon.vale.templar.{ArraySequenceE2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
 import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, scout => s}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.{InfererEquator, InfererEvaluator}
@@ -134,7 +134,9 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
   override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
     vfail()
   }
-
+  override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[Coord]): TupleT2 = {
+    vfail()
+  }
   override def getInterfaceTemplataType(it: InterfaceTemplata): TemplateTemplataType = {
     vfail()
   }
@@ -154,10 +156,17 @@ class InfererTests extends FunSuite with Matchers {
 
   def makeCannedEnvironment(): SimpleEnvironment = {
     var entries = Map[IName2, IEnvEntry]()
+    val voidName = PrimitiveName2("void")
+    entries = entries ++ Map(voidName -> TemplataEnvEntry(KindTemplata(Void2())))
+    val intName = PrimitiveName2("int")
+    entries = entries ++ Map(intName -> TemplataEnvEntry(KindTemplata(Int2())))
+    val boolName = PrimitiveName2("bool")
+    entries = entries ++ Map(boolName -> TemplataEnvEntry(KindTemplata(Bool2())))
     entries = entries ++ Map(
       CitizenName2("ImmInterface", List()) ->
         InterfaceEnvEntry(
           InterfaceA(
+            RangeS.internal(-70),
             TopLevelCitizenDeclarationNameA("ImmInterface", CodeLocationS.internal(-24)),
             false,
             CodeRuneA("M"),
@@ -169,11 +178,34 @@ class InfererTests extends FunSuite with Matchers {
             Map(CodeRuneA("M") -> MutabilityTemplataType),
             List(EqualsAR(TemplexAR(RuneAT(CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(ImmutableP)))),
             List())))
+    entries = entries ++ Map(
+      CitizenName2("ImmStruct", List()) ->
+        StructEnvEntry(
+          StructA(
+            RangeS.internal(-71),
+            TopLevelCitizenDeclarationNameA("ImmStruct", CodeLocationS.internal(-24)),
+            false,
+            false,
+            CodeRuneA("M"),
+            Some(ImmutableP),
+            KindTemplataType,
+            Set(CodeRuneA("M")),
+            List(),
+            Set(CodeRuneA("M"), CodeRuneA("I"), CodeRuneA("B")),
+            Map(CodeRuneA("M") -> MutabilityTemplataType, CodeRuneA("I") -> CoordTemplataType, CodeRuneA("B") -> CoordTemplataType),
+            List(
+              EqualsAR(TemplexAR(RuneAT(CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(ImmutableP))),
+              EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
+              EqualsAR(TemplexAR(RuneAT(CodeRuneA("B"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType)))),
+            List(
+              StructMemberA("i", FinalP, CodeRuneA("I")),
+              StructMemberA("i", FinalP, CodeRuneA("B"))))))
     entries = entries ++ Map(PrimitiveName2("Array") -> TemplataEnvEntry(ArrayTemplateTemplata()))
     entries = entries ++ Map(
         CitizenTemplateName2("MutTStruct", CodeLocation2(-25, 0)) ->
           StructEnvEntry(
             StructA(
+              RangeS.internal(-74),
               TopLevelCitizenDeclarationNameA("MutTStruct", CodeLocationS.internal(-26)),
               false,
               false,
@@ -189,6 +221,7 @@ class InfererTests extends FunSuite with Matchers {
     entries = entries ++ Map(CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)) ->
       InterfaceEnvEntry(
         InterfaceA(
+          RangeS.internal(-75),
           TopLevelCitizenDeclarationNameA("MutTInterface", CodeLocationS.internal(-28)),
           false,
           CodeRuneA("M"),
@@ -203,6 +236,7 @@ class InfererTests extends FunSuite with Matchers {
     entries = entries ++ Map(CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)) ->
       StructEnvEntry(
         StructA(
+          RangeS.internal(-73),
           TopLevelCitizenDeclarationNameA("MutStruct", CodeLocationS.internal(-30)),
           false,
           false,
@@ -218,6 +252,7 @@ class InfererTests extends FunSuite with Matchers {
     entries = entries ++ Map(CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)) ->
       InterfaceEnvEntry(
         InterfaceA(
+          RangeS.internal(-72),
           TopLevelCitizenDeclarationNameA("MutInterface", CodeLocationS.internal(-32)),
           false,
           CodeRuneA("M"),
@@ -238,12 +273,14 @@ class InfererTests extends FunSuite with Matchers {
     val mutArraySequenceOf4IntName = CitizenName2("MutArraySequenceOf4Int", List())
     entries = entries ++ Map(mutArraySequenceOf4IntName ->
       TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
-    val voidName = PrimitiveName2("void")
-    entries = entries ++ Map(voidName -> TemplataEnvEntry(KindTemplata(Void2())))
-    val intName = PrimitiveName2("int")
-    entries = entries ++ Map(intName -> TemplataEnvEntry(KindTemplata(Int2())))
-    val boolName = PrimitiveName2("bool")
-    entries = entries ++ Map(boolName -> TemplataEnvEntry(KindTemplata(Bool2())))
+    val intAndBoolTupName = CitizenName2("IntAndBoolTupName", List()) // Tuples are normally addressed by TupleNameT, but that's a detail this test doesn't need to care about.
+    entries = entries ++ Map(intAndBoolTupName ->
+      TemplataEnvEntry(
+        KindTemplata(
+          TupleT2(
+            List(Program2.intType, Program2.boolType),
+            // Normally this would be backed by a struct simply named "Tup"
+            StructRef2(FullName2(List(), CitizenName2("ImmStruct", List())))))))
     val callPrototype = PrototypeTemplata(incrementPrototype)
     entries = entries ++ Map(callPrototype.value.fullName.last -> TemplataEnvEntry(callPrototype))
     SimpleEnvironment(entries)
@@ -262,6 +299,7 @@ class InfererTests extends FunSuite with Matchers {
             case Int2() | Void2() | Bool2() => Immutable
             case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
             case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
+            case TupleT2(_, StructRef2(FullName2(_, CitizenName2(humanName, _)))) if humanName.startsWith("Imm") => Immutable
             case _ => vfail()
           }
         }
@@ -304,6 +342,11 @@ class InfererTests extends FunSuite with Matchers {
         }
         override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
           (KnownSizeArrayT2(size, RawArrayT2(element, mutability)))
+        }
+
+        override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[Coord]): TupleT2 = {
+          // Theres only one tuple in this test, and its backed by the ImmStruct.
+          TupleT2(elements, StructRef2(FullName2(List(), CitizenName2("ImmStruct", List()))))
         }
       }
     val delegate =
@@ -945,6 +988,83 @@ class InfererTests extends FunSuite with Matchers {
     inferencesD.templatasByRune(CodeRune2("M")) shouldEqual MutabilityTemplata(Mutable)
     inferencesD.templatasByRune(CodeRune2("N")) shouldEqual IntegerTemplata(4)
     inferencesD.templatasByRune(CodeRune2("E")) shouldEqual CoordTemplata(Coord(Share,Int2()))
+  }
+
+  test("Test evaluating manual sequence") {
+    val (InferSolveSuccess(inferencesD)) =
+      makeCannedEvaluator().solve(
+        makeCannedEnvironment(),
+        FakeState(),
+        List(
+          EqualsTR(
+            TemplexTR(RuneTT(CodeRune2("Z"), CoordTemplataType)),
+            TemplexTR(
+              ManualSequenceTT(
+                List(
+                  NameTT(CodeTypeNameA("int"), CoordTemplataType),
+                  NameTT(CodeTypeNameA("bool"), CoordTemplataType)),
+                CoordTemplataType)))),
+        Map(CodeRune2("Z") -> CoordTemplataType),
+        Set(CodeRune2("Z")),
+        Map(),
+        List(),
+        None,
+        true)
+    inferencesD.templatasByRune(CodeRune2("Z")) shouldEqual
+      CoordTemplata(
+        Coord(
+          Share,
+          TupleT2(
+            List(Coord(Share,Int2()), Coord(Share,Bool2())),
+            StructRef2(FullName2(List(),CitizenName2("ImmStruct",List()))))))
+  }
+
+  test("Test matching manual sequence as coord") {
+    val (InferSolveSuccess(inferencesD)) =
+      makeCannedEvaluator().solve(
+        makeCannedEnvironment(),
+        FakeState(),
+        List(
+          EqualsTR(
+            TemplexTR(NameTT(CodeTypeNameA("IntAndBoolTupName"), CoordTemplataType)),
+            TemplexTR(
+              ManualSequenceTT(
+                List(
+                  RuneTT(CodeRune2("A"), CoordTemplataType),
+                  RuneTT(CodeRune2("B"), CoordTemplataType)),
+                CoordTemplataType)))),
+        Map(),
+        Set(CodeRune2("A"), CodeRune2("B")),
+        Map(),
+        List(),
+        None,
+        true)
+    inferencesD.templatasByRune(CodeRune2("A")) shouldEqual CoordTemplata(Coord(Share,Int2()))
+    inferencesD.templatasByRune(CodeRune2("B")) shouldEqual CoordTemplata(Coord(Share,Bool2()))
+  }
+
+  test("Test matching manual sequence as kind") {
+    val (InferSolveSuccess(inferencesD)) =
+      makeCannedEvaluator().solve(
+        makeCannedEnvironment(),
+        FakeState(),
+        List(
+          EqualsTR(
+            TemplexTR(NameTT(CodeTypeNameA("IntAndBoolTupName"), KindTemplataType)),
+            TemplexTR(
+              ManualSequenceTT(
+                List(
+                  RuneTT(CodeRune2("A"), CoordTemplataType),
+                  RuneTT(CodeRune2("B"), CoordTemplataType)),
+                KindTemplataType)))),
+        Map(),
+        Set(CodeRune2("A"), CodeRune2("B")),
+        Map(),
+        List(),
+        None,
+        true)
+    inferencesD.templatasByRune(CodeRune2("A")) shouldEqual CoordTemplata(Coord(Share,Int2()))
+    inferencesD.templatasByRune(CodeRune2("B")) shouldEqual CoordTemplata(Coord(Share,Bool2()))
   }
 
   test("Test array") {

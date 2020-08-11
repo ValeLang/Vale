@@ -90,6 +90,7 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 }
 
 case class StructS(
+    range: RangeS,
     name: TopLevelCitizenDeclarationNameS,
     export: Boolean,
     weakable: Boolean,
@@ -124,6 +125,7 @@ case class ImplS(
     interfaceKindRune: IRuneS)
 
 case class InterfaceS(
+    range: RangeS,
     name: TopLevelCitizenDeclarationNameS,
     weakable: Boolean,
     mutabilityRune: IRuneS,
@@ -198,6 +200,7 @@ case class CodeBody1(body1: BodySE) extends IBody1
 
 // Underlying class for all XYZFunctionS types
 case class FunctionS(
+    range: RangeS,
     name: IFunctionDeclarationNameS,
 
     // Runes that we can know without looking at args or template args.

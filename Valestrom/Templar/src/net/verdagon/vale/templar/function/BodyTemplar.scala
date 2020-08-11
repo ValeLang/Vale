@@ -53,7 +53,8 @@ class BodyTemplar(
           evaluateFunctionBody(
               funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
             case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-              vfail("Function " + function1.name + "(:" + params2.mkString(", :") + ")\nreturn type:\n" + expectedType + "\ndoesn't match body's result:\n" + actualType)
+              throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, function1.name, expectedType, actualType))
+
             }
             case Ok((body, returns)) => (body, returns)
           }
@@ -91,7 +92,7 @@ class BodyTemplar(
               isDestructor,
               Some(expectedRetCoord)) match {
             case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-              vfail("Function " + function1.name + "(:" + params2.mkString(", :") + ")\nreturn type:\n" + expectedType + "\ndoesn't match body's result:\n" + actualType)
+              throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, bfunction1.origin.name, expectedType, actualType))
             }
             case Ok((body, returns)) => (body, returns)
           }

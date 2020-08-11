@@ -10,7 +10,7 @@ object Arrays {
     FunctionA(
       RangeS.internal(-57),
       FunctionNameA("Array", if (mutability == MutableP) { CodeLocationS.internal(-3) } else { CodeLocationS.internal(-4) }),
-      false,
+      List(),
       TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("I")),
       List(CodeRuneA("ArrayMutability"), CodeRuneA("T"), CodeRuneA("Generator")),

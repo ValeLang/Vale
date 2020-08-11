@@ -63,10 +63,6 @@ StructReferend* readStructReferend(MetalCache* cache, const json& referend) {
           structName,
           [&]() { return new StructReferend(structName); });
 
-  if (structName->name == "Tup") {
-    cache->emptyTupleStructReferend = result;
-  }
-
   return result;
 }
 
@@ -480,12 +476,24 @@ Edge* readEdge(MetalCache* cache, const json& edge) {
 StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct[""] == "Struct");
-  return new StructDefinition(
-      readName(cache, struuct["name"]),
-      readMutability(struuct["mutability"]),
-      readArray(cache, struuct["edges"], readEdge),
-      readArray(cache, struuct["members"], readStructMember),
-      struuct["weakable"]);
+  auto result =
+      new StructDefinition(
+          readName(cache, struuct["name"]),
+          readMutability(struuct["mutability"]),
+          readArray(cache, struuct["edges"], readEdge),
+          readArray(cache, struuct["members"], readStructMember),
+          struuct["weakable"]);
+
+  auto structName = result->name;
+  if (structName->name == std::string("Tup")) {
+    cache->emptyTupleStructReferend =
+        makeIfNotPresent(
+            &cache->structReferends,
+            structName,
+            [&]() { return new StructReferend(structName); });
+  }
+
+  return result;
 }
 
 InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {

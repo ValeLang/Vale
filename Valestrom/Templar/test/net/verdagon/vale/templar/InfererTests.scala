@@ -168,6 +168,7 @@ class InfererTests extends FunSuite with Matchers {
           InterfaceA(
             RangeS.internal(-70),
             TopLevelCitizenDeclarationNameA("ImmInterface", CodeLocationS.internal(-24)),
+            List(),
             false,
             CodeRuneA("M"),
             Some(ImmutableP),
@@ -184,7 +185,7 @@ class InfererTests extends FunSuite with Matchers {
           StructA(
             RangeS.internal(-71),
             TopLevelCitizenDeclarationNameA("ImmStruct", CodeLocationS.internal(-24)),
-            false,
+            List(),
             false,
             CodeRuneA("M"),
             Some(ImmutableP),
@@ -207,7 +208,7 @@ class InfererTests extends FunSuite with Matchers {
             StructA(
               RangeS.internal(-74),
               TopLevelCitizenDeclarationNameA("MutTStruct", CodeLocationS.internal(-26)),
-              false,
+              List(),
               false,
               CodeRuneA("M"),
               Some(MutableP),
@@ -223,6 +224,7 @@ class InfererTests extends FunSuite with Matchers {
         InterfaceA(
           RangeS.internal(-75),
           TopLevelCitizenDeclarationNameA("MutTInterface", CodeLocationS.internal(-28)),
+          List(),
           false,
           CodeRuneA("M"),
           Some(MutableP),
@@ -238,7 +240,7 @@ class InfererTests extends FunSuite with Matchers {
         StructA(
           RangeS.internal(-73),
           TopLevelCitizenDeclarationNameA("MutStruct", CodeLocationS.internal(-30)),
-          false,
+          List(),
           false,
           CodeRuneA("M"),
           Some(MutableP),
@@ -254,6 +256,7 @@ class InfererTests extends FunSuite with Matchers {
         InterfaceA(
           RangeS.internal(-72),
           TopLevelCitizenDeclarationNameA("MutInterface", CodeLocationS.internal(-32)),
+          List(),
           false,
           CodeRuneA("M"),
           Some(MutableP),

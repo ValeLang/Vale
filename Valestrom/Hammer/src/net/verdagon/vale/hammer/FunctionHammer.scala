@@ -50,11 +50,16 @@ object FunctionHammer {
             "Body's result: " + resultCoord)
         }
 
+        val export = function2.header.attributes.contains(Export2)
         val isAbstract = header.getAbstractInterface != None
         val isExtern = header.attributes.contains(Extern2)
-        val attrsH = translateFunctionAttributes(attrs2.filter(_ != Extern2))
-        val functionH = FunctionH(prototypeH, isAbstract, isExtern, attrsH, bodyH);
+        val attrsH = translateFunctionAttributes(attrs2.filter(a => a != Extern2 && a != Export2))
+        val functionH = FunctionH(prototypeH, export, isAbstract, isExtern, attrsH, bodyH);
         hamuts.addFunction(header.toPrototype, functionH)
+
+        if (export) {
+          Hammer.exportName(hamuts, function2.header.fullName, prototypeH.fullName)
+        }
 
         (temporaryFunctionRefH)
       }
@@ -65,7 +70,7 @@ object FunctionHammer {
     attributes.map({
       case UserFunction2 => UserFunctionH
       case Extern2 => vwat() // Should have been filtered out, hammer cares about extern directly
-      case Export2 => ExportH
+      case Export2 => vwat() // Should have been filtered out, hammer cares about export directly
       case x => vimpl(x.toString)
     })
   }

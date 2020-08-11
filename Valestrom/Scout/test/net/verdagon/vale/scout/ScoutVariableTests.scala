@@ -562,7 +562,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
       mainBlock.exprs.collect({
-        case FunctionCallSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _) => innerBody.block
+        case FunctionCallSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
       case LocalVariable1(name, FinalP,NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
@@ -587,7 +587,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
     mainBlock.exprs.collect({
-      case FunctionCallSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _) => innerBody.block
+      case FunctionCallSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _) => innerBody.block
     }).head
     val locals = lamBlock.locals
     locals.find(_.varName == ClosureParamNameS()).get match {

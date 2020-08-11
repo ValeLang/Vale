@@ -10,11 +10,12 @@ class VivemTests extends FunSuite with Matchers {
     val main =
       FunctionH(
         PrototypeH(FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,IntH())),
+        true,
         false,
         false,
-        List(UserFunctionH, ExportH),
+        List(UserFunctionH),
         BlockH(ConstantI64H(7)))
-    val programH = ProgramH(List(), List(), List(), List(main), Map())
+    val programH = ProgramH(List(), List(), List(), List(main), Map(), Map())
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(7)
@@ -30,9 +31,10 @@ class VivemTests extends FunSuite with Matchers {
     val main =
       FunctionH(
         PrototypeH(FullNameH(List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,IntH())),
+        true,
         false,
         false,
-        List(UserFunctionH, ExportH),
+        List(UserFunctionH),
         BlockH(
           CallH(
             addPrototype,
@@ -47,10 +49,11 @@ class VivemTests extends FunSuite with Matchers {
       FunctionH(
         addPrototype,
         false,
+        false,
         true,
         List(),
         BlockH(ConstantI64H(133337)))
-    val programH = ProgramH(List(), List(), List(), List(main, addExtern), Map())
+    val programH = ProgramH(List(), List(), List(), List(main, addExtern), Map(), Map())
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(159)

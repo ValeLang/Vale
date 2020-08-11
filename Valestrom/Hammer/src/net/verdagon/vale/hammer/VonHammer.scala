@@ -11,7 +11,7 @@ import net.verdagon.von._
 
 object VonHammer {
   def vonifyProgram(program: ProgramH): IVonData = {
-    val ProgramH(interfaces, structs, externs, functions, immDestructorsByKind) = program
+    val ProgramH(interfaces, structs, externs, functions, immDestructorsByKind, exportedNameByFullName) = program
 
     VonObject(
       "Program",
@@ -22,7 +22,7 @@ object VonHammer {
         VonMember("externs", VonArray(None, externs.map(vonifyPrototype).toVector)),
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
         VonMember(
-          "immDestructorsByKind",
+          "immDestructorsByReferend",
           VonArray(
             None,
             immDestructorsByKind.toVector.map({ case (kind, destructor) =>
@@ -30,8 +30,20 @@ object VonHammer {
                 "Entry",
                 None,
                 Vector(
-                  VonMember("key", vonifyKind(kind)),
-                  VonMember("value", vonifyPrototype(destructor))))
+                  VonMember("referend", vonifyKind(kind)),
+                  VonMember("destructor", vonifyPrototype(destructor))))
+            }))),
+        VonMember(
+          "exportedNameByFullName",
+          VonArray(
+            None,
+            exportedNameByFullName.toVector.map({ case (fullName, exportedName) =>
+              VonObject(
+                "Entry",
+                None,
+                Vector(
+                  VonMember("fullName", VonStr(fullName.toString())),
+                  VonMember("exportedName", VonStr(exportedName))))
             })))))
   }
 
@@ -67,13 +79,14 @@ object VonHammer {
   }
 
   def vonifyInterface(interface: InterfaceDefinitionH): IVonData = {
-    val InterfaceDefinitionH(fullName, weakable, mutability, superInterfaces, prototypes) = interface
+    val InterfaceDefinitionH(fullName, export, weakable, mutability, superInterfaces, prototypes) = interface
 
     VonObject(
       "Interface",
       None,
       Vector(
         VonMember("name", VonStr(fullName.toString())),
+        VonMember("export", VonBool(export)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
         VonMember("superInterfaces", VonArray(None, superInterfaces.map(vonifyInterfaceRef).toVector)),
@@ -181,8 +194,8 @@ object VonHammer {
                 "Entry",
                 None,
                 Vector(
-                  VonMember("key", vonifyInterfaceMethod(interfaceMethod)),
-                  VonMember("value", vonifyPrototype(structPrototype))))
+                  VonMember("method", vonifyInterfaceMethod(interfaceMethod)),
+                  VonMember("override", vonifyPrototype(structPrototype))))
             })))))
   }
 
@@ -257,13 +270,14 @@ object VonHammer {
   }
 
   def vonifyFunction(functionH: FunctionH): IVonData = {
-    val FunctionH(prototype, _, _, _, body) = functionH
+    val FunctionH(prototype, export, _, _, _, body) = functionH
 
     VonObject(
       "Function",
       None,
       Vector(
         VonMember("prototype", vonifyPrototype(prototype)),
+        VonMember("export", VonBool(export)),
         // TODO: rename block to body
         VonMember("block", vonifyNode(body))))
   }

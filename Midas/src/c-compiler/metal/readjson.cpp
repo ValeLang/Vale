@@ -460,8 +460,8 @@ std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(Met
   assert(edge.is_object());
   assert(edge["__type"] == "Entry");
   return std::make_pair(
-      readInterfaceMethod(cache, edge["key"]),
-      readPrototype(cache, edge["value"]));
+      readInterfaceMethod(cache, edge["method"]),
+      readPrototype(cache, edge["override"]));
 }
 
 Edge* readEdge(MetalCache* cache, const json& edge) {
@@ -519,8 +519,8 @@ std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(MetalCache* cache
   assert(edge.is_object());
   assert(edge["__type"] == "Entry");
   return std::make_pair(
-      readReferend(cache, edge["key"]),
-      readPrototype(cache, edge["value"]));
+      readReferend(cache, edge["referend"]),
+      readPrototype(cache, edge["destructor"]));
 }
 
 Program* readProgram(MetalCache* cache, const json& program) {
@@ -552,6 +552,6 @@ Program* readProgram(MetalCache* cache, const json& program) {
           }),
       readArrayIntoMap<Referend*, Prototype*>(
           cache,
-          program["immDestructorsByKind"],
+          program["immDestructorsByReferend"],
           readReferendAndPrototypeEntry));
 }

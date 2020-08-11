@@ -58,15 +58,23 @@ object StructHammer {
             InterfaceMethodH(prototypeH, virtualParamIndex)
           })
 
+        val export = interfaceDef2.attributes.contains(Export2)
+
         val interfaceDefH =
           InterfaceDefinitionH(
             fullNameH,
+            export,
             interfaceDef2.weakable,
             Conversions.evaluateMutability(interfaceDef2.mutability),
             List() /* super interfaces */,
             methodsH)
         hamuts.addInterface(interfaceRef2, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
+
+        if (export) {
+          Hammer.exportName(hamuts, interfaceDef2.fullName, interfaceDefH.fullName)
+        }
+
         (interfaceDefH.getRef)
       }
     }
@@ -107,16 +115,23 @@ object StructHammer {
           }
         }
 
+        val export = structDef2.attributes.contains(Export2)
+
         val structDefH =
           StructDefinitionH(
             fullNameH,
-            structDef2.attributes.contains(Export2),
+            export,
             structDef2.weakable,
             Conversions.evaluateMutability(structDef2.mutability),
             edgesH,
             membersH);
         hamuts.addStructOriginatingFromTemplar(structRef2, structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)
+
+        if (export) {
+          Hammer.exportName(hamuts, structDef2.fullName, structDefH.fullName)
+        }
+
         (structDefH.getRef)
       }
     }

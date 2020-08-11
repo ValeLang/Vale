@@ -1,6 +1,6 @@
 package net.verdagon.vale.carpenter
 
-import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionHeader2, KindTemplata, Signature2}
+import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, FunctionHeader2, KindTemplata, Signature2}
 import net.verdagon.vale.templar.types.{Coord, Immutable, InterfaceRef2, KnownSizeArrayT2, Share, StructRef2, UnknownSizeArrayT2}
 import net.verdagon.vale.templar.{Discard2, Edge2, FullName2, FunctionCall2, FunctionName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, Impl2, InterfaceEdgeBlueprint, LockWeak2, Program2, Temputs}
 import net.verdagon.vale.{vassertSome, vcurious}
@@ -26,12 +26,16 @@ object Reachability {
         }) ||
         func.header.isExport
       })
+    val exposedStructs = temputs.getAllStructs().filter(_.attributes.contains(Export2))
+    val exposedInterfaces = temputs.getAllInterfaces().filter(_.attributes.contains(Export2))
     val reachables = new Reachables(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     var sizeBefore = 0
     do {
       vcurious(sizeBefore == 0) // do we ever need multiple iterations, or is the DFS good enough?
       sizeBefore = reachables.size
       exposedFunctions.map(_.header.toSignature).foreach(visitFunction(temputs, edgeBlueprints, edges, reachables, _))
+      exposedStructs.map(_.getRef).foreach(visitStruct(temputs, edgeBlueprints, edges, reachables, _))
+      exposedInterfaces.map(_.getRef).foreach(visitInterface(temputs, edgeBlueprints, edges, reachables, _))
     } while (reachables.size != sizeBefore)
     visitStruct(temputs, edgeBlueprints, edges, reachables, Program2.emptyTupleStructRef)
     reachables

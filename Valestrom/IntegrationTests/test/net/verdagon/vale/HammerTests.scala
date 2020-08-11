@@ -90,4 +90,23 @@ class HammerTests extends FunSuite with Matchers {
       }
     }
   }
+
+
+  test("Tests export function") {
+    val compile = new Compilation(
+      """
+        |fn moo() export { 42 }
+        |""".stripMargin)
+    val hamuts = compile.getHamuts()
+    val moo = hamuts.lookupFunction("moo")
+  }
+
+  test("Tests export struct") {
+    val compile = new Compilation(
+      """
+        |struct Moo export { }
+        |""".stripMargin)
+    val hamuts = compile.getHamuts()
+    val moo = hamuts.lookupStruct("Moo")
+  }
 }

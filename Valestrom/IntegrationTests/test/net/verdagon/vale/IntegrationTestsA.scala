@@ -8,6 +8,7 @@ import net.verdagon.vale.vivem.{Heap, IntV, StructInstanceV}
 import net.verdagon.von.{VonBool, VonFloat, VonInt}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.hammer.VonHammer
 import net.verdagon.vale.metal.YonderH
 import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Share, Str2}
@@ -429,4 +430,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
+  test("Test export functions") {
+    val compile = new Compilation(
+      """fn moo() export {
+        |  42
+        |}
+        |""".stripMargin)
+    val hamuts = compile.getHamuts()
+    VonHammer.vonifyProgram(hamuts)
+  }
 }

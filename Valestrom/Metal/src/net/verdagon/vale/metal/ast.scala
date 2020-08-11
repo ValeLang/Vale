@@ -143,21 +143,28 @@ case class EdgeH(
   // that it's overriding.
   structPrototypesByInterfaceMethod: ListMap[InterfaceMethodH, PrototypeH])
 
+sealed trait IFunctionAttributeH
+case object ExportH extends IFunctionAttributeH
+case object UserFunctionH extends IFunctionAttributeH // Whether it was written by a human. Mostly for tests right now.
+
 // A function's definition.
 case class FunctionH(
   // Describes the function's name, params, and return type.
   prototype: PrototypeH,
 
-  // Used for testing, ignore.
-  // TODO: Get rid of these, they're only for testing. Perhaps use an external set?
+  // Whether this has a body. If true, the body will simply contain an InterfaceCallH instruction.
   isAbstract: Boolean,
+  // Whether this has a body. If true, the body will simply contain an ExternCallH instruction to the same
+  // prototype describing this function.
   isExtern: Boolean,
-  isUserFunction: Boolean,
+
+  attributes: List[IFunctionAttributeH],
 
   // The body of the function that contains the actual instructions.
   body: ExpressionH[ReferendH]) {
 
   def fullName = prototype.fullName
+  def isUserFunction = attributes.contains(UserFunctionH)
 }
 
 // A wrapper around a function's name, which also has its params and return type.

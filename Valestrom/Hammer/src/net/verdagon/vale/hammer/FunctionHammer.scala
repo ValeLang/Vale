@@ -2,10 +2,9 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{metal => m}
+import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, vwat, metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{FunctionHeader2, Prototype2}
-import net.verdagon.vale.{vassert, vassertSome, vfail}
+import net.verdagon.vale.templar.templata.{Export2, Extern2, FunctionHeader2, IFunctionAttribute2, Prototype2, UserFunction2}
 
 object FunctionHammer {
 
@@ -26,7 +25,7 @@ object FunctionHammer {
       case Some(functionRefH) => functionRefH
       case None => {
         val Function2(
-            header @ FunctionHeader2(humanName, isExtern, isUserFunction, params2, returnType2, _),
+            header @ FunctionHeader2(humanName, attrs2, params2, returnType2, _),
             locals2,
             body) = function2;
 
@@ -51,12 +50,24 @@ object FunctionHammer {
             "Body's result: " + resultCoord)
         }
 
-        val functionH = FunctionH(prototypeH, header.getAbstractInterface != None, isExtern, isUserFunction, bodyH);
+        val isAbstract = header.getAbstractInterface != None
+        val isExtern = header.attributes.contains(Extern2)
+        val attrsH = translateFunctionAttributes(attrs2.filter(_ != Extern2))
+        val functionH = FunctionH(prototypeH, isAbstract, isExtern, attrsH, bodyH);
         hamuts.addFunction(header.toPrototype, functionH)
 
         (temporaryFunctionRefH)
       }
     }
+  }
+
+  def translateFunctionAttributes(attributes: List[IFunctionAttribute2]) = {
+    attributes.map({
+      case UserFunction2 => UserFunctionH
+      case Extern2 => vwat() // Should have been filtered out, hammer cares about extern directly
+      case Export2 => ExportH
+      case x => vimpl(x.toString)
+    })
   }
 
   def translatePrototypes(

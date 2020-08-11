@@ -206,12 +206,12 @@ object Scout {
       }
 
     val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
-    val export = attributesP.exists({ case w @ ExportP(_) => true case _ => false })
+    val attrsS = translateCitizenAttributes(attributesP.filter({ case WeakableP(_) => false case _ => true}))
 
     StructS(
       Scout.evalRange(file, range),
       structName,
-      export,
+      attrsS,
       weakable,
       mutabilityRune,
       Some(mutability),
@@ -222,6 +222,13 @@ object Scout {
       isTemplate,
       rulesS,
       membersS)
+  }
+
+  def translateCitizenAttributes(attrsP: List[ICitizenAttributeP]): List[ICitizenAttributeS] = {
+    attrsP.map({
+      case ExportP(_) => ExportS
+      case x => vimpl(x.toString)
+    })
   }
 
   private def scoutInterface(file: Int, headP: InterfaceP): InterfaceS = {
@@ -278,6 +285,7 @@ object Scout {
       InterfaceS(
         Scout.evalRange(file, range),
         interfaceFullName,
+        translateCitizenAttributes(attributesP),
         weakable,
         mutabilityRune,
         Some(mutability),

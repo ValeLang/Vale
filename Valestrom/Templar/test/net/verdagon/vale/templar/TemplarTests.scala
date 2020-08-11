@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{CombinatorParsers, ParseFailure, ParseSuccess, Parser, FileP}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
@@ -9,6 +9,7 @@ import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
 import org.scalatest.{FunSuite, Matchers, _}
 
+import scala.collection.immutable.List
 import scala.io.Source
 
 class TemplarTests extends FunSuite with Matchers {
@@ -88,7 +89,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeader2(simpleName("main"),false, true,List(), Coord(Share, Int2()), _) => true
+      case FunctionHeader2(simpleName("main"),List(UserFunction2),List(), Coord(Share, Int2()), _) => true
     })
     main.only({ case IntLiteral2(3) => true })
   }
@@ -268,7 +269,7 @@ class TemplarTests extends FunSuite with Matchers {
     temputs.getAllStructs().collectFirst({
       case StructDefinition2(
       simpleName("MyStruct"),
-      false,
+      _,
       false,
       Mutable,
       List(StructMember2(CodeVarName2("a"), Final, ReferenceMemberType2(Coord(Share, Int2())))),
@@ -279,7 +280,6 @@ class TemplarTests extends FunSuite with Matchers {
       case FunctionHeader2(
       simpleName("MyStruct"),
       _,
-      false,
       List(Parameter2(CodeVarName2("a"), None, Coord(Share, Int2()))),
       Coord(Own, StructRef2(simpleName("MyStruct"))),
       _) =>
@@ -305,12 +305,12 @@ class TemplarTests extends FunSuite with Matchers {
 
     val interfaceDef =
       temputs.getAllInterfaces().collectFirst({
-        case id @ InterfaceDefinition2(simpleName("MyInterface"), false, Mutable, List()) => id
+        case id @ InterfaceDefinition2(simpleName("MyInterface"), _, false, Mutable, List()) => id
       }).get
 
     val structDef =
       temputs.getAllStructs.collectFirst({
-        case sd @ StructDefinition2(simpleName("MyStruct"), false, false, Mutable, _, false) => sd
+        case sd @ StructDefinition2(simpleName("MyStruct"), _, false, Mutable, _, false) => sd
       }).get
 
     vassert(temputs.impls.exists(impl => {
@@ -335,15 +335,44 @@ class TemplarTests extends FunSuite with Matchers {
     // Can't run it because there's nothing implementing that interface >_>
   }
 
-  // Known failure 2020-08-05
+  test("Tests exporting function") {
+    val compile = new Compilation(
+      """
+        |fn moo() export { }
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+    val moo = temputs.lookupFunction("moo")
+    moo.header.isExport shouldEqual true
+  }
+
+  test("Tests exporting struct") {
+    val compile = new Compilation(
+      """
+        |struct Moo export { a int; }
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+    val moo = temputs.lookupStruct("Moo")
+    moo.attributes.contains(Export2) shouldEqual true
+  }
+
+  test("Tests exporting interface") {
+    val compile = new Compilation(
+      """
+        |interface IMoo export { fn hi(virtual this &IMoo) void; }
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+    val moo = temputs.lookupInterface("IMoo")
+    moo.attributes.contains(Export2) shouldEqual true
+  }
+
   test("Tests stamping a struct and its implemented interface from a function param") {
     val compile = new Compilation(
       """
         |interface MyOption<T> imm rules(T Ref) { }
-        |struct MySome<T> export imm rules(T Ref) { value T; }
+        |struct MySome<T> imm rules(T Ref) { value T; }
         |impl<T> MyOption<T> for MySome<T>;
-        |fn moo(a MySome<int>) { }
-      """.stripMargin)
+        |fn moo(a MySome<int>) export { }
+        |""".stripMargin)
     val temputs = compile.getTemputs()
 
     val interface =
@@ -394,7 +423,6 @@ class TemplarTests extends FunSuite with Matchers {
       case
         FunctionHeader2(
         simpleName("MySome"),
-        false,
         _,
         _,
         Coord(Own, StructRef2(FullName2(List(), CitizenName2("MySome", List(CoordTemplata(Coord(Share, Int2()))))))),

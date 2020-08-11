@@ -273,7 +273,7 @@ object Astronomer {
   }
 
   def translateStruct(astrouts: AstroutsBox, env: Environment, structS: StructS): StructA = {
-    val StructS(nameS, export, weakable, mutabilityRuneS, maybePredictedMutabilityS, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, members) = structS
+    val StructS(rangeS, nameS, export, weakable, mutabilityRuneS, maybePredictedMutabilityS, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, members) = structS
     val mutabilityRuneA = Astronomer.translateRune(mutabilityRuneS)
     val maybePredictedMutabilityA = maybePredictedMutabilityS
     val nameA = Astronomer.translateTopLevelCitizenDeclarationName(nameS)
@@ -309,6 +309,7 @@ object Astronomer {
       })
 
     StructA(
+      rangeS,
       nameA,
       export,
       weakable,
@@ -324,7 +325,7 @@ object Astronomer {
   }
 
   def translateInterface(astrouts: AstroutsBox, env: Environment, interfaceS: InterfaceS): InterfaceA = {
-    val InterfaceS(nameS, weakable, mutabilityRuneS, maybePredictedMutability, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, internalMethodsS) = interfaceS
+    val InterfaceS(range, nameS, weakable, mutabilityRuneS, maybePredictedMutability, knowableRunesS, identifyingRunesS, localRunesS, predictedTypeByRune, isTemplate, rules, internalMethodsS) = interfaceS
     val mutabilityRuneA = Astronomer.translateRune(mutabilityRuneS)
     val localRunesA = localRunesS.map(Astronomer.translateRune)
     val knowableRunesA = knowableRunesS.map(Astronomer.translateRune)
@@ -357,6 +358,7 @@ object Astronomer {
 
     val interfaceA =
       InterfaceA(
+        range,
         nameA,
         weakable,
         mutabilityRuneA,
@@ -420,7 +422,7 @@ object Astronomer {
   }
 
   def translateFunction(astrouts: AstroutsBox, env: Environment, functionS: FunctionS): FunctionA = {
-    val FunctionS(nameS, knowableRunesS, identifyingRunesS, localRunesS, maybePredictedType, paramsS, maybeRetCoordRune, isTemplate, templateRules, bodyS) = functionS
+    val FunctionS(rangeS, nameS, knowableRunesS, identifyingRunesS, localRunesS, maybePredictedType, paramsS, maybeRetCoordRune, isTemplate, templateRules, bodyS) = functionS
     val nameA = translateFunctionDeclarationName(nameS)
     val knowableRunesA = knowableRunesS.map(Astronomer.translateRune)
     val localRunesA = localRunesS.map(Astronomer.translateRune)
@@ -448,6 +450,7 @@ object Astronomer {
     val bodyA = translateBody(astrouts, innerEnv, bodyS)
 
     FunctionA(
+      rangeS,
       nameA,
       true,
       tyype,

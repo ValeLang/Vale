@@ -170,6 +170,7 @@ object FunctionScout {
       }
 
     FunctionS(
+      Scout.evalRange(file, range),
       name,
       knowableValueRunes,
       identifyingRunes,
@@ -348,6 +349,7 @@ object FunctionScout {
 
     val function1 =
       FunctionS(
+        Scout.evalRange(parentStackFrame.file, range),
         lambdaName,
         knowableValueRunes,
         identifyingRunes,
@@ -522,6 +524,7 @@ object FunctionScout {
       }
 
     FunctionS(
+      Scout.evalRange(functionEnv.file, range),
       funcName,
       knowableValueRunes,
       identifyingRunes,

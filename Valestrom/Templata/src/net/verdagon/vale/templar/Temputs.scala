@@ -694,6 +694,8 @@ object Program2 {
   val emptyPackType: PackT2 = PackT2(List(), Program2.emptyTupleStructRef)
   val emptyPackReference: Coord = Coord(Share, emptyPackType)
 
+  val intType = Coord(Share, Int2())
+  val boolType = Coord(Share, Bool2())
 }
 
 //trait Program2 {

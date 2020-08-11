@@ -416,6 +416,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
+  test("Test returning empty seq") {
+    // Make sure that functions that cant be called by main will not be included.
 
+    val compile = new Compilation(
+      """fn main() [] {
+        |  []
+        |}
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+
+    compile.run(Vector())
+  }
 
 }

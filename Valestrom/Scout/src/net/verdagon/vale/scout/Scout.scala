@@ -209,6 +209,7 @@ object Scout {
     val export = attributesP.exists({ case w @ ExportP(_) => true case _ => false })
 
     StructS(
+      Scout.evalRange(file, range),
       structName,
       export,
       weakable,
@@ -275,6 +276,7 @@ object Scout {
 
     val interfaceS =
       InterfaceS(
+        Scout.evalRange(file, range),
         interfaceFullName,
         weakable,
         mutabilityRune,

@@ -35,13 +35,13 @@ class SequenceTemplar(
     }
   }
 
-  private def makeTupleType(
-    env: NamespaceEnvironment[IName2],
+  def makeTupleType(
+    env: IEnvironment,
     temputs: TemputsBox,
     types2: List[Coord]):
   (TupleT2, Mutability) = {
     val (structRef, mutability) =
-      structTemplar.makeSeqOrPackUnderstruct(env, temputs, types2, TupleName2(types2))
+      structTemplar.makeSeqOrPackUnderstruct(env.globalEnv, temputs, types2, TupleName2(types2))
 
     if (types2.isEmpty)
       vassert(temputs.lookupStruct(structRef).mutability == Immutable)

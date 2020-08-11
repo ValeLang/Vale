@@ -22,7 +22,7 @@ case class ProgramA(
     val matches = interfaces.find(_.name == name)
     vassert(matches.size == 1)
     matches.head match {
-      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _, _) => i
+      case i @ InterfaceA(_, _, _, _, _, _, _, _, _, _, _, _, _) => i
     }
   }
   def lookupStruct(name: INameA) = {
@@ -42,7 +42,7 @@ trait TypeDefinitionA {
 case class StructA(
     range: RangeS,
     name: TopLevelCitizenDeclarationNameA,
-    export: Boolean,
+    attributes: List[ICitizenAttributeA],
     weakable: Boolean,
     mutabilityRune: IRuneA,
 
@@ -89,9 +89,11 @@ case class ImplA(
 //  aliasRune: String,
 //  aliaseeRune: String)
 
+
 case class InterfaceA(
     range: RangeS,
     name: TopLevelCitizenDeclarationNameA,
+    attributes: List[ICitizenAttributeA],
     weakable: Boolean,
     mutabilityRune: IRuneA,
     // This is needed for recursive structures like
@@ -148,13 +150,19 @@ object structName {
 
 // Also remember, if a parameter has no name, it can't be varying.
 
-// template params.
+
+sealed trait ICitizenAttributeA
+sealed trait IFunctionAttributeA
+case object ExternA extends IFunctionAttributeA with ICitizenAttributeA // For optimization later
+case object ExportA extends IFunctionAttributeA with ICitizenAttributeA
+case object UserFunctionA extends IFunctionAttributeA // Whether it was written by a human. Mostly for tests right now.
+
 
 // Underlying class for all XYZFunctionS types
 case class FunctionA(
     range: RangeS,
     name: IFunctionDeclarationNameA,
-    isUserFunction: Boolean,
+    attributes: List[IFunctionAttributeA],
 
     tyype: ITemplataType,
     knowableRunes: Set[IRuneA],

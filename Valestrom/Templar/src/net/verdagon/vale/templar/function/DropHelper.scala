@@ -109,8 +109,7 @@ class DropHelper(
     val header =
       FunctionHeader2(
         bodyEnv.fullName,
-        isExtern = false,
-        isUserFunction = false,
+        List(),
         List(Parameter2(CodeVarName2("x"), None, type2)),
         Coord(Share, Void2()),
         Some(originFunction1))

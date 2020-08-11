@@ -150,10 +150,15 @@ case class FunctionBanner2(
   }
 }
 
+sealed trait IFunctionAttribute2
+sealed trait ICitizenAttribute2
+case object Extern2 extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
+case object Export2 extends IFunctionAttribute2 with ICitizenAttribute2
+case object UserFunction2 extends IFunctionAttribute2 // Whether it was written by a human. Mostly for tests right now.
+
 case class FunctionHeader2(
     fullName: FullName2[IFunctionName2],
-    isExtern: Boolean, // For optimization later
-    isUserFunction: Boolean, // Whether it was written by a human. Mostly for tests right now.
+    attributes: List[IFunctionAttribute2],
     params: List[Parameter2],
     returnType: Coord,
     maybeOriginFunction: Option[FunctionA]) extends Queriable2 {
@@ -163,6 +168,9 @@ case class FunctionHeader2(
 
   vassert(fullName.last.parameters == paramTypes)
 
+  def isExtern = attributes.contains(Extern2)
+  def isExport = attributes.contains(Export2)
+  def isUserFunction = attributes.contains(UserFunction2)
   def getAbstractInterface: Option[InterfaceRef2] = toBanner.getAbstractInterface
   def getOverride: Option[(StructRef2, InterfaceRef2)] = toBanner.getOverride
   def getVirtualIndex: Option[Int] = toBanner.getVirtualIndex

@@ -53,7 +53,7 @@ Name* readName(MetalCache* cache, const json& name) {
 }
 
 StructReferend* readStructReferend(MetalCache* cache, const json& referend) {
-  assert(referend[""] == "StructId");
+  assert(referend["__type"] == "StructId");
 
   auto structName = readName(cache, referend["name"]);
 
@@ -63,15 +63,11 @@ StructReferend* readStructReferend(MetalCache* cache, const json& referend) {
           structName,
           [&]() { return new StructReferend(structName); });
 
-  if (structName->name == "Tup") {
-    cache->emptyTupleStructReferend = result;
-  }
-
   return result;
 }
 
 InterfaceReferend* readInterfaceReferend(MetalCache* cache, const json& referend) {
-  assert(referend[""] == "InterfaceId");
+  assert(referend["__type"] == "InterfaceId");
 
   auto interfaceName = readName(cache, referend["name"]);
 
@@ -82,7 +78,7 @@ InterfaceReferend* readInterfaceReferend(MetalCache* cache, const json& referend
 }
 
 RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
-  assert(rawArray[""] == "Array");
+  assert(rawArray["__type"] == "Array");
 
   auto mutability = readMutability(rawArray["mutability"]);
   auto elementType = readReference(cache, rawArray["elementType"]);
@@ -116,33 +112,33 @@ KnownSizeArrayT* readKnownSizeArray(MetalCache* cache, const json& referend) {
 
 Referend* readReferend(MetalCache* cache, const json& referend) {
   assert(referend.is_object());
-  if (referend[""] == "Int") {
+  if (referend["__type"] == "Int") {
     return cache->innt;
-  } else if (referend[""] == "Bool") {
+  } else if (referend["__type"] == "Bool") {
     return cache->boool;
-  } else if (referend[""] == "Str") {
+  } else if (referend["__type"] == "Str") {
     return cache->str;
-  } else if (referend[""] == "Void") {
+  } else if (referend["__type"] == "Void") {
     return cache->vooid;
-  } else if (referend[""] == "StructId") {
+  } else if (referend["__type"] == "StructId") {
     return readStructReferend(cache, referend);
-  } else if (referend[""] == "Never") {
+  } else if (referend["__type"] == "Never") {
     return cache->never;
-  } else if (referend[""] == "UnknownSizeArray") {
+  } else if (referend["__type"] == "UnknownSizeArray") {
     return readUnknownSizeArray(cache, referend);
-  } else if (referend[""] == "KnownSizeArray") {
+  } else if (referend["__type"] == "KnownSizeArray") {
     return readKnownSizeArray(cache, referend);
-  } else if (referend[""] == "InterfaceId") {
+  } else if (referend["__type"] == "InterfaceId") {
     return readInterfaceReferend(cache, referend);
   } else {
-    std::cerr << "Unrecognized referend: " << referend[""] << std::endl;
+    std::cerr << "Unrecognized referend: " << referend["__type"] << std::endl;
     assert(false);
   }
 }
 
 Reference* readReference(MetalCache* cache, const json& reference) {
   assert(reference.is_object());
-  assert(reference[""] == "Ref");
+  assert(reference["__type"] == "Ref");
 
   auto ownership = readOwnership(cache, reference["ownership"]);
   auto location = readLocation(cache, reference["location"]);
@@ -157,9 +153,9 @@ Reference* readReference(MetalCache* cache, const json& reference) {
 
 Mutability readMutability(const json& mutability) {
   assert(mutability.is_object());
-  if (mutability[""].get<std::string>() == "Mutable") {
+  if (mutability["__type"].get<std::string>() == "Mutable") {
     return Mutability::MUTABLE;
-  } else if (mutability[""].get<std::string>() == "Immutable") {
+  } else if (mutability["__type"].get<std::string>() == "Immutable") {
     return Mutability::IMMUTABLE;
   } else {
     assert(false);
@@ -168,9 +164,9 @@ Mutability readMutability(const json& mutability) {
 
 Variability readVariability(const json& variability) {
   assert(variability.is_object());
-  if (variability[""].get<std::string>() == "Varying") {
+  if (variability["__type"].get<std::string>() == "Varying") {
     return Variability::VARYING;
-  } else if (variability[""].get<std::string>() == "Final") {
+  } else if (variability["__type"].get<std::string>() == "Final") {
     return Variability::FINAL;
   } else {
     assert(false);
@@ -180,13 +176,13 @@ Variability readVariability(const json& variability) {
 Ownership readOwnership(MetalCache* cache, const json& ownership) {
   assert(ownership.is_object());
 //  std::cout << ownership.type() << std::endl;
-  if (ownership[""].get<std::string>() == "Own") {
+  if (ownership["__type"].get<std::string>() == "Own") {
     return Ownership::OWN;
-  } else if (ownership[""].get<std::string>() == "Borrow") {
+  } else if (ownership["__type"].get<std::string>() == "Borrow") {
     return Ownership::BORROW;
-  } else if (ownership[""].get<std::string>() == "Weak") {
+  } else if (ownership["__type"].get<std::string>() == "Weak") {
     return Ownership::WEAK;
-  } else if (ownership[""].get<std::string>() == "Share") {
+  } else if (ownership["__type"].get<std::string>() == "Share") {
     return Ownership::SHARE;
   } else {
     assert(false);
@@ -196,9 +192,9 @@ Ownership readOwnership(MetalCache* cache, const json& ownership) {
 Location readLocation(MetalCache* cache, const json& location) {
   assert(location.is_object());
 //  std::cout << location.type() << std::endl;
-  if (location[""].get<std::string>() == "Inline") {
+  if (location["__type"].get<std::string>() == "Inline") {
     return Location::INLINE;
-  } else if (location[""].get<std::string>() == "Yonder") {
+  } else if (location["__type"].get<std::string>() == "Yonder") {
     return Location::YONDER;
   } else {
     assert(false);
@@ -207,7 +203,7 @@ Location readLocation(MetalCache* cache, const json& location) {
 
 Prototype* readPrototype(MetalCache* cache, const json& prototype) {
   assert(prototype.is_object());
-  assert(prototype[""] == "Prototype");
+  assert(prototype["__type"] == "Prototype");
 
   auto name = readName(cache, prototype["name"]);
   auto params = readArray(cache, prototype["params"], readReference);
@@ -221,11 +217,11 @@ Prototype* readPrototype(MetalCache* cache, const json& prototype) {
 
 VariableId* readVariableId(MetalCache* cache, const json& variable) {
   assert(variable.is_object());
-  assert(variable[""] == "VariableId");
+  assert(variable["__type"] == "VariableId");
 
   int number = variable["number"];
   std::string maybeName;
-  if (variable["name"][""] == "Some") {
+  if (variable["name"]["__type"] == "Some") {
     maybeName = variable["name"]["value"];
   }
 
@@ -237,7 +233,7 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
 
 Local* readLocal(MetalCache* cache, const json& local) {
   assert(local.is_object());
-  assert(local[""] == "Local");
+  assert(local["__type"] == "Local");
   auto varId = readVariableId(cache, local["id"]);
   auto ref = readReference(cache, local["type"]);
 
@@ -249,7 +245,7 @@ Local* readLocal(MetalCache* cache, const json& local) {
 
 Expression* readExpression(MetalCache* cache, const json& expression) {
   assert(expression.is_object());
-  std::string type = expression[""];
+  std::string type = expression["__type"];
   if (type == "ConstantI64") {
     return new ConstantI64(
         expression["value"]);
@@ -445,7 +441,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
 
 StructMember* readStructMember(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
-  assert(struuct[""] == "StructMember");
+  assert(struuct["__type"] == "StructMember");
   return new StructMember(
       struuct["name"],
       readVariability(struuct["variability"]),
@@ -454,7 +450,7 @@ StructMember* readStructMember(MetalCache* cache, const json& struuct) {
 
 InterfaceMethod* readInterfaceMethod(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
-  assert(struuct[""] == "InterfaceMethod");
+  assert(struuct["__type"] == "InterfaceMethod");
   return new InterfaceMethod(
       readPrototype(cache, struuct["prototype"]),
       struuct["virtualParamIndex"]);
@@ -462,7 +458,7 @@ InterfaceMethod* readInterfaceMethod(MetalCache* cache, const json& struuct) {
 
 std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
-  assert(edge[""] == "Entry");
+  assert(edge["__type"] == "Entry");
   return std::make_pair(
       readInterfaceMethod(cache, edge["key"]),
       readPrototype(cache, edge["value"]));
@@ -470,7 +466,7 @@ std::pair<InterfaceMethod*, Prototype*> readInterfaceMethodAndPrototypeEntry(Met
 
 Edge* readEdge(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
-  assert(edge[""] == "Edge");
+  assert(edge["__type"] == "Edge");
   return new Edge(
       readStructReferend(cache, edge["structName"]),
       readInterfaceReferend(cache, edge["interfaceName"]),
@@ -479,18 +475,30 @@ Edge* readEdge(MetalCache* cache, const json& edge) {
 
 StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
-  assert(struuct[""] == "Struct");
-  return new StructDefinition(
-      readName(cache, struuct["name"]),
-      readMutability(struuct["mutability"]),
-      readArray(cache, struuct["edges"], readEdge),
-      readArray(cache, struuct["members"], readStructMember),
-      struuct["weakable"]);
+  assert(struuct["__type"] == "Struct");
+  auto result =
+      new StructDefinition(
+          readName(cache, struuct["name"]),
+          readMutability(struuct["mutability"]),
+          readArray(cache, struuct["edges"], readEdge),
+          readArray(cache, struuct["members"], readStructMember),
+          struuct["weakable"]);
+
+  auto structName = result->name;
+  if (structName->name == std::string("Tup")) {
+    cache->emptyTupleStructReferend =
+        makeIfNotPresent(
+            &cache->structReferends,
+            structName,
+            [&]() { return new StructReferend(structName); });
+  }
+
+  return result;
 }
 
 InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
-  assert(struuct[""] == "Interface");
+  assert(struuct["__type"] == "Interface");
   return new InterfaceDefinition(
       readName(cache, struuct["name"]),
       readMutability(struuct["mutability"]),
@@ -501,7 +509,7 @@ InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
 
 Function* readFunction(MetalCache* cache, const json& function) {
   assert(function.is_object());
-  assert(function[""] == "Function");
+  assert(function["__type"] == "Function");
   return new Function(
       readPrototype(cache, function["prototype"]),
       readExpression(cache, function["block"]));
@@ -509,7 +517,7 @@ Function* readFunction(MetalCache* cache, const json& function) {
 
 std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
-  assert(edge[""] == "Entry");
+  assert(edge["__type"] == "Entry");
   return std::make_pair(
       readReferend(cache, edge["key"]),
       readPrototype(cache, edge["value"]));
@@ -517,7 +525,7 @@ std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(MetalCache* cache
 
 Program* readProgram(MetalCache* cache, const json& program) {
   assert(program.is_object());
-  assert(program[""] == "Program");
+  assert(program["__type"] == "Program");
   return new Program(
       readArrayIntoMap<std::string, InterfaceDefinition*>(
           cache,

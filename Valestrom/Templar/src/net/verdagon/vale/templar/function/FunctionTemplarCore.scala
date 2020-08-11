@@ -115,7 +115,7 @@ class FunctionTemplarCore(
           makeExternFunction(
             temputs,
             fullEnv.fullName,
-            startingFullEnv.function.isUserFunction,
+            translateFunctionAttributes(startingFullEnv.function.attributes),
             params2,
             retCoord,
             Some(startingFullEnv.function))
@@ -173,12 +173,12 @@ class FunctionTemplarCore(
   def makeExternFunction(
       temputs: TemputsBox,
       fullName: FullName2[IFunctionName2],
-      isUserFunction: Boolean,
+      attributes: List[IFunctionAttribute2],
       params2: List[Parameter2],
       returnType2: Coord,
       maybeOrigin: Option[FunctionA]):
   (FunctionHeader2) = {
-    val header = FunctionHeader2(fullName, true, isUserFunction, params2, returnType2, maybeOrigin)
+    val header = FunctionHeader2(fullName, Extern2 :: attributes, params2, returnType2, maybeOrigin)
     val argLookups =
       header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })
     val function2 =
@@ -190,6 +190,13 @@ class FunctionTemplarCore(
     temputs.declareFunctionReturnType(header.toSignature, header.returnType)
     temputs.addFunction(function2)
     (header)
+  }
+
+  def translateFunctionAttributes(a: List[IFunctionAttributeA]) = {
+    a.map({
+      case UserFunctionA => UserFunction2
+      case x => vimpl(x.toString)
+    })
   }
 
 
@@ -204,8 +211,7 @@ class FunctionTemplarCore(
     val header =
       FunctionHeader2(
         env.fullName,
-        isExtern = false,
-        isUserFunction = false,
+        List(),
         params2,
         returnReferenceType2,
         origin)
@@ -225,7 +231,7 @@ class FunctionTemplarCore(
         .declareFunctionReturnType(header.toSignature, returnReferenceType2)
       temputs.addFunction(function2)
     vassert(temputs.exactDeclaredSignatureExists(env.fullName))
-    (header)
+    header
   }
 
   def makeImplDestructor(
@@ -245,7 +251,7 @@ class FunctionTemplarCore(
       Function2(
         FunctionHeader2(
           env.fullName,
-          false, false,
+          List(),
           List(Parameter2(CodeVarName2("this"), Some(Override2(interfaceRef2)), structType2)),
           Coord(Share, Void2()),
           maybeOriginFunction1),

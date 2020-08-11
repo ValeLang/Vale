@@ -41,7 +41,7 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("fn main() { {_ + _}(4, 6) }")
 
     val CodeBody1(BodySE(_, BlockSE(_, List(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _,_, _, _, _)), _) = expr
+    val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _, _,_, _, _, _)), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
         vassert(mp1 != mp2)

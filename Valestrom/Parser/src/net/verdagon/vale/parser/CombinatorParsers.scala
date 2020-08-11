@@ -52,6 +52,7 @@ object CombinatorParsers
   def functionAttribute: Parser[IFunctionAttributeP] = {
     pos ~ "abstract" ~ pos ^^ { case begin ~ _ ~ end => AbstractAttributeP(Range(begin, end)) } |
     pos ~ "extern" ~ pos ^^ { case begin ~ _ ~ end => ExternAttributeP(Range(begin, end)) } |
+    pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportAttributeP(Range(begin, end)) } |
     pos ~ "pure" ~ pos ^^ { case begin ~ _ ~ end => PureAttributeP(Range(begin, end)) }
   }
 
@@ -123,7 +124,7 @@ object CombinatorParsers
     }
   }
 
-  def citizenAttribute: Parser[IStructAttributeP] = {
+  def citizenAttribute: Parser[ICitizenAttributeP] = {
     pos ~ "export" ~ pos ^^ { case begin ~ _ ~ end => ExportP(Range(begin, end)) } |
     pos ~ "weakable" ~ pos ^^ { case begin ~ _ ~ end => WeakableP(Range(begin, end)) } |
     pos ~ "sealed" ~ pos ^^ { case begin ~ _ ~ end => SealedP(Range(begin, end)) }

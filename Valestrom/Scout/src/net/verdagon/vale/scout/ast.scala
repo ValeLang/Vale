@@ -89,10 +89,16 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
   def file: Int = begin.file
 }
 
+sealed trait ICitizenAttributeS
+sealed trait IFunctionAttributeS
+case object ExternS extends IFunctionAttributeS with ICitizenAttributeS // For optimization later
+case object ExportS extends IFunctionAttributeS with ICitizenAttributeS
+case object UserFunctionS extends IFunctionAttributeS // Whether it was written by a human. Mostly for tests right now.
+
 case class StructS(
     range: RangeS,
     name: TopLevelCitizenDeclarationNameS,
-    export: Boolean,
+    attributes: List[ICitizenAttributeS],
     weakable: Boolean,
     mutabilityRune: IRuneS,
     // This is needed for recursive structures like
@@ -127,6 +133,7 @@ case class ImplS(
 case class InterfaceS(
     range: RangeS,
     name: TopLevelCitizenDeclarationNameS,
+    attributes: List[ICitizenAttributeS],
     weakable: Boolean,
     mutabilityRune: IRuneS,
     // This is needed for recursive structures like
@@ -202,6 +209,7 @@ case class CodeBody1(body1: BodySE) extends IBody1
 case class FunctionS(
     range: RangeS,
     name: IFunctionDeclarationNameS,
+    attributes: List[IFunctionAttributeS],
 
     // Runes that we can know without looking at args or template args.
     knowableRunes: Set[IRuneS],

@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.templar.{FullName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
+import net.verdagon.vale.templar.{CitizenName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
 import net.verdagon.vale.{vassert, vfail}
 
 case class FunctionRefH(prototype: PrototypeH) {
@@ -124,7 +124,7 @@ case class Locals(
 
 object Hammer {
   def translate(hinputs: Hinputs): ProgramH = {
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), List(), Map(), Map(), Map(), Map()))
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List(), Map(), Map(), Map(), Map()))
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, hinputs.emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
     StructHammer.translateInterfaces(hinputs, hamuts);
@@ -154,11 +154,31 @@ object Hammer {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
     }})
 
+    val exportedNameByFullName = hamuts.fullNameByExportedName.map(_.swap)
+    vassert(exportedNameByFullName.size == hamuts.fullNameByExportedName.size)
+
     ProgramH(
       hamuts.interfaceDefs.values.toList,
       hamuts.structDefs,
       List() /* externs */,
       hamuts.functionDefs.values.toList,
-      immDestructorPrototypesH)
+      immDestructorPrototypesH,
+      exportedNameByFullName)
+  }
+
+  def exportName(hamuts: HamutsBox, fullName2: FullName2[IName2], fullNameH: FullNameH) = {
+    val exportedName =
+      fullName2.last match {
+        case FunctionName2(humanName, _, _) => humanName
+        case CitizenName2(humanName, _) => humanName
+        case _ => vfail("Can't export something that doesn't have a human readable name!")
+      }
+    hamuts.fullNameByExportedName.get(exportedName) match {
+      case None =>
+      case Some(existingFullName) => {
+        vfail("Can't export " + fullNameH + " as " + exportedName + ", that exported name already taken by " + existingFullName)
+      }
+    }
+    hamuts.addExport(fullNameH, exportedName)
   }
 }

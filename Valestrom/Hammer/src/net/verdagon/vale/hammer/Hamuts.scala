@@ -1,6 +1,7 @@
 package net.verdagon.vale.hammer
 
 import net.verdagon.vale.metal._
+import net.verdagon.vale.templar.{FullName2, IName2}
 import net.verdagon.vale.templar.templata.Prototype2
 import net.verdagon.vale.templar.types.{InterfaceRef2, PackT2, StructRef2}
 import net.verdagon.vale.vassert
@@ -8,6 +9,7 @@ import net.verdagon.vale.vassert
 
 case class HamutsBox(var inner: Hamuts) {
 
+  def fullNameByExportedName: Map[String, FullNameH] = inner.fullNameByExportedName
   def structRefsByRef2: Map[StructRef2, StructRefH] = inner.structRefsByRef2
   def structDefsByRef2: Map[StructRef2, StructDefinitionH] = inner.structDefsByRef2
   def structDefs: List[StructDefinitionH] = inner.structDefs
@@ -43,9 +45,14 @@ case class HamutsBox(var inner: Hamuts) {
   def addFunction(functionRef2: Prototype2, functionDefH: FunctionH): Unit = {
     inner = inner.addFunction(functionRef2, functionDefH)
   }
+
+  def addExport(fullNameH: FullNameH, exportedName: String): Unit = {
+    inner = inner.addExport(fullNameH, exportedName)
+  }
 }
 
 case class Hamuts(
+    fullNameByExportedName: Map[String, FullNameH],
     structRefsByRef2: Map[StructRef2, StructRefH],
     structDefsByRef2: Map[StructRef2, StructDefinitionH],
     structDefs: List[StructDefinitionH],
@@ -55,6 +62,7 @@ case class Hamuts(
     functionDefs: Map[Prototype2, FunctionH]) {
   def forwardDeclareStruct(structRef2: StructRef2, structRefH: StructRefH): Hamuts = {
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2 + (structRef2 -> structRefH),
       structDefsByRef2,
       structDefs,
@@ -67,6 +75,7 @@ case class Hamuts(
   def addStructOriginatingFromTemplar(structRef2: StructRef2, structDefH: StructDefinitionH): Hamuts = {
     vassert(structRefsByRef2.contains(structRef2))
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2 + (structRef2 -> structDefH),
       structDefs :+ structDefH,
@@ -78,6 +87,7 @@ case class Hamuts(
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs :+ structDefH,
@@ -89,6 +99,7 @@ case class Hamuts(
 
   def forwardDeclareInterface(interfaceRef2: InterfaceRef2, interfaceRefH: InterfaceRefH): Hamuts = {
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -101,6 +112,7 @@ case class Hamuts(
   def addInterface(interfaceRef2: InterfaceRef2, interfaceDefH: InterfaceDefinitionH): Hamuts = {
     vassert(interfaceRefs.contains(interfaceRef2))
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -112,6 +124,7 @@ case class Hamuts(
 
   def forwardDeclareFunction(functionRef2: Prototype2, functionRefH: FunctionRefH): Hamuts = {
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -123,7 +136,9 @@ case class Hamuts(
 
   def addFunction(functionRef2: Prototype2, functionDefH: FunctionH): Hamuts = {
     vassert(functionRefs.contains(functionRef2))
+
     Hamuts(
+      fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -131,5 +146,19 @@ case class Hamuts(
       interfaceDefs,
       functionRefs,
       functionDefs + (functionRef2 -> functionDefH))
+  }
+
+  def addExport(fullNameH: FullNameH, exportedName: String): Hamuts = {
+    vassert(!fullNameByExportedName.contains(exportedName))
+
+    Hamuts(
+      fullNameByExportedName + (exportedName -> fullNameH),
+      structRefsByRef2,
+      structDefsByRef2,
+      structDefs,
+      interfaceRefs,
+      interfaceDefs,
+      functionRefs,
+      functionDefs)
   }
 }

@@ -56,6 +56,8 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   // Known failure 2020-08-05
+  // Maybe we can turn off tree shaking?
+  // Maybe this just violates requirements?
   test("Virtual and override functions make it into hamuts") {
     val compile = new Compilation(
       """
@@ -99,6 +101,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupFunction("moo")
+    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "moo"
   }
 
   test("Tests export struct") {
@@ -108,5 +111,16 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupStruct("Moo")
+    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "Moo"
+  }
+
+  test("Tests export interface") {
+    val compile = new Compilation(
+      """
+        |interface Moo export { }
+        |""".stripMargin)
+    val hamuts = compile.getHamuts()
+    val moo = hamuts.lookupInterface("Moo")
+    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "Moo"
   }
 }

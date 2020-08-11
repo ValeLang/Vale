@@ -617,7 +617,7 @@ class ExpressionTemplar(
 
         (expr2, returnsFromContainerExpr)
       }
-      case FunctionAE(name, function1 @ FunctionA(_, _, _, _, _, _, _, _, _, _, CodeBodyA(body))) => {
+      case FunctionAE(name, function1 @ FunctionA(_, _, _, _, _, _, _, _, _, _, _, CodeBodyA(body))) => {
         val callExpr2 = evaluateClosure(temputs, fate, name, BFunctionA(function1, body))
         (callExpr2, Set())
       }

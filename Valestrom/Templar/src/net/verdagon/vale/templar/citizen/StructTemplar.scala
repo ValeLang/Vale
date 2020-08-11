@@ -111,7 +111,7 @@ class StructTemplar(
     FunctionA(
       struct1.range,
       ConstructorNameA(struct1.name),
-      true,
+      List(UserFunctionA),
       struct1.tyype match {
         case KindTemplataType => FunctionTemplataType
         case TemplateTemplataType(params, KindTemplataType) => TemplateTemplataType(params, FunctionTemplataType)
@@ -176,7 +176,7 @@ class StructTemplar(
     FunctionA(
       interfaceA.range,
       FunctionNameA(name, codeLocation),
-      true,
+      List(UserFunctionA),
       interfaceA.tyype match {
         case KindTemplataType => FunctionTemplataType
         case TemplateTemplataType(params, KindTemplataType) => TemplateTemplataType(params, FunctionTemplataType)
@@ -296,7 +296,7 @@ class StructTemplar(
       Function2(
         FunctionHeader2(
           constructorName,
-          false, false,
+          List(),
           List(),
           anonymousSubstructType,
           None),

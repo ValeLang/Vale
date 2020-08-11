@@ -402,15 +402,38 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
           if (functionS.isTemplate) {
             // Do nothing, it's a template
           } else {
-            functionS.name match {
-              case FunctionNameA("main", _) => {
-                val _ =
-                  functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
-                    temputs, FunctionTemplata(env11, functionS))
-              }
-              case _ => {
-                // Do nothing. We only eagerly create main.
-              }
+            if (isRootFunction(functionS)) {
+              val _ =
+                functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
+                  temputs, FunctionTemplata(env11, functionS))
+            }
+          }
+        }
+      })
+
+      structsA.foreach({
+        case (structS) => {
+          if (structS.isTemplate) {
+            // Do nothing, it's a template
+          } else {
+            if (isRootStruct(structS)) {
+              val _ =
+                structTemplar.getStructRef(
+                  temputs, StructTemplata(env11, structS), List())
+            }
+          }
+        }
+      })
+
+      interfacesA.foreach({
+        case (interfaceS) => {
+          if (interfaceS.isTemplate) {
+            // Do nothing, it's a template
+          } else {
+            if (isRootInterface(interfaceS)) {
+              val _ =
+                structTemplar.getInterfaceRef(
+                  temputs, InterfaceTemplata(env11, interfaceS), List())
             }
           }
         }
@@ -422,6 +445,25 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
     } catch {
       case CompileErrorExceptionT(err) => Err(err)
     }
+  }
+
+  // Returns whether we should eagerly compile this and anything it depends on.
+  def isRootFunction(functionA: FunctionA): Boolean = {
+    functionA.name match {
+      case FunctionNameA("main", _) => return true
+      case _ =>
+    }
+    functionA.attributes.contains(ExportA)
+  }
+
+  // Returns whether we should eagerly compile this and anything it depends on.
+  def isRootStruct(structA: StructA): Boolean = {
+    structA.attributes.contains(ExportA)
+  }
+
+  // Returns whether we should eagerly compile this and anything it depends on.
+  def isRootInterface(interfaceA: InterfaceA): Boolean = {
+    interfaceA.attributes.contains(ExportA)
   }
 
   // (Once we add namespaces, this will probably change)

@@ -12,6 +12,7 @@ object IFunction1 {
     InterfaceA(
       RangeS.internal(-69),
       TopLevelCitizenDeclarationNameA("IFunction1", CodeLocationS.internal(-7)),
+      List(),
       false,
       CodeRuneA("M"),
       None,
@@ -31,7 +32,7 @@ object IFunction1 {
         FunctionA(
           RangeS.internal(-56),
           FunctionNameA("__call", CodeLocationS.internal(-8)),
-          true,
+          List(),
           FunctionTemplataType,
           Set(),
           List(),

@@ -39,15 +39,15 @@ case class ImplP(
   struct: ITemplexPT,
   interface: ITemplexPT)
 
-sealed trait IStructAttributeP
-case class ExportP(range: Range) extends IStructAttributeP
-case class WeakableP(range: Range) extends IStructAttributeP
-case class SealedP(range: Range) extends IStructAttributeP
+sealed trait ICitizenAttributeP
+case class ExportP(range: Range) extends ICitizenAttributeP
+case class WeakableP(range: Range) extends ICitizenAttributeP
+case class SealedP(range: Range) extends ICitizenAttributeP
 
 case class StructP(
   range: Range,
   name: StringP,
-  attributes: List[IStructAttributeP],
+  attributes: List[ICitizenAttributeP],
   mutability: MutabilityP,
   identifyingRunes: Option[IdentifyingRunesP],
   templateRules: Option[TemplateRulesP],
@@ -67,7 +67,7 @@ case class StructMemberP(
 case class InterfaceP(
     range: Range,
     name: StringP,
-    attributes: List[IStructAttributeP],
+    attributes: List[ICitizenAttributeP],
     mutability: MutabilityP,
     maybeIdentifyingRunes: Option[IdentifyingRunesP],
     templateRules: Option[TemplateRulesP],
@@ -76,6 +76,7 @@ case class InterfaceP(
 sealed trait IFunctionAttributeP
 case class AbstractAttributeP(range: Range) extends IFunctionAttributeP
 case class ExternAttributeP(range: Range) extends IFunctionAttributeP
+case class ExportAttributeP(range: Range) extends IFunctionAttributeP
 case class PureAttributeP(range: Range) extends IFunctionAttributeP
 
 sealed trait IRuneAttributeP

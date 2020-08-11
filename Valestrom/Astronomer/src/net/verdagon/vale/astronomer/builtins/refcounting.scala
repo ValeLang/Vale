@@ -10,7 +10,7 @@ object RefCounting {
     FunctionA(
       RangeS.internal(-60),
       FunctionNameA("__checkvarrc", CodeLocationS.internal(-11)),
-      false,
+      List(),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("I")),
       List(CodeRuneA("T")),
@@ -54,7 +54,7 @@ object RefCounting {
     FunctionA(
       RangeS.internal(-59),
       checkMemberRcName,
-      false,
+      List(),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("I")),
       List(CodeRuneA("T")),

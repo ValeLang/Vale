@@ -11,7 +11,7 @@ object Printing {
     FunctionA(
       RangeS.internal(-58),
       printlnStrName,
-      false,
+      List(),
       FunctionTemplataType,
       Set(CodeRuneA("S"), CodeRuneA("R")),
       List(),
@@ -46,7 +46,7 @@ object Printing {
     FunctionA(
       RangeS.internal(-54),
       printlnIntName,
-      false,
+      List(),
       FunctionTemplataType,
       Set(CodeRuneA("R"), CodeRuneA("I")),
       List(),
@@ -80,7 +80,7 @@ object Printing {
     FunctionA(
       RangeS.internal(-55),
       printlnBoolName,
-      false,
+      List(),
       FunctionTemplataType,
       Set(CodeRuneA("R"), CodeRuneA("I")),
       List(),
@@ -114,7 +114,7 @@ object Printing {
     FunctionA(
       RangeS.internal(-51),
       printIntName,
-      false,
+      List(),
       FunctionTemplataType,
       Set(CodeRuneA("I"), CodeRuneA("R")),
       List(),
@@ -149,7 +149,7 @@ object Printing {
     FunctionA(
       RangeS.internal(-52),
       printBoolName,
-      false,
+      List(),
       FunctionTemplataType,
       Set(CodeRuneA("I"), CodeRuneA("R")),
       List(),

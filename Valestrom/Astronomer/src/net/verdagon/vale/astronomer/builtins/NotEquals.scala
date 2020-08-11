@@ -11,7 +11,7 @@ object NotEquals {
     FunctionA(
       RangeS.internal(-50),
       name,
-      false,
+      List(),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(),
       List(CodeRuneA("T")),

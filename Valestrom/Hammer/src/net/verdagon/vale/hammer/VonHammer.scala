@@ -381,7 +381,7 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("local", vonifyLocal(local)),
-            VonMember("name", vonifyOptional[FullNameH](name, n => VonStr(n.toString())))))
+            VonMember("optName", vonifyOptional[FullNameH](name, n => VonStr(n.toString())))))
       }
       case UnstackifyH(local) => {
         VonObject(
@@ -667,7 +667,7 @@ object VonHammer {
       Vector(
         VonMember("number", VonInt(number)),
         VonMember(
-          "name",
+          "optName",
           vonifyOptional[FullNameH](maybeName, x => VonStr(x.toString())))))
   }
 

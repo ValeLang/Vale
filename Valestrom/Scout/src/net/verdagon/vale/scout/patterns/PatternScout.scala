@@ -41,7 +41,7 @@ case class LetRuleState(
 
 object PatternScout {
   def getParameterCaptures(pattern: AtomSP): List[VariableDeclaration] = {
-    val AtomSP(maybeCapture, _, _, maybeDestructure) = pattern
+    val AtomSP(_, maybeCapture, _, _, maybeDestructure) = pattern
     List() ++
         getCaptureCaptures(maybeCapture) ++
         maybeDestructure.toList.flatten.flatMap(getParameterCaptures)
@@ -79,7 +79,7 @@ object PatternScout {
     ruleState: RuleStateBox,
     patternPP: PatternPP):
   (List[IRulexSR], AtomSP) = {
-    val PatternPP(_,_,maybeCaptureP, maybeTypeP, maybeDestructureP, maybeVirtualityP) = patternPP
+    val PatternPP(range,_,maybeCaptureP, maybeTypeP, maybeDestructureP, maybeVirtualityP) = patternPP
 
     val declaredRunes = stackFrame.parentEnv.allUserDeclaredRunes()
 
@@ -87,18 +87,21 @@ object PatternScout {
       maybeVirtualityP match {
         case None => (List(), None)
         case Some(AbstractP) => (List(), Some(AbstractSP))
-        case Some(OverrideP(typeP)) => {
+        case Some(OverrideP(range, typeP)) => {
           val (newRulesFromVirtuality, rune) =
             translateMaybeTypeIntoRune(
               stackFrame.parentEnv,
-              ruleState, Some(typeP), KindTypePR)
-          (newRulesFromVirtuality, Some(OverrideSP(rune)))
+              ruleState,
+              Scout.evalRange(stackFrame.file, range),
+              Some(typeP),
+              KindTypePR)
+          (newRulesFromVirtuality, Some(OverrideSP(Scout.evalRange(stackFrame.file, range), rune)))
         }
       }
 
     val (newRulesFromType, coordRune) =
       translateMaybeTypeIntoRune(
-        stackFrame.parentEnv, ruleState, maybeTypeP, CoordTypePR)
+        stackFrame.parentEnv, ruleState, Scout.evalRange(stackFrame.file, range), maybeTypeP, CoordTypePR)
 
     val (newRulesFromDestructures, maybePatternsS) =
       maybeDestructureP match {
@@ -130,25 +133,26 @@ object PatternScout {
         }
       }
 
-    val atomSP = AtomSP(captureS, maybeVirtualityS, coordRune, maybePatternsS)
+    val atomSP = AtomSP(Scout.evalRange(stackFrame.file, range), captureS, maybeVirtualityS, coordRune, maybePatternsS)
     (newRulesFromType ++ newRulesFromDestructures ++ newRulesFromVirtuality, atomSP)
   }
 
   def translateMaybeTypeIntoRune(
       env: IEnvironment,
       rulesS: RuleStateBox,
+    range: RangeS,
       maybeTypeP: Option[ITemplexPT],
       runeType: ITypePR):
   (List[IRulexSR], IRuneS) = {
     maybeTypeP match {
       case None => {
         val rune = rulesS.newImplicitRune()
-        val newRule = TypedSR(rune, RuleScout.translateType(runeType))
+        val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
       }
       case Some(NameOrRunePT(StringP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
         val rune = CodeRuneS(nameOrRune)
-        val newRule = TypedSR(rune, RuleScout.translateType(runeType))
+        val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
       }
       case Some(nonRuneTemplexP) => {
@@ -158,7 +162,7 @@ object PatternScout {
           case Some(rune) => (newRulesFromInner, rune)
           case None => {
             val rune = rulesS.newImplicitRune()
-            val newRule = EqualsSR(TypedSR(rune, RuleScout.translateType(runeType)), TemplexSR(templexS))
+            val newRule = EqualsSR(templexS.range, TypedSR(range, rune, RuleScout.translateType(runeType)), TemplexSR(templexS))
             (newRulesFromInner ++ List(newRule), rune)
           }
         }
@@ -168,6 +172,7 @@ object PatternScout {
   def translateMaybeTypeIntoMaybeRune(
     env: IEnvironment,
     rulesS: RuleStateBox,
+    range: RangeS,
     maybeTypeP: Option[ITemplexPT],
     runeType: ITypePR):
   (List[IRulexSR], Option[IRuneS]) = {
@@ -176,7 +181,7 @@ object PatternScout {
     } else {
       val (newRules, rune) =
         translateMaybeTypeIntoRune(
-          env, rulesS, maybeTypeP, runeType)
+          env, rulesS, range, maybeTypeP, runeType)
       (newRules, Some(rune))
     }
   }
@@ -217,63 +222,75 @@ object PatternScout {
       rulesS: RuleStateBox,
       templexP: ITemplexPT):
   (List[IRulexSR], ITemplexS, Option[IRuneS]) = {
+    val evalRange = (range: Range) => Scout.evalRange(env.file, range)
+
     templexP match {
-      case AnonymousRunePT() => {
+      case AnonymousRunePT(range) => {
         val rune = rulesS.newImplicitRune()
-        (List(), RuneST(rune), Some(rune))
+        (List(), RuneST(evalRange(range), rune), Some(rune))
       }
-      case IntPT(_,value) => (List(), IntST(value), None)
-      case BoolPT(value) => (List(), BoolST(value), None)
+      case IntPT(range,value) => (List(), IntST(evalRange(range), value), None)
+      case BoolPT(range,value) => (List(), BoolST(evalRange(range), value), None)
       case NameOrRunePT(StringP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
-          (List(), RuneST(CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
+          (List(), RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
         } else {
           (List(), NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune)), None)
         }
       }
-      case MutabilityPT(mutability) => (List(), MutabilityST(mutability), None)
-      case OwnershippedPT(_,ownership @ (BorrowP|WeakP), NameOrRunePT(StringP(_, ownedCoordRuneName))) if env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)) => {
+      case MutabilityPT(range, mutability) => (List(), MutabilityST(evalRange(range), mutability), None)
+      case OwnershippedPT(rangeP,ownership @ (BorrowP|WeakP), NameOrRunePT(StringP(_, ownedCoordRuneName))) if env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)) => {
+        val range = evalRange(rangeP)
         vassert(env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)))
         val ownedCoordRune = CodeRuneS(ownedCoordRuneName)
         val kindRune = rulesS.newImplicitRune()
         val borrowedCoordRune = rulesS.newImplicitRune()
         val newRules =
           List(
-            TypedSR(kindRune, KindTypeSR),
+            TypedSR(range, kindRune, KindTypeSR),
             // It's a user rune so it's already in the orderedRunes
-            TypedSR(ownedCoordRune, CoordTypeSR),
-            TypedSR(borrowedCoordRune, CoordTypeSR),
+            TypedSR(range, ownedCoordRune, CoordTypeSR),
+            TypedSR(range, borrowedCoordRune, CoordTypeSR),
             ComponentsSR(
-              TypedSR(ownedCoordRune, CoordTypeSR),
+              range,
+              TypedSR(range, ownedCoordRune, CoordTypeSR),
               List(
-                TemplexSR(OwnershipST(OwnP)),
-                TemplexSR(RuneST(kindRune)))),
+                TemplexSR(OwnershipST(range, OwnP)),
+                TemplexSR(RuneST(range, kindRune)))),
             ComponentsSR(
-              TypedSR(borrowedCoordRune, CoordTypeSR),
+              range,
+              TypedSR(range, borrowedCoordRune, CoordTypeSR),
               List(
-                TemplexSR(OwnershipST(ownership)),
-                TemplexSR(RuneST(kindRune)))))
-        (newRules, RuneST(borrowedCoordRune), Some(borrowedCoordRune))
+                TemplexSR(OwnershipST(range, ownership)),
+                TemplexSR(RuneST(range, kindRune)))))
+        (newRules, RuneST(range, borrowedCoordRune), Some(borrowedCoordRune))
       }
-      case OwnershippedPT(_,ownership, innerP) => {
+      case OwnershippedPT(range,ownership, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)
-        (newRules, OwnershippedST(ownership, innerS), None)
+        (newRules, OwnershippedST(evalRange(range), ownership, innerS), None)
       }
-      case CallPT(_,maybeTemplateP, argsMaybeTemplexesP) => {
+      case CallPT(range,maybeTemplateP, argsMaybeTemplexesP) => {
         val (newRulesFromTemplate, maybeTemplateS, _) = translatePatternTemplex(env, rulesS, maybeTemplateP)
         val (newRulesFromArgs, argsMaybeTemplexesS) = translatePatternTemplexes(env, rulesS, argsMaybeTemplexesP)
-        (newRulesFromTemplate ++ newRulesFromArgs, CallST(maybeTemplateS, argsMaybeTemplexesS), None)
+        (newRulesFromTemplate ++ newRulesFromArgs, CallST(evalRange(range), maybeTemplateS, argsMaybeTemplexesS), None)
       }
-      case RepeaterSequencePT(_,mutabilityP, sizeP, elementP) => {
+      case RepeaterSequencePT(range,mutabilityP, sizeP, elementP) => {
         val (newRulesFromMutability, mutabilityS, _) = translatePatternTemplex(env, rulesS, mutabilityP)
         val (newRulesFromSize, sizeS, _) = translatePatternTemplex(env, rulesS, sizeP)
         val (newRulesFromElement, elementS, _) = translatePatternTemplex(env, rulesS, elementP)
-        (newRulesFromMutability ++ newRulesFromSize ++ newRulesFromElement, RepeaterSequenceST(mutabilityS, sizeS, elementS), None)
+        (newRulesFromMutability ++ newRulesFromSize ++ newRulesFromElement, RepeaterSequenceST(evalRange(range), mutabilityS, sizeS, elementS), None)
       }
-      case ManualSequencePT(_,maybeMembersP) => {
+      case ManualSequencePT(range,maybeMembersP) => {
         val (newRules, maybeMembersS) = translatePatternTemplexes(env, rulesS, maybeMembersP)
-        (newRules, ManualSequenceST(maybeMembersS), None)
+        (newRules, ManualSequenceST(evalRange(range), maybeMembersS), None)
+      }
+      case PermissionedPT(_, permission, innerP) => {
+        // TODO: Add permissions!
+        // This is just a pass-through until then.
+        val (newRules, innerS, _) =
+          translatePatternTemplex(env, rulesS, innerP)
+        (newRules, innerS, None)
       }
 //      case FunctionPT(mutableP, paramsP, retP) => {
 //        val (mutableS, _) = translatePatternMaybeTemplex(declaredRunes, rulesS, mutableP, None)
@@ -290,7 +307,7 @@ object PatternScout {
 
 //        (rulesS, FunctionST(mutableS, PackST(paramsS), retS), None)
 //      }
-      case _ => vwat()
+      case x => vwat(x.toString)
     }
   }
 }

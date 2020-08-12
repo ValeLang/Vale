@@ -57,9 +57,9 @@ class ErrorTests extends FunSuite with Matchers  {
         |""".stripMargin
     compileProgramForError(code) match {
       case e @ CouldntFindType(RangeS(CodeLocationS(0, 16), CodeLocationS(0, 20)), "Bork") => {
-        val errorText = AstronomerErrorHumanizer.humanize(List(code), e)
+        val errorText = AstronomerErrorHumanizer.humanize(List(("in.vale", code)), e)
         errorText shouldEqual
-          """2:6: Couldn't find type `Bork`:
+          """in.vale:2:6: Couldn't find type `Bork`:
             |  a Bork = 5;
             |""".stripMargin
       }

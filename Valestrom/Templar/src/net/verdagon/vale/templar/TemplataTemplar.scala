@@ -21,12 +21,14 @@ trait ITemplataTemplarDelegate {
 
   def getStructRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
   StructRef2
 
   def getInterfaceRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
@@ -187,14 +189,14 @@ class TemplataTemplar(
 //          PackTemplar.makePackType(env.globalEnv, temputs, types2)
 //        }
 
-        override def evaluateInterfaceTemplata(state: TemputsBox, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
+        override def evaluateInterfaceTemplata(state: TemputsBox, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
         (Kind) = {
-          delegate.getInterfaceRef(state, templata, templateArgs)
+          delegate.getInterfaceRef(state, callRange, templata, templateArgs)
         }
 
-        override def evaluateStructTemplata(state: TemputsBox, templata: StructTemplata, templateArgs: List[ITemplata]):
+        override def evaluateStructTemplata(state: TemputsBox, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]):
         (Kind) = {
-          delegate.getStructRef(state, templata, templateArgs)
+          delegate.getStructRef(state, callRange, templata, templateArgs)
         }
 
         //val elementCoord =

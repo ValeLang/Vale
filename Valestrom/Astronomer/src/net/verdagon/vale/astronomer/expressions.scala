@@ -31,7 +31,7 @@ case class LendAE(innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extend
     case BorrowP =>
   }
 }
-case class LockWeakAE(innerExpr1: IExpressionAE) extends IExpressionAE
+case class LockWeakAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressionAE
 
 case class ReturnAE(innerExpr1: IExpressionAE) extends IExpressionAE
 
@@ -116,7 +116,7 @@ case class FloatLiteralAE(value: Float) extends IExpressionAE
 
 case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressionAE
 
-case class DotAE(left: IExpressionAE, member: String, borrowContainer: Boolean) extends IExpressionAE
+case class DotAE(range: RangeS, left: IExpressionAE, member: String, borrowContainer: Boolean) extends IExpressionAE
 
 case class DotCallAE(left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE
 

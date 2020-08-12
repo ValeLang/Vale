@@ -29,35 +29,38 @@ object Arrays {
         CodeRuneA("M") -> MutabilityTemplataType,
         CodeRuneA("R") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("size"), FinalP), None, CodeRuneA("I"), None)),
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("generator"), FinalP), None, CodeRuneA("Generator"), None))),
+        ParameterA(AtomAP(RangeS.internal(-121), CaptureA(CodeVarNameA("size"), FinalP), None, CodeRuneA("I"), None)),
+        ParameterA(AtomAP(RangeS.internal(-122), CaptureA(CodeVarNameA("generator"), FinalP), None, CodeRuneA("Generator"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("ArrayMutability"), MutabilityTemplataType)), TemplexAR(MutabilityAT(mutability))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
-        TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
+        EqualsAR(RangeS.internal(-1403),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("ArrayMutability"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.internal(-56),mutability))),
+        EqualsAR(RangeS.internal(-1404),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
+        TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)),
         EqualsAR(
-          TemplexAR(RuneAT(CodeRuneA("Generator"), CoordTemplataType)),
+          RangeS.internal(-1405),
+          TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("Generator"), CoordTemplataType)),
           ComponentsAR(
+            RangeS.internal(-78),
             CoordTemplataType,
             List(
-              TemplexAR(OwnershipAT(BorrowP)),
+              TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)),
               TemplexAR(
-                CallAT(
-                  NameAT(CodeTypeNameA("IFunction1"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType), KindTemplataType)),
+                CallAT(RangeS.internal(-56),
+                  NameAT(RangeS.internal(-56),CodeTypeNameA("IFunction1"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType), KindTemplataType)),
                   List(
-                    RuneAT(CodeRuneA("M"), MutabilityTemplataType),
-                    NameAT(CodeTypeNameA("int"), CoordTemplataType),
-                    RuneAT(CodeRuneA("T"), CoordTemplataType)),
+                    RuneAT(RangeS.internal(-56),CodeRuneA("M"), MutabilityTemplataType),
+                    NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType),
+                    RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)),
                   KindTemplataType))))),
         EqualsAR(
-          TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)),
+          RangeS.internal(-1406),
+          TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)),
           TemplexAR(
-            CallAT(
-              NameAT(
+            CallAT(RangeS.internal(-56),
+              NameAT(RangeS.internal(-56),
                 CodeTypeNameA("Array"),
                 TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
-              List(RuneAT(CodeRuneA("ArrayMutability"), MutabilityTemplataType), RuneAT(CodeRuneA("T"), CoordTemplataType)),
+              List(RuneAT(RangeS.internal(-56),CodeRuneA("ArrayMutability"), MutabilityTemplataType), RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)),
               CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
@@ -68,7 +71,7 @@ object Arrays {
               LocalVariableA(CodeVarNameA("generator"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
               ConstructArrayAE(
-                RuneAT(CodeRuneA("T"), CoordTemplataType),
+                RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType),
                 LocalLoadAE(CodeVarNameA("size"), OwnP),
                 LocalLoadAE(CodeVarNameA("generator"), OwnP),
                 mutability))))))

@@ -1,12 +1,16 @@
 package net.verdagon.vale
 
 object SourceCodeUtils {
-  def lineAndCol(text: String, pos: Int) = {
+  def humanizePos(
+      filenamesAndSources: List[(String, String)],
+      file: Int,
+      pos: Int) = {
+    val (filename, source) = filenamesAndSources(file)
     var line = 0;
     var col = 0;
     var i = 0
     while (i <= pos) {
-      if (text(i) == '\n') {
+      if (source(i) == '\n') {
         line = line + 1;
         col = 0;
       } else {
@@ -14,15 +18,24 @@ object SourceCodeUtils {
       }
       i = i + 1;
     }
-    (line + 1) + ":" + (col + 1)
+    filename + ":" + (line + 1) + ":" + (col + 1)
   }
 
-  def nextThingAndRestOfLine(text: String, position: Int) = {
+  def nextThingAndRestOfLine(
+      filenamesAndSources: List[(String, String)],
+      file: Int,
+      position: Int) = {
+    val text = filenamesAndSources(file)._2
     // TODO: can optimize this
     text.slice(position, text.length).trim().split("\\n")(0).trim()
   }
 
-  def lineContaining(text: String, position: Int): String = {
+  def lineContaining(
+      filenamesAndSources: List[(String, String)],
+      file: Int,
+      position: Int):
+  String = {
+    val text = filenamesAndSources(file)._2
     // TODO: can optimize this perhaps
     var lineBegin = 0;
     while (true) {

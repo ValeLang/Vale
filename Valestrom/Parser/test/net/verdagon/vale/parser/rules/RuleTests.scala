@@ -69,7 +69,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
         case CallPR(StringP(_, "implements"),List(TemplexPR(NameOrRunePRT(StringP(_, "MyObject"))), TemplexPR(NameOrRunePRT(StringP(_, "T"))))) =>
     }
     compile(rulePR, "exists(fn +(T)int)") shouldHave {
-        case CallPR(StringP(_, "exists"), List(TemplexPR(PrototypePRT(StringP(_, "+"), List(NameOrRunePRT(StringP(_, "T"))), NameOrRunePRT(StringP(_, "int")))))) =>
+        case CallPR(StringP(_, "exists"), List(TemplexPR(PrototypePRT(_,StringP(_, "+"), List(NameOrRunePRT(StringP(_, "T"))), NameOrRunePRT(StringP(_, "int")))))) =>
     }
   }
 
@@ -78,7 +78,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
   }
 //
 //  test("resolveExactSignature") {
-//    compile(rulePR, "C = resolveExactSignature(\"__call\", (&F, Int))") shouldHave {//      case EqualsPR(
+//    compile(rulePR, "C = resolveExactSignature(\"__call\", (&F, Int))") shouldHave {//      case EqualsPR(_,
 //        TemplexPR(NameOrRunePRT(StringP(_, "C"))),
 //        CallPR(
 //          "resolveExactSignature",
@@ -89,22 +89,22 @@ class RuleTests extends FunSuite with Matchers with Collector {
 
   test("destructure prototype") {
     compile(rulePR, "Prot(_, _, T) = moo") shouldHave {
-      case EqualsPR(
-        ComponentsPR(
-          TypedPR(None,PrototypeTypePR),
-          List(TemplexPR(AnonymousRunePRT()), TemplexPR(AnonymousRunePRT()), TemplexPR(NameOrRunePRT(StringP(_, "T"))))),
+      case EqualsPR(_,
+        ComponentsPR(_,
+          TypedPR(_,None,PrototypeTypePR),
+          List(TemplexPR(AnonymousRunePRT(_)), TemplexPR(AnonymousRunePRT(_)), TemplexPR(NameOrRunePRT(StringP(_, "T"))))),
         TemplexPR(NameOrRunePRT(StringP(_, "moo")))) =>
     }
   }
 
   test("prototype with coords") {
     compile(rulePR, "Prot(_, (int, bool), _)") shouldHave {
-      case ComponentsPR(
-        TypedPR(None,PrototypeTypePR),
+      case ComponentsPR(_,
+        TypedPR(_,None,PrototypeTypePR),
         List(
-          TemplexPR(AnonymousRunePRT()),
-          TemplexPR(PackPRT(List(NameOrRunePRT(StringP(_, "int")), NameOrRunePRT(StringP(_, "bool"))))),
-          TemplexPR(AnonymousRunePRT()))) =>
+          TemplexPR(AnonymousRunePRT(_)),
+          TemplexPR(PackPRT(_,List(NameOrRunePRT(StringP(_, "int")), NameOrRunePRT(StringP(_, "bool"))))),
+          TemplexPR(AnonymousRunePRT(_)))) =>
     }
   }
 }

@@ -49,7 +49,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
           (maybeVirtual, maybeInterface) match {
             case (None, None) => None
             case (Some(_), None) => Some(AbstractP)
-            case (None, Some(interface)) => Some(OverrideP(interface))
+            case (None, Some(interface)) => Some(OverrideP(Range(begin, end), interface))
             case (Some(_), Some(_)) => vfail()
           }
         PatternPP(Range(begin, end), maybePreBorrow, maybeCapture, maybeType, maybeDestructure, maybeVirtuality)

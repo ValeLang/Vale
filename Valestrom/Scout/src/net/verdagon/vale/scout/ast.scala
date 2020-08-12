@@ -71,7 +71,9 @@ object CodeLocationS {
 }
 
 object RangeS {
-  val zero = RangeS(CodeLocationS.zero, CodeLocationS.zero)
+  // Should only be used in tests.
+  val testZero = RangeS(CodeLocationS.zero, CodeLocationS.zero)
+
   def internal(internalNum: Int): RangeS = {
     vassert(internalNum < 0)
     RangeS(CodeLocationS.internal(internalNum), CodeLocationS.internal(internalNum))
@@ -117,11 +119,13 @@ case class StructS(
 }
 
 case class StructMemberS(
+    range: RangeS,
     name: String,
     variability: VariabilityP,
     typeRune: IRuneS)
 
 case class ImplS(
+    range: RangeS,
     name: ImplNameS,
     rules: List[IRulexSR],
     knowableRunes: Set[IRuneS],

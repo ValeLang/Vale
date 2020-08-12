@@ -98,6 +98,7 @@ class StructTemplarCore(
               delegate.scoutExpectedFunctionForPrototype(
                 structInnerEnv,
                 temputs,
+                struct1.range,
                 GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
                 List(),
                 List(ParamFilter(Coord(Own, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
@@ -185,6 +186,7 @@ class StructTemplarCore(
       interfaceA.internalMethods.map(internalMethod => {
         delegate.evaluateOrdinaryFunctionFromNonCallForHeader(
           temputs,
+          internalMethod.range,
           FunctionTemplata(
             interfaceInnerEnv,
             internalMethod))
@@ -390,6 +392,7 @@ class StructTemplarCore(
   def makeAnonymousSubstruct(
       interfaceEnv: IEnvironment,
       temputs: TemputsBox,
+    range: RangeS,
       anonymousSubstructName: FullName2[AnonymousSubstructName2],
       interfaceRef: InterfaceRef2):
   (StructRef2, Mutability) = {
@@ -409,7 +412,7 @@ class StructTemplarCore(
     // Dont want any mutables in our immutable interface's substruct
     if (mutability == Immutable) {
       if (StructTemplar.getCompoundTypeMutability(callables) == Mutable) {
-        vfail()
+        vfail("Trying to make a mutable anonymous substruct of an immutable interface!")
       }
     }
 
@@ -509,6 +512,7 @@ class StructTemplarCore(
           delegate.scoutExpectedFunctionForPrototype(
             interfaceEnv, // Shouldnt matter here, because the callables themselves should have a __call
             temputs,
+            range,
             GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
             List(),
             forwardedCallArgs,

@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.scout.CodeLocationS
+import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.{vassert, vimpl, vwat}
 
 import scala.collection.immutable.List
@@ -81,14 +81,15 @@ import scala.collection.immutable.List
 sealed trait IRulexAR {
   def resultType: ITemplataType
 }
-case class EqualsAR(left: IRulexAR, right: IRulexAR) extends IRulexAR {
+case class EqualsAR(range: RangeS, left: IRulexAR, right: IRulexAR) extends IRulexAR {
   override def resultType: ITemplataType = left.resultType
 }
-case class OrAR(possibilities: List[IRulexAR]) extends IRulexAR {
+case class OrAR(range: RangeS, possibilities: List[IRulexAR]) extends IRulexAR {
   vassert(possibilities.nonEmpty)
   override def resultType: ITemplataType = possibilities.head.resultType
 }
 case class ComponentsAR(
+  range: RangeS,
   tyype: ITemplataType,
   components: List[IRulexAR]
 ) extends IRulexAR {
@@ -99,12 +100,14 @@ case class TemplexAR(templex: ITemplexA) extends IRulexAR {
 }
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
 case class CallAR(
+  range: RangeS,
   name: String,
   args: List[IRulexAR],
   resultType: ITemplataType
 ) extends IRulexAR
 
 case class IsaAR(
+  range: RangeS,
   subRule: IRulexAR,
   interfaceRule: IRulexAR
 ) extends IRulexAR {
@@ -115,35 +118,36 @@ case class IsaAR(
 sealed trait ITemplexA {
   def resultType: ITemplataType
 }
-case class IntAT(value: Int) extends ITemplexA {
+case class IntAT(range: RangeS, value: Int) extends ITemplexA {
   override def resultType: ITemplataType = IntegerTemplataType
 }
-case class StringAT(value: String) extends ITemplexA {
+case class StringAT(range: RangeS, value: String) extends ITemplexA {
   override def resultType: ITemplataType = StringTemplataType
 }
-case class BoolAT(value: Boolean) extends ITemplexA {
+case class BoolAT(range: RangeS, value: Boolean) extends ITemplexA {
   override def resultType: ITemplataType = BooleanTemplataType
 }
-case class MutabilityAT(mutability: MutabilityP) extends ITemplexA {
+case class MutabilityAT(range: RangeS, mutability: MutabilityP) extends ITemplexA {
   override def resultType: ITemplataType = MutabilityTemplataType
 }
-case class PermissionAT(permission: PermissionP) extends ITemplexA {
+case class PermissionAT(range: RangeS, permission: PermissionP) extends ITemplexA {
   override def resultType: ITemplataType = PermissionTemplataType
 }
-case class LocationAT(location: LocationP) extends ITemplexA {
+case class LocationAT(range: RangeS, location: LocationP) extends ITemplexA {
   override def resultType: ITemplataType = LocationTemplataType
 }
-case class OwnershipAT(ownership: OwnershipP) extends ITemplexA {
+case class OwnershipAT(range: RangeS, ownership: OwnershipP) extends ITemplexA {
   override def resultType: ITemplataType = OwnershipTemplataType
 }
-case class VariabilityAT(variability: VariabilityP) extends ITemplexA {
+case class VariabilityAT(range: RangeS, variability: VariabilityP) extends ITemplexA {
   override def resultType: ITemplataType = VariabilityTemplataType
 }
-case class CoordListAT(elements: List[ITemplexA]) extends ITemplexA {
+case class CoordListAT(range: RangeS, elements: List[ITemplexA]) extends ITemplexA {
   override def resultType: ITemplataType = PackTemplataType(CoordTemplataType)
 }
 
 case class NameAT(
+  rangeS: RangeS,
   name: IImpreciseNameStepA,
   resultType: ITemplataType
 ) extends ITemplexA {
@@ -151,6 +155,7 @@ case class NameAT(
 }
 
 case class AbsoluteNameAT(
+  rangeS: RangeS,
   name: INameA,
   resultType: ITemplataType
 ) extends ITemplexA {
@@ -163,11 +168,13 @@ case class AbsoluteNameAT(
 // from the environment and make sure it matches. For RuneAT, we might put
 // something into the environment.
 case class RuneAT(
+  rangeS: RangeS,
   rune: IRuneA,
   resultType: ITemplataType
 ) extends ITemplexA
 
 case class OwnershippedAT(
+  rangeS: RangeS,
   ownership: OwnershipP,
   inner: ITemplexA
 ) extends ITemplexA {
@@ -175,11 +182,14 @@ case class OwnershippedAT(
   override def resultType: ITemplataType = CoordTemplataType
 }
 
-case class NullableAT(inner: ITemplexA) extends ITemplexA {
+case class NullableAT(
+  rangeS: RangeS,
+  inner: ITemplexA) extends ITemplexA {
   override def resultType: ITemplataType = KindTemplataType
 }
 
 case class CallAT(
+  rangeS: RangeS,
   template: ITemplexA,
   args: List[ITemplexA],
   // This is here because we might want to coerce the result. We do this for
@@ -194,6 +204,7 @@ case class CallAT(
 //) extends ITemplexA
 
 case class PrototypeAT(
+  rangeS: RangeS,
   name: String,
   parameters: List[ITemplexA],
   returnType: ITemplexA
@@ -209,6 +220,7 @@ case class PrototypeAT(
 //) extends ITemplexA
 
 case class RepeaterSequenceAT(
+  rangeS: RangeS,
   mutability: ITemplexA,
   size: ITemplexA,
   element: ITemplexA,
@@ -218,6 +230,7 @@ case class RepeaterSequenceAT(
 ) extends ITemplexA
 
 case class ManualSequenceAT(
+  rangeS: RangeS,
   elements: List[ITemplexA],
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.

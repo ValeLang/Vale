@@ -85,7 +85,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("Templated function call") {
     compile(CombinatorParsers.expression,"toArray<imm>( &result)") shouldHave {
       case FunctionCallPE(_,None,_,false,
-      LookupPE(StringP(_, "toArray"),Some(TemplateArgsP(_, List(MutabilityPT(ImmutableP))))),
+      LookupPE(StringP(_, "toArray"),Some(TemplateArgsP(_, List(MutabilityPT(_,ImmutableP))))),
         List(LendPE(_,LookupPE(StringP(_, "result"),None),BorrowP)),
         BorrowP) =>
     }
@@ -93,7 +93,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("Templated method call") {
     compile(CombinatorParsers.expression,"result.toArray <imm> ()") shouldHave {
-      case MethodCallPE(_,LookupPE(StringP(_,"result"),None),_,BorrowP,false,LookupPE(StringP(_,"toArray"),Some(TemplateArgsP(_, List(MutabilityPT(ImmutableP))))),List()) =>
+      case MethodCallPE(_,LookupPE(StringP(_,"result"),None),_,BorrowP,false,LookupPE(StringP(_,"toArray"),Some(TemplateArgsP(_, List(MutabilityPT(_,ImmutableP))))),List()) =>
     }
   }
 

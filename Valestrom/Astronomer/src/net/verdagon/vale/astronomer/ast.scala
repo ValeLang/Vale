@@ -70,6 +70,7 @@ case class StructA(
 }
 
 case class StructMemberA(
+    range: RangeS,
     name: String,
     variability: VariabilityP,
     typeRune: IRuneA)

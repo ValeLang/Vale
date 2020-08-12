@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale.astronomer._
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.{IName2, IRune2}
 import net.verdagon.vale.templar.infer.infer.IInferSolveResult
 import net.verdagon.vale.templar.templata._
@@ -31,12 +32,14 @@ trait IInfererDelegate[Env, State] {
 
   def evaluateStructTemplata(
     state: State,
+    callRange: RangeS,
     templata: StructTemplata,
     templateArgs: List[ITemplata]):
   (Kind)
 
   def evaluateInterfaceTemplata(
     state: State,
+    callRange: RangeS,
     templata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
   (Kind)
@@ -63,7 +66,7 @@ trait IInfererDelegate[Env, State] {
 
   def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
 
-  def resolveExactSignature(env: Env, state: State, name: String, coords: List[Coord]): Prototype2
+  def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2
 }
 
 // This is the public API for the outside world to use the Infer code.
@@ -75,6 +78,7 @@ object Inferer {
     rules: List[IRulexTR],
     typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
+    invocationRange: RangeS,
     directInputs: Map[IRune2, ITemplata],
     paramAtoms: List[AtomAP],
     maybeParamInputs: Option[List[ParamFilter]],
@@ -92,6 +96,7 @@ object Inferer {
       env,
       state,
       rules,
+      invocationRange,
       typeByRune,
       localRunes,
       directInputs,
@@ -123,12 +128,12 @@ object Inferer {
         delegate.lookupTemplataImprecise(env, name)
       }
 
-      override def evaluateInterfaceTemplata(state: State, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (Kind) = {
-        delegate.evaluateInterfaceTemplata(state, templata, templateArgs)
+      override def evaluateInterfaceTemplata(state: State, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (Kind) = {
+        delegate.evaluateInterfaceTemplata(state, callRange, templata, templateArgs)
       }
 
-      override def evaluateStructTemplata(state: State, templata: StructTemplata, templateArgs: List[ITemplata]): (Kind) = {
-        delegate.evaluateStructTemplata(state, templata, templateArgs)
+      override def evaluateStructTemplata(state: State, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]): (Kind) = {
+        delegate.evaluateStructTemplata(state, callRange, templata, templateArgs)
       }
 
       override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
@@ -195,8 +200,8 @@ object Inferer {
         delegate.getSimpleInterfaceMethod(state, interfaceRef)
       }
 
-      override def resolveExactSignature(env: Env, state: State, name: String, coords: List[Coord]): Prototype2 = {
-        delegate.resolveExactSignature(env, state, name, coords)
+      override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2 = {
+        delegate.resolveExactSignature(env, state, range, name, coords)
       }
     }
   }

@@ -30,7 +30,7 @@ object Driver {
   )
 
   case class BuildInputs(
-    sources: Array[String],
+    sources: List[(String, String)],
     verbose: Boolean,
   )
 
@@ -49,7 +49,7 @@ object Driver {
         vcheck(opts.highlightOutputFile.isEmpty, "Multiple highlight output files specified!", InputException)
         parseOpts(opts.copy(highlightOutputFile = Some(value)), tail)
       }
-      case "-v" :: tail => {
+      case ("-v" | "--verbose") :: tail => {
         parseOpts(opts.copy(verbose = true), tail)
       }
       //          case "--min-size" :: value :: tail =>
@@ -92,8 +92,8 @@ object Driver {
   }
 
   def build(opts: Options): Result[ProgramH, String] = {
-    val sources = opts.inputFiles.map(readCode)
-    build(BuildInputs(sources.toArray, opts.verbose))
+    val filenamesAndSources = opts.inputFiles.zip(opts.inputFiles.map(readCode))
+    build(BuildInputs(filenamesAndSources, opts.verbose))
   }
 
   def build(inputs: BuildInputs): Result[ProgramH, String] = {
@@ -104,23 +104,23 @@ object Driver {
         (string: String) => {}
       }
 
-    val sources = inputs.sources.toList
+    val filenamesAndSources = inputs.sources
     val parseds =
-      sources.map(sourceCode => {
-        Parser.runParserForProgramAndCommentRanges(sourceCode) match {
-          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(sourceCode, error))
+      filenamesAndSources.zipWithIndex.map({ case ((filename, source), file) =>
+        Parser.runParserForProgramAndCommentRanges(source) match {
+          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filenamesAndSources, file, error))
           case ParseSuccess((program0, _)) => program0
         }
       })
     val scoutput = Scout.scoutProgram(parseds)
     val astrouts =
       Astronomer.runAstronomer(scoutput) match {
-        case Right(error) => return Err(AstronomerErrorHumanizer.humanize(sources, error))
+        case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filenamesAndSources, error))
         case Left(result) => result
       }
     val temputs =
       new Templar(if (inputs.verbose) println else (_), inputs.verbose).evaluate(astrouts) match {
-        case Err(error) => return Err(TemplarErrorHumanizer.humanize(inputs.verbose, sources, error))
+        case Err(error) => return Err(TemplarErrorHumanizer.humanize(inputs.verbose, filenamesAndSources, error))
         case Ok(x) => x
       }
     val hinputs = Carpenter.translate(debugOut, temputs)
@@ -207,7 +207,7 @@ object Driver {
           val (parsed, commentRanges) =
             Parser.runParserForProgramAndCommentRanges(code) match {
               case ParseFailure(err) => {
-                println(ParseErrorHumanizer.humanize(code, err))
+                println(ParseErrorHumanizer.humanize(List(("in.vale", code)), 0, err))
                 System.exit(22)
                 vfail()
               }

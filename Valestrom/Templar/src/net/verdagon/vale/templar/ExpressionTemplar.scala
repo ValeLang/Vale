@@ -21,6 +21,7 @@ case class TookWeakRefOfNonWeakableError() extends Throwable
 trait IExpressionTemplarDelegate {
   def evaluateTemplatedFunctionFromCallForPrototype(
     temputs: TemputsBox,
+    callRange: RangeS,
     functionTemplata: FunctionTemplata,
     explicitTemplateArgs: List[ITemplata],
     args: List[ParamFilter]):
@@ -29,6 +30,7 @@ trait IExpressionTemplarDelegate {
   def evaluateClosureStruct(
     temputs: TemputsBox,
     containingFunctionEnv: FunctionEnvironment,
+    callRange: RangeS,
     name: LambdaNameA,
     function1: BFunctionA):
   StructRef2
@@ -400,7 +402,7 @@ class ExpressionTemplar(
           }
         (resultExpr2, returnsFromInner)
       }
-      case LockWeakAE(innerExpr1) => {
+      case LockWeakAE(range, innerExpr1) => {
         val (innerExpr2, returnsFromInner) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
         vcheck(innerExpr2.resultRegister.reference.ownership == Weak, "Can only lock a weak")
@@ -414,7 +416,7 @@ class ExpressionTemplar(
             case _ => vfail()
           }
         val optBorrowInterfaceRef =
-          structTemplar.getInterfaceRef(temputs, interfaceTemplata, List(CoordTemplata(borrowCoord)))
+          structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(borrowCoord)))
         val ownOptBorrowCoord = Coord(Own, optBorrowInterfaceRef)
 
         val someConstructorTemplata =
@@ -424,7 +426,7 @@ class ExpressionTemplar(
           }
         val someConstructor =
           delegate.evaluateTemplatedFunctionFromCallForPrototype(
-            temputs, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
+            temputs, range, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
             case seff @ EvaluateFunctionFailure(_) => vfail(seff.toString)
             case EvaluateFunctionSuccess(p) => p
           }
@@ -436,7 +438,7 @@ class ExpressionTemplar(
           }
         val noneConstructor =
           delegate.evaluateTemplatedFunctionFromCallForPrototype(
-            temputs, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
+            temputs, range, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
             case seff @ EvaluateFunctionFailure(_) => vfail(seff.toString)
             case EvaluateFunctionSuccess(p) => p
           }
@@ -558,7 +560,7 @@ class ExpressionTemplar(
           }
         (exprTemplata, returnsFromContainerExpr ++ returnsFromIndexExpr)
       }
-      case DotAE(containerExpr1, memberNameStr, borrowContainer) => {
+      case DotAE(range, containerExpr1, memberNameStr, borrowContainer) => {
         var memberName = CodeVarName2(memberNameStr)
         val (unborrowedContainerExpr2, returnsFromContainerExpr) =
           evaluate(temputs, fate, containerExpr1);
@@ -568,22 +570,20 @@ class ExpressionTemplar(
         val expr2 =
           containerExpr2.resultRegister.reference.referend match {
             case structRef @ StructRef2(_) => {
-              temputs.lookupStruct(structRef) match {
-                case structDef : StructDefinition2 => {
-                  val (structMember, memberIndex) = structDef.getMemberAndIndex(memberName)
-                  val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
-                  val memberType = structMember.tyype.expectReferenceMember().reference;
-                  ReferenceMemberLookup2(
-                    containerExpr2,
-                    memberFullName,
-                    memberType)
+              val structDef = temputs.lookupStruct(structRef)
+              val (structMember, memberIndex) =
+                structDef.getMemberAndIndex(memberName) match {
+                  case None => throw CompileErrorExceptionT(CouldntFindMemberT(range, memberName.name))
+                  case Some(x) => x
                 }
-              }
+              val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
+              val memberType = structMember.tyype.expectReferenceMember().reference;
+              ReferenceMemberLookup2(containerExpr2, memberFullName, memberType)
             }
             case TupleT2(_, structRef) => {
               temputs.lookupStruct(structRef) match {
                 case structDef @ StructDefinition2(_, _, _, _, _, _) => {
-                  val (structMember, memberIndex) = structDef.getMemberAndIndex(memberName)
+                  val (structMember, memberIndex) = vassertSome(structDef.getMemberAndIndex(memberName))
                   val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                   val memberType = structMember.tyype.expectReferenceMember().reference;
                   ReferenceMemberLookup2(containerExpr2, memberFullName, memberType)
@@ -617,8 +617,8 @@ class ExpressionTemplar(
 
         (expr2, returnsFromContainerExpr)
       }
-      case FunctionAE(name, function1 @ FunctionA(_, _, _, _, _, _, _, _, _, _, _, CodeBodyA(body))) => {
-        val callExpr2 = evaluateClosure(temputs, fate, name, BFunctionA(function1, body))
+      case FunctionAE(name, function1 @ FunctionA(range, _, _, _, _, _, _, _, _, _, _, CodeBodyA(body))) => {
+        val callExpr2 = evaluateClosure(temputs, fate, range, name, BFunctionA(function1, body))
         (callExpr2, Set())
       }
       case SequenceEAE(elements1) => {
@@ -942,12 +942,13 @@ class ExpressionTemplar(
   def evaluateClosure(
       temputs: TemputsBox,
       fate: FunctionEnvironmentBox,
+      range: RangeS,
       name: LambdaNameA,
       function1: BFunctionA):
   (ReferenceExpression2) = {
 
     val closureStructRef2 =
-      delegate.evaluateClosureStruct(temputs, fate.snapshot, name, function1);
+      delegate.evaluateClosureStruct(temputs, fate.snapshot, range, name, function1);
     val closureCoord =
       templataTemplar.pointifyReferend(temputs, closureStructRef2, Own)
 

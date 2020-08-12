@@ -29,7 +29,7 @@ class ImplTests extends FunSuite with Matchers with Collector with TestParseUtil
       None,
       None,
       NameOrRunePT(StringP(_, "MyIntIdentity")),
-      CallPT(_,NameOrRunePT(StringP(_, "IFunction1")), List(MutabilityPT(MutableP), NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "int"))))) =>
+      CallPT(_,NameOrRunePT(StringP(_, "IFunction1")), List(MutabilityPT(_,MutableP), NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "int"))))) =>
     }
   }
 

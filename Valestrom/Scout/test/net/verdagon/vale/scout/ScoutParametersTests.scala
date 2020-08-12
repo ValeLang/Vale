@@ -21,7 +21,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     val runeInRules =
       main.templateRules match {
-        case List(TypedSR(rune @ CodeRuneS("T"),CoordTypeSR)) => rune
+        case List(TypedSR(_, rune @ CodeRuneS("T"),CoordTypeSR)) => rune
       }
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) match {
       case List(runeFromFunc) => vassert(runeInRules == runeFromFunc)
@@ -36,7 +36,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val tCoordRune =
       param match {
         case ParameterS(
-          AtomSP(
+          AtomSP(_,
             CaptureS(CodeVarNameS("moo"),FinalP),
             None,
             tcr @ ImplicitRuneS(_, 1),
@@ -45,19 +45,19 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     main.templateRules match {
       case List(
-        TypedSR(ImplicitRuneS(_, 0),KindTypeSR),
-        TypedSR(CodeRuneS("T"),CoordTypeSR),
-        TypedSR(ImplicitRuneS(_, 1),CoordTypeSR),
-        ComponentsSR(
-          TypedSR(CodeRuneS("T"),CoordTypeSR),
+        TypedSR(_, ImplicitRuneS(_, 0),KindTypeSR),
+        TypedSR(_, CodeRuneS("T"),CoordTypeSR),
+        TypedSR(_, ImplicitRuneS(_, 1),CoordTypeSR),
+        ComponentsSR(_,
+          TypedSR(_, CodeRuneS("T"),CoordTypeSR),
           List(
-            TemplexSR(OwnershipST(OwnP)),
-            TemplexSR(RuneST(ImplicitRuneS(_, 0))))),
-        ComponentsSR(
-          TypedSR(ImplicitRuneS(_, 1),CoordTypeSR),
+            TemplexSR(OwnershipST(_, OwnP)),
+            TemplexSR(RuneST(_, ImplicitRuneS(_, 0))))),
+        ComponentsSR(_,
+          TypedSR(_, ImplicitRuneS(_, 1),CoordTypeSR),
           List(
-            TemplexSR(OwnershipST(BorrowP)),
-            TemplexSR(RuneST(ImplicitRuneS(_, 0)))))) =>
+            TemplexSR(OwnershipST(_, BorrowP)),
+            TemplexSR(RuneST(_, ImplicitRuneS(_, 0)))))) =>
     }
 
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) match {
@@ -75,7 +75,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val paramRune =
       param match {
         case ParameterS(
-          AtomSP(
+          AtomSP(_,
             CaptureS(UnnamedLocalNameS(_),FinalP),
             None,
             pr @ ImplicitRuneS(_, 0),
@@ -84,8 +84,8 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     main.templateRules match {
       case List(
-        EqualsSR(
-          TypedSR(pr,CoordTypeSR),
+        EqualsSR(_,
+          TypedSR(_, pr,CoordTypeSR),
           TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
         vassert(pr == paramRune)
       }
@@ -102,7 +102,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val paramRune =
       param match {
         case ParameterS(
-         AtomSP(
+         AtomSP(_,
           CaptureS(UnnamedLocalNameS(_),FinalP),
           None,
           pr @ ImplicitRuneS(_, 0),
@@ -110,7 +110,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       }
 
     main.templateRules match {
-      case List(TypedSR(pr,CoordTypeSR)) => {
+      case List(TypedSR(_, pr,CoordTypeSR)) => {
         vassert(pr == paramRune)
       }
     }
@@ -129,13 +129,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val (aRune, tRune) =
       param match {
         case ParameterS(
-            AtomSP(
+            AtomSP(_,
               CaptureS(CodeVarNameS("moo"),FinalP),
               None,
               tr @ CodeRuneS("T"),
               Some(
                 List(
-                  AtomSP(
+                  AtomSP(_,
                     CaptureS(CodeVarNameS("a"),FinalP),
                     None,
                     ar @ ImplicitRuneS(_, 0),
@@ -144,9 +144,9 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
     main.templateRules match {
       case List(
-        TypedSR(tr,CoordTypeSR),
-        EqualsSR(
-          TypedSR(ar,CoordTypeSR),
+        TypedSR(_, tr,CoordTypeSR),
+        EqualsSR(_,
+          TypedSR(_, ar,CoordTypeSR),
           TemplexSR(NameST(_, CodeTypeNameS("int"))))) => {
         vassert(tr == tRune)
         vassert(ar == aRune)

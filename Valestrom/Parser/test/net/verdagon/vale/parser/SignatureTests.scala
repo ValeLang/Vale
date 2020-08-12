@@ -21,7 +21,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
                   Some(CaptureP(_,LocalNameP(StringP(_, "this")),FinalP)),
                   Some(NameOrRunePT(StringP(_, "Marine"))),
                   None,
-                  Some(OverrideP(NameOrRunePT(StringP(_, "IUnit")))))))),
+                  Some(OverrideP(_,NameOrRunePT(StringP(_, "IUnit")))))))),
           None),
         Some(BlockPE(_, List(IntLiteralPE(_, 5))))) =>
     }

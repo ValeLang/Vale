@@ -90,6 +90,7 @@ object FunctionScout {
       PatternScout.translateMaybeTypeIntoMaybeRune(
         functionEnv,
         rate,
+        Scout.evalRange(file, range),
         maybeRetPT,
         CoordTypePR)
 
@@ -257,20 +258,31 @@ object FunctionScout {
 
 //    val closurePatternId = fate.nextPatternNumber();
 
+    val closureParamRange = Scout.evalRange(parentStackFrame.file, range)
     val closureParamTypeRune = rate.newImplicitRune()
     val rulesFromClosureParam =
       List(
         EqualsSR(
-          TypedSR(closureParamTypeRune,CoordTypeSR),
-          TemplexSR(OwnershippedST(BorrowP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
-    val closureParamS = ParameterS(AtomSP(CaptureS(closureParamName,FinalP),None,closureParamTypeRune,None))
+          closureParamRange,
+          TypedSR(closureParamRange, closureParamTypeRune,CoordTypeSR),
+          TemplexSR(OwnershippedST(closureParamRange,BorrowP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
+    val closureParamS =
+      ParameterS(
+        AtomSP(
+          closureParamRange,
+          CaptureS(closureParamName,FinalP),None,closureParamTypeRune,None))
 
     val (magicParamsRules, magicParams) =
         lambdaMagicParamNames.map({
           case mpn @ MagicParamNameS(codeLocation) => {
+            val magicParamRange = RangeS(codeLocation, codeLocation)
             val magicParamRune = MagicParamRuneS(codeLocation)
-            val ruleS = TypedSR(magicParamRune,CoordTypeSR)
-            val paramS = ParameterS(AtomSP(CaptureS(mpn,FinalP),None,magicParamRune,None))
+            val ruleS = TypedSR(magicParamRange, magicParamRune,CoordTypeSR)
+            val paramS =
+              ParameterS(
+                AtomSP(
+                  magicParamRange,
+                  CaptureS(mpn,FinalP),None,magicParamRune,None))
             (ruleS, paramS)
           }
         })
@@ -291,6 +303,7 @@ object FunctionScout {
       PatternScout.translateMaybeTypeIntoMaybeRune(
         parentStackFrame.parentEnv,
         rate,
+        Scout.evalRange(myStackFrame.file, range),
         maybeRetPT,
         CoordTypePR)
 
@@ -495,6 +508,7 @@ object FunctionScout {
       PatternScout.translateMaybeTypeIntoMaybeRune(
         interfaceEnv,
         rate,
+        Scout.evalRange(myStackFrame.file, range),
         maybeReturnType,
         CoordTypePR)
 

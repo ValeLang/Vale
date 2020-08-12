@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale.astronomer._
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vfail
@@ -10,19 +11,21 @@ import scala.collection.immutable.List
 class InfererEquator[Env, State](
     templataTemplarInner: TemplataTemplarInner[Env, State]) {
 
-  private[infer] def equals(
+  private[infer] def templatasEqual(
     state: State,
+    range: RangeS,
     left: ITemplata,
     right: ITemplata,
     expectedType: ITemplataType):
   (Boolean) = {
+    println("comparing " + left + " and " + right)
     (left, right) match {
       case (IntegerTemplata(leftNum), IntegerTemplata(rightNum)) => {
         (leftNum == rightNum)
       }
       case (KindTemplata(leftKind), rightStructTemplata @ StructTemplata(_, _)) => {
         val rightKind =
-          templataTemplarInner.evaluateStructTemplata(state, rightStructTemplata, List(), expectedType)
+          templataTemplarInner.evaluateStructTemplata(state, range, rightStructTemplata, List(), expectedType)
         (leftKind == rightKind)
       }
       case (KindTemplata(leftKind), KindTemplata(rightKind)) => {

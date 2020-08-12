@@ -31,10 +31,10 @@ class ScoutTests extends FunSuite with Matchers {
     val memberRune = MemberRuneS(0)
     imoo.rules match {
       case List(
-        EqualsSR(TypedSR(memberRune, CoordTypeSR), TemplexSR(NameST(_, CodeTypeNameS("int")))),
-        EqualsSR(TemplexSR(RuneST(ImplicitRuneS(_, _))), TemplexSR(MutabilityST(MutableP)))) =>
+        EqualsSR(_, TypedSR(_, memberRune, CoordTypeSR), TemplexSR(NameST(_, CodeTypeNameS("int")))),
+        EqualsSR(_, TemplexSR(RuneST(_, ImplicitRuneS(_, _))), TemplexSR(MutabilityST(_, MutableP)))) =>
     }
-    imoo.members shouldEqual List(StructMemberS("x",FinalP,memberRune))
+    imoo.members match { case List(StructMemberS(_, "x",FinalP,memberRune)) => }
   }
 
   test("Lambda") {
@@ -54,7 +54,7 @@ class ScoutTests extends FunSuite with Matchers {
     val imoo = program1.lookupInterface("IMoo")
 
     imoo.rules match {
-      case List(EqualsSR(TemplexSR(RuneST(ImplicitRuneS(_, _))), TemplexSR(MutabilityST(MutableP)))) =>
+      case List(EqualsSR(_, TemplexSR(RuneST(_, ImplicitRuneS(_, _))), TemplexSR(MutabilityST(_, MutableP)))) =>
     }
 
     val blork = imoo.internalMethods.head
@@ -63,11 +63,11 @@ class ScoutTests extends FunSuite with Matchers {
     val (paramRune, retRune) =
       blork.templateRules match {
         case List(
-          EqualsSR(
-            TypedSR(actualParamRune, CoordTypeSR),
+          EqualsSR(_,
+            TypedSR(_, actualParamRune, CoordTypeSR),
             TemplexSR(NameST(_, CodeTypeNameS("bool")))),
-          EqualsSR(
-            TypedSR(actualRetRune, CoordTypeSR),
+          EqualsSR(_,
+            TypedSR(_, actualRetRune, CoordTypeSR),
             TemplexSR(NameST(_, CodeTypeNameS("void"))))) => {
           actualParamRune match {
             case ImplicitRuneS(_, 0) =>
@@ -85,7 +85,7 @@ class ScoutTests extends FunSuite with Matchers {
     blork.params match {
       case List(
         ParameterS(
-          AtomSP(
+          AtomSP(_,
             CaptureS(CodeVarNameS("a"),FinalP),
             None,
             ImplicitRuneS(_, 0),
@@ -109,8 +109,8 @@ class ScoutTests extends FunSuite with Matchers {
       }
     impl.rules match {
       case List(
-          EqualsSR(TypedSR(a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo")))),
-          EqualsSR(TypedSR(b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo"))))) => {
+          EqualsSR(_, TypedSR(_, a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo")))),
+          EqualsSR(_, TypedSR(_, b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo"))))) => {
         vassert(a == structRune)
         vassert(b == interfaceRune)
       }
@@ -156,10 +156,10 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, block)) = main.body
     val BlockSE(_, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
     lambda1.params match {
-      case List(_, ParameterS(AtomSP(CaptureS(MagicParamNameS(_),FinalP),None,MagicParamRuneS(_),None))) =>
+      case List(_, ParameterS(AtomSP(_,CaptureS(MagicParamNameS(_),FinalP),None,MagicParamRuneS(_),None))) =>
     }
     lambda2.params match {
-      case List(_, ParameterS(AtomSP(CaptureS(CodeVarNameS("a"),FinalP),None,ImplicitRuneS(_, _),None))) =>
+      case List(_, ParameterS(AtomSP(_,CaptureS(CodeVarNameS("a"),FinalP),None,ImplicitRuneS(_, _),None))) =>
     }
   }
 
@@ -180,17 +180,17 @@ class ScoutTests extends FunSuite with Matchers {
           LocalVariable1(ConstructingMemberNameS("x"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed),
           LocalVariable1(ConstructingMemberNameS("y"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed)),
         List(
-          LetSE(
+          LetSE(_,
             _,
             _,
             _,
-            AtomSP(CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
+            AtomSP(_,CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
             IntLiteralSE(4)),
-          LetSE(
+          LetSE(_,
             _,
             _,
             _,
-            AtomSP(CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
+            AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             BoolLiteralSE(true)),
           FunctionCallSE(_,
             FunctionLoadSE(GlobalFunctionFamilyNameS("MyStruct")),
@@ -216,11 +216,11 @@ class ScoutTests extends FunSuite with Matchers {
           LocalVariable1(ConstructingMemberNameS("x"),FinalP,Used,Used,NotUsed,NotUsed,NotUsed,NotUsed),
           LocalVariable1(ConstructingMemberNameS("y"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed)),
         List(
-          LetSE(_,_,_,
-            AtomSP(CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
+          LetSE(_, _,_,_,
+            AtomSP(_,CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
             IntLiteralSE(4)),
-          LetSE(_,_,_,
-            AtomSP(CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
+          LetSE(_, _,_,_,
+            AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             LendSE(LocalLoadSE(ConstructingMemberNameS("x"),BorrowP), BorrowP)),
           FunctionCallSE(_,
             FunctionLoadSE(GlobalFunctionFamilyNameS("MyStruct")),
@@ -247,7 +247,7 @@ class ScoutTests extends FunSuite with Matchers {
             List(
               FunctionCallSE(_,
                 FunctionLoadSE(GlobalFunctionFamilyNameS("println")),
-                List(DotSE(LocalLoadSE(CodeVarNameS("this"),BorrowP),"x",true))),
+                List(DotSE(_, LocalLoadSE(CodeVarNameS("this"),BorrowP),"x",true))),
               VoidSE())))) =>
     }
   }

@@ -30,7 +30,7 @@ class StructTests extends FunSuite with Matchers with Collector {
     compile(
       CombinatorParsers.structMember,
       "a Array<imm, T>;") shouldHave {
-      case StructMemberP(_, StringP(_, "a"), FinalP, CallPT(_,NameOrRunePT(StringP(_, "Array")), List(MutabilityPT(ImmutableP), NameOrRunePT(StringP(_, "T"))))) =>
+      case StructMemberP(_, StringP(_, "a"), FinalP, CallPT(_,NameOrRunePT(StringP(_, "Array")), List(MutabilityPT(_,ImmutableP), NameOrRunePT(StringP(_, "T"))))) =>
     }
   }
 
@@ -96,8 +96,8 @@ class StructTests extends FunSuite with Matchers with Collector {
       List(),
       MutableP,
       Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, StringP(_, "N"), List())))),
-      Some(TemplateRulesP(_, List(TypedPR(Some(StringP(_, "N")), IntTypePR)))),
-      StructMembersP(_, List(StructMemberP(_,StringP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(MutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "float"))))))) =>
+      Some(TemplateRulesP(_, List(TypedPR(_,Some(StringP(_, "N")), IntTypePR)))),
+      StructMembersP(_, List(StructMemberP(_,StringP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(_,MutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "float"))))))) =>
     }
   }
 
@@ -117,8 +117,8 @@ class StructTests extends FunSuite with Matchers with Collector {
           List(),
           MutableP,
           Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, StringP(_, "N"), List())))),
-          Some(TemplateRulesP(_, List(TypedPR(Some(StringP(_, "N")),IntTypePR)))),
-          StructMembersP(_, List(StructMemberP(_,StringP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(ImmutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "float"))))))) =>
+          Some(TemplateRulesP(_, List(TypedPR(_,Some(StringP(_, "N")),IntTypePR)))),
+          StructMembersP(_, List(StructMemberP(_,StringP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), NameOrRunePT(StringP(_, "N")), NameOrRunePT(StringP(_, "float"))))))) =>
     }
   }
 }

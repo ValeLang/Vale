@@ -25,6 +25,7 @@ class RuleTyperEvaluator[Env, State](
     state: State,
     env: Env,
     rules: List[IRulexSR],
+    invocationRange: RangeS,
     paramAtoms: List[AtomSP],
     maybeNeededRunes: Option[Set[IRuneA]]
   ): (Conclusions, IRuleTyperSolveResult[List[IRulexAR]]) = {
@@ -35,8 +36,8 @@ class RuleTyperEvaluator[Env, State](
 
     // Now we'll try solving a bunch, just to see if there's any contradictions,
     // and if so bail out early.
-    solveUntilSettled(state, env, rules, conclusions) match {
-        case (isc @ RuleTyperSolveFailure(_, _, _)) => return (conclusions.conclusions, RuleTyperSolveFailure(conclusions, "Failed during pre-solving!", List(isc)))
+    solveUntilSettled(state, env, invocationRange, rules, conclusions) match {
+        case (isc @ RuleTyperSolveFailure(_, _, _, _)) => return (conclusions.conclusions, RuleTyperSolveFailure(conclusions, invocationRange, "Failed during pre-solving!", List(isc)))
         case (RuleTyperSolveSuccess(_)) =>
       }
 
@@ -47,15 +48,15 @@ class RuleTyperEvaluator[Env, State](
     paramAtoms.zipWithIndex.foreach({
         case ((paramAtom, paramIndex)) => {
           makeMatcher().matchAgainstAtomSP(state, env, conclusions, paramAtom) match {
-            case (isc @ RuleTyperMatchConflict(_, _, _)) => return (conclusions.conclusions, RuleTyperSolveFailure(conclusions, "Failed solving types for param " + paramIndex, List(isc)))
+            case (isc @ RuleTyperMatchConflict(_, _, _, _)) => return (conclusions.conclusions, RuleTyperSolveFailure(conclusions, invocationRange, "Failed solving types for param " + paramIndex, List(isc)))
             case (RuleTyperMatchSuccess(_)) =>
           }
         }
       })
 
     val listOfMaybeRuleTypes =
-      solveUntilSettled(state, env, rules, conclusions) match {
-        case (isc @ RuleTyperSolveFailure(_, _, _)) => return (conclusions.conclusions, RuleTyperSolveFailure(conclusions, "Failed to solve!", List(isc)))
+      solveUntilSettled(state, env, invocationRange, rules, conclusions) match {
+        case (isc @ RuleTyperSolveFailure(_, _, _, _)) => return (conclusions.conclusions, RuleTyperSolveFailure(conclusions, invocationRange, "Failed to solve!", List(isc)))
         case (RuleTyperSolveSuccess(rt)) => (rt)
       }
 
@@ -69,6 +70,7 @@ class RuleTyperEvaluator[Env, State](
         conclusions.conclusions,
         RuleTyperSolveFailure(
           conclusions,
+          invocationRange,
           "Couldn't figure out types of all rules! Couldn't figure out rules at indices: " + unknownIndices,
           List()))
     }
@@ -79,6 +81,7 @@ class RuleTyperEvaluator[Env, State](
         conclusions.conclusions,
         RuleTyperSolveFailure(
           conclusions,
+          invocationRange,
           "Couldn't figure out types of all runes! Couldn't figure out: " + unfiguredOutRunes,
           List()))
     }
@@ -89,13 +92,14 @@ class RuleTyperEvaluator[Env, State](
   private def solveUntilSettled(
     state: State,
     env: Env,
+    invocationRange: RangeS,
     rules: List[IRulexSR],
     conclusions: ConclusionsBox,
   ): (IRuleTyperSolveResult[List[Option[IRulexAR]]]) = {
     val results =
       rules.map(rule => {
         evaluateRule(state, env, conclusions, rule) match {
-          case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperSolveFailure(conclusions, "", List(iec)))
+          case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperSolveFailure(conclusions, invocationRange, "", List(iec)))
           case RuleTyperEvaluateUnknown() => None
           case (RuleTyperEvaluateSuccess(result)) => Some(result)
         }
@@ -104,7 +108,7 @@ class RuleTyperEvaluator[Env, State](
     if (conclusions != conclusions) {
       // Things have not settled, we made some sort of progress in this last iteration.
       // Keep going.
-      solveUntilSettled(state, env, rules, conclusions)
+      solveUntilSettled(state, env, invocationRange, rules, conclusions)
     } else {
       (RuleTyperSolveSuccess(results))
     }
@@ -117,21 +121,21 @@ class RuleTyperEvaluator[Env, State](
     rule: IRulexSR,
   ): (IRuleTyperEvaluateResult[IRulexAR]) = {
     rule match {
-      case r @ IsaSR(_, _) => evaluateIsaRule(state, env, conclusions, r)
-      case r @ EqualsSR(_, _) => evaluateEqualsRule(state, env, conclusions, r)
-      case r @ OrSR(_) => evaluateOrRule(state, env, conclusions, r)
-      case r @ ComponentsSR(_, _) => evaluateComponentsRule(state, env, conclusions, r)
-      case r @ TypedSR(_, _) => evaluateTypedRule(state, env, conclusions, r)
+      case r @ IsaSR(_, _, _) => evaluateIsaRule(state, env, conclusions, r)
+      case r @ EqualsSR(_, _, _) => evaluateEqualsRule(state, env, conclusions, r)
+      case r @ OrSR(_, _) => evaluateOrRule(state, env, conclusions, r)
+      case r @ ComponentsSR(_, _, _) => evaluateComponentsRule(state, env, conclusions, r)
+      case r @ TypedSR(_, _, _) => evaluateTypedRule(state, env, conclusions, r)
       case TemplexSR(templexS) => {
         evaluateTemplex(state, env, conclusions, templexS) match {
-          case (rtec @ RuleTyperEvaluateConflict(_, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, "", Some(rtec)))
+          case (rtec @ RuleTyperEvaluateConflict(_, _, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, templexS.range, "", Some(rtec)))
           case RuleTyperEvaluateUnknown() => RuleTyperEvaluateUnknown()
           case (RuleTyperEvaluateSuccess(templexT)) => {
             (RuleTyperEvaluateSuccess(TemplexAR(templexT)))
           }
         }
       }
-      case r @ CallSR(_, _) => evaluateRuleCall(state, env, conclusions, r)
+      case r @ CallSR(_, _, _) => evaluateRuleCall(state, env, conclusions, r)
       case other => vfail(other.toString)
     }
   }
@@ -139,6 +143,7 @@ class RuleTyperEvaluator[Env, State](
   def evaluateRules(
     state: State,
     env: Env,
+    invocationRange: RangeS,
     conclusions: ConclusionsBox,
     rules: List[IRulexSR],
   ): (IRuleTyperEvaluateResult[List[IRulexAR]]) = {
@@ -147,8 +152,8 @@ class RuleTyperEvaluator[Env, State](
     rules.zipWithIndex.foldLeft((initialResult))({
       case (RuleTyperEvaluateUnknown(), (rule, index)) => {
         evaluateRule(state, env, conclusions, rule) match {
-          case (iec @ RuleTyperEvaluateConflict(_, _, _)) => {
-            return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating rule index " + index, Some(iec)))
+          case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => {
+            return (RuleTyperEvaluateConflict(conclusions.conclusions, rule.range, "Failed evaluating rule index " + index, Some(iec)))
           }
           case RuleTyperEvaluateUnknown() => {
             RuleTyperEvaluateUnknown()
@@ -162,8 +167,8 @@ class RuleTyperEvaluator[Env, State](
       }
       case ((RuleTyperEvaluateSuccess(previousResults)), (rule, index)) => {
         evaluateRule(state, env, conclusions, rule) match {
-          case (iec @ RuleTyperEvaluateConflict(_, _, _)) => {
-            return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating rule index " + index, Some(iec)))
+          case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => {
+            return (RuleTyperEvaluateConflict(conclusions.conclusions, invocationRange, "Failed evaluating rule index " + index, Some(iec)))
           }
           case RuleTyperEvaluateUnknown() => {
             RuleTyperEvaluateUnknown()
@@ -182,7 +187,7 @@ class RuleTyperEvaluator[Env, State](
     conclusions: ConclusionsBox,
     ruleCall: CallSR,
   ): (IRuleTyperEvaluateResult[CallAR]) = {
-    val CallSR(name, argumentRules) = ruleCall
+    val CallSR(range, name, argumentRules) = ruleCall
 
     name match {
 //      case "ownership" => {
@@ -196,46 +201,46 @@ class RuleTyperEvaluator[Env, State](
 //      }
       case "toRef" => {
         if (argumentRules.size != 1) {
-          return (RuleTyperEvaluateConflict(conclusions.conclusions, "toRef expects 1 argument, but received " + argumentRules.size, None))
+          return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "toRef expects 1 argument, but received " + argumentRules.size, None))
         }
         val List(kindRule) = argumentRules
         makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, kindRule) match {
-          case (rtmc @ RuleTyperMatchConflict(_, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in toRef argument!", Some(rtmc)))
+          case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in toRef argument!", Some(rtmc)))
           case (RuleTyperMatchSuccess(kindRuleT)) => {
-            val ruleT = CallAR(name, List(kindRuleT), CoordTemplataType)
+            val ruleT = CallAR(range, name, List(kindRuleT), CoordTemplataType)
             (RuleTyperEvaluateSuccess(ruleT))
           }
         }
       }
       case "passThroughIfInterface" => {
         if (argumentRules.size != 1) {
-          return (RuleTyperEvaluateConflict(conclusions.conclusions, "passThroughIfInterface expects 1 argument, but received " + argumentRules.size, None))
+          return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "passThroughIfInterface expects 1 argument, but received " + argumentRules.size, None))
         }
         val List(kindRule) = argumentRules
         makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, kindRule) match {
-          case (rtmc @ RuleTyperMatchConflict(_, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in toRef argument!", Some(rtmc)))
+          case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in toRef argument!", Some(rtmc)))
           case (RuleTyperMatchSuccess(kindRuleT)) => {
-            val ruleT = CallAR(name, List(kindRuleT), KindTemplataType)
+            val ruleT = CallAR(range, name, List(kindRuleT), KindTemplataType)
             (RuleTyperEvaluateSuccess(ruleT))
           }
         }
       }
       case "resolveExactSignature" => {
         if (argumentRules.size != 2) {
-          return (RuleTyperEvaluateConflict(conclusions.conclusions, "resolveExactSignature expects 2 argument, but received " + argumentRules.size, None))
+          return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "resolveExactSignature expects 2 argument, but received " + argumentRules.size, None))
         }
         val List(nameRule, argsRule) = argumentRules
         val nameRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, StringTemplataType, nameRule) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in toRef argument!", Some(rtmc))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in toRef argument!", Some(rtmc))
             case (RuleTyperMatchSuccess(nameRuleT)) => nameRuleT
           }
         val argsListRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, PackTemplataType(CoordTemplataType), argsRule) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in toRef argument!", Some(rtmc))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in toRef argument!", Some(rtmc))
             case (RuleTyperMatchSuccess(nameRuleT)) => nameRuleT
           }
-        val ruleT = CallAR("resolveExactSignature", List(nameRuleT, argsListRuleT), PrototypeTemplataType)
+        val ruleT = CallAR(range, "resolveExactSignature", List(nameRuleT, argsListRuleT), PrototypeTemplataType)
         RuleTyperEvaluateSuccess(ruleT)
       }
       case _ => vfail("Unknown function \"" + name + "\"!");
@@ -249,13 +254,13 @@ class RuleTyperEvaluator[Env, State](
     ruleTemplex: ITemplexS,
   ): (IRuleTyperEvaluateResult[ITemplexA]) = {
     ruleTemplex match {
-      case IntST(value) => (RuleTyperEvaluateSuccess(IntAT(value)))
-      case BoolST(value) => (RuleTyperEvaluateSuccess(BoolAT(value)))
-      case MutabilityST(value) => (RuleTyperEvaluateSuccess(MutabilityAT(value)))
-      case PermissionST(value) => (RuleTyperEvaluateSuccess(PermissionAT(value)))
-      case LocationST(value) => (RuleTyperEvaluateSuccess(LocationAT(value)))
-      case OwnershipST(value) => (RuleTyperEvaluateSuccess(OwnershipAT(value)))
-      case VariabilityST(value) => (RuleTyperEvaluateSuccess(VariabilityAT(value)))
+      case IntST(range, value) => (RuleTyperEvaluateSuccess(IntAT(range, value)))
+      case BoolST(range, value) => (RuleTyperEvaluateSuccess(BoolAT(range, value)))
+      case MutabilityST(range, value) => (RuleTyperEvaluateSuccess(MutabilityAT(range, value)))
+      case PermissionST(range, value) => (RuleTyperEvaluateSuccess(PermissionAT(range, value)))
+      case LocationST(range, value) => (RuleTyperEvaluateSuccess(LocationAT(range, value)))
+      case OwnershipST(range, value) => (RuleTyperEvaluateSuccess(OwnershipAT(range, value)))
+      case VariabilityST(range, value) => (RuleTyperEvaluateSuccess(VariabilityAT(range, value)))
       case NameST(range, nameS) => {
         delegate.lookupType(state, env, range, nameS) match {
           case (KindTemplataType) => {
@@ -267,39 +272,39 @@ class RuleTyperEvaluator[Env, State](
           }
           case (otherType) => {
             val nameA = Astronomer.translateImpreciseName(nameS)
-            (RuleTyperEvaluateSuccess(NameAT(nameA, otherType)))
+            (RuleTyperEvaluateSuccess(NameAT(range, nameA, otherType)))
           }
         }
       }
-      case RuneST(runeS) => {
+      case RuneST(range, runeS) => {
         val runeA = Astronomer.translateRune(runeS)
         conclusions.typeByRune.get(runeA) match {
-          case Some(tyype) => (RuleTyperEvaluateSuccess(RuneAT(runeA, tyype)))
+          case Some(tyype) => (RuleTyperEvaluateSuccess(RuneAT(range, runeA, tyype)))
           case None => RuleTyperEvaluateUnknown()
         }
       }
-      case OwnershippedST(ownershipP, innerCoordTemplexS) => {
+      case OwnershippedST(range, ownershipP, innerCoordTemplexS) => {
         makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, innerCoordTemplexS) match {
-          case (rtmc @ RuleTyperMatchConflict(_, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in inner coord part!", Some(rtmc)))
+          case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in inner coord part!", Some(rtmc)))
           case (RuleTyperMatchUnknown()) => {
             RuleTyperEvaluateUnknown()
           }
           case (RuleTyperMatchSuccess(kindTemplexT)) => {
-            val templexT = OwnershippedAT(ownershipP, kindTemplexT)
+            val templexT = OwnershippedAT(range, ownershipP, kindTemplexT)
             (RuleTyperEvaluateSuccess(templexT))
           }
         }
       }
-      case CallST(templateRule, paramRules) => {
+      case CallST(range, templateRule, paramRules) => {
         val maybeTemplateT =
           evaluateTemplex(state, env, conclusions, templateRule) match {
-            case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "bogglewogget", Some(iec)))
+            case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "bogglewogget", Some(iec)))
             case RuleTyperEvaluateUnknown() => (None)
             case (RuleTyperEvaluateSuccess(templexT)) => {
               templexT.resultType match {
                 case TemplateTemplataType(_, _) =>
                 case _ => {
-                  return (RuleTyperEvaluateConflict(conclusions.conclusions, "Trying to call something that's not a template! Is actually: " + templexT.resultType, None))
+                  return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Trying to call something that's not a template! Is actually: " + templexT.resultType, None))
                 }
               }
               (Some(templexT))
@@ -315,7 +320,7 @@ class RuleTyperEvaluator[Env, State](
             paramRules.zipWithIndex.foreach({
                 case ((paramRule, paramIndex)) => {
                   evaluateTemplex(state, env, conclusions, paramRule) match {
-                    case (imc @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict while evaluating param #" + paramIndex + "! " + paramRule, Some(imc)))
+                    case (imc @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict while evaluating param #" + paramIndex + "! " + paramRule, Some(imc)))
                     case RuleTyperEvaluateUnknown() =>
                     case (RuleTyperEvaluateSuccess(paramRuleT)) => {
                       // Throw it away; without knowing the template type, even with the argument types
@@ -333,7 +338,7 @@ class RuleTyperEvaluator[Env, State](
               paramTypes.zip(paramRules).zipWithIndex.map({
                 case (((paramType, paramRule), paramIndex)) => {
                   makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, paramType, paramRule) match {
-                    case (imc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict while matching param #" + paramIndex + "! Was matching " + paramType + " and " + paramRule, Some(imc)))
+                    case (imc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict while matching param #" + paramIndex + "! Was matching " + paramType + " and " + paramRule, Some(imc)))
                     case (RuleTyperMatchUnknown()) => None
                     case (RuleTyperMatchSuccess(paramTemplexT)) => Some(paramTemplexT)
                   }
@@ -350,20 +355,20 @@ class RuleTyperEvaluator[Env, State](
                   RuleTyperEvaluateUnknown()
                 }
                 case _ => {
-                  (RuleTyperEvaluateSuccess(CallAT(templateT, maybeRulesT.flatten, returnType)))
+                  (RuleTyperEvaluateSuccess(CallAT(range, templateT, maybeRulesT.flatten, returnType)))
                 }
               }
             }
           }
         }
       }
-      case PrototypeST(_, _, _) => {
+      case PrototypeST(range, _, _, _) => {
         vfail("Unimplemented")
       }
-      case PackST(_) => {
+      case PackST(range, _) => {
 //        evaluateTemplexes(env, conclusions, memberTemplexes) match {
-//          case (iec @ RuleTyperEvaluateConflict(_, _, _)) => {
-//            return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed to evaluate CallST arguments", Some(iec)))
+//          case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => {
+//            return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed to evaluate CallST arguments", Some(iec)))
 //          }
 //          case RuleTyperEvaluateUnknown() => {
 //            RuleTyperEvaluateUnknown()
@@ -380,23 +385,23 @@ class RuleTyperEvaluator[Env, State](
 //        }
         vfail()
       }
-      case RepeaterSequenceST(mutabilityTemplexS, sizeTemplexS, elementTemplexS) => {
+      case RepeaterSequenceST(range, mutabilityTemplexS, sizeTemplexS, elementTemplexS) => {
         // It's futile to try and get the templexTs for size and element, since we don't know whether this
         // thing will end up as a kind or coord (only matching can know that) but hey, let's match into
         // them anyway, they might provide some nice intel for our conclusions.
 
           makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, MutabilityTemplataType, mutabilityTemplexS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in mutability part!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in mutability part!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) =>
             case (RuleTyperMatchSuccess(_)) =>
           }
           makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, IntegerTemplataType, sizeTemplexS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in element part!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in element part!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) =>
             case (RuleTyperMatchSuccess(_)) =>
           }
           makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, elementTemplexS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in element part!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in element part!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) =>
             case (RuleTyperMatchSuccess(_)) =>
           }
@@ -405,10 +410,10 @@ class RuleTyperEvaluator[Env, State](
         // Return unknown.
         RuleTyperEvaluateUnknown()
       }
-      case ManualSequenceST(elements) => {
+      case ManualSequenceST(range, elements) => {
         elements.foreach(element => {
           makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, element) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Conflict in element part!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in element part!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => None
             case (RuleTyperMatchSuccess(templexA)) => Some(templexA)
           }
@@ -427,7 +432,7 @@ class RuleTyperEvaluator[Env, State](
     conclusions: ConclusionsBox,
     rule: TypedSR,
   ): (IRuleTyperEvaluateResult[TemplexAR]) = {
-    val TypedSR(runeS, typeSR) = rule
+    val TypedSR(range, runeS, typeSR) = rule
     val runeA = Astronomer.translateRune(runeS)
 
     val templataType =
@@ -443,13 +448,13 @@ class RuleTyperEvaluator[Env, State](
       case None =>
       case Some(typeFromConclusions) => {
         if (typeFromConclusions != templataType) {
-          return (RuleTyperEvaluateConflict(conclusions.conclusions, "Typed rule failed: expected rune " + runeA + " to be " + templataType + " but previously concluded " + typeFromConclusions, None))
+          return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Typed rule failed: expected rune " + runeA + " to be " + templataType + " but previously concluded " + typeFromConclusions, None))
         }
       }
     }
 
     makeMatcher().matchTypeAgainstTypedSR(state, env, conclusions, templataType, rule) match {
-      case (imc @ RuleTyperMatchConflict(_, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, "", Some(imc)))
+      case (imc @ RuleTyperMatchConflict(_, _, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, range, "", Some(imc)))
       case (RuleTyperMatchUnknown()) => RuleTyperEvaluateUnknown()
       case (RuleTyperMatchSuccess(ruleT)) => (RuleTyperEvaluateSuccess(ruleT))
     }
@@ -461,24 +466,24 @@ class RuleTyperEvaluator[Env, State](
     conclusions: ConclusionsBox,
     rule: IsaSR,
   ): (IRuleTyperEvaluateResult[IsaAR]) = {
-    val IsaSR(leftRuleS, rightRuleS) = rule
+    val IsaSR(range, leftRuleS, rightRuleS) = rule
 
     val maybeLeftRuleT =
       makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, leftRuleS) match {
-        case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed matching isa's left rule", Some(rtmc)))
+        case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed matching isa's left rule", Some(rtmc)))
         case (RuleTyperMatchUnknown()) => (None)
         case (RuleTyperMatchSuccess(leftRuleT)) => (Some(leftRuleT))
       }
 
     val maybeRightRuleT =
       makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, rightRuleS) match {
-        case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed matching isa's right rule", Some(rtmc)))
+        case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed matching isa's right rule", Some(rtmc)))
         case (RuleTyperMatchUnknown()) => (None)
         case (RuleTyperMatchSuccess(rightRuleT)) => (Some(rightRuleT))
       }
 
     (maybeLeftRuleT, maybeRightRuleT) match {
-      case (Some(leftRuleT), Some(rightRuleT)) => (RuleTyperEvaluateSuccess(IsaAR(leftRuleT, rightRuleT)))
+      case (Some(leftRuleT), Some(rightRuleT)) => (RuleTyperEvaluateSuccess(IsaAR(range, leftRuleT, rightRuleT)))
       case (_, _) => RuleTyperEvaluateUnknown()
     }
   }
@@ -489,34 +494,34 @@ class RuleTyperEvaluator[Env, State](
     conclusions: ConclusionsBox,
     rule: EqualsSR,
   ): (IRuleTyperEvaluateResult[EqualsAR]) = {
-    val EqualsSR(leftRuleS, rightRuleS) = rule
+    val EqualsSR(range, leftRuleS, rightRuleS) = rule
 
     val maybeLeftRuleT =
       evaluateRule(state, env, conclusions, leftRuleS) match {
-        case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating left rule!", Some(iec)))
+        case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed evaluating left rule!", Some(iec)))
         case RuleTyperEvaluateUnknown() => (None)
         case (RuleTyperEvaluateSuccess(leftRuleT)) => (Some(leftRuleT))
       }
 
     val maybeRightRuleT =
       evaluateRule(state, env, conclusions, rightRuleS) match {
-        case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating right rule!", Some(iec)))
+        case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed evaluating right rule!", Some(iec)))
         case RuleTyperEvaluateUnknown() => (None)
         case (RuleTyperEvaluateSuccess(rightRuleT)) => (Some(rightRuleT))
       }
 
     (maybeLeftRuleT, maybeRightRuleT) match {
       case (Some(leftRuleT), Some(rightRuleT)) => {
-        (RuleTyperEvaluateSuccess(EqualsAR(leftRuleT, rightRuleT)))
+        (RuleTyperEvaluateSuccess(EqualsAR(range, leftRuleT, rightRuleT)))
       }
       case (Some(leftRuleT), None) => {
         // We know the left, but don't know the right. Use the type from the left
         // to try and figure out the thing on the right.
         makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, leftRuleT.resultType, rightRuleS) match {
-          case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed matching right rule with type from left (" + leftRuleT.resultType + ")", Some(rtmc)))
+          case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed matching right rule with type from left (" + leftRuleT.resultType + ")", Some(rtmc)))
           case (RuleTyperMatchUnknown()) => RuleTyperEvaluateUnknown()
           case (RuleTyperMatchSuccess(rightRuleT)) => {
-            (RuleTyperEvaluateSuccess(EqualsAR(leftRuleT, rightRuleT)))
+            (RuleTyperEvaluateSuccess(EqualsAR(range, leftRuleT, rightRuleT)))
           }
         }
       }
@@ -524,10 +529,10 @@ class RuleTyperEvaluator[Env, State](
         // We know the left, but don't know the right. Use the type from the left
         // to try and figure out the thing on the right.
         makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, rightRuleT.resultType, leftRuleS) match {
-          case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed matching left rule with type from right (" + rightRuleT.resultType + ")", Some(rtmc)))
+          case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed matching left rule with type from right (" + rightRuleT.resultType + ")", Some(rtmc)))
           case (RuleTyperMatchUnknown()) => RuleTyperEvaluateUnknown()
           case (RuleTyperMatchSuccess(leftRuleT)) => {
-            (RuleTyperEvaluateSuccess(EqualsAR(leftRuleT, rightRuleT)))
+            (RuleTyperEvaluateSuccess(EqualsAR(range, leftRuleT, rightRuleT)))
           }
         }
       }
@@ -541,13 +546,14 @@ class RuleTyperEvaluator[Env, State](
     state: State,
     env: Env,
     conclusions: ConclusionsBox,
-    rule: OrSR
+    zrule: OrSR
   ): (IRuleTyperEvaluateResult[OrAR]) = {
+    val OrSR(range, alternatives) = zrule
     val listOfMaybeAlternativeT =
-      rule.alternatives.zipWithIndex.foldLeft((List[Option[IRulexAR]]()))({
+      alternatives.zipWithIndex.foldLeft((List[Option[IRulexAR]]()))({
         case ((Nil), (alternative, alternativeIndex)) => {
           evaluateRule(state, env, conclusions, alternative) match {
-            case (rtec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed to evaluate alternative index " + alternativeIndex, Some(rtec)))
+            case (rtec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed to evaluate alternative index " + alternativeIndex, Some(rtec)))
             case (RuleTyperEvaluateSuccess(alternativeRuleT)) => {
               (List(Some(alternativeRuleT)))
             }
@@ -561,7 +567,7 @@ class RuleTyperEvaluator[Env, State](
           maybeKnownType match {
             case None => {
               evaluateRule(state, env, conclusions, alternative) match {
-                case (rtec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed to evaluate alternative index " + alternativeIndex, Some(rtec)))
+                case (rtec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed to evaluate alternative index " + alternativeIndex, Some(rtec)))
                 case RuleTyperEvaluateUnknown() => {
                   (previousMaybeAlternativesT :+ None)
                 }
@@ -572,7 +578,7 @@ class RuleTyperEvaluator[Env, State](
             }
             case Some(knownType) => {
               makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, knownType, alternative) match {
-                case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed to evaluate alternative index " + alternativeIndex, Some(rtmc)))
+                case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed to evaluate alternative index " + alternativeIndex, Some(rtmc)))
                 case (RuleTyperMatchUnknown()) => {
                   (previousMaybeAlternativesT :+ None)
                 }
@@ -588,7 +594,7 @@ class RuleTyperEvaluator[Env, State](
       RuleTyperEvaluateUnknown()
     } else {
       val alternativesT = listOfMaybeAlternativeT.flatten
-      (RuleTyperEvaluateSuccess(OrAR(alternativesT)))
+      (RuleTyperEvaluateSuccess(OrAR(range, alternativesT)))
     }
   }
 
@@ -598,11 +604,11 @@ class RuleTyperEvaluator[Env, State](
     conclusions: ConclusionsBox,
     rule: ComponentsSR,
   ): (IRuleTyperEvaluateResult[EqualsAR]) = {
-    val ComponentsSR(typedRule, components) = rule
+    val ComponentsSR(range, typedRule, components) = rule
 
     val maybeTypeAndRuneRuleT =
       evaluateTypedRule(state, env, conclusions, typedRule) match {
-        case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Components rule type disagrees!", Some(iec)))
+        case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Components rule type disagrees!", Some(iec)))
         case RuleTyperEvaluateUnknown() => (None)
         case (RuleTyperEvaluateSuccess(typeAndRuneRuleT)) => (Some(typeAndRuneRuleT))
       }
@@ -610,22 +616,22 @@ class RuleTyperEvaluator[Env, State](
     val maybeComponentRulesT =
       typedRule.tyype match {
         case KindTypeSR => {
-          evaluateKindComponents(state, env, conclusions, components) match {
-            case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating kind components!", Some(iec)))
+          evaluateKindComponents(state, env, conclusions, range, components) match {
+            case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed evaluating kind components!", Some(iec)))
             case RuleTyperEvaluateUnknown() => (None)
             case (RuleTyperEvaluateSuccess(templataFromRune)) => (Some(templataFromRune))
           }
         }
         case CoordTypeSR => {
-          evaluateCoordComponents(state, env, conclusions, components) match {
-            case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating coord components!", Some(iec)))
+          evaluateCoordComponents(state, env, conclusions, range, components) match {
+            case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed evaluating coord components!", Some(iec)))
             case RuleTyperEvaluateUnknown() => (None)
             case (RuleTyperEvaluateSuccess(templataFromRune)) => (Some(templataFromRune))
           }
         }
         case PrototypeTypeSR => {
-          evaluatePrototypeComponents(state, env, conclusions, components) match {
-            case (iec @ RuleTyperEvaluateConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Failed evaluating prototype components!", Some(iec)))
+          evaluatePrototypeComponents(state, env, conclusions, range, components) match {
+            case (iec @ RuleTyperEvaluateConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Failed evaluating prototype components!", Some(iec)))
             case RuleTyperEvaluateUnknown() => (None)
             case (RuleTyperEvaluateSuccess(templataFromRune)) => (Some(templataFromRune))
           }
@@ -637,8 +643,9 @@ class RuleTyperEvaluator[Env, State](
       case (Some(typeAndRuneRuleT), Some(componentRulesT)) => {
         val equalsT =
           EqualsAR(
+            range,
             typeAndRuneRuleT,
-            ComponentsAR(typeAndRuneRuleT.resultType, componentRulesT))
+            ComponentsAR(range, typeAndRuneRuleT.resultType, componentRulesT))
         (RuleTyperEvaluateSuccess(equalsT))
       }
       case (None, None) => {
@@ -651,31 +658,32 @@ class RuleTyperEvaluator[Env, State](
     state: State,
     env: Env,
     conclusions: ConclusionsBox,
+    outerRange: RangeS,
     components: List[IRulexSR]):
   (IRuleTyperEvaluateResult[List[IRulexAR]]) = {
     components match {
       case List(ownershipRuleS, kindRuleS) => {
         val maybeOwnershipRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, OwnershipTemplataType, ownershipRuleS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Ownership component conflicted!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Ownership component conflicted!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(ownershipRuleT)) => (Some(ownershipRuleT))
           }
 //        val maybeLocationRuleT =
 //          makeMatcher().matchTypeAgainstRulexSR(env, conclusions, LocationTemplataType, locationRuleS) match {
-//            case rtmc @ RuleTyperMatchConflict(_, _, _) => return RuleTyperEvaluateConflict(conclusions.conclusions, "Location component conflicted!", Some(rtmc))
+//            case rtmc @ RuleTyperMatchConflict(_, _, _, _) => return RuleTyperEvaluateConflict(conclusions.conclusions, range, "Location component conflicted!", Some(rtmc))
 //            case RuleTyperMatchUnknown(c) => (c, None)
 //            case RuleTyperMatchContinue(c, locationRuleT) => (c, Some(locationRuleT))
 //          }
 //        val maybePermissionRuleT =
 //          makeMatcher().matchTypeAgainstRulexSR(env, conclusions, PermissionTemplataType, permissionRuleS) match {
-//            case rtmc @ RuleTyperMatchConflict(_, _, _) => return RuleTyperEvaluateConflict(conclusions.conclusions, "Permission component conflicted!", Some(rtmc))
+//            case rtmc @ RuleTyperMatchConflict(_, _, _, _) => return RuleTyperEvaluateConflict(conclusions.conclusions, range, "Permission component conflicted!", Some(rtmc))
 //            case RuleTyperMatchUnknown(c) => (c, None)
 //            case RuleTyperMatchContinue(c, permissionRuleT) => (c, Some(permissionRuleT))
 //          }
         val maybeKindRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, kindRuleS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Kind component conflicted!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Kind component conflicted!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(kindRuleT)) => (Some(kindRuleT))
           }
@@ -697,27 +705,28 @@ class RuleTyperEvaluator[Env, State](
     state: State,
     env: Env,
     conclusions: ConclusionsBox,
+    outerRange: RangeS,
     components: List[IRulexSR]):
   (IRuleTyperEvaluateResult[List[IRulexAR]]) = {
     components match {
       case List(humanNameRuleS, argsPackRuleS, returnRuleS) => {
         val maybeHumanNameRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, StringTemplataType, humanNameRuleS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Prototype name component conflicted!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Prototype name component conflicted!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(humanNameRuleT)) => (Some(humanNameRuleT))
           }
         val maybeCoordPackRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, PackTemplataType(CoordTemplataType), argsPackRuleS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => {
-              return (RuleTyperEvaluateConflict(conclusions.conclusions, "Prototype args component conflicted!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => {
+              return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Prototype args component conflicted!", Some(rtmc)))
             }
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(kindRuleT)) => (Some(kindRuleT))
           }
         val maybeCoordRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, CoordTemplataType, returnRuleS) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Prototype return component conflicted!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Prototype return component conflicted!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(kindRuleT)) => (Some(kindRuleT))
           }
@@ -739,13 +748,14 @@ class RuleTyperEvaluator[Env, State](
     state: State,
     env: Env,
     conclusions: ConclusionsBox,
+    outerRange: RangeS,
     components: List[IRulexSR]):
   (IRuleTyperEvaluateResult[List[IRulexAR]]) = {
     components match {
       case List(mutabilityRule) => {
         val maybeMutabilityRule =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, MutabilityTemplataType, mutabilityRule) match {
-            case (rtmc @ RuleTyperMatchConflict(_, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, "Mutability component conflicted!", Some(rtmc)))
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Mutability component conflicted!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(mutabilityRuleT)) => (Some(mutabilityRuleT))
           }

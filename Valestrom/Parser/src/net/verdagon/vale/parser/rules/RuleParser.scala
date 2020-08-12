@@ -15,8 +15,8 @@ trait RuleParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def typedPR: Parser[TypedPR] = {
-    (underscoreOr(typeIdentifier) ~ (white ~> typePR)) ^^ {
-      case maybeRune ~ tyype => TypedPR(maybeRune, tyype)
+    pos ~ underscoreOr(typeIdentifier) ~ (white ~> typePR) ~ pos ^^ {
+      case begin ~ maybeRune ~ tyype ~ end => TypedPR(Range(begin, end), maybeRune, tyype)
     }
   }
 
@@ -38,25 +38,29 @@ trait RuleParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def destructurePR: Parser[IRulexPR] = {
-    ((typePR <~ "(" <~ optWhite) ~
-      repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")" ^^ {
-      case tyype ~ components => ComponentsPR(TypedPR(None, tyype), components)
+    (pos ~
+      (typePR <~ "(" <~ optWhite) ~
+      repsep(rulePR, optWhite ~> "," <~ optWhite) ~
+      pos <~ optWhite <~ ")" ^^ {
+      case begin ~ tyype ~ components ~ end => ComponentsPR(Range(begin, end), TypedPR(Range(begin, end), None, tyype), components)
     }) |
-    ((typedPR <~ "(" <~ optWhite) ~
-      repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")" ^^ {
-      case container ~ components => ComponentsPR(container, components)
+    (pos ~
+      (typedPR <~ "(" <~ optWhite) ~
+      repsep(rulePR, optWhite ~> "," <~ optWhite) ~
+      pos <~ optWhite <~ ")" ^^ {
+      case begin ~ container ~ components ~ end => ComponentsPR(Range(begin, end), container, components)
     })
   }
 
   private[parser] def dotPR(innerRule: Parser[IRulexPR]): Parser[IRulexPR] = {
-    (innerRule <~ optWhite <~ "." <~ optWhite) ~ typeIdentifier ^^ {
-      case inner ~ name => DotPR(inner, name)
+    pos ~ (innerRule <~ optWhite <~ "." <~ optWhite) ~ typeIdentifier ~ pos ^^ {
+      case begin ~ inner ~ name ~ end => DotPR(Range(begin, end), inner, name)
     }
   }
 
   private[parser] def orPR(inner: Parser[IRulexPR]): Parser[IRulexPR] = {
-    (inner <~ optWhite <~ "|" <~ optWhite) ~ rep1sep(inner, optWhite ~> "|" <~ optWhite) ^^ {
-      case firstPossibility ~ restPossibilities => OrPR(firstPossibility :: restPossibilities)
+    pos ~ (inner <~ optWhite <~ "|" <~ optWhite) ~ rep1sep(inner, optWhite ~> "|" <~ optWhite) ~ pos ^^ {
+      case begin ~ firstPossibility ~ restPossibilities ~ end => OrPR(Range(begin, end), firstPossibility :: restPossibilities)
     }
   }
 
@@ -155,8 +159,8 @@ trait RuleParser extends RegexParsers with ParserUtils {
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def equalsPR(inner: Parser[IRulexPR]): Parser[EqualsPR] = {
-    (inner <~ optWhite <~ "=" <~ optWhite) ~ inner ^^ {
-      case left ~ right => EqualsPR(left, right)
+    pos ~ (inner <~ optWhite <~ "=" <~ optWhite) ~ inner ~ pos ^^ {
+      case begin ~ left ~ right ~ end => EqualsPR(Range(begin, end), left, right)
     }
   }
 

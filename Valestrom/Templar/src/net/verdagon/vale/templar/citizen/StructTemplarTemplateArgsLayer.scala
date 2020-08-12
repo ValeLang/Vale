@@ -34,6 +34,7 @@ class StructTemplarTemplateArgsLayer(
 
   def getStructRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     structTemplata: StructTemplata,
     templateArgs: List[ITemplata]):
   (StructRef2) = {
@@ -69,11 +70,12 @@ class StructTemplarTemplateArgsLayer(
             structA.localRunes,
             List(),
             None,
+            callRange,
             templateArgs)
 
         val inferences =
           result match {
-            case isf @ InferSolveFailure(_, _, _, _, _, _) => {
+            case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
               vfail("Couldnt figure out template args! Cause:\n" + isf)
             }
             case InferSolveSuccess(i) => i
@@ -87,13 +89,14 @@ class StructTemplarTemplateArgsLayer(
           case Some(_) =>
         }
 
-        middle.getStructRef(env, temputs, structA, inferences.templatasByRune)
+        middle.getStructRef(env, temputs, callRange, structA, inferences.templatasByRune)
       }
     }
   }
 
   def getInterfaceRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     interfaceTemplata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
   (InterfaceRef2) = {
@@ -131,10 +134,11 @@ class StructTemplarTemplateArgsLayer(
             interfaceS.localRunes,
             List(),
             None,
+            callRange,
             templateArgs)
         val inferences =
           result match {
-            case isf @ InferSolveFailure(_, _, _, _, _, _) => {
+            case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
               vfail("Couldnt figure out template args! Cause:\n" + isf)
             }
             case InferSolveSuccess(i) => i
@@ -149,7 +153,7 @@ class StructTemplarTemplateArgsLayer(
           case Some(_) =>
         }
 
-        middle.getInterfaceRef(env, temputs, interfaceS, inferences.templatasByRune)
+        middle.getInterfaceRef(env, temputs, callRange, interfaceS, inferences.templatasByRune)
       }
     }
   }
@@ -175,12 +179,14 @@ class StructTemplarTemplateArgsLayer(
   def makeAnonymousSubstruct(
     interfaceEnv: IEnvironment,
     temputs: TemputsBox,
+    range: RangeS,
     interfaceRef: InterfaceRef2,
     substructName: FullName2[AnonymousSubstructName2]):
   (StructRef2, Mutability) = {
     middle.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
+      range,
       interfaceRef,
       substructName)
   }

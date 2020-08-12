@@ -8,6 +8,7 @@ import net.verdagon.vale.vassert
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
 case class LetSE(
+    range: RangeS,
     rules: List[IRulexSR],
     unknowableRunes: Set[IRuneS],
     localRunes: Set[IRuneS],
@@ -120,7 +121,7 @@ case class DestructSE(inner: IExpressionSE) extends IExpressionSE
 
 case class FunctionSE(function: FunctionS) extends IExpressionSE
 
-case class DotSE(left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE
+case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE
 
 case class DotCallSE(left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE
 

@@ -18,12 +18,12 @@ object NotEquals {
       Set(CodeRuneA("T"), CodeRuneA("B")),
       Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("B") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("left"), FinalP), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("right"), FinalP), None, CodeRuneA("T"), None))),
+        ParameterA(AtomAP(RangeS.internal(-108), CaptureA(CodeVarNameA("left"), FinalP), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-109), CaptureA(CodeVarNameA("right"), FinalP), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("B")),
       List(
-        TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("B"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType)))),
+        TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)),
+        EqualsAR(RangeS.internal(-1402),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("B"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("bool"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),

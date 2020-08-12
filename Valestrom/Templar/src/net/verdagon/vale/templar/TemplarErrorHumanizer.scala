@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.SourceCodeUtils.{lineAndCol, lineContaining}
+import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
 import net.verdagon.vale.astronomer.{ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
@@ -9,14 +9,22 @@ import net.verdagon.vale.templar.types.ParamFilter
 import net.verdagon.vale.vimpl
 
 object TemplarErrorHumanizer {
-  def humanize(verbose: Boolean, sources: List[String], err: ICompileErrorT): String = {
+  def humanize(
+      verbose: Boolean,
+      filenamesAndSources: List[(String, String)],
+      err: ICompileErrorT):
+  String = {
     err match {
+      case CouldntFindMemberT(range, memberName) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Couldn't find member " + memberName + "!"
+      }
       case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
-        lineAndCol(sources(range.file), range.begin.offset) +
-          ": Function " + printableName(functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Function " + printableName(filenamesAndSources, functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
       }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
-        lineAndCol(sources(range.file), range.begin.offset) +
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find a suitable function named `" +
           (name match {
             case GlobalFunctionFamilyNameA(humanName) => humanName
@@ -28,7 +36,7 @@ object TemplarErrorHumanizer {
           } else {
             args.map({ case ParamFilter(tyype, None) => TemplataNamer.getReferenceIdentifierName(tyype) }).mkString(", ")
           }) +
-          "):\n" + lineContaining(sources(range.file), range.end.offset) + "\n" +
+          "):\n" + lineContaining(filenamesAndSources, range.file, range.end.offset) + "\n" +
           (if (outscoredReasonByPotentialBanner.size + rejectedReasonByBanner.size + rejectedReasonByFunction.size == 0) {
             "No function with that name exists.\nPerhaps you forget to include a file in the command line?\n"
           } else {
@@ -38,6 +46,7 @@ object TemplarErrorHumanizer {
                   "  " + TemplataNamer.getFullNameIdentifierName(potentialBanner.banner.fullName) + ":\n    " +
                     humanizeRejectionReason(
                       verbose,
+                      filenamesAndSources,
                       outscoredReason)
                 }
               }).mkString("\n")
@@ -48,14 +57,14 @@ object TemplarErrorHumanizer {
                 "Rejected candidates:\n" +
                   (rejectedReasonByBanner.map({
                     case (banner, rejectedReason) => {
-                      "  " + TemplataNamer.getFullNameIdentifierName(banner.fullName) + "\n    " +
-                        humanizeRejectionReason(verbose, rejectedReason)
+                      "  " + humanizeBanner(filenamesAndSources, banner) + "\n    " +
+                        humanizeRejectionReason(verbose, filenamesAndSources, rejectedReason)
                     }
                   }) ++
                     rejectedReasonByFunction.map({
                       case (functionA, rejectedReason) => {
-                        "  " + functionA.name + ":\n    " +
-                          humanizeRejectionReason(verbose, rejectedReason)
+                        "  " + printableName(filenamesAndSources, functionA.name) + ":\n    " +
+                          humanizeRejectionReason(verbose, filenamesAndSources, rejectedReason)
                       }
                     })).mkString("\n") + "\n"
               } else {
@@ -66,10 +75,23 @@ object TemplarErrorHumanizer {
     }
   }
 
-  private def printableName(functionName: IFunctionDeclarationNameA): String = {
+  def humanizeBanner(
+    filenamesAndSources: List[(String, String)],
+    banner: FunctionBanner2):
+  String = {
+    banner.originFunction match {
+      case None => vimpl()
+      case Some(x) => printableName(filenamesAndSources, x.name)
+    }
+  }
+
+  private def printableName(
+    filenamesAndSources: List[(String, String)],
+    functionName: IFunctionDeclarationNameA):
+  String = {
     functionName match {
-      case LambdaNameA(codeLocation) => vimpl()
-      case FunctionNameA(name, codeLocation) =>name
+      case LambdaNameA(codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + "(lambda)"
+      case FunctionNameA(name, codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
       case ConstructorNameA(tlcd) => vimpl()
       case ImmConcreteDestructorNameA() => vimpl()
       case ImmInterfaceDestructorNameA() => vimpl()
@@ -91,6 +113,7 @@ object TemplarErrorHumanizer {
 
   private def humanizeRejectionReason(
       verbose: Boolean,
+      filenamesAndSources: List[(String, String)],
       reason: IScoutExpectedFunctionFailureReason): String = {
     reason match {
       case WrongNumberOfArguments(supplied, expected) => {
@@ -104,8 +127,18 @@ object TemplarErrorHumanizer {
       case Outscored() => "Outscored!"
       case InferFailure(reason) => {
         if (verbose) {
-          // TODO: At some point, take a structured reason that we can pretty print.
-          reason.toString
+          if (reason.rootCauses.size == 1) {
+            val rootCause = reason.rootCauses.head
+            "Failed to infer: " +
+              humanizePos(filenamesAndSources, rootCause.range.file, rootCause.range.begin.offset) + ": " +
+              rootCause.message + "\n" +
+              rootCause.inferences.templatasByRune.map({ case (key, value) => "    - " + key + " = " + value }).mkString("\n") + "\n" +
+              rootCause.inferences.typeByRune
+                .filter(x => !rootCause.inferences.templatasByRune.contains(x._1))
+                .map({ case (rune, _) => "    - " + rune + " = unknown" }).mkString("\n") + "\n"
+          } else {
+            "(too many causes)"
+          }
         } else {
           "(run with --verbose to see some incomprehensible details)"
         }

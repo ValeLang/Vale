@@ -2,14 +2,14 @@ package net.verdagon.vale.parser
 
 sealed trait ITemplexPT
 
-case class NullablePT(inner: ITemplexPT) extends ITemplexPT
+case class NullablePT(range: Range, inner: ITemplexPT) extends ITemplexPT
 
 case class InlinePT(range: Range, inner: ITemplexPT) extends ITemplexPT
 //case class BorrowPT(range: Range, inner: ITemplexPT) extends ITemplexPT
 case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
 case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT
 //case class OwnPT(inner: ITemplexPT) extends ITemplexPT
-case class AnonymousRunePT() extends ITemplexPT
+case class AnonymousRunePT(range: Range) extends ITemplexPT
 case class NameOrRunePT(rune: StringP) extends ITemplexPT
 //case class SharePT(inner: ITemplexPT) extends ITemplexPT
 
@@ -20,8 +20,8 @@ case class ManualSequencePT(range: Range, members: List[ITemplexPT]) extends ITe
 
 
 case class IntPT(range: Range, value: Int) extends ITemplexPT
-case class BoolPT(value: Boolean) extends ITemplexPT
-case class OwnershipPT(ownership: OwnershipP) extends ITemplexPT
-case class MutabilityPT(mutability: MutabilityP) extends ITemplexPT
-case class LocationPT(location: LocationP) extends ITemplexPT
-case class PermissionPT(permission: PermissionP) extends ITemplexPT
+case class BoolPT(range: Range, value: Boolean) extends ITemplexPT
+case class OwnershipPT(range: Range, ownership: OwnershipP) extends ITemplexPT
+case class MutabilityPT(range: Range, mutability: MutabilityP) extends ITemplexPT
+case class LocationPT(range: Range, location: LocationP) extends ITemplexPT
+case class PermissionPT(range: Range, permission: PermissionP) extends ITemplexPT

@@ -22,13 +22,13 @@ object RefCounting {
         CodeRuneA("TK") -> KindTemplataType
       ),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("obj"), FinalP), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("num"), FinalP), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-117), CaptureA(CodeVarNameA("obj"), FinalP), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-118), CaptureA(CodeVarNameA("num"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)), ComponentsAR(CoordTemplataType, List(TemplexAR(OwnershipAT(BorrowP)), TemplexAR(RuneAT(CodeRuneA("TK"), KindTemplataType))))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1418),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1419),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)), ComponentsAR(RangeS.internal(-79), CoordTemplataType, List(TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)), TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("TK"), KindTemplataType))))),
+        EqualsAR(RangeS.internal(-1420),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -65,13 +65,13 @@ object RefCounting {
         CodeRuneA("V") -> CoordTemplataType,
         CodeRuneA("TK") -> KindTemplataType),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("obj"), FinalP), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("num"), FinalP), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-115), CaptureA(CodeVarNameA("obj"), FinalP), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-116), CaptureA(CodeVarNameA("num"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("T"), CoordTemplataType)), ComponentsAR(CoordTemplataType, List(TemplexAR(OwnershipAT(BorrowP)), TemplexAR(RuneAT(CodeRuneA("TK"), KindTemplataType))))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1421),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1422),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)), ComponentsAR(RangeS.internal(-80), CoordTemplataType, List(TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)), TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("TK"), KindTemplataType))))),
+        EqualsAR(RangeS.internal(-1423),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),

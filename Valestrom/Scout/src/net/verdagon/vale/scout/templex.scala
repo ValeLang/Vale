@@ -78,21 +78,21 @@ case class ImpreciseCodeVarNameS(name: String) extends IImpreciseNameStepS
 
 
 // See PVSBUFI
-sealed trait ITemplexS
-case class IntST(value: Int) extends ITemplexS
-case class StringST(value: String) extends ITemplexS
-case class MutabilityST(mutability: MutabilityP) extends ITemplexS
-case class PermissionST(permission: PermissionP) extends ITemplexS
-case class LocationST(location: LocationP) extends ITemplexS
-case class OwnershipST(ownership: OwnershipP) extends ITemplexS
-case class VariabilityST(variability: VariabilityP) extends ITemplexS
-case class BoolST(value: Boolean) extends ITemplexS
+sealed trait ITemplexS { def range: RangeS }
+case class IntST(range: RangeS, value: Int) extends ITemplexS
+case class StringST(range: RangeS, value: String) extends ITemplexS
+case class MutabilityST(range: RangeS, mutability: MutabilityP) extends ITemplexS
+case class PermissionST(range: RangeS, permission: PermissionP) extends ITemplexS
+case class LocationST(range: RangeS, location: LocationP) extends ITemplexS
+case class OwnershipST(range: RangeS, ownership: OwnershipP) extends ITemplexS
+case class VariabilityST(range: RangeS, variability: VariabilityP) extends ITemplexS
+case class BoolST(range: RangeS, value: Boolean) extends ITemplexS
 case class AbsoluteNameST(range: RangeS, name: INameS) extends ITemplexS
 case class NameST(range: RangeS, name: CodeTypeNameS) extends ITemplexS
-case class RuneST(rune: IRuneS) extends ITemplexS
-case class OwnershippedST(ownership: OwnershipP, inner: ITemplexS) extends ITemplexS
-case class NullableST(inner: ITemplexS) extends ITemplexS
-case class CallST(
+case class RuneST(range: RangeS, rune: IRuneS) extends ITemplexS
+case class OwnershippedST(range: RangeS, ownership: OwnershipP, inner: ITemplexS) extends ITemplexS
+case class NullableST(range: RangeS, inner: ITemplexS) extends ITemplexS
+case class CallST(range: RangeS,
     template: ITemplexS,
     args: List[ITemplexS]) extends ITemplexS {
 }
@@ -102,54 +102,59 @@ case class CallST(
 //  returnType: Option[ITemplexS]
 //) extends ITemplexS
 case class PrototypeST(
+  range: RangeS,
   name: String,
   parameters: List[ITemplexS],
   returnType: ITemplexS
 ) extends ITemplexS
 case class PackST(
+  range: RangeS,
   members: List[ITemplexS]
 ) extends ITemplexS
 case class BorrowST(
+  range: RangeS,
   inner: ITemplexS
 ) extends ITemplexS
 case class RepeaterSequenceST(
+  range: RangeS,
   mutability: ITemplexS,
   size: ITemplexS,
   element: ITemplexS
 ) extends ITemplexS
 case class ManualSequenceST(
+  range: RangeS,
   elements: List[ITemplexS]
 ) extends ITemplexS
 
 object TemplexSUtils {
   def getDistinctOrderedRunesForTemplex(templex: ITemplexS): List[IRuneS] = {
     templex match {
-      case StringST(_) => List()
-      case IntST(_) => List()
-      case MutabilityST(_) => List()
-      case PermissionST(_) => List()
-      case LocationST(_) => List()
-      case OwnershipST(_) => List()
-      case VariabilityST(_) => List()
-      case BoolST(_) => List()
+      case StringST(_, _) => List()
+      case IntST(_, _) => List()
+      case MutabilityST(_, _) => List()
+      case PermissionST(_, _) => List()
+      case LocationST(_, _) => List()
+      case OwnershipST(_, _) => List()
+      case VariabilityST(_, _) => List()
+      case BoolST(_, _) => List()
       case NameST(_, _) => List()
       case AbsoluteNameST(_, _) => List()
-      case RuneST(rune) => List(rune)
-      case OwnershippedST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
-      case BorrowST(inner) => getDistinctOrderedRunesForTemplex(inner)
-      case CallST(template, args) => {
+      case RuneST(_, rune) => List(rune)
+      case OwnershippedST(_, _, inner) => getDistinctOrderedRunesForTemplex(inner)
+      case BorrowST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
+      case CallST(_, template, args) => {
         (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
-      case PrototypeST(name, parameters, returnType) => {
+      case PrototypeST(_, name, parameters, returnType) => {
         (parameters :+ returnType).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
-      case PackST(members) => {
+      case PackST(_, members) => {
         members.flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
-      case RepeaterSequenceST(mutability, size, element) => {
+      case RepeaterSequenceST(_, mutability, size, element) => {
         List(mutability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
-      case ManualSequenceST(elements) => {
+      case ManualSequenceST(_, elements) => {
         elements.flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
     }

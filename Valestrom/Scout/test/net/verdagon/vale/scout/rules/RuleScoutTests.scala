@@ -19,13 +19,13 @@ class RuleScoutTests extends FunSuite with Matchers {
   test("A") {
     val expectedRulesS =
       List(
-        EqualsSR(
-          TypedSR(CodeRuneS("B"),CoordTypeSR),
-          TemplexSR(CallST(NameST(RangeS.zero, CodeTypeNameS("List")),List(RuneST(CodeRuneS("A")))))),
-        EqualsSR(
-          TypedSR(CodeRuneS("C"),CoordTypeSR),
-          OrSR(List(TemplexSR(RuneST(CodeRuneS("B"))), TemplexSR(RuneST(CodeRuneS("A"))), TemplexSR(NameST(RangeS.zero, CodeTypeNameS("int")))))),
-        TypedSR(CodeRuneS("A"),CoordTypeSR))
+        EqualsSR(RangeS.testZero,
+          TypedSR(RangeS.testZero,CodeRuneS("B"),CoordTypeSR),
+          TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("List")),List(RuneST(RangeS.testZero,CodeRuneS("A")))))),
+        EqualsSR(RangeS.testZero,
+          TypedSR(RangeS.testZero,CodeRuneS("C"),CoordTypeSR),
+          OrSR(RangeS.testZero,List(TemplexSR(RuneST(RangeS.testZero,CodeRuneS("B"))), TemplexSR(RuneST(RangeS.testZero,CodeRuneS("A"))), TemplexSR(NameST(RangeS.testZero, CodeTypeNameS("int")))))),
+        TypedSR(RangeS.testZero,CodeRuneS("A"),CoordTypeSR))
     RuleSUtils.getDistinctOrderedRunesForRulexes(expectedRulesS) shouldEqual
       List(CodeRuneS("B"), CodeRuneS("A"), CodeRuneS("C"))
 
@@ -39,13 +39,13 @@ class RuleScoutTests extends FunSuite with Matchers {
           |""".stripMargin)
     results match {
       case List(
-        EqualsSR(
-          TypedSR(br1 @ CodeRuneS("B"),CoordTypeSR),
-          TemplexSR(CallST(NameST(_, CodeTypeNameS("List")),List(RuneST(ar1 @ CodeRuneS("A")))))),
-        EqualsSR(
-          TypedSR(CodeRuneS("C"),CoordTypeSR),
-          OrSR(List(TemplexSR(RuneST(br2)), TemplexSR(RuneST(ar3)), TemplexSR(NameST(_, CodeTypeNameS("int")))))),
-        TypedSR(ar2,CoordTypeSR)) => {
+        EqualsSR(_,
+          TypedSR(_,br1 @ CodeRuneS("B"),CoordTypeSR),
+          TemplexSR(CallST(_,NameST(_, CodeTypeNameS("List")),List(RuneST(_,ar1 @ CodeRuneS("A")))))),
+        EqualsSR(_,
+          TypedSR(_,CodeRuneS("C"),CoordTypeSR),
+          OrSR(_,List(TemplexSR(RuneST(_,br2)), TemplexSR(RuneST(_,ar3)), TemplexSR(NameST(_, CodeTypeNameS("int")))))),
+        TypedSR(_,ar2,CoordTypeSR)) => {
         vassert(br1 == br2)
         vassert(ar1 == ar2)
         vassert(ar1 == ar3)

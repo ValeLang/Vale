@@ -259,7 +259,7 @@ object ExpressionScout {
         val localRunes = allRunes -- knowableRunesFromAbove
 
         val declarationsFromPattern = VariableDeclarations(PatternScout.getParameterCaptures(patternS))
-        (stackFrame1 ++ declarationsFromPattern, NormalResult(LetSE(rulesS, allUnknownRunes, localRunes, patternS, expr1)), selfUses, childUses)
+        (stackFrame1 ++ declarationsFromPattern, NormalResult(LetSE(Scout.evalRange(stackFrame1.file, range), rulesS, allUnknownRunes, localRunes, patternS, expr1)), selfUses, childUses)
       }
       case MutatePE(_, destinationExprPE, sourceExprPE) => {
         val (stackFrame1, sourceExpr1, sourceInnerSelfUses, sourceChildUses) =
@@ -281,7 +281,7 @@ object ExpressionScout {
           }
         (stackFrame2, NormalResult(mutateExpr1), sourceSelfUses.thenMerge(destinationSelfUses), sourceChildUses.thenMerge(destinationChildUses))
       }
-      case DotPE(_, containerExprPE, _, isMapCall, LookupPE(StringP(_, memberName), templateArgs)) => {
+      case DotPE(rangeP, containerExprPE, _, isMapCall, LookupPE(StringP(_, memberName), templateArgs)) => {
         if (templateArgs.nonEmpty) {
           // such as myStruct.someField<Foo>.
           // Can't think of a good use for it yet.
@@ -299,7 +299,7 @@ object ExpressionScout {
           case _ => {
             val (stackFrame1, containerExpr, selfUses, childUses) =
               scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
-            (stackFrame1, NormalResult(DotSE(containerExpr, memberName, true)), selfUses, childUses)
+            (stackFrame1, NormalResult(DotSE(Scout.evalRange(stackFrame1.file, rangeP), containerExpr, memberName, true)), selfUses, childUses)
           }
         }
       }

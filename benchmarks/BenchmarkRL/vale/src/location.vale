@@ -8,6 +8,22 @@ fn min(a int, b int) int {
   = if (a <= b) { a } else { b }
 }
 
+// Added
+struct LocationHasher { }
+fn __call(this &LocationHasher, loc Location) {
+  hash = 0;
+  mut hash = 41 * hash + loc.x;
+  mut hash = 41 * hash + loc.y;
+  = hash;
+}
+
+// Added
+struct LocationEquator { }
+fn __call(this &LocationEquator, a Location, b Location) {
+  (a.x == b.x) and (a.y == b.y)
+}
+
+
 struct Location imm {
     x int;
     y int;

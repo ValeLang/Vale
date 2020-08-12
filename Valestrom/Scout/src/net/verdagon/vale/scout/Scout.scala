@@ -124,6 +124,7 @@ object Scout {
       PatternScout.translateMaybeTypeIntoRune(
         implEnv,
         rate,
+        Scout.evalRange(file, range),
         Some(struct),
         KindTypePR)
 
@@ -131,12 +132,14 @@ object Scout {
       PatternScout.translateMaybeTypeIntoRune(
         implEnv,
         rate,
+        Scout.evalRange(file, range),
         Some(interface),
         KindTypePR)
 
     val rulesS = userRulesS ++ implicitRulesFromStruct ++ implicitRulesFromInterface
 
     ImplS(
+      Scout.evalRange(file, range),
       nameS,
       rulesS,
       knowableValueRunes ++ (if (isTemplate) List() else List(structRune, interfaceRune)),
@@ -150,6 +153,8 @@ object Scout {
     val StructP(range, StringP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val codeLocation = Scout.evalPos(file, range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
+
+    val structRangeS = Scout.evalRange(file, range)
 
     val templateRulesP = maybeTemplateRulesP.toList.flatMap(_.rules)
 
@@ -165,9 +170,11 @@ object Scout {
 
     val memberRunes = members.indices.map(index => MemberRuneS(index))
     val memberRules =
-      memberRunes.zip(members.collect({ case m @ StructMemberP(_, _, _, _) => m }).map(_.tyype)).map({ case (memberRune, memberType) =>
+      memberRunes.zip(members).collect({ case (memberRune, StructMemberP(range, _, _, memberType)) =>
+        val memberRange = Scout.evalRange(file, range)
         EqualsSR(
-          TypedSR(memberRune, CoordTypeSR),
+          memberRange,
+          TypedSR(memberRange, memberRune, CoordTypeSR),
           TemplexSR(TemplexScout.translateTemplex(structEnv, memberType)))
       })
 
@@ -180,8 +187,9 @@ object Scout {
     val rulesS =
       rulesWithoutMutabilityS :+
         EqualsSR(
-          TemplexSR(RuneST(mutabilityRune)),
-          TemplexSR(MutabilityST(mutability)))
+          structRangeS,
+          TemplexSR(RuneST(structRangeS, mutabilityRune)),
+          TemplexSR(MutabilityST(structRangeS, mutability)))
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
     val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, List(), None)
@@ -190,8 +198,8 @@ object Scout {
     val isTemplate = knowableValueRunes != allRunes
 
     val membersS =
-      members.zip(memberRunes).map({ case (StructMemberP(_, StringP(_, name), variability, _), memberRune) =>
-        StructMemberS(name, variability, memberRune)
+      members.zip(memberRunes).map({ case (StructMemberP(range, StringP(_, name), variability, _), memberRune) =>
+        StructMemberS(Scout.evalRange(structEnv.file, range), name, variability, memberRune)
       })
 
     val maybePredictedType =
@@ -237,6 +245,8 @@ object Scout {
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
     val rulesP = maybeRulesP.toList.flatMap(_.rules)
 
+    val interfaceRangeS = Scout.evalRange(file, range)
+
     val identifyingRunes: List[IRuneS] =
       maybeIdentifyingRunes
         .toList.flatMap(_.runes).map(_.name.str)
@@ -255,8 +265,9 @@ object Scout {
     val rulesS =
       rulesWithoutMutabilityS :+
       EqualsSR(
-        TemplexSR(RuneST(mutabilityRune)),
-        TemplexSR(MutabilityST(mutability)))
+        interfaceRangeS,
+        TemplexSR(RuneST(interfaceRangeS, mutabilityRune)),
+        TemplexSR(MutabilityST(interfaceRangeS, mutability)))
 
     // We gather all the runes from the scouted rules to be consistent with the function scout.
     val allRunes = PredictorEvaluator.getAllRunes(identifyingRunes, rulesS, List(), None)

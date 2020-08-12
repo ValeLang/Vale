@@ -7,7 +7,7 @@ import scala.util.parsing.input.Positional
 
 sealed trait IVirtualityP
 case object AbstractP extends IVirtualityP
-case class OverrideP(tyype: ITemplexPT) extends IVirtualityP
+case class OverrideP(range: Range, tyype: ITemplexPT) extends IVirtualityP
 
 case class PatternPP(
     range: Range,

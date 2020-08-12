@@ -212,7 +212,7 @@ class BodyTemplar(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterA(AtomAP(CaptureA(name, _), _, _, _)) => {
+      case ParameterA(AtomAP(_, CaptureA(name, _), _, _, _)) => {
         if (!fate.variables.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
           vfail("wot couldnt find " + name)
         }

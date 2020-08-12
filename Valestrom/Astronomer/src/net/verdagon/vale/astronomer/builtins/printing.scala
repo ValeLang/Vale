@@ -20,11 +20,11 @@ object Printing {
         CodeRuneA("R") -> CoordTemplataType,
         CodeRuneA("S") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("S"), None))),
+        ParameterA(AtomAP(RangeS.internal(-114), CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("S"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("S"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("str"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1407),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("S"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("str"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1408),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -55,11 +55,11 @@ object Printing {
         CodeRuneA("R") -> CoordTemplataType,
         CodeRuneA("I") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-111), CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1409),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1410),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -89,11 +89,11 @@ object Printing {
         CodeRuneA("R") -> CoordTemplataType,
         CodeRuneA("I") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-113), CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1411),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("bool"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1412),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -124,11 +124,11 @@ object Printing {
         CodeRuneA("R") -> CoordTemplataType,
       ),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-110), CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1413),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1414),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),
@@ -159,11 +159,11 @@ object Printing {
         CodeRuneA("R") -> CoordTemplataType,
       ),
       List(
-        ParameterA(AtomAP(CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-112), CaptureA(CodeVarNameA("line"), FinalP), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("R")),
       List(
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("bool"), CoordTemplataType))),
-        EqualsAR(TemplexAR(RuneAT(CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1415),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("bool"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1416),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           List(),

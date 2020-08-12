@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.scout.IRuneS
+import net.verdagon.vale.scout.{IRuneS, RangeS}
 import net.verdagon.vale.vassert
 
 package object ruletyper {
@@ -19,12 +19,15 @@ package object ruletyper {
     }
   }
 
-  trait IConflictCause
+  trait IConflictCause {
+    def range: RangeS
+  }
   case class MultipleCauses(causes: List[IConflictCause])
 
   sealed trait IRuleTyperSolveResult[T]
   case class RuleTyperSolveFailure[T](
     conclusions: ConclusionsBox,
+    range: RangeS,
     message: String,
     inner: List[IConflictCause]
   ) extends IRuleTyperSolveResult[T] with IConflictCause
@@ -39,6 +42,7 @@ package object ruletyper {
     // case failed; we want to have all the conflicts in a row, we want to have
     // the conclusions for each failure.
     conclusions: Conclusions,
+    range: RangeS,
     message: String,
     cause: Option[IConflictCause]
   ) extends IRuleTyperEvaluateResult[T] with IConflictCause
@@ -55,6 +59,7 @@ package object ruletyper {
     // case failed; we want to have all the conflicts in a row, we want to have
     // the conclusions for each failure.
     conclusions: Conclusions,
+    range: RangeS,
     message: String,
     // For an Or rule, this will contain all the conflicts for each branch.
     causes: List[IConflictCause]

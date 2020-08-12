@@ -4,7 +4,7 @@ import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
-import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
+import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar.{FunctionName2, IName2, IRune2, NameTranslator}
 import net.verdagon.vale.templar.infer.infer._
 import net.verdagon.vale.templar.templata.{Conversions, _}
@@ -52,6 +52,7 @@ class InfererMatcher[Env, State](
       typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
     inferences: InferencesBox,
+    range: RangeS,
     instance: ITemplata,
     rune: IRune2,
     expectedType: ITemplataType
@@ -72,16 +73,16 @@ class InfererMatcher[Env, State](
         // such as when we do spaceship.fly() in TMRE.
         val templataFromEnv = delegate.lookupTemplata(env, rune)
         if (templataFromEnv.tyype != expectedType) {
-          return (InferMatchConflict(inferences.inferences, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templataFromEnv.tyype + ", specifically " + templataFromEnv, List()))
+          return (InferMatchConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templataFromEnv.tyype + ", specifically " + templataFromEnv, List()))
         }
         templataFromEnv
       }
     val equal =
-      equator.equals(state, instance, alreadyExistingTemplata, expectedType)
+      equator.templatasEqual(state, range, instance, alreadyExistingTemplata, expectedType)
     if (equal) {
       (InferMatchSuccess(true))
     } else {
-      (InferMatchConflict(inferences.inferences, s"Disagreement about templata #${rune}:\n${alreadyExistingTemplata}\n${instance}", List()))
+      (InferMatchConflict(inferences.inferences, range, s"Disagreement about templata #${rune}:\n${alreadyExistingTemplata}\n${instance}", List()))
     }
   }
 
@@ -91,6 +92,7 @@ class InfererMatcher[Env, State](
       typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
     inferences: InferencesBox,
+    range: RangeS,
     instance: Coord,
     coordRune: IRune2):
   (IInferMatchResult) = {
@@ -104,7 +106,7 @@ class InfererMatcher[Env, State](
         if (instance == alreadyInferredCoord) {
           (InferMatchSuccess(true))
         } else {
-          (InferMatchConflict(inferences.inferences, s"Disagreement about ref #${coordRune}:\n${CoordTemplata(alreadyInferredCoord)}\n${instance}", List()))
+          (InferMatchConflict(inferences.inferences, range, s"Disagreement about ref #${coordRune}:\n${CoordTemplata(alreadyInferredCoord)}\n${instance}", List()))
         }
       }
     }
@@ -116,6 +118,7 @@ class InfererMatcher[Env, State](
       typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
     inferences: InferencesBox,
+    range: RangeS,
     instance: Kind,
     kindRune: IRune2):
   (IInferMatchResult) = {
@@ -128,7 +131,7 @@ class InfererMatcher[Env, State](
         if (instance == alreadyInferredKind) {
           (InferMatchSuccess(true))
         } else {
-          (InferMatchConflict(inferences.inferences, s"Disagreement about kind #${alreadyInferredKind}:\n${KindTemplata(alreadyInferredKind)}\n${instance}", List()))
+          (InferMatchConflict(inferences.inferences, range, s"Disagreement about kind #${alreadyInferredKind}:\n${KindTemplata(alreadyInferredKind)}\n${instance}", List()))
         }
       }
     }
@@ -155,7 +158,7 @@ class InfererMatcher[Env, State](
         case ((deeplySatisfiedSoFar), (structMemberType, part)) => {
           val paramFilter = ParamFilter(structMemberType, None)
           matchParamFilterAgainstAtomSP(env, state, typeByRune, localRunes, inferences, paramFilter, part) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case InferMatchSuccess(deeplySatisfied) => (deeplySatisfiedSoFar && deeplySatisfied)
           }
         }
@@ -171,41 +174,41 @@ class InfererMatcher[Env, State](
       localRunes: Set[IRune2],
       inferences: InferencesBox,
       instance: ParamFilter,
-      rule: AtomSP):
+      zrule: AtomSP):
   (IInferMatchResult) = {
-    val ruleCoordRuneS = rule.coordRune
+    val AtomSP(patternRange, name, virtuality, ruleCoordRuneS, destructure) = zrule
     val runeCoordRuneA = Astronomer.translateRune(ruleCoordRuneS)
 
     val coordDeeplySatisfied =
-      matchReference2AgainstRuneSP(env, state, typeByRune, localRunes, inferences, instance.tyype, NameTranslator.translateRune(runeCoordRuneA)) match {
-        case imc @ InferMatchConflict(_, _, _) => return imc
+      matchReference2AgainstRuneSP(env, state, typeByRune, localRunes, inferences, patternRange, instance.tyype, NameTranslator.translateRune(runeCoordRuneA)) match {
+        case imc @ InferMatchConflict(_, _, _, _) => return imc
         case (InferMatchSuccess(ds)) => (ds)
       }
 
     val destructureDeeplySatisfied =
-      rule.destructure match {
+      destructure match {
         case None => (true)
         case Some(parts) => {
           matchReference2AgainstDestructure(env, state, typeByRune, localRunes, inferences, instance.tyype, parts) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ds)) => (ds)
           }
         }
       }
 
     val virtualityDeeplySatisfied =
-      ((instance.virtuality, rule.virtuality) match {
+      ((instance.virtuality, virtuality) match {
         case (None, _) => (true)
         case (Some(Abstract2), Some(AbstractSP)) => (true)
-        case (Some(Abstract2), _) => return (InferMatchConflict(inferences.inferences, s"ParamFilter virtuality didn't match rule:\n${instance.virtuality}\n${rule.virtuality}", List()))
-        case (Some(Override2(instanceSuperInterfaceRef2)), Some(OverrideSP(kindRuneS))) => {
+        case (Some(Abstract2), _) => return (InferMatchConflict(inferences.inferences, patternRange, s"ParamFilter virtuality didn't match rule:\n${instance.virtuality}\n${virtuality}", List()))
+        case (Some(Override2(instanceSuperInterfaceRef2)), Some(OverrideSP(range, kindRuneS))) => {
           val kindRuneA = Astronomer.translateRune(kindRuneS)
-          matchReferend2AgainstRuneSP(env, state, typeByRune, localRunes, inferences, instanceSuperInterfaceRef2, NameTranslator.translateRune(kindRuneA)) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+          matchReferend2AgainstRuneSP(env, state, typeByRune, localRunes, inferences, range, instanceSuperInterfaceRef2, NameTranslator.translateRune(kindRuneA)) match {
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ds)) => (ds)
           }
         }
-        case (Some(Override2(_)), _) => return (InferMatchConflict(inferences.inferences, s"ParamFilter virtuality didn't match rule:\n${instance.virtuality}\n${rule.virtuality}", List()))
+        case (Some(Override2(_)), _) => return (InferMatchConflict(inferences.inferences, patternRange, s"ParamFilter virtuality didn't match rule:\n${instance.virtuality}\n${virtuality}", List()))
       })
 
     (InferMatchSuccess(coordDeeplySatisfied && destructureDeeplySatisfied && virtualityDeeplySatisfied))
@@ -217,14 +220,15 @@ class InfererMatcher[Env, State](
       typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
     inferences: InferencesBox,
+    range: RangeS,
     call: CallTT,
     actualCitizen: CitizenRef2):
   IInferMatchResult = {
     evaluate(env, state, typeByRune, localRunes, inferences, TemplexTR(call.template)) match {
-      case (iec @ InferEvaluateConflict(_, _, _)) => return (InferMatchConflict(inferences.inferences, "Couldn't evaluate template!", List(iec)))
+      case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferMatchConflict(inferences.inferences, range, "Couldn't evaluate template!", List(iec)))
       case (InferEvaluateUnknown(_)) => {
         vcurious() // Can this ever happen? If it does, is the below conflict appropriate?
-        (InferMatchConflict(inferences.inferences, "Couldn't figure out template!", List()))
+        (InferMatchConflict(inferences.inferences, range, "Couldn't figure out template!", List()))
       }
       case (InferEvaluateSuccess(callTemplateTemplata, templateDeeplySatisfied)) => {
         // debt: TEST THIS!
@@ -241,7 +245,7 @@ class InfererMatcher[Env, State](
             expectedArgs.zip(actualArgs).foldLeft((true))({
               case ((deeplySatisfiedSoFar), (expectedArg, actualArg)) => {
                 matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, actualArg, expectedArg) match {
-                  case imc @ InferMatchConflict(_, _, _) => return imc
+                  case imc @ InferMatchConflict(_, _, _, _) => return imc
                   case InferMatchSuccess(deeplySatisfied) => (deeplySatisfiedSoFar && deeplySatisfied)
                 }
               }
@@ -249,7 +253,7 @@ class InfererMatcher[Env, State](
           // If the function is the same, and the args are the same... it's the same.
           InferMatchSuccess(templateDeeplySatisfied && argsDeeplySatisfied)
         } else {
-          return InferMatchConflict(inferences.inferences, "Given citizen didn't come from expected template!\nCitizen: " + actualCitizen + "\nTemplate: " + callTemplateTemplata, List())
+          return InferMatchConflict(inferences.inferences, range, "Given citizen didn't come from expected template!\nCitizen: " + actualCitizen + "\nTemplate: " + callTemplateTemplata, List())
         }
       }
     }
@@ -268,7 +272,7 @@ class InfererMatcher[Env, State](
     // Check to see that the actual template matches the expected template
     val templateDeeplySatisfied =
       matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, ArrayTemplateTemplata(), expectedTemplate) match {
-        case imc @ InferMatchConflict(_, _, _) => return imc
+        case imc @ InferMatchConflict(_, _, _, _) => return imc
         case (InferMatchSuccess(ds)) => (ds)
       }
     // Check to see that the actual template args match the expected template args
@@ -276,7 +280,7 @@ class InfererMatcher[Env, State](
       expectedArgs.zip(actualArgs).foldLeft((true))({
         case ((deeplySatisfiedSoFar), (expectedArg, actualArg)) => {
           matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, actualArg, expectedArg) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case InferMatchSuccess(deeplySatisfied) => (deeplySatisfiedSoFar && deeplySatisfied)
           }
         }
@@ -295,53 +299,53 @@ class InfererMatcher[Env, State](
       rule: ITemplexT):
   (IInferMatchResult) = {
     (rule, instance) match {
-      case (IntTT(expectedValue), IntegerTemplata(actualValue))
+      case (IntTT(range, expectedValue), IntegerTemplata(actualValue))
           if actualValue == expectedValue => {
         (InferMatchSuccess(true))
       }
-      case (BoolTT(expectedValue), BooleanTemplata(actualValue))
+      case (BoolTT(range, expectedValue), BooleanTemplata(actualValue))
           if actualValue == expectedValue => {
         (InferMatchSuccess(true))
       }
-      case (OwnershipTT(expectedOwnership), OwnershipTemplata(actualOwnership)) => {
+      case (OwnershipTT(range, expectedOwnership), OwnershipTemplata(actualOwnership)) => {
         if (actualOwnership == Conversions.evaluateOwnership(expectedOwnership)) {
           return (InferMatchSuccess(true))
         } else if (actualOwnership == Share) {
           // Anything is compatible with share
           return (InferMatchSuccess(true))
         }
-        return (InferMatchConflict(inferences.inferences, s"Supplied ${actualOwnership} doesn't match expected ${expectedOwnership}", List()))
+        return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualOwnership} doesn't match expected ${expectedOwnership}", List()))
       }
-      case (MutabilityTT(expectedMutability), MutabilityTemplata(actualMutability)) => {
+      case (MutabilityTT(range, expectedMutability), MutabilityTemplata(actualMutability)) => {
         if (actualMutability == Conversions.evaluateMutability(expectedMutability)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, s"Supplied ${actualMutability} doesn't match expected ${expectedMutability}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualMutability} doesn't match expected ${expectedMutability}", List()))
         }
       }
-      case (PermissionTT(expectedPermission), PermissionTemplata(actualPermission)) => {
+      case (PermissionTT(range, expectedPermission), PermissionTemplata(actualPermission)) => {
         if (actualPermission == Conversions.evaluatePermission(expectedPermission)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, s"Supplied ${actualPermission} doesn't match expected ${expectedPermission}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualPermission} doesn't match expected ${expectedPermission}", List()))
         }
       }
-      case (LocationTT(expectedLocation), LocationTemplata(actualLocation)) => {
+      case (LocationTT(range, expectedLocation), LocationTemplata(actualLocation)) => {
         if (actualLocation == Conversions.evaluateLocation(expectedLocation)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, s"Supplied ${actualLocation} doesn't match expected ${expectedLocation}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualLocation} doesn't match expected ${expectedLocation}", List()))
         }
       }
-      case (VariabilityTT(expectedVariability), VariabilityTemplata(actualVariability)) => {
+      case (VariabilityTT(range, expectedVariability), VariabilityTemplata(actualVariability)) => {
         if (actualVariability == Conversions.evaluateVariability(expectedVariability)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, s"Supplied ${actualVariability} doesn't match expected ${expectedVariability}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualVariability} doesn't match expected ${expectedVariability}", List()))
         }
       }
-      case (NameTT(name, expectedType), actualTemplata) => {
-        val expectedTemplata = templataTemplar.lookupTemplata(env, state, name, expectedType)
+      case (NameTT(range, name, expectedType), actualTemplata) => {
+        val expectedTemplata = templataTemplar.lookupTemplata(env, state, range, name, expectedType)
         if (actualTemplata != expectedTemplata) {
           // Right here, thought about checking for subtypes, but I don't think we should.
           // For example, let's say we have this impl:
@@ -357,13 +361,13 @@ class InfererMatcher[Env, State](
           //
           // If we decide to check for subtypes here, it will do the incorrect thing in
           // that latter case. So, we don't check for subtypes here, just strict equality.
-          return (InferMatchConflict(inferences.inferences, s"Supplied templata doesn't match '${name}':\n'${name}' in environment:${expectedTemplata}\nActual:${actualTemplata}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied templata doesn't match '${name}':\n'${name}' in environment:${expectedTemplata}\nActual:${actualTemplata}", List()))
         }
         (InferMatchSuccess(true))
       }
-      case (RuneTT(rune, expectedType), actualTemplata) => {
+      case (RuneTT(range, rune, expectedType), actualTemplata) => {
         if (actualTemplata.tyype != expectedType) {
-          return InferMatchConflict(inferences.inferences, s"Doesn't match type! Expected ${expectedType} but received ${actualTemplata.tyype}", List())
+          return InferMatchConflict(inferences.inferences, range, s"Doesn't match type! Expected ${expectedType} but received ${actualTemplata.tyype}", List())
         }
         // Catch any mismatch between the type as declared by the struct/function/whatever,
         // and the type we think it is in the actual RuneTT.
@@ -371,12 +375,12 @@ class InfererMatcher[Env, State](
           case None =>
           case Some(expectedTypeFromAbove) => vassert(expectedType == expectedTypeFromAbove)
         }
-        matchTemplataAgainstRuneSP(env, state, typeByRune, localRunes, inferences, actualTemplata, rune, expectedType) match {
-          case imc @ InferMatchConflict(_, _, _) => return imc
+        matchTemplataAgainstRuneSP(env, state, typeByRune, localRunes, inferences, range, actualTemplata, rune, expectedType) match {
+          case imc @ InferMatchConflict(_, _, _, _) => return imc
           case ims @ InferMatchSuccess(_) => ims
         }
       }
-      case (ct @ CallTT(_, _, _), CoordTemplata(Coord(_, structRef @ StructRef2(_)))) => {
+      case (ct @ CallTT(range, _, _, _), CoordTemplata(Coord(_, structRef @ StructRef2(_)))) => {
         vassert(instance.tyype == ct.resultType)
 
 //        if (delegate.structIsClosure(state, structRef)) {
@@ -395,12 +399,12 @@ class InfererMatcher[Env, State](
 //            case InferEvaluateUnknown(_) => {
 //              vimpl("Shortcalling inferring not implemented yet!")
 //            }
-//            case iec @ InferEvaluateConflict(_, _, _) => InferMatchConflict(inferences.inferences, "Conflict in shortcall", List(iec))
+//            case iec @ InferEvaluateConflict(_, _, _, _) => InferMatchConflict(inferences.inferences, range, "Conflict in shortcall", List(iec))
 //          }
 //        } else {
           // If its not a closure, then there's nothing special to do here.
 
-          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, ct, structRef)
+          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, structRef)
 //        }
 
 
@@ -414,11 +418,11 @@ class InfererMatcher[Env, State](
         // We'll then get the return type of the function, and then set the rune.
         // Then we'll know the full IFunction1, and can proceed to glory.
       }
-      case (ct @ CallTT(_, _, _), CoordTemplata(Coord(_, cit @ InterfaceRef2(_)))) => {
+      case (ct @ CallTT(range, _, _, _), CoordTemplata(Coord(_, cit @ InterfaceRef2(_)))) => {
         vassert(instance.tyype == ct.resultType)
-        matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, ct, cit)
+        matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, cit)
       }
-      case (ct @ CallTT(_, _, _), KindTemplata(structRef @ StructRef2(_))) => {
+      case (ct @ CallTT(range, _, _, _), KindTemplata(structRef @ StructRef2(_))) => {
         vassert(instance.tyype == ct.resultType)
 
 //        if (delegate.structIsClosure(state, structRef)) {
@@ -437,12 +441,12 @@ class InfererMatcher[Env, State](
 //            case InferEvaluateUnknown(_) => {
 //              vimpl("Shortcalling inferring not implemented yet!")
 //            }
-//            case iec @ InferEvaluateConflict(_, _, _) => InferMatchConflict(inferences.inferences, "Conflict in shortcall", List(iec))
+//            case iec @ InferEvaluateConflict(_, _, _, _) => InferMatchConflict(inferences.inferences, range, "Conflict in shortcall", List(iec))
 //          }
 //        } else {
           // If its not a closure, then there's nothing special to do here.
 
-          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, ct, structRef)
+          matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, structRef)
 //        }
 
 
@@ -456,22 +460,22 @@ class InfererMatcher[Env, State](
         // We'll then get the return type of the function, and then set the rune.
         // Then we'll know the full IFunction1, and can proceed to glory.
       }
-      case (ct @ CallTT(_, _, _), KindTemplata(cit @ InterfaceRef2(_))) => {
+      case (ct @ CallTT(range, _, _, _), KindTemplata(cit @ InterfaceRef2(_))) => {
         vassert(instance.tyype == ct.resultType)
-        matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, ct, cit)
+        matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, cit)
       }
-      case (CallTT(expectedTemplate, expectedArgs, resultType), KindTemplata(UnknownSizeArrayT2(RawArrayT2(elementArg,mutability)))) => {
+      case (CallTT(range, expectedTemplate, expectedArgs, resultType), KindTemplata(UnknownSizeArrayT2(RawArrayT2(elementArg,mutability)))) => {
         vassert(instance.tyype == resultType)
         matchArrayAgainstCallTT(
           env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
       }
-      case (CallTT(_, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _)))) => {
-        return (InferMatchConflict(inferences.inferences, "Can't match array sequence against anything, no such rule exists", List()))
+      case (CallTT(range, _, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _)))) => {
+        return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against anything, no such rule exists", List()))
       }
-      case (CallTT(_, _, _), CoordTemplata(Coord(_, KnownSizeArrayT2(_, _)))) => {
-        return (InferMatchConflict(inferences.inferences, "Can't match array sequence against anything, no such rule exists", List()))
+      case (CallTT(range, _, _, _), CoordTemplata(Coord(_, KnownSizeArrayT2(_, _)))) => {
+        return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against anything, no such rule exists", List()))
       }
-      case (CallTT(expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(instanceOwnership, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
+      case (CallTT(range, expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(instanceOwnership, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
         vassert(instance.tyype == resultType)
         matchArrayAgainstCallTT(
           env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
@@ -484,54 +488,54 @@ class InfererMatcher[Env, State](
 //          expectedMembers.zip(actualMembers).foldLeft((true))({
 //            case ((deeplySatisfiedSoFar), (expectedMember, actualMember)) => {
 //              matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(actualMember), expectedMember) match {
-//                case imc @ InferMatchConflict(_, _, _) => return imc
+//                case imc @ InferMatchConflict(_, _, _, _) => return imc
 //                case InferMatchSuccess(deeplySatisfied) => (deeplySatisfiedSoFar && deeplySatisfied)
 //              }
 //            }
 //          })
 //        (InferMatchSuccess(membersDeeplySatisfied))
 //      }
-      case (RepeaterSequenceTT(mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
+      case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
         vassert(resultType == CoordTemplataType)
         vcurious(ownership == Share || ownership == Own)
         matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability)
       }
-      case (RepeaterSequenceTT(mutabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability)))) => {
+      case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability)))) => {
         vassert(resultType == KindTemplataType)
         matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability)
       }
-      case (RepeaterSequenceTT(_, _, _, _), KindTemplata(otherKind)) => {
-        (InferMatchConflict(inferences.inferences, "Expected repeater sequence, was: " + otherKind, List()))
+      case (RepeaterSequenceTT(range, _, _, _, _), KindTemplata(otherKind)) => {
+        (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherKind, List()))
       }
-      case (RepeaterSequenceTT(_, _, _, _), CoordTemplata(otherCoord)) => {
-        (InferMatchConflict(inferences.inferences, "Expected repeater sequence, was: " + otherCoord, List()))
+      case (RepeaterSequenceTT(range, _, _, _, _), CoordTemplata(otherCoord)) => {
+        (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherCoord, List()))
       }
-      case (ManualSequenceTT(expectedElementTemplexesT, resultType), CoordTemplata(Coord(ownership, TupleT2(elements, _)))) => {
+      case (ManualSequenceTT(range, expectedElementTemplexesT, resultType), CoordTemplata(Coord(ownership, TupleT2(elements, _)))) => {
         vassert(resultType == CoordTemplataType)
         vcurious(ownership == Share || ownership == Own)
         matchTupleKind(env, state, typeByRune, localRunes, inferences, expectedElementTemplexesT, elements)
       }
-      case (ManualSequenceTT(expectedElementTemplexesT, resultType), KindTemplata(TupleT2(elements, _))) => {
+      case (ManualSequenceTT(range, expectedElementTemplexesT, resultType), KindTemplata(TupleT2(elements, _))) => {
         vassert(resultType == KindTemplataType)
         matchTupleKind(env, state, typeByRune, localRunes, inferences, expectedElementTemplexesT, elements)
       }
-      case (ManualSequenceTT(_, _), KindTemplata(otherKind)) => {
-        (InferMatchConflict(inferences.inferences, "Expected repeater sequence, was: " + otherKind, List()))
+      case (ManualSequenceTT(range, _, _), KindTemplata(otherKind)) => {
+        (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherKind, List()))
       }
-      case (ManualSequenceTT(_, _), CoordTemplata(otherCoord)) => {
-        (InferMatchConflict(inferences.inferences, "Expected repeater sequence, was: " + otherCoord, List()))
+      case (ManualSequenceTT(range, _, _), CoordTemplata(otherCoord)) => {
+        (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherCoord, List()))
       }
-      case (OwnershipTT(ownershipP), OwnershipTemplata(ownershipT)) => {
+      case (OwnershipTT(range, ownershipP), OwnershipTemplata(ownershipT)) => {
         if (ownershipT == Share) {
           // Doesn't matter what the ownership rule was, ownership doesnt apply to Share.
           (InferMatchSuccess(true))
         } else if (ownershipT == Conversions.evaluateOwnership(ownershipP)) {
           (InferMatchSuccess(true))
         } else {
-          (InferMatchConflict(inferences.inferences, s"Ownerships don't match: ${ownershipP} and ${ownershipT}", List()))
+          (InferMatchConflict(inferences.inferences, range, s"Ownerships don't match: ${ownershipP} and ${ownershipT}", List()))
         }
       }
-      case (OwnershippedTT(expectedOwnership, innerCoordTemplex), CoordTemplata(Coord(instanceOwnership, instanceKind))) => {
+      case (OwnershippedTT(range, expectedOwnership, innerCoordTemplex), CoordTemplata(Coord(instanceOwnership, instanceKind))) => {
         val compatible =
           (instanceOwnership, expectedOwnership) match {
             case (Own, OwnP) => true
@@ -565,7 +569,7 @@ class InfererMatcher[Env, State](
             matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(Coord(instanceOwnership, instanceKind)), innerCoordTemplex)
           }
         } else {
-          (InferMatchConflict(inferences.inferences, s"Couldn't match incoming ${instanceOwnership} against expected ${expectedOwnership}", List()))
+          (InferMatchConflict(inferences.inferences, range, s"Couldn't match incoming ${instanceOwnership} against expected ${expectedOwnership}", List()))
         }
       }
       case _ => vfail("Can't match rule " + rule + " against instance " + instance)
@@ -587,19 +591,19 @@ class InfererMatcher[Env, State](
   IInferMatchResult = {
     val mutabilityDeeplySatisfied =
       matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, MutabilityTemplata(mutability), mutabilityTemplex) match {
-        case (imc@InferMatchConflict(_, _, _)) => return imc
+        case (imc@InferMatchConflict(_, _, _, _)) => return imc
         case InferMatchSuccess(deeplySatisfied) => (deeplySatisfied)
       }
 
     val sizeDeeplySatisfied =
       matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, IntegerTemplata(size), sizeTemplex) match {
-        case (imc@InferMatchConflict(_, _, _)) => return imc
+        case (imc@InferMatchConflict(_, _, _, _)) => return imc
         case InferMatchSuccess(deeplySatisfied) => (deeplySatisfied)
       }
 
     val elementDeeplySatisfied =
       matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(elementCoord), elementTemplex) match {
-        case (imc@InferMatchConflict(_, _, _)) => return imc
+        case (imc@InferMatchConflict(_, _, _, _)) => return imc
         case InferMatchSuccess(deeplySatisfied) => (deeplySatisfied)
       }
 
@@ -620,7 +624,7 @@ class InfererMatcher[Env, State](
       expectedElementTemplexesT.zip(actualElements).foldLeft((true))({
         case ((deeplySatisfiedSoFar), (expectedArg, actualArg)) => {
           matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(actualArg), expectedArg) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case InferMatchSuccess(deeplySatisfied) => (deeplySatisfiedSoFar && deeplySatisfied)
           }
         }
@@ -638,22 +642,22 @@ class InfererMatcher[Env, State](
     irule: IRulexTR):
   (IInferMatchResult) = {
     irule match {
-      case rule @ EqualsTR(_, _) => {
+      case rule @ EqualsTR(_, _, _) => {
         matchTemplataAgainstEqualsTR(env, state, typeByRune, localRunes, inferences, instance, rule)
       }
-      case rule @ IsaTR(_, _) => {
+      case rule @ IsaTR(_, _, _) => {
         matchTemplataAgainstIsaTR(env, state, typeByRune, localRunes, inferences, instance, rule)
       }
-      case rule @ OrTR(_) => {
+      case rule @ OrTR(_, _) => {
         matchTemplataAgainstOrTR(env, state, typeByRune, localRunes, inferences, instance, rule)
       }
-      case rule @ ComponentsTR(_, _) => {
+      case rule @ ComponentsTR(_, _, _) => {
         matchTemplataAgainstComponentsTR(env, state, typeByRune, localRunes, inferences, instance, rule)
       }
       case TemplexTR(itemplexTT) => {
         matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, instance, itemplexTT)
       }
-      case rule @ CallTR(_, _, _) => {
+      case rule @ CallTR(_, _, _, _) => {
         matchTemplataAgainstCallTR(env, state, typeByRune, localRunes, inferences, instance, rule)
       }
     }
@@ -676,10 +680,10 @@ class InfererMatcher[Env, State](
     // don't know what to do.
     // For now, we'll only allow calls like toRef that are 1<1>, and so can be matched.
 
-    val CallTR(name, args, resultType) = rule
+    val CallTR(range, name, args, resultType) = rule
 
     if (instance.tyype != resultType) {
-      return (InferMatchConflict(inferences.inferences, "Call result expected type " + resultType + ", but was " + instance, List()))
+      return (InferMatchConflict(inferences.inferences, range, "Call result expected type " + resultType + ", but was " + instance, List()))
     }
 
     name match {
@@ -690,11 +694,11 @@ class InfererMatcher[Env, State](
             val defaultOwnershipForKind =
               if (delegate.getMutability(state, instanceKind) == Mutable) Own else Share
             if (instanceOwnership != defaultOwnershipForKind) {
-              return (InferMatchConflict(inferences.inferences, "Coord matching into toRef doesn't have default ownership: " + instanceOwnership, List()))
+              return (InferMatchConflict(inferences.inferences, range, "Coord matching into toRef doesn't have default ownership: " + instanceOwnership, List()))
             }
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, KindTemplata(instanceKind), kindRule)
           }
-          case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to toRef: " + args, List()))
+          case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to toRef: " + args, List()))
         }
       }
       case "passThroughIfConcrete" => {
@@ -703,7 +707,7 @@ class InfererMatcher[Env, State](
           case KindTemplata(StructRef2(_) | PackT2(_, _) | TupleT2(_, _) | KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_)) => {
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, kindRule)
           }
-          case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to passThroughIfConcrete: " + args, List()))
+          case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to passThroughIfConcrete: " + args, List()))
         }
       }
       case "passThroughIfInterface" => {
@@ -712,7 +716,7 @@ class InfererMatcher[Env, State](
           case KindTemplata(InterfaceRef2(_)) => {
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, kindRule)
           }
-          case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to passThroughIfInterface: " + args, List()))
+          case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to passThroughIfInterface: " + args, List()))
         }
       }
       case "passThroughIfStruct" => {
@@ -721,7 +725,7 @@ class InfererMatcher[Env, State](
           case KindTemplata(StructRef2(_)) => {
             matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, kindRule)
           }
-          case _ => return (InferMatchConflict(inferences.inferences, "Bad arguments to passThroughIfStruct: " + instance, List()))
+          case _ => return (InferMatchConflict(inferences.inferences, range, "Bad arguments to passThroughIfStruct: " + instance, List()))
         }
       }
     }
@@ -736,10 +740,10 @@ class InfererMatcher[Env, State](
     instance: ITemplata,
     rule: ComponentsTR):
   (IInferMatchResult) = {
-    val ComponentsTR(tyype, components) = rule
+    val ComponentsTR(range, tyype, components) = rule
 
     if (!equator.templataMatchesType(instance, tyype)) {
-      return (InferMatchConflict(inferences.inferences, s"Supplied templata isn't the right type! Type: ${rule.tyype} but gave: ${instance}", List()))
+      return (InferMatchConflict(inferences.inferences, range, s"Supplied templata isn't the right type! Type: ${rule.tyype} but gave: ${instance}", List()))
     }
 
     instance match {
@@ -757,13 +761,13 @@ class InfererMatcher[Env, State](
         val actualOwnership = OwnershipTemplata(actualReference.ownership)
         val ownershipDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualOwnership, ownershipRule) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ods)) => (ods)
           }
         val actualKind = KindTemplata(actualReference.referend)
         val kindDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualKind, kindRule) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(kds)) => (kds)
           }
         (InferMatchSuccess(ownershipDeeplySatisfied && kindDeeplySatisfied))
@@ -774,26 +778,26 @@ class InfererMatcher[Env, State](
         val actualHumanNameTemplata =
           actualPrototype.fullName.last match {
             case FunctionName2(humanName, _, _) => StringTemplata(humanName)
-            case _ => return InferMatchConflict(inferences.inferences, "Actual prototype doesn't have a human name: " + actualPrototype.fullName.last, List())
+            case _ => return InferMatchConflict(inferences.inferences, range, "Actual prototype doesn't have a human name: " + actualPrototype.fullName.last, List())
           }
         val actualParamsTemplata = CoordListTemplata(actualPrototype.paramTypes)
         val actualRetTemplata = CoordTemplata(actualPrototype.returnType)
 
         val nameDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualHumanNameTemplata, nameRule) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ods)) => ods
           }
 
         val paramsDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualParamsTemplata, paramsRule) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(kds)) => (kds)
           }
 
         val retDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualRetTemplata, retRule) match {
-            case imc @ InferMatchConflict(_, _, _) => return imc
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(kds)) => (kds)
           }
 
@@ -811,13 +815,13 @@ class InfererMatcher[Env, State](
     instance: ITemplata,
     rule: EqualsTR):
   (IInferMatchResult) = {
-    val EqualsTR(left, right) = rule
+    val EqualsTR(range, left, right) = rule
 
     matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, left) match {
-      case imc @ InferMatchConflict(_, _, _) => imc
+      case imc @ InferMatchConflict(_, _, _, _) => imc
       case (InferMatchSuccess(leftDeeplySatisfied)) => {
         matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, right) match {
-          case imc @ InferMatchConflict(_, _, _) => imc
+          case imc @ InferMatchConflict(_, _, _, _) => imc
           case (InferMatchSuccess(rightDeeplySatisfied)) => {
             (InferMatchSuccess(leftDeeplySatisfied && rightDeeplySatisfied))
           }
@@ -835,13 +839,13 @@ class InfererMatcher[Env, State](
     subTemplata: ITemplata,
     rule: IsaTR):
   (IInferMatchResult) = {
-    val IsaTR(left, right) = rule
+    val IsaTR(range, left, right) = rule
 
     matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, subTemplata, left) match {
-      case imc @ InferMatchConflict(_, _, _) => imc
+      case imc @ InferMatchConflict(_, _, _, _) => imc
       case (InferMatchSuccess(subDeeplySatisfied)) => {
         evaluate(env, state, typeByRune, localRunes, inferences, right) match {
-          case (iec @ InferEvaluateConflict(_, _, _)) => return (InferMatchConflict(inferences.inferences, "Couldn't evaluate concept!", List(iec)))
+          case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferMatchConflict(inferences.inferences, range, "Couldn't evaluate concept!", List(iec)))
           case (InferEvaluateUnknown(conceptRuleDeeplySatisfied)) => {
 
             // Doesn't matter whether the concept rule is deeply satisfied because this conforms
@@ -862,7 +866,7 @@ class InfererMatcher[Env, State](
               val deeplySatisfied = subDeeplySatisfied && conceptDeeplySatisfied && isaSatisfied
               InferMatchSuccess(deeplySatisfied)
             } else {
-              return (InferMatchConflict(inferences.inferences, "Isa failed!\nSub: " + sub + "\nSuper: " + interface, List()))
+              return (InferMatchConflict(inferences.inferences, range, "Isa failed!\nSub: " + sub + "\nSuper: " + interface, List()))
             }
           }
         }
@@ -879,7 +883,7 @@ class InfererMatcher[Env, State](
     instance: ITemplata,
     rule: OrTR):
   (IInferMatchResult) = {
-    val OrTR(possibilities) = rule
+    val OrTR(range, possibilities) = rule
 
     val results = possibilities.map(matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, instance, _))
 
@@ -893,8 +897,8 @@ class InfererMatcher[Env, State](
     })
     // They must all be conflicts.
     val conflicts =
-      results.map({ case imc @ InferMatchConflict(_, _, _) => imc })
-    (InferMatchConflict(inferences.inferences, "No branches of the Or rule matched!", conflicts))
+      results.map({ case imc @ InferMatchConflict(_, _, _, _) => imc })
+    (InferMatchConflict(inferences.inferences, range, "No branches of the Or rule matched!", conflicts))
   }
 
 //

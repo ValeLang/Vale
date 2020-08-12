@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.scout.ITemplexS
+import net.verdagon.vale.scout.{ITemplexS, RangeS}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env.{IEnvironment, ILookupContext, TemplataLookupContext}
@@ -22,6 +22,7 @@ class InferTemplar(
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
+    invocationRange: RangeS,
     directInputs: Map[IRuneA, ITemplata],
     paramAtoms: List[AtomAP],
     maybeParamInputs: Option[List[ParamFilter]],
@@ -34,6 +35,7 @@ class InferTemplar(
       translateRules(rules),
       typeByRune.map({ case (key, value) => NameTranslator.translateRune(key) -> value}),
       localRunes.map(NameTranslator.translateRune),
+      invocationRange,
       directInputs.map({ case (key, value) => NameTranslator.translateRune(key) -> value}),
       paramAtoms,
       maybeParamInputs,
@@ -54,11 +56,11 @@ class InferTemplar(
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
   ): (Map[IRune2, ITemplata]) = {
-    solve(env0, temputs, rules, typeByRune, localRunes, Map(), List(), None, true) match {
+    solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), List(), None, true) match {
       case (InferSolveSuccess(inferences)) => {
         (inferences.templatasByRune)
       }
-      case (isf @ InferSolveFailure(_, _, _, _, _, _)) => {
+      case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => {
         vfail("Conflict in determining ordinary rules' runes: " + isf)
       }
     }
@@ -73,6 +75,7 @@ class InferTemplar(
     localRunes: Set[IRuneA],
     patterns1: List[AtomAP],
     maybeRetRune: Option[IRuneA],
+    invocationRange: RangeS,
     explicits: List[ITemplata],
   ): (IInferSolveResult) = {
     if (identifyingRunes.size != explicits.size) {
@@ -85,6 +88,7 @@ class InferTemplar(
       rules,
       typeByRune,
       localRunes,
+      invocationRange,
       identifyingRunes.zip(explicits).toMap,
       patterns1,
       None,
@@ -100,6 +104,7 @@ class InferTemplar(
     localRunes: Set[IRuneA],
     patterns1: List[AtomAP],
     maybeRetRune: Option[IRuneA],
+    invocationRange: RangeS,
     alreadySpecifiedTemplateArgs: List[ITemplata],
     patternInputCoords: List[ParamFilter]
   ): (IInferSolveResult) = {
@@ -110,6 +115,7 @@ class InferTemplar(
       rules,
       typeByRune,
       localRunes,
+      invocationRange,
       // Note: this two things we're zipping are of different length, that's fine.
       identifyingRunes.zip(alreadySpecifiedTemplateArgs).toMap,
       patterns1,
@@ -123,11 +129,11 @@ class InferTemplar(
 
   def translateRule(rulexA: IRulexAR): IRulexTR = {
     rulexA match {
-      case EqualsAR(left, right) => EqualsTR(translateRule(left), translateRule(right))
+      case EqualsAR(range, left, right) => EqualsTR(range, translateRule(left), translateRule(right))
       case TemplexAR(templex) => TemplexTR(translateTemplex(templex))
-      case ComponentsAR(tyype, componentsA) => ComponentsTR(tyype, componentsA.map(translateRule))
-      case OrAR(possibilities) => OrTR(possibilities.map(translateRule))
-      case CallAR(name, args, resultType) => CallTR(name, args.map(translateRule), resultType)
+      case ComponentsAR(range, tyype, componentsA) => ComponentsTR(range, tyype, componentsA.map(translateRule))
+      case OrAR(range, possibilities) => OrTR(range, possibilities.map(translateRule))
+      case CallAR(range, name, args, resultType) => CallTR(range, name, args.map(translateRule), resultType)
 //      case CoordListAR(rules) => CoordListTR(rules.map(translateRule))
       case _ => vimpl()
     }
@@ -135,19 +141,19 @@ class InferTemplar(
 
   def translateTemplex(templexA: ITemplexA): ITemplexT = {
     templexA match {
-      case RuneAT(rune, resultType) => RuneTT(NameTranslator.translateRune(rune), resultType)
-      case NameAT(name, resultType) => NameTT(name, resultType)
-      case OwnershipAT(ownership) => OwnershipTT(ownership)
-      case OwnershippedAT(ownership, inner) => OwnershippedTT(ownership, translateTemplex(inner))
-      case AbsoluteNameAT(name, resultType) => AbsoluteNameTT(name, resultType)
-      case CallAT(template, args, resultType) => CallTT(translateTemplex(template), args.map(translateTemplex), resultType)
-      case MutabilityAT(m) => MutabilityTT(m)
-      case ManualSequenceAT(m, resultType) => ManualSequenceTT(m.map(translateTemplex), resultType)
-      case RepeaterSequenceAT(mutability, size, element, resultType) => RepeaterSequenceTT(translateTemplex(mutability), translateTemplex(size), translateTemplex(element), resultType)
-//      case PackAT(members, resultType) => PackTT(members.map(translateTemplex), resultType)
-      case IntAT(value) => IntTT(value)
-      case StringAT(value) => StringTT(value)
-      case CoordListAT(elements) => CoordListTT(elements.map(translateTemplex))
+      case RuneAT(range, rune, resultType) => RuneTT(range, NameTranslator.translateRune(rune), resultType)
+      case NameAT(range, name, resultType) => NameTT(range, name, resultType)
+      case OwnershipAT(range, ownership) => OwnershipTT(range, ownership)
+      case OwnershippedAT(range, ownership, inner) => OwnershippedTT(range, ownership, translateTemplex(inner))
+      case AbsoluteNameAT(range, name, resultType) => AbsoluteNameTT(range, name, resultType)
+      case CallAT(range, template, args, resultType) => CallTT(range, translateTemplex(template), args.map(translateTemplex), resultType)
+      case MutabilityAT(range, m) => MutabilityTT(range, m)
+      case ManualSequenceAT(range, m, resultType) => ManualSequenceTT(range, m.map(translateTemplex), resultType)
+      case RepeaterSequenceAT(range, mutability, size, element, resultType) => RepeaterSequenceTT(range, translateTemplex(mutability), translateTemplex(size), translateTemplex(element), resultType)
+//      case PackAT(range, members, resultType) => PackTT(range, members.map(translateTemplex), resultType)
+      case IntAT(range, value) => IntTT(range, value)
+      case StringAT(range, value) => StringTT(range, value)
+      case CoordListAT(range, elements) => CoordListTT(range, elements.map(translateTemplex))
       case _ => vimpl(templexA.toString)
     }
   }

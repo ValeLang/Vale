@@ -37,77 +37,77 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
 
   test("Ownership") {
     compile(rulePR, "X") shouldHave { case TemplexPR(NameOrRunePRT(StringP(_, "X"))) => }
-    compile(rulePR, "X Ownership") shouldHave { case TypedPR(Some(StringP(_, "X")),OwnershipTypePR) => }
-    compile(rulePR, "X = own") shouldHave { case EqualsPR(TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(OwnershipPRT(OwnP))) => }
+    compile(rulePR, "X Ownership") shouldHave { case TypedPR(_,Some(StringP(_, "X")),OwnershipTypePR) => }
+    compile(rulePR, "X = own") shouldHave { case EqualsPR(_,TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(OwnershipPRT(_,OwnP))) => }
     compile(rulePR, "X Ownership = own|borrow|weak") shouldHave {
-      case EqualsPR(
-          TypedPR(Some(StringP(_, "X")),OwnershipTypePR),
-          OrPR(List(TemplexPR(OwnershipPRT(OwnP)), TemplexPR(OwnershipPRT(BorrowP)), TemplexPR(OwnershipPRT(WeakP))))) =>
+      case EqualsPR(_,
+          TypedPR(_,Some(StringP(_, "X")),OwnershipTypePR),
+          OrPR(_,List(TemplexPR(OwnershipPRT(_,OwnP)), TemplexPR(OwnershipPRT(_,BorrowP)), TemplexPR(OwnershipPRT(_,WeakP))))) =>
     }
-    compile(rulePR, "_ Ownership") shouldHave { case TypedPR(None,OwnershipTypePR) => }
-    compile(rulePR, "own") shouldHave { case TemplexPR(OwnershipPRT(OwnP)) => }
+    compile(rulePR, "_ Ownership") shouldHave { case TypedPR(_,None,OwnershipTypePR) => }
+    compile(rulePR, "own") shouldHave { case TemplexPR(OwnershipPRT(_,OwnP)) => }
     compile(rulePR, "_ Ownership = own|share") shouldHave {
-      case EqualsPR(
-          TypedPR(None,OwnershipTypePR),
-          OrPR(List(TemplexPR(OwnershipPRT(OwnP)), TemplexPR(OwnershipPRT(ShareP))))) =>
+      case EqualsPR(_,
+          TypedPR(_,None,OwnershipTypePR),
+          OrPR(_,List(TemplexPR(OwnershipPRT(_,OwnP)), TemplexPR(OwnershipPRT(_,ShareP))))) =>
     }
   }
 
   test("Mutability") {
     compile(rulePR, "X") shouldHave { case TemplexPR(NameOrRunePRT(StringP(_, "X"))) => }
-    compile(rulePR, "X Mutability") shouldHave { case TypedPR(Some(StringP(_, "X")),MutabilityTypePR) => }
-    compile(rulePR, "X = mut") shouldHave { case EqualsPR(TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(MutabilityPRT(MutableP))) => }
+    compile(rulePR, "X Mutability") shouldHave { case TypedPR(_,Some(StringP(_, "X")),MutabilityTypePR) => }
+    compile(rulePR, "X = mut") shouldHave { case EqualsPR(_,TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(MutabilityPRT(_,MutableP))) => }
     compile(rulePR, "X Mutability = mut") shouldHave {
-      case EqualsPR(
-          TypedPR(Some(StringP(_, "X")),MutabilityTypePR),
-          TemplexPR(MutabilityPRT(MutableP))) =>
+      case EqualsPR(_,
+          TypedPR(_,Some(StringP(_, "X")),MutabilityTypePR),
+          TemplexPR(MutabilityPRT(_,MutableP))) =>
     }
-    compile(rulePR, "_ Mutability") shouldHave { case TypedPR(None,MutabilityTypePR) => }
-    compile(rulePR, "mut") shouldHave { case TemplexPR(MutabilityPRT(MutableP)) => }
+    compile(rulePR, "_ Mutability") shouldHave { case TypedPR(_,None,MutabilityTypePR) => }
+    compile(rulePR, "mut") shouldHave { case TemplexPR(MutabilityPRT(_,MutableP)) => }
     compile(rulePR, "_ Mutability = mut|imm") shouldHave {
-      case EqualsPR(
-          TypedPR(None,MutabilityTypePR),
-          OrPR(List(TemplexPR(MutabilityPRT(MutableP)), TemplexPR(MutabilityPRT(ImmutableP))))) =>
+      case EqualsPR(_,
+          TypedPR(_,None,MutabilityTypePR),
+          OrPR(_,List(TemplexPR(MutabilityPRT(_,MutableP)), TemplexPR(MutabilityPRT(_,ImmutableP))))) =>
     }
   }
 
   test("Location") {
     compile(rulePR, "X") shouldHave { case TemplexPR(NameOrRunePRT(StringP(_, "X"))) => }
-    compile(rulePR, "X Location") shouldHave { case TypedPR(Some(StringP(_, "X")),LocationTypePR) => }
-    compile(rulePR, "X = inl") shouldHave { case EqualsPR(TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(LocationPRT(InlineP))) => }
+    compile(rulePR, "X Location") shouldHave { case TypedPR(_,Some(StringP(_, "X")),LocationTypePR) => }
+    compile(rulePR, "X = inl") shouldHave { case EqualsPR(_,TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(LocationPRT(_,InlineP))) => }
     compile(rulePR, "X Location = inl") shouldHave {
-      case EqualsPR(
-          TypedPR(Some(StringP(_, "X")),LocationTypePR),
-          TemplexPR(LocationPRT(InlineP))) =>
+      case EqualsPR(_,
+          TypedPR(_,Some(StringP(_, "X")),LocationTypePR),
+          TemplexPR(LocationPRT(_,InlineP))) =>
     }
-    compile(rulePR, "_ Location") shouldHave { case TypedPR(None,LocationTypePR) => }
-    compile(rulePR, "inl") shouldHave { case TemplexPR(LocationPRT(InlineP)) => }
+    compile(rulePR, "_ Location") shouldHave { case TypedPR(_,None,LocationTypePR) => }
+    compile(rulePR, "inl") shouldHave { case TemplexPR(LocationPRT(_,InlineP)) => }
     compile(rulePR, "_ Location = inl|yon") shouldHave {
-      case EqualsPR(
-          TypedPR(None,LocationTypePR),
-          OrPR(List(TemplexPR(LocationPRT(InlineP)), TemplexPR(LocationPRT(YonderP))))) =>
+      case EqualsPR(_,
+          TypedPR(_,None,LocationTypePR),
+          OrPR(_,List(TemplexPR(LocationPRT(_,InlineP)), TemplexPR(LocationPRT(_,YonderP))))) =>
     }
   }
 
   test("Permission") {
     compile(rulePR, "X") shouldHave { case TemplexPR(NameOrRunePRT(StringP(_, "X"))) => }
-    compile(rulePR, "X Permission") shouldHave { case TypedPR(Some(StringP(_, "X")),PermissionTypePR) => }
-    compile(rulePR, "X = rw") shouldHave { case EqualsPR(TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(PermissionPRT(ReadwriteP))) => }
+    compile(rulePR, "X Permission") shouldHave { case TypedPR(_,Some(StringP(_, "X")),PermissionTypePR) => }
+    compile(rulePR, "X = rw") shouldHave { case EqualsPR(_,TemplexPR(NameOrRunePRT(StringP(_, "X"))),TemplexPR(PermissionPRT(_,ReadwriteP))) => }
     compile(rulePR, "X Permission = rw") shouldHave {
-      case EqualsPR(
-          TypedPR(Some(StringP(_, "X")),PermissionTypePR),
-          TemplexPR(PermissionPRT(ReadwriteP))) =>
+      case EqualsPR(_,
+          TypedPR(_,Some(StringP(_, "X")),PermissionTypePR),
+          TemplexPR(PermissionPRT(_,ReadwriteP))) =>
     }
-    compile(rulePR, "_ Permission") shouldHave { case TypedPR(None,PermissionTypePR) => }
-    compile(rulePR, "rw") shouldHave { case TemplexPR(PermissionPRT(ReadwriteP)) => }
+    compile(rulePR, "_ Permission") shouldHave { case TypedPR(_,None,PermissionTypePR) => }
+    compile(rulePR, "rw") shouldHave { case TemplexPR(PermissionPRT(_,ReadwriteP)) => }
     compile(rulePR, "_ Permission = xrw|rw|ro") shouldHave {
-      case EqualsPR(
-          TypedPR(None,PermissionTypePR),
-          OrPR(
+      case EqualsPR(_,
+          TypedPR(_,None,PermissionTypePR),
+          OrPR(_,
             List(
-              TemplexPR(PermissionPRT(ExclusiveReadwriteP)),
-              TemplexPR(PermissionPRT(ReadwriteP)),
-              TemplexPR(PermissionPRT(ReadonlyP))))) =>
+              TemplexPR(PermissionPRT(_,ExclusiveReadwriteP)),
+              TemplexPR(PermissionPRT(_,ReadwriteP)),
+              TemplexPR(PermissionPRT(_,ReadonlyP))))) =>
     }
   }
 

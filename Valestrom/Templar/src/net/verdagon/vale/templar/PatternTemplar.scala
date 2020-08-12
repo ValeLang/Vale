@@ -72,8 +72,8 @@ class PatternTemplar(
   (List[ReferenceExpression2]) = {
 
     val templatasByRune =
-      inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-        case (isf @ InferSolveFailure(_, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
+      inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
+        case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
         case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
       }
 
@@ -108,7 +108,7 @@ class PatternTemplar(
       unconvertedInputExpr: ReferenceExpression2):
   (List[ReferenceExpression2]) = {
 
-    val AtomAP(maybeCapture, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
+    val AtomAP(range, maybeCapture, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
     if (maybeVirtuality.nonEmpty) {
       // This is actually to be expected for when we translate the patterns from the

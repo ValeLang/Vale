@@ -20,12 +20,14 @@ case class WeakableStructImplementingNonWeakableInterface() extends Throwable
 trait IStructTemplarDelegate {
   def evaluateOrdinaryFunctionFromNonCallForHeader(
     temputs: TemputsBox,
+    callRange: RangeS,
     functionTemplata: FunctionTemplata):
   FunctionHeader2
 
   def scoutExpectedFunctionForPrototype(
     env: IEnvironment,
     temputs: TemputsBox,
+    callRange: RangeS,
     functionName: IImpreciseNameStepA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
     args: List[ParamFilter],
@@ -85,6 +87,7 @@ class StructTemplar(
         case (member, index) => {
           ParameterA(
             AtomAP(
+              member.range,
               CaptureA(CodeVarNameA(member.name), FinalP),
               None,
               MemberRuneA(index),
@@ -95,15 +98,16 @@ class StructTemplar(
     val rules =
       struct1.rules :+
       EqualsAR(
-        TemplexAR(RuneAT(retRune, CoordTemplataType)),
+        struct1.range,
+        TemplexAR(RuneAT(struct1.range, retRune, CoordTemplataType)),
         TemplexAR(
           if (struct1.isTemplate) {
-            CallAT(
-              AbsoluteNameAT(struct1.name, struct1.tyype),
-              struct1.identifyingRunes.map(rune => RuneAT(rune, struct1.typeByRune(rune))),
+            CallAT(struct1.range,
+              AbsoluteNameAT(struct1.range,struct1.name, struct1.tyype),
+              struct1.identifyingRunes.map(rune => RuneAT(struct1.range,rune, struct1.typeByRune(rune))),
               CoordTemplataType)
           } else {
-            AbsoluteNameAT(struct1.name, CoordTemplataType)
+            AbsoluteNameAT(struct1.range,struct1.name, CoordTemplataType)
           }))
 
     val isTemplate = struct1.tyype != KindTemplataType
@@ -135,9 +139,10 @@ class StructTemplar(
       functorRunes.map(functorRune => (functorRune -> CoordTemplataType)).toMap +
         (AnonymousSubstructParentInterfaceRuneA() -> KindTemplataType)
     val params =
-      interfaceA.internalMethods.indices.toList.map(index => {
+      interfaceA.internalMethods.zipWithIndex.map({ case (method, index) =>
         ParameterA(
           AtomAP(
+            method.range,
             CaptureA(AnonymousSubstructMemberNameA(index), FinalP),
             None,
             CodeRuneA("Functor" + index),
@@ -159,15 +164,16 @@ class StructTemplar(
     // We stash the interface type in the env, so that when the interface constructor generator runs,
     // it can read this to know what interface it's making a subclass of.
       EqualsAR(
-        TemplexAR(RuneAT(AnonymousSubstructParentInterfaceRuneA(), KindTemplataType)),
+        interfaceA.range,
+        TemplexAR(RuneAT(interfaceA.range, AnonymousSubstructParentInterfaceRuneA(), KindTemplataType)),
         TemplexAR(
           if (interfaceA.isTemplate) {
-            CallAT(
-              AbsoluteNameAT(interfaceA.name, interfaceA.tyype),
-              interfaceA.identifyingRunes.map(rune => RuneAT(rune, interfaceA.typeByRune(rune))),
+            CallAT(interfaceA.range,
+              AbsoluteNameAT(interfaceA.range, interfaceA.name, interfaceA.tyype),
+              interfaceA.identifyingRunes.map(rune => RuneAT(interfaceA.range, rune, interfaceA.typeByRune(rune))),
               KindTemplataType)
           } else {
-            AbsoluteNameAT(interfaceA.name, KindTemplataType)
+            AbsoluteNameAT(interfaceA.range, interfaceA.name, KindTemplataType)
           }))
 
     val isTemplate = interfaceA.tyype != KindTemplataType
@@ -193,22 +199,24 @@ class StructTemplar(
 
   def getStructRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
   (StructRef2) = {
     templateArgsLayer.getStructRef(
-      temputs, structTemplata, uncoercedTemplateArgs)
+      temputs, callRange, structTemplata, uncoercedTemplateArgs)
   }
 
   def getInterfaceRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
   (InterfaceRef2) = {
     templateArgsLayer.getInterfaceRef(
-      temputs, interfaceTemplata, uncoercedTemplateArgs)
+      temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
   }
 
   // Makes a struct to back a closure
@@ -231,6 +239,7 @@ class StructTemplar(
   // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
   def makeAnonymousSubstruct(
     temputs: TemputsBox,
+    range: RangeS,
     interfaceRef2: InterfaceRef2,
     members: List[Coord]):
   StructRef2 = {
@@ -245,7 +254,7 @@ class StructTemplar(
     val interfaceEnv = vassertSome(temputs.envByInterfaceRef.get(interfaceRef2))
     val (s, _) =
       templateArgsLayer.makeAnonymousSubstruct(
-          interfaceEnv, temputs, interfaceRef2, anonymousSubstructName)
+          interfaceEnv, temputs, range, interfaceRef2, anonymousSubstructName)
     s
   }
 
@@ -270,6 +279,7 @@ class StructTemplar(
   // This doesnt make a constructor, but its easy enough to make manually.
   def prototypeToAnonymousSubstruct(
       temputs: TemputsBox,
+      range: RangeS,
       interfaceRef2: InterfaceRef2,
       prototype: Prototype2):
   (StructRef2, Prototype2) = {
@@ -279,7 +289,7 @@ class StructTemplar(
     val lambdas = List(functionStructType)
 
     val anonymousSubstructRef =
-      makeAnonymousSubstruct(temputs, interfaceRef2, lambdas)
+      makeAnonymousSubstruct(temputs, range, interfaceRef2, lambdas)
     val anonymousSubstructType = Coord(Share, anonymousSubstructRef)
 
     val constructorName =
@@ -399,6 +409,7 @@ class StructTemplar(
   def prototypeToAnonymousIFunctionSubstruct(
       env: IEnvironment,
       temputs: TemputsBox,
+      range: RangeS,
       prototype: Prototype2):
   (InterfaceRef2, StructRef2, Prototype2) = {
     val returnType = prototype.returnType
@@ -409,6 +420,7 @@ class StructTemplar(
     val ifunction1InterfaceRef =
       getInterfaceRef(
         temputs,
+        range,
         ifunction1Templata,
         List(
           MutabilityTemplata(Immutable),
@@ -417,7 +429,7 @@ class StructTemplar(
 
     val (elementDropFunctionAsIFunctionSubstructStructRef, constructorPrototype) =
       prototypeToAnonymousSubstruct(
-        temputs, ifunction1InterfaceRef, prototype)
+        temputs, range, ifunction1InterfaceRef, prototype)
 
     (ifunction1InterfaceRef, elementDropFunctionAsIFunctionSubstructStructRef, constructorPrototype)
   }
@@ -442,6 +454,7 @@ object StructTemplar {
             destructorTemplar: DestructorTemplar,
             env: FunctionEnvironment,
             temputs: TemputsBox,
+            callRange: RangeS,
             originFunction: Option[FunctionA],
             paramCoords: List[Parameter2],
             maybeRetCoord: Option[Coord]):
@@ -459,6 +472,7 @@ object StructTemplar {
             destructorTemplar: DestructorTemplar,
             env: FunctionEnvironment,
             temputs: TemputsBox,
+            callRange: RangeS,
             originFunction: Option[FunctionA],
             paramCoords: List[Parameter2],
             maybeRetCoord: Option[Coord]):
@@ -472,7 +486,7 @@ object StructTemplar {
 
             val structRef2 =
               structTemplar.makeAnonymousSubstruct(
-                temputs, interfaceRef2, paramCoords.map(_.tyype))
+                temputs, callRange, interfaceRef2, paramCoords.map(_.tyype))
             val structDef = temputs.lookupStruct(structRef2)
 
             val constructorFullName = env.fullName

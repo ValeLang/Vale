@@ -189,28 +189,57 @@ class ArrayTests extends FunSuite with Matchers {
         |  = board.1.2;
         |}
       """.stripMargin)
-//    val compile = new Compilation(
-//      """
-//        |struct MyInnerIntFunctor { x: Int; }
-//        |impl IFunction1<mut, int, int> for MyInnerIntFunctor;
-//        |fn __call(this: &MyInnerIntFunctor for IFunction1<mut, int, int>, i: Int) int { this.x + i }
-//        |
-//        |
-//        |struct MyOuterIntFunctor {}
-//        |impl IFunction1:(mut, int, Array<imm, int>) for MyOuterIntFunctor;
-//        |fn __call(this: &MyOuterIntFunctor for IFunction1:(mut, int, Array<imm, int>, i: Int) Array<imm, int> {
-//        |  innerIntFunctor = MyInnerIntFunctor(i);
-//        |  = Array<imm>(20, &innerIntFunctor);
-//        |}
-//        |
-//        |fn main() {
-//        |  outerIntFunctor = MyOuterIntFunctor();
-//        |  board = Array<imm>(20, &outerIntFunctor);
-//        |  = board.8.9;
-//        |}
-//      """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+  }
+
+  test("Array with capture") {
+    val compile = new Compilation(
+      """
+        |struct IntBox {
+        |  i int;
+        |}
+        |
+        |fn main() {
+        |  box = IntBox(7);
+        |  board =
+        |      Array<mut>(
+        |          3,
+        |          &IFunction1<mut, int, int>(
+        |              (col){ box.i }));
+        |  = board.1;
+        |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+  }
+
+  // Known failure 2020-08-11
+  test("Arr helper with capture") {
+    val compile = new Compilation(
+      """
+        |fn Arr<M, F>(n int, generator &F) Array<M, T>
+        |rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+        |{
+        |  Array<M>(n, &IFunction1<mut, int, T>(generator))
+        |}
+        |
+        |struct IntBox {
+        |  i int;
+        |}
+        |
+        |fn main() {
+        |  box = IntBox(7);
+        |  lam = (col){ box.i };
+        |  board =
+        |      Arr<mut>(
+        |          3,
+        |          &lam);
+        |  = board.1;
+        |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
 

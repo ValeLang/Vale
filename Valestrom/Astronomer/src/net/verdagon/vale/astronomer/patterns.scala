@@ -1,10 +1,12 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{CaptureP, VariabilityP}
+import net.verdagon.vale.scout.RangeS
 
 import scala.collection.immutable.List
 
 case class AtomAP(
+  range: RangeS,
   // This is an option because in PatternTemplar, if it's None, we'll explode the
   // expression into the destructure, and if it's Some, we'll make this variable
   // an owning ref.
@@ -15,7 +17,7 @@ case class AtomAP(
 
 sealed trait VirtualityAP
 case object AbstractAP extends VirtualityAP
-case class OverrideAP(kindRune: IRuneA) extends VirtualityAP
+case class OverrideAP(range: RangeS, kindRune: IRuneA) extends VirtualityAP
 
 object PatternSUtils {
   def getDistinctOrderedRunesForPattern(pattern: AtomAP): List[IRuneA] = {
@@ -23,7 +25,7 @@ object PatternSUtils {
       pattern.virtuality match {
         case None => List()
         case Some(AbstractAP) => List()
-        case Some(OverrideAP(kindRune)) => List(kindRune)
+        case Some(OverrideAP(range, kindRune)) => List(kindRune)
       }
     val runesFromDestructures =
       pattern.destructure.toList.flatten.flatMap(getDistinctOrderedRunesForPattern)

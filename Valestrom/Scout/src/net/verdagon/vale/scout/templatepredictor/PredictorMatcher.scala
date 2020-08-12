@@ -11,27 +11,27 @@ object PredictorMatcher {
       rule: ITemplexS):
   Unit = {
     rule match {
-      case IntST(_) =>
-      case BoolST(_) =>
-      case MutabilityST(_) =>
-      case PermissionST(_) =>
-      case LocationST(_) =>
-      case OwnershipST(_) =>
-      case VariabilityST(_) =>
+      case IntST(_, _) =>
+      case BoolST(_, _) =>
+      case MutabilityST(_, _) =>
+      case PermissionST(_, _) =>
+      case LocationST(_, _) =>
+      case OwnershipST(_, _) =>
+      case VariabilityST(_, _) =>
       case NameST(_, _) =>
       case AbsoluteNameST(_, _) =>
-      case RuneST(rune) => conclusions.markRuneValueKnowable(rune)
-      case CallST(template, args) => {
+      case RuneST(_, rune) => conclusions.markRuneValueKnowable(rune)
+      case CallST(_, template, args) => {
         matchAgainstTemplexSR(conclusions, template)
         args.foreach(matchAgainstTemplexSR(conclusions, _))
       }
-      case OwnershippedST(_, inner) => matchAgainstTemplexSR(conclusions, inner)
-      case RepeaterSequenceST(mutabilityRule, sizeRule,elementRule) => {
+      case OwnershippedST(_, _, inner) => matchAgainstTemplexSR(conclusions, inner)
+      case RepeaterSequenceST(_, mutabilityRule, sizeRule,elementRule) => {
         matchAgainstTemplexSR(conclusions, mutabilityRule)
         matchAgainstTemplexSR(conclusions, sizeRule)
         matchAgainstTemplexSR(conclusions, elementRule)
       }
-      case ManualSequenceST(elements) => {
+      case ManualSequenceST(_, elements) => {
         elements.foreach(matchAgainstTemplexSR(conclusions, _))
       }
       case x => vimpl(x.toString)
@@ -40,22 +40,22 @@ object PredictorMatcher {
 
   def matchAgainstRulexSR(conclusions: ConclusionsBox, irule: IRulexSR): Unit = {
     irule match {
-      case rule @ EqualsSR(_, _) => matchAgainstEqualsSR(conclusions, rule)
-      case rule @ OrSR(_) => matchAgainstOrSR(conclusions, rule)
-      case rule @ ComponentsSR(_, _) => matchAgainstComponentsSR(conclusions, rule)
-      case rule @ TypedSR(_, _) => matchAgainstTypedSR(conclusions, rule)
+      case rule @ EqualsSR(_, _, _) => matchAgainstEqualsSR(conclusions, rule)
+      case rule @ OrSR(_, _) => matchAgainstOrSR(conclusions, rule)
+      case rule @ ComponentsSR(_, _, _) => matchAgainstComponentsSR(conclusions, rule)
+      case rule @ TypedSR(_, _, _) => matchAgainstTypedSR(conclusions, rule)
       case TemplexSR(itemplexST) => matchAgainstTemplexSR(conclusions, itemplexST)
-      case rule @ CallSR(_, _) => matchAgainstCallSR(conclusions, rule)
+      case rule @ CallSR(_, _, _) => matchAgainstCallSR(conclusions, rule)
     }
   }
 
   def matchAgainstTypedSR(conclusions: ConclusionsBox, rule: TypedSR): Unit = {
-    val TypedSR(rune, _) = rule
+    val TypedSR(_, rune, _) = rule
     conclusions.markRuneValueKnowable(rune)
   }
 
   def matchAgainstCallSR(conclusions: ConclusionsBox, rule: CallSR): Unit = {
-    val CallSR(_, argRules) = rule
+    val CallSR(_, _, argRules) = rule
 
     // We don't do anything with the argRules; we don't evaluate or match them here, see MDMIA.
     val _ = argRules
@@ -65,13 +65,13 @@ object PredictorMatcher {
   }
 
   def matchAgainstComponentsSR(conclusions: ConclusionsBox, rule: ComponentsSR): Unit = {
-    val ComponentsSR(container, components) = rule
+    val ComponentsSR(_, container, components) = rule
     matchAgainstTypedSR(conclusions, container)
     components.foreach(matchAgainstRulexSR(conclusions, _))
   }
 
   def matchAgainstEqualsSR(conclusions: ConclusionsBox, rule: EqualsSR): Unit = {
-    val EqualsSR(left, right) = rule
+    val EqualsSR(_, left, right) = rule
     matchAgainstRulexSR(conclusions, left)
     matchAgainstRulexSR(conclusions, right)
   }

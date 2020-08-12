@@ -10,6 +10,7 @@ case class CaptureS(
   variability: VariabilityP)
 
 case class AtomSP(
+  range: RangeS,
   // This is an option because in PatternTemplar, if it's None, we'll explode the
   // expression into the destructure, and if it's Some, we'll make this variable
   // an owning ref.
@@ -20,7 +21,7 @@ case class AtomSP(
 
 sealed trait VirtualitySP
 case object AbstractSP extends VirtualitySP
-case class OverrideSP(kindRune: IRuneS) extends VirtualitySP
+case class OverrideSP(range: RangeS, kindRune: IRuneS) extends VirtualitySP
 
 object PatternSUtils {
   def getDistinctOrderedRunesForPattern(pattern: AtomSP): List[IRuneS] = {
@@ -28,7 +29,7 @@ object PatternSUtils {
       pattern.virtuality match {
         case None => List()
         case Some(AbstractSP) => List()
-        case Some(OverrideSP(kindRune)) => List(kindRune)
+        case Some(OverrideSP(range, kindRune)) => List(kindRune)
       }
     val runesFromDestructures =
       pattern.destructure.toList.flatten.flatMap(getDistinctOrderedRunesForPattern)

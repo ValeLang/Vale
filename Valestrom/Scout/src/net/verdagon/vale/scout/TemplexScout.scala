@@ -11,20 +11,22 @@ object TemplexScout {
   }
 
   def translateTemplex(env: IEnvironment, templexP: ITemplexPT): ITemplexS = {
+    val evalRange = (range: Range) => Scout.evalRange(env.file, range)
+
     templexP match {
       case NameOrRunePT(StringP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
-          RuneST(CodeRuneS(nameOrRune))
+          RuneST(evalRange(range), CodeRuneS(nameOrRune))
         } else {
           NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune))
         }
       }
-      case IntPT(_, num) => IntST(num)
-      case MutabilityPT(mutability) => MutabilityST(mutability)
-      case CallPT(_,template, args) => CallST(translateTemplex(env, template), args.map(arg => translateTemplex(env, arg)))
-      case NullablePT(inner) => NullableST(translateTemplex(env, inner))
-      case OwnershippedPT(_,ownership,inner) => OwnershippedST(ownership, translateTemplex(env, inner))
-      case RepeaterSequencePT(_,mutability, size, element) => RepeaterSequenceST(translateTemplex(env, mutability), translateTemplex(env, size), translateTemplex(env, element))
+      case IntPT(range,num) => IntST(evalRange(range), num)
+      case MutabilityPT(range,mutability) => MutabilityST(evalRange(range), mutability)
+      case CallPT(range,template, args) => CallST(evalRange(range), translateTemplex(env, template), args.map(arg => translateTemplex(env, arg)))
+      case NullablePT(range,inner) => NullableST(evalRange(range), translateTemplex(env, inner))
+      case OwnershippedPT(range,ownership,inner) => OwnershippedST(evalRange(range), ownership, translateTemplex(env, inner))
+      case RepeaterSequencePT(range,mutability, size, element) => RepeaterSequenceST(evalRange(range), translateTemplex(env, mutability), translateTemplex(env, size), translateTemplex(env, element))
     }
   }
 }

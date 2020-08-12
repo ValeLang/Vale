@@ -9,7 +9,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   def repeaterSeqTemplex: Parser[ITemplexPT] = {
     (pos ~ ("[" ~> optWhite ~> templex) ~ (white ~> "*" ~> white ~> templex <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~ numElements ~ elementType ~ end => {
-        RepeaterSequencePT(Range(begin, end), MutabilityPT(MutableP), numElements, elementType)
+        RepeaterSequencePT(Range(begin, end), MutabilityPT(Range(begin, end), MutableP), numElements, elementType)
       }
     }) |
     (pos ~ ("[<" ~> optWhite ~> atomTemplex <~ optWhite <~ ">") ~ (optWhite ~> templex) ~ (optWhite ~> "*" ~> optWhite ~> templex <~ optWhite <~ "]") ~ pos ^^ {
@@ -30,26 +30,26 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     repeaterSeqTemplex |
     manualSeqTemplex |
     (pos ~ int ~ pos ^^ { case begin ~ value ~ end => IntPT(Range(begin, end), value) }) |
-    "true" ^^^ BoolPT(true) |
-    "false" ^^^ BoolPT(false) |
-    "own" ^^^ OwnershipPT(OwnP) |
-    "borrow" ^^^ OwnershipPT(BorrowP) |
-    "weak" ^^^ OwnershipPT(WeakP) |
-    "share" ^^^ OwnershipPT(ShareP) |
-    "mut" ^^^ MutabilityPT(MutableP) |
-    "imm" ^^^ MutabilityPT(ImmutableP) |
-    "inl" ^^^ LocationPT(InlineP) |
-    "yon" ^^^ LocationPT(YonderP) |
-    "xrw" ^^^ PermissionPT(ExclusiveReadwriteP) |
-    "rw" ^^^ PermissionPT(ReadwriteP) |
-    "ro" ^^^ PermissionPT(ReadonlyP) |
-    ("_" ^^^ AnonymousRunePT()) |
+    pos ~ "true" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), true) } |
+    pos ~ "false" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), false) } |
+    pos ~ "own" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), OwnP) } |
+    pos ~ "borrow" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), BorrowP) } |
+    pos ~ "weak" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), WeakP) } |
+    pos ~ "share" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), ShareP) } |
+    pos ~ "mut" ~ pos ^^ { case begin ~ _ ~ end => MutabilityPT(Range(begin, end), MutableP) } |
+    pos ~ "imm" ~ pos ^^ { case begin ~ _ ~ end => MutabilityPT(Range(begin, end), ImmutableP) } |
+    pos ~ "inl" ~ pos ^^ { case begin ~ _ ~ end => LocationPT(Range(begin, end), InlineP) } |
+    pos ~ "yon" ~ pos ^^ { case begin ~ _ ~ end => LocationPT(Range(begin, end), YonderP) } |
+    pos ~ "xrw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ExclusiveReadwriteP) } |
+    pos ~ "rw" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ReadwriteP) } |
+    pos ~ "ro" ~ pos ^^ { case begin ~ _ ~ end => PermissionPT(Range(begin, end), ReadonlyP) } |
+    pos ~ "_" ~ pos ^^ { case begin ~ _ ~ end => AnonymousRunePT(Range(begin, end)) } |
     (typeIdentifier ^^ NameOrRunePT)
   }
 
   private[parser] def unariedTemplex: Parser[ITemplexPT] = {
     (pos ~ ("!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => PermissionedPT(Range(begin, end), ReadwriteP, inner) }) |
-    ("?" ~> optWhite ~> templex ^^ NullablePT) |
+    (pos ~ ("?" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => NullablePT(Range(begin, end), inner) }) |
     (pos ~ ("^" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), OwnP, inner) }) |
     (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), ShareP, inner) }) |
     (pos ~ ("&&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), WeakP, inner) }) |

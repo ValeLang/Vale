@@ -1,12 +1,15 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.SourceCodeUtils.{lineAndCol, lineContaining}
+import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
 
 object AstronomerErrorHumanizer {
-  def humanize(sources: List[String], err: ICompileErrorA): String = {
+  def humanize(
+      filenamesAndSources: List[(String, String)],
+      err: ICompileErrorA):
+  String = {
     err match {
       case CouldntFindType(range, name) => {
-        lineAndCol(sources(range.file), range.begin.offset) + ": Couldn't find type `" + name + "`:\n" + lineContaining(sources(range.file), range.end.offset) + "\n"
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) + ": Couldn't find type `" + name + "`:\n" + lineContaining(filenamesAndSources, range.file, range.begin.offset) + "\n"
       }
     }
   }

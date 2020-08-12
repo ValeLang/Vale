@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar.function
 
 import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, ImmInterfaceDestructorImpreciseNameA}
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
@@ -58,7 +59,7 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
         val extraEnvsToLookIn = List(superInterfaceEnv)
 
         overloadTemplar.scoutExpectedFunctionForPrototype(
-          env, temputs, nameToScoutFor, List(), needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
+          env, temputs, RangeS.internal(-1388), nameToScoutFor, List(), needleSuperFunctionParamFilters, extraEnvsToLookIn, true) match {
           case (ScoutExpectedFunctionSuccess(_)) => {
             // Throw away the prototype, we just want it to be in the temputs.
 

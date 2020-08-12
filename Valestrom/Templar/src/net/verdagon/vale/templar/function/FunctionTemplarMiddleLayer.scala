@@ -56,13 +56,13 @@ class FunctionTemplarMiddleLayer(
     maybeVirtuality1 match {
       case None => (None)
       case Some(AbstractAP) => (Some(Abstract2))
-      case Some(OverrideAP(interfaceRuneA)) => {
+      case Some(OverrideAP(range, interfaceRuneA)) => {
         env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(interfaceRuneA), Set(TemplataLookupContext)) match {
           case None => vcurious()
           case Some(KindTemplata(ir @ InterfaceRef2(_))) => (Some(Override2(ir)))
           case Some(it @ InterfaceTemplata(_, _)) => {
             val ir =
-              structTemplar.getInterfaceRef(temputs, it, List())
+              structTemplar.getInterfaceRef(temputs, range, it, List())
             (Some(Override2(ir)))
           }
         }
@@ -77,6 +77,7 @@ class FunctionTemplarMiddleLayer(
   def getOrEvaluateFunctionForBanner(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
     temputs: TemputsBox,
+    callRange: RangeS,
     function1: FunctionA):
   (FunctionBanner2) = {
 
@@ -101,7 +102,7 @@ class FunctionTemplarMiddleLayer(
       temputs.declareFunctionSignature(signature, Some(namedEnv))
       val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
       val header =
-        core.evaluateFunctionForHeader(namedEnv, temputs, params2)
+        core.evaluateFunctionForHeader(namedEnv, temputs, callRange, params2)
       if (header.toBanner != banner) {
         val bannerFromHeader = header.toBanner
         vfail("wut\n" + bannerFromHeader + "\n" + banner)
@@ -120,6 +121,7 @@ class FunctionTemplarMiddleLayer(
   def getOrEvaluateFunctionForHeader(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
     temputs: TemputsBox,
+    callRange: RangeS,
     function1: FunctionA):
   (FunctionHeader2) = {
 
@@ -150,7 +152,7 @@ class FunctionTemplarMiddleLayer(
 
         val header =
           core.evaluateFunctionForHeader(
-            namedEnv, temputs, params2)
+            namedEnv, temputs, callRange, params2)
         vassert(header.toSignature == needleSignature)
         (header)
       }
@@ -182,6 +184,7 @@ class FunctionTemplarMiddleLayer(
   def getOrEvaluateFunctionForPrototype(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
     temputs: TemputsBox,
+    callRange: RangeS,
     function1: FunctionA):
   (Prototype2) = {
 
@@ -209,7 +212,7 @@ class FunctionTemplarMiddleLayer(
         val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
         val header =
           core.evaluateFunctionForHeader(
-            namedEnv, temputs, params2)
+            namedEnv, temputs, callRange, params2)
 
         delegate.evaluateParent(namedEnv, temputs, header)
 

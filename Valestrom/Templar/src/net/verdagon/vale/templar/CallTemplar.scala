@@ -43,11 +43,11 @@ class CallTemplar(
       }
       case structRef @ StructRef2(_) => {
         evaluateClosureCall(
-          fate, temputs, structRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
+          fate, temputs, range, structRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
       case interfaceRef @ InterfaceRef2(_) => {
         evaluateClosureCall(
-          fate, temputs, interfaceRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
+          fate, temputs, range, interfaceRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
       case OverloadSet(_, functionName, _) => {
         val unconvertedArgsPointerTypes2 =
@@ -66,11 +66,12 @@ class CallTemplar(
           overloadTemplar.scoutExpectedFunctionForPrototype(
               fate.snapshot,
               temputs,
+              range,
               functionName,
               explicitlySpecifiedTemplateArgTemplexesS,
               argsParamFilters,
               List(),
-              exact = false) match {
+              false) match {
             case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
               throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
 //              vfail("Couldn't find function to call!\n" + seff.toString)
@@ -131,11 +132,12 @@ class CallTemplar(
       overloadTemplar.scoutExpectedFunctionForPrototype(
         fate,
         temputs,
+        range,
         functionName,
         explicitlySpecifiedTemplateArgTemplexesS,
         argsParamFilters,
         List(),
-        exact = false) match {
+        false) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
           ErrorReporter.report(CouldntFindFunctionToCallT(range, seff))
         }
@@ -171,6 +173,7 @@ class CallTemplar(
   private def evaluateClosureCall(
       fate: FunctionEnvironmentBox,
       temputs: TemputsBox,
+      range: RangeS,
       citizenRef: CitizenRef2,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       givenCallableUnborrowedExpr2: ReferenceExpression2,
@@ -188,7 +191,7 @@ class CallTemplar(
         argsTypes2.map(argType => ParamFilter(argType, None))
     val (maybePrototype, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunctionS) =
       overloadTemplar.scoutMaybeFunctionForPrototype(
-        env, temputs, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false)
+        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false)
     val prototype2 =
       maybePrototype match {
         case None => {

@@ -20,12 +20,12 @@ object ExpressionAstronomer {
 
   def translateExpression(env: Environment, astrouts: AstroutsBox, iexprS: IExpressionSE): IExpressionAE = {
     iexprS match {
-      case LetSE(rules, allRunesS, localRunesS, patternS, expr) => {
+      case LetSE(range, rules, allRunesS, localRunesS, patternS, expr) => {
         val allRunesA = allRunesS.map(Astronomer.translateRune)
         val localRunesA = localRunesS.map(Astronomer.translateRune)
         val (conclusions, rulesA) =
-          Astronomer.makeRuleTyper().solve(astrouts, env, rules, List(patternS), Some(allRunesA)) match {
-            case (_, rtsf @ RuleTyperSolveFailure(_, _, _)) => vfail(rtsf.toString)
+          Astronomer.makeRuleTyper().solve(astrouts, env, rules, range, List(patternS), Some(allRunesA)) match {
+            case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
         val exprA = translateExpression(env, astrouts, expr)
@@ -117,9 +117,9 @@ object ExpressionAstronomer {
         val lambdaName = functionA.name match { case n @ LambdaNameA(_) => n }
         FunctionAE(lambdaName, functionA)
       }
-      case DotSE(leftS, member, borrowContainer) => {
+      case DotSE(range, leftS, member, borrowContainer) => {
         val leftA = translateExpression(env, astrouts, leftS)
-        DotAE(leftA, member, borrowContainer)
+        DotAE(range, leftA, member, borrowContainer)
       }
       case DotCallSE(leftS, indexExprS) => {
         val leftA = translateExpression(env, astrouts, leftS)

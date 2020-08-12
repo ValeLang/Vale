@@ -2,7 +2,7 @@ package net.verdagon.vale.templar;
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS}
+import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, RangeS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
@@ -24,6 +24,7 @@ trait IFunctionGenerator {
     destructorTemplar: DestructorTemplar,
     env: FunctionEnvironment,
     temputs: TemputsBox,
+    callRange: RangeS,
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],
     paramCoords: List[Parameter2],
@@ -72,12 +73,12 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
           ancestorHelper.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
-        override def getStructRef(temputs: TemputsBox, structTemplata: StructTemplata, uncoercedTemplateArgs: List[ITemplata]): StructRef2 = {
-          structTemplar.getStructRef(temputs, structTemplata, uncoercedTemplateArgs)
+        override def getStructRef(temputs: TemputsBox, callRange: RangeS,structTemplata: StructTemplata, uncoercedTemplateArgs: List[ITemplata]): StructRef2 = {
+          structTemplar.getStructRef(temputs, callRange, structTemplata, uncoercedTemplateArgs)
         }
 
-        override def getInterfaceRef(temputs: TemputsBox, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
-          structTemplar.getInterfaceRef(temputs, interfaceTemplata, uncoercedTemplateArgs)
+        override def getInterfaceRef(temputs: TemputsBox, callRange: RangeS,interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
+          structTemplar.getInterfaceRef(temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
         }
 
         override def makeArraySequenceType(env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord): KnownSizeArrayT2 = {
@@ -150,18 +151,20 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
 
         override def evaluateInterfaceTemplata(
           state: TemputsBox,
+          callRange: RangeS,
           templata: InterfaceTemplata,
           templateArgs: List[ITemplata]):
         (Kind) = {
-          structTemplar.getInterfaceRef(state, templata, templateArgs)
+          structTemplar.getInterfaceRef(state, callRange, templata, templateArgs)
         }
 
         override def evaluateStructTemplata(
           state: TemputsBox,
+          callRange: RangeS,
           templata: StructTemplata,
           templateArgs: List[ITemplata]):
         (Kind) = {
-          structTemplar.getStructRef(state, templata, templateArgs)
+          structTemplar.getStructRef(state, callRange, templata, templateArgs)
         }
 
         override def getAncestorInterfaceDistance(temputs: TemputsBox, descendantCitizenRef: CitizenRef2, ancestorInterfaceRef: InterfaceRef2):
@@ -204,9 +207,10 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
           interfaceDef2.internalMethods.head.toPrototype
         }
 
-        override def resolveExactSignature(env: IEnvironment, state: TemputsBox, name: String, coords: List[Coord]): Prototype2 = {
-          overloadTemplar.scoutExpectedFunctionForPrototype(env, state, GlobalFunctionFamilyNameA(name), List(), coords.map(ParamFilter(_, None)), List(), true) match {
+        override def resolveExactSignature(env: IEnvironment, state: TemputsBox, range: RangeS, name: String, coords: List[Coord]): Prototype2 = {
+          overloadTemplar.scoutExpectedFunctionForPrototype(env, state, range, GlobalFunctionFamilyNameA(name), List(), coords.map(ParamFilter(_, None)), List(), true) match {
             case sef @ ScoutExpectedFunctionFailure(humanName, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
+              throw new CompileErrorExceptionT(CouldntFindFunctionToCallT(range, sef))
               vfail(sef.toString)
             }
             case ScoutExpectedFunctionSuccess(prototype) => prototype
@@ -237,8 +241,8 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
 
   val ancestorHelper =
     new AncestorHelper(opts, inferTemplar, new IAncestorHelperDelegate {
-      override def getInterfaceRef(temputs: TemputsBox, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
-        structTemplar.getInterfaceRef(temputs, interfaceTemplata, uncoercedTemplateArgs)
+      override def getInterfaceRef(temputs: TemputsBox, callRange: RangeS, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
+        structTemplar.getInterfaceRef(temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
       }
     })
 
@@ -248,14 +252,14 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
       inferTemplar,
       ancestorHelper,
       new IStructTemplarDelegate {
-        override def evaluateOrdinaryFunctionFromNonCallForHeader(temputs: TemputsBox, functionTemplata: FunctionTemplata): FunctionHeader2 = {
-          functionTemplar.evaluateOrdinaryFunctionFromNonCallForHeader(temputs, functionTemplata)
+        override def evaluateOrdinaryFunctionFromNonCallForHeader(temputs: TemputsBox, callRange: RangeS,functionTemplata: FunctionTemplata): FunctionHeader2 = {
+          functionTemplar.evaluateOrdinaryFunctionFromNonCallForHeader(temputs, callRange, functionTemplata)
         }
 
         override def scoutExpectedFunctionForPrototype(
-          env: IEnvironment, temputs: TemputsBox, functionName: IImpreciseNameStepA, explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS], args: List[ParamFilter], extraEnvsToLookIn: List[IEnvironment], exact: Boolean):
+          env: IEnvironment, temputs: TemputsBox, callRange: RangeS, functionName: IImpreciseNameStepA, explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS], args: List[ParamFilter], extraEnvsToLookIn: List[IEnvironment], exact: Boolean):
         OverloadTemplar.IScoutExpectedFunctionResult = {
-          overloadTemplar.scoutExpectedFunctionForPrototype(env, temputs, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact)
+          overloadTemplar.scoutExpectedFunctionForPrototype(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact)
         }
 
         override def makeImmConcreteDestructor(temputs: TemputsBox, env: IEnvironment, structRef2: StructRef2): Unit = {
@@ -288,9 +292,18 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
       virtualTemplar.evaluateParent(env, temputs, sparkHeader)
     }
 
-    override def generateFunction(functionTemplarCore: FunctionTemplarCore, generator: IFunctionGenerator, fullEnv: FunctionEnvironment, temputs: TemputsBox, originFunction: Option[FunctionA], paramCoords: List[Parameter2], maybeRetCoord: Option[Coord]): FunctionHeader2 = {
+    override def generateFunction(
+      functionTemplarCore: FunctionTemplarCore,
+      generator: IFunctionGenerator,
+      fullEnv: FunctionEnvironment,
+      temputs: TemputsBox,
+      callRange: RangeS,
+      originFunction: Option[FunctionA],
+      paramCoords: List[Parameter2],
+      maybeRetCoord: Option[Coord]):
+    FunctionHeader2 = {
       generator.generate(
-        functionTemplarCore, structTemplar, destructorTemplar, fullEnv, temputs, originFunction, paramCoords, maybeRetCoord)
+        functionTemplarCore, structTemplar, destructorTemplar, fullEnv, temputs, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
   val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, templataTemplar, inferTemplar, functionTemplar)
@@ -316,12 +329,12 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
       dropHelper,
       convertHelper,
       new IExpressionTemplarDelegate {
-        override def evaluateTemplatedFunctionFromCallForPrototype(temputs: TemputsBox, functionTemplata: FunctionTemplata, explicitTemplateArgs: List[ITemplata], args: List[ParamFilter]): FunctionTemplar.IEvaluateFunctionResult[Prototype2] = {
-          functionTemplar.evaluateTemplatedFunctionFromCallForPrototype(temputs, functionTemplata, explicitTemplateArgs, args)
+        override def evaluateTemplatedFunctionFromCallForPrototype(temputs: TemputsBox, callRange: RangeS, functionTemplata: FunctionTemplata, explicitTemplateArgs: List[ITemplata], args: List[ParamFilter]): FunctionTemplar.IEvaluateFunctionResult[Prototype2] = {
+          functionTemplar.evaluateTemplatedFunctionFromCallForPrototype(temputs, callRange, functionTemplata, explicitTemplateArgs, args)
         }
 
-        override def evaluateClosureStruct(temputs: TemputsBox, containingFunctionEnv: FunctionEnvironment, name: LambdaNameA, function1: BFunctionA): StructRef2 = {
-          functionTemplar.evaluateClosureStruct(temputs, containingFunctionEnv, name, function1)
+        override def evaluateClosureStruct(temputs: TemputsBox, containingFunctionEnv: FunctionEnvironment, callRange: RangeS, name: LambdaNameA, function1: BFunctionA): StructRef2 = {
+          functionTemplar.evaluateClosureStruct(temputs, containingFunctionEnv, callRange, name, function1)
         }
       })
 
@@ -405,7 +418,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
             if (isRootFunction(functionS)) {
               val _ =
                 functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
-                  temputs, FunctionTemplata(env11, functionS))
+                  temputs, RangeS.internal(-177), FunctionTemplata(env11, functionS))
             }
           }
         }
@@ -419,7 +432,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
             if (isRootStruct(structS)) {
               val _ =
                 structTemplar.getStructRef(
-                  temputs, StructTemplata(env11, structS), List())
+                  temputs, structS.range, StructTemplata(env11, structS), List())
             }
           }
         }
@@ -433,7 +446,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
             if (isRootInterface(interfaceS)) {
               val _ =
                 structTemplar.getInterfaceRef(
-                  temputs, InterfaceTemplata(env11, interfaceS), List())
+                  temputs, interfaceS.range, InterfaceTemplata(env11, interfaceS), List())
             }
           }
         }
@@ -535,6 +548,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
         overloadTemplar.scoutExpectedFunctionForPrototype(
           env,
           temputs,
+          RangeS.internal(-1900),
           neededOverride.name,
           List(), // No explicitly specified ones. It has to be findable just by param filters.
           neededOverride.paramFilters,

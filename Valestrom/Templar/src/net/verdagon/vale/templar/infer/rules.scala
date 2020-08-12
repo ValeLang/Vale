@@ -2,6 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.{IName2, IRune2}
 import net.verdagon.vale.{vassert, vimpl, vwat}
 
@@ -12,14 +13,15 @@ import scala.collection.immutable.List
 sealed trait IRulexTR {
   def resultType: ITemplataType
 }
-case class EqualsTR(left: IRulexTR, right: IRulexTR) extends IRulexTR {
+case class EqualsTR(range: RangeS, left: IRulexTR, right: IRulexTR) extends IRulexTR {
   override def resultType: ITemplataType = left.resultType
 }
-case class OrTR(possibilities: List[IRulexTR]) extends IRulexTR {
+case class OrTR(range: RangeS, possibilities: List[IRulexTR]) extends IRulexTR {
   vassert(possibilities.nonEmpty)
   override def resultType: ITemplataType = possibilities.head.resultType
 }
 case class ComponentsTR(
+  range: RangeS,
   tyype: ITemplataType,
   components: List[IRulexTR]
 ) extends IRulexTR {
@@ -30,12 +32,14 @@ case class TemplexTR(templex: ITemplexT) extends IRulexTR {
 }
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
 case class CallTR(
+  range: RangeS,
   name: String,
   args: List[IRulexTR],
   resultType: ITemplataType
 ) extends IRulexTR
 
 case class IsaTR(
+  range: RangeS,
   subRule: IRulexTR,
   interfaceRule: IRulexTR
 ) extends IRulexTR {
@@ -46,32 +50,33 @@ case class IsaTR(
 sealed trait ITemplexT {
   def resultType: ITemplataType
 }
-case class IntTT(value: Int) extends ITemplexT {
+case class IntTT(range: RangeS, value: Int) extends ITemplexT {
   override def resultType: ITemplataType = IntegerTemplataType
 }
-case class StringTT(value: String) extends ITemplexT {
+case class StringTT(range: RangeS, value: String) extends ITemplexT {
   override def resultType: ITemplataType = StringTemplataType
 }
-case class BoolTT(value: Boolean) extends ITemplexT {
+case class BoolTT(range: RangeS, value: Boolean) extends ITemplexT {
   override def resultType: ITemplataType = BooleanTemplataType
 }
-case class MutabilityTT(mutability: MutabilityP) extends ITemplexT {
+case class MutabilityTT(range: RangeS, mutability: MutabilityP) extends ITemplexT {
   override def resultType: ITemplataType = MutabilityTemplataType
 }
-case class PermissionTT(permission: PermissionP) extends ITemplexT {
+case class PermissionTT(range: RangeS, permission: PermissionP) extends ITemplexT {
   override def resultType: ITemplataType = PermissionTemplataType
 }
-case class LocationTT(location: LocationP) extends ITemplexT {
+case class LocationTT(range: RangeS, location: LocationP) extends ITemplexT {
   override def resultType: ITemplataType = LocationTemplataType
 }
-case class OwnershipTT(ownership: OwnershipP) extends ITemplexT {
+case class OwnershipTT(range: RangeS, ownership: OwnershipP) extends ITemplexT {
   override def resultType: ITemplataType = OwnershipTemplataType
 }
-case class VariabilityTT(variability: VariabilityP) extends ITemplexT {
+case class VariabilityTT(range: RangeS, variability: VariabilityP) extends ITemplexT {
   override def resultType: ITemplataType = VariabilityTemplataType
 }
 
 case class NameTT(
+  range: RangeS,
   name: IImpreciseNameStepA,
   resultType: ITemplataType
 ) extends ITemplexT {
@@ -79,6 +84,7 @@ case class NameTT(
 }
 
 case class AbsoluteNameTT(
+  range: RangeS,
   name: INameA,
   resultType: ITemplataType
 ) extends ITemplexT {
@@ -91,11 +97,13 @@ case class AbsoluteNameTT(
 // from the environment and make sure it matches. For RuneAT, we might put
 // something into the environment.
 case class RuneTT(
+  range: RangeS,
   rune: IRune2,
   resultType: ITemplataType
 ) extends ITemplexT
 
 case class OwnershippedTT(
+  range: RangeS,
   ownership: OwnershipP,
   inner: ITemplexT
 ) extends ITemplexT {
@@ -108,6 +116,7 @@ case class NullableTT(inner: ITemplexT) extends ITemplexT {
 }
 
 case class CallTT(
+  range: RangeS,
   template: ITemplexT,
   args: List[ITemplexT],
   // This is here because we might want to coerce the result. We do this for
@@ -137,6 +146,7 @@ case class PrototypeTT(
 //) extends ITemplexT
 
 case class RepeaterSequenceTT(
+  range: RangeS,
   mutability: ITemplexT,
   size: ITemplexT,
   element: ITemplexT,
@@ -146,6 +156,7 @@ case class RepeaterSequenceTT(
 ) extends ITemplexT
 
 case class ManualSequenceTT(
+  range: RangeS,
   elements: List[ITemplexT],
   // This is here because we might want to coerce the result. We do this for
   // calls, packs, etc.
@@ -153,6 +164,7 @@ case class ManualSequenceTT(
 ) extends ITemplexT
 
 case class CoordListTT(
+  range: RangeS,
   elements: List[ITemplexT]
 ) extends ITemplexT {
   override def resultType: ITemplataType = PackTemplataType(CoordTemplataType)

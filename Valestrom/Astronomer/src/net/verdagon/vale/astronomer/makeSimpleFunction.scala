@@ -51,10 +51,11 @@ object makeSimpleFunction {
 
   def simpleCoordRuneAR(rune: IRuneA, name: String): EqualsAR = {
     EqualsAR(
-      TemplexAR(RuneAT(rune, CoordTemplataType)),
-      TemplexAR(NameAT(CodeTypeNameA(name), CoordTemplataType)))
+      RangeS.internal(-1430),
+      TemplexAR(RuneAT(RangeS.internal(-56),rune, CoordTemplataType)),
+      TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA(name), CoordTemplataType)))
   }
   def simpleParam(name: IVarNameA, rune: IRuneA): ParameterA = {
-    ParameterA(AtomAP(CaptureA(name, FinalP), None, rune, None))
+    ParameterA(AtomAP(RangeS.internal(-123), CaptureA(name, FinalP), None, rune, None))
   }
 }

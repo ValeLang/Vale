@@ -1,18 +1,20 @@
 package net.verdagon.vale.templar.citizen
 
 import net.verdagon.vale.astronomer.{ImplA, ImplImpreciseNameA, ImplNameA}
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.{vassertSome, vfail, vwat}
+import net.verdagon.vale.{vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 trait IAncestorHelperDelegate {
   def getInterfaceRef(
     temputs: TemputsBox,
+    callRange: RangeS,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
@@ -43,10 +45,11 @@ class AncestorHelper(
         localRunes,
         List(),
         None,
+        RangeS.internal(-1875),
         List(KindTemplata(childCitizenRef)))
 
     result match {
-      case isf @ InferSolveFailure(_, _, _, _, _, _) => {
+      case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
         val _ = isf
         (None)
       }
@@ -57,7 +60,7 @@ class AncestorHelper(
           }
           case it @ InterfaceTemplata(_, _) => {
             val interfaceRef =
-              delegate.getInterfaceRef(temputs, it, List())
+              delegate.getInterfaceRef(temputs, vimpl(), it, List())
             (Some(interfaceRef))
           }
         }

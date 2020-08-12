@@ -313,11 +313,8 @@ case class StructDefinition2(
     }
   }
 
-  def getMemberAndIndex(memberName: IVarName2): (StructMember2, Int) = {
-    members.zipWithIndex.find(p => p._1.name.equals(memberName)) match {
-      case None => vfail("wat")
-      case Some((member, index)) => (member, index)
-    }
+  def getMemberAndIndex(memberName: IVarName2): Option[(StructMember2, Int)] = {
+    members.zipWithIndex.find(p => p._1.name.equals(memberName))
   }
 }
 

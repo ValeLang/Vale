@@ -60,13 +60,13 @@ object PredictorEvaluator {
 
   private def evaluateRule(conclusions: ConclusionsBox, rule: IRulexSR): Boolean = {
     rule match {
-      case r @ EqualsSR(_, _) => evaluateEqualsRule(conclusions, r)
-      case r @ IsaSR(_, _) => evaluateIsaRule(conclusions, r)
-      case r @ OrSR(_) => evaluateOrRule(conclusions, r)
-      case r @ ComponentsSR(_, _) => evaluateComponentsRule(conclusions, r)
-      case r @ TypedSR(_, _) => evaluateTypedRule(conclusions, r)
+      case r @ EqualsSR(_,_, _) => evaluateEqualsRule(conclusions, r)
+      case r @ IsaSR(_,_, _) => evaluateIsaRule(conclusions, r)
+      case r @ OrSR(_,_) => evaluateOrRule(conclusions, r)
+      case r @ ComponentsSR(_,_, _) => evaluateComponentsRule(conclusions, r)
+      case r @ TypedSR(_,_, _) => evaluateTypedRule(conclusions, r)
       case TemplexSR(templex) => evaluateTemplex(conclusions, templex)
-      case r @ CallSR(_, _) => evaluateRuleCall(conclusions, r)
+      case r @ CallSR(_,_, _) => evaluateRuleCall(conclusions, r)
 //      case r @ PackSR(_) => evaluatePackRule(conclusions, r)
     }
   }
@@ -87,7 +87,7 @@ object PredictorEvaluator {
     conclusions: ConclusionsBox,
     ruleCall: CallSR,
   ): Boolean = {
-    val CallSR(name, argumentRules) = ruleCall
+    val CallSR(range, name, argumentRules) = ruleCall
 
     name match {
       case "toRef" => {
@@ -134,35 +134,35 @@ object PredictorEvaluator {
     ruleTemplex: ITemplexS,
   ): Boolean = {
     ruleTemplex match {
-      case IntST(_) => true
-      case StringST(_) => true
-      case BoolST(_) => true
-      case MutabilityST(_) => true
-      case PermissionST(_) => true
-      case LocationST(_) => true
-      case OwnershipST(_) => true
-      case VariabilityST(_) => true
+      case IntST(_, _) => true
+      case StringST(_, _) => true
+      case BoolST(_, _) => true
+      case MutabilityST(_, _) => true
+      case PermissionST(_, _) => true
+      case LocationST(_, _) => true
+      case OwnershipST(_, _) => true
+      case VariabilityST(_, _) => true
       case NameST(_, _) => true
       case AbsoluteNameST(_, _) => true
-      case BorrowST(inner) => evaluateTemplex(conclusions, inner)
-      case RuneST(rune) => {
+      case BorrowST(_, inner) => evaluateTemplex(conclusions, inner)
+      case RuneST(_, rune) => {
         conclusions.knowableValueRunes.contains(rune)
       }
-      case OwnershippedST(_, kindRule) => evaluateTemplex(conclusions, kindRule)
-      case CallST(templateRule, paramRules) => {
+      case OwnershippedST(_, _, kindRule) => evaluateTemplex(conclusions, kindRule)
+      case CallST(_, templateRule, paramRules) => {
         val templateKnown = evaluateTemplex(conclusions, templateRule)
         val argsKnown = evaluateTemplexes(conclusions, paramRules)
         templateKnown && argsKnown.forall(_ == true)
       }
-      case PrototypeST(_, _, _) => {
+      case PrototypeST(_, _, _, _) => {
         vfail("Unimplemented")
       }
-      case PackST(memberTemplexes) => {
+      case PackST(_, memberTemplexes) => {
         val membersKnown =
           evaluateTemplexes(conclusions, memberTemplexes)
         membersKnown.forall(_ == true)
       }
-      case RepeaterSequenceST(mutabilityTemplex, sizeTemplex, elementTemplex) => {
+      case RepeaterSequenceST(_, mutabilityTemplex, sizeTemplex, elementTemplex) => {
         val mutabilityKnown =
           evaluateTemplex(conclusions, mutabilityTemplex)
         val sizeKnown =
@@ -171,7 +171,7 @@ object PredictorEvaluator {
           evaluateTemplex(conclusions, elementTemplex)
         mutabilityKnown && sizeKnown && elementKnown
       }
-      case ManualSequenceST(elementsTemplexes) => {
+      case ManualSequenceST(_, elementsTemplexes) => {
         val membersKnown =
           evaluateTemplexes(conclusions, elementsTemplexes)
         membersKnown.forall(_ == true)
@@ -183,7 +183,7 @@ object PredictorEvaluator {
     conclusions: ConclusionsBox,
     rule: TypedSR):
   Boolean = {
-    val TypedSR(rune, tyype) = rule
+    val TypedSR(_, rune, tyype) = rule
     conclusions.markRuneTypeKnown(rune, tyype)
     conclusions.knowableValueRunes.contains(rune)
   }
@@ -192,7 +192,7 @@ object PredictorEvaluator {
     conclusions: ConclusionsBox,
     rule: EqualsSR,
   ): Boolean = {
-    val EqualsSR(leftRule, rightRule) = rule
+    val EqualsSR(_, leftRule, rightRule) = rule
 
     val leftKnown =
       evaluateRule(conclusions, leftRule)
@@ -211,7 +211,7 @@ object PredictorEvaluator {
     conclusions: ConclusionsBox,
     rule: IsaSR,
   ): Boolean = {
-    val IsaSR(leftRule, rightRule) = rule
+    val IsaSR(_, leftRule, rightRule) = rule
 
     val leftKnown =
       evaluateRule(conclusions, leftRule)
@@ -239,7 +239,7 @@ object PredictorEvaluator {
     conclusions: ConclusionsBox,
     rule: ComponentsSR,
   ): Boolean = {
-    val ComponentsSR(typedRule, componentsRules) = rule
+    val ComponentsSR(_, typedRule, componentsRules) = rule
 
     val runeKnown =
       evaluateRule(conclusions, typedRule)

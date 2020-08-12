@@ -4,21 +4,26 @@ import net.verdagon.vale.scout._
 
 import scala.collection.immutable.List
 
-sealed trait IRulexSR
-case class EqualsSR(left: IRulexSR, right: IRulexSR) extends IRulexSR
-case class IsaSR(sub: IRulexSR, suuper: IRulexSR) extends IRulexSR
-case class OrSR(alternatives: List[IRulexSR]) extends IRulexSR
+sealed trait IRulexSR {
+  def range: RangeS
+}
+case class EqualsSR(range: RangeS, left: IRulexSR, right: IRulexSR) extends IRulexSR
+case class IsaSR(range: RangeS, sub: IRulexSR, suuper: IRulexSR) extends IRulexSR
+case class OrSR(range: RangeS, alternatives: List[IRulexSR]) extends IRulexSR
 case class ComponentsSR(
+  range: RangeS,
   // This is a TypedSR so that we can know the type, so we can know whether this is
   // a kind components rule or a coord components rule.
   container: TypedSR,
   components: List[IRulexSR]
 ) extends IRulexSR
 //case class PackSR(elements: List[IRulexSR]) extends IRulexSR
-case class TypedSR(rune: IRuneS, tyype: ITypeSR) extends IRulexSR
-case class TemplexSR(templex: ITemplexS) extends IRulexSR
+case class TypedSR(range: RangeS, rune: IRuneS, tyype: ITypeSR) extends IRulexSR
+case class TemplexSR(templex: ITemplexS) extends IRulexSR {
+  override def range: RangeS = templex.range
+}
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
-case class CallSR(name: String, args: List[IRulexSR]) extends IRulexSR {
+case class CallSR(range: RangeS, name: String, args: List[IRulexSR]) extends IRulexSR {
 }
 
 sealed trait ITypeSR
@@ -48,27 +53,19 @@ object RuleSUtils {
   def getDistinctOrderedRunesForRulex(rulex: IRulexSR): List[IRuneS] = {
     rulex match {
 //      case PackSR(elements) => getDistinctOrderedRunesForRulexes(elements)
-      case EqualsSR(left, right) => (getDistinctOrderedRunesForRulex(left) ++ getDistinctOrderedRunesForRulex(right)).distinct
-      case IsaSR(left, right) => (getDistinctOrderedRunesForRulex(left) ++ getDistinctOrderedRunesForRulex(right)).distinct
-      case OrSR(possibilities) => possibilities.flatMap(getDistinctOrderedRunesForRulex).distinct
-      case ComponentsSR(container, components) => {
+      case EqualsSR(range, left, right) => (getDistinctOrderedRunesForRulex(left) ++ getDistinctOrderedRunesForRulex(right)).distinct
+      case IsaSR(range, left, right) => (getDistinctOrderedRunesForRulex(left) ++ getDistinctOrderedRunesForRulex(right)).distinct
+      case OrSR(range, possibilities) => possibilities.flatMap(getDistinctOrderedRunesForRulex).distinct
+      case ComponentsSR(_, container, components) => {
         getDistinctOrderedRunesForRulex(container) ++ components.flatMap(getDistinctOrderedRunesForRulex).toSet
       }
-      case TypedSR(rune, tyype) => List(rune)
+      case TypedSR(_, rune, tyype) => List(rune)
       case TemplexSR(templex) => TemplexSUtils.getDistinctOrderedRunesForTemplex(templex)
-      case CallSR(name, args) => args.flatMap(getDistinctOrderedRunesForRulex).distinct
+      case CallSR(_, name, args) => args.flatMap(getDistinctOrderedRunesForRulex).distinct
     }
   }
 
   def getDistinctOrderedRunesForRulexes(rulexes: List[IRulexSR]): List[IRuneS] = {
     rulexes.flatMap(getDistinctOrderedRunesForRulex).distinct
-  }
-
-  // This can make a ref for the given kind, choosing the appropriate ownership.
-  // However, it can't figure out an unknown kind given a coord, so it's not that
-  // useful in inferring.
-  // We COULD make it possible to infer through this. Might be worth considering.
-  def knownCoordRule(kindRulexSR: IRulexSR): IRulexSR = {
-    CallSR("toRef", List(kindRulexSR))
   }
 }

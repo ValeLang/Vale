@@ -34,6 +34,7 @@ class FunctionTemplarCore(
   def evaluateFunctionForHeader(
     startingFullEnv: FunctionEnvironment,
       temputs: TemputsBox,
+    callRange: RangeS,
       params2: List[Parameter2]):
   (FunctionHeader2) = {
     val fullEnv = FunctionEnvironmentBox(startingFullEnv)
@@ -157,7 +158,7 @@ class FunctionTemplarCore(
           case None => {
             val generator = opts.functionGeneratorByName(generatorId)
             val header =
-              delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, Some(startingFullEnv.function), params2, maybeRetCoord)
+              delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, callRange, Some(startingFullEnv.function), params2, maybeRetCoord)
             if (header.toSignature != signature2) {
               vfail("Generator made a function whose signature doesn't match the expected one!\n" +
               "Expected:  " + signature2 + "\n" +

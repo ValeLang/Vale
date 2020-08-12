@@ -1,9 +1,11 @@
 package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale.astronomer.ITemplataType
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.IRune2
 import net.verdagon.vale.templar.templata.ITemplata
 import net.verdagon.vale.templar.types.ParamFilter
+import net.verdagon.vale.vassert
 
 import scala.collection.immutable.List
 
@@ -12,8 +14,12 @@ package object infer {
   // It can sometimes be coerced to a coord, see CCKTC.
   case class UncoercedTemplata(templata: ITemplata)
 
-  trait IConflictCause
-  case class MultipleCauses(causes: List[IConflictCause])
+  trait IConflictCause {
+    def range: RangeS
+    def rootCauses: List[IConflictCause]
+    def inferences: Inferences
+    def message: String
+  }
 
   sealed trait IInferSolveResult
   case class InferSolveFailure(
@@ -21,9 +27,15 @@ package object infer {
     directInputs: Map[IRune2, ITemplata],
     maybeParamInputs: Option[List[ParamFilter]],
     inferences: Inferences,
+    range: RangeS,
     message: String,
     inner: List[IConflictCause]
-  ) extends IInferSolveResult with IConflictCause
+  ) extends IInferSolveResult with IConflictCause {
+    vassert(message.nonEmpty || inner.nonEmpty)
+    override def rootCauses: List[IConflictCause] = {
+      if (inner.isEmpty) { List(this) } else { inner.flatMap(_.rootCauses) }
+    }
+  }
   case class InferSolveSuccess(
     inferences: Inferences
   ) extends IInferSolveResult
@@ -34,9 +46,15 @@ package object infer {
     // case failed; we want to have all the conflicts in a row, we want to have
     // the inferences for each failure.
     inferences: Inferences,
+    range: RangeS,
     message: String,
     cause: List[IConflictCause]
-  ) extends IInferEvaluateResult[T] with IConflictCause
+  ) extends IInferEvaluateResult[T] with IConflictCause {
+    vassert(message.nonEmpty || cause.nonEmpty)
+    override def rootCauses: List[IConflictCause] = {
+      if (cause.isEmpty) { List(this) } else { cause.flatMap(_.rootCauses) }
+    }
+  }
   case class InferEvaluateUnknown[T](
     // Whether we've satisfied every rule in this subtree.
     // This can be false for example if we have rule like `Moo = (Bork like ISomething<#T>)`
@@ -62,13 +80,18 @@ package object infer {
     // case failed; we want to have all the conflicts in a row, we want to have
     // the inferences for each failure.
     inferences: Inferences,
+    range: RangeS,
     message: String,
     // For an Or rule, this will contain all the conflicts for each branch.
     causes: List[IConflictCause]
   ) extends IInferMatchResult with IConflictCause {
+    vassert(message.nonEmpty || causes.nonEmpty)
     override def toString: String = {
       // The # signals the reader that we overrode toString
       "InferMatchConflict#(" + message + ", " + causes + ", " + inferences + ")"
+    }
+    override def rootCauses: List[IConflictCause] = {
+      if (causes.isEmpty) { List(this) } else { causes.flatMap(_.rootCauses) }
     }
   }
   case class InferMatchSuccess(

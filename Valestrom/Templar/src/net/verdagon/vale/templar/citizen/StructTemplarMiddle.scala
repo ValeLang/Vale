@@ -33,6 +33,7 @@ class StructTemplarMiddle(
   def getStructRef(
     structOuterEnv: NamespaceEnvironment[IName2],
     temputs: TemputsBox,
+    callRange: RangeS,
     structS: StructA,
     templatasByRune: Map[IRune2, ITemplata]):
   (StructRef2) = {
@@ -51,6 +52,7 @@ class StructTemplarMiddle(
   def getInterfaceRef(
     interfaceOuterEnv: NamespaceEnvironment[IName2],
     temputs: TemputsBox,
+    callRange: RangeS,
     interfaceA: InterfaceA,
     templatasByRune: Map[IRune2, ITemplata]):
   (InterfaceRef2) = {
@@ -99,6 +101,7 @@ class StructTemplarMiddle(
   def makeAnonymousSubstruct(
     interfaceEnv: IEnvironment,
     temputs: TemputsBox,
+    range: RangeS,
     interfaceRef: InterfaceRef2,
     substructName: FullName2[AnonymousSubstructName2]):
   (StructRef2, Mutability) = {
@@ -113,6 +116,7 @@ class StructTemplarMiddle(
     core.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
+      range,
       substructName,
       interfaceRef)
   }

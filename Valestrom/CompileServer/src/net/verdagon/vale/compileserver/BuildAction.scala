@@ -15,7 +15,7 @@ class BuildAction extends HttpFunction {
     }
 
     val json =
-      Driver.build(BuildInputs(Array(code), true)) match {
+      Driver.build(BuildInputs(List(("in.vale", code)), true)) match {
         case Ok(programH) => jsonifyProgram(programH)
         case Err(error) => {
           response.setStatusCode(400)

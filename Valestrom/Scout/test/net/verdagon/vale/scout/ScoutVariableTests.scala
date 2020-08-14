@@ -4,7 +4,20 @@ import net.verdagon.vale.parser.{CombinatorParsers, FinalP, ParseFailure, ParseS
 import net.verdagon.vale.{vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.runtime.Nothing$
+
 class ScoutVariableTests extends FunSuite with Matchers {
+  private def compileProgramForError(code: String): IScoutError = {
+    Parser.runParser(code) match {
+      case ParseFailure(err) => fail(err.toString)
+      case ParseSuccess(program0) => {
+        Scout.scoutProgram(List(program0)) match {
+          case null => vimpl() // TODO impl errors
+        }
+      }
+    }
+  }
+
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
@@ -19,8 +32,15 @@ class ScoutVariableTests extends FunSuite with Matchers {
     vassert(body.block.locals.size == 1)
     body.block.locals.head match {
       case LocalVariable1(
-          CodeVarNameS("x"),
-          FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+      CodeVarNameS("x"),
+      FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
+    }
+  }
+
+  // Intentional failure 2020-08-13
+  test("Reports defining same-name variable") {
+    compileProgramForError("fn main() { x = 4; x = 5; }") match {
+      case null =>
     }
   }
 

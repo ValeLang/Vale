@@ -43,7 +43,7 @@ object RefCounting {
                 FunctionCallAE(
                   RangeS.internal(-42),
                   // We add 1 because that "obj" is also a borrow ref
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("+")),
+                  FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("+")),
                   List(
                     LocalLoadAE(CodeVarNameA("num"), OwnP),
                     IntLiteralAE(1)))),

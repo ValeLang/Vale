@@ -13,7 +13,7 @@ object ExpressionScout {
   // Will contain the address of a local.
   case class LocalLookupResult(name: IVarNameS) extends IScoutResult[IExpressionSE]
   // Looks up a function.
-  case class FunctionLookupResult(name: GlobalFunctionFamilyNameS) extends IScoutResult[IExpressionSE]
+  case class FunctionLookupResult(range: RangeS, name: GlobalFunctionFamilyNameS) extends IScoutResult[IExpressionSE]
   // Anything else, such as:
   // - Result of a function call
   // - Address inside a struct
@@ -151,7 +151,7 @@ object ExpressionScout {
         // Leave it to scoutLambda to declare it.
         (stackFrame0, lookup, noVariableUses.markMoved(name), noVariableUses)
       }
-      case LookupPE(StringP(_, name), None) => {
+      case LookupPE(StringP(range, name), None) => {
         val (lookup, declarations) =
           stackFrame0.findVariable(name) match {
             case Some(fullName) => {
@@ -161,7 +161,7 @@ object ExpressionScout {
               if (stackFrame0.parentEnv.allUserDeclaredRunes().contains(CodeRuneS(name))) {
                 (NormalResult(RuneLookupSE(CodeRuneS(name))), noDeclarations)
               } else {
-                (FunctionLookupResult(GlobalFunctionFamilyNameS(name)), noDeclarations)
+                (FunctionLookupResult(Scout.evalRange(stackFrame0.file, range), GlobalFunctionFamilyNameS(name)), noDeclarations)
               }
             }
           }
@@ -271,7 +271,7 @@ object ExpressionScout {
             case LocalLookupResult(name) => {
               (LocalMutateSE(name, sourceExpr1), sourceInnerSelfUses.markMutated(name))
             }
-            case FunctionLookupResult(_) => {
+            case FunctionLookupResult(_, _) => {
               vfail("Cant mutate a function")
 //              (GlobalMutateSE(name, sourceExpr1), sourceInnerSelfUses.markMutated(name))
             }
@@ -331,8 +331,8 @@ object ExpressionScout {
             }
           (LocalLoadSE(name, targetOwnershipIfLookupResult), uses)
         }
-        case FunctionLookupResult(name) => {
-          (FunctionLoadSE(name), firstInnerSelfUses)
+        case FunctionLookupResult(range, name) => {
+          (FunctionLoadSE(range, name), firstInnerSelfUses)
         }
         case NormalResult(innerExpr1) => {
           (innerExpr1, firstInnerSelfUses)

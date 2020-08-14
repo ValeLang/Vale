@@ -11,8 +11,11 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   private[parser] def atomPattern: Parser[PatternPP]
 //  private[parser] def templex: Parser[ITemplexPT]
 
-  private[parser] def specialOperators: Parser[StringP] = {
+  private[parser] def comparisonOperators: Parser[StringP] = {
     (pstr("<=>") | pstr("<=") | pstr("<") | pstr(">=") | pstr(">") | pstr("==") | pstr("!="))
+  }
+  private[parser] def conjunctionOperators: Parser[StringP] = {
+    (pstr("and") | pstr("or"))
   }
 
   private[parser] def lookup: Parser[LookupPE] = {
@@ -343,12 +346,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
         white ~> (pstr("+") | pstr("-")) <~ white,
         (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
 
-    val withComparisons =
-      binariableExpression(
-        withAddSubtract,
-        white ~> specialOperators <~ white,
-        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
-
 //    val withAnd =
 //      binariableExpression(
 //        withAddSubtract,
@@ -363,14 +360,31 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 
     val withCustomBinaries =
       binariableExpression(
-        withComparisons,
-        not(white ~> pstr("=") <~ white) ~> (white ~> infixFunctionIdentifier <~ white),
+        withAddSubtract,
+        not(white ~> pstr("=") <~ white) ~>
+          not(white ~> comparisonOperators <~ white) ~>
+          not(white ~> conjunctionOperators <~ white) ~>
+          (white ~> infixFunctionIdentifier <~ white),
         (range, funcName: StringP, left, right) => {
           FunctionCallPE(range, None, Range(funcName.range.begin, funcName.range.end), false, LookupPE(funcName, None), List(left, right), BorrowP)
         })
 
-    withCustomBinaries |
-    (specialOperators ^^ (op => LookupPE(op, None)))
+    val withComparisons =
+      binariableExpression(
+        withCustomBinaries,
+        not(white ~> conjunctionOperators <~ white) ~>
+          white ~> comparisonOperators <~ white,
+        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
+
+    val withConjunctions =
+      binariableExpression(
+        withComparisons,
+        white ~> conjunctionOperators <~ white,
+        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
+
+    withConjunctions |
+    (conjunctionOperators ^^ (op => LookupPE(op, None))) |
+    (comparisonOperators ^^ (op => LookupPE(op, None)))
   }
 
   sealed trait StatementType

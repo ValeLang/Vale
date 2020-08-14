@@ -33,11 +33,11 @@ object NotEquals {
               LocalVariableA(CodeVarNameA("right"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
               RangeS.internal(-36),
-              FunctionLoadAE(GlobalFunctionFamilyNameA("not")),
+              FunctionLoadAE(RangeS.internal(-36), GlobalFunctionFamilyNameA("not")),
               List(
                 FunctionCallAE(
                   RangeS.internal(-37),
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("==")),
+                  FunctionLoadAE(RangeS.internal(-37), GlobalFunctionFamilyNameA("==")),
                   List(
                     LocalLoadAE(CodeVarNameA("left"), OwnP),
                     LocalLoadAE(CodeVarNameA("right"), OwnP))))))))))

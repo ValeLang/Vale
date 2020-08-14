@@ -27,12 +27,14 @@ object Forwarders {
       makeForwarder("str", List(("left", "bool")), "str", "__castBoolStr"),
       makeForwarder("str", List(("left", "float")), "str", "__castFloatStr"),
       makeForwarder("and", List(("left", "bool"), ("right", "bool")), "bool", "__and"),
+      makeForwarder("or", List(("left", "bool"), ("right", "bool")), "bool", "__or"),
       makeForwarder("not", List(("output", "bool")), "bool", "__not"),
       makeForwarder("-", List(("left", "int")), "int", "__negateInt"),
       makeForwarder("sqrt", List(("x", "float")), "float", "__sqrt"),
       makeForwarder("-", List(("left", "float")), "float", "__negateFloat"),
       makeForwarder("-", List(("left", "int"), ("right", "int")), "int", "__subtractIntInt"),
       makeForwarder("-", List(("left", "float"), ("right", "float")), "float", "__subtractFloatFloat"),
+      makeForwarder("/", List(("left", "int"), ("right", "int")), "int", "__divideIntInt"),
       makeForwarder("<", List(("left", "float"), ("right", "float")), "bool", "__lessThanFloat"),
       makeForwarder(">", List(("left", "float"), ("right", "float")), "bool", "__greaterThanFloat"),
       makeForwarder("<", List(("left", "int"), ("right", "int")), "bool", "__lessThanInt"),
@@ -56,7 +58,7 @@ object Forwarders {
             List(
               FunctionCallAE(
                 RangeS.internal(-35),
-                FunctionLoadAE(GlobalFunctionFamilyNameA(callee)),
+                FunctionLoadAE(RangeS.internal(-35), GlobalFunctionFamilyNameA(callee)),
                 params.map(param => LocalLoadAE(CodeVarNameA(param._1), OwnP))))))))
   }
 }

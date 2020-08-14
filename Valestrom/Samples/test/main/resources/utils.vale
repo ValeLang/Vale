@@ -1,4 +1,12 @@
 
+fn min(a int, b int) int {
+  = if (a <= b) { a } else { b }
+}
+
+fn max(a int, b int) int {
+  = if (a >= b) { a } else { b }
+}
+
 fn panic(msg str) {
   println(msg);
   = panic();

@@ -42,6 +42,17 @@ object VivemExterns {
     }
   }
 
+  def divideIntInt(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 2)
+    val aReferend = memory.dereference(args(0))
+    val bReferend = memory.dereference(args(1))
+    (aReferend, bReferend) match {
+      case (IntV(aValue), IntV(bValue)) => {
+        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue / bValue))
+      }
+    }
+  }
+
   def multiplyFloatFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 2)
     val aReferend = memory.dereference(args(0))
@@ -210,6 +221,17 @@ object VivemExterns {
     (aReferend, bReferend) match {
       case (BoolV(aValue), BoolV(bValue)) => {
         memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue && bValue))
+      }
+    }
+  }
+
+  def or(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 2)
+    val aReferend = memory.dereference(args(0))
+    val bReferend = memory.dereference(args(1))
+    (aReferend, bReferend) match {
+      case (BoolV(aValue), BoolV(bValue)) => {
+        memory.addAllocationForReturn(ShareH, InlineH, BoolV(aValue || bValue))
       }
     }
   }

@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
-import net.verdagon.vale.astronomer.{ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA}
+import net.verdagon.vale.astronomer.{ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
@@ -22,6 +22,10 @@ object TemplarErrorHumanizer {
       case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Function " + printableName(filenamesAndSources, functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
+      }
+      case CouldntFindFunctionToLoadT(range, GlobalFunctionFamilyNameA(name)) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Couldn't find any function named `" + name + "`!"
       }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -92,7 +96,7 @@ object TemplarErrorHumanizer {
     functionName match {
       case LambdaNameA(codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + "(lambda)"
       case FunctionNameA(name, codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
-      case ConstructorNameA(tlcd) => vimpl()
+      case ConstructorNameA(TopLevelCitizenDeclarationNameA(name, codeLocation)) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
       case ImmConcreteDestructorNameA() => vimpl()
       case ImmInterfaceDestructorNameA() => vimpl()
       case ImmDropNameA() => vimpl()

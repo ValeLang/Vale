@@ -138,8 +138,8 @@ object ExpressionAstronomer {
       case LocalLoadSE(name, borrow) => {
         LocalLoadAE(Astronomer.translateVarNameStep(name), borrow)
       }
-      case FunctionLoadSE(name) => {
-        FunctionLoadAE(Astronomer.translateGlobalFunctionFamilyName(name))
+      case FunctionLoadSE(range, name) => {
+        FunctionLoadAE(range, Astronomer.translateGlobalFunctionFamilyName(name))
       }
       case UnletSE(name) => UnletAE(name)
     }

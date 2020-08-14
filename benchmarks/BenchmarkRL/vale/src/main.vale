@@ -71,7 +71,12 @@
 
 fn main() {
   seed = 1337;// DIFFERENCE
-  rand = LCGRand(seed);
-  level = make_level(30, 30, &rand); // DIFFERENCE need &!
+  benchmark_rl(
+    seed,
+    30,
+    30,
+    10,
+    true,
+    100);
   = 0;
 }

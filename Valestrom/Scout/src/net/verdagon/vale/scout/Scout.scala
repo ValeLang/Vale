@@ -9,6 +9,8 @@ import net.verdagon.vale.vimpl
 
 import scala.util.parsing.input.OffsetPosition
 
+sealed trait IScoutError
+
 sealed trait IEnvironment {
   def file: Int
   def name: INameS

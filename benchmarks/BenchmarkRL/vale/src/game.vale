@@ -34,17 +34,17 @@ fn next(self &!LCGRand) int {
 
 
 
-// #[derive(new)]
-// pub struct Game {
-//     pub units: Arena<Unit>,
-//     pub levels: Vec<Level>,
-//     pub player_index: Option<generational_arena::Index>,
-// }
+struct Game {
+    // units List<Unit>;
+    levels List<Level>;
+    // player_index Option<generational_arena::Index>;
+}
 
 // impl Game {
-//     pub fn get_current_level(&self) -> &Level {
-//         return &self.levels[self.get_player().level_index];
-//     }
+    fn get_current_level(self &Game) &Level {
+        // return &self.levels[self.get_player().level_index];
+        self.levels.get(0).get()
+    }
 //     pub fn get_current_level_mut(&mut self) -> &mut Level {
 //         let level_index = self.get_player().level_index;
 //         return &mut self.levels[level_index];

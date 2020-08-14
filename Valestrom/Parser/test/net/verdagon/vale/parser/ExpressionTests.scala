@@ -247,4 +247,42 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       case IndexPE(_,DotPE(_,LookupPE(StringP(_,"this"),None),_,false,LookupPE(StringP(_,"board"),None)),List(LookupPE(StringP(_,"i"),None))) =>
     }
   }
+
+  test("mod and == precedence") {
+    compile(CombinatorParsers.expression,
+      """8 mod 2 == 0""") shouldHave {
+      case FunctionCallPE(_,
+        None,_,false,
+        LookupPE(StringP(_,"=="),None),
+        List(
+          FunctionCallPE(_,
+            None,_,false,
+            LookupPE(StringP(_,"mod"),None),
+            List(
+              IntLiteralPE(_,8),
+              IntLiteralPE(_,2)),
+            BorrowP),
+          IntLiteralPE(_,0)),
+        BorrowP) =>
+    }
+  }
+
+  test("or and == precedence") {
+    compile(CombinatorParsers.expression,
+      """2 == 0 or false""") shouldHave {
+      case FunctionCallPE(_,
+        None,_,false,
+        LookupPE(StringP(_,"or"),None),
+        List(
+          FunctionCallPE(_,
+            None,_,false,
+            LookupPE(StringP(_,"=="),None),
+            List(
+              IntLiteralPE(_,2),
+              IntLiteralPE(_,0)),
+            BorrowP),
+          BoolLiteralPE(_,false)),
+        BorrowP) =>
+    }
+  }
 }

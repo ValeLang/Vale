@@ -32,11 +32,11 @@ object Printing {
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
               RangeS.internal(-38),
-              FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
+              FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
                   RangeS.internal(-43),
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("+")),
+                  FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("+")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP),
                     StrLiteralAE("\n"))))))))))
@@ -67,11 +67,11 @@ object Printing {
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
               RangeS.internal(-39),
-              FunctionLoadAE(GlobalFunctionFamilyNameA("println")),
+              FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("println")),
               List(
                 FunctionCallAE(
                   RangeS.internal(-44),
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
+                  FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
@@ -101,11 +101,11 @@ object Printing {
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
               RangeS.internal(-39),
-              FunctionLoadAE(GlobalFunctionFamilyNameA("println")),
+              FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("println")),
               List(
                 FunctionCallAE(
                   RangeS.internal(-45),
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
+                  FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
@@ -136,11 +136,11 @@ object Printing {
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
               RangeS.internal(-40),
-              FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
+              FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
                   RangeS.internal(-46),
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
+                  FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 
@@ -171,11 +171,11 @@ object Printing {
             List(LocalVariableA(CodeVarNameA("line"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(FunctionCallAE(
               RangeS.internal(-41),
-              FunctionLoadAE(GlobalFunctionFamilyNameA("print")),
+              FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("print")),
               List(
                 FunctionCallAE(
                   RangeS.internal(-47),
-                  FunctionLoadAE(GlobalFunctionFamilyNameA("str")),
+                  FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("str")),
                   List(
                     LocalLoadAE(CodeVarNameA("line"), OwnP))))))))))
 }

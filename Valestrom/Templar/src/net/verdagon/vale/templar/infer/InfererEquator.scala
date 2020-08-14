@@ -18,7 +18,6 @@ class InfererEquator[Env, State](
     right: ITemplata,
     expectedType: ITemplataType):
   (Boolean) = {
-    println("comparing " + left + " and " + right)
     (left, right) match {
       case (IntegerTemplata(leftNum), IntegerTemplata(rightNum)) => {
         (leftNum == rightNum)

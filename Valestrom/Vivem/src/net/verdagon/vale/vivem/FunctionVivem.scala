@@ -55,6 +55,7 @@ object FunctionVivem {
       case """F("panic")""" => VivemExterns.panic
       case """F("__multiplyIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.multiplyIntInt
       case """F("__subtractFloatFloat",[],[R(*,<,f),R(*,<,f)])""" => VivemExterns.subtractFloatFloat
+      case """F("__divideIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.divideIntInt
 //      case PrototypeH(FullNameH(List(NamePartH("__multiplyFloatFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.multiplyFloatFloat
       case """F("__subtractIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.subtractIntInt
@@ -82,6 +83,7 @@ object FunctionVivem {
 //      case PrototypeH(FullNameH(List(NamePartH("__castFloatStr", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,StrH())) =>
 //        VivemExterns.castFloatStr
       case """F("__and",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.and
+      case """F("__or",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.or
       case """F("__mod",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.mod
       case """F("__castBoolStr",[],[R(*,<,b)])""" => VivemExterns.castBoolStr
       case _ => vimpl(ref.fullName.toString)

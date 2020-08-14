@@ -338,7 +338,7 @@ class ExpressionTemplar(
           callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), templateArgTemplexesS, argsExprs2)
         (callExpr2, returnsFromArgs)
       }
-      case FunctionCallAE(range, FunctionLoadAE(name), argsPackExpr1) => {
+      case FunctionCallAE(range, FunctionLoadAE(_, name), argsPackExpr1) => {
         val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
         val callExpr2 =
@@ -455,7 +455,7 @@ class ExpressionTemplar(
           }
         (lookupExpr1, Set())
       }
-      case FunctionLoadAE(name) => {
+      case FunctionLoadAE(range, name) => {
         // Note, we don't get here if we're about to call something with this, that's handled
         // by a different case.
 
@@ -473,7 +473,8 @@ class ExpressionTemplar(
               vfail("Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _));
             }
             case List() => {
-              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
+//              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
+              throw CompileErrorExceptionT(CouldntFindFunctionToLoadT(range, name))
               vfail("Couldn't find anything named \"" + name + "\" in env:\n" + fate);
             }
           }
@@ -738,7 +739,7 @@ class ExpressionTemplar(
             case (Never2(), _) => uncoercedElseExpr2.resultRegister.reference
             case (_, Never2()) => uncoercedThenExpr2.resultRegister.reference
             case (a, b) if a == b => uncoercedThenExpr2.resultRegister.reference
-            case _ => vimpl()
+            case (a, b) => vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
           }
         val thenExpr2 = convertHelper.convert(fate.snapshot, temputs, uncoercedThenExpr2, commonType)
         val elseExpr2 = convertHelper.convert(fate.snapshot, temputs, uncoercedElseExpr2, commonType)

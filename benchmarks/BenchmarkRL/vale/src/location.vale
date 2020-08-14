@@ -1,12 +1,3 @@
-// Added
-fn abs(i int) int {
-  = if (i >= 0) { i } else { -1 * i }
-}
-
-// Added
-fn min(a int, b int) int {
-  = if (a <= b) { a } else { b }
-}
 
 // Added
 struct LocationHasher { }
@@ -23,6 +14,10 @@ fn __call(this &LocationEquator, a Location, b Location) {
   (a.x == b.x) and (a.y == b.y)
 }
 
+// Added
+fn str(loc Location) {
+    "(" + str(loc.x) + ", " + str(loc.y) + ")"
+}
 
 struct Location imm {
     x int;

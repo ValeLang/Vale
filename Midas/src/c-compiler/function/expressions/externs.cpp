@@ -25,6 +25,16 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto result = LLVMBuildAdd(builder, leftLE, rightLE,"add");
     return result;
+  } else if (name == "F(\"__divideIntInt\",[],[R(*,<,i),R(*,<,i)])") {
+    assert(call->argExprs.size() == 2);
+    auto leftLE =
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]);
+    auto rightLE =
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[1]);
+    auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
+    return result;
   } else if (name == "F(\"__eqStrStr\",[],[R(*,>,s),R(*,>,s)])") {
     assert(call->argExprs.size() == 2);
 
@@ -218,6 +228,16 @@ LLVMValueRef translateExternCall(
   } else if (name == "F(\"__and\",[],[R(*,<,b),R(*,<,b)])") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildAnd(
+        builder,
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[1]),
+        "");
+    return result;
+  } else if (name == "F(\"__or\",[],[R(*,<,b),R(*,<,b)])") {
+    assert(call->argExprs.size() == 2);
+    auto result = LLVMBuildOr(
         builder,
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]),

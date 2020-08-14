@@ -4,7 +4,10 @@ object SourceCodeUtils {
   def humanizePos(
       filenamesAndSources: List[(String, String)],
       file: Int,
-      pos: Int) = {
+      pos: Int): String = {
+    if (file < 0) {
+      return "internal(" + file + ")"
+    }
     val (filename, source) = filenamesAndSources(file)
     var line = 0;
     var col = 0;
@@ -35,14 +38,18 @@ object SourceCodeUtils {
       file: Int,
       position: Int):
   String = {
+    if (file < 0) {
+      return "(internal(" + file + "))"
+    }
     val text = filenamesAndSources(file)._2
     // TODO: can optimize this perhaps
     var lineBegin = 0;
     while (true) {
-      val lineEnd = text.indexOf('\n', lineBegin)
-      if (lineEnd < 0) {
-        vfail()
-      }
+      val lineEnd =
+        text.indexOf('\n', lineBegin) match {
+          case -1 => text.length
+          case other => other
+        }
       if (lineBegin <= position && position < lineEnd) {
         return text.substring(lineBegin, lineEnd)
       }

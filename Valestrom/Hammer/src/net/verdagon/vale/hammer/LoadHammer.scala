@@ -22,24 +22,24 @@ object LoadHammer {
 
     val (loadedAccessH, sourceDeferreds) =
       sourceExpr2 match {
-        case LocalLookup2(ReferenceLocalVariable2(varId, variability, reference), varType2) => {
+        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2) => {
           vassert(reference == varType2)
           translateMundaneLocalLoad(hinputs, hamuts, locals, varId, reference, targetOwnership)
         }
-        case LocalLookup2(AddressibleLocalVariable2(varId, variability, localReference2), varType2) => {
+        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, localReference2), varType2) => {
           vassert(localReference2 == varType2)
           translateAddressibleLocalLoad(hinputs, hamuts, locals, varId, variability, localReference2, targetOwnership)
         }
-        case ReferenceMemberLookup2(structExpr2, memberName, memberType2) => {
+        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2) => {
           translateMundaneMemberLoad(hinputs, hamuts, locals, structExpr2, memberType2, memberName, targetOwnership)
         }
-        case AddressMemberLookup2(structExpr2, memberName, memberType2) => {
+        case AddressMemberLookup2(_,structExpr2, memberName, memberType2) => {
           translateAddressibleMemberLoad(hinputs, hamuts, locals, structExpr2, memberName, memberType2, targetOwnership)
         }
-        case UnknownSizeArrayLookup2(arrayExpr2, arrayType, indexExpr2) => {
+        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
           translateMundaneUnknownSizeArrayLoad(hinputs, hamuts, locals, arrayExpr2, indexExpr2, targetOwnership)
         }
-        case ArraySequenceLookup2(arrayExpr2, arrayType, indexExpr2) => {
+        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
           translateMundaneKnownSizeArrayLoad(hinputs, hamuts, locals, arrayExpr2, indexExpr2, targetOwnership)
         }
       }
@@ -282,7 +282,7 @@ object LoadHammer {
       locals: LocalsBox,
       lookup2: LocalLookup2):
   (ExpressionH[ReferendH]) = {
-    val LocalLookup2(localVar, type2) = lookup2;
+    val LocalLookup2(_,localVar, type2) = lookup2;
     vassert(type2 == localVar.reference)
 
     val local = locals.get(localVar.id).get
@@ -305,7 +305,7 @@ object LoadHammer {
       locals: LocalsBox,
       lookup2: AddressMemberLookup2):
   (ExpressionH[ReferendH], List[Expression2]) = {
-    val AddressMemberLookup2(structExpr2, memberName, resultType2) = lookup2;
+    val AddressMemberLookup2(_,structExpr2, memberName, resultType2) = lookup2;
 
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, locals, structExpr2);

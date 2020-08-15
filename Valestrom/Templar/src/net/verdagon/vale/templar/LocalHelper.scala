@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.LocalVariableA
-import net.verdagon.vale.scout.{MaybeUsed, NotUsed}
+import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
@@ -106,16 +106,17 @@ class LocalHelper(
 
   def maybeSoftLoad(
     fate: FunctionEnvironmentBox,
+    range: RangeS,
     expr2: Expression2,
     targetOwnership: Ownership):
   (ReferenceExpression2) = {
     expr2 match {
       case e : ReferenceExpression2 => (e)
-      case e : AddressExpression2 => softLoad(fate, e, targetOwnership)
+      case e : AddressExpression2 => softLoad(fate, range, e, targetOwnership)
     }
   }
 
-  def softLoad(fate: FunctionEnvironmentBox, a: AddressExpression2, specifiedTargetOwnership: Ownership):
+  def softLoad(fate: FunctionEnvironmentBox, loadRange: RangeS, a: AddressExpression2, specifiedTargetOwnership: Ownership):
   (ReferenceExpression2) = {
     specifiedTargetOwnership match {
       case Borrow => {
@@ -143,9 +144,9 @@ class LocalHelper(
           case Own => {
             val localVar =
               a match {
-                case LocalLookup2(lv, _) => lv
-                case AddressMemberLookup2(_, _, _) => {
-                  vfail("Can't move out of a member!")
+                case LocalLookup2(_, lv, _) => lv
+                case AddressMemberLookup2(_, _, name, _) => {
+                  throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name))
                 }
               }
             fate.markVariableMoved(localVar.id)

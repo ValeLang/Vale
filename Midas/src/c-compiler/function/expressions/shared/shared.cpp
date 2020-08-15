@@ -189,7 +189,7 @@ void buildAssert(
   buildIf(
       functionState, builder, isZeroLE(builder, conditionLE),
       [from, globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
-        buildFlare(from, globalState, functionState, thenBuilder, failMessage, " Exiting!");
+        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });

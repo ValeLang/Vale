@@ -31,6 +31,8 @@ public:
   Program* program;
   LLVMValueRef objIdCounter;
   LLVMValueRef liveHeapObjCounter;
+  LLVMValueRef derefCounter;
+  LLVMValueRef mutRcAdjustCounter;
   LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printCStr,
       getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
       strlen, censusContains, censusAdd, censusRemove, panic;

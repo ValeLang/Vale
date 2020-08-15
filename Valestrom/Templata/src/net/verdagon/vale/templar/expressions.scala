@@ -1,6 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.IVarNameA
+import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.env.{ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -47,6 +48,8 @@ trait ReferenceExpression2 extends Expression2 {
 trait AddressExpression2 extends Expression2 {
   override def resultRegister: AddressRegister2
   override def referend = resultRegister.reference.referend
+
+  def range: RangeS
 
   // Whether to move-load or borrow-load or weak-load from this expression, if coerced
   // into a reference.
@@ -397,6 +400,7 @@ case class FloatLiteral2(value: Float) extends ReferenceExpression2 {
 }
 
 case class LocalLookup2(
+    range: RangeS,
     localVariable: ILocalVariable2,
     reference: Coord
 ) extends AddressExpression2 {
@@ -436,6 +440,7 @@ case class ArgLookup2(
 //}
 
 case class ArraySequenceLookup2(
+  range: RangeS,
     arrayExpr: ReferenceExpression2,
     arrayType: KnownSizeArrayT2,
     indexExpr: ReferenceExpression2) extends AddressExpression2 {
@@ -451,6 +456,7 @@ case class ArraySequenceLookup2(
 }
 
 case class UnknownSizeArrayLookup2(
+  range: RangeS,
     arrayExpr: ReferenceExpression2,
     arrayType: UnknownSizeArrayT2,
     indexExpr: ReferenceExpression2) extends AddressExpression2 {
@@ -473,6 +479,7 @@ case class ArrayLength2(arrayExpr: ReferenceExpression2) extends ReferenceExpres
 }
 
 case class ReferenceMemberLookup2(
+  range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
     reference: Coord) extends AddressExpression2 {
@@ -485,6 +492,7 @@ case class ReferenceMemberLookup2(
   }
 }
 case class AddressMemberLookup2(
+  range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
     resultType2: Coord) extends AddressExpression2 {

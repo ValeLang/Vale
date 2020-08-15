@@ -92,7 +92,7 @@ class ClosureTests extends FunSuite with Matchers {
     // the environment in the closure has to match this; the environment has
     // to have a borrow reference instead of an owning reference.
 
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Marine {
         |  hp int;
@@ -107,7 +107,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test closure's local variables") {
-    val compile = new Compilation("fn main() { x = 4; = {x}(); }")
+    val compile = Compilation("fn main() { x = 4; = {x}(); }")
     val temputs = compile.getTemputs()
 
     temputs.lookupLambdaIn("main").variables match {
@@ -124,7 +124,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test returning a nonmutable closured variable from the closure") {
-    val compile = new Compilation("fn main() { x = 4; = {x}(); }")
+    val compile = Compilation("fn main() { x = 4; = {x}(); }")
     val temputs = compile.getTemputs()
 
     // The struct should have an int x in it which is a reference type.
@@ -139,7 +139,7 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure we're doing a referencememberlookup, since it's a reference member
     // in the closure struct.
     lambda.only({
-      case ReferenceMemberLookup2(_, FullName2(_, CodeVarName2("x")), _) =>
+      case ReferenceMemberLookup2(_,_, FullName2(_, CodeVarName2("x")), _) =>
     })
 
     // Make sure there's a function that takes in the closured vars struct, and returns an int
@@ -166,14 +166,14 @@ class ClosureTests extends FunSuite with Matchers {
     main.onlyOf(classOf[FunctionCall2])
 
     lambda.only({
-      case LocalLookup2(ReferenceLocalVariable2(FullName2(_,ClosureParamName2()),Final,_),_) =>
+      case LocalLookup2(_,ReferenceLocalVariable2(FullName2(_,ClosureParamName2()),Final,_),_) =>
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Mutates from inside a closure") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  x! = 4;
@@ -191,7 +191,7 @@ class ClosureTests extends FunSuite with Matchers {
     val lambda = temputs.lookupLambdaIn("main")
     lambda.only({
       case Mutate2(
-        AddressMemberLookup2(_,FullName2(List(FunctionName2("main",List(),List()), LambdaCitizenName2(_)),CodeVarName2("x")),Coord(Share,Int2())),
+        AddressMemberLookup2(_,_,FullName2(List(FunctionName2("main",List(),List()), LambdaCitizenName2(_)),CodeVarName2("x")),Coord(Share,Int2())),
         _) =>
     })
 
@@ -207,7 +207,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = new Compilation("fn main() { x! = 4; { { mut x = x + 1; }(); }(); = x; }")
+    val compile = Compilation("fn main() { x! = 4; { { mut x = x + 1; }(); }(); = x; }")
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }

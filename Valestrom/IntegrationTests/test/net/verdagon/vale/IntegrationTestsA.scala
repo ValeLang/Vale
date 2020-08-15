@@ -18,74 +18,74 @@ import scala.util.Try
 
 class IntegrationTestsA extends FunSuite with Matchers {
   test("Simple program returning an int") {
-    val compile = new Compilation("fn main(){3}")
+    val compile = Compilation("fn main(){3}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("Hardcoding negative numbers") {
-    val compile = new Compilation("fn main(){-3}")
+    val compile = Compilation("fn main(){-3}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(-3)
   }
 
   test("Taking an argument and returning it") {
-    val compile = new Compilation("fn main(a int){a}")
+    val compile = Compilation("fn main(a int){a}")
     compile.evalForReferend(Vector(IntV(5))) shouldEqual VonInt(5)
   }
 
   test("Tests adding two numbers") {
-    val compile = new Compilation("fn main(){ +(2, 3) }")
+    val compile = Compilation("fn main(){ +(2, 3) }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
   test("Tests adding two floats") {
-    val compile = new Compilation("fn main(){ +(2.5, 3.5) }")
+    val compile = Compilation("fn main(){ +(2.5, 3.5) }")
     compile.evalForReferend(Vector()) shouldEqual VonFloat(6.0f)
   }
 
   test("Tests inline adding") {
-    val compile = new Compilation("fn main(){ 2 + 3 }")
+    val compile = Compilation("fn main(){ 2 + 3 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
   test("Test constraint ref") {
-    val compile = new Compilation(Samples.get("constraintRef.vale"))
+    val compile = Compilation(Samples.get("constraintRef.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests inline adding more") {
-    val compile = new Compilation("fn main(){ 2 + 3 + 4 + 5 + 6 }")
+    val compile = Compilation("fn main(){ 2 + 3 + 4 + 5 + 6 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(20)
   }
 
   test("Simple lambda") {
-    val compile = new Compilation("fn main(){{7}()}")
+    val compile = Compilation("fn main(){{7}()}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   test("Lambda with one magic arg") {
-    val compile = new Compilation("fn main(){{_}(3)}")
+    val compile = Compilation("fn main(){{_}(3)}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = new Compilation("fn main(){(a int){ +(a,a)}(3)}");
+    val compile = Compilation("fn main(){(a int){ +(a,a)}(3)}");
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
   test("Test overloads") {
-    val compile = new Compilation(Samples.get("functions/overloads.vale"))
+    val compile = Compilation(Samples.get("functions/overloads.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
   test("Test block") {
-    val compile = new Compilation("fn main(){true; 200; = 300;}")
+    val compile = Compilation("fn main(){true; 200; = 300;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(300)
   }
 
   test("Test templates") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn ~<T>(a T, b T) T { a }
         |fn main(){true ~ false; 2 ~ 2; = 3 ~ 3;}
@@ -94,17 +94,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = new Compilation("fn main(){a! = 3; mut a = 4; }")
+    val compile = Compilation("fn main(){a! = 3; mut a = 4; }")
     compile.run(Vector())
   }
 
   test("Test returning a local mutable var") {
-    val compile = new Compilation("fn main(){a! = 3; mut a = 4; = a;}")
+    val compile = Compilation("fn main(){a! = 3; mut a = 4; = a;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Test taking a callable param") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn do(callable) {callable()}
         |fn main() {do({ 3 })}
@@ -113,7 +113,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Stamps an interface template via a function parameter") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface MyInterface<T> rules(T Ref) { }
         |fn doAThing<T>(i MyInterface<T>) { }
@@ -136,12 +136,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests unstackifying a variable multiple times in a function") {
-    val compile = new Compilation(Samples.get("multiUnstackify.vale"))
+    val compile = Compilation(Samples.get("multiUnstackify.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("Reads a struct member") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct MyStruct { a int; }
         |fn main() { ms = MyStruct(7); = ms.a; }
@@ -151,7 +151,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   // Known failure 2020-08-05
   test("Tests virtual doesn't get called if theres a better override") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface MyOption { }
         |
@@ -190,7 +190,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests single expression and single statement functions' returns") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct MyThing { value int; }
         |fn moo() { MyThing(4) }
@@ -200,7 +200,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests calling a templated struct's constructor") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct MySome<T> rules(T Ref) { value T; }
         |fn main() {
@@ -211,7 +211,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test int generic") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |
         |struct Vec<N, T> rules(N int)
@@ -228,28 +228,28 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = new Compilation(Samples.get("virtuals/upcasting.vale"))
+    val compile = Compilation(Samples.get("virtuals/upcasting.vale"))
     compile.run(Vector())
   }
 
   test("Tests from file") {
-    val compile = new Compilation(Samples.get("lambdas/doubleclosure.vale"))
+    val compile = Compilation(Samples.get("lambdas/doubleclosure.vale"))
     compile.run(Vector())
   }
 
   test("Tests from subdir file") {
-    val compile = new Compilation(Samples.get("virtuals/round.vale"))
+    val compile = Compilation(Samples.get("virtuals/round.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests calling a virtual function") {
-    val compile = new Compilation(Samples.get("virtuals/calling.vale"))
+    val compile = Compilation(Samples.get("virtuals/calling.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   test("Tests making a variable with a pattern") {
     // Tests putting MyOption<int> as the type of x.
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface MyOption<T> rules(T Ref) { }
         |
@@ -270,7 +270,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
 
   test("Tests a linked list") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("virtuals/ordinarylinkedlist.vale"))
@@ -278,7 +278,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests a templated linked list") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
         Samples.get("genericvirtuals/templatedlinkedlist.vale"))
@@ -286,12 +286,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests calling an abstract function") {
-    val compile = new Compilation(Samples.get("genericvirtuals/callingAbstract.vale"))
+    val compile = Compilation(Samples.get("genericvirtuals/callingAbstract.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Template overrides are stamped") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
         Samples.get("genericvirtuals/templatedoption.vale"))
@@ -299,7 +299,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests a foreach for a linked list") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
         Samples.get("genericvirtuals/foreachlinkedlist.vale"))
@@ -313,18 +313,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // So, this checks that it and its three ancestors are all stamped and all get their own
   // function families.
   test("Stamp multiple ancestors") {
-    val compile = new Compilation(Samples.get("genericvirtuals/stampMultipleAncestors.vale"))
+    val compile = Compilation(Samples.get("genericvirtuals/stampMultipleAncestors.vale"))
     val temputs = compile.getTemputs()
     compile.evalForReferend(Vector())
   }
 
   test("Tests recursion") {
-    val compile = new Compilation(Samples.get("functions/recursion.vale"))
+    val compile = Compilation(Samples.get("functions/recursion.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(120)
   }
 
   test("Tests floats") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Moo imm {
         |  x float;
@@ -337,13 +337,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("getOr function") {
-    val compile = new Compilation(Samples.get("genericvirtuals/getOr.vale"))
+    val compile = Compilation(Samples.get("genericvirtuals/getOr.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
   test("Function return without ret upcasts") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface Opt { }
         |struct Some { value int; }
@@ -369,7 +369,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Function return with ret upcasts") {
-    val compile = new Compilation(Samples.get("virtuals/retUpcast.vale"))
+    val compile = Compilation(Samples.get("virtuals/retUpcast.vale"))
 
     val temputs = compile.getTemputs()
     val doIt = temputs.lookupFunction("doIt")
@@ -381,7 +381,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Map function") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
         Samples.get("genericvirtuals/mapFunc.vale"))
@@ -393,7 +393,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test shaking") {
     // Make sure that functions that cant be called by main will not be included.
 
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       """
@@ -416,7 +416,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test generic array func") {
     // Make sure that functions that cant be called by main will not be included.
 
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn Arr<M, F>(n int, generator &F) Array<M, T>
         |rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
@@ -437,7 +437,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test returning empty seq") {
     // Make sure that functions that cant be called by main will not be included.
 
-    val compile = new Compilation(
+    val compile = Compilation(
       """fn main() [] {
         |  []
         |}
@@ -448,7 +448,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test export functions") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """fn moo() export {
         |  42
         |}

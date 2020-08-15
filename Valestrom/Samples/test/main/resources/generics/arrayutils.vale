@@ -39,6 +39,15 @@ rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
   Array<M>(n, &IFunction1<mut, int, T>(generator))
 }
 
+fn each<M, N, T, F>(arr &[<M> N * T], func F) void {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    mut i = i + 1;
+  }
+}
+
 fn each<M, T, F>(arr &Array<M, T>, func F) void {
   i! = 0;
   l = len(&arr);

@@ -19,6 +19,11 @@ fn str(loc Location) {
     "(" + str(loc.x) + ", " + str(loc.y) + ")"
 }
 
+// Added
+fn ==(a Location, b Location) bool {
+    a.x == b.x and a.y == b.y
+}
+
 struct Location imm {
     x int;
     y int;

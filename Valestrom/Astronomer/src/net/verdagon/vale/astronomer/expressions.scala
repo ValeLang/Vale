@@ -23,7 +23,7 @@ case class WhileAE(condition: BlockAE, body: BlockAE) extends IExpressionAE
 
 case class ExprMutateAE(mutatee: IExpressionAE, expr: IExpressionAE) extends IExpressionAE
 case class GlobalMutateAE(name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
-case class LocalMutateAE(name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
+case class LocalMutateAE(range: RangeS, name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
 
 case class LendAE(innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extends IExpressionAE {
   targetOwnership match {
@@ -33,7 +33,7 @@ case class LendAE(innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extend
 }
 case class LockWeakAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressionAE
 
-case class ReturnAE(innerExpr1: IExpressionAE) extends IExpressionAE
+case class ReturnAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressionAE
 
 
 //case class CurriedFuncH(closureExpr: ExpressionH, funcName: String) extends ExpressionH
@@ -78,6 +78,7 @@ case class BlockAE(
 //  args: List[IExpressionAE]) extends IExpressionAE
 
 case class ConstructArrayAE(
+    range: RangeS,
     typeTemplex: ITemplexA,
     sizeExpr: IExpressionAE,
     generatorExpr: IExpressionAE,
@@ -127,7 +128,7 @@ case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1
 case class TemplateSpecifiedLookupAE(name: String, templateArgs: List[ITemplexS]) extends IExpressionAE
 case class RuneLookupAE(rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
 
-case class LocalLoadAE(name: IVarNameA, targetOwnership: OwnershipP) extends IExpressionAE
+case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: OwnershipP) extends IExpressionAE
 case class FunctionLoadAE(range: RangeS, name: GlobalFunctionFamilyNameA) extends IExpressionAE
 
 case class UnletAE(name: String) extends IExpressionAE

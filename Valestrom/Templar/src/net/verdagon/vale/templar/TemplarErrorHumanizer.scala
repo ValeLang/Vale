@@ -15,9 +15,17 @@ object TemplarErrorHumanizer {
       err: ICompileErrorT):
   String = {
     err match {
+      case CantMoveOutOfMemberT(range, name) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Cannot move out of member (" + name + ")"
+      }
       case CannotSubscriptT(range, tyype) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot subscript type: " + tyype + "!"
+      }
+      case CouldntConvertForReturnT(range, expectedType, actualType) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Couldn't convert " + actualType + " to expected return type " + expectedType
       }
       case CouldntFindMemberT(range, memberName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +

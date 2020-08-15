@@ -7,7 +7,7 @@ import net.verdagon.vale.driver.Compilation
 
 class StringTests extends FunSuite with Matchers {
   test("Simple string") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  "sprogwoggle"
@@ -21,7 +21,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with escapes") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  "sprog\nwoggle"
@@ -35,7 +35,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with hex escape") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  "sprog\u001bwoggle"

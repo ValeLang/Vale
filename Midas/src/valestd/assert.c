@@ -11,7 +11,7 @@ void __vassert(char value) {
 
 void __vassertI64Eq(int64_t expected, int64_t actual) {
   if (expected != actual) {
-    printf("Assertion failed! Expected %d but was %d.", expected, actual);
+    printf("Assertion failed! Expected %d but was %d.\n", expected, actual);
     exit(255);
   }
 }

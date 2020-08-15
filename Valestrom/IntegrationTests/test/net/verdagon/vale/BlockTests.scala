@@ -10,7 +10,7 @@ import net.verdagon.vale.driver.Compilation
 
 class BlockTests extends FunSuite with Matchers {
   test("Empty block") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  block {
@@ -25,7 +25,7 @@ class BlockTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  block {
@@ -45,7 +45,7 @@ class BlockTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable, another variable outside with same name") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  block {

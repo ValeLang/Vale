@@ -9,7 +9,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ArrayListTest extends FunSuite with Matchers {
   test("Simple ArrayList, no optionals") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct List<E> rules(E Ref) {
         |  array Array<mut, E>;
@@ -52,7 +52,10 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list with optionals") {
-    val compile = new Compilation(
+    val compile = Compilation(
+      Samples.get("utils.vale") +
+      Samples.get("castutils.vale") +
+      Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
       Samples.get("genericvirtuals/optingarraylist.vale") +
       """
@@ -78,7 +81,10 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list zero-constructor") {
-    val compile = new Compilation(
+    val compile = Compilation(
+      Samples.get("utils.vale") +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         """
@@ -96,7 +102,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list len") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         """
@@ -114,7 +120,10 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list set") {
-    val compile = new Compilation(
+    val compile = Compilation(
+      Samples.get("utils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("castutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         """
@@ -133,7 +142,10 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list with optionals with mutable element") {
-    val compile = new Compilation(
+    val compile = Compilation(
+      Samples.get("utils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("castutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
       Samples.get("genericvirtuals/optingarraylist.vale") +
         """
@@ -160,7 +172,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Mutate mutable from in lambda") {
-    val compile = new Compilation(
+    val compile = Compilation(
         """
           |struct Marine { hp int; }
           |
@@ -183,7 +195,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Move mutable from in lambda") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
       """
         |struct Marine { hp int; }

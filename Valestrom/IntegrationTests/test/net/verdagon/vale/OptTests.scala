@@ -9,7 +9,10 @@ import net.verdagon.vale.driver.Compilation
 
 class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
-    val compile = new Compilation(
+    val compile = Compilation(
+      Samples.get("utils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("castutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         """
           |fn main() {
@@ -23,7 +26,10 @@ class OptTests extends FunSuite with Matchers {
   }
 
   test("Test empty and get for None") {
-    val compile = new Compilation(
+    val compile = Compilation(
+      Samples.get("utils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("castutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         """
           |fn main() {

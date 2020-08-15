@@ -8,8 +8,31 @@ import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
 
 class HashMapTest extends FunSuite with Matchers {
+  test("Hash map update") {
+    val compile = Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
+        """
+          |fn main() {
+          |  m = HashMap<int, int>({_}, ==);
+          |  m.add(0, 100);
+          |  m.add(4, 101);
+          |  m.add(8, 102);
+          |  m.add(12, 103);
+          |  m.update(8, 108);
+          |  = m.get(8).get();
+          |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(108)
+  }
+
   test("Hash map collisions") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -52,7 +75,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map with functors") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -75,7 +98,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map with struct as key") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
       Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -114,7 +137,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map has") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -143,7 +166,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map keys") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -170,8 +193,36 @@ class HashMapTest extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
+  test("Hash map values") {
+    val compile = Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
+        """
+          |fn main() {
+          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
+          |  m.add(0, 100);
+          |  m.add(4, 101);
+          |  m.add(8, 102);
+          |  m.add(12, 103);
+          |  k = m.values();
+          |  assertEq(k.len(), 4);
+          |  assertEq(k[0], 100);
+          |  assertEq(k[1], 101);
+          |  assertEq(k[2], 102);
+          |  assertEq(k[3], 103);
+          |  = 1337;
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+  }
+
   test("Hash map with mutable values") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -201,7 +252,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map remove") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -223,6 +274,37 @@ class HashMapTest extends FunSuite with Matchers {
           |  assert(m.has(4));
           |  m.remove(4);
           |  assert(not m.has(4));
+          |  = 1337;
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
+  }
+
+  test("Hash map remove 2") {
+    val compile = Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("genericvirtuals/optingarraylist.vale") +
+        Samples.get("genericvirtuals/hashmap.vale") +
+        Samples.get("utils.vale") +
+        """
+          |fn main() {
+          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
+          |  m.add(0, 0);
+          |  m.add(1, 1);
+          |  m.add(2, 2);
+          |  m.add(3, 3);
+          |  m.remove(1);
+          |  m.remove(2);
+          |  m.add(4, 4);
+          |
+          |  values = m.values();
+          |  assertEq(values.len(), 3, "wat");
+          |  assertEq(values[0], 0, "wat");
+          |  assertEq(values[1], 3, "wat");
+          |  assertEq(values[2], 4, "wat");
           |  = 1337;
           |}
         """.stripMargin)

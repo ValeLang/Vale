@@ -83,9 +83,7 @@ Level {
             loc = Location(x, y);
             walkable = walkabilities.get(x).get().get(y).get();
             on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
-            // println(str(loc) + " w " + str(walkable) + " e " + str(on_edge));
             if (walkable and not on_edge) {
-                // println("adding floor");
                 display_class =
                   if (rand.next() mod 2 == 0) {
                     "dirt"
@@ -119,7 +117,6 @@ Level {
                     mut neighbor_x = neighbor_x + 1;
                 }
 
-                // println("adding wall");
                 if (next_to_walkable) {
                     level.tiles.add(
                         loc,
@@ -205,12 +202,17 @@ fn connect_all_rooms(
     consider_corners_adjacent bool) void {
     rooms = identify_rooms(&walkabilities, consider_corners_adjacent);
     connect_rooms(&rand, &rooms);
-    // for i in 0..rooms.len() {
-    //     let new_room = &rooms[i];
-    //     for loc in new_room {
-    //         walkabilities[loc.x as usize][loc.y as usize] = true;
-    //     }
-    // }
+
+    i! = 0;
+    while (i < rooms.len()) {
+        new_room = rooms.get(i).get();
+
+        each (new_room) (loc){
+            walkabilities.get(loc.x).get().set(loc.y, true);
+        }
+
+        mut i = i + 1;
+    }
     0;
 }
 
@@ -237,7 +239,7 @@ List<HashSet<Location, LocationHasher, LocationEquator>> {
                             consider_corners_adjacent,
                             spark_location);
                     new_room_index = rooms.len();
-                    connected_locations_clone = connected_locations.keys();
+                    connected_locations_clone = connected_locations.toArray();
                     rooms.add(connected_locations); // DIFFERENCE clones
 
                     i! = 0;
@@ -274,9 +276,9 @@ HashSet<Location, LocationHasher, LocationEquator> {
     connected_with_unexplored_neighbors.add(start_location);
 
     while (connected_with_unexplored_neighbors.len() > 0) {
-        // DIFFERENCE they use iter we use keys()
+        // DIFFERENCE they use iter we use toArray()
         current =
-            connected_with_unexplored_neighbors.keys()[0];
+            connected_with_unexplored_neighbors.toArray()[0];
         assert(not connected_with_explored_neighbors.has(current));
 
         connected_with_unexplored_neighbors.remove(current);
@@ -316,7 +318,7 @@ fn connect_rooms(
         room = rooms.get(room_index).get();
         i! = 0;
         // DIFFERENCE
-        room_keys = room.keys();
+        room_keys = room.toArray();
         while (i < room_keys.len()) {
             room_floor_loc = room_keys[i];
 
@@ -351,110 +353,152 @@ fn connect_rooms(
         mut room_index = room_index + 1;
     }
 
-//     loop {
+    outer_running! = true;
+    while (outer_running) {
         // DIFFERENCE
-        distinct_regions_keys = region_by_room_index.keys();
-        if (distinct_regions_keys.len() >= 2) {
-            region_a = distinct_regions_keys[0];
-            region_b = distinct_regions_keys[1];
+        distinct_regions =
+            HashSet<int, IntHasher, IntEquator>(
+                &region_by_room_index.values(),
+                IntHasher(), IntEquator());
 
-            // let region_a_room_index =
-            //     *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_a])
-            //         .expect("wat");
-            // let region_a_room = &rooms[region_a_room_index];
-            // let region_a_location = *get_hash_set_random_nth(&mut rand, &region_a_room).expect("wat");
 
-            // let region_b_room_index =
-            //     *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_b])
-            //         .expect("wat");
-            // let region_b_room = &rooms[region_b_room_index];
-            // let region_b_location = *get_hash_set_random_nth(&mut rand, &region_b_room).expect("wat");
+        if (distinct_regions.len() >= 2) {
+            distinct_regions_arr = distinct_regions.toArray();
+            region_a = distinct_regions_arr[0];
+            region_b = distinct_regions_arr[1];
 
-            // // Now lets drive from region_a_location to region_b_location, and see what happens on the
-            // // way there.
-            // let mut path = Vec::new();
-            // let mut current_location = region_a_location;
-            // while current_location != region_b_location {
-            //     if current_location.x != region_b_location.x {
-            //         current_location.x += (region_b_location.x - current_location.x).signum();
-            //     } else if current_location.y != region_b_location.y {
-            //         current_location.y += (region_b_location.y - current_location.y).signum();
-            //     } else {
-            //         panic!("wat")
-            //     }
-            //     if !room_index_by_location.contains_key(&current_location) {
-            //         // It means we're in open space, keep going.
-            //         path.push(current_location);
-            //     } else {
-            //         let current_room_index = room_index_by_location[&current_location];
-            //         let current_region = region_by_room_index[&current_room_index];
-            //         if current_region == region_a {
-            //             // Keep going, but restart the path here.
-            //             path = Vec::new();
-            //         } else if current_region != region_a {
-            //             // current_regionNumber is probably region_bNumber, but isn't necessarily... we could
-            //             // have just come across a random other region.
-            //             // Either way, we hit something, so we stop now.
-            //             break;
-            //         }
-            //     }
-            // }
+            region_a_room_index =
+                get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_a)^.get()).get();
+            region_a_room = &rooms.get(region_a_room_index).get();
+            region_a_location = get_hash_set_random_nth(&rand, &region_a_room).get();
 
-            // let combined_region = regions.len();
-            // regions.insert(combined_region);
+            room_indices_by_region_num.get(region_b);
+            room_indices_by_region_num.get(region_b)^.get();
+            room_indices_by_region_num.get(region_b)^.get().len();
 
-            // let new_room_index = rooms.len();
-            // rooms.push(FxHashSet::from_iter(path.iter().cloned()));
-            // for path_location in &path {
-            //     room_index_by_location.insert(*path_location, new_room_index);
-            // }
-            // region_by_room_index.insert(new_room_index, combined_region);
-            // // We'll fill in regionNumberByRoomIndex and room_indices_by_region_num. umber shortly.
+            region_b_room_index =
+                get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_b)^.get()).get();
+            region_b_room = &rooms.get(region_b_room_index).get();
+            region_b_location = get_hash_set_random_nth(&rand, &region_b_room).get();
 
-            // // So, now we have a path that we know connects some regions. However, it might be
-            // // accidentally connecting more than two! It could have grazed past another region without
-            // // us realizing it.
-            // // So now, figure out all the regions that this path touches.
+            // Now lets drive from region_a_location to region_b_location, and see what happens on the
+            // way there.
+            path! = List<Location>();
+            current_location! = region_a_location;
+            running! = true;
+            while (running and current_location != region_b_location) {
+                if (current_location.x != region_b_location.x) {
+                    // DIFFERENCE! make sure its optimized out
+                    mut current_location =
+                        Location(
+                            current_location.x + (region_b_location.x - current_location.x).signum(),
+                            current_location.y);
+                } else if (current_location.y != region_b_location.y) {
+                    // DIFFERENCE! make sure its optimized out
+                    mut current_location =
+                        Location(
+                            current_location.x,
+                            current_location.y + (region_b_location.y - current_location.y).signum());
+                } else {
+                    panic("wat");
+                }
+                if (not room_index_by_location.has(current_location)) {
+                    // It means we're in open space, keep going.
+                    path.add(current_location);
+                } else {
+                    current_room_index = room_index_by_location.get(current_location).get();
+                    current_region = region_by_room_index.get(current_room_index).get();
+                    if (current_region == region_a) {
+                        // DIFFERENCE rust overwrites but we make a new thing.
+                        // Keep going, but restart the path here.
+                        mut path = List<Location>();
+                    } else if (current_region != region_a) {
+                        // current_regionNumber is probably region_bNumber, but isn't necessarily... we could
+                        // have just come across a random other region.
+                        // Either way, we hit something, so we stop now.
+                        mut running = false;
+                    }
+                }
+            }
 
-            // let path_adjacent_locations = get_pattern_locations_adjacent_to_any(
-            //     &FxHashSet::from_iter(path.iter().cloned()),
-            //     true,
-            //     false,
-            // );
-            // let mut path_adjacent_regions = FxHashSet::default();
-            // for path_adjacent_location in path_adjacent_locations {
-            //     if room_index_by_location.contains_key(&path_adjacent_location) {
-            //         let room_index = room_index_by_location[&path_adjacent_location];
-            //         let region = region_by_room_index[&room_index];
-            //         path_adjacent_regions.insert(region);
-            //     }
-            // }
+            combined_region = regions.len();
+            regions.add(combined_region);
 
-            // let mut room_indices_in_combined_region = FxHashSet::default();
-            // room_indices_in_combined_region.insert(new_room_index);
-            // for path_adjacent_region in path_adjacent_regions {
-            //     if path_adjacent_region == combined_region {
-            //         // The new room is already part of this region
-            //         continue;
-            //     }
-            //     for path_adjacent_room_index in &room_indices_by_region_num[&path_adjacent_region] {
-            //         region_by_room_index.insert(*path_adjacent_room_index, combined_region);
-            //         room_indices_in_combined_region.insert(*path_adjacent_room_index);
-            //     }
-            //     room_indices_by_region_num.remove(&path_adjacent_region);
-            // }
-            // room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region.clone());
+            new_room_index = rooms.len();
+            // DIFFERENCE
+            rooms.add(
+                HashSet<Location, LocationHasher, LocationEquator>(
+                    &path.toArray<mut>(), LocationHasher(), LocationEquator()));
+            each (&path) (path_location){
+                room_index_by_location.add(path_location, new_room_index);
+            }
+            region_by_room_index.add(new_room_index, combined_region);
+            // We'll fill in regionNumberByRoomIndex and room_indices_by_region_num. umber shortly.
+
+            // So, now we have a path that we know connects some regions. However, it might be
+            // accidentally connecting more than two! It could have grazed past another region without
+            // us realizing it.
+            // So now, figure out all the regions that this path touches.
+
+
+            path_adjacent_locations =
+                get_pattern_locations_adjacent_to_any(
+                    &HashSet<Location, LocationHasher, LocationEquator>(
+                        &path.toArray<mut>(), LocationHasher(), LocationEquator()),
+                    true,
+                    false);
+            path_adjacent_regions =
+                HashSet<int, IntHasher, IntEquator>(
+                    IntHasher(), IntEquator());
+            each (&path_adjacent_locations) (path_adjacent_location){
+                if (&room_index_by_location has path_adjacent_location) {
+                    room_index = room_index_by_location.get(path_adjacent_location).get();
+                    region = region_by_room_index.get(room_index).get();
+                    // DIFFERENCE we check if its already there
+                    if (not path_adjacent_regions.has(region)) {
+                        path_adjacent_regions.add(region);
+                    }
+                }
+            }
+
+            room_indices_in_combined_region =
+                HashSet<int, IntHasher, IntEquator>(
+                    IntHasher(), IntEquator());
+            room_indices_in_combined_region.add(new_room_index);
+            each (&path_adjacent_regions) (path_adjacent_region){
+                // Otherwise the new room is already part of this region
+                if (path_adjacent_region != combined_region) {
+                    each (room_indices_by_region_num.get(path_adjacent_region)^.get()) (path_adjacent_room_index){
+                        // DIFFERENCE we're calling update here
+                        region_by_room_index.update(path_adjacent_room_index, combined_region);
+                        room_indices_in_combined_region.add(path_adjacent_room_index);
+                    }
+                    room_indices_by_region_num.remove(path_adjacent_region);
+                }
+            }
+            // DIFFERENCE they had a clone?
+            room_indices_by_region_num.add(combined_region, room_indices_in_combined_region);
 
             // room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region);
+        } else {
+            mut outer_running = false;
         }
-//     }
+    }
 
     0;
 }
 
-// fn get_hash_set_random_nth<'a, T>(rand: &mut LCGRand, set: &'a FxHashSet<T>) -> Option<&'a T> {
-//     ret set.iter().nth((rand.next() as usize) % set.len());
-// }
+fn get_hash_set_random_nth<T, H, E>(
+    rand &!LCGRand,
+    set &HashSet<T, H, E>)
+Opt<T> {
+    if (set.empty?()) {
+        result Opt<T> = None<T>();
+        ret result;
+    }
+    keys = set.toArray();
+    ret Some(keys[rand.next() mod keys.len()]);
+}
 
 fn get_adjacent_locations(
     width int,

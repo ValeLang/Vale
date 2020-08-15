@@ -209,13 +209,19 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
 
   globalState->liveHeapObjCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__liveHeapObjCounter");
-//  LLVMSetLinkage(globalState->liveHeapObjCounter, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
   globalState->objIdCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__objIdCounter");
-//  LLVMSetLinkage(globalState->liveHeapObjCounter, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->objIdCounter, LLVMConstInt(LLVMInt64Type(), 501, false));
+
+  globalState->derefCounter =
+      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "derefCounter");
+  LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+
+  globalState->mutRcAdjustCounter =
+      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
+  LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
   initInternalStructs(globalState);
   initInternalExterns(globalState);

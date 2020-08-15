@@ -513,7 +513,7 @@ class OverloadTemplar(
       if (bannerByIsBestScore.getOrElse(true, List()).isEmpty) {
         vfail("wat")
       } else if (bannerByIsBestScore.getOrElse(true, List()).size > 1) {
-        vfail("Can't resolve between:\n" + bannerByIsBestScore.mkString("\n"))
+        vfail("Can't resolve between:\n" + bannerByIsBestScore.mapValues(_.mkString("\n")).mkString("\n"))
       } else {
         bannerByIsBestScore(true).head._1
       };

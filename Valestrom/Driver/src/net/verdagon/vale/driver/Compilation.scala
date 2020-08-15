@@ -12,27 +12,33 @@ import net.verdagon.vale.{Err, Ok, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData
 
-class Compilation(code: String, verbose: Boolean = true) {
-  val filenamesAndSources = List(("in.vale", code))
+object Compilation {
+  def apply(code: String, verbose: Boolean = true): Compilation = new Compilation(List(("in.vale", code)), verbose)
+}
 
-  var parsedCache: Option[FileP] = None
+class Compilation(filenamesAndSources: List[(String, String)], verbose: Boolean = true) {
+  var parsedsCache: Option[List[FileP]] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None
   var temputsCache: Option[Temputs] = None
   var hinputsCache: Option[Hinputs] = None
   var hamutsCache: Option[ProgramH] = None
 
-  def getParsed(): FileP = {
-    parsedCache match {
-      case Some(parsed) => parsed
+  def getParseds(): List[FileP] = {
+    parsedsCache match {
+      case Some(parseds) => parseds
       case None => {
-        Parser.runParserForProgramAndCommentRanges(code) match {
-          case ParseFailure(err) => vwat(err.toString)
-          case ParseSuccess((program0, _)) => {
-            parsedCache = Some(program0)
-            program0
-          }
-        }
+        parsedsCache =
+          Some(
+            filenamesAndSources.map({ case (filename, source) =>
+              Parser.runParserForProgramAndCommentRanges(source) match {
+                case ParseFailure(err) => vwat(err.toString)
+                case ParseSuccess((program0, _)) => {
+                  program0
+                }
+              }
+            }))
+        parsedsCache.get
       }
     }
   }
@@ -41,7 +47,7 @@ class Compilation(code: String, verbose: Boolean = true) {
     scoutputCache match {
       case Some(scoutput) => scoutput
       case None => {
-        val scoutput = Scout.scoutProgram(List(getParsed()))
+        val scoutput = Scout.scoutProgram(getParseds())
         scoutputCache = Some(scoutput)
         scoutput
       }

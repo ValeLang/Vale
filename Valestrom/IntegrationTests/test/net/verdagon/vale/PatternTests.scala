@@ -11,7 +11,7 @@ import net.verdagon.vale.driver.Compilation
 class PatternTests extends FunSuite with Matchers {
   // To get something like this to work would be rather involved.
   //test("Test matching a single-member pack") {
-  //  val compile = new Compilation("fn main() { [x] = (4); = x; }")
+  //  val compile = Compilation("fn main() { [x] = (4); = x; }")
   //  compile.getTemputs()
   //  val main = temputs.lookupFunction("main")
   //  main.header.returnType shouldEqual Coord(Share, Int2())
@@ -20,7 +20,7 @@ class PatternTests extends FunSuite with Matchers {
 
   test("Test matching a multiple-member seq of immutables") {
     // Checks that the 5 made it into y, and it was an int
-    val compile = new Compilation("fn main() { (x, y) = [4, 5]; = y; }")
+    val compile = Compilation("fn main() { (x, y) = [4, 5]; = y; }")
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
     main.header.returnType shouldEqual Coord(Share, Int2())
@@ -29,7 +29,7 @@ class PatternTests extends FunSuite with Matchers {
 
   test("Test matching a multiple-member seq of mutables") {
     // Checks that the 5 made it into y, and it was an int
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Marine { hp int; }
         |fn main() { (x, y) = [Marine(6), Marine(8)]; = y.hp; }
@@ -42,7 +42,7 @@ class PatternTests extends FunSuite with Matchers {
 
   test("Test matching a multiple-member pack of immutable and own") {
     // Checks that the 5 made it into y, and it was an int
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Marine { hp int; }
         |fn main() { (x, y) = [7, Marine(8)]; = y.hp; }
@@ -54,7 +54,7 @@ class PatternTests extends FunSuite with Matchers {
 
   test("Test matching a multiple-member pack of immutable and borrow") {
     // Checks that the 5 made it into y, and it was an int
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Marine { hp int; }
         |fn main() {

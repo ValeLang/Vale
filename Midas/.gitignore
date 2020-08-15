@@ -90,6 +90,7 @@ packages
 # Build output
 valec
 test/test_build
+test/Driver.jar
 
 # python
 __pycache__

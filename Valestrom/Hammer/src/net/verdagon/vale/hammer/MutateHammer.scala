@@ -26,22 +26,22 @@ object MutateHammer {
 
     val (oldValueAccess, destinationDeferreds) =
       destinationExpr2 match {
-        case LocalLookup2(ReferenceLocalVariable2(varId, variability, reference), varType2) => {
+        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2) => {
           translateMundaneLocalMutate(hinputs, hamuts, locals, sourceExprResultLine, varId)
         }
-        case LocalLookup2(AddressibleLocalVariable2(varId, variability, reference), varType2) => {
+        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, reference), varType2) => {
           translateAddressibleLocalMutate(hinputs, hamuts, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
         }
-        case ReferenceMemberLookup2(structExpr2, memberName, memberType2) => {
+        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2) => {
           translateMundaneMemberMutate(hinputs, hamuts, locals, sourceExprResultLine, structExpr2, memberName)
         }
-        case AddressMemberLookup2(structExpr2, memberName, memberType2) => {
+        case AddressMemberLookup2(_,structExpr2, memberName, memberType2) => {
           translateAddressibleMemberMutate(hinputs, hamuts, locals, sourceExprResultLine, structExpr2, memberName)
         }
-        case ArraySequenceLookup2(arrayExpr2, arrayType, indexExpr2) => {
+        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
           translateMundaneKnownSizeArrayMutate(hinputs, hamuts, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
-        case UnknownSizeArrayLookup2(arrayExpr2, arrayType, indexExpr2) => {
+        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
           translateMundaneUnknownSizeArrayMutate(hinputs, hamuts, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
       }

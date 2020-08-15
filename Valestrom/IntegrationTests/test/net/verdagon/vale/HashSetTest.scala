@@ -5,8 +5,58 @@ import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
 class HashSetTest extends FunSuite with Matchers {
-  test("Hash set has") {
+  test("Hash set from KSA") {
     val compile = new Compilation(
+      List(
+        ("castutils.vale" -> Samples.get("castutils.vale")),
+        ("printutils.vale" -> Samples.get("printutils.vale")),
+        ("generics/arrayutils.vale" -> Samples.get("generics/arrayutils.vale")),
+        ("genericvirtuals/opt.vale" -> Samples.get("genericvirtuals/opt.vale")),
+        ("genericvirtuals/optingarraylist.vale" -> Samples.get("genericvirtuals/optingarraylist.vale")),
+        ("genericvirtuals/hashset.vale" -> Samples.get("genericvirtuals/hashset.vale")),
+        ("utils.vale" -> Samples.get("utils.vale")),
+        ("in.vale" ->
+          """
+            |fn main() {
+            |  m = HashSet<int>([0, 4, 8, 12], IFunction1<mut, int, int>({_}), ==);
+            |  assert(m.has(0));
+            |  assert(m.has(4));
+            |  assert(m.has(8));
+            |  assert(m.has(12));
+            |  = 111;
+            |}
+          """.stripMargin)))
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(111)
+  }
+
+  test("Hash set from Array") {
+    val compile = new Compilation(
+      List(
+        ("castutils.vale" -> Samples.get("castutils.vale")),
+        ("printutils.vale" -> Samples.get("printutils.vale")),
+        ("generics/arrayutils.vale" -> Samples.get("generics/arrayutils.vale")),
+        ("genericvirtuals/opt.vale" -> Samples.get("genericvirtuals/opt.vale")),
+        ("genericvirtuals/optingarraylist.vale" -> Samples.get("genericvirtuals/optingarraylist.vale")),
+        ("genericvirtuals/hashset.vale" -> Samples.get("genericvirtuals/hashset.vale")),
+        ("utils.vale" -> Samples.get("utils.vale")),
+        ("in.vale" ->
+          """
+            |fn main() {
+            |  m = HashSet<int>([0, 4, 8, 12].toArray<imm>(), IFunction1<mut, int, int>({_}), ==);
+            |  assert(m.has(0));
+            |  assert(m.has(4));
+            |  assert(m.has(8));
+            |  assert(m.has(12));
+            |  = 111;
+            |}
+          """.stripMargin)))
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(111)
+  }
+
+  test("Hash set has") {
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -34,8 +84,8 @@ class HashSetTest extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(111)
   }
 
-  test("Hash set keys") {
-    val compile = new Compilation(
+  test("Hash set toArray") {
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
@@ -49,7 +99,7 @@ class HashSetTest extends FunSuite with Matchers {
           |  m.add(4);
           |  m.add(8);
           |  m.add(12);
-          |  k = m.keys();
+          |  k = m.toArray();
           |  assertEq(k.len(), 4);
           |  assertEq(k[0], 0);
           |  assertEq(k[1], 4);
@@ -63,7 +113,7 @@ class HashSetTest extends FunSuite with Matchers {
   }
 
   test("Hash set remove") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +

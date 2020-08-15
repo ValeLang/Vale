@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 struct ScreenColor imm { i int; }
 fn Black() { ScreenColor(0) }
@@ -18,30 +17,6 @@ fn ==(a ScreenColor, b ScreenColor) { a.i == b.i }
 struct ScreenCell {
     fg_color ScreenColor;
     bg_color ScreenColor;
-=======
-// use crossterm::{cursor::MoveTo, ExecutableCommand};
-// use std::io::stdout;
-
-// #[allow(dead_code)]
-// #[derive(PartialEq)]
-// pub enum ScreenColor {
-//     Black,
-//     DarkGray,
-//     Turquoise,
-//     Red,
-//     LightGray,
-//     Orange,
-//     Yellow,
-//     OrangeYellow,
-//     Green,
-//     White,
-//     Gray,
-// }
-
-struct ScreenCell {
-    // fg_color ScreenColor;
-    // bg_color ScreenColor;
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
     character str;
     dirty bool;
 }
@@ -60,11 +35,7 @@ struct StrBox {
 
 // impl Screen {
     fn newScreen(width int, height int) Screen {
-<<<<<<< HEAD
         println("\u001b[1;1H\u001b[2J");
-=======
-        println("\x1b[1;1H\x1b[2J");
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 
         cells = List<List<ScreenCell>>();
 
@@ -77,15 +48,9 @@ struct StrBox {
             while (y < height) {
                 q.add(
                     ScreenCell(
-<<<<<<< HEAD
                         White(),
                         Black(),
                         " ",
-=======
-                        // ScreenColor::White,
-                        // ScreenColor::Black,
-                        "9",
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
                         true // All cells start as dirty, so we can display them all now
                     ));
 
@@ -97,10 +62,6 @@ struct StrBox {
             mut x = x + 1;
         }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
         ret Screen(
             width,
             height,
@@ -112,7 +73,6 @@ struct StrBox {
 //         self.status_line = new_line;
 //     }
 
-<<<<<<< HEAD
     fn set_cell(
         self &!Screen,
         x int,
@@ -201,92 +161,4 @@ struct StrBox {
             "48;2;" + fg_red + ";" + fg_green + ";" + fg_red + "m" +
             character + "\u001b[0m");
     }
-=======
-//     pub fn set_cell(
-//         &mut self,
-//         x: usize,
-//         y: usize,
-//         bg_color: ScreenColor,
-//         fg_color: ScreenColor,
-//         character: String,
-//     ) {
-//         let cell = &mut self.cells[x][y];
-
-//         if bg_color != cell.bg_color {
-//             cell.bg_color = bg_color;
-//             cell.dirty = true;
-//         }
-
-//         if fg_color != cell.fg_color {
-//             cell.fg_color = fg_color;
-//             cell.dirty = true;
-//         }
-
-//         if character != cell.character {
-//             cell.character = character;
-//             cell.dirty = true;
-//         }
-//     }
-
-//     pub fn paint_screen(&self) {
-//         for x in 0..self.width {
-//             for y in 0..self.height {
-//                 if self.cells[x][y].dirty {
-//                     self.paint_cell(x, y);
-//                 }
-//             }
-//         }
-//         match stdout().execute(MoveTo(0, self.height as u16)) {
-//             Ok(_) => {}
-//             Err(_) => panic!("Couldn't move cursor!"),
-//         }
-//         println!("{}", self.status_line);
-//     }
-
-//     fn paint_cell(&self, x: usize, y: usize) {
-//         let cell = &self.cells[x][y];
-
-//         // For precise colors:
-//         // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal
-//         // For standard colors:
-//         // https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
-
-//         let (fg_red, fg_green, fg_blue) =
-//             match cell.bg_color {
-//                 ScreenColor::DarkGray => (40, 40, 40),
-//                 ScreenColor::Orange => (255, 96, 0),
-//                 ScreenColor::Red => (255, 0, 0),
-//                 ScreenColor::Black => (0, 0, 0),
-//                 _ => panic!("Unimplemented"),
-//             };
-
-//         let (bg_red, bg_green, bg_blue) =
-//             match cell.fg_color {
-//                 ScreenColor::Red => (255, 0, 0),
-//                 ScreenColor::Turquoise => (0, 128, 255),
-//                 ScreenColor::Orange => (255, 96, 0),
-//                 ScreenColor::Green => (0, 196, 0),
-//                 ScreenColor::Yellow => (255, 255, 0),
-//                 ScreenColor::OrangeYellow => (255, 186, 0),
-//                 ScreenColor::LightGray => (224, 224, 224),
-//                 ScreenColor::Gray => (150, 150, 150),
-//                 ScreenColor::White => (255, 255, 255),
-//                 _ => panic!("Unimplemented"),
-//             };
-
-//         let character = &cell.character;
-
-//         match stdout().execute(MoveTo(x as u16, y as u16)) {
-//             Ok(_) => {}
-//             Err(_) => panic!("Couldn't move cursor!"),
-//         }
-
-//         println!(
-//             "\x1b[38;2;{};{};{};48;2;{};{};{}m{}\x1b[0m",
-//             bg_red, bg_green, bg_blue,
-//             fg_red, fg_green, fg_blue,
-//             character
-//         );
-//     }
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 // }

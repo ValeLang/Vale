@@ -71,9 +71,9 @@ Level {
     mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
     mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
 
-    // // The caverns and rooms from the above process are probably disjoint and we can't get
-    // // from one to the other. Here, we dig tunnels between them until they're connected.
-    // connect_all_rooms(&mut rand, &mut walkabilities, false);
+    // The caverns and rooms from the above process are probably disjoint and we can't get
+    // from one to the other. Here, we dig tunnels between them until they're connected.
+    connect_all_rooms(&rand, &walkabilities, false);
 
     // Now, assemble the above walkabilities 2D bool array into a legit 2D tile array.
     mut x = 0;
@@ -199,251 +199,309 @@ List<List<bool>> {
     ret new_walkabilities;
 }
 
-// fn connect_all_rooms(
-//     mut rand: &mut LCGRand,
-//     mut walkabilities: &mut Vec<Vec<bool>>,
-//     consider_corners_adjacent: bool,
-// ) {
-//     let mut rooms = identify_rooms(&mut walkabilities, consider_corners_adjacent);
-//     connect_rooms(&mut rand, &mut rooms);
-//     for i in 0..rooms.len() {
-//         let new_room = &rooms[i];
-//         for loc in new_room {
-//             walkabilities[loc.x as usize][loc.y as usize] = true;
-//         }
-//     }
-// }
+fn connect_all_rooms(
+    rand &!LCGRand,
+    walkabilities &!List<List<bool>>,
+    consider_corners_adjacent bool) void {
+    rooms = identify_rooms(&walkabilities, consider_corners_adjacent);
+    connect_rooms(&rand, &rooms);
+    // for i in 0..rooms.len() {
+    //     let new_room = &rooms[i];
+    //     for loc in new_room {
+    //         walkabilities[loc.x as usize][loc.y as usize] = true;
+    //     }
+    // }
+    0;
+}
 
-// pub fn identify_rooms(
-//     walkabilities: &mut Vec<Vec<bool>>,
-//     consider_corners_adjacent: bool,
-// ) -> Vec<FxHashSet<Location>> {
-//     let mut room_index_by_location = FxHashMap::default();
-//     let mut rooms = Vec::new();
+fn identify_rooms(
+    walkabilities &!List<List<bool>>,
+    consider_corners_adjacent bool)
+List<HashSet<Location, LocationHasher, LocationEquator>> {
+    room_index_by_location =
+        HashMap<Location, int, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+    rooms =
+        List<HashSet<Location, LocationHasher, LocationEquator>>();
 
-//     for x in 0..walkabilities.len() {
-//         for y in 0..walkabilities[x].len() {
-//             if walkabilities[x][y] {
-//                 let spark_location = Location::new(x as i32, y as i32);
-//                 if room_index_by_location.contains_key(&spark_location) {
-//                     continue;
-//                 }
-//                 let connected_locations = find_all_connected_locations(
-//                     &walkabilities,
-//                     consider_corners_adjacent,
-//                     spark_location,
-//                 );
-//                 let new_room_index = rooms.len();
-//                 rooms.push(connected_locations.clone());
-//                 for connected_location in connected_locations {
-//                     assert!(!room_index_by_location.contains_key(&connected_location));
-//                     room_index_by_location.insert(connected_location, new_room_index);
-//                 }
-//             }
-//         }
-//     }
-//     return rooms;
-// }
+    x! = 0;
+    while (x < walkabilities.len()) {
+        y! = 0;
+        while (y < walkabilities.get(x).get().len()) {
+            if (walkabilities.get(x).get().get(y).get()) {
+                spark_location = Location(x, y);
+                if (not room_index_by_location.has(spark_location)) {
+                    connected_locations =
+                        find_all_connected_locations(
+                            &walkabilities,
+                            consider_corners_adjacent,
+                            spark_location);
+                    new_room_index = rooms.len();
+                    connected_locations_clone = connected_locations.keys();
+                    rooms.add(connected_locations); // DIFFERENCE clones
 
-// pub fn find_all_connected_locations(
-//     walkabilities: &Vec<Vec<bool>>,
-//     consider_corners_adjacent: bool,
-//     start_location: Location,
-// ) -> FxHashSet<Location> {
-//     let mut connected_with_unexplored_neighbors = FxHashSet::default();
-//     let mut connected_with_explored_neighbors = FxHashSet::<Location>::default();
+                    i! = 0;
+                    while (i < connected_locations_clone.len()) {
+                        connected_location = connected_locations_clone[i];
+                        assert(not room_index_by_location.has(connected_location));
+                        room_index_by_location.add(connected_location, new_room_index);
 
-//     connected_with_unexplored_neighbors.insert(start_location);
+                        mut i = i + 1;
+                    }
+                }
+            }
+            mut y = y + 1;
+        }
 
-//     while connected_with_unexplored_neighbors.len() > 0 {
-//         let current = connected_with_unexplored_neighbors
-//             .iter()
-//             .nth(0)
-//             .expect("")
-//             .clone();
-//         assert!(!connected_with_explored_neighbors.contains(&current));
+        mut x = x + 1;
+    }
 
-//         connected_with_unexplored_neighbors.remove(&current);
-//         connected_with_explored_neighbors.insert(current);
+    ret rooms;
+}
 
-//         for neighbor in
-//             get_adjacent_walkable_locations(walkabilities, current, consider_corners_adjacent)
-//         {
-//             if connected_with_explored_neighbors.contains(&neighbor) {
-//                 continue;
-//             }
-//             if connected_with_unexplored_neighbors.contains(&neighbor) {
-//                 continue;
-//             }
-//             connected_with_unexplored_neighbors.insert(neighbor);
-//         }
-//     }
+fn find_all_connected_locations(
+    walkabilities &List<List<bool>>,
+    consider_corners_adjacent bool,
+    start_location Location)
+HashSet<Location, LocationHasher, LocationEquator> {
+    connected_with_unexplored_neighbors =
+        HashSet<Location, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+    connected_with_explored_neighbors =
+        HashSet<Location, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
 
-//     return connected_with_explored_neighbors;
-// }
+    connected_with_unexplored_neighbors.add(start_location);
 
-// pub fn connect_rooms(mut rand: &mut LCGRand, rooms: &mut Vec<FxHashSet<Location>>) {
-//     // This function will be adding the corridors to `rooms`.
+    while (connected_with_unexplored_neighbors.len() > 0) {
+        // DIFFERENCE they use iter we use keys()
+        current =
+            connected_with_unexplored_neighbors.keys()[0];
+        assert(not connected_with_explored_neighbors.has(current));
 
-//     let mut room_index_by_location = FxHashMap::<Location, usize>::default();
+        connected_with_unexplored_neighbors.remove(current);
+        connected_with_explored_neighbors.add(current);
 
-//     for room_index in 0..rooms.len() {
-//         let room = &rooms[room_index];
-//         for room_floor_loc in room {
-//             room_index_by_location.insert(*room_floor_loc, room_index);
-//         }
-//     }
+        adj_walkable_locs =
+            get_adjacent_walkable_locations(walkabilities, current, consider_corners_adjacent);
 
-//     let mut regions = FxHashSet::default();
+        i! = 0;
+        while (i < adj_walkable_locs.len()) {
+            neighbor = adj_walkable_locs.get(i).get();
 
-//     let mut region_by_room_index = FxHashMap::default();
-//     let mut room_indices_by_region_num = FxHashMap::default();
+            if (not connected_with_explored_neighbors.has(neighbor)) {
+                if (not connected_with_unexplored_neighbors.has(neighbor)) {
+                    connected_with_unexplored_neighbors.add(neighbor);
+                }
+            }
 
-//     for room_index in 0..rooms.len() {
-//         let region = room_index;
-//         region_by_room_index.insert(room_index, region);
-//         let mut room_indices_in_region = FxHashSet::default();
-//         room_indices_in_region.insert(room_index);
-//         room_indices_by_region_num.insert(region, room_indices_in_region);
-//         regions.insert(region);
-//     }
+            mut i = i + 1;
+        }
+    }
+
+    ret connected_with_explored_neighbors;
+}
+
+fn connect_rooms(
+    rand &!LCGRand,
+    rooms &!List<HashSet<Location, LocationHasher, LocationEquator>>) {
+    // This function will be adding the corridors to `rooms`.
+
+    room_index_by_location =
+        HashMap<Location, int, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+
+    room_index! = 0;
+    while (room_index < rooms.len()) {
+        room = rooms.get(room_index).get();
+        i! = 0;
+        // DIFFERENCE
+        room_keys = room.keys();
+        while (i < room_keys.len()) {
+            room_floor_loc = room_keys[i];
+
+            room_index_by_location.add(room_floor_loc, room_index);
+
+            mut i = i + 1;
+        }
+
+        mut room_index = room_index + 1;
+    }
+
+    regions = List<int>();
+
+    region_by_room_index =
+        HashMap<int, int, IntHasher, IntEquator>(
+            IntHasher(), IntEquator());
+    room_indices_by_region_num =
+        HashMap<int, HashSet<int, IntHasher, IntEquator>, IntHasher, IntEquator>(
+            IntHasher(), IntEquator());
+
+    mut room_index = 0;
+    while (room_index < rooms.len()) {
+        region = room_index;
+        region_by_room_index.add(room_index, region);
+        room_indices_in_region =
+            HashSet<int, IntHasher, IntEquator>(
+                IntHasher(), IntEquator());
+        room_indices_in_region.add(room_index);
+        room_indices_by_region_num.add(region, room_indices_in_region);
+        regions.add(region);
+
+        mut room_index = room_index + 1;
+    }
 
 //     loop {
-//         let distinct_regions =
-//             FxHashSet::<usize>::from_iter(region_by_room_index.values().cloned());
-//         if distinct_regions.len() < 2 {
-//             break;
-//         }
-//         let mut two_regions_iter = distinct_regions.iter();
-//         let region_a = *two_regions_iter.next().expect("wat");
-//         let region_b = *two_regions_iter.next().expect("wat");
+        // DIFFERENCE
+        distinct_regions_keys = region_by_room_index.keys();
+        if (distinct_regions_keys.len() >= 2) {
+            region_a = distinct_regions_keys[0];
+            region_b = distinct_regions_keys[1];
 
-//         let region_a_room_index =
-//             *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_a])
-//                 .expect("wat");
-//         let region_a_room = &rooms[region_a_room_index];
-//         let region_a_location = *get_hash_set_random_nth(&mut rand, &region_a_room).expect("wat");
+            // let region_a_room_index =
+            //     *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_a])
+            //         .expect("wat");
+            // let region_a_room = &rooms[region_a_room_index];
+            // let region_a_location = *get_hash_set_random_nth(&mut rand, &region_a_room).expect("wat");
 
-//         let region_b_room_index =
-//             *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_b])
-//                 .expect("wat");
-//         let region_b_room = &rooms[region_b_room_index];
-//         let region_b_location = *get_hash_set_random_nth(&mut rand, &region_b_room).expect("wat");
+            // let region_b_room_index =
+            //     *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_b])
+            //         .expect("wat");
+            // let region_b_room = &rooms[region_b_room_index];
+            // let region_b_location = *get_hash_set_random_nth(&mut rand, &region_b_room).expect("wat");
 
-//         // Now lets drive from region_a_location to region_b_location, and see what happens on the
-//         // way there.
-//         let mut path = Vec::new();
-//         let mut current_location = region_a_location;
-//         while current_location != region_b_location {
-//             if current_location.x != region_b_location.x {
-//                 current_location.x += (region_b_location.x - current_location.x).signum();
-//             } else if current_location.y != region_b_location.y {
-//                 current_location.y += (region_b_location.y - current_location.y).signum();
-//             } else {
-//                 panic!("wat")
-//             }
-//             if !room_index_by_location.contains_key(&current_location) {
-//                 // It means we're in open space, keep going.
-//                 path.push(current_location);
-//             } else {
-//                 let current_room_index = room_index_by_location[&current_location];
-//                 let current_region = region_by_room_index[&current_room_index];
-//                 if current_region == region_a {
-//                     // Keep going, but restart the path here.
-//                     path = Vec::new();
-//                 } else if current_region != region_a {
-//                     // current_regionNumber is probably region_bNumber, but isn't necessarily... we could
-//                     // have just come across a random other region.
-//                     // Either way, we hit something, so we stop now.
-//                     break;
-//                 }
-//             }
-//         }
+            // // Now lets drive from region_a_location to region_b_location, and see what happens on the
+            // // way there.
+            // let mut path = Vec::new();
+            // let mut current_location = region_a_location;
+            // while current_location != region_b_location {
+            //     if current_location.x != region_b_location.x {
+            //         current_location.x += (region_b_location.x - current_location.x).signum();
+            //     } else if current_location.y != region_b_location.y {
+            //         current_location.y += (region_b_location.y - current_location.y).signum();
+            //     } else {
+            //         panic!("wat")
+            //     }
+            //     if !room_index_by_location.contains_key(&current_location) {
+            //         // It means we're in open space, keep going.
+            //         path.push(current_location);
+            //     } else {
+            //         let current_room_index = room_index_by_location[&current_location];
+            //         let current_region = region_by_room_index[&current_room_index];
+            //         if current_region == region_a {
+            //             // Keep going, but restart the path here.
+            //             path = Vec::new();
+            //         } else if current_region != region_a {
+            //             // current_regionNumber is probably region_bNumber, but isn't necessarily... we could
+            //             // have just come across a random other region.
+            //             // Either way, we hit something, so we stop now.
+            //             break;
+            //         }
+            //     }
+            // }
 
-//         let combined_region = regions.len();
-//         regions.insert(combined_region);
+            // let combined_region = regions.len();
+            // regions.insert(combined_region);
 
-//         let new_room_index = rooms.len();
-//         rooms.push(FxHashSet::from_iter(path.iter().cloned()));
-//         for path_location in &path {
-//             room_index_by_location.insert(*path_location, new_room_index);
-//         }
-//         region_by_room_index.insert(new_room_index, combined_region);
-//         // We'll fill in regionNumberByRoomIndex and room_indices_by_region_num. umber shortly.
+            // let new_room_index = rooms.len();
+            // rooms.push(FxHashSet::from_iter(path.iter().cloned()));
+            // for path_location in &path {
+            //     room_index_by_location.insert(*path_location, new_room_index);
+            // }
+            // region_by_room_index.insert(new_room_index, combined_region);
+            // // We'll fill in regionNumberByRoomIndex and room_indices_by_region_num. umber shortly.
 
-//         // So, now we have a path that we know connects some regions. However, it might be
-//         // accidentally connecting more than two! It could have grazed past another region without
-//         // us realizing it.
-//         // So now, figure out all the regions that this path touches.
+            // // So, now we have a path that we know connects some regions. However, it might be
+            // // accidentally connecting more than two! It could have grazed past another region without
+            // // us realizing it.
+            // // So now, figure out all the regions that this path touches.
 
-//         let path_adjacent_locations = get_pattern_locations_adjacent_to_any(
-//             &FxHashSet::from_iter(path.iter().cloned()),
-//             true,
-//             false,
-//         );
-//         let mut path_adjacent_regions = FxHashSet::default();
-//         for path_adjacent_location in path_adjacent_locations {
-//             if room_index_by_location.contains_key(&path_adjacent_location) {
-//                 let room_index = room_index_by_location[&path_adjacent_location];
-//                 let region = region_by_room_index[&room_index];
-//                 path_adjacent_regions.insert(region);
-//             }
-//         }
+            // let path_adjacent_locations = get_pattern_locations_adjacent_to_any(
+            //     &FxHashSet::from_iter(path.iter().cloned()),
+            //     true,
+            //     false,
+            // );
+            // let mut path_adjacent_regions = FxHashSet::default();
+            // for path_adjacent_location in path_adjacent_locations {
+            //     if room_index_by_location.contains_key(&path_adjacent_location) {
+            //         let room_index = room_index_by_location[&path_adjacent_location];
+            //         let region = region_by_room_index[&room_index];
+            //         path_adjacent_regions.insert(region);
+            //     }
+            // }
 
-//         let mut room_indices_in_combined_region = FxHashSet::default();
-//         room_indices_in_combined_region.insert(new_room_index);
-//         for path_adjacent_region in path_adjacent_regions {
-//             if path_adjacent_region == combined_region {
-//                 // The new room is already part of this region
-//                 continue;
-//             }
-//             for path_adjacent_room_index in &room_indices_by_region_num[&path_adjacent_region] {
-//                 region_by_room_index.insert(*path_adjacent_room_index, combined_region);
-//                 room_indices_in_combined_region.insert(*path_adjacent_room_index);
-//             }
-//             room_indices_by_region_num.remove(&path_adjacent_region);
-//         }
-//         room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region.clone());
+            // let mut room_indices_in_combined_region = FxHashSet::default();
+            // room_indices_in_combined_region.insert(new_room_index);
+            // for path_adjacent_region in path_adjacent_regions {
+            //     if path_adjacent_region == combined_region {
+            //         // The new room is already part of this region
+            //         continue;
+            //     }
+            //     for path_adjacent_room_index in &room_indices_by_region_num[&path_adjacent_region] {
+            //         region_by_room_index.insert(*path_adjacent_room_index, combined_region);
+            //         room_indices_in_combined_region.insert(*path_adjacent_room_index);
+            //     }
+            //     room_indices_by_region_num.remove(&path_adjacent_region);
+            // }
+            // room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region.clone());
 
-//         room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region);
+            // room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region);
+        }
 //     }
-// }
+
+    0;
+}
 
 // fn get_hash_set_random_nth<'a, T>(rand: &mut LCGRand, set: &'a FxHashSet<T>) -> Option<&'a T> {
-//     return set.iter().nth((rand.next() as usize) % set.len());
+//     ret set.iter().nth((rand.next() as usize) % set.len());
 // }
 
-// fn get_adjacent_locations(
-//     width int,
-//     height int,
-//     center: Location,
-//     consider_corners_adjacent: bool,
-// ) -> Vec<Location> {
-//     let mut result = Vec::new();
-//     for adjacent in get_pattern_adjacent_locations(center, consider_corners_adjacent) {
-//         if adjacent.x >= 0 && adjacent.y >= 0 && adjacent.x < width && adjacent.y < height {
-//             result.push(adjacent)
-//         }
-//     }
-//     return result;
-// }
+fn get_adjacent_locations(
+    width int,
+    height int,
+    center Location,
+    consider_corners_adjacent bool)
+List<Location> {
+    result = List<Location>();
 
-// fn get_adjacent_walkable_locations(
-//     walkabilities: &Vec<Vec<bool>>,
-//     center: Location,
-//     consider_corners_adjacent: bool,
-// ) -> Vec<Location> {
-//     let mut result = Vec::new();
-//     let adjacents = get_adjacent_locations(
-//         walkabilities.len() as i32,
-//         walkabilities[0].len() as i32,
-//         center,
-//         consider_corners_adjacent,
-//     );
-//     for neighbor in adjacents {
-//         if walkabilities[neighbor.x as usize][neighbor.y as usize] {
-//             result.push(neighbor);
-//         }
-//     }
-//     return result;
-// }
+    pals = get_pattern_adjacent_locations(center, consider_corners_adjacent);
+
+    i! = 0;
+    while (i < pals.len()) {
+        adjacent = pals.get(i).get();
+
+        if (adjacent.x >= 0 and adjacent.y >= 0 and adjacent.x < width and adjacent.y < height) {
+            result.add(adjacent);
+        }
+
+        mut i = i + 1;
+    }
+
+    ret result;
+}
+
+fn get_adjacent_walkable_locations(
+    walkabilities &List<List<bool>>,
+    center Location,
+    consider_corners_adjacent bool)
+List<Location> {
+    result = List<Location>();
+    adjacents =
+        get_adjacent_locations(
+            walkabilities.len(),
+            walkabilities.get(0).get().len(),
+            center,
+            consider_corners_adjacent);
+
+    i! = 0;
+    while (i < adjacents.len()) {
+        neighbor = adjacents.get(i).get();
+
+        if (walkabilities.get(neighbor.x).get().get(neighbor.y).get()) {
+            result.add(neighbor);
+        }
+
+        mut i = i + 1;
+    }
+    ret result;
+}

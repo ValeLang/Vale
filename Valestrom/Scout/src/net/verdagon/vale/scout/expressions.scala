@@ -123,7 +123,7 @@ case class FunctionSE(function: FunctionS) extends IExpressionSE
 
 case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE
 
-case class DotCallSE(left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE
+case class DotCallSE(range: RangeS, left: IExpressionSE, indexExpr: IExpressionSE) extends IExpressionSE
 
 case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1: List[IExpressionSE]) extends IExpressionSE
 

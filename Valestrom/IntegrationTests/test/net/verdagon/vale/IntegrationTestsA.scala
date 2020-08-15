@@ -299,7 +299,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests a foreach for a linked list") {
-    val compile = new Compilation(Samples.get("genericvirtuals/foreachlinkedlist.vale"))
+    val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/foreachlinkedlist.vale"))
     compile.evalForStdout(Vector()) shouldEqual "102030"
   }
 

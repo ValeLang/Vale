@@ -525,6 +525,7 @@ class StructTemplarCore(
         val argExpressions =
           SoftLoad2(
             ReferenceMemberLookup2(
+              range,
               ArgLookup2(
                 0,
                 Coord(

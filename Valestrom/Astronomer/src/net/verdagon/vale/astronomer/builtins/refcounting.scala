@@ -38,14 +38,14 @@ object RefCounting {
               LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
               CheckRefCountAE(
-                LocalLoadAE(CodeVarNameA("obj"), OwnP),
+                LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP),
                 VariableRefCount,
                 FunctionCallAE(
                   RangeS.internal(-42),
                   // We add 1 because that "obj" is also a borrow ref
                   FunctionLoadAE(RangeS.internal(-38),GlobalFunctionFamilyNameA("+")),
                   List(
-                    LocalLoadAE(CodeVarNameA("num"), OwnP),
+                    LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP),
                     IntLiteralAE(1)))),
               VoidAE())))))
 
@@ -80,6 +80,6 @@ object RefCounting {
               LocalVariableA(CodeVarNameA("obj"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
               LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
-              CheckRefCountAE(LocalLoadAE(CodeVarNameA("obj"), OwnP), MemberRefCount, LocalLoadAE(CodeVarNameA("num"), OwnP)),
+              CheckRefCountAE(LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP), MemberRefCount, LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP)),
               VoidAE())))))
 }

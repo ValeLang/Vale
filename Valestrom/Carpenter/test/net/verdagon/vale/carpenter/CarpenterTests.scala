@@ -4,7 +4,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class CarpenterTests extends FunSuite with Matchers {
 //  test("Function param has virtual") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I {}
 //        |fn doThing(i: virtual I) {4}
@@ -23,7 +23,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //  // There is no doAThing which takes in a MyInterface, so there should be no
 //  // virtual shenanigans going on.
 //  test("No virtual/override/abstract means no function families") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface MyInterface { }
 //        |
@@ -42,7 +42,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //
 //  // Make sure we generate a covariant family for doAThing.
 //  test("Function with virtual makes a function family") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface MyInterface {
 //        |  fn doAThing(i: virtual MyInterface):();
@@ -68,7 +68,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //
 //
 //  test("Unrelated structs don't share function families") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface MyInterface<T> { }
 //        |fn doThing<T>(x: virtual MyInterface<T>) {}
@@ -101,7 +101,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //
 //
 //  test("Functions with same signatures for different ancestors") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |interface J<T> { }
@@ -128,7 +128,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //
 //
 //  test("Virtual function is added to overridden families and gets its own family") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |interface J<T> { }
@@ -156,7 +156,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //
 //
 //  test("Struct is stamped and function families created") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |
@@ -187,7 +187,7 @@ class CarpenterTests extends FunSuite with Matchers {
 //  // Make sure it keeps doAThing and doBThing separate, even though they have the same signatures.
 //  // This tripped up the superfamilycarpenter once when it forgot to compare the names.
 //  test("Functions with same params but different name dont share families") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface MyInterface<T> { }
 //        |struct MyStruct<T> { }

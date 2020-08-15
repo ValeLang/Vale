@@ -6,7 +6,7 @@ import net.verdagon.vale.driver.Compilation
 
 class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  while (false) {}
@@ -18,7 +18,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Test a for-ish while loop") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  i! = 0;
@@ -33,7 +33,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Tests a while loop with a complex condition") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  key! = 0;
@@ -50,7 +50,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Tests a while loop with a != in it") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  key! = 0;
@@ -68,7 +68,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Return from infinite while loop") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() int {
         |  while (true) {
@@ -82,7 +82,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 //
 //  test("Tests a while loop with a move in it") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |fn doThings(m: Marine) { }
 //        |struct Marine { hp: int; }

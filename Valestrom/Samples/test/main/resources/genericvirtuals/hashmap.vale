@@ -28,6 +28,19 @@ fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
       0)
 }
 
+fn len<K, V, H, E>(self &HashMap<K, V, H, E>) int { self.size }
+
+fn update<K, V, H, E>(self &HashMap<K, V, H, E>, key K, value V) void {
+  hash int = (self.hasher)(key);
+  startIndex = abs(hash mod self.table.len());
+  index? = findIndexOfKey(self.table, self.equator, startIndex, key);
+  if (index?.empty?()) {
+    panic("Map doesnt have given key!");
+  }
+  node = self.table[index?.get()].get();
+  mut node.value = value;
+}
+
 fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
   if (map.has(key)) {
     panic("Map already has given key!");
@@ -133,6 +146,19 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
     mut index = index + 1;
   }
   = list.toArray<imm>();
+}
+
+fn values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
+  list = List<V>();
+  index = 0;
+  while (index < self.table.len()) {
+    node? = self.table[index];
+    if (not(node?.empty?())) {
+      list.add(node?.get().value);
+    }
+    mut index = index + 1;
+  }
+  = list.toArray<mut>();
 }
 
 fn innerRemove<K, V, H, E>(

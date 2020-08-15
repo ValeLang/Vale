@@ -236,13 +236,13 @@ object ExpressionHammer {
         (loadedAccessH, deferreds)
       }
 
-      case lookup2 @ LocalLookup2(AddressibleLocalVariable2(_, _, _), _) => {
+      case lookup2 @ LocalLookup2(_,AddressibleLocalVariable2(_, _, _), _) => {
         val loadBoxAccess =
           LoadHammer.translateLocalAddress(hinputs, hamuts, locals, lookup2)
         (loadBoxAccess, List())
       }
 
-      case lookup2 @ AddressMemberLookup2(_, _, _) => {
+      case lookup2 @ AddressMemberLookup2(_,_, _, _) => {
         val (loadBoxAccess, deferreds) =
           LoadHammer.translateMemberAddress(hinputs, hamuts, locals, lookup2)
         (loadBoxAccess, deferreds)

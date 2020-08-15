@@ -470,10 +470,10 @@ class InfererMatcher[Env, State](
           env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
       }
       case (CallTT(range, _, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _)))) => {
-        return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against anything, no such rule exists", List()))
+        return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against a CallTT, no such rule exists", List()))
       }
       case (CallTT(range, _, _, _), CoordTemplata(Coord(_, KnownSizeArrayT2(_, _)))) => {
-        return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against anything, no such rule exists", List()))
+        return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against a CallTT, no such rule exists", List()))
       }
       case (CallTT(range, expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(instanceOwnership, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
         vassert(instance.tyype == resultType)

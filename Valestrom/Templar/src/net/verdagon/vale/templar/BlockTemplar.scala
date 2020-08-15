@@ -31,11 +31,10 @@ class BlockTemplar(
     temputs: TemputsBox,
     block1: BlockAE):
   (Block2, Set[Coord]) = {
-    val newCounter = 1
     val fate =
       FunctionEnvironmentBox(
         FunctionEnvironment(
-          parentFate.snapshot, parentFate.fullName, parentFate.function, Map(), parentFate.maybeReturnType, List(), newCounter, List(), Set()))
+          parentFate.snapshot, parentFate.fullName, parentFate.function, Map(), parentFate.maybeReturnType, List(), parentFate.varCounter, List(), Set()))
     val startingFate = fate.snapshot
 
     fate.addScoutedLocals(block1.locals)
@@ -48,6 +47,10 @@ class BlockTemplar(
     // We don't just use the old parentFate because this one might have had moveds added to it.
     val newParentFate @ FunctionEnvironment(_, _, _, _, _, _, _, _, _) = fate.parentEnv
     parentFate.functionEnvironment = newParentFate
+
+    // We may have made some temporary vars in the block, make sure we don't accidentally reuse their numbers,
+    // carry the var counter into the original fate.
+    parentFate.nextCounters(fate.varCounter - parentFate.varCounter)
 
     (block2, returnsFromExprs)
   }

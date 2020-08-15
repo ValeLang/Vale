@@ -69,7 +69,7 @@ case class Locals(
     tyype: ReferenceH[ReferendH]):
   (Locals, Local) = {
     if (templarLocals.contains(varId2)) {
-      vfail("wot")
+      vfail("There's already a templar local named: " + varId2)
     }
     val newLocalIdNumber = locals.size
     val varIdNameH = NameHammer.translateFullName(hinputs, hamuts, varId2)

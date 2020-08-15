@@ -68,13 +68,14 @@
 // }
 
 
+struct MyBoxx { i int; b bool; }
 
 fn main() {
-  seed = 1337;// DIFFERENCE
+  seed = 44;// DIFFERENCE
   benchmark_rl(
     seed,
-    36,
-    18,
+    30,
+    20,
     10,
     true,
     100);

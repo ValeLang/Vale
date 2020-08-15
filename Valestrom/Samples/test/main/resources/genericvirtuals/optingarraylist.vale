@@ -41,3 +41,12 @@ fn toList<E>(arr &Array<_, E>) List<E> {
   };
   = list;
 }
+
+fn each<E, F>(list &List<E>, func F) void {
+  i! = 0;
+  l = len(&list);
+  while (i < l) {
+    func(list.get(i).get());
+    mut i = i + 1;
+  }
+}

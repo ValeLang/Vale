@@ -194,7 +194,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = new Compilation("fn main(){a! = 3; mut a = 4; }")
     val temputs = compile.getTemputs();
     val main = temputs.lookupFunction("main")
-    main.only({ case Mutate2(LocalLookup2(ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), Varying, _), _), IntLiteral2(4)) => })
+    main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), Varying, _), _), IntLiteral2(4)) => })
   }
 
   test("Test taking a callable param") {

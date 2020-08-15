@@ -15,6 +15,10 @@ object TemplarErrorHumanizer {
       err: ICompileErrorT):
   String = {
     err match {
+      case CannotSubscriptT(range, tyype) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Cannot subscript type: " + tyype + "!"
+      }
       case CouldntFindMemberT(range, memberName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find member " + memberName + "!"
@@ -26,6 +30,10 @@ object TemplarErrorHumanizer {
       case CouldntFindFunctionToLoadT(range, GlobalFunctionFamilyNameA(name)) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find any function named `" + name + "`!"
+      }
+      case CouldntFindTypeT(range, name) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Couldn't find any type named `" + name + "`!"
       }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +

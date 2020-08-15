@@ -189,31 +189,11 @@ class CallTemplar(
     val paramFilters =
       ParamFilter(templataTemplar.pointifyReferend(temputs, citizenRef, Borrow), None) ::
         argsTypes2.map(argType => ParamFilter(argType, None))
-    val (maybePrototype, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunctionS) =
-      overloadTemplar.scoutMaybeFunctionForPrototype(
-        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false)
     val prototype2 =
-      maybePrototype match {
-        case None => {
-          vfail(
-            "Struct not callable: " + citizenRef + "\n" +
-              "Outscored:\n" +
-              outscoredReasonByPotentialBanner
-                .map({ case (k, v) => k + ": " + v })
-                .mkString("\n") +
-              "\n" +
-              "Rejected banners:\n" +
-              rejectedReasonByBanner
-                .map({ case (k, v) => k + ": " + v })
-                .mkString("\n") +
-              "\n" +
-              "Rejected functionSs:\n" +
-              rejectedReasonByFunctionS
-                .map({ case (k, v) => k + ": " + v })
-                .mkString("\n") +
-              "\n")
-        }
-        case Some(p) => p
+      overloadTemplar.scoutExpectedFunctionForPrototype(
+        env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false) match {
+        case ScoutExpectedFunctionSuccess(p) => p
+        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
       }
 
     // Whether we're given a borrow or an own, the call itself will be given a borrow.

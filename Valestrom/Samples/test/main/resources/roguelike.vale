@@ -476,12 +476,6 @@ fn inputKey() int {
   panic();
 }
 
-struct IntHasher { }
-fn __call(this &IntHasher, x int) { x }
-
-struct IntEquator { }
-fn __call(this &IntEquator, a int, b int) { a == b }
-
 
 fn goblinAt?(
   goblins &HashMap<int, Goblin, IntHasher, IntEquator>,

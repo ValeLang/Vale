@@ -1,6 +1,7 @@
 package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.CombinatorParsers.opt
+import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{OffsetPosition, Position, Positional}
@@ -96,9 +97,10 @@ trait ParserUtils extends RegexParsers {
       case begin ~ s ~ end => {
         StringP(
           Range(begin, end),
-          "\\\\t".r.replaceAllIn(
-            "\\\\n".r.replaceAllIn(s, "\n"),
-            "\t"))
+          StringEscapeUtils.unescapeJava(s))
+//          "\\\\t".r.replaceAllIn(
+//            "\\\\n".r.replaceAllIn(s, "\n"),
+//            "\t"))
       }
     }
   }

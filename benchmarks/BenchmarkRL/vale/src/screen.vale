@@ -1,25 +1,22 @@
-// use crossterm::{cursor::MoveTo, ExecutableCommand};
-// use std::io::stdout;
 
-// #[allow(dead_code)]
-// #[derive(PartialEq)]
-// pub enum ScreenColor {
-//     Black,
-//     DarkGray,
-//     Turquoise,
-//     Red,
-//     LightGray,
-//     Orange,
-//     Yellow,
-//     OrangeYellow,
-//     Green,
-//     White,
-//     Gray,
-// }
+struct ScreenColor imm { i int; }
+fn Black() { ScreenColor(0) }
+fn DarkGray() { ScreenColor(1) }
+fn Turquoise() { ScreenColor(2) }
+fn Red() { ScreenColor(3) }
+fn LightGray() { ScreenColor(4) }
+fn Orange() { ScreenColor(5) }
+fn Yellow() { ScreenColor(6) }
+fn OrangeYellow() { ScreenColor(7) }
+fn Green() { ScreenColor(8) }
+fn White() { ScreenColor(9) }
+fn Gray() { ScreenColor(10) }
+
+fn ==(a ScreenColor, b ScreenColor) { a.i == b.i }
 
 struct ScreenCell {
-    // fg_color ScreenColor;
-    // bg_color ScreenColor;
+    fg_color ScreenColor;
+    bg_color ScreenColor;
     character str;
     dirty bool;
 }
@@ -38,7 +35,7 @@ struct StrBox {
 
 // impl Screen {
     fn newScreen(width int, height int) Screen {
-        println("\x1b[1;1H\x1b[2J");
+        println("\u001b[1;1H\u001b[2J");
 
         cells = List<List<ScreenCell>>();
 
@@ -51,9 +48,9 @@ struct StrBox {
             while (y < height) {
                 q.add(
                     ScreenCell(
-                        // ScreenColor::White,
-                        // ScreenColor::Black,
-                        "9",
+                        White(),
+                        Black(),
+                        " ",
                         true // All cells start as dirty, so we can display them all now
                     ));
 
@@ -76,90 +73,92 @@ struct StrBox {
 //         self.status_line = new_line;
 //     }
 
-//     pub fn set_cell(
-//         &mut self,
-//         x: usize,
-//         y: usize,
-//         bg_color: ScreenColor,
-//         fg_color: ScreenColor,
-//         character: String,
-//     ) {
-//         let cell = &mut self.cells[x][y];
+    fn set_cell(
+        self &!Screen,
+        x int,
+        y int,
+        bg_color ScreenColor,
+        fg_color ScreenColor,
+        character str
+    ) {
+        cell = &self.cells.get(x).get().get(y).get();
 
-//         if bg_color != cell.bg_color {
-//             cell.bg_color = bg_color;
-//             cell.dirty = true;
-//         }
+        if (bg_color != cell.bg_color) {
+            mut cell.bg_color = bg_color;
+            mut cell.dirty = true;
+        }
 
-//         if fg_color != cell.fg_color {
-//             cell.fg_color = fg_color;
-//             cell.dirty = true;
-//         }
+        if (fg_color != cell.fg_color) {
+            mut cell.fg_color = fg_color;
+            mut cell.dirty = true;
+        }
 
-//         if character != cell.character {
-//             cell.character = character;
-//             cell.dirty = true;
-//         }
-//     }
+        if (character != cell.character) {
+            mut cell.character = character;
+            mut cell.dirty = true;
+        }
+    }
 
-//     pub fn paint_screen(&self) {
-//         for x in 0..self.width {
-//             for y in 0..self.height {
-//                 if self.cells[x][y].dirty {
-//                     self.paint_cell(x, y);
-//                 }
-//             }
-//         }
-//         match stdout().execute(MoveTo(0, self.height as u16)) {
-//             Ok(_) => {}
-//             Err(_) => panic!("Couldn't move cursor!"),
-//         }
-//         println!("{}", self.status_line);
-//     }
+    fn paint_screen(self &Screen) {
+        x! = 0;
+        while (x < self.width) {
 
-//     fn paint_cell(&self, x: usize, y: usize) {
-//         let cell = &self.cells[x][y];
+            y! = 0;
+            while (y < self.height) {
+                if (self.cells.get(x).get().get(y).get().dirty) {
+                    self.paint_cell(x, y);
+                }
 
-//         // For precise colors:
-//         // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal
-//         // For standard colors:
-//         // https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
+                mut y = y + 1;
+            }
 
-//         let (fg_red, fg_green, fg_blue) =
-//             match cell.bg_color {
-//                 ScreenColor::DarkGray => (40, 40, 40),
-//                 ScreenColor::Orange => (255, 96, 0),
-//                 ScreenColor::Red => (255, 0, 0),
-//                 ScreenColor::Black => (0, 0, 0),
-//                 _ => panic!("Unimplemented"),
-//             };
+            mut x = x + 1;
+        }
+        print("\u001b[" + self.height + ";" + 0 + "H");
+        println(self.status_line);
+    }
 
-//         let (bg_red, bg_green, bg_blue) =
-//             match cell.fg_color {
-//                 ScreenColor::Red => (255, 0, 0),
-//                 ScreenColor::Turquoise => (0, 128, 255),
-//                 ScreenColor::Orange => (255, 96, 0),
-//                 ScreenColor::Green => (0, 196, 0),
-//                 ScreenColor::Yellow => (255, 255, 0),
-//                 ScreenColor::OrangeYellow => (255, 186, 0),
-//                 ScreenColor::LightGray => (224, 224, 224),
-//                 ScreenColor::Gray => (150, 150, 150),
-//                 ScreenColor::White => (255, 255, 255),
-//                 _ => panic!("Unimplemented"),
-//             };
+    fn paint_cell(&self, x int, y int) {
+        cell = &self.cells.get(x).get().get(y).get();
 
-//         let character = &cell.character;
+        // For precise colors:
+        // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal
+        // For standard colors:
+        // https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
 
-//         match stdout().execute(MoveTo(x as u16, y as u16)) {
-//             Ok(_) => {}
-//             Err(_) => panic!("Couldn't move cursor!"),
-//         }
+        (fg_red, fg_green, fg_blue) =
+            if (cell.bg_color == DarkGray()) { [40, 40, 40] }
+            else if (cell.bg_color == Orange()) { [255, 96, 0] }
+            else if (cell.bg_color == Red()) { [255, 0, 0] }
+            else if (cell.bg_color == Black()) { [0, 0, 0] }
+            else { panic("Unimplemented") };
 
-//         println!(
-//             "\x1b[38;2;{};{};{};48;2;{};{};{}m{}\x1b[0m",
-//             bg_red, bg_green, bg_blue,
-//             fg_red, fg_green, fg_blue,
-//             character
-//         );
-//     }
+        (bg_red, bg_green, bg_blue) =
+            if (cell.fg_color == Red()) { [255, 0, 0] }
+            else if (cell.fg_color == Turquoise()) { [0, 128, 255] }
+            else if (cell.fg_color == Orange()) { [255, 96, 0] }
+            else if (cell.fg_color == Green()) { [0, 196, 0] }
+            else if (cell.fg_color == Yellow()) { [255, 255, 0] }
+            else if (cell.fg_color == OrangeYellow()) { [255, 186, 0] }
+            else if (cell.fg_color == LightGray()) { [224, 224, 224] }
+            else if (cell.fg_color == Gray()) { [150, 150, 150] }
+            else if (cell.fg_color == White()) { [255, 255, 255] }
+            else { panic("Unimplemented") };
+
+        character = &cell.character;
+
+        print("\u001b[" + y + ";" + x + "H");
+
+        // println(
+        //     "\u001b[38;2;{};{};{};48;2;{};{};{}m{}\u001b[0m",
+        //     bg_red, bg_green, bg_blue,
+        //     fg_red, fg_green, fg_blue,
+        //     character
+        // );
+        print(
+            "\u001b[" +
+            "38;2;" + bg_red + ";" + bg_green + ";" + bg_blue + ";" +
+            "48;2;" + fg_red + ";" + fg_green + ";" + fg_red + "m" +
+            character + "\u001b[0m");
+    }
 // }

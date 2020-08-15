@@ -280,7 +280,9 @@ class ArrayTests extends FunSuite with Matchers {
         |  lam = { println(arr.6); };
         |  (lam)();
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "6\n"
   }

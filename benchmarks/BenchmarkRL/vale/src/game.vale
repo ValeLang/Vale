@@ -143,24 +143,24 @@ struct Game {
 //     }
 // }
 
-// // Get all the locations adjacent to `center`.
-// pub fn get_pattern_adjacent_locations(
-//     center: Location,
-//     consider_corners_adjacent: bool,
-// ) -> Vec<Location> {
-//     let mut result = Vec::new();
-//     result.push(Location::new(center.x - 1, center.y));
-//     result.push(Location::new(center.x, center.y + 1));
-//     result.push(Location::new(center.x, center.y - 1));
-//     result.push(Location::new(center.x + 1, center.y));
-//     if consider_corners_adjacent {
-//         result.push(Location::new(center.x - 1, center.y - 1));
-//         result.push(Location::new(center.x - 1, center.y + 1));
-//         result.push(Location::new(center.x + 1, center.y - 1));
-//         result.push(Location::new(center.x + 1, center.y + 1));
-//     }
-//     return result;
-// }
+// Get all the locations adjacent to `center`.
+fn get_pattern_adjacent_locations(
+    center Location,
+    consider_corners_adjacent bool)
+List<Location> {
+    result = List<Location>();
+    result.add(Location(center.x - 1, center.y));
+    result.add(Location(center.x, center.y + 1));
+    result.add(Location(center.x, center.y - 1));
+    result.add(Location(center.x + 1, center.y));
+    if (consider_corners_adjacent) {
+        result.add(Location(center.x - 1, center.y - 1));
+        result.add(Location(center.x - 1, center.y + 1));
+        result.add(Location(center.x + 1, center.y - 1));
+        result.add(Location(center.x + 1, center.y + 1));
+    }
+    ret result;
+}
 
 // // Get all the locations adjacent to any of the ones in `source_locs`.
 // pub fn get_pattern_locations_adjacent_to_any(

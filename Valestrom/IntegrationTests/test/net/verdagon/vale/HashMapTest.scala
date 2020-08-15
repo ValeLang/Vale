@@ -60,12 +60,6 @@ class HashMapTest extends FunSuite with Matchers {
       Samples.get("genericvirtuals/hashmap.vale") +
       Samples.get("utils.vale") +
       """
-        |struct IntHasher { }
-        |fn __call(this &IntHasher, x int) { x }
-        |
-        |struct IntEquator { }
-        |fn __call(this &IntEquator, a int, b int) { a == b }
-        |
         |fn add42(map &HashMap<int, int, IntHasher, IntEquator>) {
         |  map.add(42, 100);
         |}

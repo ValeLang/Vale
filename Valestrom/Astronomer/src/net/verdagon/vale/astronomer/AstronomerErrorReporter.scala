@@ -5,7 +5,8 @@ import net.verdagon.vale.scout.RangeS
 case class CompileErrorExceptionA(err: ICompileErrorA) extends RuntimeException
 
 sealed trait ICompileErrorA
-case class CouldntFindType(range: RangeS, name: String) extends ICompileErrorA //  vfail("Nothing found with name " + name)
+case class CouldntFindTypeA(range: RangeS, name: String) extends ICompileErrorA //  vfail("Nothing found with name " + name)
+case class WrongNumArgsForTemplateA(range: RangeS, expectedNumArgs: Int, actualNumArgs: Int) extends ICompileErrorA
 
 object ErrorReporter {
   def report(err: ICompileErrorA): Nothing = {

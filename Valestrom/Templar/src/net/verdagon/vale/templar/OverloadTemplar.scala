@@ -240,7 +240,7 @@ class OverloadTemplar(
                             override def lookupType(state: TemputsBox, env: IEnvironment, rangeS: RangeS, name: CodeTypeNameS): ITemplataType = {
                               val templata =
                                 env.getNearestTemplataWithName(Astronomer.translateImpreciseName(name), Set(TemplataLookupContext)) match {
-                                  case None => vfail("Nothing found with name " + name)
+                                  case None => throw CompileErrorExceptionT(CouldntFindTypeT(rangeS, name.name))
                                   case Some(t) => t
                                 }
                               (templata.tyype)

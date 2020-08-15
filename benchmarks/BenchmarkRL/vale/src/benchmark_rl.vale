@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // Returns whether we should probably re-display it next turn.
 // Will be false if its something static like terrain, or true
 // if it's something that moves around like a unit.
@@ -31,38 +30,6 @@ fn set_screen_cell(
     } else {
         drop(tile?);
     }
-=======
-// // Returns whether we should probably re-display it next turn.
-// // Will be false if its something static like terrain, or true
-// // if it's something that moves around like a unit.
-// pub fn set_screen_cell(
-//     screen: &mut Screen,
-//     game: &Game,
-//     player_visible_locs: &FxHashSet<Location>,
-//     loc: Location,
-// ) {
-//     let mut foreground_color = ScreenColor::White;
-//     let mut background_color = ScreenColor::Black;
-//     let mut character = " ";
-
-//     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
-//         match tile.display_class.as_str() {
-//             "dirt" => {
-//                 character = ".";
-//                 foreground_color = ScreenColor::Orange;
-//             }
-//             "grass" => {
-//                 character = ".";
-//                 foreground_color = ScreenColor::Green;
-//             }
-//             "wall" => {
-//                 character = "#";
-//                 foreground_color = ScreenColor::Gray;
-//             }
-//             _ => panic!("unrecognized tile display class"),
-//         }
-//     }
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 
 //     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
 //         if let Some(fire) = tile.get_first_component::<FireTileComponent>() {
@@ -95,7 +62,6 @@ fn set_screen_cell(
 //         background_color = ScreenColor::DarkGray;
 //     }
 
-<<<<<<< HEAD
     screen.set_cell(
         loc.x,
         loc.y,
@@ -103,16 +69,6 @@ fn set_screen_cell(
         foreground_color,
         character);
 }
-=======
-//     screen.set_cell(
-//         loc.x as usize,
-//         loc.y as usize,
-//         background_color,
-//         foreground_color,
-//         character.to_string(),
-//     );
-// }
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 
 // // Moves the player to the next level.
 // // Returns true to continue with the game, false to exit the game.
@@ -163,11 +119,7 @@ Game {
             List<Level>());
             //, None);
 
-<<<<<<< HEAD
   level = make_level(max_width, max_height, &rand); // DIFFERENCE need &!
-=======
-  level = make_level(30, 30, &rand); // DIFFERENCE need &!
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
   game.levels.add(level);
 //     for _ in 0..num_levels {
 //         let level_index = game.levels.len();
@@ -263,7 +215,6 @@ Game {
 //     }
 // }
 
-<<<<<<< HEAD
 fn display(
         seed int,
         maybe_screen &!Opt<Screen>,
@@ -307,34 +258,7 @@ fn display(
         screen.paint_screen();
     }
 }
-=======
-// pub fn display(seed: int, maybe_screen: &mut Option<Screen>, game: &Game) {
-//     let maybe_player_loc = game.units.get(game.get_player_index()).map(|p| p.loc);
-//     let player_visible_locs =
-//         match maybe_player_loc {
-//             None => FxHashSet::default(),
-//             Some(player_loc) => {
-//                 game.get_current_level().get_locations_within_sight(
-//                     player_loc, true, DEFAULT_SIGHT_RANGE_100)
-//             }
-//         };
 
-//     if let Some(mut screen) = maybe_screen.as_mut() {
-//         for x in 0..game.get_current_level().max_width {
-//             for y in 0..game.get_current_level().max_height {
-//                 let loc = Location::new(x, y);
-//                 set_screen_cell(&mut screen, &game, &player_visible_locs, loc);
-//             }
-//         }
-//         if let Some(player) = game.units.get(game.get_player_index()) {
-//             screen.set_status_line(format!("Seed {}   Level {}   HP: {} / {}\nTo benchmark: --seed 1337 --width 40 --height 30 --num_levels 5 --turn_delay 0 --display 0", seed, player.level_index, player.hp, player.max_hp));
-//         } else {
-//             screen.set_status_line("Dead!                                      ".to_string());
-//         }
-//         screen.paint_screen();
-//     }
-// }
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 
 fn benchmark_rl(
     seed int,
@@ -348,34 +272,19 @@ fn benchmark_rl(
 
     game = setup(&rand, level_width, level_height, num_levels);
 
-<<<<<<< HEAD
     maybe_screen =
         if (should_display) {
           z Opt<Screen> =
-=======
-    // maybe_screen =
-    //     if (should_display) {
-          z =
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
               Some(
                 newScreen(
                 game.get_current_level().max_width,
                 game.get_current_level().max_height));
-<<<<<<< HEAD
           = z;
         } else {
           z Opt<Screen> =
             None<Screen>();
           = z;
         };
-=======
-          // = z;
-        // } else {
-        //   z Opt<Screen> =
-        //     None<Screen>();
-        //   = z;
-        // };
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 
 //     loop {
 //         turn(&mut rand, &mut game);
@@ -389,11 +298,7 @@ fn benchmark_rl(
 //             }
 //         }
 
-<<<<<<< HEAD
         display(seed, &maybe_screen, &game);
-=======
-//         display(seed, &mut maybe_screen, &game);
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 
 //         if turn_delay > 0 {
 //             sleep(Duration::new(turn_delay as u64 / 1000, turn_delay as u32 % 1000 * 1000000));
@@ -401,7 +306,6 @@ fn benchmark_rl(
 //     }
 
     
-<<<<<<< HEAD
   // level = game.levels.get(0).get();  
               // drop(z); // START HERE if we move this down or get rid of it... infinite loop.
 
@@ -411,17 +315,4 @@ fn benchmark_rl(
   //   println(str(location) + " " + tile.display_class);
   // };
 
-=======
-  level = game.levels.get(0).get();  
-              drop(z); // START HERE if we move this down or get rid of it... infinite loop.
-
-  level.tiles.keys() each (location){
-    tile? Opt<&Tile> = level.tiles.get(location);
-    tile = tile?^.get();
-    println(str(location) + " " + tile.display_class);
-  };
-
-
-    println("Done");
->>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
 }

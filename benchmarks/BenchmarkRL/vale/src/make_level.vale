@@ -54,6 +54,10 @@ Level {
 
         thing = inside_ellipse and walkable;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
         thisCol.add(thing);
 
         mut y = y + 1;
@@ -83,9 +87,13 @@ Level {
             loc = Location(x, y);
             walkable = walkabilities.get(x).get().get(y).get();
             on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
+<<<<<<< HEAD
             // println(str(loc) + " w " + str(walkable) + " e " + str(on_edge));
             if (walkable and not on_edge) {
                 // println("adding floor");
+=======
+            //if (walkable and not on_edge) {
+>>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
                 display_class =
                   if (rand.next() mod 2 == 0) {
                     "dirt"
@@ -98,6 +106,7 @@ Level {
                         true,
                         display_class));//,
                         // components: Arena::new()));
+<<<<<<< HEAD
             } else {
                 next_to_walkable! = false;
 
@@ -133,6 +142,32 @@ Level {
             mut y = y + 1;
         }
 
+=======
+            // } else {
+            //     next_to_walkable! = false;
+            //     for neighbor_x in cmp::max(0, x - 1)..cmp::min(max_width - 1, x + 1 + 1) {
+            //         for neighbor_y in cmp::max(0, y - 1)..cmp::min(max_height - 1, y + 1 + 1) {
+            //             let neighbor_walkable =
+            //                 walkabilities[neighbor_x as usize][neighbor_y as usize];
+            //             if neighbor_walkable {
+            //                 next_to_walkable = true;
+            //             }
+            //         }
+            //     }
+            //     if next_to_walkable {
+            //         level.tiles.insert(
+            //             loc,
+            //             Tile {
+            //                 walkable: false,
+            //                 display_class: "wall".to_string(),
+            //                 components: Arena::new(),
+            //             },
+            //         );
+            //     }
+            // }
+            mut y = y + 1;
+        }
+>>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
         mut x = x + 1;
     }
 
@@ -184,7 +219,10 @@ List<List<bool>> {
           mut neighbor_x = neighbor_x + 1;
         }
 
+<<<<<<< HEAD
         // println("modifying to " + str(num_walkable_neighbors >= 5) + " cuz " + str(num_walkable_neighbors));
+=======
+>>>>>>> 42a5b3b40a4f7455cc5450dd14954b46c81cae02
         new_walkabilities.get(x).get().set(y, num_walkable_neighbors >= 5);
 
         mut y = y + 1;

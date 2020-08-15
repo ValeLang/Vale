@@ -480,6 +480,9 @@ class InfererMatcher[Env, State](
         matchArrayAgainstCallTT(
           env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
       }
+      case (CallTT(range, expectedTemplate, expectedArgs, resultType), ct @ CoordTemplata(_)) => {
+        return (InferMatchConflict(inferences.inferences, range, "Can't match " + ct + " against CallTT", List()))
+      }
       case (PrototypeTT(_, _, _), _) => {
         vfail("what even is this")
       }

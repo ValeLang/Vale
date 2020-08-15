@@ -1,5 +1,5 @@
 
-struct HashNode<K, V> {
+struct HashMapNode<K, V> {
   key K;
   value V;
 }
@@ -7,7 +7,7 @@ struct HashNode<K, V> {
 struct HashMap<K, V, H, E> {
   hasher H;
   equator E;
-  table Array<mut, Opt<HashNode<K, V>>>;
+  table Array<mut, Opt<HashMapNode<K, V>>>;
   size int;
 }
 
@@ -19,10 +19,10 @@ fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
   HashMap<K, V>(
       hasher,
       equator,
-      Array<mut, Opt<HashNode<K, V>>>(
+      Array<mut, Opt<HashMapNode<K, V>>>(
         capacity,
-        &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
-          opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
+        &IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index){
+          opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
           = opt;
         })),
       0)
@@ -37,10 +37,10 @@ fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
         if (map.table.len() == 0) { 2 }
         else { map.table.len() * 2 };
     newTable =
-        Array<mut, Opt<HashNode<K, V>>>(
+        Array<mut, Opt<HashMapNode<K, V>>>(
             newSize,
-            &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
-              opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
+            &IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index){
+              opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
               = opt;
             }));
     i = 0;
@@ -48,7 +48,7 @@ fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
       if (map.table[i].empty?()) {
         // do nothing
       } else {
-        node? = (mut map.table[i] = None<HashNode<K, V>>());
+        node? = (mut map.table[i] = None<HashMapNode<K, V>>());
         node = get(node?);
         addNodeToTable(&newTable, map.hasher, node);
       }
@@ -57,20 +57,20 @@ fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
     mut map.table = newTable;
   }
 
-  addNodeToTable(map.table, map.hasher, HashNode<K, V>(key, value));
+  addNodeToTable(map.table, map.hasher, HashMapNode<K, V>(key, value));
   mut map.size = map.size + 1;
 }
 
-fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashNode<K, V>>>, hasher H, node HashNode<K, V>) {
+fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashMapNode<K, V>>>, hasher H, node HashMapNode<K, V>) {
   hash int = (hasher)(node.key);
   startIndex = abs(hash mod table.len());
   index = findEmptyIndexForKey(table, startIndex, node.key);
 
-  opt Opt<HashNode<K, V>> = Some(node);
+  opt Opt<HashMapNode<K, V>> = Some(node);
   mut table[index] = opt;
 }
 
-fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex int, key K) int {
+fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashMapNode<K, V>>>, startIndex int, key K) int {
   i = 0;
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
@@ -84,7 +84,7 @@ fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex
   = panic("findEmptyIndexForKey went past end of table!");
 }
 
-fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
+fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashMapNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
   i = 0;
   while (i < table.len()) {
     index = (startIndex + i) mod table.len();
@@ -136,7 +136,7 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
 }
 
 fn innerRemove<K, V, H, E>(
-  table &Array<mut, Opt<HashNode<K, V>>>,
+  table &Array<mut, Opt<HashMapNode<K, V>>>,
   hasher H,
   equator E,
   key K)
@@ -145,7 +145,7 @@ int {
   startIndex = abs(hash mod table.len());
   index? = findIndexOfKey(table, equator, startIndex, key);
   index = index?.get();
-  mut table[index] = None<HashNode<K, V>>();
+  mut table[index] = None<HashMapNode<K, V>>();
   ret index;
 }
 
@@ -159,10 +159,10 @@ void {
   i! = 1;
   while (i < map.table.len()) {
     neighborIndex = (originalIndex + i) mod len(map.table);
-    neighbor? = (mut map.table[neighborIndex] = None<HashNode<K, V>>());
+    neighbor? = (mut map.table[neighborIndex] = None<HashMapNode<K, V>>());
     if (not neighbor?.empty?()) {
       (neighborKey, neighborValue) = neighbor?^.get();
-      addNodeToTable(map.table, map.hasher, HashNode<K, V>(neighborKey, neighborValue));
+      addNodeToTable(map.table, map.hasher, HashMapNode<K, V>(neighborKey, neighborValue));
     } else {
       drop(neighbor?);
       mut i = map.table.len(); // break

@@ -58,7 +58,7 @@ object BuiltInFunctions {
               List(LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
                 ArrayLengthAE(
-                  LocalLoadAE(CodeVarNameA("arr"), OwnP))))))),
+                  LocalLoadAE(RangeS.internal(-62),CodeVarNameA("arr"), OwnP))))))),
       FunctionA(
         RangeS.internal(-62),
         FunctionNameA("len", s.CodeLocationS.internal(-21)),
@@ -145,5 +145,5 @@ object BuiltInFunctions {
             BlockAE(
               List(LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
-                LockWeakAE(RangeS.internal(-91), LocalLoadAE(CodeVarNameA("weakRef"), WeakP))))))))
+                LockWeakAE(RangeS.internal(-91), LocalLoadAE(RangeS.internal(-62),CodeVarNameA("weakRef"), WeakP))))))))
 }

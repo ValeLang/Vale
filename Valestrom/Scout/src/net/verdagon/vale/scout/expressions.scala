@@ -21,7 +21,7 @@ case class WhileSE(condition: BlockSE, body: BlockSE) extends IExpressionSE
 
 case class ExprMutateSE(mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE
 case class GlobalMutateSE(name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
-case class LocalMutateSE(name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
+case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
 
 case class LendSE(innerExpr1: IExpressionSE, targetOwnership: OwnershipP) extends IExpressionSE {
   targetOwnership match {
@@ -98,7 +98,7 @@ case class RepeaterBlockSE(expression: IExpressionSE) extends IExpressionSE
 // Results in a pack, represents the differences between the expressions
 case class RepeaterBlockIteratorSE(expression: IExpressionSE) extends IExpressionSE
 
-case class ReturnSE(inner: IExpressionSE) extends IExpressionSE
+case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 case class VoidSE() extends IExpressionSE {}
 
 case class SequenceESE(elements: List[IExpressionSE]) extends IExpressionSE
@@ -131,7 +131,7 @@ case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1
 
 case class TemplateSpecifiedLookupSE(name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
 
-case class LocalLoadSE(name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
+case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
 case class FunctionLoadSE(range: RangeS, name: GlobalFunctionFamilyNameS) extends IExpressionSE
 case class RuneLookupSE(rune: IRuneS) extends IExpressionSE
 

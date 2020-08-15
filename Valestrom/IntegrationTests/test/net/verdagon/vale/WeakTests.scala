@@ -12,7 +12,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class WeakTests extends FunSuite with Matchers {
   test("Make and lock weak ref then destroy own") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("weaks/lockWhileLive.vale"))
 
@@ -29,7 +29,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Destroy own then locking gives none") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("weaks/dropThenLock.vale"))
 
@@ -37,7 +37,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Drop while locked") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("weaks/dropWhileLocked.vale"))
 
@@ -51,7 +51,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make and lock weak ref from borrow local then destroy own") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
       Samples.get("weaks/weakFromLocalCRef.vale"))
 
@@ -63,7 +63,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make and lock weak ref from borrow then destroy own") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("weaks/weakFromCRef.vale"))
 
@@ -75,7 +75,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make weak ref from temporary") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         """
           |struct Muta weakable { hp int; }
@@ -89,7 +89,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Cant make weak ref to non-weakable") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         """
           |struct Muta { hp int; }
@@ -108,7 +108,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Cant make weakable extend a non-weakable") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("genericvirtuals/opt.vale") +
         """
           |interface IUnit {}

@@ -14,7 +14,7 @@ import net.verdagon.vale.driver.Compilation
 
 class OwnershipTests extends FunSuite with Matchers {
   test("Borrowing a temporary mutable makes a local var") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { hp int; }
         |fn main() {
@@ -35,7 +35,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("When statement result is an owning ref, calls destructor") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { }
         |
@@ -59,7 +59,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("Saves return value then destroys temporary") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { hp int; }
         |
@@ -82,7 +82,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("Calls destructor on local var") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { }
         |
@@ -107,7 +107,7 @@ class OwnershipTests extends FunSuite with Matchers {
 
   test("Calls destructor on local var unless moved") {
     // Should call the destructor in moo, but not in main
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       """
@@ -149,7 +149,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("Saves return value then destroys local var") {
-    val compile = new Compilation(
+    val compile = Compilation(
       Samples.get("castutils.vale") +
         Samples.get("printutils.vale") +
       """
@@ -174,7 +174,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("Gets from temporary struct a member's member") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Wand {
         |  charges int;
@@ -198,7 +198,7 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Checks that we stored a borrowed temporary in a local") {
     // Checking for 2 because one for the temporary, and one inside the
     // templated wrapper function.
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { }
         |fn main() {
@@ -214,7 +214,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("Var RC for one local") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { }
         |fn main() {
@@ -233,7 +233,7 @@ class OwnershipTests extends FunSuite with Matchers {
   }
 
   test("Unstackifies local vars") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  i! = 0;
@@ -254,7 +254,7 @@ class OwnershipTests extends FunSuite with Matchers {
 
 //
 //  test("Moving doesn't affect ref count") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |struct Muta { }
 //        |fn main() {
@@ -268,7 +268,7 @@ class OwnershipTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Wingman catches hanging borrow") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |struct MutaA { }
 //        |struct MutaB {

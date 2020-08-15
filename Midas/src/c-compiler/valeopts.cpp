@@ -40,7 +40,8 @@ enum
     OPT_WIDTH,
     OPT_IMMERR,
     OPT_VERIFY,
-    OPT_FLARES,
+  OPT_FLARES,
+  OPT_FASTMODE,
     OPT_FILENAMES,
     OPT_CHECKTREE,
     OPT_EXTFUN,
@@ -79,6 +80,7 @@ static opt_arg_t args[] =
 
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
     { "flares", '\0', OPT_ARG_NONE, OPT_FLARES },
+    { "fastmode", '\0', OPT_ARG_NONE, OPT_FASTMODE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
     { "asm", '\0', OPT_ARG_NONE, OPT_ASM },
     { "llvmir", '\0', OPT_ARG_NONE, OPT_LLVMIR },
@@ -205,6 +207,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         case OPT_VERIFY: opt->verify = 1; break;
 
         case OPT_FLARES: opt->flares = 1; break;
+        case OPT_FASTMODE: opt->fastmode = 1; break;
 
         default: usage(); return -1;
         }

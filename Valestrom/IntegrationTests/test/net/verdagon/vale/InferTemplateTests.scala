@@ -9,7 +9,7 @@ import net.verdagon.vale.driver.Compilation
 
 class InferTemplateTests extends FunSuite with Matchers {
   test("Test inferring a borrowed argument") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Muta { hp int; }
         |fn moo<T>(m &T) { m.hp }

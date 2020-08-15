@@ -12,7 +12,7 @@ class HammerTests extends FunSuite with Matchers {
   // The generated nodes will be tested by end-to-end tests.
 
   test("Simple main") {
-    val compile = new Compilation(
+    val compile = Compilation(
       "fn main(){3}")
     val hamuts = compile.getHamuts()
 
@@ -22,7 +22,7 @@ class HammerTests extends FunSuite with Matchers {
 
 //  // Make sure a ListNode struct made it out
 //  test("Templated struct makes it into hamuts") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |struct ListNode<T> imm rules(T: Ref) {
 //        |  tail: *ListNode<T>;
@@ -34,7 +34,7 @@ class HammerTests extends FunSuite with Matchers {
 //  }
 
   test("Two templated structs make it into hamuts") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface MyOption<T> imm rules(T Ref) { }
         |struct MyNone<T> imm rules(T Ref) { }
@@ -59,7 +59,7 @@ class HammerTests extends FunSuite with Matchers {
   // Maybe we can turn off tree shaking?
   // Maybe this just violates requirements?
   test("Virtual and override functions make it into hamuts") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface Blark imm { }
         |fn wot(virtual b *Blark) int abstract;
@@ -76,7 +76,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests stripping things after panic") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() int {
         |  panic();
@@ -95,7 +95,7 @@ class HammerTests extends FunSuite with Matchers {
 
 
   test("Tests export function") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn moo() export { 42 }
         |""".stripMargin)
@@ -105,7 +105,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests export struct") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Moo export { }
         |""".stripMargin)
@@ -115,7 +115,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests export interface") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface Moo export { }
         |""".stripMargin)

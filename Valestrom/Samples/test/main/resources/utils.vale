@@ -43,3 +43,9 @@ fn __call(this &IntHasher, x int) { x }
 
 struct IntEquator { }
 fn __call(this &IntEquator, a int, b int) { a == b }
+
+fn signum(a int) int {
+  = if (a < 0) { -1 }
+    else if (a > 0) { 1 }
+    else { 0 }
+}

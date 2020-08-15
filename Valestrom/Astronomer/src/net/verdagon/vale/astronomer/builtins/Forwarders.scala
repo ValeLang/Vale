@@ -58,6 +58,6 @@ object Forwarders {
               FunctionCallAE(
                 RangeS.internal(-35),
                 FunctionLoadAE(RangeS.internal(-35), GlobalFunctionFamilyNameA(callee)),
-                params.map(param => LocalLoadAE(CodeVarNameA(param._1), OwnP))))))))
+                params.map(param => LocalLoadAE(RangeS.internal(-35), CodeVarNameA(param._1), OwnP))))))))
   }
 }

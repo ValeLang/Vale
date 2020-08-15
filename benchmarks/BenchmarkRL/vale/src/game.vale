@@ -29,7 +29,7 @@ fn next(self &!LCGRand) int {
 
 // // Makes a GameMutator that does nothing.
 // pub fn do_nothing_game_mutator() -> GameMutator {
-//     return Box::new(|_rand, _game| {});
+//     ret Box::new(|_rand, _game| {});
 // }
 
 
@@ -42,18 +42,18 @@ struct Game {
 
 // impl Game {
     fn get_current_level(self &Game) &Level {
-        // return &self.levels[self.get_player().level_index];
+        // ret &self.levels[self.get_player().level_index];
         self.levels.get(0).get()
     }
 //     pub fn get_current_level_mut(&mut self) -> &mut Level {
 //         let level_index = self.get_player().level_index;
-//         return &mut self.levels[level_index];
+//         ret &mut self.levels[level_index];
 //     }
 //     pub fn get_player_index(&self) -> generational_arena::Index {
-//         return self.player_index.expect("No player yet!");
+//         ret self.player_index.expect("No player yet!");
 //     }
 //     pub fn get_player(&self) -> &Unit {
-//         return &self.units[self.get_player_index()];
+//         ret &self.units[self.get_player_index()];
 //     }
 
 //     pub fn add_unit_to_level(
@@ -80,7 +80,7 @@ struct Game {
 //             .insert(loc, unit_index);
 //         let unit = &mut self.units[unit_index];
 //         unit.index = Some(unit_index);
-//         return unit_index;
+//         ret unit_index;
 //     }
 
 //     pub fn damage_unit(
@@ -139,7 +139,7 @@ struct Game {
 //     -> &mut T {
 //         let tile = self.get_current_level_mut().tiles.get_mut(&tile_loc).expect("");
 //         let icomponent = tile.components.get_mut(tile_component_index).expect("wat");
-//         return &mut *icomponent.downcast_mut::<T>().expect("");
+//         ret &mut *icomponent.downcast_mut::<T>().expect("");
 //     }
 // }
 
@@ -162,25 +162,29 @@ List<Location> {
     ret result;
 }
 
-// // Get all the locations adjacent to any of the ones in `source_locs`.
-// pub fn get_pattern_locations_adjacent_to_any(
-//     source_locs: &FxHashSet<Location>,
-//     include_source_locs: bool,
-//     consider_corners_adjacent: bool,
-// ) -> FxHashSet<Location> {
-//     let mut result = FxHashSet::default();
-//     for &original_location in source_locs {
-//         let mut adjacents =
-//             get_pattern_adjacent_locations(original_location, consider_corners_adjacent);
-//         if include_source_locs {
-//             adjacents.push(original_location.clone());
-//         }
-//         for adjacent_location in adjacents {
-//             if !include_source_locs && source_locs.contains(&adjacent_location) {
-//                 continue;
-//             }
-//             result.insert(adjacent_location);
-//         }
-//     }
-//     return result;
-// }
+// Get all the locations adjacent to any of the ones in `source_locs`.
+fn get_pattern_locations_adjacent_to_any(
+    source_locs &HashSet<Location, LocationHasher, LocationEquator>,
+    include_source_locs bool,
+    consider_corners_adjacent bool)
+HashSet<Location, LocationHasher, LocationEquator> {
+    result =
+        HashSet<Location, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+    each (source_locs) (original_location){
+        adjacents =
+            get_pattern_adjacent_locations(original_location, consider_corners_adjacent);
+        if (include_source_locs) {
+            adjacents.add(original_location);
+        }
+        each (&adjacents) (adjacent_location){
+            if (include_source_locs or not source_locs.has(adjacent_location)) {
+                // DIFFERENCE our set doesnt let you insert if already there
+                if (not result.has(adjacent_location)) {
+                    result.add(adjacent_location);
+                }
+            }
+        }
+    }
+    ret result;
+}

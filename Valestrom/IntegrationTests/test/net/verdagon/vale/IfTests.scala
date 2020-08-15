@@ -9,7 +9,7 @@ import net.verdagon.vale.driver.Compilation
 
 class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  = if (true) { 3 } else { 5 }
@@ -26,7 +26,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Simple false branch returning an int") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  = if (false) { 3 } else { 5 }
@@ -37,7 +37,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Ladder") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |fn main() {
         |  = if (false) { 3 } else if (true) { 5 } else { 7 }
@@ -60,7 +60,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Moving from inside if") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Marine { x int; }
         |fn main() {
@@ -90,7 +90,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("If with complex condition") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |struct Marine { x int; }
         |fn main() {
@@ -109,7 +109,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Ret from inside if will destroy locals") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """struct Marine { hp int; }
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
@@ -136,7 +136,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Can continue if other branch would have returned") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """struct Marine { hp int; }
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
@@ -164,7 +164,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Destructure inside if") {
-    val compile = new Compilation(
+    val compile = Compilation(
 
       """
         |struct Bork {

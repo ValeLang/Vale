@@ -148,7 +148,7 @@ class PatternTemplar(
         // This will mark the variable as moved
         val localLookupExpr =
           localHelper.softLoad(
-            fate, LocalLookup2(export, inputExpr.resultRegister.reference), Own)
+            fate, range, LocalLookup2(range, export, inputExpr.resultRegister.reference), Own)
 
         expectedCoord.referend match {
           case StructRef2(_) => {
@@ -162,7 +162,7 @@ class PatternTemplar(
 
             val innerLets =
               nonCheckingTranslateStructInner(
-                temputs, fate, listOfMaybeDestructureMemberPatterns, expectedCoord, localLookupExpr)
+                temputs, fate, range, listOfMaybeDestructureMemberPatterns, expectedCoord, localLookupExpr)
             (lets0 ++ innerLets)
           }
           case PackT2(_, underlyingStruct @ StructRef2(_)) => {
@@ -170,7 +170,7 @@ class PatternTemplar(
             val reinterpretExpr2 = TemplarReinterpret2(localLookupExpr, structType2)
             val innerLets =
               nonCheckingTranslateStructInner(
-                temputs, fate, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
+                temputs, fate, range, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
             (lets0 ++ innerLets)
           }
           case TupleT2(_, underlyingStruct @ StructRef2(_)) => {
@@ -178,7 +178,7 @@ class PatternTemplar(
             val reinterpretExpr2 = TemplarReinterpret2(localLookupExpr, structType2)
             val innerLets =
               nonCheckingTranslateStructInner(
-                temputs, fate, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
+                temputs, fate, range, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
             (lets0 ++ innerLets)
           }
           case KnownSizeArrayT2(size, RawArrayT2(memberType, mutability)) => {
@@ -187,7 +187,7 @@ class PatternTemplar(
             }
             val innerLets =
               nonCheckingTranslateArraySeq(
-                temputs, fate, listOfMaybeDestructureMemberPatterns, localLookupExpr)
+                temputs, fate, range, listOfMaybeDestructureMemberPatterns, localLookupExpr)
             (lets0 ++ innerLets)
           }
           case _ => vfail("impl!")
@@ -315,6 +315,7 @@ class PatternTemplar(
   private def nonCheckingTranslateArraySeq(
     temputs: TemputsBox,
     fate: FunctionEnvironmentBox,
+    range: RangeS,
     innerPatternMaybes: List[AtomAP],
     inputArraySeqExpr: ReferenceExpression2):
   (List[ReferenceExpression2]) = {
@@ -353,7 +354,7 @@ class PatternTemplar(
               case (((innerPattern, memberType), index)) => {
                 val loadExpr =
                   SoftLoad2(
-                    ArraySequenceLookup2(inputArraySeqExpr, arraySeqT, IntLiteral2(index)),
+                    ArraySequenceLookup2(range, inputArraySeqExpr, arraySeqT, IntLiteral2(index)),
                     Share)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
@@ -376,6 +377,7 @@ class PatternTemplar(
   private def nonCheckingTranslateStructInner(
     temputs: TemputsBox,
     fate: FunctionEnvironmentBox,
+    range: RangeS,
     innerPatternMaybes: List[AtomAP],
     structType2: Coord,
     inputStructExpr: ReferenceExpression2):
@@ -412,7 +414,8 @@ class PatternTemplar(
                 val loadExpr =
                   SoftLoad2(
                     ReferenceMemberLookup2(
-                      SoftLoad2(LocalLookup2(packLocalVariable, structType2), Share),
+                      range,
+                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2), Share),
                       structDef2.fullName.addStep(structDef2.members(index).name),
                       memberType),
                     Share)

@@ -44,13 +44,13 @@ object SourceCodeUtils {
     val text = filenamesAndSources(file)._2
     // TODO: can optimize this perhaps
     var lineBegin = 0;
-    while (true) {
+    while (lineBegin < text.length) {
       val lineEnd =
         text.indexOf('\n', lineBegin) match {
           case -1 => text.length
           case other => other
         }
-      if (lineBegin <= position && position < lineEnd) {
+      if (lineBegin <= position && position <= lineEnd) {
         return text.substring(lineBegin, lineEnd)
       }
       lineBegin = lineEnd + 1

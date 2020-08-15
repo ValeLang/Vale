@@ -70,6 +70,7 @@ class Compilation(code: String, verbose: Boolean = true) {
         val temputs =
           new Templar(println, verbose).evaluate(getAstrouts()) match {
             case Ok(t) => t
+
             case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, filenamesAndSources, e))
           }
         temputsCache = Some(temputs)

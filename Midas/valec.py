@@ -13,6 +13,7 @@ from typing import Dict, Any, List, Callable
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
+    print("Running: " + str(args))
     return subprocess.run(args, stdout=PIPE, stderr=PIPE, text=True, **kwargs)
 
 
@@ -20,7 +21,7 @@ class ValeCompiler(unittest.TestCase):
     GENPATH: str = os.environ.get('GENPATH', "cmake-build-debug")
 
     def valestrom(self, vale_files: List[str],
-                  vir_file: str) -> subprocess.CompletedProcess:
+                  valestrom_options: List[str]) -> subprocess.CompletedProcess:
         driver = os.path.dirname(os.path.realpath(__file__)) + "/test/Driver.jar"
         # print(driver)
         driver_class = "net.verdagon.vale.driver.Driver"
@@ -30,14 +31,13 @@ class ValeCompiler(unittest.TestCase):
                 "-cp",
                 driver,
                 driver_class,
-                "build",
-                "-o",
-                vir_file
-            ] + vale_files
+                "build"
+            ] + valestrom_options + vale_files
         )
 
     def valec(self, vir_file: str,
-              o_files_dir: str) -> subprocess.CompletedProcess:
+              o_files_dir: str,
+              midas_options: List[str]) -> subprocess.CompletedProcess:
         assert self.GENPATH
         valec_path = shutil.which("valec")
         if not type(valec_path) is str:
@@ -45,7 +45,7 @@ class ValeCompiler(unittest.TestCase):
 
         return procrun(
             [valec_path, "--verify", "--llvmir", "--output-dir",
-             o_files_dir, vir_file])
+             o_files_dir, vir_file] + midas_options)
 
     def clang(self, o_files: List[str],
               exe_file: str) -> subprocess.CompletedProcess:
@@ -66,7 +66,7 @@ class ValeCompiler(unittest.TestCase):
         self.GENPATH: str = type(self).GENPATH
 
     def compile_and_execute(
-            self, vale_files: str) -> subprocess.CompletedProcess:
+            self, args: str) -> subprocess.CompletedProcess:
 
         # parser = argparse.ArgumentParser(description='Compiles a Vale program.')
         # parser.add_argument('integers', metavar='N', type=int, nargs='+',
@@ -79,6 +79,12 @@ class ValeCompiler(unittest.TestCase):
         #                     help='sum the integers (default: find the max)')
         # args = parser.parse_args()
 
+        valestrom_options = []
+        midas_options = []
+        if "--flares" in args:
+            args.remove("--flares")
+            midas_options.append("--flares")
+        vale_files = args
 
         build_dir = f"build"
 
@@ -87,7 +93,7 @@ class ValeCompiler(unittest.TestCase):
         os.makedirs(build_dir)
 
         vir_file = f"build.vir"
-        proc = self.valestrom(vale_files, vir_file)
+        proc = self.valestrom(vale_files, ["-o", vir_file])
         # print(proc.stdout)
         # print(proc.stderr)
         if proc.returncode == 0:
@@ -99,7 +105,7 @@ class ValeCompiler(unittest.TestCase):
           print(f"Internal error while compiling {vale_files}:\n" + proc.stdout + "\n" + proc.stderr)
           sys.exit(proc.returncode)
 
-        proc = self.valec(vir_file, build_dir)
+        proc = self.valec(vir_file, build_dir, midas_options)
         self.assertEqual(proc.returncode, 0,
                          f"valec couldn't compile {vir_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)

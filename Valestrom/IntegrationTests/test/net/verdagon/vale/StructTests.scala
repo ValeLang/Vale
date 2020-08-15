@@ -98,7 +98,9 @@ class StructTests extends FunSuite with Matchers {
         |fn main() {
         |  Marine(Weapon());
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "Destroying marine!\nDestroying weapon!\n"
   }
@@ -106,6 +108,8 @@ class StructTests extends FunSuite with Matchers {
   // Known failure 2020-08-05
   test("Mutate destroys member after moving it out of the object") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       """
         |interface Opt<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }

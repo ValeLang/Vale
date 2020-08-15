@@ -14,5 +14,6 @@
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
     <orderEntry type="module" module-name="Samples" />
+    <orderEntry type="library" name="commons-lang:commons-lang:2.6" level="project" />
   </component>
 </module>

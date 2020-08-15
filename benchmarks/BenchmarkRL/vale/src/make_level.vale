@@ -54,7 +54,6 @@ Level {
 
         thing = inside_ellipse and walkable;
 
-
         thisCol.add(thing);
 
         mut y = y + 1;
@@ -84,7 +83,9 @@ Level {
             loc = Location(x, y);
             walkable = walkabilities.get(x).get().get(y).get();
             on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
-            //if (walkable and not on_edge) {
+            // println(str(loc) + " w " + str(walkable) + " e " + str(on_edge));
+            if (walkable and not on_edge) {
+                // println("adding floor");
                 display_class =
                   if (rand.next() mod 2 == 0) {
                     "dirt"
@@ -97,30 +98,42 @@ Level {
                         true,
                         display_class));//,
                         // components: Arena::new()));
-            // } else {
-            //     next_to_walkable! = false;
-            //     for neighbor_x in cmp::max(0, x - 1)..cmp::min(max_width - 1, x + 1 + 1) {
-            //         for neighbor_y in cmp::max(0, y - 1)..cmp::min(max_height - 1, y + 1 + 1) {
-            //             let neighbor_walkable =
-            //                 walkabilities[neighbor_x as usize][neighbor_y as usize];
-            //             if neighbor_walkable {
-            //                 next_to_walkable = true;
-            //             }
-            //         }
-            //     }
-            //     if next_to_walkable {
-            //         level.tiles.insert(
-            //             loc,
-            //             Tile {
-            //                 walkable: false,
-            //                 display_class: "wall".to_string(),
-            //                 components: Arena::new(),
-            //             },
-            //         );
-            //     }
-            // }
+            } else {
+                next_to_walkable! = false;
+
+                neighbor_x! = max(0, x - 1);
+                while (neighbor_x < min(max_width - 1, x + 1 + 1)) {
+
+                    neighbor_y! = max(0, y - 1);
+                    while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
+
+                        neighbor_walkable =
+                            walkabilities.get(neighbor_x).get().get(neighbor_y).get();
+                        if (neighbor_walkable) {
+                            mut next_to_walkable = true;
+                        }
+
+                        mut neighbor_y = neighbor_y + 1;
+                    }
+
+                    mut neighbor_x = neighbor_x + 1;
+                }
+
+                // println("adding wall");
+                if (next_to_walkable) {
+                    level.tiles.add(
+                        loc,
+                        Tile(
+                            false,
+                            "wall"));
+                            // components: Arena::new(),
+                }
+            }
+
             mut y = y + 1;
         }
+
+
         mut x = x + 1;
     }
 

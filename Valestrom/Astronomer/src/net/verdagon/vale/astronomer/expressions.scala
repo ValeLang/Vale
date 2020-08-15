@@ -118,7 +118,7 @@ case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressio
 
 case class DotAE(range: RangeS, left: IExpressionAE, member: String, borrowContainer: Boolean) extends IExpressionAE
 
-case class DotCallAE(left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE
+case class DotCallAE(range: RangeS, left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE
 
 case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1: List[IExpressionAE]) extends IExpressionAE
 

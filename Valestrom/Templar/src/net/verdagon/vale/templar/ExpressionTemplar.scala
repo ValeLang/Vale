@@ -526,7 +526,7 @@ class ExpressionTemplar(
         // So far, we only allow these when they're immediately called like functions
         vfail("unimplemented")
       }
-      case DotCallAE(containerExpr1, indexExpr1) => {
+      case DotCallAE(range, containerExpr1, indexExpr1) => {
         val (unborrowedContainerExpr2, returnsFromContainerExpr) =
           evaluate(temputs, fate, containerExpr1);
         val containerExpr2 =
@@ -556,6 +556,9 @@ class ExpressionTemplar(
                 }
                 case _ => vimpl("impl random access of structs' members")
               }
+            }
+            case sr @ StructRef2(_) => {
+              throw CompileErrorExceptionT(CannotSubscriptT(range, containerExpr2.resultRegister.reference))
             }
             // later on, a map type could go here
           }

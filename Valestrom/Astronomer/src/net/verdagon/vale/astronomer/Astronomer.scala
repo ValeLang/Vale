@@ -233,7 +233,7 @@ object Astronomer {
     val (primitivesS, structsS, interfacesS) = env.lookupType(name)
 
     if (primitivesS.isEmpty && structsS.isEmpty && interfacesS.isEmpty) {
-      ErrorReporter.report(CouldntFindType(range, name.name))
+      ErrorReporter.report(CouldntFindTypeA(range, name.name))
     }
     if (primitivesS.size.signum + structsS.size.signum + interfacesS.size.signum > 1) {
       vfail("Name doesn't correspond to only one of primitive or struct or interface: " + name)

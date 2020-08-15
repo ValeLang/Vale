@@ -140,6 +140,17 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
+  } else if (name == "F(\"__greaterThanInt\",[],[R(*,<,i),R(*,<,i)])") {
+    assert(call->argExprs.size() == 2);
+    auto result = LLVMBuildICmp(
+        builder,
+        LLVMIntSGT,
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[1]),
+        "");
+    return result;
   } else if (name == "F(\"__greaterThanOrEqInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
@@ -174,8 +185,16 @@ LLVMValueRef translateExternCall(
         "");
     return result;
   } else if (name == "F(\"__eqBoolBool\",[],[R(*,<,b),R(*,<,b)])") {
-    // VivemExterns.eqBoolBool
-    assert(false);
+    assert(call->argExprs.size() == 2);
+    auto result = LLVMBuildICmp(
+        builder,
+        LLVMIntEQ,
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]),
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[1]),
+        "");
+    return result;
   } else if (name == "F(\"__print\",[],[R(*,>,s)])") {
     assert(call->argExprs.size() == 1);
 

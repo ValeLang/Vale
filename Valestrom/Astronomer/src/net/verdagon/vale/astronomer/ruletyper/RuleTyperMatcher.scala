@@ -131,7 +131,9 @@ class RuleTyperMatcher[Env, State](
     expectedTypes: List[ITemplataType],
     rules: List[ITemplexS]):
   (IRuleTyperMatchResult[List[ITemplexA]]) = {
-    vcheck(expectedTypes.size == rules.size, "Wrong number of args for template!")
+    if (expectedTypes.size != rules.size) {
+      throw CompileErrorExceptionA(WrongNumArgsForTemplateA(range, expectedTypes.size, rules.size));
+    }
     val resultTemplexesT =
       expectedTypes.zip(rules).zipWithIndex.flatMap({
         case ((expectedType, rule), index) => {

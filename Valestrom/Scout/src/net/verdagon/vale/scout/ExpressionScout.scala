@@ -303,12 +303,12 @@ object ExpressionScout {
           }
         }
       }
-      case IndexPE(_, containerExprPE, List(indexExprPE)) => {
+      case IndexPE(range, containerExprPE, List(indexExprPE)) => {
         val (stackFrame1, containerExpr1, containerSelfUses, containerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
         val (stackFrame2, indexExpr1, indexSelfUses, indexChildUses) =
           scoutExpressionAndCoerce(stackFrame1, indexExprPE, OwnP);
-        val dot1 = DotCallSE(containerExpr1, indexExpr1)
+        val dot1 = DotCallSE(Scout.evalRange(stackFrame2.file, range), containerExpr1, indexExpr1)
         (stackFrame2, NormalResult(dot1), containerSelfUses.thenMerge(indexSelfUses), containerChildUses.thenMerge(indexChildUses))
       }
     }

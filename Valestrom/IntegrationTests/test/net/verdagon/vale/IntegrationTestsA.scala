@@ -270,12 +270,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
 
   test("Tests a linked list") {
-    val compile = new Compilation(Samples.get("virtuals/ordinarylinkedlist.vale"))
+    val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+      Samples.get("virtuals/ordinarylinkedlist.vale"))
     compile.evalForReferend(Vector())
   }
 
   test("Tests a templated linked list") {
-    val compile = new Compilation(Samples.get("genericvirtuals/templatedlinkedlist.vale"))
+    val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/templatedlinkedlist.vale"))
     compile.evalForReferend(Vector())
   }
 
@@ -285,7 +291,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Template overrides are stamped") {
-    val compile = new Compilation(Samples.get("genericvirtuals/templatedoption.vale"))
+    val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/templatedoption.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(1)
   }
 
@@ -369,7 +378,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Map function") {
-    val compile = new Compilation(Samples.get("genericvirtuals/mapFunc.vale"))
+    val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("genericvirtuals/mapFunc.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
@@ -379,6 +391,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     // Make sure that functions that cant be called by main will not be included.
 
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       """
         |fn bork(x str) { print(x); }
         |fn helperFunc(x int) { print(x); }

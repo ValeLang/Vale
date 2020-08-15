@@ -29,7 +29,6 @@ object Externs {
         makeExtern("__castIntInt", List(("left", "int")), "int"),
         makeExtern("__castFloatInt", List(("left", "float")), "int"),
         makeExtern("__castIntStr", List(("left", "int")), "str"),
-        makeExtern("__castBoolStr", List(("left", "bool")), "str"),
         makeExtern("__castFloatStr", List(("left", "float")), "str"),
         makeExtern("__and", List(("left", "bool"), ("right", "bool")), "bool"),
         makeExtern("__or", List(("left", "bool"), ("right", "bool")), "bool"),

@@ -10,6 +10,8 @@ import net.verdagon.vale.driver.Compilation
 class HashMapTest extends FunSuite with Matchers {
   test("Hash map collisions") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
       Samples.get("genericvirtuals/optingarraylist.vale") +
       Samples.get("genericvirtuals/hashmap.vale") +
@@ -51,6 +53,8 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map with functors") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
       Samples.get("genericvirtuals/optingarraylist.vale") +
       Samples.get("genericvirtuals/hashmap.vale") +
@@ -78,6 +82,8 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map with struct as key") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+      Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         Samples.get("genericvirtuals/hashmap.vale") +
@@ -115,6 +121,8 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map has") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         Samples.get("genericvirtuals/hashmap.vale") +
@@ -142,6 +150,8 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map keys") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         Samples.get("genericvirtuals/hashmap.vale") +
@@ -168,6 +178,8 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map with mutable values") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         Samples.get("genericvirtuals/hashmap.vale") +
@@ -196,6 +208,8 @@ class HashMapTest extends FunSuite with Matchers {
 
   test("Hash map remove") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       Samples.get("genericvirtuals/opt.vale") +
         Samples.get("genericvirtuals/optingarraylist.vale") +
         Samples.get("genericvirtuals/hashmap.vale") +

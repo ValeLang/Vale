@@ -67,8 +67,6 @@ object FunctionVivem {
       case """F("__lessThanFloat",[],[R(*,<,f),R(*,<,f)])""" => VivemExterns.lessThanFloat
 //      case PrototypeH(FullNameH(List(NamePartH("__greaterThanFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,BoolH())) =>
 //        VivemExterns.greaterThanFloat
-//      case PrototypeH(FullNameH(List(NamePartH("__lessThanOrEqInt", Some(List()), Some(List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH()))), None))), List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH())), ReferenceH(m.Share,BoolH())) =>
-//        VivemExterns.lessThanOrEqInt
 //      case PrototypeH(FullNameH(List(NamePartH("__greaterThanInt", Some(List()), Some(List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH()))), None))), List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH())), ReferenceH(m.Share,BoolH())) =>
 //        VivemExterns.greaterThanInt
       case """F("__eqStrStr",[],[R(*,>,s),R(*,>,s)])""" => VivemExterns.eqStrStr
@@ -80,12 +78,12 @@ object FunctionVivem {
       case """F("__castIntStr",[],[R(*,<,i)])""" => VivemExterns.castIntStr
       case """F("__castIntFloat",[],[R(*,<,i)])""" => VivemExterns.castIntFloat
       case """F("__castFloatInt",[],[R(*,<,f)])""" => VivemExterns.castFloatInt
+      case """F("__lessThanOrEqInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.lessThanOrEqInt
 //      case PrototypeH(FullNameH(List(NamePartH("__castFloatStr", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,StrH())) =>
 //        VivemExterns.castFloatStr
       case """F("__and",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.and
       case """F("__or",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.or
       case """F("__mod",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.mod
-      case """F("__castBoolStr",[],[R(*,<,b)])""" => VivemExterns.castBoolStr
       case _ => vimpl(ref.fullName.toString)
     }
   }

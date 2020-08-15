@@ -10,7 +10,9 @@ class PrintTests extends FunSuite with Matchers {
         |fn main() {
         |  println(6);
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "6\n"
   }
@@ -21,7 +23,9 @@ class PrintTests extends FunSuite with Matchers {
         |fn main() {
         |  println(true);
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "true\n"
   }

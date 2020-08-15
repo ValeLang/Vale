@@ -1,33 +1,35 @@
-// // Returns whether we should probably re-display it next turn.
-// // Will be false if its something static like terrain, or true
-// // if it's something that moves around like a unit.
-// pub fn set_screen_cell(
-//     screen: &mut Screen,
-//     game: &Game,
-//     player_visible_locs: &FxHashSet<Location>,
-//     loc: Location,
-// ) {
-//     let mut foreground_color = ScreenColor::White;
-//     let mut background_color = ScreenColor::Black;
-//     let mut character = " ";
+// Returns whether we should probably re-display it next turn.
+// Will be false if its something static like terrain, or true
+// if it's something that moves around like a unit.
+fn set_screen_cell(
+    screen &!Screen,
+    game &Game,
+    // player_visible_locs &FxHashSet<Location>,
+    loc Location) {
+    foreground_color = White();
+    background_color = Black();
+    character! = " ";
 
-//     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
-//         match tile.display_class.as_str() {
-//             "dirt" => {
-//                 character = ".";
-//                 foreground_color = ScreenColor::Orange;
-//             }
-//             "grass" => {
-//                 character = ".";
-//                 foreground_color = ScreenColor::Green;
-//             }
-//             "wall" => {
-//                 character = "#";
-//                 foreground_color = ScreenColor::Gray;
-//             }
-//             _ => panic!("unrecognized tile display class"),
-//         }
-//     }
+    // println("looking up " + str(loc));
+    tile? = game.get_current_level().tiles.get(loc);
+    if (not tile?.empty?()) {
+        tile = tile?^.get();
+        if (tile.display_class == "dirt") {
+            mut character = ".";
+            mut foreground_color = Orange();
+        } else if (tile.display_class == "grass") {
+            mut character = ".";
+            mut foreground_color = Green();
+        } else if (tile.display_class == "wall") {
+        // "wall" => {
+            mut character = "#";
+            mut foreground_color = Gray();
+        } else {
+            panic("unrecognized tile display class");
+        }
+    } else {
+        drop(tile?);
+    }
 
 //     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
 //         if let Some(fire) = tile.get_first_component::<FireTileComponent>() {
@@ -60,14 +62,13 @@
 //         background_color = ScreenColor::DarkGray;
 //     }
 
-//     screen.set_cell(
-//         loc.x as usize,
-//         loc.y as usize,
-//         background_color,
-//         foreground_color,
-//         character.to_string(),
-//     );
-// }
+    screen.set_cell(
+        loc.x,
+        loc.y,
+        background_color,
+        foreground_color,
+        character);
+}
 
 // // Moves the player to the next level.
 // // Returns true to continue with the game, false to exit the game.
@@ -118,7 +119,7 @@ Game {
             List<Level>());
             //, None);
 
-  level = make_level(30, 30, &rand); // DIFFERENCE need &!
+  level = make_level(max_width, max_height, &rand); // DIFFERENCE need &!
   game.levels.add(level);
 //     for _ in 0..num_levels {
 //         let level_index = game.levels.len();
@@ -214,32 +215,49 @@ Game {
 //     }
 // }
 
-// pub fn display(seed: int, maybe_screen: &mut Option<Screen>, game: &Game) {
-//     let maybe_player_loc = game.units.get(game.get_player_index()).map(|p| p.loc);
-//     let player_visible_locs =
-//         match maybe_player_loc {
-//             None => FxHashSet::default(),
-//             Some(player_loc) => {
-//                 game.get_current_level().get_locations_within_sight(
-//                     player_loc, true, DEFAULT_SIGHT_RANGE_100)
-//             }
-//         };
+fn display(
+        seed int,
+        maybe_screen &!Opt<Screen>,
+        game &Game) {
+    // let maybe_player_loc = game.units.get(game.get_player_index()).map(|p| p.loc);
+    // let player_visible_locs =
+    //     match maybe_player_loc {
+    //         None => FxHashSet::default(),
+    //         Some(player_loc) => {
+    //             game.get_current_level().get_locations_within_sight(
+    //                 player_loc, true, DEFAULT_SIGHT_RANGE_100)
+    //         }
+    //     };
 
-//     if let Some(mut screen) = maybe_screen.as_mut() {
-//         for x in 0..game.get_current_level().max_width {
-//             for y in 0..game.get_current_level().max_height {
-//                 let loc = Location::new(x, y);
-//                 set_screen_cell(&mut screen, &game, &player_visible_locs, loc);
-//             }
-//         }
-//         if let Some(player) = game.units.get(game.get_player_index()) {
-//             screen.set_status_line(format!("Seed {}   Level {}   HP: {} / {}\nTo benchmark: --seed 1337 --width 40 --height 30 --num_levels 5 --turn_delay 0 --display 0", seed, player.level_index, player.hp, player.max_hp));
-//         } else {
-//             screen.set_status_line("Dead!                                      ".to_string());
-//         }
-//         screen.paint_screen();
-//     }
-// }
+    // if let Some(mut screen) = maybe_screen.as_mut() {
+    if (not empty?(maybe_screen)) {
+        screen = maybe_screen.get();
+
+        x! = 0;
+        while (x < game.get_current_level().max_width) {
+
+            y! = 0;
+            while (y < game.get_current_level().max_height) {
+                loc = Location(x, y);
+                set_screen_cell(
+                    &screen,
+                    &game,
+                    // &player_visible_locs,
+                    loc);
+
+                mut y = y + 1;
+            }
+
+            mut x = x + 1;
+        }
+        // if let Some(player) = game.units.get(game.get_player_index()) {
+        //     screen.set_status_line(format!("Seed {}   Level {}   HP: {} / {}\nTo benchmark: --seed 1337 --width 40 --height 30 --num_levels 5 --turn_delay 0 --display 0", seed, player.level_index, player.hp, player.max_hp));
+        // } else {
+        //     screen.set_status_line("Dead!                                      ".to_string());
+        // }
+        screen.paint_screen();
+    }
+}
 
 fn benchmark_rl(
     seed int,
@@ -253,19 +271,19 @@ fn benchmark_rl(
 
     game = setup(&rand, level_width, level_height, num_levels);
 
-    // maybe_screen =
-    //     if (should_display) {
-          z =
+    maybe_screen =
+        if (should_display) {
+          z Opt<Screen> =
               Some(
                 newScreen(
                 game.get_current_level().max_width,
                 game.get_current_level().max_height));
-          // = z;
-        // } else {
-        //   z Opt<Screen> =
-        //     None<Screen>();
-        //   = z;
-        // };
+          = z;
+        } else {
+          z Opt<Screen> =
+            None<Screen>();
+          = z;
+        };
 
 //     loop {
 //         turn(&mut rand, &mut game);
@@ -279,7 +297,7 @@ fn benchmark_rl(
 //             }
 //         }
 
-//         display(seed, &mut maybe_screen, &game);
+        display(seed, &maybe_screen, &game);
 
 //         if turn_delay > 0 {
 //             sleep(Duration::new(turn_delay as u64 / 1000, turn_delay as u32 % 1000 * 1000000));
@@ -287,15 +305,13 @@ fn benchmark_rl(
 //     }
 
     
-  level = game.levels.get(0).get();  
-              drop(z); // START HERE if we move this down or get rid of it... infinite loop.
+  // level = game.levels.get(0).get();  
+              // drop(z); // START HERE if we move this down or get rid of it... infinite loop.
 
-  level.tiles.keys() each (location){
-    tile? Opt<&Tile> = level.tiles.get(location);
-    tile = tile?^.get();
-    println(str(location) + " " + tile.display_class);
-  };
+  // level.tiles.keys() each (location){
+  //   tile? Opt<&Tile> = level.tiles.get(location);
+  //   tile = tile?^.get();
+  //   println(str(location) + " " + tile.display_class);
+  // };
 
-
-    println("Done");
 }

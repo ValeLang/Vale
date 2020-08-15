@@ -33,3 +33,7 @@ fn assertEq<T>(a T, b T) void {
 fn assertEq<T>(a T, b T, msg str) void {
   assert(a == b, msg);
 }
+
+fn !=<T>(a &T, b &T) bool{
+  not (a == b)
+}

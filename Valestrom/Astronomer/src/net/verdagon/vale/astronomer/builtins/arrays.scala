@@ -71,9 +71,10 @@ object Arrays {
               LocalVariableA(CodeVarNameA("generator"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
               ConstructArrayAE(
+                RangeS.internal(-56),
                 RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType),
-                LocalLoadAE(CodeVarNameA("size"), OwnP),
-                LocalLoadAE(CodeVarNameA("generator"), OwnP),
+                LocalLoadAE(RangeS.internal(-56),CodeVarNameA("size"), OwnP),
+                LocalLoadAE(RangeS.internal(-56),CodeVarNameA("generator"), OwnP),
                 mutability))))))
   }
 }

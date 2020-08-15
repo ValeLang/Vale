@@ -9,7 +9,7 @@ import net.verdagon.vale.driver.Compilation
 class VirtualTests extends FunSuite with Matchers {
 
     test("Simple program containing a virtual function") {
-      val compile = new Compilation(
+      val compile = Compilation(
         """
           |interface I {}
           |fn doThing(virtual i I) {4}
@@ -40,7 +40,7 @@ class VirtualTests extends FunSuite with Matchers {
     }
 
   test("Can call virtual function") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface I {}
         |fn doThing(virtual i I) {4}
@@ -72,7 +72,7 @@ class VirtualTests extends FunSuite with Matchers {
   }
 
   test("Can call interface env's function from outside") {
-    val compile = new Compilation(
+    val compile = Compilation(
       """
         |interface I {
         |  fn doThing(virtual i I) int;

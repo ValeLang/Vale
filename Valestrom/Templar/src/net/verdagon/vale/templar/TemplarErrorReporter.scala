@@ -14,6 +14,9 @@ case class CannotSubscriptT(range: RangeS, tyype: Coord) extends ICompileErrorT
 case class CouldntFindFunctionToLoadT(range: RangeS, name: GlobalFunctionFamilyNameA) extends ICompileErrorT
 case class CouldntFindMemberT(range: RangeS, memberName: String) extends ICompileErrorT
 case class BodyResultDoesntMatch(range: RangeS, functionName: IFunctionDeclarationNameA, expectedReturnType: Coord, resultType: Coord) extends ICompileErrorT
+case class CouldntConvertForReturnT(range: RangeS, expectedType: Coord, actualType: Coord) extends ICompileErrorT
+// ("Can't move out of a member!")
+case class CantMoveOutOfMemberT(range: RangeS, name: FullName2[IVarName2]) extends ICompileErrorT
 
 object ErrorReporter {
   def report(err: ICompileErrorT): Nothing = {

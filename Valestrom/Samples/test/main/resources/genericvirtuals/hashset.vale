@@ -23,11 +23,41 @@ fn HashSet<K, H, E>(hasher H, equator E, capacity int) HashSet<K, H, E> {
       0)
 }
 
+fn HashSet<K, H, E, M, N>(
+    valuesKSA &[<M> N * K],
+    hasher H,
+    equator E)
+HashSet<K, H, E> {
+  this = HashSet<K, H, E>(hasher, equator, 0);
+  each (valuesKSA) (v){
+    if (not this.has(v)) {
+      this.add(v);
+    }
+  }
+  ret this;
+}
+
+fn HashSet<K, H, E, M>(
+    valuesArray &Array<M, K>,
+    hasher H,
+    equator E)
+HashSet<K, H, E> {
+  this = HashSet<K, H, E>(hasher, equator, 0);
+  each (valuesArray) (v){
+    if (not this.has(v)) {
+      this.add(v);
+    }
+  }
+  ret this;
+}
+
 fn len<K, H, E>(set &HashSet<K, H, E>) int { set.size }
+
+fn empty?<K, H, E>(set &HashSet<K, H, E>) bool { set.size == 0 }
 
 fn add<K, H, E>(set &HashSet<K, H, E>, key K) void {
   if (set.has(key)) {
-    panic("Map already has given key!");
+    panic("HashSet already has given key!");
   }
   if ((set.size + 1) * 2 >= set.table.len()) {
     newSize =
@@ -119,7 +149,7 @@ fn has<K, H, E>(self &HashSet<K, H, E>, key K) bool {
   not(self.get(key).empty?())
 }
 
-fn keys<K, H, E>(self &HashSet<K, H, E>) Array<imm, K> {
+fn toArray<K, H, E>(self &HashSet<K, H, E>) Array<imm, K> {
   list = List<K>();
   index = 0;
   while (index < self.table.len()) {
@@ -165,5 +195,19 @@ void {
       mut i = set.table.len(); // break
     }
     mut i = i + 1;
+  }
+}
+
+fn each<K, H, E, F>(
+  self &HashSet<K, H, E>,
+  func F)
+void {
+  index! = 0;
+  while (index < self.table.len()) {
+    node? = self.table[index];
+    if (not(node?.empty?())) {
+      func(node?.get());
+    }
+    mut index = index + 1;
   }
 }

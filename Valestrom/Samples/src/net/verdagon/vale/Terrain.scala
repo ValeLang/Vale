@@ -314,7 +314,7 @@ object Terrain {
         |""".stripMargin
 
   def main(args: Array[String]): Unit = {
-//    val compile = new Compilation(generatorCode)
+//    val compile = Compilation(generatorCode)
 //
 //    val data =
 //      Vivem.executeWithPrimitiveArgs(

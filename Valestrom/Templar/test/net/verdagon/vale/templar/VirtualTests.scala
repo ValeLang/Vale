@@ -8,7 +8,7 @@ class VirtualTests extends FunSuite with Matchers {
   // TODO: pull all of the templar specific stuff out, the unit test-y stuff
 
 //  test("Simple program containing a virtual function") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I {}
 //        |fn doThing(i: virtual I) {4}
@@ -24,7 +24,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Simple program containing a virtual function taking an interface") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I {}
 //        |struct S {}
@@ -42,7 +42,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Simple override") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I {}
 //        |struct S {}
@@ -67,7 +67,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Two functions overriding another function") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I {}
 //        |struct S1 {}
@@ -86,7 +86,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Function taking an interface overriding another function") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I1 {}
 //        |interface I2 {}
@@ -114,7 +114,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Function taking an interface overriding another function with virtual") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I1 {}
 //        |interface I2 {}
@@ -149,7 +149,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Stamps ancestor structs when we declare a child struct") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |fn dance<T>(i: virtual I<T>) {
@@ -191,7 +191,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Calls an overriding function") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |fn dance<T>(i: virtual I<T>) {
@@ -235,7 +235,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  // So, this checks that it and its three ancestors are all stamped and all get their own
 //  // function families.
 //  test("Stamp multiple function families") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |
@@ -308,7 +308,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  // However, each struct is required to have a vtable entry for that function... they'll all
 //  // point to the original doThing<int>(:I<int>).
 //  test("Stamps virtual functions on a templated interface") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |
@@ -350,7 +350,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //
 //  test("Virtual creates function family roots") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |interface J<T> { }
@@ -378,7 +378,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //  // Should only be two function families.
 //  test("Override doesnt make a function family root") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface I<T> { }
 //        |interface J<T> { }
@@ -432,7 +432,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  // something different; theyre only distinguished by their template args.
 //
 //  test("Functions with same signatures but different template params make different families") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface MyInterface<T> { }
 //        |fn doThing<T>(x: virtual MyInterface<T>) {}
@@ -455,7 +455,7 @@ class VirtualTests extends FunSuite with Matchers {
 //  }
 //
 //  test("Stamps different families for different template args") {
-//    val compile = new Compilation(
+//    val compile = Compilation(
 //      """
 //        |interface MyInterface<T> { }
 //        |abstract fn doThing<T>(x: virtual MyInterface<T>)Void;

@@ -58,7 +58,7 @@ object CombinatorParsers
 
   def topLevelFunctionBegin = {
     pos ~
-      ("fn" ~> optWhite ~> exprIdentifier <~ optWhite) ~
+      ("fn" ~> optWhite ~> (comparisonOperators | exprIdentifier) <~ optWhite) ~
       opt(identifyingRunesPR <~ optWhite) ~
       (patternPrototypeParams <~ optWhite) ~
       // We have template rules before and after the return type because the return type likes

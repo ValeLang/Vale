@@ -33,4 +33,22 @@ class StringTests extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonStr("sprog\nwoggle")
   }
+
+  test("String with hex escape") {
+    val compile = new Compilation(
+      """
+        |fn main() {
+        |  "sprog\u001bwoggle"
+        |}
+        |""".stripMargin, false)
+
+    val temputs = compile.getTemputs()
+    temputs.lookupFunction("main").only({
+      case StrLiteral2(x) => {
+        x shouldEqual "sprog\u001bwoggle"
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonStr("sprog\u001bwoggle")
+  }
 }

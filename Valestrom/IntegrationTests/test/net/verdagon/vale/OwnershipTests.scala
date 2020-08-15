@@ -47,7 +47,9 @@ class OwnershipTests extends FunSuite with Matchers {
         |fn main() {
         |  Muta();
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
@@ -69,7 +71,9 @@ class OwnershipTests extends FunSuite with Matchers {
         |fn main() {
         |  = (Muta(10)).hp;
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
@@ -90,7 +94,9 @@ class OwnershipTests extends FunSuite with Matchers {
         |fn main() {
         |  a = Muta();
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
@@ -102,6 +108,8 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Calls destructor on local var unless moved") {
     // Should call the destructor in moo, but not in main
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       """
         |struct Muta { }
         |
@@ -142,6 +150,8 @@ class OwnershipTests extends FunSuite with Matchers {
 
   test("Saves return value then destroys local var") {
     val compile = new Compilation(
+      Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
       """
         |struct Muta { hp int; }
         |

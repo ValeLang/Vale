@@ -40,6 +40,7 @@ enum
     OPT_WIDTH,
     OPT_IMMERR,
     OPT_VERIFY,
+    OPT_FLARES,
     OPT_FILENAMES,
     OPT_CHECKTREE,
     OPT_EXTFUN,
@@ -77,6 +78,7 @@ static opt_arg_t args[] =
     { "linker", '\0', OPT_ARG_REQUIRED, OPT_LINKER },
 
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
+    { "flares", '\0', OPT_ARG_NONE, OPT_FLARES },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
     { "asm", '\0', OPT_ARG_NONE, OPT_ASM },
     { "llvmir", '\0', OPT_ARG_NONE, OPT_LLVMIR },
@@ -201,6 +203,8 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         case OPT_ASM: opt->print_asm = 1; break;
         case OPT_LLVMIR: opt->print_llvmir = 1; break;
         case OPT_VERIFY: opt->verify = 1; break;
+
+        case OPT_FLARES: opt->flares = 1; break;
 
         default: usage(); return -1;
         }

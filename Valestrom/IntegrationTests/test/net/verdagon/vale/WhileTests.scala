@@ -42,7 +42,9 @@ class WhileTests extends FunSuite with Matchers {
         |  }
         |  = key;
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale"))
 
     compile.evalForReferend(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
   }
@@ -57,7 +59,10 @@ class WhileTests extends FunSuite with Matchers {
         |  }
         |  = key;
         |}
-      """.stripMargin)
+      """.stripMargin +
+        Samples.get("castutils.vale") +
+        Samples.get("printutils.vale") +
+        Samples.get("utils.vale"))
 
     compile.evalForReferend(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
   }

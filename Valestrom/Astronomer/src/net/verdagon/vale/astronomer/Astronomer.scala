@@ -637,15 +637,15 @@ object Astronomer {
   }
 
 
-  val stlFunctions =
-    Forwarders.forwarders ++
-    List(
-      NotEquals.function,
-      Printing.printInt,
-      Printing.printlnInt,
-      Printing.printBool,
-      Printing.printlnBool,
-      Printing.printlnStr)
+//  val stlFunctions =
+//    Forwarders.forwarders ++
+//    List(
+//      NotEquals.function,
+//      Printing.printInt,
+//      Printing.printlnInt,
+//      Printing.printBool,
+//      Printing.printlnBool,
+//      Printing.printlnStr)
 
   val wrapperFunctions =
     List(
@@ -656,7 +656,7 @@ object Astronomer {
 
   def runAstronomer(programS: ProgramS): Either[ProgramA, ICompileErrorA] = {
     try {
-      val suppliedFunctions = stlFunctions ++ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
+      val suppliedFunctions = /*stlFunctions ++*/ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
       val suppliedInterfaces = List(IFunction1.interface)
       val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS) =
         Astronomer.translateProgram(programS, primitives, suppliedFunctions, suppliedInterfaces)

@@ -18,9 +18,17 @@ LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
   auto iter = globalState->knownSizeArrayCountedStructs.find(knownSizeArrayMT->name);
   if (iter == globalState->knownSizeArrayCountedStructs.end()) {
     auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), knownSizeArrayMT->name->name.c_str());
+
     std::vector<LLVMTypeRef> elementsL;
-    elementsL.push_back(globalState->nonWeakableControlBlockStructL);
+
+    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
+      elementsL.push_back(globalState->immControlBlockStructL);
+    } else assert(false);
+
     elementsL.push_back(innerArrayLT);
+
     LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
 
     iter = globalState->knownSizeArrayCountedStructs.emplace(knownSizeArrayMT->name, countedStruct).first;
@@ -44,10 +52,19 @@ LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
   auto iter = globalState->unknownSizeArrayCountedStructs.find(unknownSizeArrayMT->name);
   if (iter == globalState->unknownSizeArrayCountedStructs.end()) {
     auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "rc").c_str());
+
     std::vector<LLVMTypeRef> elementsL;
-    elementsL.push_back(globalState->nonWeakableControlBlockStructL);
+
+    if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    } else if (unknownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
+      elementsL.push_back(globalState->immControlBlockStructL);
+    } else assert(false);
+
     elementsL.push_back(LLVMInt64Type());
+
     elementsL.push_back(innerArrayLT);
+
     LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
 
     iter = globalState->unknownSizeArrayCountedStructs.emplace(unknownSizeArrayMT->name, countedStruct).first;

@@ -35,14 +35,18 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
+    KnownSizeArrayT* knownSizeArrayT,
     LLVMTypeRef structLT,
     const std::vector<LLVMValueRef>& membersLE,
     const std::string& typeName) {
   auto newStructLE = allocateStruct(globalState, builder, structTypeM, structLT);
   fillControlBlock(
+      FL(),
       globalState,
       functionState,
       builder,
+      knownSizeArrayT->rawArray->mutability,
+      false,
       getConcreteControlBlockPtr(builder, newStructLE),
       typeName);
   fillKnownSizeArray(
@@ -94,6 +98,7 @@ LLVMValueRef translateNewArrayFromValues(
                 functionState,
                 builder,
                 newArrayFromValues->arrayRefType,
+                newArrayFromValues->arrayReferend,
                 knownSizeArrayCountedStructLT,
                 elementsLE,
                 knownSizeArrayMT->name->name);

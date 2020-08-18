@@ -10,7 +10,9 @@ LLVMValueRef allocateStruct(
     LLVMBuilderRef builder,
     Reference* structTypeM,
     LLVMTypeRef structL) {
-  adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+  if (globalState->opt->census) {
+    adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+  }
 
   LLVMValueRef resultPtrLE = nullptr;
   if (structTypeM->location == Location::INLINE) {
@@ -59,7 +61,9 @@ LLVMValueRef mallocUnknownSizeArray(
   auto newWrapperPtrLE =
       LLVMBuildCall(builder, globalState->malloc, &sizeBytesLE, 1, "");
 
-  adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+  if (globalState->opt->census) {
+    adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+  }
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
@@ -92,7 +96,9 @@ LLVMValueRef mallocStr(
   auto destCharPtrLE =
       LLVMBuildCall(builder, globalState->malloc, &sizeBytesLE, 1, "donePtr");
 
-  adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+  if (globalState->opt->census) {
+    adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+  }
 
   auto newStrWrapperPtrLE =
       LLVMBuildBitCast(
@@ -101,7 +107,11 @@ LLVMValueRef mallocStr(
           LLVMPointerType(globalState->stringWrapperStructL, 0),
           "newStrWrapperPtr");
   fillControlBlock(
-      globalState, functionState, builder, getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
+      FL(),
+      globalState, functionState, builder,
+      Mutability::IMMUTABLE,
+      false,
+      getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
   if (globalState->opt->census) {
@@ -136,9 +146,15 @@ void freeConcrete(
         "");
   }
 
-  auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
-  buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
-      "Tried to free concrete that had nonzero RC!");
+  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
+    buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+        "Tried to free concrete that had nonzero RC!");
+  } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+    // Do nothing
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    assert(false); // impl
+  } else assert(false);
 
   if (concreteRefM->location == Location::INLINE) {
     // Do nothing, it was alloca'd.
@@ -159,5 +175,7 @@ void freeConcrete(
         builder, globalState->free, &concreteAsCharPtrLE, 1, "");
   }
 
-  adjustCounter(builder, globalState->liveHeapObjCounter, -1);
+  if (globalState->opt->census) {
+    adjustCounter(builder, globalState->liveHeapObjCounter, -1);
+  }
 }

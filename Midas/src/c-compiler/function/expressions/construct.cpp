@@ -31,14 +31,15 @@ LLVMValueRef constructCountedStruct(
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
   LLVMValueRef newStructPtrLE = allocateStruct(globalState, builder, structTypeM, structL);
-  auto objIdLE =
-      fillControlBlock(
-          globalState, functionState, builder,
-          getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
+  fillControlBlock(
+      from,
+      globalState, functionState, builder,
+      structM->mutability,
+      structM->weakable,
+      getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
   fillInnerStruct(
       builder, structM, membersLE,
       getStructContentsPtr(builder, newStructPtrLE));
-  buildFlare(from, globalState, functionState, builder, "Allocating ", structM->name->name, objIdLE);
   return newStructPtrLE;
 }
 

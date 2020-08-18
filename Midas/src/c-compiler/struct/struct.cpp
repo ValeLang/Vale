@@ -41,15 +41,22 @@ void translateStruct(
 
   LLVMTypeRef countedStructL = globalState->getCountedStruct(structM->name);
   std::vector<LLVMTypeRef> countedStructMemberTypesL;
+
   // First member is a ref counts struct. We don't include the int directly
   // because we want fat pointers to point to this struct, so they can reach
   // into it and increment without doing any casting.
-  if (structM->weakable) {
-    countedStructMemberTypesL.push_back(globalState->weakableControlBlockStructL);
-  } else {
-    countedStructMemberTypesL.push_back(globalState->nonWeakableControlBlockStructL);
-  }
+  if (structM->mutability == Mutability::MUTABLE) {
+    if (structM->weakable) {
+      countedStructMemberTypesL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else {
+      countedStructMemberTypesL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    }
+  } else if (structM->mutability == Mutability::IMMUTABLE) {
+    countedStructMemberTypesL.push_back(globalState->immControlBlockStructL);
+  } else assert(false);
+
   countedStructMemberTypesL.push_back(valStructL);
+
   LLVMStructSetBody(
       countedStructL, countedStructMemberTypesL.data(), countedStructMemberTypesL.size(), false);
 

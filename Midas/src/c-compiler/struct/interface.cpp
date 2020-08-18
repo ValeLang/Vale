@@ -54,15 +54,20 @@ void translateInterface(
 
   LLVMTypeRef refStructL = globalState->getInterfaceRefStruct(interfaceM->name);
   std::vector<LLVMTypeRef> refStructMemberTypesL;
-  // The object ptr is the 0th element, so we don't have to add and subtract 1
-  // whenever we want to affect its ref count.
-  // It points to the any struct, which is a wrapper around a ref count.
+
+  // this points to the control block.
   // It makes it easier to increment and decrement ref counts.
-  if (interfaceM->weakable) {
-    refStructMemberTypesL.push_back(LLVMPointerType(globalState->weakableControlBlockStructL, 0));
-  } else {
-    refStructMemberTypesL.push_back(LLVMPointerType(globalState->nonWeakableControlBlockStructL, 0));
-  }
+  if (interfaceM->mutability == Mutability::MUTABLE) {
+    if (interfaceM->weakable) {
+      refStructMemberTypesL.push_back(LLVMPointerType(globalState->mutWeakableControlBlockStructL, 0));
+    } else {
+      refStructMemberTypesL.push_back(LLVMPointerType(globalState->mutNonWeakableControlBlockStructL, 0));
+    }
+  } else if (interfaceM->mutability == Mutability::IMMUTABLE) {
+    refStructMemberTypesL.push_back(LLVMPointerType(globalState->immControlBlockStructL, 0));
+  } else assert(false);
+
+
   refStructMemberTypesL.push_back(LLVMPointerType(itableStruct, 0));
   LLVMStructSetBody(
       refStructL,

@@ -153,22 +153,22 @@ void fillControlBlock(
   }
 
   if (globalState->opt->census) {
-    auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            objIdLE,
-            globalState->controlBlockObjIdIndex,
-            "controlBlockWithRcAndObjId");
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            globalState->getOrMakeStringConstant(typeName),
-            globalState->controlBlockTypeStrIndex,
-            "controlBlockComplete");
-    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
+//    auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
+//    newControlBlockLE =
+//        LLVMBuildInsertValue(
+//            builder,
+//            newControlBlockLE,
+//            objIdLE,
+//            globalState->controlBlockObjIdIndex,
+//            "controlBlockWithRcAndObjId");
+//    newControlBlockLE =
+//        LLVMBuildInsertValue(
+//            builder,
+//            newControlBlockLE,
+//            globalState->getOrMakeStringConstant(typeName),
+//            globalState->controlBlockTypeStrIndex,
+//            "controlBlockComplete");
+//    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakable) {
     auto wrciLE = LLVMBuildCall(builder, globalState->allocWrc, nullptr, 0, "");

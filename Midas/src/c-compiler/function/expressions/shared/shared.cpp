@@ -253,7 +253,7 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef refLE) {
   LLVMValueRef resultAsVoidPtrLE =
-      LLVMBuildBitCast(
+      LLVMBuildPointerCast(
           builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
@@ -275,6 +275,7 @@ void checkValidReference(
     Reference* refM,
     LLVMValueRef refLE) {
   if (globalState->opt->census) {
+    assert(LLVMTypeOf(refLE) == translateType(globalState, refM));
     if (refM->ownership == Ownership::OWN) {
       auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);

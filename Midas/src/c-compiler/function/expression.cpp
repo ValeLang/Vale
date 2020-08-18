@@ -452,7 +452,7 @@ LLVMValueRef translateExpressionInner(
     LLVMValueRef arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
     auto resultLE = loadElement(globalState, functionState, blockState, builder, arrayType, arrayReferend->rawArray->elementType, sizeLE, arrayPtrLE, mutability, indexLE);
     acquireReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, resultLE);
-    checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, arrayPtrLE);
+    checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, resultLE);
     return resultLE;
   } else if (auto unknownSizeArrayLoad = dynamic_cast<UnknownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -579,7 +579,7 @@ LLVMValueRef translateExpressionInner(
     auto oldMemberLE =
         swapMember(
             builder, structDefM, structExpr, memberIndex, memberName, sourceExpr);
-    checkValidReference(FL(), globalState, functionState, builder, memberType, structExpr);
+    checkValidReference(FL(), globalState, functionState, builder, memberType, oldMemberLE);
     discard(
         AFL("MemberStore discard struct"), globalState, functionState, blockState, builder,
         memberStore->structType, structExpr);
@@ -632,7 +632,7 @@ LLVMValueRef translateExpressionInner(
     auto sourceLE =
         translateExpression(
             globalState, functionState, blockState, builder, lockWeak->sourceExpr);
-    checkValidReference(FL(), globalState, functionState, builder, lockWeak->resultOptType, sourceLE);
+    checkValidReference(FL(), globalState, functionState, builder, lockWeak->sourceType, sourceLE);
 
     auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, sourceLE);
 

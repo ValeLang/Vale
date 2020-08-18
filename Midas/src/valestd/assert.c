@@ -2,16 +2,16 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void __vassert(char value) {
+void __vassert(char value, const char* message) {
   if (!value) {
-    printf("Assertion failed!\n");
+    printf("%s\n", message);
     exit(255);
   }
 }
 
-void __vassertI64Eq(int64_t expected, int64_t actual) {
+void __vassertI64Eq(int64_t expected, int64_t actual, const char* message) {
   if (expected != actual) {
-    printf("Assertion failed! Expected %d but was %d.\n", expected, actual);
+    printf("%s Expected %d but was %d.\n", message, expected, actual);
     exit(255);
   }
 }

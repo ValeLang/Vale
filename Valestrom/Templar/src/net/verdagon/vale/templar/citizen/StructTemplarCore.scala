@@ -124,9 +124,9 @@ class StructTemplarCore(
 
     ancestorInterfaces.foreach({
       case (ancestorInterface) => {
-        if (structDef2.weakable) {
-          val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
-          vcheck(interfaceDefinition2.weakable, WeakableStructImplementingNonWeakableInterface)
+        val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
+        if (structDef2.weakable != interfaceDefinition2.weakable) {
+          throw WeakableImplingMismatch(structDef2.weakable, interfaceDefinition2.weakable)
         }
         temputs.addImpl(temporaryStructRef, ancestorInterface)
       }

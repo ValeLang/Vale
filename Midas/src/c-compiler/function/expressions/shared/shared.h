@@ -70,6 +70,11 @@ LLVMValueRef getControlBlockPtr(
     LLVMValueRef referenceLE,
     Reference* refM);
 
+void adjustWeakRc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE,
+    int amount);
 
 // Returns the new RC
 LLVMValueRef adjustStrongRc(

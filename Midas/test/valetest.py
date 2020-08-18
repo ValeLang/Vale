@@ -39,7 +39,7 @@ class ValeTest(unittest.TestCase):
               o_files_dir: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
         return procrun(
-            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--region-override", "unsafe-fast", "--output-dir",
+            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--region-override", "assist", "--output-dir",
              o_files_dir, vir_file])
 
     def clang(self, o_files: List[str],
@@ -241,32 +241,53 @@ class ValeTest(unittest.TestCase):
             [PATH_TO_SAMPLES + "nestedblocks.vale"],
             42)
 
-    def test_dropThenLock(self) -> None:
+    def test_dropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code(
             [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-             PATH_TO_SAMPLES + "weaks/dropThenLock.vale"],
+             PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale"],
             42)
 
-    def test_lockWhileLive(self) -> None:
+    def test_lockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code(
             [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-             PATH_TO_SAMPLES + "weaks/lockWhileLive.vale"],
+             PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale"],
             7)
 
-    def test_weakFromLocalCRef(self) -> None:
+    def test_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code(
             [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-             PATH_TO_SAMPLES + "weaks/weakFromLocalCRef.vale"],
+             PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale"],
             7)
 
-    def test_weakFromCRef(self) -> None:
+    def test_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code(
             [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-             PATH_TO_SAMPLES + "weaks/weakFromCRef.vale"],
+             PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale"],
             7)
 
-    # def test_roguelike(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code("roguelike.vale", 42)
+    # def test_dropThenLockInterface(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code(
+    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+    #          PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale"],
+    #         42)
+    #
+    # def test_lockWhileLiveInterface(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code(
+    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+    #          PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale"],
+    #         7)
+    #
+    # def test_weakFromLocalCRefInterface(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code(
+    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+    #          PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale"],
+    #         7)
+    #
+    # def test_weakFromCRefInterface(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code(
+    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+    #          PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale"],
+    #         7)
 
 
 if __name__ == '__main__':

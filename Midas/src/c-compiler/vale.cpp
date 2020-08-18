@@ -83,6 +83,7 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->censusRemove = addFunction(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 
   globalState->allocWrc = addFunction(globalState->mod, "__allocWrc", int64LT, {});
+  globalState->checkWrc = addFunction(globalState->mod, "__checkWrc", voidLT, {int64LT});
   globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
   globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
   globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});

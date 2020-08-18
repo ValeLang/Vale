@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 // List of option ids
 enum
@@ -40,8 +41,9 @@ enum
     OPT_WIDTH,
     OPT_IMMERR,
     OPT_VERIFY,
-  OPT_FLARES,
-  OPT_FASTMODE,
+    OPT_FLARES,
+    OPT_CENSUS,
+    OPT_REGION_OVERRIDE,
     OPT_FILENAMES,
     OPT_CHECKTREE,
     OPT_EXTFUN,
@@ -79,8 +81,9 @@ static opt_arg_t args[] =
     { "linker", '\0', OPT_ARG_REQUIRED, OPT_LINKER },
 
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
-    { "flares", '\0', OPT_ARG_NONE, OPT_FLARES },
-    { "fastmode", '\0', OPT_ARG_NONE, OPT_FASTMODE },
+    { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
+    { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
+    { "region-override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
     { "asm", '\0', OPT_ARG_NONE, OPT_ASM },
     { "llvmir", '\0', OPT_ARG_NONE, OPT_LLVMIR },
@@ -171,14 +174,13 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     int print_usage = 0;
     int i;
 
-    memset(opt, 0, sizeof(ValeOptions));
     // options->limit = PASS_ALL;
     // options->check.errors = errors_alloc();
 
     optInit(args, &s, argc, argv);
     opt->release = 1;
     opt->flares = false;
-    opt->census = true;
+    opt->census = false;
 
     while ((id = optNext(&s)) != -1) {
         switch (id) {
@@ -206,8 +208,38 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         case OPT_LLVMIR: opt->print_llvmir = 1; break;
         case OPT_VERIFY: opt->verify = 1; break;
 
-        case OPT_FLARES: opt->flares = 1; break;
-        case OPT_FASTMODE: opt->fastmode = 1; break;
+        case OPT_FLARES: {
+          if (!s.arg_val) {
+            opt->flares = true;
+          } else if (s.arg_val == std::string("on")) {
+            opt->flares = true;
+          } else if (s.arg_val == std::string("off")) {
+            opt->flares = false;
+          } else assert(false);
+          break;
+        }
+
+        case OPT_CENSUS: {
+          if (!s.arg_val) {
+            opt->census = true;
+          } else if (s.arg_val == std::string("on")) {
+            opt->census = true;
+          } else if (s.arg_val == std::string("off")) {
+            opt->census = false;
+          } else assert(false);
+          break;
+        }
+
+        case OPT_REGION_OVERRIDE: {
+          if (s.arg_val == std::string("unsafe-fast")) {
+            opt->regionOverride = RegionOverride::FAST;
+          } else if (s.arg_val == std::string("assist")) {
+            opt->regionOverride = RegionOverride::ASSIST;
+          } else if (s.arg_val == std::string("resilient")) {
+            opt->regionOverride = RegionOverride::RESILIENT;
+          } else assert(false);
+          break;
+        }
 
         default: usage(); return -1;
         }

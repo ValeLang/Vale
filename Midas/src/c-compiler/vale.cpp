@@ -102,45 +102,78 @@ void initInternalStructs(GlobalState* globalState) {
   {
     auto controlBlockStructL =
         LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), CONTROL_BLOCK_STRUCT_NAME);
+            LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    globalState->controlBlockTypeStrIndex = memberTypesL.size();
-    memberTypesL.push_back(int8PtrLT);
+    if (globalState->opt->census) {
+      globalState->controlBlockTypeStrIndex = memberTypesL.size();
+      memberTypesL.push_back(int8PtrLT);
 
-    globalState->controlBlockObjIdIndex = memberTypesL.size();
-    memberTypesL.push_back(int64LT);
+      globalState->controlBlockObjIdIndex = memberTypesL.size();
+      memberTypesL.push_back(int64LT);
+    }
 
-    globalState->controlBlockRcMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(int64LT);
-
-    globalState->controlBlockWrciMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(int64LT);
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      globalState->mutControlBlockRcMemberIndex = memberTypesL.size();
+      memberTypesL.push_back(int64LT);
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      // Do nothing
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      assert(false); // impl
+    } else assert(false);
 
     LLVMStructSetBody(
         controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->weakableControlBlockStructL = controlBlockStructL;
+    globalState->mutNonWeakableControlBlockStructL = controlBlockStructL;
   }
 
   {
     auto controlBlockStructL =
         LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), CONTROL_BLOCK_STRUCT_NAME);
+            LLVMGetGlobalContext(), "immControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match weakable
-    memberTypesL.push_back(int8PtrLT);
+    if (globalState->opt->census) {
+      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakable
+      memberTypesL.push_back(int8PtrLT);
 
-    assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match weakable
-    memberTypesL.push_back(int64LT);
+      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakable
+      memberTypesL.push_back(int64LT);
+    }
 
-    assert(memberTypesL.size() == globalState->controlBlockRcMemberIndex); // should match weakable
+    globalState->immControlBlockRcMemberIndex = memberTypesL.size();
     memberTypesL.push_back(int64LT);
 
     LLVMStructSetBody(
         controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->nonWeakableControlBlockStructL = controlBlockStructL;
+    globalState->immControlBlockStructL = controlBlockStructL;
   }
+
+  {
+    auto controlBlockStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "mutWeakableControlBlock");
+    std::vector<LLVMTypeRef> memberTypesL;
+
+    if (globalState->opt->census) {
+      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakable
+      memberTypesL.push_back(int8PtrLT);
+
+      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakable
+      memberTypesL.push_back(int64LT);
+    }
+
+    assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakable
+    memberTypesL.push_back(int64LT);
+
+    globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
+    memberTypesL.push_back(int64LT);
+
+    LLVMStructSetBody(
+        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
+    globalState->mutWeakableControlBlockStructL = controlBlockStructL;
+  }
+
 
   {
     auto stringInnerStructL =
@@ -159,7 +192,7 @@ void initInternalStructs(GlobalState* globalState) {
         LLVMStructCreateNamed(
             LLVMGetGlobalContext(), "__Str_rc");
     std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(globalState->nonWeakableControlBlockStructL);
+    memberTypesL.push_back(globalState->immControlBlockStructL);
     memberTypesL.push_back(globalState->stringInnerStructL);
     LLVMStructSetBody(
         stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
@@ -167,7 +200,32 @@ void initInternalStructs(GlobalState* globalState) {
   }
 }
 
-void compileValeCode(GlobalState* globalState, const char* filename) {
+void compileValeCode(GlobalState* globalState, const std::string& filename) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      std::cout << "Region override: assist" << std::endl;
+      break;
+    case RegionOverride::RESILIENT:
+      std::cout << "Region override: resilient" << std::endl;
+      break;
+    case RegionOverride::FAST:
+      std::cout << "Region override: fast" << std::endl;
+      break;
+  }
+
+  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (!globalState->opt->census) {
+      std::cout << "Warning: not using census when in assist mode!" << std::endl;
+    }
+  } else {
+    if (globalState->opt->flares) {
+      std::cout << "Warning: using flares outside of assist mode, will slow things down!" << std::endl;
+    }
+    if (globalState->opt->census) {
+      std::cout << "Warning: using census outside of assist mode, will slow things down!" << std::endl;
+    }
+  }
+
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
 
@@ -295,7 +353,7 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
   LLVMValueRef mainResult =
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
-  {
+  if (globalState->opt->census) {
     LLVMValueRef args[2] = {
         LLVMConstInt(LLVMInt64Type(), 0, false),
         LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs")
@@ -303,7 +361,7 @@ void compileValeCode(GlobalState* globalState, const char* filename) {
     LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
   }
 
-  {
+  if (globalState->opt->census) {
     LLVMValueRef args[2] = {
         LLVMConstInt(LLVMInt64Type(), 0, false),
         LLVMBuildCall(
@@ -355,11 +413,11 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
   LLVMInitializeX86AsmParser();
 
   // Find target for the specified triple
-  if (!opt->triple)
+  if (opt->triple.empty())
     opt->triple = LLVMGetDefaultTargetTriple();
 
   LLVMTargetRef target;
-  if (LLVMGetTargetFromTriple(opt->triple, &target, &err) != 0) {
+  if (LLVMGetTargetFromTriple(opt->triple.c_str(), &target, &err) != 0) {
     errorExit(ExitCode::LlvmSetupFailed, "Could not create target: ", err);
     LLVMDisposeMessage(err);
     return NULL;
@@ -370,13 +428,13 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
   LLVMCodeGenOptLevel opt_level = opt->release? LLVMCodeGenLevelAggressive : LLVMCodeGenLevelNone;
 
   LLVMRelocMode reloc = (opt->pic || opt->library)? LLVMRelocPIC : LLVMRelocDefault;
-  if (!opt->cpu)
+  if (opt->cpu.empty())
     opt->cpu = "generic";
-  if (!opt->features)
+  if (opt->features.empty())
     opt->features = "";
 
   LLVMTargetMachineRef machine;
-  if (!(machine = LLVMCreateTargetMachine(target, opt->triple, opt->cpu, opt->features, opt_level, reloc, LLVMCodeModelDefault))) {
+  if (!(machine = LLVMCreateTargetMachine(target, opt->triple.c_str(), opt->cpu.c_str(), opt->features.c_str(), opt_level, reloc, LLVMCodeModelDefault))) {
     errorExit(ExitCode::LlvmSetupFailed, "Could not create target machine");
     return NULL;
   }
@@ -429,9 +487,13 @@ void generateModule(GlobalState *globalState) {
   createModule(globalState);
 
   // Serialize the LLVM IR, if requested
-  if (globalState->opt->print_llvmir && LLVMPrintModuleToFile(globalState->mod, fileMakePath(globalState->opt->output, globalState->opt->srcNameNoExt.c_str(), "ll").c_str(), &err) != 0) {
-    std::cerr << "Could not emit pre-ir file: " << err << std::endl;
-    LLVMDisposeMessage(err);
+  if (globalState->opt->print_llvmir) {
+    auto outputFilePath = fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(), "ll");
+    std::cout << "Printing file " << outputFilePath << std::endl;
+    if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
+      std::cerr << "Could not emit pre-ir file: " << err << std::endl;
+      LLVMDisposeMessage(err);
+    }
   }
 
   // Verify generated IR
@@ -452,31 +514,35 @@ void generateModule(GlobalState *globalState) {
   LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
   LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
   LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
-  if (globalState->opt->release)
+
+  if (globalState->opt->release) {
     LLVMAddFunctionInliningPass(passmgr);        // Function inlining
+  }
   LLVMRunPassManager(passmgr, globalState->mod);
   LLVMDisposePassManager(passmgr);
 
   // Serialize the LLVM IR, if requested
-  auto outputFilePath = fileMakePath(globalState->opt->output, globalState->opt->srcNameNoExt.c_str(), "opt.ll");
-  std::cout << "Printing file " << outputFilePath << std::endl;
-  if (globalState->opt->print_llvmir && LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
-    std::cerr << "Could not emit ir file: " << err << std::endl;
-    LLVMDisposeMessage(err);
+  if (globalState->opt->print_llvmir) {
+    auto outputFilePath = fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(), "opt.ll");
+    std::cout << "Printing file " << outputFilePath << std::endl;
+    if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
+      std::cerr << "Could not emit ir file: " << err << std::endl;
+      LLVMDisposeMessage(err);
+    }
   }
 
   // Transform IR to target's ASM and OBJ
   if (globalState->machine) {
     auto objpath =
-        fileMakePath(globalState->opt->output, globalState->opt->srcNameNoExt.c_str(),
+        fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wasm" : objext);
     auto asmpath =
-        fileMakePath(globalState->opt->output,
+        fileMakePath(globalState->opt->output.c_str(),
             globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wat" : asmext);
     generateOutput(
         objpath.c_str(), globalState->opt->print_asm ? asmpath.c_str() : NULL,
-        globalState->mod, globalState->opt->triple, globalState->machine);
+        globalState->mod, globalState->opt->triple.c_str(), globalState->machine);
   }
 
 
@@ -517,9 +583,9 @@ int main(int argc, char **argv) {
   if (argc < 2)
     errorExit(ExitCode::BadOpts, "Specify a Vale program to compile.");
   valeOptions.srcpath = argv[1];
-  new (&valeOptions.srcDir) std::string(fileDirectory(valeOptions.srcpath));
-  new (&valeOptions.srcNameNoExt) std::string(getFileNameNoExt(valeOptions.srcpath));
-  new (&valeOptions.srcDirAndNameNoExt) std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
+  valeOptions.srcDir = std::string(fileDirectory(valeOptions.srcpath));
+  valeOptions.srcNameNoExt = std::string(getFileNameNoExt(valeOptions.srcpath));
+  valeOptions.srcDirAndNameNoExt = std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
 
   // We set up generation early because we need target info, e.g.: pointer size
   GlobalState globalState;

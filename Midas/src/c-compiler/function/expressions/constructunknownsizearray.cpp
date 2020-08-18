@@ -36,11 +36,12 @@ void fillUnknownSizeArray(
       });
 }
 
-LLVMValueRef constructKnownSizeArrayCountedStruct(
+LLVMValueRef constructUnknownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
+    UnknownSizeArrayT* unknownSizeArrayT,
     Reference* generatorType,
     LLVMValueRef generatorLE,
     LLVMTypeRef usaWrapperPtrLT,
@@ -51,9 +52,12 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
       mallocUnknownSizeArray(
           globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
   fillControlBlock(
+      FL(),
       globalState,
       functionState,
       builder,
+      unknownSizeArrayT->rawArray->mutability,
+      false,
       getConcreteControlBlockPtr(builder, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, LLVMBuildStructGEP(builder, usaWrapperPtrLE, 1, "lenPtr"));
@@ -98,11 +102,12 @@ LLVMValueRef translateConstructUnknownSizeArray(
       translateUnknownSizeArrayToWrapperStruct(
           globalState, unknownSizeArrayMT);
   auto resultLE =
-      constructKnownSizeArrayCountedStruct(
+      constructUnknownSizeArrayCountedStruct(
           globalState,
       functionState,
       blockState,
       builder,
+          unknownSizeArrayMT,
           generatorType,
           generatorLE,
           unknownSizeArrayCountedStructLT,

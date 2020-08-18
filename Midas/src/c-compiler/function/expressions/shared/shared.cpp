@@ -88,19 +88,21 @@ void flareAdjustStrongRc(
     LLVMValueRef controlBlockPtr,
     LLVMValueRef oldAmount,
     LLVMValueRef newAmount) {
-  buildFlare(
-      from,
-      globalState,
-      functionState,
-      builder,
-      typeid(*refM->referend).name(),
-      " ",
-      getTypeNameStrPtrFromControlBlockPtr(globalState, builder, controlBlockPtr),
-      getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtr),
-      ", ",
-      oldAmount,
-      "->",
-      newAmount);
+  if (globalState->opt->census) {
+    buildFlare(
+        from,
+        globalState,
+        functionState,
+        builder,
+        typeid(*refM->referend).name(),
+        " ",
+        getTypeNameStrPtrFromControlBlockPtr(globalState, builder, controlBlockPtr),
+        getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtr),
+        ", ",
+        oldAmount,
+        "->",
+        newAmount);
+  }
 }
 
 // Returns the new RC
@@ -113,7 +115,7 @@ LLVMValueRef adjustStrongRc(
     Reference* refM,
     int amount) {
   auto controlBlockPtrLE = getControlBlockPtr(builder, exprLE, refM);
-  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
   auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
   flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
@@ -126,7 +128,7 @@ LLVMValueRef strongRcIsZero(
     LLVMValueRef exprLE,
     Reference* refM) {
   auto controlBlockPtr = getControlBlockPtr(builder, exprLE, refM);
-  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, controlBlockPtr));
+  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, refM, controlBlockPtr));
 }
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
@@ -251,7 +253,7 @@ void checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef refLE) {
-  if (!globalState->opt->census) {
+  if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
       auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);

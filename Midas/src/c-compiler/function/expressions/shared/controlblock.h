@@ -2,6 +2,7 @@
 #define FUNCTION_EXPRESSIONS_SHARED_CONTROLBLOCK_H_
 
 #include "globalstate.h"
+#include "shared.h"
 #include <llvm-c/Core.h>
 #include <function/function.h>
 
@@ -22,11 +23,13 @@ LLVMValueRef getInterfaceControlBlockPtr(
 LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef controlBlockPtr);
 // See CRCISFAORC for why we don't take in a mutability.
 LLVMValueRef getWrciFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef controlBlockPtr);
 
 LLVMValueRef getObjIdFromControlBlockPtr(
@@ -38,13 +41,17 @@ LLVMValueRef getObjIdFromControlBlockPtr(
 LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef controlBlockPtrLE);
 
 // Returns object ID
-LLVMValueRef fillControlBlock(
+void fillControlBlock(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Mutability mutability,
+    bool weakable,
     LLVMValueRef controlBlockPtrLE,
     const std::string& typeName);
 

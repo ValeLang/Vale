@@ -122,6 +122,20 @@ LLVMValueRef adjustStrongRc(
   return newRc;
 }
 
+void adjustWeakRc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE,
+    int amount) {
+  if (amount == 1) {
+    auto wrciLE = getWrciFromWeakRef(builder, exprLE);
+    LLVMBuildCall(builder, globalState->incrementWrc, &wrciLE, 1, "");
+  } else if (amount == -1) {
+    auto wrciLE = getWrciFromWeakRef(builder, exprLE);
+    LLVMBuildCall(builder, globalState->decrementWrc, &wrciLE, 1, "");
+  } else assert(false);
+}
+
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
@@ -246,6 +260,13 @@ void buildAssertCensusContains(
   buildAssert(checkerAFL, globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
 }
 
+void buildCheckWrc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef wrciLE) {
+  LLVMBuildCall(builder, globalState->checkWrc, &wrciLE, 1, "");
+}
+
 void checkValidReference(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
@@ -273,6 +294,10 @@ void checkValidReference(
     } else if (refM->ownership == Ownership::BORROW) {
       auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+    } else if (refM->ownership == Ownership::WEAK) {
+      // WARNING: This check has false positives.
+      auto wrciLE = getWrciFromWeakRef(builder, refLE);
+      buildCheckWrc(globalState, builder, wrciLE);
     } else assert(false);
   }
 }
@@ -310,29 +335,39 @@ LLVMValueRef upcast2(
     InterfaceReferend* targetInterfaceReferendM) {
   assert(sourceStructTypeM->location != Location::INLINE);
 
-  auto interfaceRefLT =
-      globalState->getInterfaceRefStruct(
-          targetInterfaceReferendM->fullName);
+  switch (targetInterfaceTypeM->ownership) {
+    case Ownership::OWN:
+    case Ownership::BORROW:
+    case Ownership::SHARE: {
+      auto interfaceRefLT =
+          globalState->getInterfaceRefStruct(
+              targetInterfaceReferendM->fullName);
 
-  auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
-  interfaceRefLE =
-      LLVMBuildInsertValue(
-          builder,
-          interfaceRefLE,
-          getControlBlockPtr(builder, sourceStructLE, sourceStructTypeM),
-          0,
-          "interfaceRefWithOnlyObj");
-  interfaceRefLE =
-      LLVMBuildInsertValue(
-          builder,
-          interfaceRefLE,
-          globalState->getInterfaceTablePtr(
-              globalState->program->getStruct(sourceStructReferendM->fullName)
-                  ->getEdgeForInterface(targetInterfaceReferendM->fullName)),
-          1,
-          "interfaceRef");
+      auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
+      interfaceRefLE =
+          LLVMBuildInsertValue(
+              builder,
+              interfaceRefLE,
+              getControlBlockPtr(builder, sourceStructLE, sourceStructTypeM),
+              0,
+              "interfaceRefWithOnlyObj");
+      interfaceRefLE =
+          LLVMBuildInsertValue(
+              builder,
+              interfaceRefLE,
+              globalState->getInterfaceTablePtr(
+                  globalState->program->getStruct(sourceStructReferendM->fullName)
+                      ->getEdgeForInterface(targetInterfaceReferendM->fullName)),
+              1,
+              "interfaceRef");
 
-  checkValidReference(
-      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
-  return interfaceRefLE;
+      checkValidReference(
+          FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
+      return interfaceRefLE;
+    }
+    case Ownership::WEAK: {
+      assert(false);
+      return nullptr;
+    }
+  }
 }

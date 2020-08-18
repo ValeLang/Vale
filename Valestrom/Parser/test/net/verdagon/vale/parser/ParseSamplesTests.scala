@@ -6,10 +6,10 @@ import org.scalatest.{FunSuite, Matchers}
 
 
 class ParseSamplesTests extends FunSuite with Matchers with Collector with TestParseUtils {
-  test("weaks/dropThenLock.vale") { compileProgramWithComments(Samples.get("weaks/dropThenLock.vale")) }
-  test("weaks/lockWhileLive.vale") { compileProgramWithComments(Samples.get("weaks/lockWhileLive.vale")) }
-  test("weaks/weakFromCRef.vale") { compileProgramWithComments(Samples.get("weaks/weakFromCRef.vale")) }
-  test("weaks/weakFromLocalCRef.vale") { compileProgramWithComments(Samples.get("weaks/weakFromLocalCRef.vale")) }
+  test("weaks/dropThenLockStruct.vale") { compileProgramWithComments(Samples.get("weaks/dropThenLockStruct.vale")) }
+  test("weaks/lockWhileLiveStruct.vale") { compileProgramWithComments(Samples.get("weaks/lockWhileLiveStruct.vale")) }
+  test("weaks/weakFromCRefStruct.vale") { compileProgramWithComments(Samples.get("weaks/weakFromCRefStruct.vale")) }
+  test("weaks/weakFromLocalCRefStruct.vale") { compileProgramWithComments(Samples.get("weaks/weakFromLocalCRefStruct.vale")) }
   test("addret.vale") { compileProgramWithComments(Samples.get("addret.vale")) }
   test("arrays/immusa.vale") { compileProgramWithComments(Samples.get("arrays/immusa.vale")) }
   test("arrays/immusalen.vale") { compileProgramWithComments(Samples.get("arrays/immusalen.vale")) }

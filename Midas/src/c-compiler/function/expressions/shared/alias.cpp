@@ -100,7 +100,7 @@ void discard(
       } else if (sourceRef->ownership == Ownership::BORROW) {
         adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
       } else if (sourceRef->ownership == Ownership::WEAK) {
-        assert(false);
+        adjustWeakRc(globalState, builder, expr, -1);
       } else if (sourceRef->ownership == Ownership::SHARE) {
         if (sourceRef->location == Location::INLINE) {
           assert(false); // impl
@@ -138,8 +138,7 @@ void discard(
       } else if (sourceRef->ownership == Ownership::WEAK) {
         auto structReferend = dynamic_cast<StructReferend*>(sourceRnd);
         assert(structReferend);
-        auto wrciLE = getWrciFromWeakRef(builder, expr);
-        LLVMBuildCall(builder, globalState->decrementWrc, &wrciLE, 1, "");
+        adjustWeakRc(globalState, builder, expr, -1);
       } else if (sourceRef->ownership == Ownership::SHARE) {
         if (sourceRef->location == Location::INLINE) {
           // Do nothing, we can just let inline structs disappear

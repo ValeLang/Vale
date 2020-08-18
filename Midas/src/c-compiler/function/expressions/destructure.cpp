@@ -29,7 +29,7 @@ LLVMValueRef translateDestructure(
 
   if (structM->weakable) {
     auto controlBlockPtrLE = getControlBlockPtr(builder, structLE, destructureM->structType);
-    auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+    auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, destructureM->structType, controlBlockPtrLE);
     LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
   }
 
@@ -51,9 +51,15 @@ LLVMValueRef translateDestructure(
   }
 
   if (destructureM->structType->ownership == Ownership::OWN) {
-    adjustStrongRc(
-        AFL("Destroy decrementing the owning ref"),
-        globalState, functionState, builder, structLE, destructureM->structType, -1);
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      adjustStrongRc(
+          AFL("Destroy decrementing the owning ref"),
+          globalState, functionState, builder, structLE, destructureM->structType, -1);
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      // Do nothing
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      assert(false); // impl
+    } else assert(false);
   } else if (destructureM->structType->ownership == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
   } else {

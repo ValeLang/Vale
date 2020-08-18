@@ -53,7 +53,7 @@ LLVMValueRef assembleStructWeakRef(
     StructReferend* structReferendM,
     LLVMValueRef objPtrLE) {
   auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
   LLVMBuildCall(builder, globalState->incrementWrc, &wrciLE, 1, "");
 
   auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
@@ -151,9 +151,17 @@ LLVMValueRef translateExpressionInner(
         auto resultLE =
             LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
         checkValidReference(FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
-        adjustStrongRc(
-            AFL("LocalLoad"),
-            globalState, functionState, builder, resultLE, localLoad->local->type, 1);
+
+        if (localLoad->local->type->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
+          adjustStrongRc(
+              AFL("LocalLoad"),
+              globalState, functionState, builder, resultLE, localLoad->local->type, 1);
+        } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+          // Do nothing
+        } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+          assert(false); // impl
+        } else assert(false);
+
         return resultLE;
       }
     } else if (localLoad->local->type->ownership == Ownership::OWN) {
@@ -167,7 +175,14 @@ LLVMValueRef translateExpressionInner(
         auto resultLE = LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
         checkValidReference(
             FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
-        adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, localLoad->local->type, 1);
+
+        if (localLoad->local->type->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
+          adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, localLoad->local->type, 1);
+        } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+          // Do nothing
+        } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+          assert(false); // impl
+        } else assert(false);
         return resultLE;
       } else if (localLoad->targetOwnership == Ownership::WEAK) {
         auto sourceRefLE = LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
@@ -195,7 +210,14 @@ LLVMValueRef translateExpressionInner(
         auto resultLE = LLVMBuildLoad(builder, localAddr, localLoad->localName.c_str());
         checkValidReference(
             FL(), globalState, functionState, builder, localLoad->local->type, resultLE);
-        adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, localLoad->local->type, 1);
+
+        if (localLoad->local->type->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
+          adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, localLoad->local->type, 1);
+        } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+          // Do nothing
+        } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+          assert(false); // impl
+        } else assert(false);
         return resultLE;
       } else if (localLoad->targetOwnership == Ownership::WEAK) {
         // Making a weak ref from a constraint ref local.
@@ -339,9 +361,15 @@ LLVMValueRef translateExpressionInner(
         });
 
     if (arrayType->ownership == Ownership::OWN) {
-      adjustStrongRc(
-          AFL("Destroy decrementing the owning ref"),
-          globalState, functionState, builder, arrayWrapperLE, arrayType, -1);
+      if (localLoad->local->type->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
+        adjustStrongRc(
+            AFL("Destroy decrementing the owning ref"),
+            globalState, functionState, builder, arrayWrapperLE, arrayType, -1);
+      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+        // Do nothing
+      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+        assert(false); // impl
+      } else assert(false);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
     } else {
@@ -386,9 +414,15 @@ LLVMValueRef translateExpressionInner(
         });
 
     if (arrayType->ownership == Ownership::OWN) {
-      adjustStrongRc(
-          AFL("Destroy decrementing the owning ref"),
-          globalState, functionState, builder, arrayWrapperLE, arrayType, -1);
+      if (destroyUnknownSizeArrayIntoFunction->arrayType->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
+        adjustStrongRc(
+            AFL("Destroy decrementing the owning ref"),
+            globalState, functionState, builder, arrayWrapperLE, arrayType, -1);
+      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+        // Do nothing
+      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+        assert(false); // impl
+      } else assert(false);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
     } else {

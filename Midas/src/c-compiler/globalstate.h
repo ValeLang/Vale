@@ -10,8 +10,6 @@
 #include "metal/instructions.h"
 #include "valeopts.h"
 
-#define CONTROL_BLOCK_STRUCT_NAME "__ControlBlock"
-
 class GlobalState {
 public:
   LLVMTargetMachineRef machine;
@@ -41,10 +39,12 @@ public:
 
   int controlBlockTypeStrIndex;
   int controlBlockObjIdIndex;
-  int controlBlockRcMemberIndex;
-  int controlBlockWrciMemberIndex;
-  LLVMTypeRef nonWeakableControlBlockStructL;
-  LLVMTypeRef weakableControlBlockStructL;
+  int immControlBlockRcMemberIndex;
+  int mutControlBlockRcMemberIndex;
+  int mutControlBlockWrciMemberIndex;
+  LLVMTypeRef mutNonWeakableControlBlockStructL;
+  LLVMTypeRef mutWeakableControlBlockStructL;
+  LLVMTypeRef immControlBlockStructL;
   LLVMTypeRef stringWrapperStructL;
   LLVMTypeRef stringInnerStructL;
 

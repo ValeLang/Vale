@@ -84,6 +84,13 @@ class ValeCompiler(unittest.TestCase):
         if "--flares" in args:
             args.remove("--flares")
             midas_options.append("--flares")
+        if "--region-override" in args:
+            ind = args.index("--region-override")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            midas_options.append("--region-override")
+            midas_options.append(val)
         vale_files = args
 
         build_dir = f"build"

@@ -25,11 +25,28 @@ class RawArrayT;
 class KnownSizeArrayT;
 class UnknownSizeArrayT;
 
+enum class UnconvertedOwnership {
+  OWN,
+  BORROW,
+  WEAK,
+  SHARE
+};
+
 enum class Ownership {
   OWN,
   BORROW,
   WEAK,
   SHARE
+};
+
+enum class Weakability {
+  WEAKABLE,
+  NON_WEAKABLE,
+};
+
+enum class UnconvertedWeakability {
+  WEAKABLE,
+  NON_WEAKABLE,
 };
 
 enum class Permission {
@@ -56,6 +73,35 @@ enum class Virtuality {
 enum class Variability {
     FINAL,
     VARYING
+};
+
+// Interned
+class UnconvertedReference {
+public:
+  UnconvertedOwnership ownership;
+  Location location;
+  Referend* referend;
+//  std::string debugStr;
+
+  UnconvertedReference(
+      UnconvertedOwnership ownership_,
+      Location location_,
+      Referend* referend_
+//      , const std::string& debugStr_
+  ) :
+      ownership(ownership_),
+      location(location_),
+      referend(referend_)
+//    , debugStr(debugStr_)
+  {
+
+    if (ownership == UnconvertedOwnership::BORROW || ownership == UnconvertedOwnership::WEAK) {
+      assert(location == Location::YONDER);
+    }
+  }
+
+  // Someday, have a nice way to print out this Reference...
+  std::string str() { return ""; }
 };
 
 // Interned
@@ -139,11 +185,11 @@ public:
 class RawArrayT {
 public:
   Mutability mutability;
-  Reference* elementType;
+  UnconvertedReference* elementType;
 
   RawArrayT(
       Mutability mutability_,
-      Reference* elementType_) :
+      UnconvertedReference* elementType_) :
       mutability(mutability_),
       elementType(elementType_) {}
 };

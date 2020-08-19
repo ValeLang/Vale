@@ -292,13 +292,13 @@ object Scout {
     val internalMethodsS = internalMethodsP.map(FunctionScout.scoutInterfaceMember(interfaceEnv, _))
 
     val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
-    val seealed = attributesP.exists({ case w @ SealedP(_) => true case _ => false })
+    val attrsS = translateCitizenAttributes(attributesP.filter({ case WeakableP(_) => false case _ => true}))
 
     val interfaceS =
       InterfaceS(
         Scout.evalRange(file, range),
         interfaceFullName,
-        translateCitizenAttributes(attributesP),
+        attrsS,
         weakable,
         mutabilityRune,
         Some(mutability),

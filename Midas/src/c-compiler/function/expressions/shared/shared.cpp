@@ -32,7 +32,7 @@ void makeLocal(
   auto localAddr =
       LLVMBuildAlloca(
           builder,
-          translateType(globalState, local->type),
+          translateType(globalState, getEffectiveType(globalState, local->type)),
           local->id->maybeName.c_str());
   blockState->addLocal(local->id, localAddr);
   LLVMBuildStore(builder, valueToStore, localAddr);
@@ -120,6 +120,20 @@ LLVMValueRef adjustStrongRc(
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
   flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
   return newRc;
+}
+
+void adjustWeakRc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE,
+    int amount) {
+  if (amount == 1) {
+    auto wrciLE = getWrciFromWeakRef(builder, exprLE);
+    LLVMBuildCall(builder, globalState->incrementWrc, &wrciLE, 1, "");
+  } else if (amount == -1) {
+    auto wrciLE = getWrciFromWeakRef(builder, exprLE);
+    LLVMBuildCall(builder, globalState->decrementWrc, &wrciLE, 1, "");
+  } else assert(false);
 }
 
 LLVMValueRef strongRcIsZero(
@@ -239,11 +253,18 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef refLE) {
   LLVMValueRef resultAsVoidPtrLE =
-      LLVMBuildBitCast(
+      LLVMBuildPointerCast(
           builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
   buildAssert(checkerAFL, globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
+}
+
+void buildCheckWrc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef wrciLE) {
+  LLVMBuildCall(builder, globalState->checkWrc, &wrciLE, 1, "");
 }
 
 void checkValidReference(
@@ -253,6 +274,7 @@ void checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef refLE) {
+  assert(LLVMTypeOf(refLE) == translateType(globalState, refM));
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
       auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
@@ -273,6 +295,10 @@ void checkValidReference(
     } else if (refM->ownership == Ownership::BORROW) {
       auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+    } else if (refM->ownership == Ownership::WEAK) {
+      // WARNING: This check has false positives.
+      auto wrciLE = getWrciFromWeakRef(builder, refLE);
+      buildCheckWrc(globalState, builder, wrciLE);
     } else assert(false);
   }
 }
@@ -288,7 +314,7 @@ LLVMValueRef buildCall(
   auto funcL = funcIter->second;
 
   auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
-  checkValidReference(FL(), globalState, functionState, builder, prototype->returnType, resultLE);
+  checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, prototype->returnType), resultLE);
 
   if (prototype->returnType->referend == globalState->metalCache.never) {
     return LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
@@ -297,18 +323,12 @@ LLVMValueRef buildCall(
   }
 }
 
-LLVMValueRef upcast2(
+LLVMValueRef makeWeakRefStruct(
     GlobalState* globalState,
-    FunctionState* functionState,
     LLVMBuilderRef builder,
-
-    Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceStructLE,
-
-    Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM) {
-  assert(sourceStructTypeM->location != Location::INLINE);
+    InterfaceReferend* targetInterfaceReferendM,
+    LLVMValueRef controlBlockPtrLE) {
 
   auto interfaceRefLT =
       globalState->getInterfaceRefStruct(
@@ -319,7 +339,7 @@ LLVMValueRef upcast2(
       LLVMBuildInsertValue(
           builder,
           interfaceRefLE,
-          getControlBlockPtr(builder, sourceStructLE, sourceStructTypeM),
+          controlBlockPtrLE,
           0,
           "interfaceRefWithOnlyObj");
   interfaceRefLE =
@@ -332,7 +352,152 @@ LLVMValueRef upcast2(
           1,
           "interfaceRef");
 
-  checkValidReference(
-      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
   return interfaceRefLE;
+}
+
+LLVMValueRef upcast2(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+
+    Reference* sourceStructTypeM,
+    StructReferend* sourceStructReferendM,
+    LLVMValueRef sourceRefLE,
+
+    Reference* targetInterfaceTypeM,
+    InterfaceReferend* targetInterfaceReferendM) {
+  assert(sourceStructTypeM->location != Location::INLINE);
+
+  switch (targetInterfaceTypeM->ownership) {
+    case Ownership::OWN:
+    case Ownership::BORROW:
+    case Ownership::SHARE: {
+      auto interfaceRefLE =
+          makeWeakRefStruct(
+              globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
+              getControlBlockPtr(builder, sourceRefLE, sourceStructTypeM));
+      checkValidReference(
+          FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
+      return interfaceRefLE;
+    }
+    case Ownership::WEAK: {
+      checkValidReference(
+          FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
+      auto controlBlockPtr =
+          getConcreteControlBlockPtr(
+              builder,
+              getObjPtrFromWeakRef(
+                  globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
+
+      auto interfaceRefLT =
+          globalState->getInterfaceWeakRefStruct(
+              targetInterfaceReferendM->fullName);
+      auto interfaceWeakRefLE = LLVMGetUndef(interfaceRefLT);
+      interfaceWeakRefLE =
+          LLVMBuildInsertValue(
+              builder,
+              interfaceWeakRefLE,
+              getWrciFromWeakRef(builder, sourceRefLE),
+              0,
+              "interfaceRefWithOnlyObj");
+      interfaceWeakRefLE =
+          LLVMBuildInsertValue(
+              builder,
+              interfaceWeakRefLE,
+              makeWeakRefStruct(
+                  globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
+                  controlBlockPtr),
+              1,
+              "interfaceRef");
+      checkValidReference(
+          FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
+      return interfaceWeakRefLE;
+    }
+  }
+}
+
+// TODO move into region classes
+Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership ownership) {
+  if (ownership == UnconvertedOwnership::SHARE) {
+    return Ownership::SHARE;
+  } else if (ownership == UnconvertedOwnership::OWN) {
+    return Ownership::OWN;
+  } else if (ownership == UnconvertedOwnership::WEAK) {
+    return Ownership::WEAK;
+  } else if (ownership == UnconvertedOwnership::BORROW) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      return Ownership::BORROW;
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      return Ownership::BORROW;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      return Ownership::WEAK;
+    } else assert(false);
+  } else assert(false);
+}
+
+// TODO move into region classes
+Reference* getEffectiveType(GlobalState* globalState, UnconvertedReference* refM) {
+  return globalState->metalCache.getReference(
+      getEffectiveOwnership(globalState, refM->ownership),
+      refM->location,
+      refM->referend);
+}
+
+// TODO move into region classes
+std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM) {
+  std::vector<Reference*> result;
+  for (auto thing : refsM) {
+    result.push_back(getEffectiveType(globalState, thing));
+  }
+  return result;
+}
+
+// TODO move into region classes
+Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef) {
+  if (structDef->mutability == Mutability::IMMUTABLE) {
+    assert(structDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
+    return Weakability::NON_WEAKABLE;
+  } else {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      if (structDef->weakability == UnconvertedWeakability::WEAKABLE) {
+        return Weakability::WEAKABLE;
+      } else {
+        return Weakability::NON_WEAKABLE;
+      }
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      if (structDef->weakability == UnconvertedWeakability::WEAKABLE) {
+        return Weakability::WEAKABLE;
+      } else {
+        return Weakability::NON_WEAKABLE;
+      }
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      // All mutable structs are weakability in resilient mode
+      return Weakability::WEAKABLE;
+    } else assert(false);
+  }
+}
+
+// TODO move into region classes
+Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef) {
+  if (interfaceDef->mutability == Mutability::IMMUTABLE) {
+    assert(interfaceDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
+    return Weakability::NON_WEAKABLE;
+  } else {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      if (interfaceDef->weakability == UnconvertedWeakability::WEAKABLE) {
+        return Weakability::WEAKABLE;
+      } else {
+        return Weakability::NON_WEAKABLE;
+      }
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      if (interfaceDef->weakability == UnconvertedWeakability::WEAKABLE) {
+        return Weakability::WEAKABLE;
+      } else {
+        return Weakability::NON_WEAKABLE;
+      }
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      // All mutable structs are weakability in resilient mode
+      return Weakability::WEAKABLE;
+    } else assert(false);
+  }
 }

@@ -46,7 +46,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
       functionState,
       builder,
       knownSizeArrayT->rawArray->mutability,
-      false,
+      Weakability::NON_WEAKABLE,
       getConcreteControlBlockPtr(builder, newStructLE),
       typeName);
   fillKnownSizeArray(
@@ -68,7 +68,7 @@ LLVMValueRef translateNewArrayFromValues(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
   for (auto elementLE : elementsLE) {
     checkValidReference(FL(), globalState, functionState, builder,
-        newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
+        getEffectiveType(globalState, newArrayFromValues->arrayReferend->rawArray->elementType), elementLE);
   }
 
   auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(newArrayFromValues->arrayRefType->referend);
@@ -97,13 +97,13 @@ LLVMValueRef translateNewArrayFromValues(
                 globalState,
                 functionState,
                 builder,
-                newArrayFromValues->arrayRefType,
+                getEffectiveType(globalState, newArrayFromValues->arrayRefType),
                 newArrayFromValues->arrayReferend,
                 knownSizeArrayCountedStructLT,
                 elementsLE,
                 knownSizeArrayMT->name->name);
         checkValidReference(FL(), globalState, functionState, builder,
-            newArrayFromValues->arrayRefType, resultLE);
+            getEffectiveType(globalState, newArrayFromValues->arrayRefType), resultLE);
         return resultLE;
       }
     }

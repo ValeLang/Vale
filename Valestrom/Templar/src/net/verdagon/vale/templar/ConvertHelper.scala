@@ -83,6 +83,7 @@ class ConvertHelper(
         case (Borrow, Share) => {
           vfail(); // curious
         }
+        case (Weak, Weak) => sourceExpr
       }
 
     val sourceExprDecayedOwnershippedConverted =

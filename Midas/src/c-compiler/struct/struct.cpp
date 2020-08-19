@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/shared.h>
 
 #include "struct.h"
 
@@ -34,7 +35,9 @@ void translateStruct(
   std::vector<LLVMTypeRef> innerStructMemberTypesL;
   for (int i = 0; i < structM->members.size(); i++) {
     innerStructMemberTypesL.push_back(
-        translateType(globalState, structM->members[i]->type));
+        translateType(
+            globalState,
+            getEffectiveType(globalState, structM->members[i]->type)));
   }
   LLVMStructSetBody(
       valStructL, innerStructMemberTypesL.data(), innerStructMemberTypesL.size(), false);
@@ -46,7 +49,7 @@ void translateStruct(
   // because we want fat pointers to point to this struct, so they can reach
   // into it and increment without doing any casting.
   if (structM->mutability == Mutability::MUTABLE) {
-    if (structM->weakable) {
+    if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
       countedStructMemberTypesL.push_back(globalState->mutWeakableControlBlockStructL);
     } else {
       countedStructMemberTypesL.push_back(globalState->mutNonWeakableControlBlockStructL);

@@ -18,7 +18,7 @@ V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeEl
 }
 
 struct HashRefVec {
-  size_t operator()(const std::vector<Reference *> &refs) const {
+  size_t operator()(const std::vector<UnconvertedReference *> &refs) const {
     size_t result = 1337;
     for (auto el : refs) {
       result += (size_t) el;
@@ -28,8 +28,8 @@ struct HashRefVec {
 };
 struct RefVecEquals {
   bool operator()(
-      const std::vector<Reference *> &a,
-      const std::vector<Reference *> &b) const {
+      const std::vector<UnconvertedReference *> &a,
+      const std::vector<UnconvertedReference *> &b) const {
     if (a.size() != b.size())
       return false;
     for (size_t i = 0; i < a.size(); i++) {
@@ -54,13 +54,28 @@ public:
   std::unordered_map<std::string, Name*> names;
 
   // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
-  std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
+  std::unordered_map<UnconvertedReference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
   std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
   std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
+  std::unordered_map<Referend*, std::unordered_map<UnconvertedOwnership, std::unordered_map<Location, UnconvertedReference*>>> unconvertedReferences;
   std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> references;
-  std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
+  std::unordered_map<Name*, std::unordered_map<UnconvertedReference*, std::unordered_map<std::vector<UnconvertedReference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
   std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
-  std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
+  std::unordered_map<VariableId*, std::unordered_map<UnconvertedReference*, Local*>> locals;
+
+  UnconvertedReference* getUnconvertedReference(UnconvertedOwnership ownership, Location location, Referend* referend) {
+    return makeIfNotPresent(
+        &unconvertedReferences[referend][ownership],
+        location,
+        [&](){ return new UnconvertedReference(ownership, location, referend); });
+  }
+
+  Reference* getReference(Ownership ownership, Location location, Referend* referend) {
+    return makeIfNotPresent(
+        &references[referend][ownership],
+        location,
+        [&](){ return new Reference(ownership, location, referend); });
+  }
 };
 
 #endif

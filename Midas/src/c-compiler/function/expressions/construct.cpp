@@ -35,7 +35,7 @@ LLVMValueRef constructCountedStruct(
       from,
       globalState, functionState, builder,
       structM->mutability,
-      structM->weakable,
+      getEffectiveWeakability(globalState, structM),
       getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
   fillInnerStruct(
       builder, structM, membersLE,

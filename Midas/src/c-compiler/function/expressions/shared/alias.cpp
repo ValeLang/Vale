@@ -17,63 +17,63 @@ void acquireReference(
     Reference* resultRef,
     LLVMValueRef expr) {
 
-  if (resultRef->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
+  bool proceed =
+      globalState->opt->regionOverride == RegionOverride::ASSIST ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT ||
+          (globalState->opt->regionOverride == RegionOverride::FAST && resultRef->ownership == Ownership::SHARE);
+  if (!proceed) {
+    return;
+  }
 
-    auto sourceRnd = resultRef->referend;
+  auto sourceRnd = resultRef->referend;
 
-    if (dynamic_cast<Int*>(sourceRnd) ||
-        dynamic_cast<Bool*>(sourceRnd) ||
-        dynamic_cast<Float*>(sourceRnd)) {
-      // Do nothing for these, they're always inlined and copied.
-    } else if (dynamic_cast<InterfaceReferend*>(sourceRnd)) {
-      if (resultRef->ownership == Ownership::OWN) {
-        // We should never acquire an owning reference.
-        // If you trip this, perhaps you're trying to borrow, and you handed in
-        // the wrong thing for resultRef?
-        assert(false);
-      } else if (resultRef->ownership == Ownership::BORROW) {
-        adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
-      } else if (resultRef->ownership == Ownership::WEAK) {
-        assert(false);
-      } else if (resultRef->ownership == Ownership::SHARE) {
-        if (resultRef->location == Location::INLINE) {
-          assert(false); // impl
-        } else {
-          adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
-        }
-      } else assert(false);
-    } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
-        dynamic_cast<KnownSizeArrayT*>(sourceRnd) ||
-        dynamic_cast<UnknownSizeArrayT*>(sourceRnd)) {
-      if (resultRef->ownership == Ownership::OWN) {
-        // We might be loading a member as an own if we're destructuring.
-        // Don't adjust the RC, since we're only moving it.
-      } else if (resultRef->ownership == Ownership::BORROW) {
-        adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
-      } else if (resultRef->ownership == Ownership::WEAK) {
-        assert(false);
-      } else if (resultRef->ownership == Ownership::SHARE) {
-        if (resultRef->location == Location::INLINE) {
-          // Do nothing, we can just let inline structs disappear
-        } else {
-          adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
-        }
-      } else assert(false);
-    } else if (dynamic_cast<Str*>(sourceRnd)) {
-      assert(resultRef->ownership == Ownership::SHARE);
-      assert(resultRef->location == Location::YONDER);
-      adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
-    } else {
-      std::cerr << "Unimplemented type in acquireReference: "
-          << typeid(*resultRef->referend).name() << std::endl;
+  if (dynamic_cast<Int*>(sourceRnd) ||
+      dynamic_cast<Bool*>(sourceRnd) ||
+      dynamic_cast<Float*>(sourceRnd)) {
+    // Do nothing for these, they're always inlined and copied.
+  } else if (dynamic_cast<InterfaceReferend*>(sourceRnd)) {
+    if (resultRef->ownership == Ownership::OWN) {
+      // We should never acquire an owning reference.
+      // If you trip this, perhaps you're trying to borrow, and you handed in
+      // the wrong thing for resultRef?
       assert(false);
-    }
-
-  } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-    // Do nothing
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-    assert(false); // impl
-  } else assert(false);
+    } else if (resultRef->ownership == Ownership::BORROW) {
+      adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+    } else if (resultRef->ownership == Ownership::WEAK) {
+      assert(false);
+    } else if (resultRef->ownership == Ownership::SHARE) {
+      if (resultRef->location == Location::INLINE) {
+        assert(false); // impl
+      } else {
+        adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+      }
+    } else assert(false);
+  } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
+      dynamic_cast<KnownSizeArrayT*>(sourceRnd) ||
+      dynamic_cast<UnknownSizeArrayT*>(sourceRnd)) {
+    if (resultRef->ownership == Ownership::OWN) {
+      // We might be loading a member as an own if we're destructuring.
+      // Don't adjust the RC, since we're only moving it.
+    } else if (resultRef->ownership == Ownership::BORROW) {
+      adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+    } else if (resultRef->ownership == Ownership::WEAK) {
+      assert(false);
+    } else if (resultRef->ownership == Ownership::SHARE) {
+      if (resultRef->location == Location::INLINE) {
+        // Do nothing, we can just let inline structs disappear
+      } else {
+        adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+      }
+    } else assert(false);
+  } else if (dynamic_cast<Str*>(sourceRnd)) {
+    assert(resultRef->ownership == Ownership::SHARE);
+    assert(resultRef->location == Location::YONDER);
+    adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
+  } else {
+    std::cerr << "Unimplemented type in acquireReference: "
+        << typeid(*resultRef->referend).name() << std::endl;
+    assert(false);
+  }
 }
 
 void discard(

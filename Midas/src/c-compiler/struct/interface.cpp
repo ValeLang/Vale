@@ -1,4 +1,5 @@
 #include <iostream>
+#include <function/expressions/shared/shared.h>
 
 #include "interface.h"
 
@@ -30,8 +31,8 @@ void declareInterface(
 LLVMTypeRef translateInterfaceMethodToFunctionType(
     GlobalState* globalState,
     InterfaceMethod* method) {
-  auto returnLT = translateType(globalState, method->prototype->returnType);
-  auto paramsLT = translateTypes(globalState, method->prototype->params);
+  auto returnLT = translateType(globalState, getEffectiveType(globalState, method->prototype->returnType));
+  auto paramsLT = translateTypes(globalState, getEffectiveTypes(globalState, method->prototype->params));
   paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }
@@ -58,7 +59,7 @@ void translateInterface(
   // this points to the control block.
   // It makes it easier to increment and decrement ref counts.
   if (interfaceM->mutability == Mutability::MUTABLE) {
-    if (interfaceM->weakable) {
+    if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
       refStructMemberTypesL.push_back(LLVMPointerType(globalState->mutWeakableControlBlockStructL, 0));
     } else {
       refStructMemberTypesL.push_back(LLVMPointerType(globalState->mutNonWeakableControlBlockStructL, 0));
@@ -77,7 +78,7 @@ void translateInterface(
 
   auto interfaceWeakRefStructL = globalState->getInterfaceWeakRefStruct(interfaceM->name);
   std::vector<LLVMTypeRef> interfaceWeakRefStructMemberTypesL;
-  interfaceWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMInt64Type(), 0));
+  interfaceWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
   interfaceWeakRefStructMemberTypesL.push_back(refStructL);
   LLVMStructSetBody(interfaceWeakRefStructL, interfaceWeakRefStructMemberTypesL.data(), interfaceWeakRefStructMemberTypesL.size(), false);
 }

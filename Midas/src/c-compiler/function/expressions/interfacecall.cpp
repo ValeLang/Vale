@@ -23,9 +23,21 @@ LLVMValueRef translateInterfaceCall(
     argsLE.push_back(argLE);
   }
 
-  auto resultLE =
-      buildInterfaceCall(
-          builder, argExprsLE, call->virtualParamIndex, call->indexInEdge);
+  LLVMValueRef resultLE;
+  switch (call->functionType->params[call->virtualParamIndex]->ownership) {
+    case UnconvertedOwnership::OWN:
+    case UnconvertedOwnership::BORROW:
+    case UnconvertedOwnership::SHARE: {
+      resultLE =
+          buildInterfaceCall(
+              builder, argExprsLE, call->virtualParamIndex, call->indexInEdge);
+      break;
+    }
+    case UnconvertedOwnership::WEAK: {
+      assert(false);
+      break;
+    }
+  }
   checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, call->functionType->returnType), resultLE);
 
   if (call->functionType->returnType->referend == globalState->metalCache.never) {

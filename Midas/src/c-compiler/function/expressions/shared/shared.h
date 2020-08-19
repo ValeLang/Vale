@@ -207,4 +207,12 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
 
+// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
+LLVMValueRef forceDerefWeak(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef weakRefLE);
+
 #endif

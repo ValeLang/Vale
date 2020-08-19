@@ -28,12 +28,6 @@ LLVMValueRef translateDestructure(
 
   auto structM = globalState->program->getStruct(structReferend->fullName);
 
-  if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-    auto controlBlockPtrLE = getControlBlockPtr(builder, structLE, getEffectiveType(globalState, destructureM->structType));
-    auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, getEffectiveType(globalState, destructureM->structType), controlBlockPtrLE);
-    LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
-  }
-
   for (int i = 0; i < structM->members.size(); i++) {
     auto memberName = structM->members[i]->name;
     LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
@@ -59,7 +53,8 @@ LLVMValueRef translateDestructure(
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      assert(false); // impl
+      // Do nothing, the owning ref doesnt count towards the WRC.
+      //   adjustWeakRc(globalState, builder, structLE, -1);
     } else assert(false);
   } else if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.

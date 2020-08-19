@@ -150,10 +150,40 @@ void freeConcrete(
     auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
     buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
         "Tried to free concrete that had nonzero RC!");
+
+    if (auto structReferendM = dynamic_cast<StructReferend*>(concreteRefM->referend)) {
+      auto structM = globalState->program->getStruct(structReferendM->fullName);
+      if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+        auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
+        auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+        LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+      }
+    } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(concreteRefM->referend)) {
+      auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
+      if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
+        auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
+        auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+        LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+      }
+    } else {
+      // Do nothing, only structs and interfaces are weakable in assist mode.
+    }
   } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
     // Do nothing
+    assert(false);
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-    assert(false); // impl
+    if (concreteRefM->ownership == Ownership::SHARE) {
+      auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
+      buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+          "Tried to free concrete that had nonzero RC!");
+    } else {
+      assert(concreteRefM->ownership == Ownership::OWN);
+
+      // In resilient mode, every mutable is weakable.
+      auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
+      auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+      LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+    }
   } else assert(false);
 
   if (concreteRefM->location == Location::INLINE) {

@@ -20,7 +20,7 @@ class Expression {
 public:
     virtual ~Expression() {}
 
-//    virtual Reference* getResultType() const = 0;
+//    virtual UnconvertedReference* getResultType() const = 0;
 };
 
 class ConstantI64 : public Expression {
@@ -65,10 +65,10 @@ public:
 
 class Argument : public Expression {
 public:
-  Reference* resultType;
+  UnconvertedReference* resultType;
   int argumentIndex;
   Argument(
-      Reference* resultType_,
+      UnconvertedReference* resultType_,
       int argumentIndex_) :
       resultType(resultType_),
     argumentIndex(argumentIndex_) {}
@@ -102,14 +102,14 @@ public:
 class Destroy : public Expression {
 public:
   Expression* structExpr;
-  Reference* structType;
-  std::vector<Reference*> localTypes;
+  UnconvertedReference* structType;
+  std::vector<UnconvertedReference*> localTypes;
   std::vector<Local*> localIndices;
 
   Destroy(
       Expression* structExpr_,
-      Reference* structType_,
-      std::vector<Reference*> localTypes_,
+      UnconvertedReference* structType_,
+      std::vector<UnconvertedReference*> localTypes_,
       std::vector<Local*> localIndices_) :
       structExpr(structExpr_),
       structType(structType_),
@@ -121,16 +121,16 @@ public:
 class StructToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
-  Reference* sourceStructType;
+  UnconvertedReference* sourceStructType;
   StructReferend* sourceStructReferend;
-  Reference* targetInterfaceType;
+  UnconvertedReference* targetInterfaceType;
   InterfaceReferend* targetInterfaceReferend;
 
   StructToInterfaceUpcast(
       Expression* sourceExpr_,
-      Reference* sourceStructType_,
+      UnconvertedReference* sourceStructType_,
       StructReferend* sourceStructReferend_,
-      Reference* targetInterfaceType_,
+      UnconvertedReference* targetInterfaceType_,
       InterfaceReferend* targetInterfaceReferend_) :
       sourceExpr(sourceExpr_),
       sourceStructType(sourceStructType_),
@@ -164,12 +164,12 @@ public:
 class LocalLoad : public Expression {
 public:
   Local* local;
-  Ownership targetOwnership;
+  UnconvertedOwnership targetOwnership;
   std::string localName;
 
   LocalLoad(
       Local* local,
-      Ownership targetOwnership,
+      UnconvertedOwnership targetOwnership,
       std::string localName) :
       local(local),
     targetOwnership(targetOwnership),
@@ -180,12 +180,12 @@ public:
 class WeakAlias : public Expression {
 public:
   Expression* sourceExpr;
-  Reference* sourceType;
+  UnconvertedReference* sourceType;
   Referend* sourceReferend;
 
   WeakAlias(
       Expression* sourceExpr_,
-      Reference* sourceType_,
+      UnconvertedReference* sourceType_,
       Referend* sourceReferend_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
@@ -196,18 +196,18 @@ public:
 class MemberStore : public Expression {
 public:
   Expression* structExpr;
-  Reference* structType;
+  UnconvertedReference* structType;
   int memberIndex;
   Expression* sourceExpr;
-  Reference* resultType;
+  UnconvertedReference* resultType;
   std::string memberName;
 
   MemberStore(
       Expression* structExpr_,
-      Reference* structType_,
+      UnconvertedReference* structType_,
       int memberIndex_,
       Expression* sourceExpr_,
-      Reference* resultType_,
+      UnconvertedReference* resultType_,
       std::string memberName_) :
     structExpr(structExpr_),
     structType(structType_),
@@ -222,21 +222,21 @@ class MemberLoad : public Expression {
 public:
   Expression* structExpr;
   StructReferend* structId;
-  Reference* structType;
+  UnconvertedReference* structType;
   int memberIndex;
-  Ownership targetOwnership;
-  Reference* expectedMemberType;
-  Reference* expectedResultType;
+  UnconvertedOwnership targetOwnership;
+  UnconvertedReference* expectedMemberType;
+  UnconvertedReference* expectedResultType;
   std::string memberName;
 
   MemberLoad(
       Expression* structExpr_,
       StructReferend* structId_,
-      Reference* structType_,
+      UnconvertedReference* structType_,
       int memberIndex_,
-      Ownership targetOwnership_,
-      Reference* expectedMemberType_,
-      Reference* expectedResultType_,
+      UnconvertedOwnership targetOwnership_,
+      UnconvertedReference* expectedMemberType_,
+      UnconvertedReference* expectedResultType_,
       std::string memberName_) :
     structExpr(structExpr_),
     structId(structId_),
@@ -252,12 +252,12 @@ public:
 class NewArrayFromValues : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
-  Reference* arrayRefType;
+  UnconvertedReference* arrayRefType;
   KnownSizeArrayT* arrayReferend;
 
   NewArrayFromValues(
       std::vector<Expression*> sourceExprs_,
-      Reference* arrayRefType_,
+      UnconvertedReference* arrayRefType_,
       KnownSizeArrayT* arrayReferend_) :
       sourceExprs(sourceExprs_),
       arrayRefType(arrayRefType_),
@@ -276,24 +276,24 @@ public:
 class UnknownSizeArrayStore : public Expression {
 public:
   Expression* arrayExpr;
-  Reference* arrayType;
+  UnconvertedReference* arrayType;
   UnknownSizeArrayT* arrayReferend;
   Expression* indexExpr;
-  Reference* indexType;
+  UnconvertedReference* indexType;
   Referend* indexReferend;
   Expression* sourceExpr;
-  Reference* sourceType;
+  UnconvertedReference* sourceType;
   Referend* sourceReferend;
 
   UnknownSizeArrayStore(
       Expression* arrayExpr_,
-      Reference* arrayType_,
+      UnconvertedReference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
       Expression* indexExpr_,
-      Reference* indexType_,
+      UnconvertedReference* indexType_,
       Referend* indexReferend_,
       Expression* sourceExpr_,
-      Reference* sourceType_,
+      UnconvertedReference* sourceType_,
       Referend* sourceReferend_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
@@ -310,23 +310,23 @@ public:
 class UnknownSizeArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
-  Reference* arrayType;
+  UnconvertedReference* arrayType;
   UnknownSizeArrayT* arrayReferend;
   Expression* indexExpr;
-  Reference* indexType;
+  UnconvertedReference* indexType;
   Referend* indexReferend;
-  Reference* resultType;
-  Ownership targetOwnership;
+  UnconvertedReference* resultType;
+  UnconvertedOwnership targetOwnership;
 
   UnknownSizeArrayLoad(
       Expression* arrayExpr_,
-      Reference* arrayType_,
+      UnconvertedReference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
       Expression* indexExpr_,
-      Reference* indexType_,
+      UnconvertedReference* indexType_,
       Referend* indexReferend_,
-      Reference* resultType_,
-      Ownership targetOwnership_) :
+      UnconvertedReference* resultType_,
+      UnconvertedOwnership targetOwnership_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
@@ -341,19 +341,19 @@ public:
 class KnownSizeArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
-  Reference* arrayType;
+  UnconvertedReference* arrayType;
   KnownSizeArrayT* arrayReferend;
   Expression* indexExpr;
-  Reference* resultType;
-  Ownership targetOwnership;
+  UnconvertedReference* resultType;
+  UnconvertedOwnership targetOwnership;
 
   KnownSizeArrayLoad(
       Expression* arrayExpr_,
-      Reference* arrayType_,
+      UnconvertedReference* arrayType_,
       KnownSizeArrayT* arrayReferend_,
       Expression* indexExpr_,
-      Reference* resultType_,
-      Ownership targetOwnership_) :
+      UnconvertedReference* resultType_,
+      UnconvertedOwnership targetOwnership_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
@@ -379,12 +379,12 @@ class ExternCall : public Expression {
 public:
     Prototype *function;
     std::vector<Expression *> argExprs;
-    std::vector<Reference *> argTypes;
+    std::vector<UnconvertedReference *> argTypes;
 
     ExternCall(
         Prototype *function_,
         std::vector<Expression *> argExprs_,
-        std::vector<Reference *> argTypes_)
+        std::vector<UnconvertedReference *> argTypes_)
         : function(function_),
         argExprs(argExprs_),
         argTypes(argTypes_) {}
@@ -415,20 +415,20 @@ public:
 
 class If : public Expression {
 public:
-  Expression * conditionExpr;
-  Expression * thenExpr;
-  Reference * thenResultType;
-  Expression * elseExpr;
-  Reference * elseResultType;
-  Reference * commonSupertype;
+  Expression* conditionExpr;
+  Expression* thenExpr;
+  UnconvertedReference* thenResultType;
+  Expression* elseExpr;
+  UnconvertedReference* elseResultType;
+  UnconvertedReference* commonSupertype;
 
   If(
       Expression * conditionExpr_,
       Expression * thenExpr_,
-      Reference* thenResultType_,
+      UnconvertedReference* thenResultType_,
       Expression * elseExpr_,
-      Reference* elseResultType_,
-      Reference * commonSupertype_) :
+      UnconvertedReference* elseResultType_,
+      UnconvertedReference* commonSupertype_) :
     conditionExpr(conditionExpr_),
     thenExpr(thenExpr_),
     thenResultType(thenResultType_),
@@ -456,9 +456,9 @@ public:
 class Block : public Expression {
 public:
   Expression * inner;
-  Reference * innerType;
+  UnconvertedReference* innerType;
 
-  Block(Expression * inner_, Reference * innerType_) :
+  Block(Expression * inner_, UnconvertedReference* innerType_) :
   inner(inner_),
   innerType(innerType_) {}
 };
@@ -466,11 +466,11 @@ public:
 class Return : public Expression {
 public:
   Expression *sourceExpr;
-  Reference* sourceType;
+  UnconvertedReference* sourceType;
 
   Return(
     Expression *sourceExpr_,
-    Reference* sourceType_)
+    UnconvertedReference* sourceType_)
     : sourceExpr(sourceExpr_),
       sourceType(sourceType_) {}
 };
@@ -479,21 +479,21 @@ public:
 class ConstructUnknownSizeArray : public Expression {
 public:
   Expression* sizeExpr;
-  Reference* sizeType;
+  UnconvertedReference* sizeType;
   Referend* sizeReferend;
   Expression* generatorExpr;
-  Reference* generatorType;
+  UnconvertedReference* generatorType;
   InterfaceReferend* generatorReferend;
-  Reference* arrayRefType;
+  UnconvertedReference* arrayRefType;
 
   ConstructUnknownSizeArray(
       Expression* sizeExpr_,
-      Reference* sizeType_,
+      UnconvertedReference* sizeType_,
       Referend* sizeReferend_,
       Expression* generatorExpr_,
-      Reference* generatorType_,
+      UnconvertedReference* generatorType_,
       InterfaceReferend* generatorReferend_,
-      Reference* arrayRefType_) :
+      UnconvertedReference* arrayRefType_) :
     sizeExpr(sizeExpr_),
     sizeType(sizeType_),
     sizeReferend(sizeReferend_),
@@ -506,17 +506,17 @@ public:
 class DestroyKnownSizeArrayIntoFunction : public Expression {
 public:
   Expression* arrayExpr;
-  Reference* arrayType;
+  UnconvertedReference* arrayType;
   KnownSizeArrayT* arrayReferend;
   Expression* consumerExpr;
-  Reference* consumerType;
+  UnconvertedReference* consumerType;
 
   DestroyKnownSizeArrayIntoFunction(
       Expression* arrayExpr_,
-      Reference* arrayType_,
+      UnconvertedReference* arrayType_,
       KnownSizeArrayT* arrayReferend_,
       Expression* consumerExpr_,
-      Reference* consumerType_) :
+      UnconvertedReference* consumerType_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
@@ -533,18 +533,18 @@ public:
 class DestroyUnknownSizeArray : public Expression {
 public:
   Expression* arrayExpr;
-  Reference* arrayType;
+  UnconvertedReference* arrayType;
   UnknownSizeArrayT* arrayReferend;
   Expression* consumerExpr;
-  Reference* consumerType;
+  UnconvertedReference* consumerType;
   InterfaceReferend* consumerReferend;
 
   DestroyUnknownSizeArray(
       Expression* arrayExpr_,
-      Reference* arrayType_,
+      UnconvertedReference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
       Expression* consumerExpr_,
-      Reference* consumerType_,
+      UnconvertedReference* consumerType_,
       InterfaceReferend* consumerReferend_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
@@ -557,11 +557,11 @@ public:
 class NewStruct : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
-  Reference* resultType;
+  UnconvertedReference* resultType;
 
   NewStruct(
       std::vector<Expression*> sourceExprs_,
-      Reference* resultType_) :
+      UnconvertedReference* resultType_) :
       sourceExprs(sourceExprs_),
       resultType(resultType_) {}
 };
@@ -569,11 +569,11 @@ public:
 class ArrayLength : public Expression {
 public:
   Expression* sourceExpr;
-  Reference* sourceType;
+  UnconvertedReference* sourceType;
 
   ArrayLength(
       Expression* sourceExpr_,
-      Reference* sourceType_) :
+      UnconvertedReference* sourceType_) :
       sourceExpr(sourceExpr_),
       sourceType(sourceType_) {}
 };
@@ -590,9 +590,9 @@ public:
 class Discard : public Expression {
 public:
   Expression* sourceExpr;
-  Reference* sourceResultType;
+  UnconvertedReference* sourceResultType;
 
-  Discard(Expression* sourceExpr_, Reference* sourceResultType_) :
+  Discard(Expression* sourceExpr_, UnconvertedReference* sourceResultType_) :
       sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
 };
 
@@ -600,29 +600,29 @@ public:
 class LockWeak : public Expression {
 public:
   Expression* sourceExpr;
-  Reference* sourceType;
+  UnconvertedReference* sourceType;
 
   Prototype* someConstructor;
-  Reference* someType;
+  UnconvertedReference* someType;
   StructReferend* someReferend;
 
   Prototype* noneConstructor;
-  Reference* noneType;
+  UnconvertedReference* noneType;
   StructReferend* noneReferend;
 
-  Reference* resultOptType;
+  UnconvertedReference* resultOptType;
   InterfaceReferend* resultOptReferend;
 
   LockWeak(
       Expression* sourceExpr_,
-      Reference* sourceType_,
+      UnconvertedReference* sourceType_,
       Prototype* someConstructor_,
-      Reference* someType_,
+      UnconvertedReference* someType_,
       StructReferend* someReferend_,
       Prototype* noneConstructor_,
-      Reference* noneType_,
+      UnconvertedReference* noneType_,
       StructReferend* noneReferend_,
-      Reference* resultOptType_,
+      UnconvertedReference* resultOptType_,
       InterfaceReferend* resultOptReferend_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
@@ -640,11 +640,11 @@ public:
 class Local {
 public:
     VariableId* id;
-    Reference* type;
+    UnconvertedReference* type;
 
     Local(
         VariableId* id_,
-        Reference* type_) :
+        UnconvertedReference* type_) :
     id(id_),
     type(type_) {}
 };

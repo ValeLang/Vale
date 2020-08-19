@@ -15,7 +15,7 @@ import net.verdagon.vale.templar.OverloadTemplar.IScoutExpectedFunctionResult
 
 import scala.collection.immutable.List
 
-case class WeakableStructImplementingNonWeakableInterface() extends Throwable
+case class WeakableImplingMismatch(structWeakable: Boolean, interfaceWeakable: Boolean) extends Throwable
 
 trait IStructTemplarDelegate {
   def evaluateOrdinaryFunctionFromNonCallForHeader(

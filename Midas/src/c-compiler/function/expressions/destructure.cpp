@@ -14,12 +14,13 @@ LLVMValueRef translateDestructure(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Destroy* destructureM) {
-  auto mutability = ownershipToMutability(destructureM->structType->ownership);
+  auto mutability = ownershipToMutability(getEffectiveOwnership(globalState, destructureM->structType->ownership));
 
   auto structLE =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
-  checkValidReference(FL(), globalState, functionState, builder, destructureM->structType, structLE);
+  checkValidReference(
+      FL(), globalState, functionState, builder, getEffectiveType(globalState, destructureM->structType), structLE);
 
   auto structReferend =
       dynamic_cast<StructReferend *>(destructureM->structType->referend);
@@ -27,9 +28,9 @@ LLVMValueRef translateDestructure(
 
   auto structM = globalState->program->getStruct(structReferend->fullName);
 
-  if (structM->weakable) {
-    auto controlBlockPtrLE = getControlBlockPtr(builder, structLE, destructureM->structType);
-    auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, destructureM->structType, controlBlockPtrLE);
+  if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+    auto controlBlockPtrLE = getControlBlockPtr(builder, structLE, getEffectiveType(globalState, destructureM->structType));
+    auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, getEffectiveType(globalState, destructureM->structType), controlBlockPtrLE);
     LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
   }
 
@@ -40,7 +41,7 @@ LLVMValueRef translateDestructure(
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
-    checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberLE);
+    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, structM->members[i]->type), memberLE);
     makeLocal(
         globalState,
       functionState,
@@ -50,24 +51,25 @@ LLVMValueRef translateDestructure(
         memberLE);
   }
 
-  if (destructureM->structType->ownership == Ownership::OWN) {
+  if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::OWN) {
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
       adjustStrongRc(
           AFL("Destroy decrementing the owning ref"),
-          globalState, functionState, builder, structLE, destructureM->structType, -1);
+          globalState, functionState, builder, structLE, getEffectiveType(globalState, destructureM->structType), -1);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       assert(false); // impl
     } else assert(false);
-  } else if (destructureM->structType->ownership == Ownership::SHARE) {
+  } else if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
   } else {
     assert(false);
   }
 
-  freeConcrete(AFL("Destroy freeing"), globalState, functionState, blockState, builder,
-      structLE, destructureM->structType);
+  freeConcrete(
+      AFL("Destroy freeing"), globalState, functionState, blockState, builder,
+      structLE, getEffectiveType(globalState, destructureM->structType));
 
   return makeConstExpr(builder, makeNever());
 }

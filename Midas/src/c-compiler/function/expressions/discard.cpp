@@ -12,17 +12,20 @@ LLVMValueRef translateDiscard(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Discard* discardM) {
+  auto sourceExpr = discardM->sourceExpr;
+  auto sourceResultType = getEffectiveType(globalState, discardM->sourceResultType);
+
   auto innerLE =
       translateExpression(
-          globalState, functionState, blockState, builder, discardM->sourceExpr);
-  checkValidReference(FL(), globalState, functionState, builder, discardM->sourceResultType, innerLE);
+          globalState, functionState, blockState, builder, sourceExpr);
+  checkValidReference(FL(), globalState, functionState, builder, sourceResultType, innerLE);
   discard(
-      AFL(std::string("Discard from ") + typeid(*discardM->sourceExpr).name()),
+      AFL(std::string("Discard from ") + typeid(*sourceExpr).name()),
       globalState,
       functionState,
       blockState,
       builder,
-      discardM->sourceResultType,
+      getEffectiveType(globalState, discardM->sourceResultType),
       innerLE);
   return makeConstExpr(builder, makeNever());
 }

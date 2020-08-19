@@ -4,7 +4,10 @@
 #include "translatetype.h"
 
 LLVMTypeRef makeInnerKnownSizeArrayLT(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
-  auto elementLT = translateType(globalState, knownSizeArrayMT->rawArray->elementType);
+  auto elementLT =
+      translateType(
+          globalState,
+          getEffectiveType(globalState, knownSizeArrayMT->rawArray->elementType));
   return LLVMArrayType(elementLT, knownSizeArrayMT->size);
 }
 
@@ -38,7 +41,7 @@ LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
 }
 
 LLVMTypeRef makeInnerUnknownSizeArrayLT(GlobalState* globalState, UnknownSizeArrayT* unknownSizeArrayMT) {
-  auto elementLT = translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
+  auto elementLT = translateType(globalState, getEffectiveType(globalState, unknownSizeArrayMT->rawArray->elementType));
   return LLVMArrayType(elementLT, 0);
 }
 
@@ -204,7 +207,10 @@ Mutability getMutability(GlobalState* globalState, Reference* referenceM) {
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
     Prototype* prototype) {
-  auto returnLT = translateType(globalState, prototype->returnType);
-  auto paramsLT = translateTypes(globalState, prototype->params);
+  auto returnLT = translateType(globalState, getEffectiveType(globalState, prototype->returnType));
+  auto paramsLT =
+      translateTypes(
+          globalState,
+          getEffectiveTypes(globalState, prototype->params));
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }

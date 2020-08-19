@@ -57,8 +57,8 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->malloc = addFunction(globalState->mod, "malloc", int8PtrLT, {int64LT});
   globalState->free = addFunction(globalState->mod, "free", voidLT, {int8PtrLT});
   globalState->exit = addFunction(globalState->mod, "exit", voidLT, {int8LT});
-  globalState->assert = addFunction(globalState->mod, "__vassert", voidLT, {int1LT});
-  globalState->assertI64Eq = addFunction(globalState->mod, "__vassertI64Eq", voidLT, { int64LT, int64LT });
+  globalState->assert = addFunction(globalState->mod, "__vassert", voidLT, {int1LT, int8PtrLT});
+  globalState->assertI64Eq = addFunction(globalState->mod, "__vassertI64Eq", voidLT, { int64LT, int64LT, int8PtrLT });
   globalState->flareI64 = addFunction(globalState->mod, "__vflare_i64", voidLT, { int64LT, int64LT });
   globalState->printCStr = addFunction(globalState->mod, "__vprintCStr", voidLT, {int8PtrLT});
   globalState->getch = addFunction(globalState->mod, "getchar", int64LT, {});
@@ -83,6 +83,7 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->censusRemove = addFunction(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 
   globalState->allocWrc = addFunction(globalState->mod, "__allocWrc", int64LT, {});
+  globalState->checkWrc = addFunction(globalState->mod, "__checkWrc", voidLT, {int64LT});
   globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
   globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
   globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});
@@ -119,7 +120,7 @@ void initInternalStructs(GlobalState* globalState) {
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      assert(false); // impl
+      // Do nothing, mutables dont have a strong RC, just a weak one
     } else assert(false);
 
     LLVMStructSetBody(
@@ -130,14 +131,45 @@ void initInternalStructs(GlobalState* globalState) {
   {
     auto controlBlockStructL =
         LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "mutWeakableControlBlock");
+    std::vector<LLVMTypeRef> memberTypesL;
+
+    if (globalState->opt->census) {
+      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
+      memberTypesL.push_back(int8PtrLT);
+
+      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
+      memberTypesL.push_back(int64LT);
+    }
+
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakability
+      memberTypesL.push_back(int64LT);
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      // Do nothing
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      // Do nothing, mutables dont have a strong RC, just a weak one
+    } else assert(false);
+
+    globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
+    memberTypesL.push_back(int64LT);
+
+    LLVMStructSetBody(
+        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
+    globalState->mutWeakableControlBlockStructL = controlBlockStructL;
+  }
+
+  {
+    auto controlBlockStructL =
+        LLVMStructCreateNamed(
             LLVMGetGlobalContext(), "immControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
     if (globalState->opt->census) {
-      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakable
+      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
-      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakable
+      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
     }
 
@@ -147,31 +179,6 @@ void initInternalStructs(GlobalState* globalState) {
     LLVMStructSetBody(
         controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
     globalState->immControlBlockStructL = controlBlockStructL;
-  }
-
-  {
-    auto controlBlockStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "mutWeakableControlBlock");
-    std::vector<LLVMTypeRef> memberTypesL;
-
-    if (globalState->opt->census) {
-      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakable
-      memberTypesL.push_back(int8PtrLT);
-
-      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakable
-      memberTypesL.push_back(int64LT);
-    }
-
-    assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakable
-    memberTypesL.push_back(int64LT);
-
-    globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(int64LT);
-
-    LLVMStructSetBody(
-        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->mutWeakableControlBlockStructL = controlBlockStructL;
   }
 
 
@@ -225,6 +232,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       std::cout << "Warning: using census outside of assist mode, will slow things down!" << std::endl;
     }
   }
+
+  std::cout << "OVERRIDING to fast mode!" << std::endl;
+  globalState->opt->regionOverride = RegionOverride::FAST;
+  std::cout << "OVERRIDING census to true!" << std::endl;
+  globalState->opt->census = true;
+//  std::cout << "OVERRIDING flares to true!" << std::endl;
+//  globalState->opt->flares = true;
+
 
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
@@ -354,20 +369,22 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
   if (globalState->opt->census) {
-    LLVMValueRef args[2] = {
+    LLVMValueRef args[3] = {
         LLVMConstInt(LLVMInt64Type(), 0, false),
-        LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs")
+        LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
+        globalState->getOrMakeStringConstant("Memory leaks!"),
     };
-    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
+    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
   }
 
   if (globalState->opt->census) {
-    LLVMValueRef args[2] = {
+    LLVMValueRef args[3] = {
         LLVMConstInt(LLVMInt64Type(), 0, false),
         LLVMBuildCall(
-            entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs")
+            entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs"),
+        globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 2, "");
+    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
   }
 
   if (mainM->returnType->referend == globalState->metalCache.vooid) {

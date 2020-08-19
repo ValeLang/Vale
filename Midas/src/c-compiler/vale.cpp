@@ -120,7 +120,7 @@ void initInternalStructs(GlobalState* globalState) {
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      assert(false); // impl
+      // Do nothing, mutables dont have a strong RC, just a weak one
     } else assert(false);
 
     LLVMStructSetBody(
@@ -135,20 +135,20 @@ void initInternalStructs(GlobalState* globalState) {
     std::vector<LLVMTypeRef> memberTypesL;
 
     if (globalState->opt->census) {
-      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakable
+      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
-      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakable
+      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
     }
 
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-      assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakable
+      assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      assert(false); // impl
+      // Do nothing, mutables dont have a strong RC, just a weak one
     } else assert(false);
 
     globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
@@ -166,10 +166,10 @@ void initInternalStructs(GlobalState* globalState) {
     std::vector<LLVMTypeRef> memberTypesL;
 
     if (globalState->opt->census) {
-      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakable
+      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
-      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakable
+      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
     }
 
@@ -233,10 +233,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-//  std::cout << "OVERRIDING to unsafe-fast mode!" << std::endl;
-//  globalState->opt->regionOverride = RegionOverride::FAST;
-//  std::cout << "OVERRIDING census to true!" << std::endl;
-//  globalState->opt->census = true;
+  std::cout << "OVERRIDING to fast mode!" << std::endl;
+  globalState->opt->regionOverride = RegionOverride::FAST;
+  std::cout << "OVERRIDING census to true!" << std::endl;
+  globalState->opt->census = true;
 //  std::cout << "OVERRIDING flares to true!" << std::endl;
 //  globalState->opt->flares = true;
 

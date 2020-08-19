@@ -51,7 +51,7 @@ void fillControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Mutability mutability,
-    bool weakable,
+    Weakability weakable,
     LLVMValueRef controlBlockPtrLE,
     const std::string& typeName);
 
@@ -74,7 +74,6 @@ LLVMValueRef getObjPtrFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    LLVMValueRef weakRefLE,
-    Reference* constraintRefM);
+    LLVMValueRef weakRefLE);
 
 #endif //VALEC_CONTROLBLOCK_H

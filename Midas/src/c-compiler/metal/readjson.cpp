@@ -8,8 +8,8 @@
 // for convenience
 using json = nlohmann::json;
 
-Reference* readReference(MetalCache* cache, const json& reference);
-Ownership readOwnership(MetalCache* cache, const json& ownership);
+UnconvertedReference* readReference(MetalCache* cache, const json& reference);
+UnconvertedOwnership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
 Location readLocation(MetalCache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 
@@ -136,19 +136,16 @@ Referend* readReferend(MetalCache* cache, const json& referend) {
   }
 }
 
-Reference* readReference(MetalCache* cache, const json& reference) {
+UnconvertedReference* readReference(MetalCache* cache, const json& reference) {
   assert(reference.is_object());
   assert(reference["__type"] == "Ref");
 
-  auto ownership = readOwnership(cache, reference["ownership"]);
+  auto ownership = readUnconvertedOwnership(cache, reference["ownership"]);
   auto location = readLocation(cache, reference["location"]);
   auto referend = readReferend(cache, reference["referend"]);
 //  std::string debugStr = reference["debugStr"];
 
-  return makeIfNotPresent(
-      &cache->references[referend][ownership],
-      location,
-      [&](){ return new Reference(ownership, location, referend); });
+  return cache->getUnconvertedReference(ownership, location, referend);
 }
 
 Mutability readMutability(const json& mutability) {
@@ -173,17 +170,17 @@ Variability readVariability(const json& variability) {
   }
 }
 
-Ownership readOwnership(MetalCache* cache, const json& ownership) {
+UnconvertedOwnership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
   assert(ownership.is_object());
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
-    return Ownership::OWN;
+    return UnconvertedOwnership::OWN;
   } else if (ownership["__type"].get<std::string>() == "Borrow") {
-    return Ownership::BORROW;
+    return UnconvertedOwnership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
-    return Ownership::WEAK;
+    return UnconvertedOwnership::WEAK;
   } else if (ownership["__type"].get<std::string>() == "Share") {
-    return Ownership::SHARE;
+    return UnconvertedOwnership::SHARE;
   } else {
     assert(false);
   }
@@ -288,7 +285,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "LocalLoad") {
     return new LocalLoad(
         readLocal(cache, expression["local"]),
-        readOwnership(cache, expression["targetOwnership"]),
+        readUnconvertedOwnership(cache, expression["targetOwnership"]),
         expression["localName"]);
   } else if (type == "WeakAlias") {
     return new WeakAlias(
@@ -338,7 +335,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readStructReferend(cache, expression["structId"]),
         readReference(cache, expression["structType"]),
         expression["memberIndex"],
-        readOwnership(cache, expression["targetOwnership"]),
+        readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readReference(cache, expression["expectedMemberType"]),
         readReference(cache, expression["expectedResultType"]),
         expression["memberName"]);
@@ -354,7 +351,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readKnownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["resultType"]),
-        readOwnership(cache, expression["targetOwnership"]));
+        readUnconvertedOwnership(cache, expression["targetOwnership"]));
   } else if (type == "UnknownSizeArrayLoad") {
     return new UnknownSizeArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
@@ -364,7 +361,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["indexType"]),
         readReferend(cache, expression["indexReferend"]),
         readReference(cache, expression["resultType"]),
-        readOwnership(cache, expression["targetOwnership"]));
+        readUnconvertedOwnership(cache, expression["targetOwnership"]));
   } else if (type == "UnknownSizeArrayStore") {
     return new UnknownSizeArrayStore(
         readExpression(cache, expression["arrayExpr"]),
@@ -482,7 +479,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
           readMutability(struuct["mutability"]),
           readArray(cache, struuct["edges"], readEdge),
           readArray(cache, struuct["members"], readStructMember),
-          struuct["weakable"]);
+          struuct["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
 
   auto structName = result->name;
   if (structName->name == std::string("Tup")) {
@@ -504,7 +501,7 @@ InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
       readMutability(struuct["mutability"]),
       {},
       readArray(cache, struuct["methods"], readInterfaceMethod),
-      struuct["weakable"]);
+      struuct["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
 }
 
 Function* readFunction(MetalCache* cache, const json& function) {

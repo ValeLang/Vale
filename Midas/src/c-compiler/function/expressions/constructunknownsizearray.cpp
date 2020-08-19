@@ -57,7 +57,7 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
       functionState,
       builder,
       unknownSizeArrayT->rawArray->mutability,
-      false,
+      Weakability::NON_WEAKABLE,
       getConcreteControlBlockPtr(builder, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, LLVMBuildStructGEP(builder, usaWrapperPtrLE, 1, "lenPtr"));
@@ -88,14 +88,14 @@ LLVMValueRef translateConstructUnknownSizeArray(
 
   auto unknownSizeArrayMT = dynamic_cast<UnknownSizeArrayT*>(constructUnknownSizeArray->arrayRefType->referend);
 
-  auto usaWrapperPtrLT = translateType(globalState, constructUnknownSizeArray->arrayRefType);
-  auto usaElementLT = translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
+  auto usaWrapperPtrLT = translateType(globalState, getEffectiveType(globalState, constructUnknownSizeArray->arrayRefType));
+  auto usaElementLT = translateType(globalState, getEffectiveType(globalState, unknownSizeArrayMT->rawArray->elementType));
 
   auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
   auto generatorLE = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
   checkValidReference(FL(), globalState, functionState, builder,
-      constructUnknownSizeArray->generatorType, generatorLE);
+      getEffectiveType(globalState, constructUnknownSizeArray->generatorType), generatorLE);
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
@@ -108,17 +108,17 @@ LLVMValueRef translateConstructUnknownSizeArray(
       blockState,
       builder,
           unknownSizeArrayMT,
-          generatorType,
+          getEffectiveType(globalState, generatorType),
           generatorLE,
           unknownSizeArrayCountedStructLT,
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);
   checkValidReference(FL(), globalState, functionState, builder,
-      constructUnknownSizeArray->arrayRefType, resultLE);
+      getEffectiveType(globalState, constructUnknownSizeArray->arrayRefType), resultLE);
 
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorType, generatorLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, getEffectiveType(globalState, sizeType), sizeLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, getEffectiveType(globalState, generatorType), generatorLE);
 
   return resultLE;
 }

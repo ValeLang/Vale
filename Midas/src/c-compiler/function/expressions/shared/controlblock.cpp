@@ -112,13 +112,13 @@ void fillControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Mutability mutability,
-    bool weakable,
+    Weakability weakability,
     LLVMValueRef controlBlockPtrLE,
     const std::string& typeName) {
 
   LLVMValueRef newControlBlockLE = nullptr;
   if (mutability == Mutability::MUTABLE) {
-    if (weakable) {
+    if (weakability == Weakability::WEAKABLE) {
       newControlBlockLE = LLVMGetUndef(globalState->mutWeakableControlBlockStructL);
     } else {
       newControlBlockLE = LLVMGetUndef(globalState->mutNonWeakableControlBlockStructL);
@@ -170,7 +170,7 @@ void fillControlBlock(
 //            "controlBlockComplete");
 //    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
-  if (weakable) {
+  if (weakability == Weakability::WEAKABLE) {
     auto wrciLE = LLVMBuildCall(builder, globalState->allocWrc, nullptr, 0, "");
     newControlBlockLE =
         LLVMBuildInsertValue(
@@ -205,10 +205,10 @@ LLVMValueRef getObjPtrFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    LLVMValueRef weakRefLE,
-    Reference* constraintRefM) {
+    LLVMValueRef weakRefLE) {
+  checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRefLE);
   auto refLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-  checkValidReference(FL(), globalState, functionState, builder, constraintRefM, refLE);
-  acquireReference(FL(), globalState, functionState, builder, constraintRefM, refLE);
+  // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
+  // a valid reference.
   return refLE;
 }

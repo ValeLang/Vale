@@ -196,8 +196,15 @@ LLVMValueRef upcast2(
     LLVMBuilderRef builder,
     Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceStructLE,
+    LLVMValueRef sourceRefLE,
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);
+
+// TODO move these into region classes
+Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership ownership);
+Reference* getEffectiveType(GlobalState* globalState, UnconvertedReference* refM);
+Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef);
+Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
+std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
 
 #endif

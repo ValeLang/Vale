@@ -110,7 +110,7 @@ LLVMValueRef mallocStr(
       FL(),
       globalState, functionState, builder,
       Mutability::IMMUTABLE,
-      false,
+      Weakability::NON_WEAKABLE,
       getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 

@@ -265,29 +265,29 @@ class ValeTest(unittest.TestCase):
              PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale"],
             7)
 
-    # def test_dropThenLockInterface(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code(
-    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-    #          PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale"],
-    #         42)
-    #
-    # def test_lockWhileLiveInterface(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code(
-    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-    #          PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale"],
-    #         7)
-    #
-    # def test_weakFromLocalCRefInterface(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code(
-    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-    #          PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale"],
-    #         7)
-    #
-    # def test_weakFromCRefInterface(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code(
-    #         [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
-    #          PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale"],
-    #         7)
+    def test_dropThenLockInterface(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale"],
+            42)
+
+    def test_lockWhileLiveInterface(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale"],
+            7)
+
+    def test_weakFromLocalCRefInterface(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale"],
+            7)
+
+    def test_weakFromCRefInterface(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale"],
+            7)
 
 
 if __name__ == '__main__':

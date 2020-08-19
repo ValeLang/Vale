@@ -116,19 +116,19 @@ public:
     Mutability mutability;
     std::vector<Edge*> edges;
     std::vector<StructMember*> members;
-    bool weakable;
+    UnconvertedWeakability weakability;
 
     StructDefinition(
         Name* name_,
         Mutability mutability_,
         std::vector<Edge*> edges_,
         std::vector<StructMember*> members_,
-        bool weakable_) :
+        UnconvertedWeakability weakable_) :
         name(name_),
         mutability(mutability_),
         edges(edges_),
         members(members_),
-        weakable(weakable_) {}
+        weakability(weakable_) {}
 
     Edge* getEdgeForInterface(Name* interfaceName) {
       for (auto e : edges) {
@@ -144,12 +144,12 @@ class StructMember {
 public:
     std::string name;
     Variability variability;
-    Reference* type;
+    UnconvertedReference* type;
 
     StructMember(
         std::string name_,
         Variability variability_,
-        Reference* type_) :
+        UnconvertedReference* type_) :
         name(name_),
         variability(variability_),
         type(type_) {}
@@ -162,25 +162,25 @@ public:
     Mutability mutability;
     std::vector<Name*> superInterfaces;
     std::vector<InterfaceMethod*> methods;
-    bool weakable;
+    UnconvertedWeakability weakability;
 
     InterfaceDefinition(
         Name* name_,
         Mutability mutability_,
         const std::vector<Name*>& superInterfaces_,
         const std::vector<InterfaceMethod*>& methods_,
-        bool weakable_) :
+        UnconvertedWeakability weakable_) :
       name(name_),
       mutability(mutability_),
       superInterfaces(superInterfaces_),
       methods(methods_),
-      weakable(weakable_) {}
+      weakability(weakable_) {}
 };
 
 class Function {
 public:
     Prototype* prototype;
-  Expression* block;
+    Expression* block;
 
     Function(
 
@@ -195,13 +195,13 @@ public:
 class Prototype {
 public:
     Name* name;
-    std::vector<Reference*> params;
-    Reference* returnType;
+    std::vector<UnconvertedReference*> params;
+    UnconvertedReference* returnType;
 
     Prototype(
         Name* name_,
-        std::vector<Reference*> params_,
-        Reference* returnType_) :
+        std::vector<UnconvertedReference*> params_,
+        UnconvertedReference* returnType_) :
       name(name_),
       params(std::move(params_)),
       returnType(returnType_) {}

@@ -16,7 +16,7 @@ LLVMValueRef translateCall(
   argsLE.reserve(call->argExprs.size());
   for (int i = 0; i < call->argExprs.size(); i++) {
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
-    checkValidReference(FL(), globalState, functionState, builder, call->function->params[i], argLE);
+    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, call->function->params[i]), argLE);
     argsLE.push_back(argLE);
   }
 

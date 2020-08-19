@@ -3,6 +3,7 @@
 #include "translatetype.h"
 
 #include "shared.h"
+#include "controlblock.h"
 
 LLVMValueRef getStructContentsPtr(
     LLVMBuilderRef builder, LLVMValueRef concretePtrLE) {
@@ -49,33 +50,32 @@ LLVMValueRef loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
-    LLVMValueRef structExpr,
-    Mutability mutability,
+    LLVMValueRef structRefLE,
+    Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
     const std::string& memberName) {
 
-  if (mutability == Mutability::IMMUTABLE) {
-    if (structRefM->location == Location::INLINE) {
-      return LLVMBuildExtractValue(
-          builder, structExpr, memberIndex, memberName.c_str());
-    } else {
-      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
-          structExpr);
+  if (structRefM->location == Location::INLINE) {
+    return LLVMBuildExtractValue(
+        builder, structRefLE, memberIndex, memberName.c_str());
+  } else if (structRefM->location == Location::YONDER) {
+    if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::SHARE) {
+      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
       auto resultLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
       acquireReference(from, globalState, functionState, builder, memberType, resultLE);
       return resultLE;
-    }
-  } else if (mutability == Mutability::MUTABLE) {
-    LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
-        structExpr);
-    auto resultLE =
-        loadInnerStructMember(
-            builder, innerStructPtrLE, memberIndex, memberName);
-    acquireReference(from, globalState, functionState, builder, memberType, resultLE);
-    return resultLE;
+    } else if (structRefM->ownership == Ownership::WEAK) {
+      auto thing = forceDerefWeak(globalState, functionState, builder, structRefM, structRefLE);
+      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
+      auto resultLE =
+          loadInnerStructMember(
+              builder, innerStructPtrLE, memberIndex, memberName);
+      acquireReference(from, globalState, functionState, builder, memberType, resultLE);
+      return resultLE;
+    } else assert(false);
   } else {
     assert(false);
     return nullptr;

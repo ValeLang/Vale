@@ -25,7 +25,14 @@ LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
     std::vector<LLVMTypeRef> elementsL;
 
     if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+        // In resilient mode, we can have weak refs to arrays
+        elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+      } else assert(false);
     } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
       elementsL.push_back(globalState->immControlBlockStructL);
     } else assert(false);
@@ -59,7 +66,14 @@ LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
     std::vector<LLVMTypeRef> elementsL;
 
     if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+        // In resilient mode, we can have weak refs to arrays
+        elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+      } else assert(false);
     } else if (unknownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
       elementsL.push_back(globalState->immControlBlockStructL);
     } else assert(false);
@@ -175,10 +189,9 @@ Mutability ownershipToMutability(Ownership ownership) {
       return Mutability::IMMUTABLE;
     case Ownership::BORROW:
     case Ownership::OWN:
+    case Ownership::WEAK:
       return Mutability::MUTABLE;
   }
-  assert(false);
-  return Mutability::MUTABLE;
 }
 
 Mutability getMutability(GlobalState* globalState, Reference* referenceM) {

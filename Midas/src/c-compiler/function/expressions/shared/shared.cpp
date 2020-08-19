@@ -501,3 +501,17 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
     } else assert(false);
   }
 }
+
+// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
+LLVMValueRef forceDerefWeak(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef weakRefLE) {
+  auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, weakRefLE);
+  buildAssert(
+      FL(), globalState, functionState, builder, isAliveLE,
+      "Tried dereferencing dangling reference!");
+  return getObjPtrFromWeakRef(globalState, functionState, builder, refM, weakRefLE);
+}

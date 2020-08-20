@@ -57,32 +57,32 @@ LLVMValueRef loadMember(
     Reference* resultType,
     const std::string& memberName) {
 
+  LLVMValueRef sourceRefLE = nullptr;
   if (structRefM->location == Location::INLINE) {
-    return LLVMBuildExtractValue(
-        builder, structRefLE, memberIndex, memberName.c_str());
+    sourceRefLE =
+        LLVMBuildExtractValue(
+            builder, structRefLE, memberIndex, memberName.c_str());
   } else if (structRefM->location == Location::YONDER) {
     if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::SHARE) {
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
-      auto resultLE =
+      sourceRefLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      acquireReference(from, globalState, functionState, builder, resultType, resultLE);
-      return resultLE;
     } else if (structRefM->ownership == Ownership::WEAK) {
       auto thing = forceDerefWeak(globalState, functionState, builder, structRefM, structRefLE);
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
-//      start here, need to make own go to weak
-      auto resultLE =
+      sourceRefLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      checkValidReference(FL(), globalState, functionState, builder, resultType, resultLE);
-      acquireReference(from, globalState, functionState, builder, resultType, resultLE);
-      return resultLE;
     } else assert(false);
   } else {
     assert(false);
     return nullptr;
   }
+
+  auto resultRefLE = load(globalState, functionState, builder, memberType, resultType, sourceRefLE);
+  acquireReference(from, globalState, functionState, builder, resultType, resultRefLE);
+  return resultRefLE;
 }
 
 LLVMValueRef swapMember(

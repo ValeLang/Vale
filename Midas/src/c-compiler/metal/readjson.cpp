@@ -493,15 +493,15 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
   return result;
 }
 
-InterfaceDefinition* readInterface(MetalCache* cache, const json& struuct) {
-  assert(struuct.is_object());
-  assert(struuct["__type"] == "Interface");
+InterfaceDefinition* readInterface(MetalCache* cache, const json& interface) {
+  assert(interface.is_object());
+  assert(interface["__type"] == "Interface");
   return new InterfaceDefinition(
-      readName(cache, struuct["name"]),
-      readMutability(struuct["mutability"]),
+      readName(cache, interface["name"]),
+      readMutability(interface["mutability"]),
       {},
-      readArray(cache, struuct["methods"], readInterfaceMethod),
-      struuct["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
+      readArray(cache, interface["methods"], readInterfaceMethod),
+      interface["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
 }
 
 Function* readFunction(MetalCache* cache, const json& function) {

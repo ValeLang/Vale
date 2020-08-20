@@ -31,7 +31,7 @@ void fillUnknownSizeArray(
             LLVMBuildGEP(
                 bodyBuilder, usaElementsPtrLE, indices.data(), indices.size(), "elementPtr");
         std::vector<LLVMValueRef> argExprsLE = { generatorLE, indexLE };
-        auto elementLE = buildInterfaceCall(bodyBuilder, argExprsLE, 0, 0);
+        auto elementLE = buildInterfaceCall(globalState, functionState, bodyBuilder, generatorType, argExprsLE, 0, 0);
         LLVMBuildStore(bodyBuilder, elementLE, elementPtrLE);
       });
 }

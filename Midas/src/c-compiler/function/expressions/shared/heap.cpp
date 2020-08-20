@@ -195,12 +195,12 @@ void freeConcrete(
             concretePtrLE,
             LLVMPointerType(LLVMInt8Type(), 0),
             "concreteCharPtrForFree");
-    buildFlare(
-        AFL("Freeing: "),
-        globalState,
-        functionState,
-        builder,
-        LLVMBuildBitCast(builder, concreteAsCharPtrLE, LLVMPointerType(LLVMInt64Type(), 0), "printthis"));
+//    buildFlare(
+//        AFL("Freeing: "),
+//        globalState,
+//        functionState,
+//        builder,
+//        LLVMBuildBitCast(builder, concreteAsCharPtrLE, LLVMPointerType(LLVMInt64Type(), 0), "printthis"));
     LLVMBuildCall(
         builder, globalState->free, &concreteAsCharPtrLE, 1, "");
   }

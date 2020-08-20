@@ -14,7 +14,7 @@ LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
     LLVMValueRef concretePtrLE);
 
-LLVMValueRef getInterfaceControlBlockPtr(
+LLVMValueRef getControlBlockPtrFromInterfaceRef(
     LLVMBuilderRef builder,
     LLVMValueRef interfaceRefLE);
 
@@ -69,7 +69,7 @@ LLVMValueRef getIsAliveFromWeakRef(
     LLVMBuilderRef builder,
     LLVMValueRef weakRefLE);
 
-LLVMValueRef getObjPtrFromWeakRef(
+LLVMValueRef getInnerRefFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

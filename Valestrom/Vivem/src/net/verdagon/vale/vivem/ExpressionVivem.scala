@@ -908,13 +908,14 @@ object ExpressionVivem {
 
     val interfaceReference = undeviewedArgReferences(virtualParamIndex)
 
-    val structH =
-      heap.dereference(interfaceReference) match {
-        case StructInstanceV(s, _) => s
+    // Vivem wants to know the type of an undead object so it can call a weak-self
+    // method after it's been dropped. Midas can do this (it relies on it for resilient
+    // mode) though some other platforms probably won't be able to.
+    val edge =
+      heap.dereference(interfaceReference, allowUndead = true) match {
+        case StructInstanceV(structH, _) => structH.edges.find(_.interface == interfaceRefH).get
         case other => vwat(other.toString)
       }
-
-    val edge = structH.edges.find(_.interface == interfaceRefH).get
 
     val ReferenceV(actualStruct, actualInterfaceKind, actualOwnership, actualLocation, allocNum) = interfaceReference
     vassert(actualInterfaceKind.hamut == interfaceRefH)

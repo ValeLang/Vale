@@ -565,15 +565,24 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
 LLVMValueRef forceDerefWeak(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef weakRefLE) {
+  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
   auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, weakRefLE);
-  buildAssert(
-      FL(), globalState, functionState, builder, isAliveLE,
-      "Tried dereferencing dangling reference!");
+  buildIf(
+      functionState, builder, isZeroLE(builder, isAliveLE),
+      [from, globalState, functionState, wrciLE](LLVMBuilderRef thenBuilder) {
+        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
+        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference, wrci: ");
+        buildPrint(globalState, thenBuilder, wrciLE);
+        buildPrint(globalState, thenBuilder, ", exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+      });
   return getInnerRefFromWeakRef(globalState, functionState, builder, refM, weakRefLE);
 }
 

@@ -156,6 +156,7 @@ void freeConcrete(
       if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
         auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
         auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+        buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(concreteRefM->referend)) {
@@ -163,6 +164,7 @@ void freeConcrete(
       if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
         auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
         auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+        buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
       }
     } else {
@@ -184,6 +186,7 @@ void freeConcrete(
           auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
           auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
               controlBlockPtrLE);
+          buildFlare(FL(), globalState, functionState, builder);
           LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
         }
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(concreteRefM->referend)) {
@@ -192,6 +195,7 @@ void freeConcrete(
           auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
           auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
               controlBlockPtrLE);
+          buildFlare(FL(), globalState, functionState, builder);
           LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
         }
       } else {
@@ -209,6 +213,7 @@ void freeConcrete(
       // In resilient mode, every mutable is weakable.
       auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
       auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+      buildFlare(FL(), globalState, functionState, builder);
       LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
     }
   } else assert(false);

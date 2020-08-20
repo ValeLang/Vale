@@ -84,6 +84,9 @@ class ValeCompiler(unittest.TestCase):
         if "--flares" in args:
             args.remove("--flares")
             midas_options.append("--flares")
+        if "--census" in args:
+            args.remove("--census")
+            midas_options.append("--census")
         if "--region-override" in args:
             ind = args.index("--region-override")
             del args[ind]

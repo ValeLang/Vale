@@ -80,7 +80,7 @@ object LetHammer {
   ExpressionH[ReferendH] = {
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
-    val expectedLocalBoxType = ReferenceH(m.OwnH, InlineH, boxStructRefH)
+    val expectedLocalBoxType = ReferenceH(m.OwnH, YonderH, boxStructRefH)
 
     val local =
       locals.addTemplarLocal(hinputs, hamuts, varId, expectedLocalBoxType)

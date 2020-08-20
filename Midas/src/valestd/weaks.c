@@ -9,6 +9,8 @@
 #define WRC_LIVE_BIT 0x8000000000000000
 #define WRC_INITIAL_VALUE WRC_LIVE_BIT
 
+#define REUSE 0
+
 typedef struct {
   uint64_t capacity;
   uint64_t size;
@@ -19,8 +21,10 @@ typedef struct {
 static WrcTable wrcTable = { 0, 0, NO_FREE_WRCI, NULL };
 
 static void releaseWrc(uint64_t wrcIndex) {
+#ifdef REUSE
   wrcTable.entries[wrcIndex] = wrcTable.firstFree;
   wrcTable.firstFree = wrcIndex;
+#endif
   assert(wrcTable.size > 0);
   wrcTable.size--;
 }

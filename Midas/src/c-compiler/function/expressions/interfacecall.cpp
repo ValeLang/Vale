@@ -25,7 +25,13 @@ LLVMValueRef translateInterfaceCall(
 
   auto resultLE =
       buildInterfaceCall(
-          builder, argExprsLE, call->virtualParamIndex, call->indexInEdge);
+          globalState,
+          functionState,
+          builder,
+          getEffectiveType(globalState, call->functionType->params[call->virtualParamIndex]),
+          argExprsLE,
+          call->virtualParamIndex,
+          call->indexInEdge);
   checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, call->functionType->returnType), resultLE);
 
   if (call->functionType->returnType->referend == globalState->metalCache.never) {

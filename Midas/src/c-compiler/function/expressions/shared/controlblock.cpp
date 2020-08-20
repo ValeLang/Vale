@@ -8,7 +8,7 @@ LLVMValueRef getConcreteControlBlockPtr(
   return LLVMBuildStructGEP(builder, concretePtrLE, 0, "controlPtr");
 }
 
-LLVMValueRef getInterfaceControlBlockPtr(
+LLVMValueRef getControlBlockPtrFromInterfaceRef(
     LLVMBuilderRef builder,
     LLVMValueRef interfaceRefLE) {
   // Interface fat pointer's first element points directly at the control block,
@@ -153,21 +153,21 @@ void fillControlBlock(
   }
 
   if (globalState->opt->census) {
-//    auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
-//    newControlBlockLE =
-//        LLVMBuildInsertValue(
-//            builder,
-//            newControlBlockLE,
-//            objIdLE,
-//            globalState->controlBlockObjIdIndex,
-//            "controlBlockWithRcAndObjId");
-//    newControlBlockLE =
-//        LLVMBuildInsertValue(
-//            builder,
-//            newControlBlockLE,
-//            globalState->getOrMakeStringConstant(typeName),
-//            globalState->controlBlockTypeStrIndex,
-//            "controlBlockComplete");
+    auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
+    newControlBlockLE =
+        LLVMBuildInsertValue(
+            builder,
+            newControlBlockLE,
+            objIdLE,
+            globalState->controlBlockObjIdIndex,
+            "controlBlockWithRcAndObjId");
+    newControlBlockLE =
+        LLVMBuildInsertValue(
+            builder,
+            newControlBlockLE,
+            globalState->getOrMakeStringConstant(typeName),
+            globalState->controlBlockTypeStrIndex,
+            "controlBlockComplete");
 //    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
@@ -200,15 +200,15 @@ LLVMValueRef getIsAliveFromWeakRef(
   return LLVMBuildCall(builder, globalState->wrcIsLive, &wrciLE, 1, "isAlive");
 }
 
-LLVMValueRef getObjPtrFromWeakRef(
+LLVMValueRef getInnerRefFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
     LLVMValueRef weakRefLE) {
   checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRefLE);
-  auto refLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+  auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
   // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
   // a valid reference.
-  return refLE;
+  return innerRefLE;
 }

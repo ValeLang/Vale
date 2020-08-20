@@ -212,4 +212,32 @@ class WeakTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
+  test("Call weak-self method, after drop") {
+    val compile = Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("weaks/callWeakSelfMethodAfterDrop.vale"))
+
+    val main = compile.getTemputs().lookupFunction("main")
+
+    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+
+    val hamuts = compile.getHamuts()
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(0)
+  }
+
+  test("Call weak-self method, while alive") {
+    val compile = Compilation(
+      Samples.get("genericvirtuals/opt.vale") +
+        Samples.get("weaks/callWeakSelfMethodWhileLive.vale"))
+
+    val main = compile.getTemputs().lookupFunction("main")
+
+    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+
+    val hamuts = compile.getHamuts()
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
 }

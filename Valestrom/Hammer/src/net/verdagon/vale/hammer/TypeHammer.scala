@@ -149,13 +149,17 @@ object TypeHammer {
     val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
     val mutability = Conversions.evaluateMutability(type2.array.mutability)
-    KnownSizeArrayTH(name, type2.size, RawArrayTH(mutability, memberReferenceH))
+    val result = KnownSizeArrayTH(name, type2.size, RawArrayTH(mutability, memberReferenceH))
+    hamuts.addKnownSizeArray(result)
+    result
   }
 
   def translateUnknownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: UnknownSizeArrayT2): UnknownSizeArrayTH = {
     val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
     val (memberReferenceH) = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
     val mutability = Conversions.evaluateMutability(type2.array.mutability)
-    (UnknownSizeArrayTH(nameH, RawArrayTH(mutability, memberReferenceH)))
+    val result = UnknownSizeArrayTH(nameH, RawArrayTH(mutability, memberReferenceH))
+    hamuts.addUnknownSizeArray(result)
+    result
   }
 }

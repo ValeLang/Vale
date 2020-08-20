@@ -84,7 +84,7 @@ LLVMValueRef translateConstruct(
 
   switch (structM->mutability) {
     case Mutability::MUTABLE: {
-      auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+      auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
       return constructCountedStruct(
           from, globalState, functionState, builder, countedStructL, desiredReference, structM, membersLE);
     }
@@ -96,7 +96,7 @@ LLVMValueRef translateConstruct(
             builder, structM, valStructL, membersLE);
       } else {
         auto countedStructL =
-            globalState->getCountedStruct(structReferend->fullName);
+            globalState->getWrapperStruct(structReferend->fullName);
         return constructCountedStruct(
             from, globalState, functionState, builder, countedStructL, desiredReference, structM, membersLE);
       }

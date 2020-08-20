@@ -48,6 +48,8 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
     LLVMTypeRef usaElementLT,
     LLVMValueRef sizeLE,
     const std::string& typeName) {
+  buildFlare(FL(), globalState, functionState, builder, "Constructing USA!");
+
   auto usaWrapperPtrLE =
       mallocUnknownSizeArray(
           globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
@@ -57,7 +59,7 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
       functionState,
       builder,
       unknownSizeArrayT->rawArray->mutability,
-      Weakability::NON_WEAKABLE,
+      getEffectiveWeakability(globalState, unknownSizeArrayT->rawArray),
       getConcreteControlBlockPtr(builder, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, LLVMBuildStructGEP(builder, usaWrapperPtrLE, 1, "lenPtr"));
@@ -99,8 +101,7 @@ LLVMValueRef translateConstructUnknownSizeArray(
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
-      translateUnknownSizeArrayToWrapperStruct(
-          globalState, unknownSizeArrayMT);
+      globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
   auto resultLE =
       constructUnknownSizeArrayCountedStruct(
           globalState,

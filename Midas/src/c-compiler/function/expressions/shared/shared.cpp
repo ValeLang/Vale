@@ -495,6 +495,22 @@ std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<
 }
 
 // TODO move into region classes
+Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) {
+  if (array->mutability == Mutability::IMMUTABLE) {
+    return Weakability::NON_WEAKABLE;
+  } else {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+      return Weakability::NON_WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      return Weakability::NON_WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      // All mutables are weakabile in resilient mode
+      return Weakability::WEAKABLE;
+    } else assert(false);
+  }
+}
+
+// TODO move into region classes
 Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef) {
   if (structDef->mutability == Mutability::IMMUTABLE) {
     assert(structDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
@@ -584,6 +600,38 @@ LLVMValueRef assembleStructWeakRef(
   auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
 
   auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+LLVMValueRef assembleKnownSizeArrayWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    KnownSizeArrayT* knownSizeArrayMT,
+    LLVMValueRef objPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+LLVMValueRef assembleUnknownSizeArrayWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    UnknownSizeArrayT* unknownSizeArrayMT,
+    LLVMValueRef objPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name));
   weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
   weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
 

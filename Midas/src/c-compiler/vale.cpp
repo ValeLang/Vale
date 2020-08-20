@@ -26,6 +26,7 @@
 #include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
+#include <struct/array.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -246,12 +247,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  std::cout << "OVERRIDING to fast mode!" << std::endl;
-  globalState->opt->regionOverride = RegionOverride::FAST;
+  std::cout << "OVERRIDING to assist mode!" << std::endl;
+  globalState->opt->regionOverride = RegionOverride::ASSIST;
   std::cout << "OVERRIDING census to true!" << std::endl;
   globalState->opt->census = true;
-//  std::cout << "OVERRIDING flares to true!" << std::endl;
-//  globalState->opt->flares = true;
+  std::cout << "OVERRIDING flares to true!" << std::endl;
+  globalState->opt->flares = true;
 
 
   std::ifstream instream(filename);
@@ -324,6 +325,18 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     declareInterface(globalState, interfaceM);
   }
 
+  for (auto p : program->knownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    declareKnownSizeArray(globalState, arrayM);
+  }
+
+  for (auto p : program->unknownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    declareUnknownSizeArray(globalState, arrayM);
+  }
+
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
@@ -334,6 +347,18 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto interfaceM = p.second;
     translateInterface(globalState, interfaceM);
+  }
+
+  for (auto p : program->knownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    translateKnownSizeArray(globalState, arrayM);
+  }
+
+  for (auto p : program->unknownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    translateUnknownSizeArray(globalState, arrayM);
   }
 
   for (auto p : program->structs) {

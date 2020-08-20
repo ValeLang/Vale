@@ -38,6 +38,14 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addInterface(interfaceRef2, interfaceDefH)
   }
 
+  def addKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): Unit = {
+    inner = inner.addKnownSizeArray(knownSizeArrayTH)
+  }
+
+  def addUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): Unit = {
+    inner = inner.addUnknownSizeArray(unknownSizeArrayTH)
+  }
+
   def forwardDeclareFunction(functionRef2: Prototype2, functionRefH: FunctionRefH): Unit = {
     inner = inner.forwardDeclareFunction(functionRef2, functionRefH)
   }
@@ -56,6 +64,8 @@ case class Hamuts(
     structRefsByRef2: Map[StructRef2, StructRefH],
     structDefsByRef2: Map[StructRef2, StructDefinitionH],
     structDefs: List[StructDefinitionH],
+    knownSizeArrays: List[KnownSizeArrayTH],
+    unknownSizeArrays: List[UnknownSizeArrayTH],
     interfaceRefs: Map[InterfaceRef2, InterfaceRefH],
     interfaceDefs: Map[InterfaceRef2, InterfaceDefinitionH],
     functionRefs: Map[Prototype2, FunctionRefH],
@@ -66,6 +76,8 @@ case class Hamuts(
       structRefsByRef2 + (structRef2 -> structRefH),
       structDefsByRef2,
       structDefs,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -79,6 +91,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2 + (structRef2 -> structDefH),
       structDefs :+ structDefH,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -91,6 +105,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs :+ structDefH,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -103,6 +119,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs + (interfaceRef2 -> interfaceRefH),
       interfaceDefs,
       functionRefs,
@@ -116,6 +134,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs,
       interfaceDefs + (interfaceRef2 -> interfaceDefH),
       functionRefs,
@@ -128,6 +148,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs + (functionRef2 -> functionRefH),
@@ -142,6 +164,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
+      knownSizeArrays,
+      unknownSizeArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -156,6 +180,36 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
+      knownSizeArrays,
+      unknownSizeArrays,
+      interfaceRefs,
+      interfaceDefs,
+      functionRefs,
+      functionDefs)
+  }
+
+  def addKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): Hamuts = {
+    Hamuts(
+      fullNameByExportedName,
+      structRefsByRef2,
+      structDefsByRef2,
+      structDefs,
+      knownSizeArrays :+ knownSizeArrayTH,
+      unknownSizeArrays,
+      interfaceRefs,
+      interfaceDefs,
+      functionRefs,
+      functionDefs)
+  }
+
+  def addUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): Hamuts = {
+    Hamuts(
+      fullNameByExportedName,
+      structRefsByRef2,
+      structDefsByRef2,
+      structDefs,
+      knownSizeArrays,
+      unknownSizeArrays :+ unknownSizeArrayTH,
       interfaceRefs,
       interfaceDefs,
       functionRefs,

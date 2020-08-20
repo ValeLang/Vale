@@ -160,14 +160,14 @@ void fillControlBlock(
             newControlBlockLE,
             objIdLE,
             globalState->controlBlockObjIdIndex,
-            "controlBlockWithRcAndObjId");
+            "strControlBlockWithObjId");
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,
             newControlBlockLE,
             globalState->getOrMakeStringConstant(typeName),
             globalState->controlBlockTypeStrIndex,
-            "controlBlockComplete");
+            "strControlBlockWithTypeStr");
 //    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
@@ -178,7 +178,7 @@ void fillControlBlock(
             newControlBlockLE,
             wrciLE,
             globalState->mutControlBlockWrciMemberIndex,
-            "controlBlockComplete");
+            "strControlBlockWithWrci");
   }
   LLVMBuildStore(
       builder,

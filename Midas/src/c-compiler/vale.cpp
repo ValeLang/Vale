@@ -246,12 +246,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  std::cout << "OVERRIDING to assist mode!" << std::endl;
-  globalState->opt->regionOverride = RegionOverride::ASSIST;
+  std::cout << "OVERRIDING to fast mode!" << std::endl;
+  globalState->opt->regionOverride = RegionOverride::FAST;
   std::cout << "OVERRIDING census to true!" << std::endl;
   globalState->opt->census = true;
-  std::cout << "OVERRIDING flares to true!" << std::endl;
-  globalState->opt->flares = true;
+//  std::cout << "OVERRIDING flares to true!" << std::endl;
+//  globalState->opt->flares = true;
 
 
   std::ifstream instream(filename);

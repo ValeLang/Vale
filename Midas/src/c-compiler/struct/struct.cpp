@@ -18,8 +18,8 @@ void declareStruct(
   auto countedStructL =
       LLVMStructCreateNamed(
           LLVMGetGlobalContext(), (structM->name->name + "rc").c_str());
-  assert(globalState->countedStructs.count(structM->name->name) == 0);
-  globalState->countedStructs.emplace(structM->name->name, countedStructL);
+  assert(globalState->wrapperStructs.count(structM->name->name) == 0);
+  globalState->wrapperStructs.emplace(structM->name->name, countedStructL);
 
   auto structWeakRefStructL =
       LLVMStructCreateNamed(
@@ -42,7 +42,7 @@ void translateStruct(
   LLVMStructSetBody(
       valStructL, innerStructMemberTypesL.data(), innerStructMemberTypesL.size(), false);
 
-  LLVMTypeRef countedStructL = globalState->getCountedStruct(structM->name);
+  LLVMTypeRef countedStructL = globalState->getWrapperStruct(structM->name);
   std::vector<LLVMTypeRef> countedStructMemberTypesL;
 
   // First member is a ref counts struct. We don't include the int directly

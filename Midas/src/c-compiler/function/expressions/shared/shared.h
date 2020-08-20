@@ -208,6 +208,7 @@ LLVMValueRef upcast2(
 // TODO move these into region classes
 Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership ownership);
 Reference* getEffectiveType(GlobalState* globalState, UnconvertedReference* refM);
+Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array);
 Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef);
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
@@ -240,5 +241,30 @@ LLVMValueRef assembleVoidStructWeakRef(
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtrLE,
     LLVMValueRef wrciLE);
+
+LLVMValueRef assembleKnownSizeArrayWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    KnownSizeArrayT* knownSizeArrayMT,
+    LLVMValueRef objPtrLE);
+
+LLVMValueRef assembleUnknownSizeArrayWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    UnknownSizeArrayT* unknownSizeArrayMT,
+    LLVMValueRef objPtrLE);
+
+
+
+// Loads from either a local or a member, and does the appropriate casting.
+LLVMValueRef load(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceType,
+    Reference* targetType,
+    LLVMValueRef sourceRefLE);
 
 #endif

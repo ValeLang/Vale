@@ -210,7 +210,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
 
         case OPT_FLARES: {
           if (!s.arg_val) {
-            opt->flares = true;
+            opt->flares = false;
           } else if (s.arg_val == std::string("on")) {
             opt->flares = true;
           } else if (s.arg_val == std::string("off")) {

@@ -25,14 +25,6 @@ Mutability ownershipToMutability(Ownership ownership);
 
 Mutability getMutability(GlobalState* globalState, Reference* referenceM);
 
-LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
-    GlobalState* globalState,
-    KnownSizeArrayT* knownSizeArrayMT);
-
-LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
-    GlobalState* globalState,
-    UnknownSizeArrayT* unknownSizeArrayMT);
-
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
     Prototype* prototype);

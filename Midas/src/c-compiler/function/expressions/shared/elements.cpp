@@ -94,27 +94,30 @@ LLVMValueRef loadElement(
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
-    LLVMValueRef indexLE) {
+    LLVMValueRef indexLE,
+    Reference* resultRefM) {
 
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
   buildAssert(AFL("Bounds check"), globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
+  LLVMValueRef fromArrayLE = nullptr;
   if (mutability == Mutability::IMMUTABLE) {
     if (structRefM->location == Location::INLINE) {
       assert(false);
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
       return nullptr;
     } else {
-      return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+      fromArrayLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    return loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+    fromArrayLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
   } else {
     assert(false);
     return nullptr;
   }
+  return load(globalState, functionState, builder, elementRefM, resultRefM, fromArrayLE);
 }
 
 

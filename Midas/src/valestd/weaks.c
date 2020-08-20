@@ -59,39 +59,58 @@ uint64_t __allocWrc() {
   }
 
   wrcTable.entries[resultWrci] = WRC_INITIAL_VALUE;
+  printf("Allocated wrci %d\n", resultWrci);
   return resultWrci;
 }
 
 int8_t __wrcIsLive(uint64_t wrcIndex) {
-  assert(wrcIndex < wrcTable.size);
+  if (wrcIndex >= wrcTable.capacity) {
+    printf("Bad wrci: %d\n", wrcIndex);
+    assert(0);
+  }
   int8_t alive = (wrcTable.entries[wrcIndex] & WRC_LIVE_BIT) != 0;
   return alive;
 }
 
 // Warning: can have false positives, where it says something's valid when it's not.
 void __checkWrc(uint64_t wrcIndex) {
-  assert(wrcIndex < wrcTable.size);
+  if (wrcIndex >= wrcTable.capacity) {
+    printf("Bad wrci: %d\n", wrcIndex);
+    assert(0);
+  }
 }
 
 void __incrementWrc(uint64_t wrcIndex) {
-  assert(wrcIndex < wrcTable.size);
+  if (wrcIndex >= wrcTable.capacity) {
+    printf("Bad wrci: %d\n", wrcIndex);
+    assert(0);
+  }
   wrcTable.entries[wrcIndex]++;
-  printf("incremented, now %d\n", wrcTable.entries[wrcIndex]);
+  printf("incremented %d, now %d\n", wrcIndex, wrcTable.entries[wrcIndex]);
 }
 
 void __decrementWrc(uint64_t wrcIndex) {
-  assert(wrcIndex < wrcTable.size);
+  if (wrcIndex >= wrcTable.capacity) {
+    printf("Bad wrci: %d\n", wrcIndex);
+    assert(0);
+  }
   wrcTable.entries[wrcIndex]--;
-  printf("decremented, now %d\n", wrcTable.entries[wrcIndex]);
+  printf("decremented %d, now %d\n", wrcIndex, wrcTable.entries[wrcIndex]);
   if (wrcTable.entries[wrcIndex] == 0) {
+    printf("releasing! %d\n", wrcIndex);
     releaseWrc(wrcIndex);
   }
 }
 
 void __markWrcDead(uint64_t wrcIndex) {
-  assert(wrcIndex < wrcTable.size);
+  if (wrcIndex >= wrcTable.capacity) {
+    printf("Bad wrci: %d\n", wrcIndex);
+    assert(0);
+  }
   wrcTable.entries[wrcIndex] &= ~WRC_LIVE_BIT;
+  printf("marking %d dead!\n", wrcIndex);
   if (wrcTable.entries[wrcIndex] == 0) {
+    printf("releasing! %d\n", wrcIndex);
     releaseWrc(wrcIndex);
   }
 }

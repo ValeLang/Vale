@@ -19,9 +19,10 @@ LLVMValueRef loadMember(
     LLVMBuilderRef builder,
     Reference* structRefM,
     LLVMValueRef structRefLE,
-    Mutability mutability,
+    Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
+    Reference* resultType,
     const std::string& memberName);
 
 LLVMValueRef loadInnerStructMember(
@@ -31,9 +32,12 @@ LLVMValueRef loadInnerStructMember(
     const std::string& memberName);
 
 LLVMValueRef swapMember(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    LLVMValueRef structExpr,
+    Reference* structRefM,
+    LLVMValueRef structRefLE,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newMemberLE);

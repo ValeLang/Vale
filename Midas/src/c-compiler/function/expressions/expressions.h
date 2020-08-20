@@ -97,4 +97,11 @@ LLVMValueRef translateConstantStr(
     LLVMBuilderRef builder,
     ConstantStr* constantStr);
 
+LLVMValueRef translateLocalLoad(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef builder,
+    LocalLoad* localLoad);
+
 #endif

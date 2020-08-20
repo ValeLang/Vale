@@ -3,93 +3,6 @@
 
 #include "translatetype.h"
 
-LLVMTypeRef makeInnerKnownSizeArrayLT(GlobalState* globalState, KnownSizeArrayT* knownSizeArrayMT) {
-  auto elementLT =
-      translateType(
-          globalState,
-          getEffectiveType(globalState, knownSizeArrayMT->rawArray->elementType));
-  return LLVMArrayType(elementLT, knownSizeArrayMT->size);
-}
-
-// This gives the actual struct, *not* a pointer to a struct, which you sometimes
-// might need instead. For that, use translateType.
-LLVMTypeRef translateKnownSizeArrayToWrapperStruct(
-    GlobalState* globalState,
-    KnownSizeArrayT* knownSizeArrayMT) {
-  auto innerArrayLT = makeInnerKnownSizeArrayLT(globalState, knownSizeArrayMT);
-
-  auto iter = globalState->knownSizeArrayCountedStructs.find(knownSizeArrayMT->name);
-  if (iter == globalState->knownSizeArrayCountedStructs.end()) {
-    auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), knownSizeArrayMT->name->name.c_str());
-
-    std::vector<LLVMTypeRef> elementsL;
-
-    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        // In resilient mode, we can have weak refs to arrays
-        elementsL.push_back(globalState->mutWeakableControlBlockStructL);
-      } else assert(false);
-    } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
-      elementsL.push_back(globalState->immControlBlockStructL);
-    } else assert(false);
-
-    elementsL.push_back(innerArrayLT);
-
-    LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
-
-    iter = globalState->knownSizeArrayCountedStructs.emplace(knownSizeArrayMT->name, countedStruct).first;
-  }
-
-  return iter->second;
-}
-
-LLVMTypeRef makeInnerUnknownSizeArrayLT(GlobalState* globalState, UnknownSizeArrayT* unknownSizeArrayMT) {
-  auto elementLT = translateType(globalState, getEffectiveType(globalState, unknownSizeArrayMT->rawArray->elementType));
-  return LLVMArrayType(elementLT, 0);
-}
-
-// This gives the actual struct, *not* a pointer to a struct, which you sometimes
-// might need instead. For that, use translateType.
-LLVMTypeRef translateUnknownSizeArrayToWrapperStruct(
-    GlobalState* globalState,
-    UnknownSizeArrayT* unknownSizeArrayMT) {
-  auto innerArrayLT = makeInnerUnknownSizeArrayLT(globalState, unknownSizeArrayMT);
-
-  auto iter = globalState->unknownSizeArrayCountedStructs.find(unknownSizeArrayMT->name);
-  if (iter == globalState->unknownSizeArrayCountedStructs.end()) {
-    auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "rc").c_str());
-
-    std::vector<LLVMTypeRef> elementsL;
-
-    if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        // In resilient mode, we can have weak refs to arrays
-        elementsL.push_back(globalState->mutWeakableControlBlockStructL);
-      } else assert(false);
-    } else if (unknownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
-      elementsL.push_back(globalState->immControlBlockStructL);
-    } else assert(false);
-
-    elementsL.push_back(LLVMInt64Type());
-
-    elementsL.push_back(innerArrayLT);
-
-    LLVMStructSetBody(countedStruct, elementsL.data(), elementsL.size(), false);
-
-    iter = globalState->unknownSizeArrayCountedStructs.emplace(unknownSizeArrayMT->name, countedStruct).first;
-  }
-
-  return iter->second;
-}
-
 LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
   if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
     assert(referenceM->ownership == Ownership::SHARE);
@@ -108,30 +21,39 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       assert(false);
       return nullptr;
     } else {
-      auto innerArrayLT = makeInnerKnownSizeArrayLT(globalState,
-          knownSizeArrayMT);
+      auto knownSizeArrayCountedStructLT = globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
       if (referenceM->location == Location::INLINE) {
-        return innerArrayLT;
+        return knownSizeArrayCountedStructLT;
       } else {
-        auto knownSizeArrayCountedStructLT =
-            translateKnownSizeArrayToWrapperStruct(
-                globalState, knownSizeArrayMT);
-
-        return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+        if (referenceM->ownership == Ownership::OWN) {
+          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+        } else if (referenceM->ownership == Ownership::BORROW) {
+          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+        } else if (referenceM->ownership == Ownership::SHARE) {
+          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+        } else if (referenceM->ownership == Ownership::WEAK) {
+          return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
+        } else assert(false);
       }
     }
   } else if (auto unknownSizeArrayMT =
       dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
-    auto knownSizeArrayCountedStructLT =
-        translateUnknownSizeArrayToWrapperStruct(
-            globalState, unknownSizeArrayMT);
-    return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+    auto unknownSizeArrayCountedStructLT = globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
+    if (referenceM->ownership == Ownership::OWN) {
+      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+    } else if (referenceM->ownership == Ownership::BORROW) {
+      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+    } else if (referenceM->ownership == Ownership::SHARE) {
+      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+    } else if (referenceM->ownership == Ownership::WEAK) {
+      return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
+    } else assert(false);
   } else if (auto structReferend =
       dynamic_cast<StructReferend*>(referenceM->referend)) {
 
     auto structM = globalState->program->getStruct(structReferend->fullName);
     if (structM->mutability == Mutability::MUTABLE) {
-      auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+      auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
       if (referenceM->ownership == Ownership::OWN) {
         return LLVMPointerType(countedStructL, 0);
       } else if (referenceM->ownership == Ownership::BORROW) {
@@ -146,7 +68,7 @@ LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
       if (referenceM->location == Location::INLINE) {
         return globalState->getInnerStruct(structReferend->fullName);
       } else {
-        auto countedStructL = globalState->getCountedStruct(structReferend->fullName);
+        auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
         return LLVMPointerType(countedStructL, 0);
       }
     }

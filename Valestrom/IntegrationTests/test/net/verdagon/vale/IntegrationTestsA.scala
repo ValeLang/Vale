@@ -186,6 +186,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |""".stripMargin)
+    val hamuts = compile.getHamuts();
     compile.evalForReferend(Vector()) shouldEqual VonInt(60)
   }
 

@@ -538,6 +538,20 @@ Program* readProgram(MetalCache* cache, const json& program) {
             auto s = readStruct(cache, j);
             return std::make_pair(s->name->name, s);
           }),
+      readArrayIntoMap<std::string, KnownSizeArrayT*>(
+          cache,
+          program["knownSizeArrays"],
+          [](MetalCache* cache, json j){
+            auto s = readKnownSizeArray(cache, j);
+            return std::make_pair(s->name->name, s);
+          }),
+      readArrayIntoMap<std::string, UnknownSizeArrayT*>(
+          cache,
+          program["unknownSizeArrays"],
+          [](MetalCache* cache, json j){
+            auto s = readUnknownSizeArray(cache, j);
+            return std::make_pair(s->name->name, s);
+          }),
       nullptr,//readStructName(program["emptyPackStructRef"]),
       {},//readArray<readExtern>(program["externs"]),
       readArrayIntoMap<std::string, Function*>(

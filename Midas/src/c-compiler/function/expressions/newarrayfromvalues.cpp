@@ -46,7 +46,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
       functionState,
       builder,
       knownSizeArrayT->rawArray->mutability,
-      Weakability::NON_WEAKABLE,
+      getEffectiveWeakability(globalState, knownSizeArrayT->rawArray),
       getConcreteControlBlockPtr(builder, newStructLE),
       typeName);
   fillKnownSizeArray(
@@ -73,9 +73,9 @@ LLVMValueRef translateNewArrayFromValues(
 
   auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(newArrayFromValues->arrayRefType->referend);
 
-  switch (Mutability::IMMUTABLE/* arrayL->mutability*/) {
+  switch (newArrayFromValues->arrayReferend->rawArray->mutability) {
 //    case Mutability::MUTABLE: {
-//      auto countedArrayL = globalState->getCountedStruct(structReferend->fullName);
+//      auto countedArrayL = globalState->getWrapperStruct(structReferend->fullName);
 //      return constructCountedStruct(
 //          globalState, builder, countedStructL, structM, membersLE);
 //    }
@@ -90,8 +90,7 @@ LLVMValueRef translateNewArrayFromValues(
       } else {
         // If we get here, arrayLT is a pointer to our counted struct.
         auto knownSizeArrayCountedStructLT =
-            translateKnownSizeArrayToWrapperStruct(
-                globalState, knownSizeArrayMT);
+                globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
         auto resultLE =
             constructKnownSizeArrayCountedStruct(
                 globalState,

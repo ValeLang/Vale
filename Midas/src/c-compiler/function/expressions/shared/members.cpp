@@ -54,6 +54,7 @@ LLVMValueRef loadMember(
     Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
+    Reference* resultType,
     const std::string& memberName) {
 
   if (structRefM->location == Location::INLINE) {
@@ -65,15 +66,17 @@ LLVMValueRef loadMember(
       auto resultLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      acquireReference(from, globalState, functionState, builder, memberType, resultLE);
+      acquireReference(from, globalState, functionState, builder, resultType, resultLE);
       return resultLE;
     } else if (structRefM->ownership == Ownership::WEAK) {
       auto thing = forceDerefWeak(globalState, functionState, builder, structRefM, structRefLE);
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
+//      start here, need to make own go to weak
       auto resultLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      acquireReference(from, globalState, functionState, builder, memberType, resultLE);
+      checkValidReference(FL(), globalState, functionState, builder, resultType, resultLE);
+      acquireReference(from, globalState, functionState, builder, resultType, resultLE);
       return resultLE;
     } else assert(false);
   } else {
@@ -83,15 +86,31 @@ LLVMValueRef loadMember(
 }
 
 LLVMValueRef swapMember(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    LLVMValueRef structExpr,
+    Reference* structRefM,
+    LLVMValueRef structRefLE,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newMemberLE) {
+
+  LLVMValueRef innerStructPtrLE;
+  switch (structRefM->ownership) {
+    case Ownership::OWN:
+    case Ownership::BORROW:
+    case Ownership::SHARE:
+      innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
+      break;
+    case Ownership::WEAK:
+      auto voidPtrLE =
+          getInnerRefFromWeakRef(globalState, functionState, builder, structRefM, structRefLE);
+      innerStructPtrLE = getStructContentsPtr(builder, voidPtrLE);
+      break;
+  }
+
   assert(structDefM->mutability == Mutability::MUTABLE);
-  LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
-      structExpr);
 
   LLVMValueRef oldMember =
       loadInnerStructMember(

@@ -47,6 +47,10 @@ public:
   LLVMTypeRef immControlBlockStructL;
   LLVMTypeRef stringWrapperStructL;
   LLVMTypeRef stringInnerStructL;
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  LLVMTypeRef weakVoidRefStructL;
 
   LLVMBuilderRef stringConstantBuilder;
   std::unordered_map<std::string, LLVMValueRef> stringConstants;

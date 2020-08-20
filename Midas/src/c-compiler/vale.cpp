@@ -205,6 +205,19 @@ void initInternalStructs(GlobalState* globalState) {
         stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
     globalState->stringWrapperStructL = stringWrapperStructL;
   }
+
+  {
+    // This is a weak ref to a void*. When we're calling an interface method on a weak,
+    // we have no idea who the receiver is. They'll receive this struct as the correctly
+    // typed flavor of it (from structWeakRefStructs).
+    globalState->weakVoidRefStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "__weak_voidp");
+    std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
+    structWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
+    structWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMVoidType(), 0));
+    LLVMStructSetBody(globalState->weakVoidRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
+  }
 }
 
 void compileValeCode(GlobalState* globalState, const std::string& filename) {
@@ -237,8 +250,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->opt->regionOverride = RegionOverride::ASSIST;
   std::cout << "OVERRIDING census to true!" << std::endl;
   globalState->opt->census = true;
-//  std::cout << "OVERRIDING flares to true!" << std::endl;
-//  globalState->opt->flares = true;
+  std::cout << "OVERRIDING flares to true!" << std::endl;
+  globalState->opt->flares = true;
 
 
   std::ifstream instream(filename);

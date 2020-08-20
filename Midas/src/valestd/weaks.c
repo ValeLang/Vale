@@ -76,11 +76,13 @@ void __checkWrc(uint64_t wrcIndex) {
 void __incrementWrc(uint64_t wrcIndex) {
   assert(wrcIndex < wrcTable.size);
   wrcTable.entries[wrcIndex]++;
+  printf("incremented, now %d\n", wrcTable.entries[wrcIndex]);
 }
 
 void __decrementWrc(uint64_t wrcIndex) {
   assert(wrcIndex < wrcTable.size);
   wrcTable.entries[wrcIndex]--;
+  printf("decremented, now %d\n", wrcTable.entries[wrcIndex]);
   if (wrcTable.entries[wrcIndex] == 0) {
     releaseWrc(wrcIndex);
   }

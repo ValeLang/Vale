@@ -290,5 +290,18 @@ class ValeTest(unittest.TestCase):
             7)
 
 
+    def test_callWeakSelfMethodWhileLive(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale"],
+            42)
+
+    def test_callWeakSelfMethodAfterDrop(self) -> None:
+        self.compile_and_execute_and_expect_return_code(
+            [PATH_TO_SAMPLES + "genericvirtuals/opt.vale",
+             PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale"],
+            0)
+
+
 if __name__ == '__main__':
     unittest.main()

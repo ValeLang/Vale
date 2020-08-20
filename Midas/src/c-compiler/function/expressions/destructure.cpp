@@ -21,6 +21,7 @@ LLVMValueRef translateDestructure(
           globalState, functionState, blockState, builder, destructureM->structExpr);
   checkValidReference(
       FL(), globalState, functionState, builder, getEffectiveType(globalState, destructureM->structType), structLE);
+//  buildFlare(FL(), globalState, functionState, builder, "structLE is ", structLE);
 
   auto structReferend =
       dynamic_cast<StructReferend *>(destructureM->structType->referend);
@@ -30,8 +31,7 @@ LLVMValueRef translateDestructure(
 
   for (int i = 0; i < structM->members.size(); i++) {
     auto memberName = structM->members[i]->name;
-    LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
-        structLE);
+    LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structLE);
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);

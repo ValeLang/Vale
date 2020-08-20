@@ -15,6 +15,7 @@ object TemplataNamer {
       ownership match {
         case Share => ""//"*"
         case Borrow => "&"
+        case Weak => "&&"
         case Own => ""//"^"
       }
     ownershipString + getReferendIdentifierName(referend)

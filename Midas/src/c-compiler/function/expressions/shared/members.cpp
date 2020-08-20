@@ -54,44 +54,63 @@ LLVMValueRef loadMember(
     Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
+    Reference* resultType,
     const std::string& memberName) {
 
+  LLVMValueRef sourceRefLE = nullptr;
   if (structRefM->location == Location::INLINE) {
-    return LLVMBuildExtractValue(
-        builder, structRefLE, memberIndex, memberName.c_str());
+    sourceRefLE =
+        LLVMBuildExtractValue(
+            builder, structRefLE, memberIndex, memberName.c_str());
   } else if (structRefM->location == Location::YONDER) {
     if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::SHARE) {
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
-      auto resultLE =
+      sourceRefLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      acquireReference(from, globalState, functionState, builder, memberType, resultLE);
-      return resultLE;
     } else if (structRefM->ownership == Ownership::WEAK) {
       auto thing = forceDerefWeak(globalState, functionState, builder, structRefM, structRefLE);
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
-      auto resultLE =
+      sourceRefLE =
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
-      acquireReference(from, globalState, functionState, builder, memberType, resultLE);
-      return resultLE;
     } else assert(false);
   } else {
     assert(false);
     return nullptr;
   }
+
+  auto resultRefLE = load(globalState, functionState, builder, memberType, resultType, sourceRefLE);
+  acquireReference(from, globalState, functionState, builder, resultType, resultRefLE);
+  return resultRefLE;
 }
 
 LLVMValueRef swapMember(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    LLVMValueRef structExpr,
+    Reference* structRefM,
+    LLVMValueRef structRefLE,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newMemberLE) {
+
+  LLVMValueRef innerStructPtrLE;
+  switch (structRefM->ownership) {
+    case Ownership::OWN:
+    case Ownership::BORROW:
+    case Ownership::SHARE:
+      innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
+      break;
+    case Ownership::WEAK:
+      auto voidPtrLE =
+          getInnerRefFromWeakRef(globalState, functionState, builder, structRefM, structRefLE);
+      innerStructPtrLE = getStructContentsPtr(builder, voidPtrLE);
+      break;
+  }
+
   assert(structDefM->mutability == Mutability::MUTABLE);
-  LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder,
-      structExpr);
 
   LLVMValueRef oldMember =
       loadInnerStructMember(

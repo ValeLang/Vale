@@ -36,10 +36,11 @@ class ValeTest(unittest.TestCase):
         )
 
     def valec(self, vir_file: str,
-              o_files_dir: str) -> subprocess.CompletedProcess:
+              o_files_dir: str,
+              region_override: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
         return procrun(
-            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--census", "--region-override", "assist", "--output-dir",
+            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--census", "--region-override", region_override, "--output-dir",
              o_files_dir, vir_file])
 
     def clang(self, o_files: List[str],
@@ -61,7 +62,7 @@ class ValeTest(unittest.TestCase):
         self.GENPATH: str = type(self).GENPATH
 
     def compile_and_execute(
-            self, vale_filepaths: List[str]) -> subprocess.CompletedProcess:
+            self, vale_filepaths: List[str], region_override: str) -> subprocess.CompletedProcess:
         last_vale_filepath = vale_filepaths[len(vale_filepaths) - 1]
         file_name_without_extension = os.path.splitext(os.path.basename(last_vale_filepath))[0]
         build_dir = f"test/test_build/{file_name_without_extension}_build"
@@ -78,7 +79,7 @@ class ValeTest(unittest.TestCase):
                          f"valestrom couldn't compile {file_name_without_extension}:\n" +
                          proc.stdout + "\n" + proc.stderr)
 
-        proc = self.valec(vir_file, build_dir)
+        proc = self.valec(vir_file, build_dir, region_override)
         self.assertEqual(proc.returncode, 0,
                          f"valec couldn't compile {vir_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
@@ -95,7 +96,19 @@ class ValeTest(unittest.TestCase):
 
     def compile_and_execute_and_expect_return_code(self, vale_files: List[str],
                                                    expected_return_code) -> None:
-        proc = self.compile_and_execute(vale_files)
+        proc = self.compile_and_execute(vale_files, "assist")
+        # print(proc.stdout)
+        # print(proc.stderr)
+        self.assertEqual(proc.returncode, expected_return_code,
+                         f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
+
+        proc = self.compile_and_execute(vale_files, "unsafe-fast")
+        # print(proc.stdout)
+        # print(proc.stderr)
+        self.assertEqual(proc.returncode, expected_return_code,
+                         f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
+
+        proc = self.compile_and_execute(vale_files, "resilient")
         # print(proc.stdout)
         # print(proc.stderr)
         self.assertEqual(proc.returncode, expected_return_code,

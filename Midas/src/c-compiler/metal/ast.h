@@ -42,6 +42,8 @@ class Program {
 public:
     std::unordered_map<std::string, InterfaceDefinition*> interfaces;
     std::unordered_map<std::string, StructDefinition*> structs;
+    std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays;
+    std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays;
     // Get rid of this; since there's no IDs anymore we can have a stable
     // hardcoded NameH("__Pack", Some(List()), None, None).
     StructReferend* emptyPackStructRef;
@@ -52,12 +54,16 @@ public:
     Program(
       std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
       std::unordered_map<std::string, StructDefinition*> structs_,
+      std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays_,
+      std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays_,
       StructReferend* emptyPackStructRef_,
       std::unordered_map<std::string, Prototype*> externs_,
       std::unordered_map<std::string, Function*> functions_,
         std::unordered_map<Referend*, Prototype*> immDestructorsByKind_) :
         interfaces(move(interfaces_)),
         structs(move(structs_)),
+        knownSizeArrays(move(knownSizeArrays_)),
+        unknownSizeArrays(move(unknownSizeArrays_)),
         emptyPackStructRef(emptyPackStructRef_),
         externs(move(externs_)),
         functions(move(functions_)),

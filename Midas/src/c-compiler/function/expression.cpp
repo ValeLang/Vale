@@ -46,170 +46,6 @@ LLVMValueRef translateExpression(
   return resultLE;
 }
 
-LLVMValueRef translateLocalLoad(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    LocalLoad* localLoad) {
-  auto local = localLoad->local;
-  auto localId = local->id;
-  auto localName = localLoad->localName;
-  auto localType = getEffectiveType(globalState, local->type);
-  auto targetOwnership = getEffectiveOwnership(globalState, localLoad->targetOwnership);
-  auto targetLocation = targetOwnership == Ownership::SHARE ? localType->location : Location::YONDER;
-  auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, localType->referend);
-
-  auto localAddr = blockState->getLocalAddr(localId);
-
-
-  if (localType->ownership == Ownership::SHARE) {
-    if (localType->location == Location::INLINE) {
-      auto resultLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-      checkValidReference(FL(), globalState, functionState, builder, localType, resultLE);
-      return resultLE;
-    } else {
-      auto resultLE =
-          LLVMBuildLoad(builder, localAddr, localName.c_str());
-      checkValidReference(FL(), globalState, functionState, builder, localType, resultLE);
-
-      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        adjustStrongRc(
-            AFL("LocalLoad"),
-            globalState, functionState, builder, resultLE, localType, 1);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        adjustStrongRc(
-            AFL("LocalLoad"),
-            globalState, functionState, builder, resultLE, localType, 1);
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        adjustStrongRc(
-            AFL("LocalLoad"),
-            globalState, functionState, builder, resultLE, localType, 1);
-      } else assert(false);
-
-      return resultLE;
-    }
-  } else if (localType->ownership == Ownership::OWN) {
-    if (targetOwnership == Ownership::OWN) {
-      // Cant load an owning reference from a owning local. That would require an unstackify.
-      assert(false);
-    } else if (targetOwnership == Ownership::BORROW) {
-      // We do the same thing for inline and yonder muts, the only difference is
-      // where the memory lives.
-
-      auto resultLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-      checkValidReference(
-          FL(), globalState, functionState, builder, localType, resultLE);
-      checkValidReference(
-          FL(), globalState, functionState, builder, resultType, resultLE);
-
-      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, resultType, 1);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        // Do nothing
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, resultType, 1);
-      } else assert(false);
-      return resultLE;
-    } else if (targetOwnership == Ownership::WEAK) {
-      auto sourceRefLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-      checkValidReference(
-          FL(), globalState, functionState, builder, localType, sourceRefLE);
-
-      // Now we need to package it up into a weak ref.
-      if (auto structReferend = dynamic_cast<StructReferend*>(localType->referend)) {
-        auto weakRefLE =
-            assembleStructWeakRef(
-                globalState, builder, localType, structReferend, sourceRefLE);
-        adjustWeakRc(AFL("LocalLoad(weak 1)"), globalState, functionState, builder, weakRefLE, 1);
-        return weakRefLE;
-      } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(localType->referend)) {
-        assert(false); // impl
-      } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(localType->referend)) {
-        auto weakRefLE =
-            assembleKnownSizeArrayWeakRef(
-                globalState, builder, localType, knownSizeArray, sourceRefLE);
-        adjustWeakRc(AFL("LocalLoad(weak 1)"), globalState, functionState, builder, weakRefLE, 1);
-        return weakRefLE;
-      } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(localType->referend)) {
-        auto weakRefLE =
-            assembleUnknownSizeArrayWeakRef(
-                globalState, builder, localType, unknownSizeArray, sourceRefLE);
-        adjustWeakRc(AFL("LocalLoad(weak 1)"), globalState, functionState, builder, weakRefLE, 1);
-        buildFlare(FL(), globalState, functionState, builder);
-        return weakRefLE;
-      } else assert(false);
-    } else {
-      assert(false);
-    }
-  } else if (localType->ownership == Ownership::BORROW) {
-
-    if (targetOwnership == Ownership::OWN) {
-      assert(false); // Cant load an owning reference from a constraint ref local.
-    } else if (targetOwnership == Ownership::BORROW) {
-      // We do the same thing for inline and yonder muts, the only difference is
-      // where the memory lives.
-      auto resultLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-
-//      auto controlBlockPtr = getControlBlockPtr(builder, resultLE, localType);
-//      auto objIdLE = getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtr);
-
-      checkValidReference(
-          FL(), globalState, functionState, builder, localType, resultLE);
-
-      if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        adjustStrongRc(AFL("LocalLoad"), globalState, functionState, builder, resultLE, localType, 1);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        // Do nothing
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        assert(false); // impl
-      } else assert(false);
-      return resultLE;
-    } else if (targetOwnership == Ownership::WEAK) {
-      // Making a weak ref from a constraint ref local.
-
-      if (auto structReferendM = dynamic_cast<StructReferend*>(localType->referend)) {
-        // We do the same thing for inline and yonder muts, the only difference is
-        // where the memory lives.
-        auto objPtrLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-        auto weakRefLE =
-            assembleStructWeakRef(
-                globalState, builder, localType, structReferendM, objPtrLE);
-        adjustWeakRc(AFL("LocalLoad(weak 2)"), globalState, functionState, builder, weakRefLE, 1);
-        return weakRefLE;
-      } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(localType->referend)) {
-        auto objPtrLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-        auto weakRefLE =
-            assembleInterfaceWeakRef(
-                globalState, builder, localType, interfaceReferendM, objPtrLE);
-        adjustWeakRc(AFL("LocalLoad(weak 3)"), globalState, functionState, builder, weakRefLE, 1);
-        return weakRefLE;
-      } else assert(false);
-    } else {
-      assert(false);
-    }
-  } else if (localType->ownership == Ownership::WEAK) {
-    if (targetOwnership == Ownership::OWN) {
-      assert(false); // Cant load an owning reference from a weak ref local.
-    } else if (targetOwnership == Ownership::BORROW) {
-      assert(false); // Can't implicitly make a constraint ref from a weak ref.
-    } else if (targetOwnership == Ownership::WEAK) {
-
-      // We do the same thing for inline and yonder muts, the only difference is
-      // where the memory lives.
-      auto weakRefLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-      checkValidReference(
-          FL(), globalState, functionState, builder, localType, weakRefLE);
-      adjustWeakRc(AFL("LocalLoad(weak 4)"), globalState, functionState, builder, weakRefLE, 1);
-      return weakRefLE;
-    } else {
-      assert(false);
-    }
-  } else {
-    assert(false);
-  }
-}
-
 LLVMValueRef translateExpressionInner(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -229,10 +65,10 @@ LLVMValueRef translateExpressionInner(
   } else if (auto ret = dynamic_cast<Return*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto sourceLE = translateExpression(globalState, functionState, blockState, builder, ret->sourceExpr);
-    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, ret->sourceType), sourceLE);
     if (ret->sourceType->referend == globalState->metalCache.never) {
       return sourceLE;
     } else {
+      checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, ret->sourceType), sourceLE);
       return LLVMBuildRet(builder, sourceLE);
     }
   } else if (auto stackify = dynamic_cast<Stackify*>(expr)) {
@@ -261,15 +97,17 @@ LLVMValueRef translateExpressionInner(
   } else if (auto weakAlias = dynamic_cast<WeakAlias*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 
+    auto sourceLE =
+        translateExpression(
+            globalState, functionState, blockState, builder, weakAlias->sourceExpr);
+
     if (getEffectiveOwnership(globalState, weakAlias->sourceType->ownership) == Ownership::SHARE) {
       assert(false);
     } else if (getEffectiveOwnership(globalState, weakAlias->sourceType->ownership) == Ownership::OWN) {
       assert(false);
     } else if (getEffectiveOwnership(globalState, weakAlias->sourceType->ownership) == Ownership::BORROW) {
       if (auto structReferendM = dynamic_cast<StructReferend*>(weakAlias->sourceType->referend)) {
-        auto objPtrLE =
-            translateExpression(
-                globalState, functionState, blockState, builder, weakAlias->sourceExpr);
+        auto objPtrLE = sourceLE;
         auto weakRefLE =
             assembleStructWeakRef(
                 globalState, builder, getEffectiveType(globalState, weakAlias->sourceType), structReferendM, objPtrLE);
@@ -282,7 +120,8 @@ LLVMValueRef translateExpressionInner(
         assert(false); // impl
       } else assert(false);
     } else if (getEffectiveOwnership(globalState, weakAlias->sourceType->ownership) == Ownership::WEAK) {
-      assert(false);
+      // Nothing to do!
+      return sourceLE;
     } else {
       assert(false);
     }
@@ -470,20 +309,29 @@ LLVMValueRef translateExpressionInner(
     return makeConstExpr(builder, makeNever());
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    auto arrayType = knownSizeArrayLoad->arrayType;
+    auto arrayType = getEffectiveType(globalState, knownSizeArrayLoad->arrayType);
     auto arrayExpr = knownSizeArrayLoad->arrayExpr;
     auto indexExpr = knownSizeArrayLoad->indexExpr;
     auto arrayReferend = knownSizeArrayLoad->arrayReferend;
+    auto elementType = getEffectiveType(globalState, arrayReferend->rawArray->elementType);
+    auto targetOwnership = getEffectiveOwnership(globalState, knownSizeArrayLoad->targetOwnership);
+    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, elementType->referend);
 
     auto arrayWrapperPtrLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
-    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, arrayType), arrayWrapperPtrLE);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
     auto sizeLE = constI64LE(dynamic_cast<KnownSizeArrayT*>(knownSizeArrayLoad->arrayType->referend)->size);
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
-    auto mutability = ownershipToMutability(getEffectiveOwnership(globalState, arrayType->ownership));
-    discard(AFL("KSALoad"), globalState, functionState, blockState, builder, getEffectiveType(globalState, arrayType), arrayWrapperPtrLE);
+    auto mutability = ownershipToMutability(arrayType->ownership);
+    discard(AFL("KSALoad"), globalState, functionState, blockState, builder, arrayType, arrayWrapperPtrLE);
 
     LLVMValueRef arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
-    auto resultLE = loadElement(globalState, functionState, blockState, builder, getEffectiveType(globalState, arrayType), getEffectiveType(globalState, arrayReferend->rawArray->elementType), sizeLE, arrayPtrLE, mutability, indexLE);
+    auto resultLE =
+        loadElement(
+            globalState, functionState, blockState, builder, arrayType,
+            getEffectiveType(globalState, arrayReferend->rawArray->elementType),
+            sizeLE, arrayPtrLE, mutability, indexLE,
+            resultType);
     acquireReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, arrayReferend->rawArray->elementType), resultLE);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, arrayReferend->rawArray->elementType), resultLE);
     return resultLE;
@@ -494,7 +342,9 @@ LLVMValueRef translateExpressionInner(
     auto indexExpr = unknownSizeArrayLoad->indexExpr;
     auto arrayReferend = unknownSizeArrayLoad->arrayReferend;
     auto elementType = getEffectiveType(globalState, arrayReferend->rawArray->elementType);
-    auto resultType = getEffectiveType(globalState, unknownSizeArrayLoad->resultType);
+    auto targetOwnership = getEffectiveOwnership(globalState, unknownSizeArrayLoad->targetOwnership);
+    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, elementType->referend);
 
     auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
 
@@ -518,7 +368,7 @@ LLVMValueRef translateExpressionInner(
     auto mutability = ownershipToMutability(arrayType->ownership);
 
     LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
-    auto resultLE = loadElement(globalState, functionState, blockState, builder, arrayType, elementType, sizeLE, arrayPtrLE, mutability, indexLE);
+    auto resultLE = loadElement(globalState, functionState, blockState, builder, arrayType, elementType, sizeLE, arrayPtrLE, mutability, indexLE, resultType);
 
     acquireReference(FL(), globalState, functionState, builder, resultType, resultLE);
 
@@ -529,19 +379,39 @@ LLVMValueRef translateExpressionInner(
     return resultLE;
   } else if (auto unknownSizeArrayStore = dynamic_cast<UnknownSizeArrayStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    auto arrayType = unknownSizeArrayStore->arrayType;
+    auto arrayType = getEffectiveType(globalState, unknownSizeArrayStore->arrayType);
     auto arrayExpr = unknownSizeArrayStore->arrayExpr;
     auto indexExpr = unknownSizeArrayStore->indexExpr;
     auto arrayReferend = unknownSizeArrayStore->arrayReferend;
+    auto elementType = getEffectiveType(globalState, arrayReferend->rawArray->elementType);
+    auto targetOwnership = elementType->ownership == Ownership::SHARE ? Ownership::SHARE : Ownership::BORROW;
+    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, elementType->referend);
 
 
-    auto arrayWrapperPtrLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
-    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, arrayType), arrayWrapperPtrLE);
+    auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
+    checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
+
+
+    LLVMValueRef arrayWrapperPtrLE;
+    switch (arrayType->ownership) {
+      case Ownership::OWN:
+      case Ownership::BORROW:
+      case Ownership::SHARE:
+        arrayWrapperPtrLE = arrayRefLE;
+        break;
+      case Ownership::WEAK:
+        arrayWrapperPtrLE =
+            forceDerefWeak(globalState, functionState, builder, arrayType, arrayRefLE);
+        break;
+    }
+
+
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
 
 
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
-    auto mutability = ownershipToMutability(getEffectiveType(globalState, arrayType)->ownership);
+    auto mutability = ownershipToMutability(arrayType->ownership);
 
 
 
@@ -550,7 +420,11 @@ LLVMValueRef translateExpressionInner(
     LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
 
 
-    auto oldValueLE = loadElement(globalState, functionState, blockState, builder, getEffectiveType(globalState, arrayType), getEffectiveType(globalState, arrayReferend->rawArray->elementType), sizeLE, arrayPtrLE, mutability, indexLE);
+    auto oldValueLE =
+        loadElement(
+            globalState, functionState, blockState, builder, arrayType,
+            elementType, sizeLE, arrayPtrLE, mutability, indexLE,
+            resultType);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, arrayReferend->rawArray->elementType), oldValueLE);
     // We dont acquireReference here because we aren't aliasing the reference, we're moving it out.
 
@@ -562,9 +436,9 @@ LLVMValueRef translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, arrayReferend->rawArray->elementType), valueToStoreLE);
 
 
-    storeElement(globalState, functionState, blockState, builder, getEffectiveType(globalState, arrayType), getEffectiveType(globalState, arrayReferend->rawArray->elementType), sizeLE, arrayPtrLE, mutability, indexLE, valueToStoreLE);
+    storeElement(globalState, functionState, blockState, builder, arrayType, getEffectiveType(globalState, arrayReferend->rawArray->elementType), sizeLE, arrayPtrLE, mutability, indexLE, valueToStoreLE);
 
-    discard(AFL("USAStore"), globalState, functionState, blockState, builder, getEffectiveType(globalState, arrayType), arrayWrapperPtrLE);
+    discard(AFL("USAStore"), globalState, functionState, blockState, builder, arrayType, arrayRefLE);
 
 
     return oldValueLE;
@@ -700,25 +574,50 @@ LLVMValueRef translateExpressionInner(
     auto resultOptLE =
         buildIfElse(functionState, builder, isAliveLE, resultOptTypeLE, false, false,
             [globalState, functionState, lockWeak, sourceLE](LLVMBuilderRef thenBuilder) {
-              auto sourceTypeM = lockWeak->sourceType;
-              auto someConstructor = lockWeak->someConstructor;
-              auto constraintRefLE =
-                  getInnerRefFromWeakRef(
-                      globalState,
-                      functionState,
-                      thenBuilder,
-                      getEffectiveType(globalState, sourceTypeM),
+
+          // TODO extract more of this common code out?
+              LLVMValueRef someLE = nullptr;
+              switch (globalState->opt->regionOverride) {
+                case RegionOverride::ASSIST:
+                case RegionOverride::FAST: {
+                  auto sourceTypeM = lockWeak->sourceType;
+                  auto someConstructor = lockWeak->someConstructor;
+                  auto constraintRefLE =
+                      getInnerRefFromWeakRef(
+                          globalState,
+                          functionState,
+                          thenBuilder,
+                          getEffectiveType(globalState, sourceTypeM),
+                          sourceLE);
+                  checkValidReference(FL(), globalState, functionState, thenBuilder,
+                      getEffectiveType(globalState, someConstructor->params[0]),
+                      constraintRefLE);
+                  acquireReference(
+                      FL(), globalState, functionState, thenBuilder,
+                      getEffectiveType(globalState, someConstructor->params[0]),
+                      constraintRefLE);
+                  // If we get here, object is alive, return a Some.
+                  someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {constraintRefLE});
+                  break;
+                }
+                case RegionOverride::RESILIENT: {
+                  // The incoming "constraint" ref is actually already a week ref. All we have to
+                  // do now is wrap it in a Some.
+
+                  auto sourceTypeM = lockWeak->sourceType;
+                  auto someConstructor = lockWeak->someConstructor;
+                  checkValidReference(FL(), globalState, functionState, thenBuilder,
+                      getEffectiveType(globalState, someConstructor->params[0]),
                       sourceLE);
-              checkValidReference(FL(), globalState, functionState, thenBuilder,
-                  getEffectiveType(globalState, someConstructor->params[0]),
-                  constraintRefLE);
-              acquireReference(
-                  FL(), globalState, functionState, thenBuilder,
-                  getEffectiveType(globalState, someConstructor->params[0]),
-                  constraintRefLE);
-              // If we get here, object is alive, return a Some.
-              auto someLE =
-                  buildCall(globalState, functionState, thenBuilder, someConstructor, {constraintRefLE});
+                  acquireReference(
+                      FL(), globalState, functionState, thenBuilder,
+                      getEffectiveType(globalState, someConstructor->params[0]),
+                      sourceLE);
+                  // If we get here, object is alive, return a Some.
+                  someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {sourceLE});
+                  break;
+                }
+              }
               return upcast2(
                   globalState,
                   functionState,

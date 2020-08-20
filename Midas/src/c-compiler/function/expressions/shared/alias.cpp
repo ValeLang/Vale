@@ -20,7 +20,7 @@ void acquireReference(
   bool proceed =
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT ||
-          (globalState->opt->regionOverride == RegionOverride::FAST && resultRef->ownership == Ownership::SHARE);
+          (globalState->opt->regionOverride == RegionOverride::FAST && (resultRef->ownership == Ownership::SHARE || resultRef->ownership == Ownership::WEAK));
   if (!proceed) {
     return;
   }
@@ -90,8 +90,8 @@ void discard(
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
           globalState->opt->regionOverride == RegionOverride::RESILIENT ||
           (globalState->opt->regionOverride == RegionOverride::FAST &&
-            sourceRef->ownership == Ownership::SHARE ||
-              sourceRef->ownership == Ownership::WEAK);
+              (sourceRef->ownership == Ownership::SHARE ||
+              sourceRef->ownership == Ownership::WEAK));
   if (!proceed) {
     return;
   }

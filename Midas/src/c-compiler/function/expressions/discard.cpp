@@ -20,7 +20,7 @@ LLVMValueRef translateDiscard(
           globalState, functionState, blockState, builder, sourceExpr);
   checkValidReference(FL(), globalState, functionState, builder, sourceResultType, innerLE);
   discard(
-      AFL(std::string("Discard from ") + typeid(*sourceExpr).name()),
+      AFL(std::string("Discard ") + std::to_string((int)discardM->sourceResultType->ownership) + " " + typeid(*discardM->sourceResultType->referend).name() + " from " + typeid(*sourceExpr).name()),
       globalState,
       functionState,
       blockState,

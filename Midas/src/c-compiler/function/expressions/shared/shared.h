@@ -256,4 +256,15 @@ LLVMValueRef assembleUnknownSizeArrayWeakRef(
     UnknownSizeArrayT* unknownSizeArrayMT,
     LLVMValueRef objPtrLE);
 
+
+
+// Loads from either a local or a member, and does the appropriate casting.
+LLVMValueRef load(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceType,
+    Reference* targetType,
+    LLVMValueRef sourceRefLE);
+
 #endif

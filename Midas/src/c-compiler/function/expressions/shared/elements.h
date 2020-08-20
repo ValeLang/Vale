@@ -21,7 +21,8 @@ LLVMValueRef loadElement(
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
-    LLVMValueRef indexLE);
+    LLVMValueRef indexLE,
+    Reference* resultRefM);
 
 LLVMValueRef storeElement(
     GlobalState* globalState,

@@ -247,10 +247,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-//  std::cout << "OVERRIDING to resilient mode!" << std::endl;
-//  globalState->opt->regionOverride = RegionOverride::RESILIENT;
-//  std::cout << "OVERRIDING census to true!" << std::endl;
-//  globalState->opt->census = true;
+//  std::cout << "OVERRIDING to fast mode!" << std::endl;
+//  globalState->opt->regionOverride = RegionOverride::FAST;
+  std::cout << "OVERRIDING census to true!" << std::endl;
+  globalState->opt->census = true;
 //  std::cout << "OVERRIDING flares to true!" << std::endl;
 //  globalState->opt->flares = true;
 

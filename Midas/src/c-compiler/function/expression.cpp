@@ -152,9 +152,12 @@ LLVMValueRef translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto memberExprs =
         translateExpressions(
-            globalState, functionState, blockState, builder, newStruct->sourceExprs);    auto resultLE =
+            globalState, functionState, blockState, builder, newStruct->sourceExprs);
+    auto resultLE =
         translateConstruct(
-            AFL("NewStruct"), globalState, functionState, builder, getEffectiveType(globalState, newStruct->resultType), memberExprs);    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, newStruct->resultType), resultLE);    return resultLE;
+            AFL("NewStruct"), globalState, functionState, builder, getEffectiveType(globalState, newStruct->resultType), memberExprs);
+    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, newStruct->resultType), resultLE);
+    return resultLE;
   } else if (auto consecutor = dynamic_cast<Consecutor*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto exprs =
@@ -247,6 +250,7 @@ LLVMValueRef translateExpressionInner(
       assert(false);
     }
 
+    buildFlare(FL(), globalState, functionState, builder);
     freeConcrete(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
         arrayWrapperLE, arrayType);
 
@@ -301,6 +305,7 @@ LLVMValueRef translateExpressionInner(
       assert(false);
     }
 
+    buildFlare(FL(), globalState, functionState, builder);
     freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
         arrayWrapperLE, arrayType);
 
@@ -359,7 +364,7 @@ LLVMValueRef translateExpressionInner(
         break;
       case Ownership::WEAK:
         arrayWrapperPtrLE =
-            forceDerefWeak(globalState, functionState, builder, arrayType, arrayRefLE);
+            forceDerefWeak(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
         break;
     }
 
@@ -402,7 +407,7 @@ LLVMValueRef translateExpressionInner(
         break;
       case Ownership::WEAK:
         arrayWrapperPtrLE =
-            forceDerefWeak(globalState, functionState, builder, arrayType, arrayRefLE);
+            forceDerefWeak(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
         break;
     }
 
@@ -460,7 +465,7 @@ LLVMValueRef translateExpressionInner(
         break;
       case Ownership::WEAK:
         arrayWrapperPtrLE =
-            forceDerefWeak(globalState, functionState, builder, arrayType, arrayRefLE);
+            forceDerefWeak(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
         break;
     }
 

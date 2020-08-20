@@ -171,6 +171,7 @@ void discard(
         builder,
         isZeroLE(builder, rcLE),
         [from, globalState, functionState, blockState, expr, sourceRef](LLVMBuilderRef thenBuilder) {
+          buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
           freeConcrete(from, globalState, functionState, blockState, thenBuilder, expr, sourceRef);
         });
   } else {

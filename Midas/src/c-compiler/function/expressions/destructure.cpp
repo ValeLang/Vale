@@ -62,6 +62,7 @@ LLVMValueRef translateDestructure(
     assert(false);
   }
 
+  buildFlare(FL(), globalState, functionState, builder);
   freeConcrete(
       AFL("Destroy freeing"), globalState, functionState, blockState, builder,
       structLE, getEffectiveType(globalState, destructureM->structType));

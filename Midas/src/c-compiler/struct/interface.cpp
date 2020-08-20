@@ -31,9 +31,22 @@ void declareInterface(
 LLVMTypeRef translateInterfaceMethodToFunctionType(
     GlobalState* globalState,
     InterfaceMethod* method) {
-  auto returnLT = translateType(globalState, getEffectiveType(globalState, method->prototype->returnType));
-  auto paramsLT = translateTypes(globalState, getEffectiveTypes(globalState, method->prototype->params));
-  paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+  auto returnMT = getEffectiveType(globalState, method->prototype->returnType);
+  auto paramsMT = getEffectiveTypes(globalState, method->prototype->params);
+  auto returnLT = translateType(globalState, returnMT);
+  auto paramsLT = translateTypes(globalState, paramsMT);
+
+  switch (paramsMT[method->virtualParamIndex]->ownership) {
+    case Ownership::BORROW:
+    case Ownership::OWN:
+    case Ownership::SHARE:
+      paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+      break;
+    case Ownership::WEAK:
+      paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
+      break;
+  }
+
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }
 

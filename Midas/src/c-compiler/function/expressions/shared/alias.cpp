@@ -109,7 +109,7 @@ void discard(
     } else if (sourceRef->ownership == Ownership::BORROW) {
       adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      adjustWeakRc(globalState, builder, expr, -1);
+      adjustWeakRc(from, globalState, functionState, builder, expr, -1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
@@ -119,7 +119,7 @@ void discard(
             functionState,
             builder,
             isZeroLE(builder, rcLE),
-            [globalState, expr, interfaceRnd, sourceRef](LLVMBuilderRef thenBuilder) {
+            [globalState, functionState, expr, interfaceRnd, sourceRef](LLVMBuilderRef thenBuilder) {
               auto immDestructor = globalState->program->getImmDestructor(sourceRef->referend);
 
               auto interfaceM = globalState->program->getInterface(interfaceRnd->fullName);
@@ -132,7 +132,7 @@ void discard(
               assert(indexInEdge >= 0);
 
               std::vector<LLVMValueRef> argExprsL = { expr };
-              buildInterfaceCall(thenBuilder, argExprsL, 0, indexInEdge);
+              buildInterfaceCall(globalState, functionState, thenBuilder, sourceRef, argExprsL, 0, indexInEdge);
             });
       }
     } else assert(false);
@@ -147,7 +147,7 @@ void discard(
     } else if (sourceRef->ownership == Ownership::WEAK) {
       auto structReferend = dynamic_cast<StructReferend*>(sourceRnd);
       assert(structReferend);
-      adjustWeakRc(globalState, builder, expr, -1);
+      adjustWeakRc(from, globalState, functionState, builder, expr, -1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear

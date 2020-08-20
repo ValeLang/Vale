@@ -169,8 +169,35 @@ void freeConcrete(
       // Do nothing, only structs and interfaces are weakable in assist mode.
     }
   } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-    // Do nothing
-    assert(false);
+    // In fast mode, only shared things are strong RC'd
+    if (concreteRefM->ownership == Ownership::SHARE) {
+      // Only shared stuff is RC'd in fast mode
+      auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
+      buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+          "Tried to free concrete that had nonzero RC!");
+    } else {
+      // It's a mutable, so mark WRCs dead
+
+      if (auto structReferendM = dynamic_cast<StructReferend *>(concreteRefM->referend)) {
+        auto structM = globalState->program->getStruct(structReferendM->fullName);
+        if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+          auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
+          auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
+              controlBlockPtrLE);
+          LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+        }
+      } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(concreteRefM->referend)) {
+        auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
+        if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
+          auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
+          auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
+              controlBlockPtrLE);
+          LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+        }
+      } else {
+        // Do nothing, only structs and interfaces are weakable in assist mode.
+      }
+    }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
     if (concreteRefM->ownership == Ownership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);

@@ -76,14 +76,15 @@ void __checkWrc(uint64_t wrcIndex) {
 void __incrementWrc(uint64_t wrcIndex) {
   assert(wrcIndex < wrcTable.size);
   wrcTable.entries[wrcIndex]++;
-  printf("incremented, now %d\n", wrcTable.entries[wrcIndex]);
+//  printf("incremented %d, now %d\n", wrcIndex, wrcTable.entries[wrcIndex]);
 }
 
 void __decrementWrc(uint64_t wrcIndex) {
   assert(wrcIndex < wrcTable.size);
   wrcTable.entries[wrcIndex]--;
-  printf("decremented, now %d\n", wrcTable.entries[wrcIndex]);
+//  printf("decremented %d, now %d\n", wrcIndex, wrcTable.entries[wrcIndex]);
   if (wrcTable.entries[wrcIndex] == 0) {
+//    printf("releasing! %d\n", wrcIndex);
     releaseWrc(wrcIndex);
   }
 }
@@ -91,7 +92,9 @@ void __decrementWrc(uint64_t wrcIndex) {
 void __markWrcDead(uint64_t wrcIndex) {
   assert(wrcIndex < wrcTable.size);
   wrcTable.entries[wrcIndex] &= ~WRC_LIVE_BIT;
+//  printf("marking %d dead!\n", wrcIndex);
   if (wrcTable.entries[wrcIndex] == 0) {
+//    printf("releasing! %d\n", wrcIndex);
     releaseWrc(wrcIndex);
   }
 }

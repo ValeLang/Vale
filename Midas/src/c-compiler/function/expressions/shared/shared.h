@@ -71,7 +71,9 @@ LLVMValueRef getControlBlockPtr(
     Reference* refM);
 
 void adjustWeakRc(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
     int amount);
@@ -152,7 +154,10 @@ inline void buildFlare(
 }
 
 LLVMValueRef buildInterfaceCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
+    Reference* virtualParamMT,
     std::vector<LLVMValueRef> argExprsLE,
     int virtualParamIndex,
     int indexInEdge);
@@ -206,5 +211,34 @@ Reference* getEffectiveType(GlobalState* globalState, UnconvertedReference* refM
 Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef);
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
+
+// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
+LLVMValueRef forceDerefWeak(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef weakRefLE);
+
+
+LLVMValueRef assembleInterfaceWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* interfaceTypeM,
+    InterfaceReferend* interfaceReferendM,
+    LLVMValueRef fatPtrLE);
+
+LLVMValueRef assembleStructWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    StructReferend* structReferendM,
+    LLVMValueRef objPtrLE);
+
+LLVMValueRef assembleVoidStructWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockPtrLE,
+    LLVMValueRef wrciLE);
 
 #endif

@@ -64,7 +64,7 @@ LLVMValueRef getControlBlockPtr(
     LLVMValueRef referenceLE,
     Reference* refM) {
   if (dynamic_cast<InterfaceReferend*>(refM->referend)) {
-    return getInterfaceControlBlockPtr(builder, referenceLE);
+    return getControlBlockPtrFromInterfaceRef(builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(refM->referend)) {
     return getConcreteControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(refM->referend)) {
@@ -89,19 +89,20 @@ void flareAdjustStrongRc(
     LLVMValueRef oldAmount,
     LLVMValueRef newAmount) {
   if (globalState->opt->census) {
-    buildFlare(
-        from,
-        globalState,
-        functionState,
-        builder,
-        typeid(*refM->referend).name(),
-        " ",
-        getTypeNameStrPtrFromControlBlockPtr(globalState, builder, controlBlockPtr),
-        getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtr),
-        ", ",
-        oldAmount,
-        "->",
-        newAmount);
+    std::cout << "reenable census flare" << std::endl;
+//    buildFlare(
+//        from,
+//        globalState,
+//        functionState,
+//        builder,
+//        typeid(*refM->referend).name(),
+//        " ",
+//        getTypeNameStrPtrFromControlBlockPtr(globalState, builder, controlBlockPtr),
+//        getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtr),
+//        ", ",
+//        oldAmount,
+//        "->",
+//        newAmount);
   }
 }
 
@@ -118,15 +119,18 @@ LLVMValueRef adjustStrongRc(
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
   auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
-  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
+//  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
   return newRc;
 }
 
 void adjustWeakRc(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
     int amount) {
+  buildFlare(from, globalState, functionState, builder, "Adjusting by ", amount);
   if (amount == 1) {
     auto wrciLE = getWrciFromWeakRef(builder, exprLE);
     LLVMBuildCall(builder, globalState->incrementWrc, &wrciLE, 1, "");
@@ -180,10 +184,11 @@ void buildPrint(
   } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8Type(), 0)) {
     LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
   } else {
-    buildPrint(
-        globalState,
-        builder,
-        LLVMBuildPointerCast(builder, exprLE, LLVMInt64Type(), ""));
+    assert(false);
+//    buildPrint(
+//        globalState,
+//        builder,
+//        LLVMBuildPointerCast(builder, exprLE, LLVMInt64Type(), ""));
   }
 }
 
@@ -212,25 +217,60 @@ void buildAssert(
 }
 
 LLVMValueRef buildInterfaceCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
+    Reference* virtualParamMT,
     std::vector<LLVMValueRef> argExprsLE,
     int virtualParamIndex,
     int indexInEdge) {
   auto virtualArgLE = argExprsLE[virtualParamIndex];
-  auto objPtrLE =
-      LLVMBuildPointerCast(
-          builder,
-          getInterfaceControlBlockPtr(builder, virtualArgLE),
-          LLVMPointerType(LLVMVoidType(), 0),
-          "objAsVoidPtr");
-  auto itablePtrLE = getTablePtrFromInterfaceRef(builder, virtualArgLE);
+
+  LLVMValueRef itablePtrLE;
+  switch (virtualParamMT->ownership) {
+    case Ownership::OWN:
+    case Ownership::BORROW:
+    case Ownership::SHARE: {
+      itablePtrLE = getTablePtrFromInterfaceRef(builder, virtualArgLE);
+
+      auto objVoidPtrLE =
+          LLVMBuildPointerCast(
+              builder,
+              getControlBlockPtrFromInterfaceRef(builder, virtualArgLE),
+              LLVMPointerType(LLVMVoidType(), 0),
+              "objAsVoidPtr");
+      argExprsLE[virtualParamIndex] = objVoidPtrLE;
+      break;
+    }
+    case Ownership::WEAK: {
+      // Disassemble the weak interface ref.
+      auto wrciLE = getWrciFromWeakRef(builder, virtualArgLE);
+      auto interfaceRefLE =
+          getInnerRefFromWeakRef(
+              globalState,
+              functionState,
+              builder,
+              virtualParamMT,
+              argExprsLE[virtualParamIndex]);
+      auto controlBlockPtrLE = getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
+
+      itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
+
+      // Now, reassemble a weak void* ref to the struct.
+      auto weakVoidStructRefLE =
+          assembleVoidStructWeakRef(globalState, builder, controlBlockPtrLE, wrciLE);
+
+      argExprsLE[virtualParamIndex] = weakVoidStructRefLE;
+
+      break;
+    }
+  }
+
   assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
   auto funcPtrPtrLE =
       LLVMBuildStructGEP(
           builder, itablePtrLE, indexInEdge, "methodPtrPtr");
   auto funcPtrLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
-
-  argExprsLE[virtualParamIndex] = objPtrLE;
 
   return LLVMBuildCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
@@ -274,6 +314,7 @@ void checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef refLE) {
+  assert(refLE != nullptr);
   assert(LLVMTypeOf(refLE) == translateType(globalState, refM));
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
@@ -300,6 +341,7 @@ void checkValidReference(
       auto wrciLE = getWrciFromWeakRef(builder, refLE);
       buildCheckWrc(globalState, builder, wrciLE);
     } else assert(false);
+  } else {
   }
 }
 
@@ -323,7 +365,7 @@ LLVMValueRef buildCall(
   }
 }
 
-LLVMValueRef makeWeakRefStruct(
+LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     StructReferend* sourceStructReferendM,
@@ -373,7 +415,7 @@ LLVMValueRef upcast2(
     case Ownership::BORROW:
     case Ownership::SHARE: {
       auto interfaceRefLE =
-          makeWeakRefStruct(
+          makeInterfaceRefStruct(
               globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
               getControlBlockPtr(builder, sourceRefLE, sourceStructTypeM));
       checkValidReference(
@@ -386,7 +428,7 @@ LLVMValueRef upcast2(
       auto controlBlockPtr =
           getConcreteControlBlockPtr(
               builder,
-              getObjPtrFromWeakRef(
+              getInnerRefFromWeakRef(
                   globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
 
       auto interfaceRefLT =
@@ -398,16 +440,16 @@ LLVMValueRef upcast2(
               builder,
               interfaceWeakRefLE,
               getWrciFromWeakRef(builder, sourceRefLE),
-              0,
+              WEAK_REF_RCINDEX_MEMBER_INDEX,
               "interfaceRefWithOnlyObj");
       interfaceWeakRefLE =
           LLVMBuildInsertValue(
               builder,
               interfaceWeakRefLE,
-              makeWeakRefStruct(
+              makeInterfaceRefStruct(
                   globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
                   controlBlockPtr),
-              1,
+              WEAK_REF_OBJPTR_MEMBER_INDEX,
               "interfaceRef");
       checkValidReference(
           FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
@@ -500,4 +542,75 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
       return Weakability::WEAKABLE;
     } else assert(false);
   }
+}
+
+// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
+LLVMValueRef forceDerefWeak(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef weakRefLE) {
+  auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, weakRefLE);
+  buildAssert(
+      FL(), globalState, functionState, builder, isAliveLE,
+      "Tried dereferencing dangling reference!");
+  return getInnerRefFromWeakRef(globalState, functionState, builder, refM, weakRefLE);
+}
+
+LLVMValueRef assembleInterfaceWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* interfaceTypeM,
+    InterfaceReferend* interfaceReferendM,
+    LLVMValueRef fatPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, fatPtrLE, interfaceTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, interfaceTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getInterfaceWeakRefStruct(interfaceReferendM->fullName));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, fatPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+LLVMValueRef assembleStructWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    StructReferend* structReferendM,
+    LLVMValueRef objPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+// Used in interface calling, when we dont know what the underlying struct type is yet.
+LLVMValueRef assembleVoidStructWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockPtrLE,
+    LLVMValueRef wrciLE) {
+//  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+//  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto objVoidPtrLE =
+      LLVMBuildPointerCast(
+          builder,
+          controlBlockPtrLE,
+          LLVMPointerType(LLVMVoidType(), 0),
+          "objAsVoidPtr");
+
+  auto weakRefLE = LLVMGetUndef(globalState->weakVoidRefStructL);
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+//  adjustWeakRc(globalState, builder, weakRefLE, 1);
+
+  return weakRefLE;
 }

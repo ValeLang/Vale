@@ -25,6 +25,7 @@ static Census census = { 0, 0, 0, NULL };
 
 // Returns -1 if not found.
 static int64_t censusFindIndexOf(void* obj) {
+  assert(obj);
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;
@@ -39,12 +40,14 @@ static int64_t censusFindIndexOf(void* obj) {
 }
 
 int64_t __vcensusContains(void* obj) {
+  assert(obj);
   int64_t index = censusFindIndexOf(obj);
   return index != -1;
 }
 
 // Returns -1 if already present.
 static int64_t censusFindOpenSpaceIndexFor(void* obj) {
+  assert(obj);
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;
@@ -58,6 +61,7 @@ static int64_t censusFindOpenSpaceIndexFor(void* obj) {
 
 // Doesnt expand or increment size.
 void censusInnerAdd(void* obj) {
+  assert(obj);
   assert(census.size < census.capacity);
   if (__vcensusContains(obj)) {
     fprintf(stderr, "Tried to add %p to census, but was already present!\n", obj);
@@ -93,6 +97,7 @@ static void censusExpand() {
 }
 
 void __vcensusAdd(void* obj) {
+  assert(obj);
   if (census.size >= census.capacity) {
     censusExpand();
   }
@@ -102,6 +107,7 @@ void __vcensusAdd(void* obj) {
 
 // Doesnt do any fixing of neighbors, or decrementing of size.
 int64_t censusInnerRemove(void* obj) {
+  assert(obj);
   int64_t originalIndex = censusFindIndexOf(obj);
   assert(originalIndex != -1);
   assert(census.entries[originalIndex].address == obj);
@@ -110,6 +116,7 @@ int64_t censusInnerRemove(void* obj) {
 }
 
 void __vcensusRemove(void* obj) {
+  assert(obj);
   int64_t originalIndex = censusInnerRemove(obj);
   census.size--;
 

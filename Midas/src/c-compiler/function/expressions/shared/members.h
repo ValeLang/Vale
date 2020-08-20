@@ -18,7 +18,7 @@ LLVMValueRef loadMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
-    LLVMValueRef structExpr,
+    LLVMValueRef structRefLE,
     Mutability mutability,
     Reference* memberType,
     int memberIndex,

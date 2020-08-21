@@ -19,7 +19,7 @@ case class IfSE(condition: BlockSE, thenBody: BlockSE, elseBody: BlockSE) extend
 
 case class WhileSE(condition: BlockSE, body: BlockSE) extends IExpressionSE
 
-case class ExprMutateSE(mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE
+case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE
 case class GlobalMutateSE(name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
 

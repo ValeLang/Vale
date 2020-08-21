@@ -106,6 +106,8 @@ LLVMValueRef swapMember(
     case Ownership::WEAK:
       auto voidPtrLE =
           getInnerRefFromWeakRef(globalState, functionState, builder, structRefM, structRefLE);
+      auto wrciLE = getWrciFromWeakRef(builder, structRefLE);
+      buildFlare(FL(), globalState, functionState, builder, "Loading weak ref from struct, wrci: ", wrciLE);
       innerStructPtrLE = getStructContentsPtr(builder, voidPtrLE);
       break;
   }

@@ -141,7 +141,7 @@ LLVMValueRef translateExpressionInner(
     return resultLE;
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
-    auto resultLE = LLVMGetParam(functionState->containingFunc, argument->argumentIndex);
+    auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, argument->resultType), resultLE);
     return resultLE;
   } else if (auto constantStr = dynamic_cast<ConstantStr*>(expr)) {

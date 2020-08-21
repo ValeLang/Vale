@@ -120,7 +120,7 @@ Game {
             //, None);
 
   level = make_level(max_width, max_height, &rand); // DIFFERENCE need &!
-  game.levels.add(level);
+  //game.levels.add(level);
 //     for _ in 0..num_levels {
 //         let level_index = game.levels.len();
 //         game.levels.push(make_level(max_width, max_height, &mut rand));
@@ -272,19 +272,19 @@ fn benchmark_rl(
 
     game = setup(&rand, level_width, level_height, num_levels);
 
-    maybe_screen =
-        if (should_display) {
-          z Opt<Screen> =
-              Some(
-                newScreen(
-                game.get_current_level().max_width,
-                game.get_current_level().max_height));
-          = z;
-        } else {
-          z Opt<Screen> =
-            None<Screen>();
-          = z;
-        };
+    // maybe_screen =
+    //     if (should_display) {
+    //       z Opt<Screen> =
+    //           Some(
+    //             newScreen(
+    //             game.get_current_level().max_width,
+    //             game.get_current_level().max_height));
+    //       = z;
+    //     } else {
+    //       z Opt<Screen> =
+    //         None<Screen>();
+    //       = z;
+    //     };
 
 //     loop {
 //         turn(&mut rand, &mut game);
@@ -298,7 +298,7 @@ fn benchmark_rl(
 //             }
 //         }
 
-        display(seed, &maybe_screen, &game);
+        //display(seed, &maybe_screen, &game);
 
 //         if turn_delay > 0 {
 //             sleep(Duration::new(turn_delay as u64 / 1000, turn_delay as u32 % 1000 * 1000000));
@@ -315,4 +315,5 @@ fn benchmark_rl(
   //   println(str(location) + " " + tile.display_class);
   // };
 
+  println("done");
 }

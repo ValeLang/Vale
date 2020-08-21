@@ -143,8 +143,10 @@ void discard(
       // We can't discard owns, they must be destructured.
       assert(false);
     } else if (sourceRef->ownership == Ownership::BORROW) {
+      buildFlare(from, globalState, functionState, builder, "Decr strong concrete borrow!");
       adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
+      buildFlare(from, globalState, functionState, builder, "Decr weak concrete weak!");
       adjustWeakRc(from, globalState, functionState, builder, expr, -1);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {

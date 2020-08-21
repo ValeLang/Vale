@@ -355,12 +355,20 @@ LLVMValueRef buildCall(
   assert(funcIter != globalState->functions.end());
   auto funcL = funcIter->second;
 
+  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+  buildFlare(FL(), globalState, functionState, builder, "Calling function ", prototype->name->name);
+
   auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
   checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, prototype->returnType), resultLE);
 
   if (prototype->returnType->referend == globalState->metalCache.never) {
+    buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+
     return LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
   } else {
+    buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
     return resultLE;
   }
 }

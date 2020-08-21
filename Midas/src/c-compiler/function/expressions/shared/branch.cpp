@@ -24,14 +24,14 @@ void buildIf(
 
   LLVMBasicBlockRef thenStartBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
   LLVMBuilderRef thenBlockBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
 
   LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, afterwardBlockL);
@@ -79,7 +79,7 @@ LLVMValueRef buildIfElse(
 
   LLVMBasicBlockRef thenStartBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
   LLVMBuilderRef thenBlockBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
@@ -92,7 +92,7 @@ LLVMValueRef buildIfElse(
 
   LLVMBasicBlockRef elseStartBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
   LLVMBuilderRef elseBlockBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(elseBlockBuilder, elseStartBlockL);
@@ -106,7 +106,7 @@ LLVMValueRef buildIfElse(
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
   if (!thenResultIsNever) {
     // Instruction to jump to the afterward block.
@@ -169,7 +169,7 @@ void buildWhile(
 
   LLVMBasicBlockRef bodyStartBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
   LLVMBuilderRef bodyBlockBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(bodyBlockBuilder, bodyStartBlockL);
@@ -181,7 +181,7 @@ void buildWhile(
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlock(
-          functionState->containingFunc,
+          functionState->containingFuncL,
           functionState->nextBlockName().c_str());
 
   LLVMBuildCondBr(bodyBlockBuilder, continueLE, bodyStartBlockL, afterwardBlockL);

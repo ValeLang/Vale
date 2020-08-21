@@ -27,6 +27,10 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't convert " + actualType + " to expected return type " + expectedType
       }
+      case CouldntConvertForMutateT(range, expectedType, actualType) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Mutate couldn't convert " + actualType + " to expected destination type " + expectedType
+      }
       case CouldntFindMemberT(range, memberName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find member " + memberName + "!"

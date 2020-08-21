@@ -34,12 +34,12 @@ void translateFunction(
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 
-  FunctionState functionState(functionL, returnTypeL);
+  FunctionState functionState(functionM, functionL, returnTypeL);
 
   int blockNumber = functionState.nextBlockNumber++;
   auto blockName = std::string("block") + std::to_string(blockNumber);
   LLVMBasicBlockRef firstBlockL =
-      LLVMAppendBasicBlock(functionState.containingFunc, blockName.c_str());
+      LLVMAppendBasicBlock(functionState.containingFuncL, blockName.c_str());
 
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
@@ -74,7 +74,7 @@ void translateFunction(
 
   BlockState initialBlockState(nullptr);
 
-  buildFlare(FL(), globalState, &functionState, bodyTopLevelBuilder, "Calling function ", functionM->prototype->name->name);
+  buildFlare(FL(), globalState, &functionState, bodyTopLevelBuilder, "Inside function ", functionM->prototype->name->name);
 
   // Translate the body of the function. Can ignore the result because it's a
   // Never, because Valestrom guarantees we end function bodies in a ret.

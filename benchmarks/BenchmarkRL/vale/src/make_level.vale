@@ -66,73 +66,73 @@ Level {
     // We should now have a randomly-noisy-semi-filled ellipse, like an ellipse of static
     // on an otherwise black TV screen.
 
-    // // Do a couple generations of cellular automata to smooth out the noisiness to get some
-    // // caverns and rooms forming.
-    // mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
-    // mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+    // Do a couple generations of cellular automata to smooth out the noisiness to get some
+    // caverns and rooms forming.
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
 
-    // // The caverns and rooms from the above process are probably disjoint and we can't get
-    // // from one to the other. Here, we dig tunnels between them until they're connected.
-    // connect_all_rooms(&rand, &walkabilities, false);
+    // The caverns and rooms from the above process are probably disjoint and we can't get
+    // from one to the other. Here, we dig tunnels between them until they're connected.
+    connect_all_rooms(&rand, &walkabilities, false);
 
-    // // Now, assemble the above walkabilities 2D bool array into a legit 2D tile array.
-    // mut x = 0;
-    // while (x < max_width) {
-    //     y! = 0;
-    //     while (y < max_height) {
-    //         loc = Location(x, y);
-    //         walkable = walkabilities.get(x).get().get(y).get();
-    //         on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
-    //         if (walkable and not on_edge) {
-    //             display_class =
-    //               if (rand.next() mod 2 == 0) {
-    //                 "dirt"
-    //               } else {
-    //                 "grass"
-    //               };
-    //             level.tiles.add(
-    //                 loc,
-    //                 Tile(
-    //                     true,
-    //                     display_class));//,
-    //                     // components: Arena::new()));
-    //         } else {
-    //             next_to_walkable! = false;
+    // Now, assemble the above walkabilities 2D bool array into a legit 2D tile array.
+    mut x = 0;
+    while (x < max_width) {
+        y! = 0;
+        while (y < max_height) {
+            loc = Location(x, y);
+            walkable = walkabilities.get(x).get().get(y).get();
+            on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
+            if (walkable and not on_edge) {
+                display_class =
+                  if (rand.next() mod 2 == 0) {
+                    "dirt"
+                  } else {
+                    "grass"
+                  };
+                level.tiles.add(
+                    loc,
+                    Tile(
+                        true,
+                        display_class));//,
+                        // components: Arena::new()));
+            } else {
+                next_to_walkable! = false;
 
-    //             neighbor_x! = max(0, x - 1);
-    //             while (neighbor_x < min(max_width - 1, x + 1 + 1)) {
+                neighbor_x! = max(0, x - 1);
+                while (neighbor_x < min(max_width - 1, x + 1 + 1)) {
 
-    //                 neighbor_y! = max(0, y - 1);
-    //                 while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
+                    neighbor_y! = max(0, y - 1);
+                    while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
 
-    //                     neighbor_walkable =
-    //                         walkabilities.get(neighbor_x).get().get(neighbor_y).get();
-    //                     if (neighbor_walkable) {
-    //                         mut next_to_walkable = true;
-    //                     }
+                        neighbor_walkable =
+                            walkabilities.get(neighbor_x).get().get(neighbor_y).get();
+                        if (neighbor_walkable) {
+                            mut next_to_walkable = true;
+                        }
 
-    //                     mut neighbor_y = neighbor_y + 1;
-    //                 }
+                        mut neighbor_y = neighbor_y + 1;
+                    }
 
-    //                 mut neighbor_x = neighbor_x + 1;
-    //             }
+                    mut neighbor_x = neighbor_x + 1;
+                }
 
-    //             if (next_to_walkable) {
-    //                 level.tiles.add(
-    //                     loc,
-    //                     Tile(
-    //                         false,
-    //                         "wall"));
-    //                         // components: Arena::new(),
-    //             }
-    //         }
+                if (next_to_walkable) {
+                    level.tiles.add(
+                        loc,
+                        Tile(
+                            false,
+                            "wall"));
+                            // components: Arena::new(),
+                }
+            }
 
-    //         mut y = y + 1;
-    //     }
+            mut y = y + 1;
+        }
 
 
-    //     mut x = x + 1;
-    // }
+        mut x = x + 1;
+    }
 
     ret level;
 }

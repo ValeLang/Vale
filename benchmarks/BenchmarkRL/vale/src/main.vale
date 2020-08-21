@@ -71,32 +71,13 @@
 struct MyBoxx { i int; b bool; }
 
 fn main() {
-
-      thing = List<bool>();
-      list = &thing;
-      newElement = true;
-
-    newLen = if (len(list) == 0) { 1 } else { len(list) * 2 };
-    newArray =
-        Array<mut, Opt<bool>>(newLen, &IFunction1<mut, int, Opt<bool>>((index){
-          = if (index < len(list)) {
-              = (mut list.array[index] = None<bool>());
-            } else {
-              result Opt<bool> = None<bool>();
-              = result;
-            }
-        }));
-    mut list.array = newArray;
-  mut list.array[list.size] = Some<bool>(newElement);
-  mut list.size = list.size + 1;
-
-    ret 0;
-  // benchmark_rl(
-  //   seed,
-  //   1,
-  //   1,
-  //   10,
-  //   false,
-  //   100);
-  // = 0;
+  seed = 44;// DIFFERENCE
+  benchmark_rl(
+    seed,
+    30,
+    20,
+    10,
+    false,
+    100);
+  = 0;
 }

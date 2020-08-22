@@ -149,7 +149,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
-  // Known failure 2020-08-05
+  // Known failure 2020-08-20
   test("Tests virtual doesn't get called if theres a better override") {
     val compile = Compilation(
       """

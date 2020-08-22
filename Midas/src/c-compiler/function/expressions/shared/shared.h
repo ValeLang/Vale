@@ -99,7 +99,6 @@ LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 
 
 void buildAssert(
-    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -125,6 +124,19 @@ inline void buildFlareInner(
     GlobalState* globalState,
     LLVMBuilderRef builder) { }
 
+inline void buildPrintAreaAndFileAndLine(GlobalState* globalState, LLVMBuilderRef builder, AreaAndFileAndLine from) {
+  buildPrint(globalState, builder, "\033[0;34m");
+  buildPrint(globalState, builder, getFileName(from.file));
+  buildPrint(globalState, builder, ":");
+  buildPrint(globalState, builder, from.line);
+  buildPrint(globalState, builder, "\033[0m");
+  buildPrint(globalState, builder, " ");
+  if (!from.area.empty()) {
+    buildPrint(globalState, builder, getFileName(from.area));
+    buildPrint(globalState, builder, ": ");
+  }
+}
+
 template<typename... T>
 inline void buildFlare(
     AreaAndFileAndLine from,
@@ -137,17 +149,8 @@ inline void buildFlare(
     for (int i = 0; i < functionState->instructionDepthInAst; i++)
       indentStr += " ";
 
-    buildPrint(globalState, builder, "\033[0;34m");
     buildPrint(globalState, builder, indentStr);
-    buildPrint(globalState, builder, getFileName(from.file));
-    buildPrint(globalState, builder, ":");
-    buildPrint(globalState, builder, from.line);
-    buildPrint(globalState, builder, "\033[0m");
-    buildPrint(globalState, builder, " ");
-    if (!from.area.empty()) {
-      buildPrint(globalState, builder, getFileName(from.area));
-      buildPrint(globalState, builder, ": ");
-    }
+    buildPrintAreaAndFileAndLine(globalState, builder, from);
     buildFlareInner(globalState, builder, std::forward<T>(rest)...);
     buildPrint(globalState, builder, "\n");
   }
@@ -215,6 +218,7 @@ std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
 LLVMValueRef forceDerefWeak(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

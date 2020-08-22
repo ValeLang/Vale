@@ -201,7 +201,6 @@ void buildPrint(
 
 // We'll assert if conditionLE is false.
 void buildAssert(
-    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -209,7 +208,7 @@ void buildAssert(
     const std::string& failMessage) {
   buildIf(
       functionState, builder, isZeroLE(builder, conditionLE),
-      [from, globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
+      [globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
@@ -297,7 +296,7 @@ void buildAssertCensusContains(
           builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
-  buildAssert(checkerAFL, globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
+  buildAssert(globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
 }
 
 void buildCheckWrc(
@@ -355,12 +354,20 @@ LLVMValueRef buildCall(
   assert(funcIter != globalState->functions.end());
   auto funcL = funcIter->second;
 
+  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+  buildFlare(FL(), globalState, functionState, builder, "Calling function ", prototype->name->name);
+
   auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
   checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, prototype->returnType), resultLE);
 
   if (prototype->returnType->referend == globalState->metalCache.never) {
+    buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+
     return LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
   } else {
+    buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
     return resultLE;
   }
 }
@@ -565,15 +572,24 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
 LLVMValueRef forceDerefWeak(
+    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef weakRefLE) {
+  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
   auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, weakRefLE);
-  buildAssert(
-      FL(), globalState, functionState, builder, isAliveLE,
-      "Tried dereferencing dangling reference!");
+  buildIf(
+      functionState, builder, isZeroLE(builder, isAliveLE),
+      [from, globalState, functionState, wrciLE](LLVMBuilderRef thenBuilder) {
+        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
+        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference, wrci: ");
+        buildPrint(globalState, thenBuilder, wrciLE);
+        buildPrint(globalState, thenBuilder, ", exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+      });
   return getInnerRefFromWeakRef(globalState, functionState, builder, refM, weakRefLE);
 }
 

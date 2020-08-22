@@ -54,10 +54,10 @@ object ExpressionAstronomer {
         val exprA = translateExpression(env, astrouts, innerS)
         DestructAE(exprA)
       }
-      case ExprMutateSE(mutateeS, exprS) => {
+      case ExprMutateSE(rangeS, mutateeS, exprS) => {
         val conditionA = translateExpression(env, astrouts, mutateeS)
         val bodyA = translateExpression(env, astrouts, exprS)
-        ExprMutateAE(conditionA, bodyA)
+        ExprMutateAE(rangeS, conditionA, bodyA)
       }
       case GlobalMutateSE(name, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)

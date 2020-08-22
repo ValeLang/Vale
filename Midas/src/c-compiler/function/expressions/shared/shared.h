@@ -99,7 +99,6 @@ LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 
 
 void buildAssert(
-    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

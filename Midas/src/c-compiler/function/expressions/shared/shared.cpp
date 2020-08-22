@@ -201,7 +201,6 @@ void buildPrint(
 
 // We'll assert if conditionLE is false.
 void buildAssert(
-    AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -209,7 +208,7 @@ void buildAssert(
     const std::string& failMessage) {
   buildIf(
       functionState, builder, isZeroLE(builder, conditionLE),
-      [from, globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
+      [globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
@@ -297,7 +296,7 @@ void buildAssertCensusContains(
           builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
-  buildAssert(checkerAFL, globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
+  buildAssert(globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
 }
 
 void buildCheckWrc(

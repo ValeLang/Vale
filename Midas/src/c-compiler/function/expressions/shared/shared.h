@@ -70,14 +70,6 @@ LLVMValueRef getControlBlockPtr(
     LLVMValueRef referenceLE,
     Reference* refM);
 
-void adjustWeakRc(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
-    int amount);
-
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
@@ -216,15 +208,6 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
 
-// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
-LLVMValueRef forceDerefWeak(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef weakRefLE);
-
 
 LLVMValueRef assembleInterfaceWeakRef(
     GlobalState* globalState,
@@ -270,5 +253,10 @@ LLVMValueRef load(
     Reference* sourceType,
     Reference* targetType,
     LLVMValueRef sourceRefLE);
+
+void buildCheckWrc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef wrciLE);
 
 #endif

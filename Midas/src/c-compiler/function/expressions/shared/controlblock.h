@@ -64,11 +64,6 @@ LLVMValueRef getWrciFromWeakRef(
     LLVMBuilderRef builder,
     LLVMValueRef weakRefLE);
 
-LLVMValueRef getIsAliveFromWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE);
-
 LLVMValueRef getInnerRefFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,

@@ -4,6 +4,7 @@
 #include "shared.h"
 #include "controlblock.h"
 #include "string.h"
+#include "weaks.h"
 
 LLVMValueRef allocateStruct(
     GlobalState* globalState,
@@ -154,18 +155,12 @@ void freeConcrete(
     if (auto structReferendM = dynamic_cast<StructReferend*>(concreteRefM->referend)) {
       auto structM = globalState->program->getStruct(structReferendM->fullName);
       if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-        auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
-        auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
-        buildFlare(FL(), globalState, functionState, builder);
-        LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+        markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(concreteRefM->referend)) {
       auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
       if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
-        auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
-        auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
-        buildFlare(FL(), globalState, functionState, builder);
-        LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+        markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
       }
     } else {
       // Do nothing, only structs and interfaces are weakable in assist mode.
@@ -183,20 +178,12 @@ void freeConcrete(
       if (auto structReferendM = dynamic_cast<StructReferend *>(concreteRefM->referend)) {
         auto structM = globalState->program->getStruct(structReferendM->fullName);
         if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-          auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
-          auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
-              controlBlockPtrLE);
-          buildFlare(FL(), globalState, functionState, builder);
-          LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+          markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
         }
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(concreteRefM->referend)) {
         auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
         if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
-          auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
-          auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
-              controlBlockPtrLE);
-          buildFlare(FL(), globalState, functionState, builder);
-          LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+          markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
         }
       } else {
         // Do nothing, only structs and interfaces are weakable in assist mode.
@@ -211,10 +198,7 @@ void freeConcrete(
       assert(concreteRefM->ownership == Ownership::OWN);
 
       // In resilient mode, every mutable is weakable.
-      auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
-      auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
-      buildFlare(FL(), globalState, functionState, builder);
-      LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+      markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
     }
   } else assert(false);
 

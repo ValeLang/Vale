@@ -114,15 +114,17 @@ public:
 
 class FunctionState {
 public:
-  LLVMValueRef containingFunc;
+  Function* containingFuncM;
+  LLVMValueRef containingFuncL;
   // This is here so we can return an Undef of this when we realize we just
   // called into a Never-returning function.
   LLVMTypeRef returnTypeL;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
 
-  FunctionState(LLVMValueRef containingFunc_, LLVMTypeRef returnTypeL_) :
-      containingFunc(containingFunc_),
+  FunctionState(Function* containingFuncM_, LLVMValueRef containingFuncL_, LLVMTypeRef returnTypeL_) :
+      containingFuncM(containingFuncM_),
+      containingFuncL(containingFuncL_),
       returnTypeL(returnTypeL_) {}
 
   std::string nextBlockName() {

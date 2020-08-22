@@ -100,7 +100,9 @@ LLVMValueRef loadElement(
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
-  buildAssert(AFL("Bounds check"), globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
+  buildFlare(FL(), globalState, functionState, builder, "index: ", indexLE);
+  buildFlare(FL(), globalState, functionState, builder, "size: ", sizeLE);
+  buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
   LLVMValueRef fromArrayLE = nullptr;
   if (mutability == Mutability::IMMUTABLE) {
@@ -137,7 +139,7 @@ LLVMValueRef storeElement(
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
-  buildAssert(AFL("Bounds check"), globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
+  buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
   if (mutability == Mutability::IMMUTABLE) {
     if (arrayRefM->location == Location::INLINE) {

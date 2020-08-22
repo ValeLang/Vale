@@ -509,7 +509,7 @@ class ExpressionTemplar(
         val mutate2 = Mutate2(destinationExpr2, convertedSourceExpr2);
         (mutate2, returnsFromSource)
       }
-      case ExprMutateAE(destinationExpr1, sourceExpr1) => {
+      case ExprMutateAE(range, destinationExpr1, sourceExpr1) => {
         val (unconvertedSourceExpr2, returnsFromSource) =
           evaluateAndCoerceToReferenceExpression(temputs, fate, sourceExpr1)
         val (destinationExpr2, returnsFromDestination) =
@@ -517,7 +517,7 @@ class ExpressionTemplar(
         val isConvertible =
           templataTemplar.isTypeConvertible(temputs, unconvertedSourceExpr2.resultRegister.reference, destinationExpr2.resultRegister.reference)
         if (!isConvertible) {
-          vfail("In mutate, can't convert from: " + unconvertedSourceExpr2.resultRegister.reference + "\nto: " + destinationExpr2.resultRegister.reference)
+          throw CompileErrorExceptionT(CouldntConvertForMutateT(range, destinationExpr2.resultRegister.reference, unconvertedSourceExpr2.resultRegister.reference))
         }
         val convertedSourceExpr2 =
           convertHelper.convert(fate.snapshot, temputs, unconvertedSourceExpr2, destinationExpr2.resultRegister.reference);

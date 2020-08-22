@@ -168,7 +168,7 @@ void fillControlBlock(
             globalState->getOrMakeStringConstant(typeName),
             globalState->controlBlockTypeStrIndex,
             "strControlBlockWithTypeStr");
-//    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
+    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
     auto wrciLE = LLVMBuildCall(builder, globalState->allocWrc, nullptr, 0, "");

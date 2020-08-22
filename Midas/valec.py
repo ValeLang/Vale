@@ -49,7 +49,7 @@ class ValeCompiler(unittest.TestCase):
 
     def clang(self, o_files: List[str],
               exe_file: str) -> subprocess.CompletedProcess:
-        return procrun(["clang", "-O2", "-o", exe_file] + o_files)
+        return procrun(["clang", "-O3", "-o", exe_file] + o_files)
 
     def exec(self, exe_file: str) -> subprocess.CompletedProcess:
         return procrun([f"./{exe_file}"])

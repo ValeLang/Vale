@@ -123,21 +123,11 @@ LLVMValueRef adjustStrongRc(
   return newRc;
 }
 
-void adjustWeakRc(
-    AreaAndFileAndLine from,
+void buildCheckWrc(
     GlobalState* globalState,
-    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
-    int amount) {
-  buildFlare(from, globalState, functionState, builder, "Adjusting by ", amount);
-  if (amount == 1) {
-    auto wrciLE = getWrciFromWeakRef(builder, exprLE);
-    LLVMBuildCall(builder, globalState->incrementWrc, &wrciLE, 1, "");
-  } else if (amount == -1) {
-    auto wrciLE = getWrciFromWeakRef(builder, exprLE);
-    LLVMBuildCall(builder, globalState->decrementWrc, &wrciLE, 1, "");
-  } else assert(false);
+    LLVMValueRef wrciLE) {
+  LLVMBuildCall(builder, globalState->checkWrc, &wrciLE, 1, "");
 }
 
 LLVMValueRef strongRcIsZero(
@@ -297,13 +287,6 @@ void buildAssertCensusContains(
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
   buildAssert(globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
-}
-
-void buildCheckWrc(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef wrciLE) {
-  LLVMBuildCall(builder, globalState->checkWrc, &wrciLE, 1, "");
 }
 
 void checkValidReference(
@@ -568,29 +551,6 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
       return Weakability::WEAKABLE;
     } else assert(false);
   }
-}
-
-// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
-LLVMValueRef forceDerefWeak(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef weakRefLE) {
-  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
-  auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, weakRefLE);
-  buildIf(
-      functionState, builder, isZeroLE(builder, isAliveLE),
-      [from, globalState, functionState, wrciLE](LLVMBuilderRef thenBuilder) {
-        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
-        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference, wrci: ");
-        buildPrint(globalState, thenBuilder, wrciLE);
-        buildPrint(globalState, thenBuilder, ", exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-      });
-  return getInnerRefFromWeakRef(globalState, functionState, builder, refM, weakRefLE);
 }
 
 LLVMValueRef assembleInterfaceWeakRef(

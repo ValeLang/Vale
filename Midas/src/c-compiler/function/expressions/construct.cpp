@@ -9,15 +9,37 @@
 #include "function/expressions/shared/heap.h"
 
 void fillInnerStruct(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE,
     LLVMValueRef innerStructPtrLE) {
   for (int i = 0; i < membersLE.size(); i++) {
+    auto memberLE = membersLE[i];
+    auto memberType = getEffectiveType(globalState, structM->members[i]->type);
+    if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      if (globalState->opt->census) {
+        if (dynamic_cast<StructReferend*>(memberType->referend) ||
+            dynamic_cast<InterfaceReferend*>(memberType->referend) ||
+            dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
+            dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
+          if (memberType->ownership == Ownership::WEAK) {
+            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
+            buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", wrciLE);
+          } else {
+            auto controlBlockPtrLE = getControlBlockPtr(builder, memberLE, memberType);
+            buildFlare(FL(), globalState, functionState, builder,
+                "Member ", i, ": ",
+                getObjIdFromControlBlockPtr(globalState, builder, controlBlockPtrLE));
+          }
+        }
+      }
+    }
     auto memberName = structM->members[i]->name;
     auto ptrLE =
         LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
-    LLVMBuildStore(builder, membersLE[i], ptrLE);
+    LLVMBuildStore(builder, memberLE, ptrLE);
   }
 }
 
@@ -30,6 +52,7 @@ LLVMValueRef constructCountedStruct(
     Reference* structTypeM,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
+  buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
   LLVMValueRef newStructPtrLE = allocateStruct(globalState, builder, structTypeM, structL);
   fillControlBlock(
       from,
@@ -38,8 +61,10 @@ LLVMValueRef constructCountedStruct(
       getEffectiveWeakability(globalState, structM),
       getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
   fillInnerStruct(
+      globalState, functionState,
       builder, structM, membersLE,
       getStructContentsPtr(builder, newStructPtrLE));
+  buildFlare(FL(), globalState, functionState, builder, "Done filling new struct");
   return newStructPtrLE;
 }
 

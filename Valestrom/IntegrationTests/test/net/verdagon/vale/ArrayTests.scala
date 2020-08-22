@@ -214,7 +214,7 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
-  // Known failure 2020-08-11
+  // Known failure 2020-08-20
   test("Arr helper with capture") {
     val compile = Compilation(
       """

@@ -148,7 +148,7 @@ void freeConcrete(
 
   if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
     auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
-    buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+    buildAssert(globalState, functionState, builder, rcIsZeroLE,
         "Tried to free concrete that had nonzero RC!");
 
     if (auto structReferendM = dynamic_cast<StructReferend*>(concreteRefM->referend)) {
@@ -156,6 +156,7 @@ void freeConcrete(
       if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
         auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
         auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+        buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(concreteRefM->referend)) {
@@ -163,6 +164,7 @@ void freeConcrete(
       if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
         auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
         auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+        buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
       }
     } else {
@@ -173,7 +175,7 @@ void freeConcrete(
     if (concreteRefM->ownership == Ownership::SHARE) {
       // Only shared stuff is RC'd in fast mode
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
-      buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+      buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
       // It's a mutable, so mark WRCs dead
@@ -184,6 +186,7 @@ void freeConcrete(
           auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
           auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
               controlBlockPtrLE);
+          buildFlare(FL(), globalState, functionState, builder);
           LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
         }
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(concreteRefM->referend)) {
@@ -192,6 +195,7 @@ void freeConcrete(
           auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
           auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
               controlBlockPtrLE);
+          buildFlare(FL(), globalState, functionState, builder);
           LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
         }
       } else {
@@ -201,7 +205,7 @@ void freeConcrete(
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
     if (concreteRefM->ownership == Ownership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
-      buildAssert(from, globalState, functionState, builder, rcIsZeroLE,
+      buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
       assert(concreteRefM->ownership == Ownership::OWN);
@@ -209,6 +213,7 @@ void freeConcrete(
       // In resilient mode, every mutable is weakable.
       auto controlBlockPtrLE = getControlBlockPtr(builder, concretePtrLE, concreteRefM);
       auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+      buildFlare(FL(), globalState, functionState, builder);
       LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
     }
   } else assert(false);

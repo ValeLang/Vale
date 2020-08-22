@@ -27,7 +27,7 @@ import net.verdagon.vale.{vassert, vfail}
 // thought of as dimensions of a coordinate.
 case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: LocationH, kind: T) {
   (ownership, location) match {
-    case (OwnH, _) =>
+    case (OwnH, YonderH) =>
     case (ShareH, _) =>
     case (BorrowH, YonderH) =>
     case (WeakH, YonderH) =>
@@ -55,8 +55,8 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
 
       // This will have false positives eventually, take it out then.
       val shouldBeInlined =
-        (ownership == ShareH && isTup) ||
-        (ownership == OwnH && isBox)
+        (ownership == ShareH && isTup)// ||
+        //(ownership == OwnH && isBox)
       vassert(shouldBeInlined == (location == InlineH));
     }
     case _ =>

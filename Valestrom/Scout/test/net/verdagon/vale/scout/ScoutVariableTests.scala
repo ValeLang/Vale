@@ -37,7 +37,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  // Intentional failure 2020-08-13
+  // Intentional failure 2020-08-20
   test("Reports defining same-name variable") {
     compileProgramForError("fn main() { x = 4; x = 5; }") match {
       case null =>

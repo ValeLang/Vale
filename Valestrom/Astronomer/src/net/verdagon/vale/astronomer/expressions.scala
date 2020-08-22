@@ -21,7 +21,7 @@ case class IfAE(condition: BlockAE, thenBody: BlockAE, elseBody: BlockAE) extend
 
 case class WhileAE(condition: BlockAE, body: BlockAE) extends IExpressionAE
 
-case class ExprMutateAE(mutatee: IExpressionAE, expr: IExpressionAE) extends IExpressionAE
+case class ExprMutateAE(range: RangeS, mutatee: IExpressionAE, expr: IExpressionAE) extends IExpressionAE
 case class GlobalMutateAE(name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
 case class LocalMutateAE(range: RangeS, name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
 

@@ -55,7 +55,7 @@ class HammerTests extends FunSuite with Matchers {
     vassert(myNone.members.isEmpty);
   }
 
-  // Known failure 2020-08-05
+  // Known failure 2020-08-20
   // Maybe we can turn off tree shaking?
   // Maybe this just violates requirements?
   test("Virtual and override functions make it into hamuts") {

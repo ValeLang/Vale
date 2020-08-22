@@ -43,11 +43,10 @@ Level {
       while (y < max_height) {
         half_max_width = max_width / 2;
         half_max_height = max_height / 2;
-        inside_ellipse = (x - half_max_width)
-            * (x - half_max_width)
-            * (half_max_height * half_max_height)
-            + (y - half_max_height) * (y - half_max_height) * (half_max_width * half_max_width)
-            < (half_max_width * half_max_width) * (half_max_height * half_max_height);
+        inside_ellipse =
+            (x - half_max_width) * (x - half_max_width) * (half_max_height * half_max_height) +
+            (y - half_max_height) * (y - half_max_height) * (half_max_width * half_max_width) <
+            (half_max_width * half_max_width) * (half_max_height * half_max_height);
 
         // Randomly determine whether something inside the ellipse is walkable or not.
         walkable = rand.next() mod 2 == 0;

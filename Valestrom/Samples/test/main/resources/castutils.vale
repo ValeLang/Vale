@@ -10,3 +10,7 @@ fn +(i int, s str) str {
 fn +(s str, i int) str {
   s + str(i)
 }
+
+fn +(s str, b bool) str {
+  s + str(b)
+}

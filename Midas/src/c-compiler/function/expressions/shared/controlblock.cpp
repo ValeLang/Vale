@@ -192,14 +192,6 @@ LLVMValueRef getWrciFromWeakRef(
   return LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "wrci");
 }
 
-LLVMValueRef getIsAliveFromWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE) {
-  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
-  return LLVMBuildCall(builder, globalState->wrcIsLive, &wrciLE, 1, "isAlive");
-}
-
 LLVMValueRef getInnerRefFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,

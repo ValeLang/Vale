@@ -3,6 +3,7 @@
 #include "translatetype.h"
 
 #include "shared.h"
+#include "weaks.h"
 #include "controlblock.h"
 
 LLVMValueRef getStructContentsPtr(

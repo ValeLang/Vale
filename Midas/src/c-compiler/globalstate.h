@@ -35,7 +35,9 @@ public:
       getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
       strlen, censusContains, censusAdd, censusRemove, panic;
 
-  LLVMValueRef allocWrc, incrementWrc, checkWrc, decrementWrc, wrcIsLive, markWrcDead, getNumWrcs;
+  LLVMValueRef allocWrc, checkWrc, markWrcDead, getNumWrcs;
+
+  LLVMValueRef wrcCapacityPtr, wrcFirstFreeWrciPtr, wrcEntriesArrayPtr;
 
   int controlBlockTypeStrIndex;
   int controlBlockObjIdIndex;

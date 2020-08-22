@@ -2,6 +2,7 @@
 #include <llvm-c/DebugInfo.h>
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Analysis.h>
+#include <llvm-c/IRReader.h>
 
 #include <assert.h>
 #include <string>
@@ -85,11 +86,20 @@ void initInternalExterns(GlobalState* globalState) {
 
   globalState->allocWrc = addFunction(globalState->mod, "__allocWrc", int64LT, {});
   globalState->checkWrc = addFunction(globalState->mod, "__checkWrc", voidLT, {int64LT});
-  globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
-  globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
-  globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});
+//  globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
+//  globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
+//  globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});
   globalState->markWrcDead = addFunction(globalState->mod, "__markWrcDead", voidLT, {int64LT});
   globalState->getNumWrcs = addFunction(globalState->mod, "__getNumWrcs", int64LT, {});
+
+  globalState->wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__wrc_capacity");
+  LLVMSetLinkage(globalState->wrcCapacityPtr, LLVMExternalLinkage);
+
+  globalState->wrcFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__wrc_firstFree");
+  LLVMSetLinkage(globalState->wrcFirstFreeWrciPtr, LLVMExternalLinkage);
+
+  globalState->wrcEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt64Type(), 0), "__wrc_entries");
+  LLVMSetLinkage(globalState->wrcEntriesArrayPtr, LLVMExternalLinkage);
 }
 
 void initInternalStructs(GlobalState* globalState) {
@@ -249,8 +259,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 //  std::cout << "OVERRIDING to fast mode!" << std::endl;
 //  globalState->opt->regionOverride = RegionOverride::FAST;
-  std::cout << "OVERRIDING census to true!" << std::endl;
-  globalState->opt->census = true;
+//  std::cout << "OVERRIDING census to true!" << std::endl;
+//  globalState->opt->census = true;
 //  std::cout << "OVERRIDING flares to true!" << std::endl;
 //  globalState->opt->flares = true;
 
@@ -533,6 +543,21 @@ void generateOutput(
     LLVMDisposeMessage(err);
   }
 }
+//
+//LLVMModuleRef loadLLFileIntoModule(LLVMContextRef context, const std::string& file) {
+//  char* errorMessage = nullptr;
+//  LLVMMemoryBufferRef buffer = nullptr;
+//  if (LLVMCreateMemoryBufferWithContentsOfFile(file.c_str(), &buffer, &errorMessage) != 0) {
+//    std::cerr << "Couldnt create buffer: " << errorMessage << std::endl;
+//    exit(1);
+//  }
+//  LLVMModuleRef newMod = nullptr;
+//  if (LLVMParseIRInContext(context, buffer, &newMod, &errorMessage) != 0) {
+//    std::cerr << "Couldnt load file: " << errorMessage << std::endl;
+//    exit(1);
+//  }
+//  LLVMDisposeMemoryBuffer(buffer);
+//}
 
 // Generate IR nodes into LLVM IR using LLVM
 void generateModule(GlobalState *globalState) {
@@ -599,7 +624,6 @@ void generateModule(GlobalState *globalState) {
         objpath.c_str(), globalState->opt->print_asm ? asmpath.c_str() : NULL,
         globalState->mod, globalState->opt->triple.c_str(), globalState->machine);
   }
-
 
   LLVMDisposeModule(globalState->mod);
   // LLVMContextDispose(gen.context);  // Only need if we created a new context

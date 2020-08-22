@@ -53,6 +53,8 @@ set(LLVM_LINK_COMPONENTS
 		X86Disassembler
 		X86Info
 		X86Utils
+
+		IRReader
 )
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
@@ -87,6 +89,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/elements.cpp
 		src/c-compiler/function/expressions/shared/members.cpp
 		src/c-compiler/function/expressions/shared/shared.cpp
+		src/c-compiler/function/expressions/shared/weaks.cpp
 		src/c-compiler/function/expressions/shared/alias.cpp
 		src/c-compiler/function/expressions/shared/branch.cpp
 		src/c-compiler/function/expressions/shared/string.cpp

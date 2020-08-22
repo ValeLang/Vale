@@ -4,6 +4,7 @@
 #include "function/expressions/shared/controlblock.h"
 #include "function/expressions/shared/members.h"
 #include "function/expressions/shared/heap.h"
+#include "function/expressions/shared/weaks.h"
 
 #include "translatetype.h"
 

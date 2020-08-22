@@ -1,3 +1,9 @@
 a.out
 build.vir
 build
+
+# programs for benchmarking
+assist
+resilient
+resilientFastEstimate
+unsafeFast

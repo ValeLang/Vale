@@ -49,7 +49,7 @@ class ValeCompiler(unittest.TestCase):
 
     def clang(self, o_files: List[str],
               exe_file: str) -> subprocess.CompletedProcess:
-        return procrun(["clang", "-o", exe_file] + o_files)
+        return procrun(["clang", "-O3", "-o", exe_file] + o_files)
 
     def exec(self, exe_file: str) -> subprocess.CompletedProcess:
         return procrun([f"./{exe_file}"])
@@ -116,6 +116,8 @@ class ValeCompiler(unittest.TestCase):
           sys.exit(proc.returncode)
 
         proc = self.valec(vir_file, build_dir, midas_options)
+        # print(proc.stdout)
+        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"valec couldn't compile {vir_file}:\n" +
                          proc.stdout + "\n" + proc.stderr)
@@ -129,6 +131,8 @@ class ValeCompiler(unittest.TestCase):
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/weaks.c"
             ]
         proc = self.clang(o_files, exe_file)
+        # print(proc.stdout)
+        # print(proc.stderr)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
                          proc.stdout + "\n" + proc.stderr)

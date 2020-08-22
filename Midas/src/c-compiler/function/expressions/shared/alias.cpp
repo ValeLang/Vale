@@ -6,6 +6,7 @@
 #include "members.h"
 #include "branch.h"
 #include "controlblock.h"
+#include "weaks.h"
 #include "heap.h"
 
 // Increments the RC, if needed

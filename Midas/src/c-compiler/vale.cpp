@@ -84,13 +84,13 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->censusAdd = addFunction(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
   globalState->censusRemove = addFunction(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 
-//  globalState->allocWrc = addFunction(globalState->mod, "__allocWrc", int64LT, {});
+//  globalState->noteWeakableCreated = addFunction(globalState->mod, "__allocWrc", int64LT, {});
   globalState->expandWrcTable = addFunction(globalState->mod, "__expandWrcTable", voidLT, {});
   globalState->checkWrc = addFunction(globalState->mod, "__checkWrc", voidLT, {int64LT});
 //  globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
 //  globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
 //  globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});
-//  globalState->markWrcDead = addFunction(globalState->mod, "__markWrcDead", voidLT, {int64LT});
+//  globalState->noteWeakableDestroyed = addFunction(globalState->mod, "__markWrcDead", voidLT, {int64LT});
   globalState->getNumWrcs = addFunction(globalState->mod, "__getNumWrcs", int64LT, {});
 
   globalState->wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__wrc_capacity");

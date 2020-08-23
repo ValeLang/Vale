@@ -70,7 +70,8 @@ LLVMValueRef loadMember(
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
     } else if (structRefM->ownership == Ownership::WEAK) {
-      auto thing = derefConstraintRef(from, globalState, functionState, builder, structRefM, structRefLE);
+      auto thing = derefMaybeWeakRef(from, globalState, functionState, builder, structRefM,
+          structRefLE);
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
       sourceRefLE =
           loadInnerStructMember(
@@ -97,21 +98,8 @@ LLVMValueRef swapMember(
     const std::string& memberName,
     LLVMValueRef newMemberLE) {
 
-  LLVMValueRef innerStructPtrLE;
-  switch (structRefM->ownership) {
-    case Ownership::OWN:
-    case Ownership::BORROW:
-    case Ownership::SHARE:
-      innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
-      break;
-    case Ownership::WEAK:
-      auto voidPtrLE =
-          getInnerRefFromWeakRef(globalState, functionState, builder, structRefM, structRefLE);
-      auto wrciLE = getWrciFromWeakRef(builder, structRefLE);
-      buildFlare(FL(), globalState, functionState, builder, "Loading weak ref from struct, wrci: ", wrciLE);
-      innerStructPtrLE = getStructContentsPtr(builder, voidPtrLE);
-      break;
-  }
+  LLVMValueRef objPtrLE = derefMaybeWeakRef(FL(), globalState, functionState, builder, structRefM, structRefLE);
+  auto innerStructPtrLE = getStructContentsPtr(builder, objPtrLE);
 
   assert(structDefM->mutability == Mutability::MUTABLE);
 

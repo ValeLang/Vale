@@ -8,6 +8,52 @@
 constexpr uint64_t WRC_ALIVE_BIT = 0x8000000000000000;
 constexpr uint64_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
 
+void buildCheckWrc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef wrciLE) {
+  LLVMBuildCall(builder, globalState->checkWrc, &wrciLE, 1, "");
+}
+
+LLVMValueRef getWrciFromWeakRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE) {
+  return LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "wrci");
+}
+
+LLVMValueRef getWrciFromControlBlockPtr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef controlBlockPtr) {
+
+  if (refM->ownership == Ownership::SHARE) {
+    // Shares never have weak refs
+    assert(false);
+  } else {
+    auto wrciPtrLE =
+        LLVMBuildStructGEP(
+            builder,
+            controlBlockPtr,
+            globalState->mutControlBlockWrciMemberIndex,
+            "wrciPtr");
+    return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
+  }
+}
+
+LLVMValueRef getInnerRefFromWeakRef(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefM,
+    LLVMValueRef weakRefLE) {
+  checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRefLE);
+  auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+  // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
+  // a valid reference.
+  return innerRefLE;
+}
+
 LLVMValueRef getWrcPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
@@ -42,50 +88,57 @@ void maybeReleaseWrc(
       });
 }
 
-void adjustWeakRc(
+void aliasWeakRef(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
-    int amount) {
-  buildFlare(from, globalState, functionState, builder, "Adjusting by ", amount);
+    LLVMValueRef exprLE) {
+  buildFlare(from, globalState, functionState, builder, "Incrementing");
   auto wrciLE = getWrciFromWeakRef(builder, exprLE);
   if (globalState->opt->census) {
     buildCheckWrc(globalState, builder, wrciLE);
   }
 
   auto ptrToWrcLE = getWrcPtr(globalState, builder, wrciLE);
-  auto wrcLE = adjustCounter(builder, ptrToWrcLE, amount);
+  adjustCounter(builder, ptrToWrcLE, 1);
+}
 
-  // if (amount == 1) {
-  //   LLVMBuildCall(builder, globalState->incrementWrc, &wrciLE, 1, "");
-  // } else if (amount == -1) {
-  //   LLVMBuildCall(builder, globalState->decrementWrc, &wrciLE, 1, "");
-  // } else assert(false);
-
-  if (amount < 0) {
-    maybeReleaseWrc(globalState, functionState, builder, wrciLE, ptrToWrcLE, wrcLE);
+void discardWeakRef(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef exprLE) {
+  buildFlare(from, globalState, functionState, builder, "Decrementing");
+  auto wrciLE = getWrciFromWeakRef(builder, exprLE);
+  if (globalState->opt->census) {
+    buildCheckWrc(globalState, builder, wrciLE);
   }
+
+  auto ptrToWrcLE = getWrcPtr(globalState, builder, wrciLE);
+  auto wrcLE = adjustCounter(builder, ptrToWrcLE, -1);
+
+  maybeReleaseWrc(globalState, functionState, builder, wrciLE, ptrToWrcLE, wrcLE);
 }
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
-LLVMValueRef derefConstraintRef(
+LLVMValueRef derefMaybeWeakRef(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef constraintRefLE) {
+    LLVMValueRef weakRefLE) {
   switch (refM->ownership) {
     case Ownership::OWN:
     case Ownership::BORROW:
     case Ownership::SHARE: {
-      auto objPtrLE = constraintRefLE;
+      auto objPtrLE = weakRefLE;
       return objPtrLE;
     }
     case Ownership::WEAK: {
-      auto fatPtrLE = constraintRefLE;
+      auto fatPtrLE = weakRefLE;
       auto wrciLE = getWrciFromWeakRef(builder, fatPtrLE);
       auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, fatPtrLE);
       buildIf(
@@ -106,7 +159,7 @@ LLVMValueRef derefConstraintRef(
   }
 }
 
-void markWrcDead(
+void noteWeakableDestroyed(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -115,7 +168,7 @@ void markWrcDead(
   auto controlBlockPtrLE = getControlBlockPtr(builder, concreteRefLE, concreteRefM);
   auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
 
-//  LLVMBuildCall(builder, globalState->markWrcDead, &wrciLE, 1, "");
+//  LLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");
 
   auto ptrToWrcLE = getWrcPtr(globalState, builder, wrciLE);
   auto prevWrcLE = LLVMBuildLoad(builder, ptrToWrcLE, "wrc");
@@ -159,7 +212,7 @@ LLVMValueRef getIsAliveFromWeakRef(
       "wrcLive");
 }
 
-LLVMValueRef allocWrc(
+LLVMValueRef noteWeakableCreated(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder) {
@@ -202,4 +255,203 @@ LLVMValueRef allocWrc(
       wrcPtrLE);
 
   return resultWrciLE;
+}
+
+LLVMValueRef fillWeakableControlBlock(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockLE) {
+  auto wrciLE = noteWeakableCreated(globalState, functionState, builder);
+  return LLVMBuildInsertValue(
+      builder,
+      controlBlockLE,
+      wrciLE,
+      globalState->mutControlBlockWrciMemberIndex,
+      "strControlBlockWithWrci");
+}
+
+LLVMValueRef getControlBlockPtrFromInterfaceWeakRef(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* virtualParamMT,
+    LLVMValueRef virtualArgLE) {
+  auto interfaceRefLE =
+      getInnerRefFromWeakRef(
+          globalState,
+          functionState,
+          builder,
+          virtualParamMT,
+          virtualArgLE);
+  return getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
+}
+
+
+
+LLVMValueRef weakInterfaceRefToWeakStructRef(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMValueRef exprLE) {
+  // Disassemble the weak interface ref.
+  auto wrciLE = getWrciFromWeakRef(builder, exprLE);
+  auto interfaceRefLE =
+      getInnerRefFromWeakRef(
+          globalState,
+          functionState,
+          builder,
+          refM,
+          exprLE);
+  auto controlBlockPtrLE = getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
+
+  // Now, reassemble a weak void* ref to the struct.
+  auto weakVoidStructRefLE =
+      assembleVoidStructWeakRef(globalState, builder, controlBlockPtrLE, wrciLE);
+
+  return weakVoidStructRefLE;
+}
+
+void buildCheckWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE) {
+  // WARNING: This check has false positives.
+  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
+  buildCheckWrc(globalState, builder, wrciLE);
+}
+
+
+LLVMValueRef assembleInterfaceWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* interfaceTypeM,
+    InterfaceReferend* interfaceReferendM,
+    LLVMValueRef fatPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, fatPtrLE, interfaceTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, interfaceTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getInterfaceWeakRefStruct(interfaceReferendM->fullName));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, fatPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+LLVMValueRef assembleStructWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    StructReferend* structReferendM,
+    LLVMValueRef objPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+LLVMValueRef assembleKnownSizeArrayWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    KnownSizeArrayT* knownSizeArrayMT,
+    LLVMValueRef objPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+LLVMValueRef assembleUnknownSizeArrayWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* structTypeM,
+    UnknownSizeArrayT* unknownSizeArrayMT,
+    LLVMValueRef objPtrLE) {
+  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto weakRefLE = LLVMGetUndef(globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name));
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+  return weakRefLE;
+}
+
+// Used in interface calling, when we dont know what the underlying struct type is yet.
+LLVMValueRef assembleVoidStructWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockPtrLE,
+    LLVMValueRef wrciLE) {
+//  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+//  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+
+  auto objVoidPtrLE =
+      LLVMBuildPointerCast(
+          builder,
+          controlBlockPtrLE,
+          LLVMPointerType(LLVMVoidType(), 0),
+          "objAsVoidPtr");
+
+  auto weakRefLE = LLVMGetUndef(globalState->weakVoidRefStructL);
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
+
+//  adjustWeakRc(globalState, builder, weakRefLE, 1);
+
+  return weakRefLE;
+}
+
+
+LLVMValueRef weakStructRefToWeakInterfaceRef(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef sourceRefLE,
+    StructReferend* sourceStructReferendM,
+    Reference* sourceStructTypeM,
+    InterfaceReferend* targetInterfaceReferendM,
+    Reference* targetInterfaceTypeM) {
+  checkValidReference(
+      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
+  auto controlBlockPtr =
+      getConcreteControlBlockPtr(
+          builder,
+          getInnerRefFromWeakRef(
+              globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
+
+  auto interfaceRefLT =
+      globalState->getInterfaceWeakRefStruct(
+          targetInterfaceReferendM->fullName);
+
+  auto interfaceWeakRefLE = LLVMGetUndef(interfaceRefLT);
+  interfaceWeakRefLE =
+      LLVMBuildInsertValue(
+          builder,
+          interfaceWeakRefLE,
+          getWrciFromWeakRef(builder, sourceRefLE),
+          WEAK_REF_RCINDEX_MEMBER_INDEX,
+          "interfaceRefWithOnlyObj");
+  interfaceWeakRefLE =
+      LLVMBuildInsertValue(
+          builder,
+          interfaceWeakRefLE,
+          makeInterfaceRefStruct(
+              globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
+              controlBlockPtr),
+          WEAK_REF_OBJPTR_MEMBER_INDEX,
+          "interfaceRef");
+  checkValidReference(
+      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
+  return interfaceWeakRefLE;
 }

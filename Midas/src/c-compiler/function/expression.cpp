@@ -112,7 +112,7 @@ LLVMValueRef translateExpressionInner(
         auto weakRefLE =
             assembleStructWeakRef(
                 globalState, builder, getEffectiveType(globalState, weakAlias->sourceType), structReferendM, objPtrLE);
-        adjustWeakRc(FL(), globalState, functionState, builder, weakRefLE, 1);
+        aliasWeakRef(FL(), globalState, functionState, builder, weakRefLE);
         discard(
             AFL("WeakAlias drop constraintref"),
             globalState, functionState, blockState, builder, getEffectiveType(globalState, weakAlias->sourceType), objPtrLE);
@@ -357,7 +357,7 @@ LLVMValueRef translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     LLVMValueRef arrayWrapperPtrLE =
-        derefConstraintRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
+        derefMaybeWeakRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
@@ -390,7 +390,7 @@ LLVMValueRef translateExpressionInner(
 
 
     LLVMValueRef arrayWrapperPtrLE =
-        derefConstraintRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
+        derefMaybeWeakRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
 
@@ -437,7 +437,7 @@ LLVMValueRef translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     LLVMValueRef arrayWrapperPtrLE =
-        derefConstraintRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
+        derefMaybeWeakRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     discard(AFL("USALen"), globalState, functionState, blockState, builder, arrayType, arrayRefLE);

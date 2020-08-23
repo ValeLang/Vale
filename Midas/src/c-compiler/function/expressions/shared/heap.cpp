@@ -155,12 +155,12 @@ void freeConcrete(
     if (auto structReferendM = dynamic_cast<StructReferend*>(concreteRefM->referend)) {
       auto structM = globalState->program->getStruct(structReferendM->fullName);
       if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-        markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
+        noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(concreteRefM->referend)) {
       auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
       if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
-        markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
+        noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
       }
     } else {
       // Do nothing, only structs and interfaces are weakable in assist mode.
@@ -178,12 +178,12 @@ void freeConcrete(
       if (auto structReferendM = dynamic_cast<StructReferend *>(concreteRefM->referend)) {
         auto structM = globalState->program->getStruct(structReferendM->fullName);
         if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-          markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
+          noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
         }
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(concreteRefM->referend)) {
         auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
         if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
-          markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
+          noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
         }
       } else {
         // Do nothing, only structs and interfaces are weakable in assist mode.
@@ -198,7 +198,7 @@ void freeConcrete(
       assert(concreteRefM->ownership == Ownership::OWN);
 
       // In resilient mode, every mutable is weakable.
-      markWrcDead(globalState, functionState, builder, concreteRefM, concretePtrLE);
+      noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
     }
   } else assert(false);
 

@@ -1,5 +1,6 @@
 #include "controlblock.h"
 #include "shared.h"
+#include "weaks.h"
 
 LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
@@ -171,7 +172,8 @@ void fillControlBlock(
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
-    auto wrciLE = LLVMBuildCall(builder, globalState->allocWrc, nullptr, 0, "");
+    auto wrciLE = allocWrc(globalState, functionState, builder);
+
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,

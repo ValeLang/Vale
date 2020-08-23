@@ -79,35 +79,22 @@ uint64_t __expandWrcTable() {
     free(oldEntries);
   }
 }
-
-uint64_t __allocWrc() {
-  if (__wrc_firstFree == __wrc_capacity) {
-    __expandWrcTable();
-  }
-
-  uint64_t resultWrci = __wrc_firstFree;
-  __wrc_firstFree = __wrc_entries[resultWrci];
-  __wrc_entries[resultWrci] = WRC_INITIAL_VALUE;
-  return resultWrci;
-}
+//
+//uint64_t __allocWrc() {
+//  if (__wrc_firstFree == __wrc_capacity) {
+//    __expandWrcTable();
+//  }
+//
+//  uint64_t resultWrci = __wrc_firstFree;
+//  __wrc_firstFree = __wrc_entries[resultWrci];
+//  __wrc_entries[resultWrci] = WRC_INITIAL_VALUE;
+//  return resultWrci;
+//}
 
 
 // Warning: can have false positives, where it says something's valid when it's not.
 void __checkWrc(uint64_t wrcIndex) {
   if (wrcIndex >= __wrc_capacity) {
     assert(0);
-  }
-}
-
-void __markWrcDead(uint64_t wrcIndex) {
-  __wrc_entries[wrcIndex] &= ~WRC_LIVE_BIT;
-  if (__wrc_entries[wrcIndex] == 0) {
-#ifdef REUSE_RELEASED
-    __wrc_entries[wrcIndex] = __wrc_firstFree;
-    __wrc_firstFree = wrcIndex;
-#else
-    // Do nothing, dont add to the freelist. Freelist will just contain all the unused free spots
-  // later in the array.
-#endif
   }
 }

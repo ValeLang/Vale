@@ -35,7 +35,7 @@ public:
       getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
       strlen, censusContains, censusAdd, censusRemove, panic;
 
-  LLVMValueRef allocWrc, checkWrc, markWrcDead, getNumWrcs;
+  LLVMValueRef expandWrcTable, checkWrc, markWrcDead, getNumWrcs;
 
   LLVMValueRef wrcCapacityPtr, wrcFirstFreeWrciPtr, wrcEntriesArrayPtr;
 

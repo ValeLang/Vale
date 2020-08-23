@@ -356,18 +356,8 @@ LLVMValueRef translateExpressionInner(
 
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
-    LLVMValueRef arrayWrapperPtrLE;
-    switch (arrayType->ownership) {
-      case Ownership::OWN:
-      case Ownership::BORROW:
-      case Ownership::SHARE:
-        arrayWrapperPtrLE = arrayRefLE;
-        break;
-      case Ownership::WEAK:
-        arrayWrapperPtrLE =
-            forceDerefWeak(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
-        break;
-    }
+    LLVMValueRef arrayWrapperPtrLE =
+        derefConstraintRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
@@ -399,19 +389,8 @@ LLVMValueRef translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
 
-    LLVMValueRef arrayWrapperPtrLE;
-    switch (arrayType->ownership) {
-      case Ownership::OWN:
-      case Ownership::BORROW:
-      case Ownership::SHARE:
-        arrayWrapperPtrLE = arrayRefLE;
-        break;
-      case Ownership::WEAK:
-        arrayWrapperPtrLE =
-            forceDerefWeak(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
-        break;
-    }
-
+    LLVMValueRef arrayWrapperPtrLE =
+        derefConstraintRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
 
@@ -457,18 +436,8 @@ LLVMValueRef translateExpressionInner(
     auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
-    LLVMValueRef arrayWrapperPtrLE;
-    switch (arrayType->ownership) {
-      case Ownership::OWN:
-      case Ownership::BORROW:
-      case Ownership::SHARE:
-        arrayWrapperPtrLE = arrayRefLE;
-        break;
-      case Ownership::WEAK:
-        arrayWrapperPtrLE =
-            forceDerefWeak(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
-        break;
-    }
+    LLVMValueRef arrayWrapperPtrLE =
+        derefConstraintRef(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(builder, arrayWrapperPtrLE);
     discard(AFL("USALen"), globalState, functionState, blockState, builder, arrayType, arrayRefLE);

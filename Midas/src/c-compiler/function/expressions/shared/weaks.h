@@ -22,7 +22,7 @@ void adjustWeakRc(
     int amount);
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
-LLVMValueRef forceDerefWeak(
+LLVMValueRef derefConstraintRef(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
@@ -41,5 +41,10 @@ void markWrcDead(
     LLVMBuilderRef builder,
     Reference* concreteRefM,
     LLVMValueRef concreteRefLE);
+
+LLVMValueRef allocWrc(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder);
 
 #endif

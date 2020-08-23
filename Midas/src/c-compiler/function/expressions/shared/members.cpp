@@ -70,7 +70,7 @@ LLVMValueRef loadMember(
           loadInnerStructMember(
               builder, innerStructPtrLE, memberIndex, memberName);
     } else if (structRefM->ownership == Ownership::WEAK) {
-      auto thing = forceDerefWeak(from, globalState, functionState, builder, structRefM, structRefLE);
+      auto thing = derefConstraintRef(from, globalState, functionState, builder, structRefM, structRefLE);
       LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
       sourceRefLE =
           loadInnerStructMember(

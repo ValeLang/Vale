@@ -41,7 +41,7 @@ void acquireReference(
     } else if (resultRef->ownership == Ownership::BORROW) {
       adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
     } else if (resultRef->ownership == Ownership::WEAK) {
-      adjustWeakRc(from, globalState, functionState, builder, expr, 1);
+      aliasWeakRef(from, globalState, functionState, builder, expr);
     } else if (resultRef->ownership == Ownership::SHARE) {
       if (resultRef->location == Location::INLINE) {
         assert(false); // impl
@@ -58,7 +58,7 @@ void acquireReference(
     } else if (resultRef->ownership == Ownership::BORROW) {
       adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
     } else if (resultRef->ownership == Ownership::WEAK) {
-      adjustWeakRc(from, globalState, functionState, builder, expr, 1);
+      aliasWeakRef(from, globalState, functionState, builder, expr);
     } else if (resultRef->ownership == Ownership::SHARE) {
       if (resultRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
@@ -110,7 +110,7 @@ void discard(
     } else if (sourceRef->ownership == Ownership::BORROW) {
       adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      adjustWeakRc(from, globalState, functionState, builder, expr, -1);
+      discardWeakRef(from, globalState, functionState, builder, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
@@ -148,7 +148,7 @@ void discard(
       adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
       buildFlare(from, globalState, functionState, builder, "Decr weak concrete weak!");
-      adjustWeakRc(from, globalState, functionState, builder, expr, -1);
+      discardWeakRef(from, globalState, functionState, builder, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear

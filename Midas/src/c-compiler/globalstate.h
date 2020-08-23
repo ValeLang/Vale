@@ -12,49 +12,57 @@
 
 class GlobalState {
 public:
-  LLVMTargetMachineRef machine;
-  LLVMContextRef context;
-  LLVMDIBuilderRef dibuilder;
-  LLVMMetadataRef compileUnit;
-  LLVMMetadataRef difile;
+  LLVMTargetMachineRef machine = nullptr;
+  LLVMContextRef context = nullptr;
+  LLVMDIBuilderRef dibuilder = nullptr;
+  LLVMMetadataRef compileUnit = nullptr;
+  LLVMMetadataRef difile = nullptr;
 
-  ValeOptions *opt;
+  ValeOptions *opt = nullptr;
 
-  LLVMTargetDataRef dataLayout;
-  LLVMModuleRef mod;
-  int ptrSize;
+  LLVMTargetDataRef dataLayout = nullptr;
+  LLVMModuleRef mod = nullptr;
+  int ptrSize = 0;
 
   MetalCache metalCache;
 
-  Program* program;
-  LLVMValueRef objIdCounter;
-  LLVMValueRef liveHeapObjCounter;
-  LLVMValueRef derefCounter;
-  LLVMValueRef mutRcAdjustCounter;
-  LLVMValueRef malloc, free, assert, exit, assertI64Eq, flareI64, printCStr,
-      getch, printInt, printBool, initStr, addStr, eqStr, printVStr, intToCStr,
-      strlen, censusContains, censusAdd, censusRemove, panic;
+  Program* program = nullptr;
+  LLVMValueRef objIdCounter = nullptr;
+  LLVMValueRef liveHeapObjCounter = nullptr;
+  LLVMValueRef derefCounter = nullptr;
+  LLVMValueRef mutRcAdjustCounter = nullptr;
+  LLVMValueRef malloc = nullptr, free = nullptr, assert = nullptr, exit = nullptr,
+      assertI64Eq = nullptr, flareI64 = nullptr, printCStr = nullptr,
+      getch = nullptr, printInt = nullptr, printBool = nullptr, initStr = nullptr, addStr = nullptr,
+      eqStr = nullptr, printVStr = nullptr, intToCStr = nullptr,
+      strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr,
+      panic = nullptr;
 
-  LLVMValueRef expandWrcTable, checkWrc, markWrcDead, getNumWrcs;
+  LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;
+  LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
 
-  LLVMValueRef wrcCapacityPtr, wrcFirstFreeWrciPtr, wrcEntriesArrayPtr;
+  LLVMValueRef wrcCapacityPtr = nullptr, wrcFirstFreeWrciPtr = nullptr, wrcEntriesArrayPtr = nullptr;
+  LLVMValueRef lgtCapacityPtr = nullptr, lgtFirstFreeWrciPtr = nullptr, lgtEntriesArrayPtr = nullptr;
 
-  int controlBlockTypeStrIndex;
-  int controlBlockObjIdIndex;
-  int immControlBlockRcMemberIndex;
-  int mutControlBlockRcMemberIndex;
-  int mutControlBlockWrciMemberIndex;
-  LLVMTypeRef mutNonWeakableControlBlockStructL;
-  LLVMTypeRef mutWeakableControlBlockStructL;
-  LLVMTypeRef immControlBlockStructL;
-  LLVMTypeRef stringWrapperStructL;
-  LLVMTypeRef stringInnerStructL;
+  int controlBlockTypeStrIndex = -1;
+  int controlBlockObjIdIndex = -1;
+  int immControlBlockRcMemberIndex = -1;
+  int mutControlBlockRcMemberIndex = -1;
+  int mutControlBlockWrciMemberIndex = -1;
+  int mutControlBlockLgtiMemberIndex = -1;
+  LLVMTypeRef weakRefHeaderStructL = nullptr; // contains gen index and generation
+  LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
+  LLVMTypeRef mutNonWeakableControlBlockStructL = nullptr;
+  LLVMTypeRef mutWeakableControlBlockStructL = nullptr;
+  LLVMTypeRef immControlBlockStructL = nullptr;
+  LLVMTypeRef stringWrapperStructL = nullptr;
+  LLVMTypeRef stringInnerStructL = nullptr;
   // This is a weak ref to a void*. When we're calling an interface method on a weak,
   // we have no idea who the receiver is. They'll receive this struct as the correctly
   // typed flavor of it (from structWeakRefStructs).
-  LLVMTypeRef weakVoidRefStructL;
+  LLVMTypeRef weakVoidRefStructL = nullptr;
 
-  LLVMBuilderRef stringConstantBuilder;
+  LLVMBuilderRef stringConstantBuilder = nullptr;
   std::unordered_map<std::string, LLVMValueRef> stringConstants;
 
   // These don't have a ref count.

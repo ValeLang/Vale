@@ -26,7 +26,7 @@ object ExpressionHammer {
         (ConstantI64H(value), List())
       }
       case VoidLiteral2() => {
-        val constructH = NewStructH(List(), ProgramH.emptyTupleStructType)
+        val constructH = NewStructH(List(), List(), ProgramH.emptyTupleStructType)
         (constructH, List())
       }
       case StrLiteral2(value) => {
@@ -119,8 +119,8 @@ object ExpressionHammer {
         vassert(resultLines.size == structDefH.members.size)
         val newStructNode =
           NewStructH(
-
             resultLines,
+            structDefH.members.map(_.name),
             resultReference.expectStructReference())
 
         val newStructNodeAndDeferredsExprH =
@@ -176,6 +176,7 @@ object ExpressionHammer {
         val newStructNode =
           NewStructH(
             resultLines,
+            structDefH.members.map(_.name),
             resultReference.expectStructReference())
         // Export locals from inside the pack
 
@@ -220,8 +221,8 @@ object ExpressionHammer {
         vassert(memberResultLines.size == structDefH.members.size)
         val newStructNode =
           NewStructH(
-
             memberResultLines,
+            structDefH.members.map(_.name),
             resultTypeH.expectStructReference())
 
         val newStructAndDeferredsExprH =
@@ -477,7 +478,7 @@ object ExpressionHammer {
 
     val newExprs =
       if (originalExpr.resultType == ProgramH.emptyTupleStructType) {
-        val void = NewStructH(List(), ProgramH.emptyTupleStructType)
+        val void = NewStructH(List(), List(), ProgramH.emptyTupleStructType)
         originalExpr :: (deferredExprs :+ void)
       } else {
         val temporaryResultLocal = locals.addHammerLocal(originalExpr.resultType)

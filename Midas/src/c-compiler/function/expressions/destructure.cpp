@@ -55,6 +55,9 @@ LLVMValueRef translateDestructure(
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // Do nothing, the owning ref doesnt count towards the WRC.
       //   adjustWeakRc(globalState, builder, structLE, -1);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // Do nothing, the owning ref doesn't count towards any WRC or anything.
+      // freeConcrete will take care of incrementing the generation.
     } else assert(false);
   } else if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.

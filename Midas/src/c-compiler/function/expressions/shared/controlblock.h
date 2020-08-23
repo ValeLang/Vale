@@ -6,8 +6,8 @@
 #include <llvm-c/Core.h>
 #include <function/function.h>
 
-constexpr int WEAK_REF_RCINDEX_MEMBER_INDEX = 0;
-constexpr int WEAK_REF_OBJPTR_MEMBER_INDEX = 1;
+constexpr int WEAK_REF_MEMBER_INDEX_FOR_HEADER = 0;
+constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
 
 // A concrete is a struct, known size array, unknown size array, or Str.
 LLVMValueRef getConcreteControlBlockPtr(

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <function/expressions/shared/shared.h>
+#include <function/expressions/shared/weaks.h>
 
 #include "struct.h"
 
@@ -15,11 +16,11 @@ void declareStruct(
   assert(globalState->innerStructs.count(structM->name->name) == 0);
   globalState->innerStructs.emplace(structM->name->name, innerStructL);
 
-  auto countedStructL =
+  auto wrapperStructL =
       LLVMStructCreateNamed(
           LLVMGetGlobalContext(), (structM->name->name + "rc").c_str());
   assert(globalState->wrapperStructs.count(structM->name->name) == 0);
-  globalState->wrapperStructs.emplace(structM->name->name, countedStructL);
+  globalState->wrapperStructs.emplace(structM->name->name, wrapperStructL);
 
   auto structWeakRefStructL =
       LLVMStructCreateNamed(
@@ -42,32 +43,29 @@ void translateStruct(
   LLVMStructSetBody(
       valStructL, innerStructMemberTypesL.data(), innerStructMemberTypesL.size(), false);
 
-  LLVMTypeRef countedStructL = globalState->getWrapperStruct(structM->name);
-  std::vector<LLVMTypeRef> countedStructMemberTypesL;
+  LLVMTypeRef wrapperStructL = globalState->getWrapperStruct(structM->name);
+  std::vector<LLVMTypeRef> wrapperStructMemberTypesL;
 
   // First member is a ref counts struct. We don't include the int directly
   // because we want fat pointers to point to this struct, so they can reach
   // into it and increment without doing any casting.
   if (structM->mutability == Mutability::MUTABLE) {
     if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-      countedStructMemberTypesL.push_back(globalState->mutWeakableControlBlockStructL);
+      wrapperStructMemberTypesL.push_back(globalState->mutWeakableControlBlockStructL);
     } else {
-      countedStructMemberTypesL.push_back(globalState->mutNonWeakableControlBlockStructL);
+      wrapperStructMemberTypesL.push_back(globalState->mutNonWeakableControlBlockStructL);
     }
   } else if (structM->mutability == Mutability::IMMUTABLE) {
-    countedStructMemberTypesL.push_back(globalState->immControlBlockStructL);
+    wrapperStructMemberTypesL.push_back(globalState->immControlBlockStructL);
   } else assert(false);
 
-  countedStructMemberTypesL.push_back(valStructL);
+  wrapperStructMemberTypesL.push_back(valStructL);
 
   LLVMStructSetBody(
-      countedStructL, countedStructMemberTypesL.data(), countedStructMemberTypesL.size(), false);
+      wrapperStructL, wrapperStructMemberTypesL.data(), wrapperStructMemberTypesL.size(), false);
 
   auto structWeakRefStructL = globalState->getStructWeakRefStruct(structM->name);
-  std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
-  structWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
-  structWeakRefStructMemberTypesL.push_back(LLVMPointerType(countedStructL, 0));
-  LLVMStructSetBody(structWeakRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
+  makeStructWeakRefStruct(globalState, structWeakRefStructL, wrapperStructL);
 }
 
 void declareEdge(

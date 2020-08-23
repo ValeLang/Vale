@@ -1,6 +1,7 @@
 a.out
 build.vir
 build
+build.o
 
 # programs for benchmarking
 assist

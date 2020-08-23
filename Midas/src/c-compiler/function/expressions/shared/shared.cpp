@@ -43,13 +43,26 @@ LLVMValueRef adjustCounter(
     LLVMBuilderRef builder,
     LLVMValueRef counterPtrLE,
     int adjustAmount) {
-  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
-  auto newValLE =
-      LLVMBuildAdd(
-          builder, prevValLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "counterNewVal");
-  LLVMBuildStore(builder, newValLE, counterPtrLE);
+  if (LLVMTypeOf(counterPtrLE) == LLVMPointerType(LLVMInt64Type(), 0)) {
+    auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+    auto newValLE =
+        LLVMBuildAdd(
+            builder, prevValLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "counterNewVal");
+    LLVMBuildStore(builder, newValLE, counterPtrLE);
 
-  return newValLE;
+    return newValLE;
+  } else if (LLVMTypeOf(counterPtrLE) == LLVMPointerType(LLVMInt32Type(), 0)) {
+      auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+      auto newValLE =
+          LLVMBuildAdd(
+              builder, prevValLE, LLVMConstInt(LLVMInt32Type(), adjustAmount, true), "counterNewVal");
+      LLVMBuildStore(builder, newValLE, counterPtrLE);
+
+      return newValLE;
+  } else {
+    // impl
+    assert(false);
+  }
 }
 
 
@@ -165,6 +178,9 @@ void buildPrint(
     LLVMValueRef exprLE) {
   if (LLVMTypeOf(exprLE) == LLVMInt64Type()) {
     LLVMBuildCall(builder, globalState->printInt, &exprLE, 1, "");
+  } else if (LLVMTypeOf(exprLE) == LLVMInt32Type()) {
+    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64Type(), "asI64");
+    LLVMBuildCall(builder, globalState->printInt, &i64LE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8Type(), 0)) {
     LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
   } else {
@@ -435,6 +451,8 @@ Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership o
       return Ownership::BORROW;
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       return Ownership::WEAK;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      return Ownership::WEAK;
     } else assert(false);
   } else assert(false);
 }
@@ -468,6 +486,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) 
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // All mutables are weakabile in resilient mode
       return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // All mutables are weakabile in resilient mode
+      return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
@@ -493,6 +514,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // All mutable structs are weakability in resilient mode
       return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // All mutable structs are weakability in resilient mode
+      return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
@@ -516,7 +540,10 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
         return Weakability::NON_WEAKABLE;
       }
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      // All mutable structs are weakability in resilient mode
+      // All mutable structs are weakable in resilient mode
+      return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // All mutable structs are weakable in resilient fast mode
       return Weakability::WEAKABLE;
     } else assert(false);
   }
@@ -634,4 +661,9 @@ LLVMValueRef load(
   } else {
     assert(false);
   }
+}
+
+LLVMValueRef addExtern(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
+  LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+  return LLVMAddFunction(mod, name.c_str(), funcType);
 }

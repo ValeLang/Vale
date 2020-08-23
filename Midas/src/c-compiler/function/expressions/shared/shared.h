@@ -208,43 +208,6 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
 
-
-LLVMValueRef assembleInterfaceWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* interfaceTypeM,
-    InterfaceReferend* interfaceReferendM,
-    LLVMValueRef fatPtrLE);
-
-LLVMValueRef assembleStructWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    StructReferend* structReferendM,
-    LLVMValueRef objPtrLE);
-
-LLVMValueRef assembleVoidStructWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef controlBlockPtrLE,
-    LLVMValueRef wrciLE);
-
-LLVMValueRef assembleKnownSizeArrayWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    KnownSizeArrayT* knownSizeArrayMT,
-    LLVMValueRef objPtrLE);
-
-LLVMValueRef assembleUnknownSizeArrayWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    UnknownSizeArrayT* unknownSizeArrayMT,
-    LLVMValueRef objPtrLE);
-
-
-
 // Loads from either a local or a member, and does the appropriate casting.
 LLVMValueRef load(
     GlobalState* globalState,
@@ -254,9 +217,11 @@ LLVMValueRef load(
     Reference* targetType,
     LLVMValueRef sourceRefLE);
 
-void buildCheckWrc(
+LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef wrciLE);
+    StructReferend* sourceStructReferendM,
+    InterfaceReferend* targetInterfaceReferendM,
+    LLVMValueRef controlBlockPtrLE);
 
 #endif

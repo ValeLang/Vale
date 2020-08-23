@@ -48,26 +48,6 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
   }
 }
 
-LLVMValueRef getWrciFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef controlBlockPtr) {
-
-  if (refM->ownership == Ownership::SHARE) {
-    // Shares never have weak refs
-    assert(false);
-  } else {
-    auto wrciPtrLE =
-        LLVMBuildStructGEP(
-            builder,
-            controlBlockPtr,
-            globalState->mutControlBlockWrciMemberIndex,
-            "wrciPtr");
-    return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
-  }
-}
-
 LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
@@ -172,37 +152,10 @@ void fillControlBlock(
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
-    auto wrciLE = allocWrc(globalState, functionState, builder);
-
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            wrciLE,
-            globalState->mutControlBlockWrciMemberIndex,
-            "strControlBlockWithWrci");
+    newControlBlockLE = fillWeakableControlBlock(globalState, functionState, builder, newControlBlockLE);
   }
   LLVMBuildStore(
       builder,
       newControlBlockLE,
       controlBlockPtrLE);
-}
-
-LLVMValueRef getWrciFromWeakRef(
-    LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE) {
-  return LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "wrci");
-}
-
-LLVMValueRef getInnerRefFromWeakRef(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* weakRefM,
-    LLVMValueRef weakRefLE) {
-  checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRefLE);
-  auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-  // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
-  // a valid reference.
-  return innerRefLE;
 }

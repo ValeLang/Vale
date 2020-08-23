@@ -25,12 +25,6 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef controlBlockPtr);
-// See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef getWrciFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef controlBlockPtr);
 
 LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
@@ -59,16 +53,5 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtr);
-
-LLVMValueRef getWrciFromWeakRef(
-    LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE);
-
-LLVMValueRef getInnerRefFromWeakRef(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* weakRefM,
-    LLVMValueRef weakRefLE);
 
 #endif //VALEC_CONTROLBLOCK_H

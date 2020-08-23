@@ -6,6 +6,7 @@
 #include "branch.h"
 
 constexpr uint64_t WRC_ALIVE_BIT = 0x8000000000000000;
+constexpr uint64_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
 
 LLVMValueRef getWrcPtr(
     GlobalState* globalState,
@@ -68,28 +69,41 @@ void adjustWeakRc(
   }
 }
 
-
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
-LLVMValueRef forceDerefWeak(
+LLVMValueRef derefConstraintRef(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef weakRefLE) {
-  auto wrciLE = getWrciFromWeakRef(builder, weakRefLE);
-  auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, weakRefLE);
-  buildIf(
-      functionState, builder, isZeroLE(builder, isAliveLE),
-      [from, globalState, functionState, wrciLE](LLVMBuilderRef thenBuilder) {
-        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
-        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference, wrci: ");
-        buildPrint(globalState, thenBuilder, wrciLE);
-        buildPrint(globalState, thenBuilder, ", exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-      });
-  return getInnerRefFromWeakRef(globalState, functionState, builder, refM, weakRefLE);
+    LLVMValueRef constraintRefLE) {
+  switch (refM->ownership) {
+    case Ownership::OWN:
+    case Ownership::BORROW:
+    case Ownership::SHARE: {
+      auto objPtrLE = constraintRefLE;
+      return objPtrLE;
+    }
+    case Ownership::WEAK: {
+      auto fatPtrLE = constraintRefLE;
+      auto wrciLE = getWrciFromWeakRef(builder, fatPtrLE);
+      auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, fatPtrLE);
+      buildIf(
+          functionState, builder, isZeroLE(builder, isAliveLE),
+          [from, globalState, functionState, wrciLE](LLVMBuilderRef thenBuilder) {
+            buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
+            buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference, wrci: ");
+            buildPrint(globalState, thenBuilder, wrciLE);
+            buildPrint(globalState, thenBuilder, ", exiting!\n");
+            auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+            LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+          });
+      return getInnerRefFromWeakRef(globalState, functionState, builder, refM, fatPtrLE);
+    }
+    default:
+      assert(false);
+      break;
+  }
 }
 
 void markWrcDead(
@@ -143,4 +157,49 @@ LLVMValueRef getIsAliveFromWeakRef(
           "wrcLiveBitOrZero"),
       constI64LE(0),
       "wrcLive");
+}
+
+LLVMValueRef allocWrc(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder) {
+  // uint64_t resultWrci = __wrc_firstFree;
+  auto resultWrciLE = LLVMBuildLoad(builder, globalState->wrcFirstFreeWrciPtr, "resultWrci");
+
+  // if (resultWrci == __wrc_capacity) {
+  //   __expandWrcTable();
+  // }
+  auto atCapacityLE =
+      LLVMBuildICmp(
+          builder,
+          LLVMIntEQ,
+          resultWrciLE,
+          LLVMBuildLoad(builder, globalState->wrcCapacityPtr, "wrcCapacity"),
+          "atCapacity");
+  buildIf(
+      functionState,
+      builder,
+      atCapacityLE,
+      [globalState](LLVMBuilderRef thenBuilder) {
+        LLVMBuildCall(thenBuilder, globalState->expandWrcTable, nullptr, 0, "");
+      });
+
+  // u64* wrcPtr = &__wrc_entries[resultWrci];
+  auto wrcPtrLE = getWrcPtr(globalState, builder, resultWrciLE);
+
+  // __wrc_firstFree = *wrcPtr;
+  LLVMBuildStore(
+      builder,
+      // *wrcPtr
+      LLVMBuildLoad(builder, wrcPtrLE, ""),
+      // __wrc_firstFree
+      globalState->wrcFirstFreeWrciPtr);
+
+  // *wrcPtr = WRC_INITIAL_VALUE;
+  LLVMBuildStore(
+      builder,
+      LLVMConstInt(LLVMInt64Type(), WRC_INITIAL_VALUE, false),
+      wrcPtrLE);
+
+  return resultWrciLE;
 }

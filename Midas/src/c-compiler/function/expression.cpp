@@ -244,6 +244,8 @@ LLVMValueRef translateExpressionInner(
         // Do nothing
       } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
         assert(false); // impl
+      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+        assert(false); // impl
       } else assert(false);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
@@ -299,6 +301,8 @@ LLVMValueRef translateExpressionInner(
       } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
         // Mutables in resilient mode dont have strong RC, and also, they dont adjust
         // weak RC for owning refs
+      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+        assert(false);
       } else assert(false);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
@@ -590,6 +594,10 @@ LLVMValueRef translateExpressionInner(
                       sourceLE);
                   // If we get here, object is alive, return a Some.
                   someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {sourceLE});
+                  break;
+                }
+                case RegionOverride::RESILIENT_FAST: {
+                  assert(false);
                   break;
                 }
               }

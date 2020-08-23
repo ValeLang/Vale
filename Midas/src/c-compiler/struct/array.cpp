@@ -1,5 +1,6 @@
 #include <iostream>
 #include <function/expressions/shared/shared.h>
+#include <function/expressions/shared/weaks.h>
 
 #include "array.h"
 
@@ -52,6 +53,9 @@ void translateKnownSizeArray(
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // In resilient mode, we can have weak refs to arrays
       elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
     } else assert(false);
   } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
     elementsL.push_back(globalState->immControlBlockStructL);
@@ -62,10 +66,7 @@ void translateKnownSizeArray(
   LLVMStructSetBody(knownSizeArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
 
   auto arrayWeakRefStructL = globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
-  std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
-  arrayWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
-  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(knownSizeArrayWrapperStruct, 0));
-  LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
+  makeKnownSizeArrayWeakRefStruct(globalState, knownSizeArrayWrapperStruct, arrayWeakRefStructL);
 }
 
 void declareUnknownSizeArray(
@@ -99,6 +100,9 @@ void translateUnknownSizeArray(
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // In resilient mode, we can have weak refs to arrays
       elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
     } else assert(false);
   } else if (unknownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
     elementsL.push_back(globalState->immControlBlockStructL);
@@ -111,8 +115,5 @@ void translateUnknownSizeArray(
   LLVMStructSetBody(unknownSizeArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
 
   auto arrayWeakRefStructL = globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
-  std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
-  arrayWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
-  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(unknownSizeArrayWrapperStruct, 0));
-  LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
+  makeUnknownSizeArrayWeakRefStruct(globalState, unknownSizeArrayWrapperStruct, arrayWeakRefStructL);
 }

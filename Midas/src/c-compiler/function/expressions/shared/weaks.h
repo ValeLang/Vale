@@ -61,26 +61,12 @@ LLVMValueRef noteWeakableCreated(
     LLVMBuilderRef builder);
 
 
-LLVMValueRef getWrciFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef controlBlockPtr);
-
-
 LLVMValueRef fillWeakableControlBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockLE);
 
-
-LLVMValueRef getControlBlockPtrFromInterfaceWeakRef(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* virtualParamMT,
-    LLVMValueRef virtualArgLE);
 
 LLVMValueRef weakInterfaceRefToWeakStructRef(
     GlobalState* globalState,
@@ -140,5 +126,30 @@ LLVMValueRef assembleVoidStructWeakRef(
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtrLE,
     LLVMValueRef wrciLE);
+
+// Makes the part of the weak ref that contains information on how to know if the contained thing
+// is weakable.
+// A "weak reference" contains this and also the actual object pointer.
+void makeWeakRefStructs(GlobalState* globalState);
+
+void initWeakInternalExterns(GlobalState* globalState);
+
+
+void makeStructWeakRefStruct(GlobalState* globalState, LLVMTypeRef structWeakRefStructL, LLVMTypeRef wrapperStructL);
+
+void makeInterfaceWeakRefStruct(GlobalState* globalState, LLVMTypeRef interfaceWeakRefStructL, LLVMTypeRef refStructL);
+
+void makeVoidPtrWeakRefStruct(GlobalState* globalState, LLVMTypeRef weakVoidRefStructL);
+
+
+void makeUnknownSizeArrayWeakRefStruct(
+    GlobalState* globalState,
+    LLVMTypeRef unknownSizeArrayWrapperStruct,
+    LLVMTypeRef arrayWeakRefStructL);
+
+void makeKnownSizeArrayWeakRefStruct(
+    GlobalState* globalState,
+    LLVMTypeRef knownSizeArrayWrapperStruct,
+    LLVMTypeRef arrayWeakRefStructL);
 
 #endif

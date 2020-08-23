@@ -166,6 +166,10 @@ inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);
 }
 
+inline LLVMValueRef constI32LE(int n) {
+  return LLVMConstInt(LLVMInt32Type(), n, false);
+}
+
 
 void buildAssertCensusContains(
     AreaAndFileAndLine from,
@@ -223,5 +227,12 @@ LLVMValueRef makeInterfaceRefStruct(
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
     LLVMValueRef controlBlockPtrLE);
+
+
+LLVMValueRef addExtern(
+    LLVMModuleRef mod,
+    const std::string& name,
+    LLVMTypeRef retType,
+    std::vector<LLVMTypeRef> paramTypes);
 
 #endif

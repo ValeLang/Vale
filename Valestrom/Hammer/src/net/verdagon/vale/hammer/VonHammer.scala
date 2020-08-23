@@ -380,7 +380,7 @@ object VonHammer {
             VonMember("resultType", vonifyCoord(resultType)),
             VonMember("resultReferend", vonifyKind(resultType.kind))))
       }
-      case NewStructH(sourceExprs, resultType) => {
+      case NewStructH(sourceExprs, targetMemberNames, resultType) => {
         VonObject(
           "NewStruct",
           None,
@@ -388,6 +388,9 @@ object VonHammer {
             VonMember(
               "sourceExprs",
               VonArray(None, sourceExprs.map(vonifyNode).toVector)),
+            VonMember(
+              "memberNames",
+              VonArray(None, targetMemberNames.map(n => VonStr(n.toString)).toVector)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
       case StackifyH(sourceExpr, local, name) => {

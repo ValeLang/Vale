@@ -200,6 +200,17 @@ void freeConcrete(
       // In resilient mode, every mutable is weakable.
       noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
     }
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    if (concreteRefM->ownership == Ownership::SHARE) {
+      auto rcIsZeroLE = strongRcIsZero(globalState, builder, concretePtrLE, concreteRefM);
+      buildAssert(globalState, functionState, builder, rcIsZeroLE,
+          "Tried to free concrete that had nonzero RC!");
+    } else {
+      assert(concreteRefM->ownership == Ownership::OWN);
+
+      // In resilient mode, every mutable is weakable.
+      noteWeakableDestroyed(globalState, functionState, builder, concreteRefM, concretePtrLE);
+    }
   } else assert(false);
 
   if (concreteRefM->location == Location::INLINE) {

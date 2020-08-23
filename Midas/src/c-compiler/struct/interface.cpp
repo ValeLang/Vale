@@ -1,5 +1,6 @@
 #include <iostream>
 #include <function/expressions/shared/shared.h>
+#include <function/expressions/shared/weaks.h>
 
 #include "interface.h"
 
@@ -90,8 +91,5 @@ void translateInterface(
       false);
 
   auto interfaceWeakRefStructL = globalState->getInterfaceWeakRefStruct(interfaceM->name);
-  std::vector<LLVMTypeRef> interfaceWeakRefStructMemberTypesL;
-  interfaceWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
-  interfaceWeakRefStructMemberTypesL.push_back(refStructL);
-  LLVMStructSetBody(interfaceWeakRefStructL, interfaceWeakRefStructMemberTypesL.data(), interfaceWeakRefStructMemberTypesL.size(), false);
+  makeInterfaceWeakRefStruct(globalState, interfaceWeakRefStructL, refStructL);
 }

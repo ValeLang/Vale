@@ -13,9 +13,8 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
 constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
 
-constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
-constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
-
+constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 0;
+constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 1;
 
 static void buildCheckWrc(
     GlobalState* globalState,
@@ -27,8 +26,8 @@ static void buildCheckWrc(
 static void buildCheckGen(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef geniLE) {
-  LLVMBuildCall(builder, globalState->checkLgti, &geniLE, 1, "");
+    LLVMValueRef lgtiLE) {
+  LLVMBuildCall(builder, globalState->checkLgti, &lgtiLE, 1, "");
 }
 
 static LLVMValueRef getWrciFromWeakRef(
@@ -41,7 +40,23 @@ static LLVMValueRef getWrciFromWeakRef(
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI, "wrci");
 }
 
-static LLVMValueRef getLgtIndexFromControlBlockPtr(
+static LLVMValueRef getHeaderFromWeakRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE) {
+  return LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "weakRefHeader");
+}
+
+static LLVMValueRef getLgtiFromWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE) {
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST);
+  auto headerLE =
+      LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "weakRefHeader");
+  return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "lgti");
+}
+
+static LLVMValueRef getLgtiFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
@@ -101,40 +116,39 @@ static LLVMValueRef getTargetGenFromWeakRef(
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST);
   auto headerLE =
       LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "weakRefHeader");
-  return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "actualGeni");
-}
-
-static LLVMValueRef getGeniFromWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST);
-  auto headerLE =
-      LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "weakRefHeader");
-  return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "targetGen");
+  return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
 }
 
 static LLVMValueRef getLGTEntryGenPtr(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef geniLE) {
+    LLVMValueRef lgtiLE) {
   auto genEntriesPtrLE =
-      LLVMBuildLoad(builder, globalState->lgtEntriesArrayPtr, "genEntriesArrayPtr");
+      LLVMBuildLoad(builder, globalState->lgtEntriesArrayPtr, "lgtEntriesArrayPtr");
   auto ptrToLGTEntryLE =
-      LLVMBuildGEP(builder, genEntriesPtrLE, &geniLE, 1, "ptrToLGTEntry");
+      LLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
       LLVMBuildStructGEP(builder, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_GEN, "ptrToLGTEntryGen");
   return ptrToLGTEntryGenLE;
 }
 
+static LLVMValueRef getActualGen(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef lgtiLE) {
+  return LLVMBuildLoad(builder, getLGTEntryGenPtr(globalState, functionState, builder, lgtiLE), "lgti");
+}
+
 static LLVMValueRef getLGTEntryNextFreePtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef geniLE) {
+    LLVMValueRef lgtiLE) {
   auto genEntriesPtrLE =
       LLVMBuildLoad(builder, globalState->lgtEntriesArrayPtr, "genEntriesArrayPtr");
   auto ptrToLGTEntryLE =
-      LLVMBuildGEP(builder, genEntriesPtrLE, &geniLE, 1, "ptrToLGTEntry");
+      LLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
       LLVMBuildStructGEP(builder, ptrToLGTEntryLE, LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE, "ptrToLGTEntryNextFree");
   return ptrToLGTEntryGenLE;
@@ -143,10 +157,10 @@ static LLVMValueRef getLGTEntryNextFreePtr(
 static LLVMValueRef makeGenHeader(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef lgtIndexLE,
+    LLVMValueRef lgtiLE,
     LLVMValueRef targetGenLE) {
   auto headerLE = LLVMGetUndef(globalState->weakRefHeaderStructL);
-  headerLE = LLVMBuildInsertValue(builder, headerLE, lgtIndexLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "headerWithLgti");
+  headerLE = LLVMBuildInsertValue(builder, headerLE, lgtiLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "headerWithLgti");
   headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
   return headerLE;
 }
@@ -245,34 +259,86 @@ LLVMValueRef derefMaybeWeakRef(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef weakRefLE) {
-  switch (refM->ownership) {
-    case Ownership::OWN:
-    case Ownership::BORROW:
-    case Ownership::SHARE: {
-      auto objPtrLE = weakRefLE;
-      return objPtrLE;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::FAST:
+    case RegionOverride::ASSIST:
+    case RegionOverride::RESILIENT: {
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::BORROW:
+        case Ownership::SHARE: {
+          auto objPtrLE = weakRefLE;
+          return objPtrLE;
+        }
+        case Ownership::WEAK: {
+          auto fatPtrLE = weakRefLE;
+          auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, fatPtrLE);
+          buildIf(
+              functionState, builder, isZeroLE(builder, isAliveLE),
+              [from, globalState, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
+                buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
+                buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
+                assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_FAST);
+                auto wrciLE = getWrciFromWeakRef(globalState, thenBuilder, fatPtrLE);
+                buildPrint(globalState, thenBuilder, "Wrci: ");
+                buildPrint(globalState, thenBuilder, wrciLE);
+                buildPrint(globalState, thenBuilder, " ");
+                buildPrint(globalState, thenBuilder, "Exiting!\n");
+                auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+                LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+              });
+          return getInnerRefFromWeakRef(globalState, functionState, builder, refM, fatPtrLE);
+        }
+        default:
+          assert(false);
+          break;
+      }
     }
-    case Ownership::WEAK: {
-      auto fatPtrLE = weakRefLE;
-      auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, fatPtrLE);
-      buildIf(
-          functionState, builder, isZeroLE(builder, isAliveLE),
-          [from, globalState, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
-            auto wrciLE = getWrciFromWeakRef(globalState, thenBuilder, fatPtrLE);
-            buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
-            buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
-            if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-              // impl
-            } else {
-              buildPrint(globalState, thenBuilder, "Wrci: ");
-              buildPrint(globalState, thenBuilder, wrciLE);
-              buildPrint(globalState, thenBuilder, " ");
-            }
-            buildPrint(globalState, thenBuilder, "Exiting!\n");
-            auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
-            LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-          });
-      return getInnerRefFromWeakRef(globalState, functionState, builder, refM, fatPtrLE);
+    case RegionOverride::RESILIENT_FAST: {
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE: {
+          auto objPtrLE = weakRefLE;
+          return objPtrLE;
+        }
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto fatPtrLE = weakRefLE;
+          auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, fatPtrLE);
+          buildIf(
+              functionState, builder, isZeroLE(builder, isAliveLE),
+              [from, globalState, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
+                buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
+                buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
+                if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+                  auto lgtiLE = getLgtiFromWeakRef(globalState, thenBuilder, fatPtrLE);
+                  buildPrint(globalState, thenBuilder, "lgti ");
+                  buildPrint(globalState, thenBuilder, lgtiLE);
+                  buildPrint(globalState, thenBuilder, " ");
+                  auto targetGenLE = getTargetGenFromWeakRef(globalState, thenBuilder, fatPtrLE);
+                  buildPrint(globalState, thenBuilder, "targetGen ");
+                  buildPrint(globalState, thenBuilder, targetGenLE);
+                  buildPrint(globalState, thenBuilder, " ");
+                  auto actualGenLE = getActualGen(globalState, functionState, thenBuilder, lgtiLE);
+                  buildPrint(globalState, thenBuilder, "actualGen ");
+                  buildPrint(globalState, thenBuilder, actualGenLE);
+                  buildPrint(globalState, thenBuilder, " ");
+                } else {
+                  auto wrciLE = getWrciFromWeakRef(globalState, thenBuilder, fatPtrLE);
+                  buildPrint(globalState, thenBuilder, "Wrci: ");
+                  buildPrint(globalState, thenBuilder, wrciLE);
+                  buildPrint(globalState, thenBuilder, " ");
+                }
+                buildPrint(globalState, thenBuilder, "Exiting!\n");
+                auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+                LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+              });
+          return getInnerRefFromWeakRef(globalState, functionState, builder, refM, fatPtrLE);
+        }
+        default:
+          assert(false);
+          break;
+      }
     }
     default:
       assert(false);
@@ -288,28 +354,19 @@ void noteWeakableDestroyed(
     LLVMValueRef concreteRefLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
     auto controlBlockPtrLE = getControlBlockPtr(builder, concreteRefLE, concreteRefM);
-    auto geniLE = getLgtIndexFromControlBlockPtr(globalState, builder, concreteRefM,
-        controlBlockPtrLE);
-
-    //  LLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");
-
-    auto ptrToActualGenLE = getLGTEntryGenPtr(globalState, builder, geniLE);
-//    auto prevGenLE = LLVMBuildLoad(builder, ptrToGenLE, "wrc");
+    auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
+    auto ptrToActualGenLE = getLGTEntryGenPtr(globalState, functionState, builder, lgtiLE);
     adjustCounter(builder, ptrToActualGenLE, 1);
+    auto ptrToLgtEntryNextFreeLE = getLGTEntryNextFreePtr(globalState, builder, lgtiLE);
 
-//    auto genLE =
-//        LLVMBuildAnd(
-//            builder,
-//            prevGenLE,
-//            LLVMConstInt(LLVMInt64Type(), ~WRC_ALIVE_BIT, true),
-//            "");
-
-//    // Equivalent:
-//    // __wrc_entries[wrcIndex] = __wrc_entries[wrcIndex] & ~WRC_LIVE_BIT;
-//    // *wrcPtr = *wrcPtr & ~WRC_LIVE_BIT;
-//    LLVMBuildStore(builder, wrcLE, ptrToWrcLE);
-//
-//    maybeReleaseWrc(globalState, functionState, builder, wrciLE, ptrToWrcLE, wrcLE);
+    // __lgt_entries[lgti] = __lgt_firstFree;
+    LLVMBuildStore(
+        builder,
+        LLVMBuildLoad(
+            builder, globalState->lgtFirstFreeLgtiPtr, "firstFreeLgti"),
+        ptrToLgtEntryNextFreeLE);
+    // __lgt_firstFree = lgti;
+    LLVMBuildStore(builder, lgtiLE, globalState->lgtFirstFreeLgtiPtr);
   } else {
     auto controlBlockPtrLE = getControlBlockPtr(builder, concreteRefLE, concreteRefM);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
@@ -338,6 +395,7 @@ void noteWeakableDestroyed(
 
 LLVMValueRef getIsAliveFromWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef weakRefLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
@@ -345,11 +403,11 @@ LLVMValueRef getIsAliveFromWeakRef(
     auto targetGenLE = getTargetGenFromWeakRef(globalState, builder, weakRefLE);
 
     // Get actual generation from the table
-    auto geniLE = getGeniFromWeakRef(globalState, builder, weakRefLE);
+    auto lgtiLE = getLgtiFromWeakRef(globalState, builder, weakRefLE);
     if (globalState->opt->census) {
-      buildCheckGen(globalState, builder, geniLE);
+      buildCheckGen(globalState, builder, lgtiLE);
     }
-    auto ptrToActualGenLE = getLGTEntryGenPtr(globalState, builder, geniLE);
+    auto ptrToActualGenLE = getLGTEntryGenPtr(globalState, functionState, builder, lgtiLE);
     auto actualGenLE = LLVMBuildLoad(builder, ptrToActualGenLE, "gen");
 
     return LLVMBuildICmp(
@@ -384,7 +442,39 @@ LLVMValueRef noteWeakableCreated(
     FunctionState* functionState,
     LLVMBuilderRef builder) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    assert(false);
+      // uint64_t resultLgti = __lgt_firstFree;
+      auto resultLgtiLE = LLVMBuildLoad(builder, globalState->lgtFirstFreeLgtiPtr, "resultLgti");
+
+      // if (resultLgti == __lgt_capacity) {
+      //   __expandLgtTable();
+      // }
+      auto atCapacityLE =
+          LLVMBuildICmp(
+              builder,
+              LLVMIntEQ,
+              resultLgtiLE,
+              LLVMBuildLoad(builder, globalState->lgtCapacityPtr, "lgtCapacity"),
+              "atCapacity");
+      buildIf(
+          functionState,
+          builder,
+          atCapacityLE,
+          [globalState](LLVMBuilderRef thenBuilder) {
+            LLVMBuildCall(thenBuilder, globalState->expandLgt, nullptr, 0, "");
+          });
+
+      // __LGT_Entry* lgtEntryPtr = &__lgt_entries[resultLgti];
+      auto lgtNextFreePtrLE = getLGTEntryNextFreePtr(globalState, builder, resultLgtiLE);
+
+      // __lgt_firstFree = lgtEntryPtr->nextFree;
+      LLVMBuildStore(
+          builder,
+          // lgtEntryPtr->nextFree
+          LLVMBuildLoad(builder, lgtNextFreePtrLE, ""),
+          // __lgt_firstFree
+          globalState->lgtFirstFreeLgtiPtr);
+
+      return resultLgtiLE;
   } else {
     // uint64_t resultWrci = __wrc_firstFree;
     auto resultWrciLE = LLVMBuildLoad(builder, globalState->wrcFirstFreeWrciPtr, "resultWrci");
@@ -434,13 +524,13 @@ LLVMValueRef fillWeakableControlBlock(
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    auto geniLE = noteWeakableCreated(globalState, functionState, builder);
     return LLVMBuildInsertValue(
         builder,
         controlBlockLE,
-        // Start at 1, 0 would mean it's dead.
-        LLVMConstInt(LLVMInt32Type(), 1, false),
+        geniLE,
         globalState->mutControlBlockLgtiMemberIndex,
-        "controlBlockWithRc");
+        "controlBlockWithLgti");
   } else {
     auto wrciLE = noteWeakableCreated(globalState, functionState, builder);
     return LLVMBuildInsertValue(
@@ -475,8 +565,28 @@ LLVMValueRef weakInterfaceRefToWeakStructRef(
     Reference* refM,
     LLVMValueRef exprLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    // impl
-    assert(false);
+    auto headerLE = getHeaderFromWeakRef(builder, exprLE);
+    auto interfaceRefLE =
+        getInnerRefFromWeakRef(
+            globalState,
+            functionState,
+            builder,
+            refM,
+            exprLE);
+    auto controlBlockPtrLE = getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
+
+//    auto objVoidPtrLE =
+//        LLVMBuildPointerCast(
+//            builder,
+//            controlBlockPtrLE,
+//            LLVMPointerType(LLVMVoidType(), 0),
+//            "objAsVoidPtr");
+
+    // Now, reassemble a weak void* ref to the struct.
+    auto weakVoidStructRefLE =
+        assembleVoidStructWeakRef(globalState, builder, controlBlockPtrLE, headerLE);
+
+    return weakVoidStructRefLE;
   } else {
     // Disassemble the weak interface ref.
     auto wrciLE = getWrciFromWeakRef(globalState, builder, exprLE);
@@ -489,9 +599,17 @@ LLVMValueRef weakInterfaceRefToWeakStructRef(
             exprLE);
     auto controlBlockPtrLE = getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
 
+    auto objVoidPtrLE =
+        LLVMBuildPointerCast(
+            builder,
+            controlBlockPtrLE,
+            LLVMPointerType(LLVMVoidType(), 0),
+            "objAsVoidPtr");
+    auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
+
     // Now, reassemble a weak void* ref to the struct.
     auto weakVoidStructRefLE =
-        assembleVoidStructWeakRef(globalState, builder, controlBlockPtrLE, wrciLE);
+        assembleVoidStructWeakRef(globalState, builder, controlBlockPtrLE, headerLE);
 
     return weakVoidStructRefLE;
   }
@@ -503,8 +621,8 @@ void buildCheckWeakRef(
     LLVMValueRef weakRefLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
     // WARNING: This check has false positives.
-    auto geniLE = getGeniFromWeakRef(globalState, builder, weakRefLE);
-    buildCheckGen(globalState, builder, geniLE);
+    auto lgtiLE = getLgtiFromWeakRef(globalState, builder, weakRefLE);
+    buildCheckGen(globalState, builder, lgtiLE);
   } else {
     // WARNING: This check has false positives.
     auto wrciLE = getWrciFromWeakRef(globalState, builder, weakRefLE);
@@ -514,13 +632,25 @@ void buildCheckWeakRef(
 
 LLVMValueRef assembleInterfaceWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* interfaceTypeM,
     InterfaceReferend* interfaceReferendM,
     LLVMValueRef fatPtrLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    // impl
-    assert(false);
+    auto controlBlockPtrLE = getControlBlockPtr(builder, fatPtrLE, interfaceTypeM);
+    auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, interfaceTypeM,
+        controlBlockPtrLE);
+    auto currentGenLE = getActualGen(globalState, functionState, builder, lgtiLE);
+    auto headerLE = makeGenHeader(globalState, builder, lgtiLE, currentGenLE);
+
+    auto weakRefLE = LLVMGetUndef(
+        globalState->getInterfaceWeakRefStruct(interfaceReferendM->fullName));
+    weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
+    weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, fatPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
+        "");
+
+    return weakRefLE;
   } else {
     auto controlBlockPtrLE = getControlBlockPtr(builder, fatPtrLE, interfaceTypeM);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, interfaceTypeM,
@@ -540,16 +670,23 @@ LLVMValueRef assembleInterfaceWeakRef(
 
 LLVMValueRef assembleStructWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
     StructReferend* structReferendM,
     LLVMValueRef objPtrLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    buildFlare(FL(), globalState, functionState, builder);
     auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
-    auto lgtIndexLE = getLgtIndexFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
-    auto currentGenPtrLE = getLGTEntryGenPtr(globalState, builder, lgtIndexLE);
-    auto currentGenLE = LLVMBuildLoad(builder, currentGenPtrLE, "gen");
-    auto headerLE = makeGenHeader(globalState, builder, lgtIndexLE, currentGenLE);
+    auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, structTypeM,
+        controlBlockPtrLE);
+    buildFlare(FL(), globalState, functionState, builder, lgtiLE);
+//    auto currentGenPtrLE = getLGTEntryGenPtr(globalState, builder, lgtiLE);
+//    buildFlare(FL(), globalState, functionState, builder);
+    auto currentGenLE = getActualGen(globalState, functionState, builder, lgtiLE);
+    buildFlare(FL(), globalState, functionState, builder);
+    auto headerLE = makeGenHeader(globalState, builder, lgtiLE, currentGenLE);
+    buildFlare(FL(), globalState, functionState, builder);
 
     auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
     weakRefLE =
@@ -557,8 +694,11 @@ LLVMValueRef assembleStructWeakRef(
     weakRefLE =
         LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
 
+    buildFlare(FL(), globalState, functionState, builder);
+
     return weakRefLE;
   } else {
+    buildFlare(FL(), globalState, functionState, builder);
     auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
     auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
@@ -599,13 +739,25 @@ LLVMValueRef assembleKnownSizeArrayWeakRef(
 
 LLVMValueRef assembleUnknownSizeArrayWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
     UnknownSizeArrayT* unknownSizeArrayMT,
     LLVMValueRef objPtrLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    // impl
-    assert(false);
+    auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
+    auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+    auto targetGenLE = getActualGen(globalState, functionState, builder, lgtiLE);
+    auto headerLE = makeGenHeader(globalState, builder, lgtiLE, targetGenLE);
+
+    auto weakRefLE = LLVMGetUndef(
+        globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name));
+    weakRefLE =
+        LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
+    weakRefLE =
+        LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
+
+    return weakRefLE;
   } else {
     auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
@@ -626,10 +778,21 @@ LLVMValueRef assembleVoidStructWeakRef(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef controlBlockPtrLE,
-    LLVMValueRef wrciLE) {
+    LLVMValueRef headerLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    // impl
-    assert(false);
+    auto objVoidPtrLE =
+        LLVMBuildPointerCast(
+            builder,
+            controlBlockPtrLE,
+            LLVMPointerType(LLVMVoidType(), 0),
+            "objAsVoidPtr");
+
+    auto weakRefLE = LLVMGetUndef(globalState->weakVoidRefStructL);
+    weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
+    weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
+        "");
+
+    return weakRefLE;
   } else {
     auto objVoidPtrLE =
         LLVMBuildPointerCast(
@@ -637,7 +800,6 @@ LLVMValueRef assembleVoidStructWeakRef(
             controlBlockPtrLE,
             LLVMPointerType(LLVMVoidType(), 0),
             "objAsVoidPtr");
-    auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
     auto weakRefLE = LLVMGetUndef(globalState->weakVoidRefStructL);
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
@@ -659,8 +821,39 @@ LLVMValueRef weakStructRefToWeakInterfaceRef(
     InterfaceReferend* targetInterfaceReferendM,
     Reference* targetInterfaceTypeM) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    // impl
-    assert(false);
+    checkValidReference(
+        FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
+    auto controlBlockPtr =
+        getConcreteControlBlockPtr(
+            builder,
+            getInnerRefFromWeakRef(
+                globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
+
+    auto interfaceRefLT =
+        globalState->getInterfaceWeakRefStruct(
+            targetInterfaceReferendM->fullName);
+    auto headerLE = getHeaderFromWeakRef(builder, sourceRefLE);
+
+    auto interfaceWeakRefLE = LLVMGetUndef(interfaceRefLT);
+    interfaceWeakRefLE =
+        LLVMBuildInsertValue(
+            builder,
+            interfaceWeakRefLE,
+            headerLE,
+            WEAK_REF_MEMBER_INDEX_FOR_HEADER,
+            "interfaceRefWithOnlyObj");
+    interfaceWeakRefLE =
+        LLVMBuildInsertValue(
+            builder,
+            interfaceWeakRefLE,
+            makeInterfaceRefStruct(
+                globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
+                controlBlockPtr),
+            WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
+            "interfaceRef");
+    checkValidReference(
+        FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
+    return interfaceWeakRefLE;
   } else {
     checkValidReference(
         FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
@@ -776,8 +969,8 @@ void initWeakInternalExterns(GlobalState* globalState) {
     globalState->lgtCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__lgt_capacity");
     LLVMSetLinkage(globalState->lgtCapacityPtr, LLVMExternalLinkage);
 
-    globalState->lgtFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__lgt_firstFree");
-    LLVMSetLinkage(globalState->lgtFirstFreeWrciPtr, LLVMExternalLinkage);
+    globalState->lgtFirstFreeLgtiPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__lgt_firstFree");
+    LLVMSetLinkage(globalState->lgtFirstFreeLgtiPtr, LLVMExternalLinkage);
 
     globalState->lgtEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(globalState->lgtEntryStructL, 0), "__lgt_entries");
     LLVMSetLinkage(globalState->lgtEntriesArrayPtr, LLVMExternalLinkage);

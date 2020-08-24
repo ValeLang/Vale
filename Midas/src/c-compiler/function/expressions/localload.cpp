@@ -24,10 +24,16 @@ LLVMValueRef translateLocalLoad(
 
   auto localAddr = blockState->getLocalAddr(localId);
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto sourceRefLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
   checkValidReference(FL(), globalState, functionState, builder, localType, sourceRefLE);
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto resultRefLE = load(globalState, functionState, builder, localType, resultType, sourceRefLE);
+  buildFlare(FL(), globalState, functionState, builder);
   acquireReference(FL(), globalState, functionState, builder, resultType, resultRefLE);
+  buildFlare(FL(), globalState, functionState, builder);
   return resultRefLE;
 }

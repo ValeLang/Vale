@@ -235,4 +235,8 @@ LLVMValueRef addExtern(
     LLVMTypeRef retType,
     std::vector<LLVMTypeRef> paramTypes);
 
+inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
+  return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
+}
+
 #endif

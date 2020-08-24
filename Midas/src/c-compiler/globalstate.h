@@ -42,7 +42,7 @@ public:
   LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
 
   LLVMValueRef wrcCapacityPtr = nullptr, wrcFirstFreeWrciPtr = nullptr, wrcEntriesArrayPtr = nullptr;
-  LLVMValueRef lgtCapacityPtr = nullptr, lgtFirstFreeWrciPtr = nullptr, lgtEntriesArrayPtr = nullptr;
+  LLVMValueRef lgtCapacityPtr = nullptr, lgtFirstFreeLgtiPtr = nullptr, lgtEntriesArrayPtr = nullptr;
 
   int controlBlockTypeStrIndex = -1;
   int controlBlockObjIdIndex = -1;

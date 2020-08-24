@@ -45,6 +45,7 @@ LLVMValueRef getInnerRefFromWeakRef(
 
 LLVMValueRef getIsAliveFromWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef weakRefLE);
 
@@ -93,6 +94,7 @@ void buildCheckWeakRef(
 
 LLVMValueRef assembleInterfaceWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* interfaceTypeM,
     InterfaceReferend* interfaceReferendM,
@@ -101,6 +103,7 @@ LLVMValueRef assembleInterfaceWeakRef(
 
 LLVMValueRef assembleStructWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
     StructReferend* structReferendM,
@@ -115,6 +118,7 @@ LLVMValueRef assembleKnownSizeArrayWeakRef(
 
 LLVMValueRef assembleUnknownSizeArrayWeakRef(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
     UnknownSizeArrayT* unknownSizeArrayMT,

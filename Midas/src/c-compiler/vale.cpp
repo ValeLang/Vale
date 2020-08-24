@@ -103,13 +103,13 @@ void initInternalStructs(GlobalState* globalState) {
             LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    if (globalState->opt->census) {
+//    if (globalState->opt->census) {
       globalState->controlBlockTypeStrIndex = memberTypesL.size();
       memberTypesL.push_back(int8PtrLT);
 
       globalState->controlBlockObjIdIndex = memberTypesL.size();
       memberTypesL.push_back(int64LT);
-    }
+//    }
 
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
       globalState->mutControlBlockRcMemberIndex = memberTypesL.size();
@@ -135,13 +135,13 @@ void initInternalStructs(GlobalState* globalState) {
             LLVMGetGlobalContext(), "mutWeakableControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    if (globalState->opt->census) {
+//    if (globalState->opt->census) {
       assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
       assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
-    }
+//    }
 
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
       assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakability
@@ -173,13 +173,13 @@ void initInternalStructs(GlobalState* globalState) {
             LLVMGetGlobalContext(), "immControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    if (globalState->opt->census) {
+//    if (globalState->opt->census) {
       assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
       assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
-    }
+//    }
 
     globalState->immControlBlockRcMemberIndex = memberTypesL.size();
     memberTypesL.push_back(int64LT);

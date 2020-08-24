@@ -3,6 +3,7 @@
 #include "translatetype.h"
 #include "controlblock.h"
 #include "branch.h"
+#include "weaks.h"
 
 // A "Never" is something that should never be read.
 // This is useful in a lot of situations, for example:
@@ -42,13 +43,26 @@ LLVMValueRef adjustCounter(
     LLVMBuilderRef builder,
     LLVMValueRef counterPtrLE,
     int adjustAmount) {
-  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
-  auto newValLE =
-      LLVMBuildAdd(
-          builder, prevValLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "counterNewVal");
-  LLVMBuildStore(builder, newValLE, counterPtrLE);
+  if (LLVMTypeOf(counterPtrLE) == LLVMPointerType(LLVMInt64Type(), 0)) {
+    auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+    auto newValLE =
+        LLVMBuildAdd(
+            builder, prevValLE, LLVMConstInt(LLVMInt64Type(), adjustAmount, true), "counterNewVal");
+    LLVMBuildStore(builder, newValLE, counterPtrLE);
 
-  return newValLE;
+    return newValLE;
+  } else if (LLVMTypeOf(counterPtrLE) == LLVMPointerType(LLVMInt32Type(), 0)) {
+      auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+      auto newValLE =
+          LLVMBuildAdd(
+              builder, prevValLE, LLVMConstInt(LLVMInt32Type(), adjustAmount, true), "counterNewVal");
+      LLVMBuildStore(builder, newValLE, counterPtrLE);
+
+      return newValLE;
+  } else {
+    // impl
+    assert(false);
+  }
 }
 
 
@@ -123,13 +137,6 @@ LLVMValueRef adjustStrongRc(
   return newRc;
 }
 
-void buildCheckWrc(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef wrciLE) {
-  LLVMBuildCall(builder, globalState->checkWrc, &wrciLE, 1, "");
-}
-
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
@@ -171,8 +178,14 @@ void buildPrint(
     LLVMValueRef exprLE) {
   if (LLVMTypeOf(exprLE) == LLVMInt64Type()) {
     LLVMBuildCall(builder, globalState->printInt, &exprLE, 1, "");
+  } else if (LLVMTypeOf(exprLE) == LLVMInt32Type()) {
+    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64Type(), "asI64");
+    LLVMBuildCall(builder, globalState->printInt, &i64LE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8Type(), 0)) {
     LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
+  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMVoidType(), 0)) {
+    auto asIntLE = LLVMBuildPointerCast(builder, exprLE, LLVMInt64Type(), "asI64");
+    LLVMBuildCall(builder, globalState->printInt, &asIntLE, 1, "");
   } else {
     assert(false);
 //    buildPrint(
@@ -233,21 +246,20 @@ LLVMValueRef buildInterfaceCall(
     }
     case Ownership::WEAK: {
       // Disassemble the weak interface ref.
-      auto wrciLE = getWrciFromWeakRef(builder, virtualArgLE);
       auto interfaceRefLE =
           getInnerRefFromWeakRef(
               globalState,
               functionState,
               builder,
               virtualParamMT,
-              argExprsLE[virtualParamIndex]);
-      auto controlBlockPtrLE = getControlBlockPtrFromInterfaceRef(builder, interfaceRefLE);
+              virtualArgLE);
 
       itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
 
       // Now, reassemble a weak void* ref to the struct.
       auto weakVoidStructRefLE =
-          assembleVoidStructWeakRef(globalState, builder, controlBlockPtrLE, wrciLE);
+          weakInterfaceRefToWeakStructRef(
+              globalState, functionState, builder, virtualParamMT, virtualArgLE);
 
       argExprsLE[virtualParamIndex] = weakVoidStructRefLE;
 
@@ -319,9 +331,7 @@ void checkValidReference(
       auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else if (refM->ownership == Ownership::WEAK) {
-      // WARNING: This check has false positives.
-      auto wrciLE = getWrciFromWeakRef(builder, refLE);
-      buildCheckWrc(globalState, builder, wrciLE);
+      buildCheckWeakRef(globalState, builder, refLE);
     } else assert(false);
   } else {
   }
@@ -413,37 +423,15 @@ LLVMValueRef upcast2(
       return interfaceRefLE;
     }
     case Ownership::WEAK: {
-      checkValidReference(
-          FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
-      auto controlBlockPtr =
-          getConcreteControlBlockPtr(
-              builder,
-              getInnerRefFromWeakRef(
-                  globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
-
-      auto interfaceRefLT =
-          globalState->getInterfaceWeakRefStruct(
-              targetInterfaceReferendM->fullName);
-      auto interfaceWeakRefLE = LLVMGetUndef(interfaceRefLT);
-      interfaceWeakRefLE =
-          LLVMBuildInsertValue(
-              builder,
-              interfaceWeakRefLE,
-              getWrciFromWeakRef(builder, sourceRefLE),
-              WEAK_REF_RCINDEX_MEMBER_INDEX,
-              "interfaceRefWithOnlyObj");
-      interfaceWeakRefLE =
-          LLVMBuildInsertValue(
-              builder,
-              interfaceWeakRefLE,
-              makeInterfaceRefStruct(
-                  globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
-                  controlBlockPtr),
-              WEAK_REF_OBJPTR_MEMBER_INDEX,
-              "interfaceRef");
-      checkValidReference(
-          FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
-      return interfaceWeakRefLE;
+      return weakStructRefToWeakInterfaceRef(
+          globalState,
+          functionState,
+          builder,
+          sourceRefLE,
+          sourceStructReferendM,
+          sourceStructTypeM,
+          targetInterfaceReferendM,
+          targetInterfaceTypeM);
     }
     default:
       assert(false);
@@ -465,6 +453,8 @@ Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership o
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       return Ownership::BORROW;
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+      return Ownership::WEAK;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
       return Ownership::WEAK;
     } else assert(false);
   } else assert(false);
@@ -499,6 +489,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) 
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // All mutables are weakabile in resilient mode
       return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // All mutables are weakabile in resilient mode
+      return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
@@ -524,6 +517,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // All mutable structs are weakability in resilient mode
       return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // All mutable structs are weakability in resilient mode
+      return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
@@ -547,101 +543,14 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
         return Weakability::NON_WEAKABLE;
       }
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      // All mutable structs are weakability in resilient mode
+      // All mutable structs are weakable in resilient mode
+      return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // All mutable structs are weakable in resilient fast mode
       return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
-
-LLVMValueRef assembleInterfaceWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* interfaceTypeM,
-    InterfaceReferend* interfaceReferendM,
-    LLVMValueRef fatPtrLE) {
-  auto controlBlockPtrLE = getControlBlockPtr(builder, fatPtrLE, interfaceTypeM);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, interfaceTypeM, controlBlockPtrLE);
-
-  auto weakRefLE = LLVMGetUndef(globalState->getInterfaceWeakRefStruct(interfaceReferendM->fullName));
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, fatPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-
-  return weakRefLE;
-}
-
-LLVMValueRef assembleStructWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    StructReferend* structReferendM,
-    LLVMValueRef objPtrLE) {
-  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
-
-  auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-
-  return weakRefLE;
-}
-
-LLVMValueRef assembleKnownSizeArrayWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    KnownSizeArrayT* knownSizeArrayMT,
-    LLVMValueRef objPtrLE) {
-  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
-
-  auto weakRefLE = LLVMGetUndef(globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name));
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-
-  return weakRefLE;
-}
-
-LLVMValueRef assembleUnknownSizeArrayWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    UnknownSizeArrayT* unknownSizeArrayMT,
-    LLVMValueRef objPtrLE) {
-  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
-
-  auto weakRefLE = LLVMGetUndef(globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name));
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-
-  return weakRefLE;
-}
-
-// Used in interface calling, when we dont know what the underlying struct type is yet.
-LLVMValueRef assembleVoidStructWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef controlBlockPtrLE,
-    LLVMValueRef wrciLE) {
-//  auto controlBlockPtrLE = getControlBlockPtr(builder, objPtrLE, structTypeM);
-//  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
-
-  auto objVoidPtrLE =
-      LLVMBuildPointerCast(
-          builder,
-          controlBlockPtrLE,
-          LLVMPointerType(LLVMVoidType(), 0),
-          "objAsVoidPtr");
-
-  auto weakRefLE = LLVMGetUndef(globalState->weakVoidRefStructL);
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, wrciLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "");
-  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-
-//  adjustWeakRc(globalState, builder, weakRefLE, 1);
-
-  return weakRefLE;
-}
-
 
 
 // TODO maybe combine with alias/acquireReference?
@@ -659,21 +568,27 @@ LLVMValueRef load(
   auto targetLocation = targetType->location;
 //  assert(sourceLocation == targetLocation); // unimplemented
 
+  buildFlare(FL(), globalState, functionState, builder);
   checkValidReference(FL(), globalState, functionState, builder, sourceType, sourceRefLE);
 
+  buildFlare(FL(), globalState, functionState, builder);
   if (sourceOwnership == Ownership::SHARE) {
     if (sourceLocation == Location::INLINE) {
+      buildFlare(FL(), globalState, functionState, builder);
       return sourceRefLE;
     } else {
+      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
 
       return resultRefLE;
     }
   } else if (sourceOwnership == Ownership::OWN) {
     if (targetOwnership == Ownership::OWN) {
+      buildFlare(FL(), globalState, functionState, builder);
       // Cant load an owning reference from a owning local. That would require an unstackify.
       assert(false);
     } else if (targetOwnership == Ownership::BORROW) {
+      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
       // We do the same thing for inline and yonder muts, the only difference is
       // where the memory lives.
@@ -683,26 +598,32 @@ LLVMValueRef load(
 
       return resultRefLE;
     } else if (targetOwnership == Ownership::WEAK) {
+      buildFlare(FL(), globalState, functionState, builder);
       // Now we need to package it up into a weak ref.
       if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
+        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleStructWeakRef(
-                globalState, builder, sourceType, structReferend, sourceRefLE);
+                globalState, functionState, builder, sourceType, structReferend, sourceRefLE);
+        buildFlare(FL(), globalState, functionState, builder);
         return weakRefLE;
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
+        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleInterfaceWeakRef(
-                globalState, builder, sourceType, interfaceReferendM, sourceRefLE);
+                globalState, functionState, builder, sourceType, interfaceReferendM, sourceRefLE);
         return weakRefLE;
       } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
+        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleKnownSizeArrayWeakRef(
                 globalState, builder, sourceType, knownSizeArray, sourceRefLE);
         return weakRefLE;
       } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
+        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleUnknownSizeArrayWeakRef(
-                globalState, builder, sourceType, unknownSizeArray, sourceRefLE);
+                globalState, functionState, builder, sourceType, unknownSizeArray, sourceRefLE);
         buildFlare(FL(), globalState, functionState, builder);
         return weakRefLE;
       } else assert(false);
@@ -710,29 +631,35 @@ LLVMValueRef load(
       assert(false);
     }
   } else if (sourceOwnership == Ownership::BORROW) {
+    buildFlare(FL(), globalState, functionState, builder);
 
     if (targetOwnership == Ownership::OWN) {
+      buildFlare(FL(), globalState, functionState, builder);
       assert(false); // Cant load an owning reference from a constraint ref local.
     } else if (targetOwnership == Ownership::BORROW) {
+      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
       // We do the same thing for inline and yonder muts, the only difference is
       // where the memory lives.
 
       return resultRefLE;
     } else if (targetOwnership == Ownership::WEAK) {
+      buildFlare(FL(), globalState, functionState, builder);
       // Making a weak ref from a constraint ref local.
 
       if (auto structReferendM = dynamic_cast<StructReferend*>(sourceType->referend)) {
+        buildFlare(FL(), globalState, functionState, builder);
         // We do the same thing for inline and yonder muts, the only difference is
         // where the memory lives.
         auto weakRefLE =
             assembleStructWeakRef(
-                globalState, builder, sourceType, structReferendM, sourceRefLE);
+                globalState, functionState, builder, sourceType, structReferendM, sourceRefLE);
         return weakRefLE;
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
+        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleInterfaceWeakRef(
-                globalState, builder, sourceType, interfaceReferendM, sourceRefLE);
+                globalState, functionState, builder, sourceType, interfaceReferendM, sourceRefLE);
         return weakRefLE;
       } else assert(false);
     } else {
@@ -740,10 +667,13 @@ LLVMValueRef load(
     }
   } else if (sourceOwnership == Ownership::WEAK) {
     if (targetOwnership == Ownership::OWN) {
+      buildFlare(FL(), globalState, functionState, builder);
       assert(false); // Cant load an owning reference from a weak ref local.
     } else if (targetOwnership == Ownership::BORROW) {
+      buildFlare(FL(), globalState, functionState, builder);
       assert(false); // Can't implicitly make a constraint ref from a weak ref.
     } else if (targetOwnership == Ownership::WEAK) {
+      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
 
       // We do the same thing for inline and yonder muts, the only difference is
@@ -755,4 +685,9 @@ LLVMValueRef load(
   } else {
     assert(false);
   }
+}
+
+LLVMValueRef addExtern(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
+  LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
+  return LLVMAddFunction(mod, name.c_str(), funcType);
 }

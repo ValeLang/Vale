@@ -88,6 +88,7 @@ object LetHammer {
     StackifyH(
       NewStructH(
         List(sourceExprResultLine),
+        hamuts.structDefs.find(_.getRef == boxStructRefH).get.members.map(_.name),
         expectedLocalBoxType),
       local,
       Some(NameHammer.translateFullName(hinputs, hamuts, varId)))

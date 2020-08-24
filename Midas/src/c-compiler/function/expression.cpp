@@ -111,7 +111,7 @@ LLVMValueRef translateExpressionInner(
         auto objPtrLE = sourceLE;
         auto weakRefLE =
             assembleStructWeakRef(
-                globalState, builder, getEffectiveType(globalState, weakAlias->sourceType), structReferendM, objPtrLE);
+                globalState, functionState, builder, getEffectiveType(globalState, weakAlias->sourceType), structReferendM, objPtrLE);
         aliasWeakRef(FL(), globalState, functionState, builder, weakRefLE);
         discard(
             AFL("WeakAlias drop constraintref"),
@@ -302,7 +302,8 @@ LLVMValueRef translateExpressionInner(
         // Mutables in resilient mode dont have strong RC, and also, they dont adjust
         // weak RC for owning refs
       } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-        assert(false);
+        // Mutables in resilient v1 dont have strong RC, and also, they dont adjust
+        // weak RC for owning refs
       } else assert(false);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
@@ -546,7 +547,7 @@ LLVMValueRef translateExpressionInner(
             globalState, functionState, blockState, builder, lockWeak->sourceExpr);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, lockWeak->sourceType), sourceLE);
 
-    auto isAliveLE = getIsAliveFromWeakRef(globalState, builder, sourceLE);
+    auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceLE);
 
     auto resultOptTypeLE = translateType(globalState, getEffectiveType(globalState, lockWeak->resultOptType));
 
@@ -579,6 +580,7 @@ LLVMValueRef translateExpressionInner(
                   someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {constraintRefLE});
                   break;
                 }
+                case RegionOverride::RESILIENT_FAST:
                 case RegionOverride::RESILIENT: {
                   // The incoming "constraint" ref is actually already a week ref. All we have to
                   // do now is wrap it in a Some.
@@ -594,10 +596,6 @@ LLVMValueRef translateExpressionInner(
                       sourceLE);
                   // If we get here, object is alive, return a Some.
                   someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {sourceLE});
-                  break;
-                }
-                case RegionOverride::RESILIENT_FAST: {
-                  assert(false);
                   break;
                 }
               }

@@ -1,5 +1,6 @@
 #include "controlblock.h"
 #include "shared.h"
+#include "weaks.h"
 
 LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
@@ -38,32 +39,14 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
       assert(false); // Mutables in fast mode dont have a strong RC
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // Fine to access the strong RC for mutables in resilient mode
-    }
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      assert(false);
+    } else assert(false);
     return LLVMBuildStructGEP(
         builder,
         controlBlockPtr,
         globalState->mutControlBlockRcMemberIndex,
         "rcPtr");
-  }
-}
-
-LLVMValueRef getWrciFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef controlBlockPtr) {
-
-  if (refM->ownership == Ownership::SHARE) {
-    // Shares never have weak refs
-    assert(false);
-  } else {
-    auto wrciPtrLE =
-        LLVMBuildStructGEP(
-            builder,
-            controlBlockPtr,
-            globalState->mutControlBlockWrciMemberIndex,
-            "wrciPtr");
-    return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
   }
 }
 
@@ -139,7 +122,7 @@ void fillControlBlock(
   } else {
     bool hasStrongRc =
         globalState->opt->regionOverride == RegionOverride::ASSIST ||
-            globalState->opt->regionOverride == RegionOverride::RESILIENT;
+        globalState->opt->regionOverride == RegionOverride::RESILIENT;
     if (hasStrongRc) {
       newControlBlockLE =
           LLVMBuildInsertValue(
@@ -171,36 +154,10 @@ void fillControlBlock(
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
-    auto wrciLE = LLVMBuildCall(builder, globalState->allocWrc, nullptr, 0, "");
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            wrciLE,
-            globalState->mutControlBlockWrciMemberIndex,
-            "strControlBlockWithWrci");
+    newControlBlockLE = fillWeakableControlBlock(globalState, functionState, builder, newControlBlockLE);
   }
   LLVMBuildStore(
       builder,
       newControlBlockLE,
       controlBlockPtrLE);
-}
-
-LLVMValueRef getWrciFromWeakRef(
-    LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE) {
-  return LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_RCINDEX_MEMBER_INDEX, "wrci");
-}
-
-LLVMValueRef getInnerRefFromWeakRef(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* weakRefM,
-    LLVMValueRef weakRefLE) {
-  checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRefLE);
-  auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_OBJPTR_MEMBER_INDEX, "");
-  // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
-  // a valid reference.
-  return innerRefLE;
 }

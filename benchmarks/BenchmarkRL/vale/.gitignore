@@ -1,9 +1,13 @@
 a.out
 build.vir
 build
+build.o
 
 # programs for benchmarking
 assist
 resilient
 resilientFastEstimate
 unsafeFast
+resilientv0
+resilientv1
+unsafefast

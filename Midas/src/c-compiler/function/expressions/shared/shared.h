@@ -166,6 +166,10 @@ inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);
 }
 
+inline LLVMValueRef constI32LE(int n) {
+  return LLVMConstInt(LLVMInt32Type(), n, false);
+}
+
 
 void buildAssertCensusContains(
     AreaAndFileAndLine from,
@@ -208,43 +212,6 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
 
-
-LLVMValueRef assembleInterfaceWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* interfaceTypeM,
-    InterfaceReferend* interfaceReferendM,
-    LLVMValueRef fatPtrLE);
-
-LLVMValueRef assembleStructWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    StructReferend* structReferendM,
-    LLVMValueRef objPtrLE);
-
-LLVMValueRef assembleVoidStructWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef controlBlockPtrLE,
-    LLVMValueRef wrciLE);
-
-LLVMValueRef assembleKnownSizeArrayWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    KnownSizeArrayT* knownSizeArrayMT,
-    LLVMValueRef objPtrLE);
-
-LLVMValueRef assembleUnknownSizeArrayWeakRef(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* structTypeM,
-    UnknownSizeArrayT* unknownSizeArrayMT,
-    LLVMValueRef objPtrLE);
-
-
-
 // Loads from either a local or a member, and does the appropriate casting.
 LLVMValueRef load(
     GlobalState* globalState,
@@ -254,9 +221,22 @@ LLVMValueRef load(
     Reference* targetType,
     LLVMValueRef sourceRefLE);
 
-void buildCheckWrc(
+LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef wrciLE);
+    StructReferend* sourceStructReferendM,
+    InterfaceReferend* targetInterfaceReferendM,
+    LLVMValueRef controlBlockPtrLE);
+
+
+LLVMValueRef addExtern(
+    LLVMModuleRef mod,
+    const std::string& name,
+    LLVMTypeRef retType,
+    std::vector<LLVMTypeRef> paramTypes);
+
+inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
+  return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
+}
 
 #endif

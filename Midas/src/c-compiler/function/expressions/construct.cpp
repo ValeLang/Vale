@@ -25,8 +25,8 @@ void fillInnerStruct(
             dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
             dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
           if (memberType->ownership == Ownership::WEAK) {
-            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
-            buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", wrciLE);
+//            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
+            buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
           } else {
             auto controlBlockPtrLE = getControlBlockPtr(builder, memberLE, memberType);
             buildFlare(FL(), globalState, functionState, builder,

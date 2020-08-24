@@ -536,6 +536,8 @@ case class DestroyUnknownSizeArrayH(
 case class NewStructH(
   // Expressions containing the values we'll use as members of the new struct.
   sourceExpressions: List[ExpressionH[ReferendH]],
+  // Names of the members of the struct, in order.
+  targetMemberNames: List[FullNameH],
   // The type of struct we'll create.
   resultType: ReferenceH[StructRefH]
 ) extends ExpressionH[StructRefH]

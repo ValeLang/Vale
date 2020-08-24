@@ -28,6 +28,7 @@
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
 #include <struct/array.h>
+#include <function/expressions/shared/weaks.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -41,65 +42,49 @@
 using json = nlohmann::json;
 
 
-LLVMValueRef addFunction(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
-  LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-  return LLVMAddFunction(mod, name.c_str(), funcType);
-}
-
 void initInternalExterns(GlobalState* globalState) {
   auto voidLT = LLVMVoidType();
   auto voidPtrLT = LLVMPointerType(voidLT, 0);
   auto int1LT = LLVMInt1Type();
   auto int8LT = LLVMInt8Type();
+  auto int32LT = LLVMInt32Type();
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   auto stringInnerStructPtrLT = LLVMPointerType(globalState->stringInnerStructL, 0);
 
-  globalState->malloc = addFunction(globalState->mod, "malloc", int8PtrLT, {int64LT});
-  globalState->free = addFunction(globalState->mod, "free", voidLT, {int8PtrLT});
-  globalState->exit = addFunction(globalState->mod, "exit", voidLT, {int8LT});
-  globalState->assert = addFunction(globalState->mod, "__vassert", voidLT, {int1LT, int8PtrLT});
-  globalState->assertI64Eq = addFunction(globalState->mod, "__vassertI64Eq", voidLT, { int64LT, int64LT, int8PtrLT });
-  globalState->flareI64 = addFunction(globalState->mod, "__vflare_i64", voidLT, { int64LT, int64LT });
-  globalState->printCStr = addFunction(globalState->mod, "__vprintCStr", voidLT, {int8PtrLT});
-  globalState->getch = addFunction(globalState->mod, "getchar", int64LT, {});
-  globalState->printInt = addFunction(globalState->mod, "__vprintI64", voidLT, {int64LT});
-  globalState->printBool = addFunction(globalState->mod, "__vprintBool", voidLT, {int1LT});
+  globalState->malloc = addExtern(globalState->mod, "malloc", int8PtrLT, {int64LT});
+  globalState->free = addExtern(globalState->mod, "free", voidLT, {int8PtrLT});
+  globalState->exit = addExtern(globalState->mod, "exit", voidLT, {int8LT});
+  globalState->assert = addExtern(globalState->mod, "__vassert", voidLT, {int1LT, int8PtrLT});
+  globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", voidLT,
+      {int64LT, int64LT, int8PtrLT});
+  globalState->flareI64 = addExtern(globalState->mod, "__vflare_i64", voidLT, {int64LT, int64LT});
+  globalState->printCStr = addExtern(globalState->mod, "__vprintCStr", voidLT, {int8PtrLT});
+  globalState->getch = addExtern(globalState->mod, "getchar", int64LT, {});
+  globalState->printInt = addExtern(globalState->mod, "__vprintI64", voidLT, {int64LT});
+  globalState->printBool = addExtern(globalState->mod, "__vprintBool", voidLT, {int1LT});
   globalState->initStr =
-      addFunction(globalState->mod, "__vinitStr", voidLT,
-          { stringInnerStructPtrLT, int8PtrLT, });
+      addExtern(globalState->mod, "__vinitStr", voidLT,
+          {stringInnerStructPtrLT, int8PtrLT,});
   globalState->addStr =
-      addFunction(globalState->mod, "__vaddStr", voidLT,
-          { stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT });
+      addExtern(globalState->mod, "__vaddStr", voidLT,
+          {stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT});
   globalState->eqStr =
-      addFunction(globalState->mod, "__veqStr", int8LT,
-          { stringInnerStructPtrLT, stringInnerStructPtrLT });
+      addExtern(globalState->mod, "__veqStr", int8LT,
+          {stringInnerStructPtrLT, stringInnerStructPtrLT});
   globalState->printVStr =
-      addFunction(globalState->mod, "__vprintStr", voidLT,
-          { stringInnerStructPtrLT });
-  globalState->intToCStr = addFunction(globalState->mod, "__vintToCStr", voidLT, { int64LT, int8PtrLT, int64LT });
-  globalState->strlen = addFunction(globalState->mod, "strlen", int64LT, { int8PtrLT });
-  globalState->censusContains = addFunction(globalState->mod, "__vcensusContains", int64LT, {voidPtrLT});
-  globalState->censusAdd = addFunction(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
-  globalState->censusRemove = addFunction(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
+      addExtern(globalState->mod, "__vprintStr", voidLT,
+          {stringInnerStructPtrLT});
+  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", voidLT,
+      {int64LT, int8PtrLT, int64LT});
+  globalState->strlen = addExtern(globalState->mod, "strlen", int64LT, {int8PtrLT});
+  globalState->censusContains = addExtern(globalState->mod, "__vcensusContains", int64LT,
+      {voidPtrLT});
+  globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
+  globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 
-  globalState->allocWrc = addFunction(globalState->mod, "__allocWrc", int64LT, {});
-  globalState->checkWrc = addFunction(globalState->mod, "__checkWrc", voidLT, {int64LT});
-//  globalState->incrementWrc = addFunction(globalState->mod, "__incrementWrc", voidLT, {int64LT});
-//  globalState->decrementWrc = addFunction(globalState->mod, "__decrementWrc", voidLT, {int64LT});
-//  globalState->wrcIsLive = addFunction(globalState->mod, "__wrcIsLive", int1LT, {int64LT});
-  globalState->markWrcDead = addFunction(globalState->mod, "__markWrcDead", voidLT, {int64LT});
-  globalState->getNumWrcs = addFunction(globalState->mod, "__getNumWrcs", int64LT, {});
-
-  globalState->wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__wrc_capacity");
-  LLVMSetLinkage(globalState->wrcCapacityPtr, LLVMExternalLinkage);
-
-  globalState->wrcFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__wrc_firstFree");
-  LLVMSetLinkage(globalState->wrcFirstFreeWrciPtr, LLVMExternalLinkage);
-
-  globalState->wrcEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt64Type(), 0), "__wrc_entries");
-  LLVMSetLinkage(globalState->wrcEntriesArrayPtr, LLVMExternalLinkage);
+  initWeakInternalExterns(globalState);
 }
 
 void initInternalStructs(GlobalState* globalState) {
@@ -107,6 +92,7 @@ void initInternalStructs(GlobalState* globalState) {
   auto voidPtrLT = LLVMPointerType(voidLT, 0);
   auto int1LT = LLVMInt1Type();
   auto int8LT = LLVMInt8Type();
+  auto int32LT = LLVMInt32Type();
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int64PtrLT = LLVMPointerType(int64LT, 0);
@@ -117,13 +103,13 @@ void initInternalStructs(GlobalState* globalState) {
             LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    if (globalState->opt->census) {
+//    if (globalState->opt->census) {
       globalState->controlBlockTypeStrIndex = memberTypesL.size();
       memberTypesL.push_back(int8PtrLT);
 
       globalState->controlBlockObjIdIndex = memberTypesL.size();
       memberTypesL.push_back(int64LT);
-    }
+//    }
 
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
       globalState->mutControlBlockRcMemberIndex = memberTypesL.size();
@@ -132,6 +118,8 @@ void initInternalStructs(GlobalState* globalState) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // Do nothing, mutables dont have a strong RC, just a weak one
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // Do nothing, mutables dont have a strong RC, just a generation
     } else assert(false);
 
     LLVMStructSetBody(
@@ -139,19 +127,21 @@ void initInternalStructs(GlobalState* globalState) {
     globalState->mutNonWeakableControlBlockStructL = controlBlockStructL;
   }
 
+  makeWeakRefStructs(globalState);
+
   {
     auto controlBlockStructL =
         LLVMStructCreateNamed(
             LLVMGetGlobalContext(), "mutWeakableControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    if (globalState->opt->census) {
+//    if (globalState->opt->census) {
       assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
       assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
-    }
+//    }
 
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
       assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakability
@@ -160,10 +150,17 @@ void initInternalStructs(GlobalState* globalState) {
       // Do nothing
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
       // Do nothing, mutables dont have a strong RC, just a weak one
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      // Do nothing, mutables dont have a strong RC, just a generation
     } else assert(false);
 
-    globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(int64LT);
+    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      globalState->mutControlBlockLgtiMemberIndex = memberTypesL.size();
+      memberTypesL.push_back(int32LT);
+    } else {
+      globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
+      memberTypesL.push_back(int32LT);
+    }
 
     LLVMStructSetBody(
         controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
@@ -176,13 +173,13 @@ void initInternalStructs(GlobalState* globalState) {
             LLVMGetGlobalContext(), "immControlBlock");
     std::vector<LLVMTypeRef> memberTypesL;
 
-    if (globalState->opt->census) {
+//    if (globalState->opt->census) {
       assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
       memberTypesL.push_back(int8PtrLT);
 
       assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
-    }
+//    }
 
     globalState->immControlBlockRcMemberIndex = memberTypesL.size();
     memberTypesL.push_back(int64LT);
@@ -217,18 +214,13 @@ void initInternalStructs(GlobalState* globalState) {
     globalState->stringWrapperStructL = stringWrapperStructL;
   }
 
-  {
-    // This is a weak ref to a void*. When we're calling an interface method on a weak,
-    // we have no idea who the receiver is. They'll receive this struct as the correctly
-    // typed flavor of it (from structWeakRefStructs).
-    globalState->weakVoidRefStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "__weak_voidp");
-    std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
-    structWeakRefStructMemberTypesL.push_back(LLVMInt64Type());
-    structWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMVoidType(), 0));
-    LLVMStructSetBody(globalState->weakVoidRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
-  }
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  globalState->weakVoidRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), "__Weak_VoidP");
+  makeVoidPtrWeakRefStruct(globalState, globalState->weakVoidRefStructL);
 }
 
 void compileValeCode(GlobalState* globalState, const std::string& filename) {
@@ -241,6 +233,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       break;
     case RegionOverride::FAST:
       std::cout << "Region override: fast" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_FAST:
+      std::cout << "Region override: resilient fast" << std::endl;
+      break;
+    default:
+      assert(false);
       break;
   }
 
@@ -257,8 +255,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-//  std::cout << "OVERRIDING to fast mode!" << std::endl;
-//  globalState->opt->regionOverride = RegionOverride::FAST;
+//  std::cout << "OVERRIDING to assist mode!" << std::endl;
+//  globalState->opt->regionOverride = RegionOverride::ASSIST;
 //  std::cout << "OVERRIDING census to true!" << std::endl;
 //  globalState->opt->census = true;
 //  std::cout << "OVERRIDING flares to true!" << std::endl;
@@ -426,13 +424,31 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
   if (globalState->opt->census) {
-    LLVMValueRef args[3] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
-        LLVMBuildCall(
-            entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs"),
-        globalState->getOrMakeStringConstant("WRC leaks!"),
-    };
-    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
+    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+      LLVMValueRef args[3] = {
+          LLVMConstInt(LLVMInt64Type(), 0, false),
+          LLVMBuildZExt(
+              entryBuilder,
+              LLVMBuildCall(
+                  entryBuilder, globalState->getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
+              LLVMInt64Type(),
+              ""),
+          globalState->getOrMakeStringConstant("WRC leaks!"),
+      };
+      LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
+    } else {
+      LLVMValueRef args[3] = {
+          LLVMConstInt(LLVMInt64Type(), 0, false),
+          LLVMBuildZExt(
+              entryBuilder,
+              LLVMBuildCall(
+                  entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs"),
+              LLVMInt64Type(),
+              ""),
+          globalState->getOrMakeStringConstant("WRC leaks!"),
+      };
+      LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
+    }
   }
 
   if (mainM->returnType->referend == globalState->metalCache.vooid) {

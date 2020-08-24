@@ -113,6 +113,8 @@ Mutability ownershipToMutability(Ownership ownership) {
     case Ownership::OWN:
     case Ownership::WEAK:
       return Mutability::MUTABLE;
+    default:
+      assert(false);
   }
 }
 

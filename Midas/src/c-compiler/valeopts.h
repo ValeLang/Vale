@@ -8,6 +8,7 @@
 
 enum class RegionOverride {
   ASSIST,
+  NAIVE_RC,
   RESILIENT,
   RESILIENT_FAST,
   FAST

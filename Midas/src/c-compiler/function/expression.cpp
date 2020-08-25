@@ -235,27 +235,16 @@ LLVMValueRef translateExpressionInner(
         });
 
     if (arrayType->ownership == Ownership::OWN) {
-      assert(false);
-      if (arrayType->ownership == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        adjustStrongRc(
-            AFL("Destroy decrementing the owning ref"),
-            globalState, functionState, builder, arrayWrapperLE, arrayType, -1);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        // Do nothing
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        assert(false); // impl
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-        assert(false); // impl
-      } else assert(false);
+      discardOwningRef(FL(), globalState, functionState, blockState, builder, arrayType, arrayWrapperLE);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
+
+      freeConcrete(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
+          arrayWrapperLE, arrayType);
     } else {
       assert(false);
     }
 
-    buildFlare(FL(), globalState, functionState, builder);
-    freeConcrete(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
-        arrayWrapperLE, arrayType);
 
     discard(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerLE);
 
@@ -292,28 +281,16 @@ LLVMValueRef translateExpressionInner(
         });
 
     if (arrayType->ownership == Ownership::OWN) {
-      if (getEffectiveOwnership(globalState, destroyUnknownSizeArrayIntoFunction->arrayType->ownership) == Ownership::SHARE || globalState->opt->regionOverride == RegionOverride::ASSIST) {
-        adjustStrongRc(
-            AFL("Destroy decrementing the owning ref"),
-            globalState, functionState, builder, arrayWrapperLE, arrayType, -1);
-      } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-        // Do nothing
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-        // Mutables in resilient mode dont have strong RC, and also, they dont adjust
-        // weak RC for owning refs
-      } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-        // Mutables in resilient v1 dont have strong RC, and also, they dont adjust
-        // weak RC for owning refs
-      } else assert(false);
+      discardOwningRef(FL(), globalState, functionState, blockState, builder, arrayType, arrayWrapperLE);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
+
+      // Free it!
+      freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
+          arrayWrapperLE, arrayType);
     } else {
       assert(false);
     }
-
-    buildFlare(FL(), globalState, functionState, builder);
-    freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
-        arrayWrapperLE, arrayType);
 
     discard(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerLE);
 
@@ -559,6 +536,7 @@ LLVMValueRef translateExpressionInner(
               LLVMValueRef someLE = nullptr;
               switch (globalState->opt->regionOverride) {
                 case RegionOverride::ASSIST:
+                case RegionOverride::NAIVE_RC:
                 case RegionOverride::FAST: {
                   auto sourceTypeM = lockWeak->sourceType;
                   auto someConstructor = lockWeak->someConstructor;

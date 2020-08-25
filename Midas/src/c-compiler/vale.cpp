@@ -111,7 +111,8 @@ void initInternalStructs(GlobalState* globalState) {
       memberTypesL.push_back(int64LT);
 //    }
 
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       globalState->mutControlBlockRcMemberIndex = memberTypesL.size();
       memberTypesL.push_back(int64LT);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
@@ -143,7 +144,8 @@ void initInternalStructs(GlobalState* globalState) {
       memberTypesL.push_back(int64LT);
 //    }
 
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakability
       memberTypesL.push_back(int64LT);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
@@ -227,6 +229,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
       std::cout << "Region override: assist" << std::endl;
+      break;
+    case RegionOverride::NAIVE_RC:
+      std::cout << "Region override: naive-rc" << std::endl;
       break;
     case RegionOverride::RESILIENT:
       std::cout << "Region override: resilient" << std::endl;

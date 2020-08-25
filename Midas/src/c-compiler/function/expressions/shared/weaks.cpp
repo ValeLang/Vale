@@ -262,6 +262,7 @@ LLVMValueRef derefMaybeWeakRef(
   switch (globalState->opt->regionOverride) {
     case RegionOverride::FAST:
     case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
     case RegionOverride::RESILIENT: {
       switch (refM->ownership) {
         case Ownership::OWN:
@@ -351,9 +352,8 @@ void noteWeakableDestroyed(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* concreteRefM,
-    LLVMValueRef concreteRefLE) {
+    LLVMValueRef controlBlockPtrLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-    auto controlBlockPtrLE = getControlBlockPtr(builder, concreteRefLE, concreteRefM);
     auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
     auto ptrToActualGenLE = getLGTEntryGenPtr(globalState, functionState, builder, lgtiLE);
     adjustCounter(builder, ptrToActualGenLE, 1);
@@ -368,7 +368,6 @@ void noteWeakableDestroyed(
     // __lgt_firstFree = lgti;
     LLVMBuildStore(builder, lgtiLE, globalState->lgtFirstFreeLgtiPtr);
   } else {
-    auto controlBlockPtrLE = getControlBlockPtr(builder, concreteRefLE, concreteRefM);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM, controlBlockPtrLE);
 
     //  LLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");

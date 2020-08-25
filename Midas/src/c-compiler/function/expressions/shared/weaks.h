@@ -54,7 +54,7 @@ void noteWeakableDestroyed(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* concreteRefM,
-    LLVMValueRef concreteRefLE);
+    LLVMValueRef controlBlockPtrLE);
 
 LLVMValueRef noteWeakableCreated(
     GlobalState* globalState,

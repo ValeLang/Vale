@@ -140,10 +140,9 @@ LLVMValueRef adjustStrongRc(
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
-    Reference* refM) {
-  auto controlBlockPtr = getControlBlockPtr(builder, exprLE, refM);
-  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, refM, controlBlockPtr));
+    Reference* refM,
+    LLVMValueRef controlBlockPtrLE) {
+  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE));
 }
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {
@@ -448,7 +447,8 @@ Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership o
   } else if (ownership == UnconvertedOwnership::WEAK) {
     return Ownership::WEAK;
   } else if (ownership == UnconvertedOwnership::BORROW) {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       return Ownership::BORROW;
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       return Ownership::BORROW;
@@ -482,7 +482,8 @@ Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) 
   if (array->mutability == Mutability::IMMUTABLE) {
     return Weakability::NON_WEAKABLE;
   } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       return Weakability::NON_WEAKABLE;
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       return Weakability::NON_WEAKABLE;
@@ -502,7 +503,8 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
     assert(structDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
     return Weakability::NON_WEAKABLE;
   } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       if (structDef->weakability == UnconvertedWeakability::WEAKABLE) {
         return Weakability::WEAKABLE;
       } else {
@@ -530,7 +532,8 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
     assert(interfaceDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
     return Weakability::NON_WEAKABLE;
   } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       if (interfaceDef->weakability == UnconvertedWeakability::WEAKABLE) {
         return Weakability::WEAKABLE;
       } else {

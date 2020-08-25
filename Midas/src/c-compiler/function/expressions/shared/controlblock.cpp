@@ -35,6 +35,8 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
   } else {
     if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
       // Fine to access the strong RC for mutables in assist mode
+    } else if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+      // Fine to access the strong RC for mutables in naive-rc mode
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       assert(false); // Mutables in fast mode dont have a strong RC
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
@@ -122,6 +124,7 @@ void fillControlBlock(
   } else {
     bool hasStrongRc =
         globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
         globalState->opt->regionOverride == RegionOverride::RESILIENT;
     if (hasStrongRc) {
       newControlBlockLE =

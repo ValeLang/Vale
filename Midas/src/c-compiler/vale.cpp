@@ -117,9 +117,9 @@ void initInternalStructs(GlobalState* globalState) {
       memberTypesL.push_back(int64LT);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       // Do nothing, mutables dont have a strong RC, just a weak one
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // Do nothing, mutables dont have a strong RC, just a generation
     } else assert(false);
 
@@ -150,13 +150,13 @@ void initInternalStructs(GlobalState* globalState) {
       memberTypesL.push_back(int64LT);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       // Do nothing
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       // Do nothing, mutables dont have a strong RC, just a weak one
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // Do nothing, mutables dont have a strong RC, just a generation
     } else assert(false);
 
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       globalState->mutControlBlockLgtiMemberIndex = memberTypesL.size();
       memberTypesL.push_back(int32LT);
     } else {
@@ -233,13 +233,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;
       break;
-    case RegionOverride::RESILIENT:
+    case RegionOverride::RESILIENT_V0:
       std::cout << "Region override: resilient" << std::endl;
       break;
     case RegionOverride::FAST:
       std::cout << "Region override: fast" << std::endl;
       break;
-    case RegionOverride::RESILIENT_FAST:
+    case RegionOverride::RESILIENT_V1:
       std::cout << "Region override: resilient fast" << std::endl;
       break;
     default:
@@ -429,7 +429,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
   if (globalState->opt->census) {
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       LLVMValueRef args[3] = {
           LLVMConstInt(LLVMInt64Type(), 0, false),
           LLVMBuildZExt(

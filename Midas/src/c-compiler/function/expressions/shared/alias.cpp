@@ -21,8 +21,8 @@ void acquireReference(
   bool proceed =
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
       (globalState->opt->regionOverride == RegionOverride::FAST &&
           (resultRef->ownership == Ownership::SHARE || resultRef->ownership == Ownership::WEAK));
   if (!proceed) {
@@ -121,7 +121,7 @@ void discardOwningRef(
       freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
           exprLE, sourceTypeM);
       break;
-    case RegionOverride::RESILIENT:
+    case RegionOverride::RESILIENT_V0:
       // Mutables in resilient mode dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
@@ -129,7 +129,7 @@ void discardOwningRef(
       freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
           exprLE, sourceTypeM);
       break;
-    case RegionOverride::RESILIENT_FAST: {
+    case RegionOverride::RESILIENT_V1: {
       // Mutables in resilient v1 dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
@@ -157,8 +157,8 @@ void discard(
   bool proceed =
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
       (globalState->opt->regionOverride == RegionOverride::FAST &&
           (sourceRef->ownership == Ownership::SHARE ||
           sourceRef->ownership == Ownership::WEAK));

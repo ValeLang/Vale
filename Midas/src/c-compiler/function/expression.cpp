@@ -558,8 +558,8 @@ LLVMValueRef translateExpressionInner(
                   someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {constraintRefLE});
                   break;
                 }
-                case RegionOverride::RESILIENT_FAST:
-                case RegionOverride::RESILIENT: {
+                case RegionOverride::RESILIENT_V1:
+                case RegionOverride::RESILIENT_V0: {
                   // The incoming "constraint" ref is actually already a week ref. All we have to
                   // do now is wrap it in a Some.
 

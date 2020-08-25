@@ -452,9 +452,9 @@ Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership o
       return Ownership::BORROW;
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       return Ownership::BORROW;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       return Ownership::WEAK;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       return Ownership::WEAK;
     } else assert(false);
   } else assert(false);
@@ -487,10 +487,10 @@ Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) 
       return Weakability::NON_WEAKABLE;
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       return Weakability::NON_WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       // All mutables are weakabile in resilient mode
       return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // All mutables are weakabile in resilient mode
       return Weakability::WEAKABLE;
     } else assert(false);
@@ -516,10 +516,10 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
       } else {
         return Weakability::NON_WEAKABLE;
       }
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       // All mutable structs are weakability in resilient mode
       return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // All mutable structs are weakability in resilient mode
       return Weakability::WEAKABLE;
     } else assert(false);
@@ -545,10 +545,10 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
       } else {
         return Weakability::NON_WEAKABLE;
       }
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       // All mutable structs are weakable in resilient mode
       return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // All mutable structs are weakable in resilient fast mode
       return Weakability::WEAKABLE;
     } else assert(false);

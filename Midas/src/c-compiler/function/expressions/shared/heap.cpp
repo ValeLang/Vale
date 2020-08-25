@@ -204,7 +204,7 @@ void freeConcrete(
         // Do nothing, only structs and interfaces are weakable in assist mode.
       }
     }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
     if (refM->ownership == Ownership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
@@ -215,7 +215,7 @@ void freeConcrete(
       // In resilient mode, every mutable is weakable.
       noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
     }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     if (refM->ownership == Ownership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,

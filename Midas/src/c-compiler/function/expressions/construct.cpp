@@ -18,7 +18,7 @@ void fillInnerStruct(
   for (int i = 0; i < membersLE.size(); i++) {
     auto memberLE = membersLE[i];
     auto memberType = getEffectiveType(globalState, structM->members[i]->type);
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
+    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       if (globalState->opt->census) {
         if (dynamic_cast<StructReferend*>(memberType->referend) ||
             dynamic_cast<InterfaceReferend*>(memberType->referend) ||

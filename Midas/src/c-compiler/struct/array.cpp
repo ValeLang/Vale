@@ -46,7 +46,8 @@ void translateKnownSizeArray(
   std::vector<LLVMTypeRef> elementsL;
 
   if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
@@ -93,7 +94,8 @@ void translateUnknownSizeArray(
   std::vector<LLVMTypeRef> elementsL;
 
   if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
       elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
     } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
       elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);

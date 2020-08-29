@@ -234,7 +234,6 @@ void discard(
             });
       }
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      buildFlare(from, globalState, functionState, builder, "Decr weak concrete weak!");
       discardWeakRef(from, globalState, functionState, builder, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {

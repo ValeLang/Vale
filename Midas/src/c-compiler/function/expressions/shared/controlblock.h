@@ -29,6 +29,7 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
 LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     LLVMValueRef controlBlockPtr);
 
 // Strong means owning or borrow or shared; things that control the lifetime.
@@ -44,6 +45,7 @@ void fillControlBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     Mutability mutability,
     Weakability weakable,
     LLVMValueRef controlBlockPtrLE,

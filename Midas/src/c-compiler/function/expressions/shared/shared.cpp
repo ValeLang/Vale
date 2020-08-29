@@ -571,27 +571,21 @@ LLVMValueRef load(
   auto targetLocation = targetType->location;
 //  assert(sourceLocation == targetLocation); // unimplemented
 
-  buildFlare(FL(), globalState, functionState, builder);
   checkValidReference(FL(), globalState, functionState, builder, sourceType, sourceRefLE);
 
-  buildFlare(FL(), globalState, functionState, builder);
   if (sourceOwnership == Ownership::SHARE) {
     if (sourceLocation == Location::INLINE) {
-      buildFlare(FL(), globalState, functionState, builder);
       return sourceRefLE;
     } else {
-      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
 
       return resultRefLE;
     }
   } else if (sourceOwnership == Ownership::OWN) {
     if (targetOwnership == Ownership::OWN) {
-      buildFlare(FL(), globalState, functionState, builder);
       // Cant load an owning reference from a owning local. That would require an unstackify.
       assert(false);
     } else if (targetOwnership == Ownership::BORROW) {
-      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
       // We do the same thing for inline and yonder muts, the only difference is
       // where the memory lives.
@@ -601,33 +595,26 @@ LLVMValueRef load(
 
       return resultRefLE;
     } else if (targetOwnership == Ownership::WEAK) {
-      buildFlare(FL(), globalState, functionState, builder);
       // Now we need to package it up into a weak ref.
       if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
-        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleStructWeakRef(
                 globalState, functionState, builder, sourceType, structReferend, sourceRefLE);
-        buildFlare(FL(), globalState, functionState, builder);
         return weakRefLE;
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleInterfaceWeakRef(
                 globalState, functionState, builder, sourceType, interfaceReferendM, sourceRefLE);
         return weakRefLE;
       } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
-        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleKnownSizeArrayWeakRef(
                 globalState, builder, sourceType, knownSizeArray, sourceRefLE);
         return weakRefLE;
       } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
-        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleUnknownSizeArrayWeakRef(
                 globalState, functionState, builder, sourceType, unknownSizeArray, sourceRefLE);
-        buildFlare(FL(), globalState, functionState, builder);
         return weakRefLE;
       } else assert(false);
     } else {
@@ -637,21 +624,17 @@ LLVMValueRef load(
     buildFlare(FL(), globalState, functionState, builder);
 
     if (targetOwnership == Ownership::OWN) {
-      buildFlare(FL(), globalState, functionState, builder);
       assert(false); // Cant load an owning reference from a constraint ref local.
     } else if (targetOwnership == Ownership::BORROW) {
-      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
       // We do the same thing for inline and yonder muts, the only difference is
       // where the memory lives.
 
       return resultRefLE;
     } else if (targetOwnership == Ownership::WEAK) {
-      buildFlare(FL(), globalState, functionState, builder);
       // Making a weak ref from a constraint ref local.
 
       if (auto structReferendM = dynamic_cast<StructReferend*>(sourceType->referend)) {
-        buildFlare(FL(), globalState, functionState, builder);
         // We do the same thing for inline and yonder muts, the only difference is
         // where the memory lives.
         auto weakRefLE =
@@ -659,7 +642,6 @@ LLVMValueRef load(
                 globalState, functionState, builder, sourceType, structReferendM, sourceRefLE);
         return weakRefLE;
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-        buildFlare(FL(), globalState, functionState, builder);
         auto weakRefLE =
             assembleInterfaceWeakRef(
                 globalState, functionState, builder, sourceType, interfaceReferendM, sourceRefLE);
@@ -670,13 +652,10 @@ LLVMValueRef load(
     }
   } else if (sourceOwnership == Ownership::WEAK) {
     if (targetOwnership == Ownership::OWN) {
-      buildFlare(FL(), globalState, functionState, builder);
       assert(false); // Cant load an owning reference from a weak ref local.
     } else if (targetOwnership == Ownership::BORROW) {
-      buildFlare(FL(), globalState, functionState, builder);
       assert(false); // Can't implicitly make a constraint ref from a weak ref.
     } else if (targetOwnership == Ownership::WEAK) {
-      buildFlare(FL(), globalState, functionState, builder);
       auto resultRefLE = sourceRefLE;
 
       // We do the same thing for inline and yonder muts, the only difference is

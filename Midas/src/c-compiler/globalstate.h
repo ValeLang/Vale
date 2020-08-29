@@ -10,6 +10,38 @@
 #include "metal/instructions.h"
 #include "valeopts.h"
 
+enum class ControlBlockMember {
+  UNUSED_32B,
+  LGTI,
+  WRCI,
+  STRONG_RC,
+  CENSUS_TYPE_STR,
+  CENSUS_OBJ_ID
+};
+
+class ControlBlockLayout {
+public:
+  int getMemberIndex(ControlBlockMember member) {
+    for (int i = 0; i < members.size(); i++) {
+      if (members[i] == member) {
+        return i;
+      }
+    }
+    assert(false);
+  }
+
+  void addMember(ControlBlockMember member) {
+    members.push_back(member);
+  }
+
+  std::vector<ControlBlockMember> getMembers() const {
+    return members;
+  }
+
+private:
+  std::vector<ControlBlockMember> members;
+};
+
 class GlobalState {
 public:
   LLVMTargetMachineRef machine = nullptr;
@@ -38,18 +70,36 @@ public:
       strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr,
       panic = nullptr;
 
+  LLVMValueRef genMalloc = nullptr, genFree = nullptr;
+
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;
   LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
 
   LLVMValueRef wrcCapacityPtr = nullptr, wrcFirstFreeWrciPtr = nullptr, wrcEntriesArrayPtr = nullptr;
   LLVMValueRef lgtCapacityPtr = nullptr, lgtFirstFreeLgtiPtr = nullptr, lgtEntriesArrayPtr = nullptr;
 
-  int controlBlockTypeStrIndex = -1;
-  int controlBlockObjIdIndex = -1;
-  int immControlBlockRcMemberIndex = -1;
-  int mutControlBlockRcMemberIndex = -1;
-  int mutControlBlockWrciMemberIndex = -1;
-  int mutControlBlockLgtiMemberIndex = -1;
+  ControlBlockLayout immControlBlockLayout;
+  ControlBlockLayout mutNonWeakableControlBlockLayout;
+  ControlBlockLayout mutWeakableControlBlockLayout;
+
+//  int immControlBlockRcMemberIndex = -1;
+//  // 1th member is an unused 32 bits of padding, see genHeap.c
+//  int immControlBlockTypeStrIndex = -1;
+//  int immControlBlockObjIdIndex = -1;
+//
+//  int mutNonWeakableControlBlockRcMemberIndex = -1;
+//  // 1th member is an unused 32 bits of padding, see genHeap.c
+//  int mutNonWeakableControlBlockTypeStrIndex = -1;
+//  int mutNonWeakableControlBlockObjIdIndex = -1;
+//
+//  // Member 0 will always be the LGTI (resilient v1) or WRCI (all others)
+//  int mutWeakableControlBlockLgtiMemberIndex = -1; // Must always be at the top of the struct
+//  int mutWeakableControlBlockWrciMemberIndex = -1; // Will be at the top of the struct, just to be symmetrical with LGTI
+//  // 1th member is an unused 32 bits of padding, see genHeap.c
+//  int mutWeakableControlBlockRcMemberIndex = -1;
+//  int mutWeakableControlBlockTypeStrIndex = -1;
+//  int mutWeakableControlBlockObjIdIndex = -1;
+
   LLVMTypeRef weakRefHeaderStructL = nullptr; // contains gen index and generation
   LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
   LLVMTypeRef mutNonWeakableControlBlockStructL = nullptr;
@@ -171,6 +221,7 @@ public:
     }
     return iter->second;
   }
+  ControlBlockLayout* getControlBlockLayout(Referend* referend);
 };
 
 #endif

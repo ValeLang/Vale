@@ -84,6 +84,9 @@ class ValeCompiler(unittest.TestCase):
         if "--flares" in args:
             args.remove("--flares")
             midas_options.append("--flares")
+        if "--gen-heap" in args:
+            args.remove("--gen-heap")
+            midas_options.append("--gen-heap")
         if "--census" in args:
             args.remove("--census")
             midas_options.append("--census")

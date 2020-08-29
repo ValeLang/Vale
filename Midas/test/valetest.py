@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Callable
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
+    # print("Running: " + str(args))
     return subprocess.run(args, capture_output=True, text=True, **kwargs)
 
 
@@ -40,7 +41,7 @@ class ValeTest(unittest.TestCase):
               region_override: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
         return procrun(
-            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--census", "--region-override", region_override, "--output-dir",
+            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--region-override", region_override, "--output-dir",
              o_files_dir, vir_file])
 
     def clang(self, o_files: List[str],
@@ -63,7 +64,7 @@ class ValeTest(unittest.TestCase):
 
     def compile_and_execute(
             self, vale_filepaths: List[str], region_override: str) -> subprocess.CompletedProcess:
-        last_vale_filepath = vale_filepaths[len(vale_filepaths) - 1]
+        last_vale_filepath = vale_filepaths[0]
         file_name_without_extension = os.path.splitext(os.path.basename(last_vale_filepath))[0]
         build_dir = f"test/test_build/{file_name_without_extension}_build"
 
@@ -85,7 +86,7 @@ class ValeTest(unittest.TestCase):
                          proc.stdout + "\n" + proc.stderr)
 
         exe_file = f"{build_dir}/{file_name_without_extension}"
-        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c", "src/valestd/weaks.c"]
+        o_files = glob.glob(f"{build_dir}/*.o") + ["src/valestd/assert.c", "src/valestd/stdio.c", "src/valestd/str.c", "src/valestd/census.c", "src/valestd/weaks.c", "src/valestd/genHeap.c"]
         proc = self.clang(o_files, exe_file)
         self.assertEqual(proc.returncode, 0,
                          f"clang couldn't compile {o_files}:\n" +
@@ -453,6 +454,17 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
     def test_weakFromCRefStruct_naiverc(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
+
+    def test_loadFromWeakable_assist(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
+    def test_loadFromWeakable_unsafefast(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
+    def test_loadFromWeakable_resilientv0(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
+    def test_loadFromWeakable_resilientv1(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
+    def test_loadFromWeakable_naiverc(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
     def test_dropThenLockInterface_assist(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 42)

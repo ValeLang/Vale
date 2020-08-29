@@ -5,8 +5,8 @@
 #include "controlblock.h"
 #include "branch.h"
 
-constexpr uint64_t WRC_ALIVE_BIT = 0x80000000;
-constexpr uint64_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
+constexpr uint32_t WRC_ALIVE_BIT = 0x80000000;
+constexpr uint32_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI = 0;
 
@@ -67,13 +67,13 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
     // Shares never have weak refs
     assert(false);
   } else {
-    auto geniPtrLE =
+    auto lgtiPtrLE =
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr,
-            globalState->mutControlBlockLgtiMemberIndex,
-            "geniPtr");
-    return LLVMBuildLoad(builder, geniPtrLE, "geni");
+            globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
+            "lgtiPtr");
+    return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
   }
 }
 
@@ -92,7 +92,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr,
-            globalState->mutControlBlockWrciMemberIndex,
+            globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::WRCI),
             "wrciPtr");
     return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
   }
@@ -218,7 +218,6 @@ void aliasWeakRef(
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     // Do nothing!
   } else {
-    buildFlare(from, globalState, functionState, builder, "Incrementing");
     auto wrciLE = getWrciFromWeakRef(globalState, builder, exprLE);
     if (globalState->opt->census) {
       buildCheckWrc(globalState, builder, wrciLE);
@@ -238,7 +237,6 @@ void discardWeakRef(
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     // Do nothing!
   } else {
-    buildFlare(from, globalState, functionState, builder, "Decrementing");
     auto wrciLE = getWrciFromWeakRef(globalState, builder, exprLE);
     if (globalState->opt->census) {
       buildCheckWrc(globalState, builder, wrciLE);
@@ -521,6 +519,7 @@ LLVMValueRef fillWeakableControlBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     LLVMValueRef controlBlockLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     auto geniLE = noteWeakableCreated(globalState, functionState, builder);
@@ -528,7 +527,7 @@ LLVMValueRef fillWeakableControlBlock(
         builder,
         controlBlockLE,
         geniLE,
-        globalState->mutControlBlockLgtiMemberIndex,
+        globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::LGTI),
         "controlBlockWithLgti");
   } else {
     auto wrciLE = noteWeakableCreated(globalState, functionState, builder);
@@ -536,8 +535,8 @@ LLVMValueRef fillWeakableControlBlock(
         builder,
         controlBlockLE,
         wrciLE,
-        globalState->mutControlBlockWrciMemberIndex,
-        "strControlBlockWithWrci");
+        globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::WRCI),
+        "weakableControlBlockWithWrci");
   }
 }
 

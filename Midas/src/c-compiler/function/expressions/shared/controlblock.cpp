@@ -24,37 +24,17 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMValueRef controlBlockPtr) {
-
-  if (refM->ownership == Ownership::SHARE) {
-    // Shares always have ref counts
-    return LLVMBuildStructGEP(
-        builder,
-        controlBlockPtr,
-        globalState->immControlBlockRcMemberIndex,
-        "rcPtr");
-  } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-      // Fine to access the strong RC for mutables in assist mode
-    } else if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-      // Fine to access the strong RC for mutables in naive-rc mode
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      assert(false); // Mutables in fast mode dont have a strong RC
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      // Fine to access the strong RC for mutables in resilient mode
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      assert(false);
-    } else assert(false);
-    return LLVMBuildStructGEP(
-        builder,
-        controlBlockPtr,
-        globalState->mutControlBlockRcMemberIndex,
-        "rcPtr");
-  }
+  return LLVMBuildStructGEP(
+      builder,
+      controlBlockPtr,
+      globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::STRONG_RC),
+      "rcPtr");
 }
 
 LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     LLVMValueRef controlBlockPtr) {
   assert(globalState->opt->census);
   return LLVMBuildLoad(
@@ -62,7 +42,7 @@ LLVMValueRef getObjIdFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr,
-          globalState->controlBlockObjIdIndex,
+          globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
           "objIdPtr"),
       "objId");
 }
@@ -70,13 +50,14 @@ LLVMValueRef getObjIdFromControlBlockPtr(
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef controlBlockPtr) {
   return LLVMBuildLoad(
       builder,
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr,
-          globalState->controlBlockTypeStrIndex,
+          globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
           "typeNameStrPtrPtr"),
       "typeNameStrPtr");
 }
@@ -96,6 +77,7 @@ void fillControlBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     Mutability mutability,
     Weakability weakability,
     LLVMValueRef controlBlockPtrLE,
@@ -118,22 +100,21 @@ void fillControlBlock(
             builder,
             newControlBlockLE,
             // Start at 1, 0 would mean it's dead.
-            LLVMConstInt(LLVMInt64Type(), 1, false),
-            globalState->immControlBlockRcMemberIndex,
+            LLVMConstInt(LLVMInt32Type(), 1, false),
+            globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
             "controlBlockWithRc");
   } else {
     bool hasStrongRc =
         globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
-        globalState->opt->regionOverride == RegionOverride::RESILIENT_V0;
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC;
     if (hasStrongRc) {
       newControlBlockLE =
           LLVMBuildInsertValue(
               builder,
               newControlBlockLE,
               // Start at 1, 0 would mean it's dead.
-              LLVMConstInt(LLVMInt64Type(), 1, false),
-              globalState->mutControlBlockRcMemberIndex,
+              LLVMConstInt(LLVMInt32Type(), 1, false),
+              globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
               "controlBlockWithRc");
     }
   }
@@ -145,19 +126,19 @@ void fillControlBlock(
             builder,
             newControlBlockLE,
             objIdLE,
-            globalState->controlBlockObjIdIndex,
+            globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
             "strControlBlockWithObjId");
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,
             newControlBlockLE,
             globalState->getOrMakeStringConstant(typeName),
-            globalState->controlBlockTypeStrIndex,
+            globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
             "strControlBlockWithTypeStr");
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
   if (weakability == Weakability::WEAKABLE) {
-    newControlBlockLE = fillWeakableControlBlock(globalState, functionState, builder, newControlBlockLE);
+    newControlBlockLE = fillWeakableControlBlock(globalState, functionState, builder, referendM, newControlBlockLE);
   }
   LLVMBuildStore(
       builder,

@@ -41,6 +41,12 @@
 // for convenience
 using json = nlohmann::json;
 
+std::string genMallocName(int bytes) {
+  return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
+}
+std::string genFreeName(int bytes) {
+  return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
+}
 
 void initInternalExterns(GlobalState* globalState) {
   auto voidLT = LLVMVoidType();
@@ -53,8 +59,11 @@ void initInternalExterns(GlobalState* globalState) {
 
   auto stringInnerStructPtrLT = LLVMPointerType(globalState->stringInnerStructL, 0);
 
+  globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
+  globalState->genFree = addExtern(globalState->mod, "__genFree", voidLT, {voidPtrLT});
   globalState->malloc = addExtern(globalState->mod, "malloc", int8PtrLT, {int64LT});
   globalState->free = addExtern(globalState->mod, "free", voidLT, {int8PtrLT});
+
   globalState->exit = addExtern(globalState->mod, "exit", voidLT, {int8LT});
   globalState->assert = addExtern(globalState->mod, "__vassert", voidLT, {int1LT, int8PtrLT});
   globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", voidLT,
@@ -87,6 +96,44 @@ void initInternalExterns(GlobalState* globalState) {
   initWeakInternalExterns(globalState);
 }
 
+void setControlBlockStructBody(LLVMTypeRef structL, const ControlBlockLayout& layout) {
+  auto voidLT = LLVMVoidType();
+  auto voidPtrLT = LLVMPointerType(voidLT, 0);
+  auto int1LT = LLVMInt1Type();
+  auto int8LT = LLVMInt8Type();
+  auto int32LT = LLVMInt32Type();
+  auto int64LT = LLVMInt64Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+  auto int64PtrLT = LLVMPointerType(int64LT, 0);
+
+  std::vector<LLVMTypeRef> membersL;
+  for (auto member : layout.getMembers()) {
+    switch (member) {
+      case ControlBlockMember::UNUSED_32B:
+        membersL.push_back(int32LT);
+        break;
+      case ControlBlockMember::LGTI:
+        assert(membersL.empty()); // LGTI should be at the top of the object
+        membersL.push_back(int32LT);
+        break;
+      case ControlBlockMember::WRCI:
+        membersL.push_back(int32LT);
+        break;
+      case ControlBlockMember::STRONG_RC:
+        membersL.push_back(int32LT);
+        break;
+      case ControlBlockMember::CENSUS_OBJ_ID:
+        membersL.push_back(int64LT);
+        break;
+      case ControlBlockMember::CENSUS_TYPE_STR:
+        membersL.push_back(int8PtrLT);
+        break;
+    }
+  }
+
+  LLVMStructSetBody(structL, membersL.data(), membersL.size(), false);
+}
+
 void initInternalStructs(GlobalState* globalState) {
   auto voidLT = LLVMVoidType();
   auto voidPtrLT = LLVMPointerType(voidLT, 0);
@@ -97,99 +144,282 @@ void initInternalStructs(GlobalState* globalState) {
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int64PtrLT = LLVMPointerType(int64LT, 0);
 
-  {
-    auto controlBlockStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
-    std::vector<LLVMTypeRef> memberTypesL;
+  if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+      globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+    {
+      ControlBlockLayout immControlBlockLayout;
+      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto immControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
+      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
+      globalState->immControlBlockLayout = immControlBlockLayout;
+      globalState->immControlBlockStructL = immControlBlockStructL;
+    }
 
-//    if (globalState->opt->census) {
-      globalState->controlBlockTypeStrIndex = memberTypesL.size();
-      memberTypesL.push_back(int8PtrLT);
+    {
+      ControlBlockLayout mutNonWeakableControlBlockLayout;
+      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto mutNonWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
+      setControlBlockStructBody(mutNonWeakableControlBlockStructL, mutNonWeakableControlBlockLayout);
+      globalState->mutNonWeakableControlBlockLayout = mutNonWeakableControlBlockLayout;
+      globalState->mutNonWeakableControlBlockStructL = mutNonWeakableControlBlockStructL;
+    }
 
-      globalState->controlBlockObjIdIndex = memberTypesL.size();
-      memberTypesL.push_back(int64LT);
-//    }
+    {
+      ControlBlockLayout mutWeakableControlBlockLayout;
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
+      // We could add this in to avoid an InstructionCombiningPass bug where when it inlines things
+      // it doesnt seem to realize that there's padding at the end of structs.
+      // To see it, make loadFromWeakable test in fast mode, see its .ll and its .opt.ll, it seems
+      // to get the wrong pointer for the first member.
+      // mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      auto mutWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
+      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
+      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+    }
+  } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+    {
+      ControlBlockLayout immControlBlockLayout;
+      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto immControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
+      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
+      globalState->immControlBlockLayout = immControlBlockLayout;
+      globalState->immControlBlockStructL = immControlBlockStructL;
+    }
 
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-      globalState->mutControlBlockRcMemberIndex = memberTypesL.size();
-      memberTypesL.push_back(int64LT);
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      // Do nothing
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      // Do nothing, mutables dont have a strong RC, just a weak one
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      // Do nothing, mutables dont have a strong RC, just a generation
-    } else assert(false);
+    {
+      ControlBlockLayout mutNonWeakableControlBlockLayout;
+      // Fast mode mutables have no strong RC
+      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto mutNonWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
+      setControlBlockStructBody(mutNonWeakableControlBlockStructL, mutNonWeakableControlBlockLayout);
+      globalState->mutNonWeakableControlBlockLayout = mutNonWeakableControlBlockLayout;
+      globalState->mutNonWeakableControlBlockStructL = mutNonWeakableControlBlockStructL;
+    }
 
-    LLVMStructSetBody(
-        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->mutNonWeakableControlBlockStructL = controlBlockStructL;
+    {
+      ControlBlockLayout mutWeakableControlBlockLayout;
+      // Fast mode mutables have no strong RC
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
+      auto mutWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
+      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
+      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+    }
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+    {
+      ControlBlockLayout immControlBlockLayout;
+      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto immControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
+      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
+      globalState->immControlBlockLayout = immControlBlockLayout;
+      globalState->immControlBlockStructL = immControlBlockStructL;
+    }
+
+    {
+      ControlBlockLayout mutWeakableControlBlockLayout;
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto mutWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
+      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
+      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+      globalState->mutNonWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutNonWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+    }
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+    {
+      ControlBlockLayout immControlBlockLayout;
+      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto immControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
+      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
+      globalState->immControlBlockLayout = immControlBlockLayout;
+      globalState->immControlBlockStructL = immControlBlockStructL;
+    }
+
+    {
+      ControlBlockLayout mutWeakableControlBlockLayout;
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::LGTI);
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto mutWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
+      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
+      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+      globalState->mutNonWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutNonWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+    }
+  } else {
+    assert(false);
   }
+//
+//  {
+//    auto controlBlockStructL =
+//        LLVMStructCreateNamed(
+//            LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
+//    std::vector<LLVMTypeRef> memberTypesL;
+//
+//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+//      globalState->mutNonWeakableControlBlockRcMemberIndex = memberTypesL.size();
+//      memberTypesL.push_back(int32LT);
+//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+//      memberTypesL.push_back(int32LT); // Unused
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//      // Unused, mutables dont have a strong RC, just a weak one
+//      memberTypesL.push_back(int32LT);
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+//      // Unused, mutables dont have a strong RC, just a weak one
+//      memberTypesL.push_back(int32LT);
+//    } else assert(false);
+//
+//    // 1th member is always an unused 32bit int (see genHeap.c)
+//    memberTypesL.push_back(int32LT); // Unused
+//
+//    if (globalState->opt->census) {
+//      globalState->mutNonWeakableControlBlockTypeStrIndex = memberTypesL.size();
+//      memberTypesL.push_back(int8PtrLT);
+//
+//      globalState->mutNonWeakableControlBlockObjIdIndex = memberTypesL.size();
+//      memberTypesL.push_back(int64LT);
+//    }
+//
+//    setControlBlockStructBody(
+//        globalState->mutNonWeakableControlBlockStructL,
+//        &globalState->mutNonWeakableControlBlockLayout);
+//    globalState->mutNonWeakableControlBlockStructL = controlBlockStructL;
+//  }
 
   makeWeakRefStructs(globalState);
 
-  {
-    auto controlBlockStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "mutWeakableControlBlock");
-    std::vector<LLVMTypeRef> memberTypesL;
-
-//    if (globalState->opt->census) {
-      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
-      memberTypesL.push_back(int8PtrLT);
-
-      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
-      memberTypesL.push_back(int64LT);
+//  {
+//    auto controlBlockStructL =
+//        LLVMStructCreateNamed(
+//            LLVMGetGlobalContext(), "mutWeakableControlBlock");
+//    std::vector<LLVMTypeRef> memberTypesL;
+//
+//    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+//      globalState->mutWeakableControlBlockLgtiMemberIndex = memberTypesL.size();
+//      memberTypesL.push_back(int32LT);
+//    } else {
+//      globalState->mutWeakableControlBlockWrciMemberIndex = memberTypesL.size();
+//      memberTypesL.push_back(int32LT);
 //    }
-
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-      assert(memberTypesL.size() == globalState->mutControlBlockRcMemberIndex); // should match non-weakability
-      memberTypesL.push_back(int64LT);
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      // Do nothing
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      // Do nothing, mutables dont have a strong RC, just a weak one
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      // Do nothing, mutables dont have a strong RC, just a generation
-    } else assert(false);
-
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      globalState->mutControlBlockLgtiMemberIndex = memberTypesL.size();
-      memberTypesL.push_back(int32LT);
-    } else {
-      globalState->mutControlBlockWrciMemberIndex = memberTypesL.size();
-      memberTypesL.push_back(int32LT);
-    }
-
-    LLVMStructSetBody(
-        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->mutWeakableControlBlockStructL = controlBlockStructL;
-  }
-
-  {
-    auto controlBlockStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "immControlBlock");
-    std::vector<LLVMTypeRef> memberTypesL;
-
+//
+//    // 1th member is always an unused 32bit int (see genHeap.c)
+//    memberTypesL.push_back(int32LT); // Unused
+//
+//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+//      assert(memberTypesL.size() == globalState->mutWeakableControlBlockRcMemberIndex); // should match non-weakability
+//      memberTypesL.push_back(int32LT);
+//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+//      // Unused, fast mode has no RC
+//      memberTypesL.push_back(int32LT);
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//      // Unused, mutables dont have a strong RC, just a weak one
+//      memberTypesL.push_back(int32LT);
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+//      // Unused, mutables dont have a strong RC, just a weak one
+//      memberTypesL.push_back(int32LT);
+//    } else assert(false);
+//
 //    if (globalState->opt->census) {
-      assert(memberTypesL.size() == globalState->controlBlockTypeStrIndex); // should match mon-weakability
-      memberTypesL.push_back(int8PtrLT);
-
-      assert(memberTypesL.size() == globalState->controlBlockObjIdIndex); // should match non-weakability
-      memberTypesL.push_back(int64LT);
+//      globalState->mutWeakableControlBlockTypeStrIndex = memberTypesL.size();
+//      memberTypesL.push_back(int8PtrLT);
+//
+//      globalState->mutWeakableControlBlockObjIdIndex = memberTypesL.size();
+//      memberTypesL.push_back(int64LT);
 //    }
+//
+//    LLVMStructSetBody(
+//        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
+//    globalState->mutWeakableControlBlockStructL = controlBlockStructL;
+//  }
 
-    globalState->immControlBlockRcMemberIndex = memberTypesL.size();
-    memberTypesL.push_back(int64LT);
-
-    LLVMStructSetBody(
-        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->immControlBlockStructL = controlBlockStructL;
-  }
+//  {
+//    auto controlBlockStructL =
+//        LLVMStructCreateNamed(
+//            LLVMGetGlobalContext(), "immControlBlock");
+//    std::vector<LLVMTypeRef> memberTypesL;
+//
+//    globalState->immControlBlockRcMemberIndex = memberTypesL.size();
+//    memberTypesL.push_back(int32LT);
+//
+//    // 1th member is always an unused 32bit int (see genHeap.c)
+//    memberTypesL.push_back(int32LT);
+//
+//    if (globalState->opt->census) {
+//      globalState->immControlBlockTypeStrIndex = memberTypesL.size();
+//      memberTypesL.push_back(int8PtrLT);
+//
+//      globalState->immControlBlockObjIdIndex = memberTypesL.size();
+//      memberTypesL.push_back(int64LT);
+//    }
+//
+//    LLVMStructSetBody(
+//        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
+//    globalState->immControlBlockStructL = controlBlockStructL;
+//  }
 
 
   {
@@ -234,14 +464,17 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       std::cout << "Region override: naive-rc" << std::endl;
       break;
     case RegionOverride::RESILIENT_V0:
-      std::cout << "Region override: resilient" << std::endl;
+      std::cout << "Region override: resilient-v0" << std::endl;
       break;
     case RegionOverride::FAST:
       std::cout << "Region override: fast" << std::endl;
       break;
     case RegionOverride::RESILIENT_V1:
-      std::cout << "Region override: resilient fast" << std::endl;
+      std::cout << "Region override: resilient-v1" << std::endl;
       break;
+//    case RegionOverride::RESILIENT_V2:
+//      std::cout << "Region override: resilient-v2" << std::endl;
+//      break;
     default:
       assert(false);
       break;
@@ -260,6 +493,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
+  std::cout << "OVERRIDING to gen heap false!" << std::endl;
+  globalState->opt->genHeap = false;
 //  std::cout << "OVERRIDING to assist mode!" << std::endl;
 //  globalState->opt->regionOverride = RegionOverride::ASSIST;
 //  std::cout << "OVERRIDING census to true!" << std::endl;
@@ -611,7 +846,7 @@ void generateModule(GlobalState *globalState) {
   // Optimize the generated LLVM IR
   LLVMPassManagerRef passmgr = LLVMCreatePassManager();
   LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
-  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
+//  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
   LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
   LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
   LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph

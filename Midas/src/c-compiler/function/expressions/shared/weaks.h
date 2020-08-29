@@ -66,6 +66,7 @@ LLVMValueRef fillWeakableControlBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     LLVMValueRef controlBlockLE);
 
 

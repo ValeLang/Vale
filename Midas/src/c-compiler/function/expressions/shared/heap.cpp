@@ -6,28 +6,61 @@
 #include "string.h"
 #include "weaks.h"
 
-LLVMValueRef allocateStruct(
+LLVMValueRef callMalloc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
-    LLVMTypeRef structL) {
+    LLVMValueRef sizeLE) {
+  if (globalState->opt->genHeap) {
+    return LLVMBuildCall(builder, globalState->genMalloc, &sizeLE, 1, "");
+  } else {
+    return LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
+  }
+}
+
+LLVMValueRef callFree(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef controlBlockPtrLE) {
+  if (globalState->opt->genHeap) {
+    auto concreteAsVoidPtrLE =
+        LLVMBuildBitCast(
+            builder,
+            controlBlockPtrLE,
+            LLVMPointerType(LLVMVoidType(), 0),
+            "concreteVoidPtrForFree");
+    return LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
+  } else {
+    auto concreteAsCharPtrLE =
+        LLVMBuildBitCast(
+            builder,
+            controlBlockPtrLE,
+            LLVMPointerType(LLVMInt8Type(), 0),
+            "concreteCharPtrForFree");
+    return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+  }
+}
+
+LLVMValueRef mallocKnownSize(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    LLVMTypeRef referendLT) {
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, 1);
   }
 
   LLVMValueRef resultPtrLE = nullptr;
-  if (structTypeM->location == Location::INLINE) {
-    resultPtrLE = LLVMBuildAlloca(builder, structL, "newstruct");
-  } else if (structTypeM->location == Location::YONDER) {
-    size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, structL);
+  if (refM->location == Location::INLINE) {
+    resultPtrLE = LLVMBuildAlloca(builder, referendLT, "newstruct");
+  } else if (refM->location == Location::YONDER) {
+    size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, referendLT);
     LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
 
-    auto newStructLE =
-        LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
+    auto newStructLE = callMalloc(globalState, builder, sizeLE);
 
     resultPtrLE =
         LLVMBuildBitCast(
-            builder, newStructLE, LLVMPointerType(structL, 0), "newstruct");
+            builder, newStructLE, LLVMPointerType(referendLT, 0), "newstruct");
   } else {
     assert(false);
     return nullptr;
@@ -59,8 +92,7 @@ LLVMValueRef mallocUnknownSizeArray(
               ""),
           "usaMallocSizeBytes");
 
-  auto newWrapperPtrLE =
-      LLVMBuildCall(builder, globalState->malloc, &sizeBytesLE, 1, "");
+  auto newWrapperPtrLE = callMalloc(globalState, builder, sizeBytesLE);
 
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, 1);
@@ -94,8 +126,7 @@ LLVMValueRef mallocStr(
           makeConstIntExpr(builder,LLVMInt64Type(),  1 + LLVMABISizeOfType(globalState->dataLayout, globalState->stringWrapperStructL)),
           "strMallocSizeBytes");
 
-  auto destCharPtrLE =
-      LLVMBuildCall(builder, globalState->malloc, &sizeBytesLE, 1, "donePtr");
+  auto destCharPtrLE = callMalloc(globalState, builder, sizeBytesLE);
 
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, 1);
@@ -110,6 +141,7 @@ LLVMValueRef mallocStr(
   fillControlBlock(
       FL(),
       globalState, functionState, builder,
+      globalState->metalCache.str,
       Mutability::IMMUTABLE,
       Weakability::NON_WEAKABLE,
       getConcreteControlBlockPtr(builder, newStrWrapperPtrLE), "Str");
@@ -231,14 +263,7 @@ void freeConcrete(
   if (refM->location == Location::INLINE) {
     // Do nothing, it was alloca'd.
   } else if (refM->location == Location::YONDER) {
-    auto concreteAsCharPtrLE =
-        LLVMBuildBitCast(
-            builder,
-            controlBlockPtrLE,
-            LLVMPointerType(LLVMInt8Type(), 0),
-            "concreteCharPtrForFree");
-    LLVMBuildCall(
-        builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+    callFree(globalState, builder, controlBlockPtrLE);
   }
 
   if (globalState->opt->census) {

@@ -128,7 +128,8 @@ class ValeCompiler(unittest.TestCase):
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/stdio.c",
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/str.c",
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/census.c",
-              os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/weaks.c"
+              os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/weaks.c",
+              os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/genHeap.c"
             ]
         proc = self.clang(o_files, exe_file)
         # print(proc.stdout)

@@ -42,6 +42,7 @@ enum
     OPT_IMMERR,
     OPT_VERIFY,
     OPT_FLARES,
+    OPT_GEN_HEAP,
     OPT_CENSUS,
     OPT_REGION_OVERRIDE,
     OPT_FILENAMES,
@@ -82,6 +83,7 @@ static opt_arg_t args[] =
 
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
     { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
+    { "gen-heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
     { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
     { "region-override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
@@ -180,6 +182,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     optInit(args, &s, argc, argv);
     opt->release = 1;
     opt->flares = false;
+    opt->genHeap = false;
     opt->census = false;
 
     while ((id = optNext(&s)) != -1) {
@@ -218,6 +221,17 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
           } else assert(false);
           break;
         }
+
+          case OPT_GEN_HEAP: {
+            if (!s.arg_val) {
+              opt->genHeap = true;
+            } else if (s.arg_val == std::string("on")) {
+              opt->genHeap = true;
+            } else if (s.arg_val == std::string("off")) {
+              opt->genHeap = false;
+            } else assert(false);
+            break;
+          }
 
         case OPT_CENSUS: {
           if (!s.arg_val) {

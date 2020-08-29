@@ -78,6 +78,9 @@ LLVMValueRef translateExpressionInner(
         translateExpression(
             globalState, functionState, blockState, builder, stackify->sourceExpr);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, stackify->local->type), valueToStoreLE);
+    if (stackify->local->type->referend == globalState->metalCache.innt) {
+      buildFlare(FL(), globalState, functionState, builder, "Storing ", valueToStoreLE);
+    }
     makeLocal(
         globalState, functionState, blockState, builder, stackify->local, valueToStoreLE);
     return makeConstExpr(builder, makeNever());
@@ -92,6 +95,9 @@ LLVMValueRef translateExpressionInner(
     auto valueToStoreLE =
         translateExpression(
             globalState, functionState, blockState, builder, localStore->sourceExpr);
+    if (localStore->local->type->referend == globalState->metalCache.innt) {
+      buildFlare(FL(), globalState, functionState, builder, "Storing ", valueToStoreLE);
+    }
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, localStore->local->type), valueToStoreLE);
     LLVMBuildStore(builder, valueToStoreLE, localAddr);
     return oldValueLE;
@@ -200,6 +206,9 @@ LLVMValueRef translateExpressionInner(
             getEffectiveType(globalState, memberLoad->expectedResultType),
             memberName);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, memberLoad->expectedResultType), resultLE);
+    if (memberLoad->expectedResultType->referend == globalState->metalCache.innt) {
+      buildFlare(FL(), globalState, functionState, builder, "MemberLoad loaded ", memberName, ": ", resultLE);
+    }
     discard(
         AFL("MemberLoad drop struct"),
         globalState, functionState, blockState, builder, getEffectiveType(globalState, memberLoad->structType), structLE);

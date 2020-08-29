@@ -33,7 +33,7 @@ void fillInnerStruct(
 //            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
             buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
           } else {
-            auto controlBlockPtrLE = getControlBlockPtr(builder, memberLE, memberType);
+            auto controlBlockPtrLE = getControlBlockPtr(builder, memberLE, memberType->referend);
             buildFlare(FL(), globalState, functionState, builder,
                 "Member ", i, ": ",
                 getObjIdFromControlBlockPtr(globalState, builder, memberType->referend, controlBlockPtrLE));

@@ -112,8 +112,11 @@ void setControlBlockStructBody(LLVMTypeRef structL, const ControlBlockLayout& la
       case ControlBlockMember::UNUSED_32B:
         membersL.push_back(int32LT);
         break;
+      case ControlBlockMember::GENERATION:
+        assert(membersL.empty()); // Generation should be at the top of the object
+        membersL.push_back(int32LT);
+        break;
       case ControlBlockMember::LGTI:
-        assert(membersL.empty()); // LGTI should be at the top of the object
         membersL.push_back(int32LT);
         break;
       case ControlBlockMember::WRCI:
@@ -149,6 +152,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout immControlBlockLayout;
       immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -164,6 +169,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout mutNonWeakableControlBlockLayout;
       mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -179,6 +186,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout mutWeakableControlBlockLayout;
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -200,6 +209,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout immControlBlockLayout;
       immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -216,6 +227,8 @@ void initInternalStructs(GlobalState* globalState) {
       ControlBlockLayout mutNonWeakableControlBlockLayout;
       // Fast mode mutables have no strong RC
       mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -232,6 +245,8 @@ void initInternalStructs(GlobalState* globalState) {
       ControlBlockLayout mutWeakableControlBlockLayout;
       // Fast mode mutables have no strong RC
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -248,6 +263,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout immControlBlockLayout;
       immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -263,6 +280,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout mutWeakableControlBlockLayout;
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -280,6 +299,8 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout immControlBlockLayout;
       immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
@@ -295,13 +316,51 @@ void initInternalStructs(GlobalState* globalState) {
     {
       ControlBlockLayout mutWeakableControlBlockLayout;
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::LGTI);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
       mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
       if (globalState->opt->census) {
         mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
         mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
       }
       auto mutWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock");
+      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
+      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+      globalState->mutNonWeakableControlBlockLayout = mutWeakableControlBlockLayout;
+      globalState->mutNonWeakableControlBlockStructL = mutWeakableControlBlockStructL;
+    }
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+    {
+      ControlBlockLayout immControlBlockLayout;
+      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
+      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto immControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
+      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
+      globalState->immControlBlockLayout = immControlBlockLayout;
+      globalState->immControlBlockStructL = immControlBlockStructL;
+    }
+
+    {
+      ControlBlockLayout mutWeakableControlBlockLayout;
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::GENERATION);
+      // This is where we put the size in the current generational heap, we can use it for something
+      // else until we get rid of that.
+      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
+      if (globalState->opt->census) {
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+      }
+      auto mutWeakableControlBlockStructL =
+          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock");
       setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
       globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
       globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
@@ -456,6 +515,29 @@ void initInternalStructs(GlobalState* globalState) {
 }
 
 void compileValeCode(GlobalState* globalState, const std::string& filename) {
+//  std::cout << "OVERRIDING to resilient-v2 mode!" << std::endl;
+//  globalState->opt->regionOverride = RegionOverride::RESILIENT_V2;
+
+//  std::cout << "OVERRIDING to assist mode!" << std::endl;
+//  globalState->opt->regionOverride = RegionOverride::ASSIST;
+
+//  std::cout << "OVERRIDING census to true!" << std::endl;
+//  globalState->opt->census = true;
+//  std::cout << "OVERRIDING flares to true!" << std::endl;
+//  globalState->opt->flares = true;
+
+//  std::cout << "OVERRIDING gen-heap to true!" << std::endl;
+//  globalState->opt->genHeap = true;
+
+
+  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+    if (!globalState->opt->genHeap) {
+      std::cerr << "Error: using resilient v2 without generational heap, overriding generational heap to true!" << std::endl;
+      globalState->opt->genHeap = true;
+    }
+  }
+
+
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
       std::cout << "Region override: assist" << std::endl;
@@ -472,9 +554,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     case RegionOverride::RESILIENT_V1:
       std::cout << "Region override: resilient-v1" << std::endl;
       break;
-//    case RegionOverride::RESILIENT_V2:
-//      std::cout << "Region override: resilient-v2" << std::endl;
-//      break;
+    case RegionOverride::RESILIENT_V2:
+      std::cout << "Region override: resilient-v2" << std::endl;
+      break;
     default:
       assert(false);
       break;
@@ -492,15 +574,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       std::cout << "Warning: using census outside of assist mode, will slow things down!" << std::endl;
     }
   }
-
-  std::cout << "OVERRIDING to gen heap false!" << std::endl;
-  globalState->opt->genHeap = false;
-//  std::cout << "OVERRIDING to assist mode!" << std::endl;
-//  globalState->opt->regionOverride = RegionOverride::ASSIST;
-//  std::cout << "OVERRIDING census to true!" << std::endl;
-//  globalState->opt->census = true;
-//  std::cout << "OVERRIDING flares to true!" << std::endl;
-//  globalState->opt->flares = true;
 
 
   std::ifstream instream(filename);
@@ -649,12 +722,34 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
 
+  if (globalState->opt->census) {
+    // Add all the edges to the census, so we can check that fat pointers are right.
+    // We remove them again at the end of outer main.
+    // We should one day do this for all globals.
+    for (auto edgeAndItablePtr : globalState->interfaceTablePtrs) {
+      auto itablePtrLE = edgeAndItablePtr.second;
+      LLVMValueRef itablePtrAsVoidPtrLE =
+          LLVMBuildBitCast(
+              entryBuilder, itablePtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+      LLVMBuildCall(entryBuilder, globalState->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
+    }
+  }
 
   LLVMValueRef emptyValues[1] = {};
   LLVMValueRef mainResult =
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
+
   if (globalState->opt->census) {
+    // Remove all the things from the census that we added at the start of the program.
+    for (auto edgeAndItablePtr : globalState->interfaceTablePtrs) {
+      auto itablePtrLE = edgeAndItablePtr.second;
+      LLVMValueRef itablePtrAsVoidPtrLE =
+          LLVMBuildBitCast(
+              entryBuilder, itablePtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+      LLVMBuildCall(entryBuilder, globalState->censusRemove, &itablePtrAsVoidPtrLE, 1, "");
+    }
+
     LLVMValueRef args[3] = {
         LLVMConstInt(LLVMInt64Type(), 0, false),
         LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
@@ -845,15 +940,15 @@ void generateModule(GlobalState *globalState) {
 
   // Optimize the generated LLVM IR
   LLVMPassManagerRef passmgr = LLVMCreatePassManager();
-  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
-//  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
-  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
-  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
-  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
+//  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
+////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
+//  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
+//  LLVMAddGVNPass(passmgr);                         // Eliminate common subexpressions.
+//  LLVMAddCFGSimplificationPass(passmgr);           // Simplify the control flow graph
 
-  if (globalState->opt->release) {
-    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
-  }
+//  if (globalState->opt->release) {
+//    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
+//  }
   LLVMRunPassManager(passmgr, globalState->mod);
   LLVMDisposePassManager(passmgr);
 

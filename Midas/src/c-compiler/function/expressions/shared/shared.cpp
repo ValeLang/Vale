@@ -76,16 +76,16 @@ LLVMValueRef getControlBlockPtr(
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef referenceLE,
-    Reference* refM) {
-  if (dynamic_cast<InterfaceReferend*>(refM->referend)) {
+    Referend* referendM) {
+  if (dynamic_cast<InterfaceReferend*>(referendM)) {
     return getControlBlockPtrFromInterfaceRef(builder, referenceLE);
-  } else if (dynamic_cast<StructReferend*>(refM->referend)) {
+  } else if (dynamic_cast<StructReferend*>(referendM)) {
     return getConcreteControlBlockPtr(builder, referenceLE);
-  } else if (dynamic_cast<KnownSizeArrayT*>(refM->referend)) {
+  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
     return getConcreteControlBlockPtr(builder, referenceLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(refM->referend)) {
+  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
     return getConcreteControlBlockPtr(builder, referenceLE);
-  } else if (dynamic_cast<Str*>(refM->referend)) {
+  } else if (dynamic_cast<Str*>(referendM)) {
     return getConcreteControlBlockPtr(builder, referenceLE);
   } else {
     assert(false);
@@ -129,7 +129,7 @@ LLVMValueRef adjustStrongRc(
     LLVMValueRef exprLE,
     Reference* refM,
     int amount) {
-  auto controlBlockPtrLE = getControlBlockPtr(builder, exprLE, refM);
+  auto controlBlockPtrLE = getControlBlockPtr(builder, exprLE, refM->referend);
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
   auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
@@ -227,12 +227,18 @@ LLVMValueRef buildInterfaceCall(
     int indexInEdge) {
   auto virtualArgLE = argExprsLE[virtualParamIndex];
 
-  LLVMValueRef itablePtrLE;
+  LLVMValueRef itablePtrLE = nullptr;
   switch (virtualParamMT->ownership) {
     case Ownership::OWN:
     case Ownership::BORROW:
     case Ownership::SHARE: {
+      buildFlare(FL(), globalState, functionState, builder);
+
+      assert(LLVMTypeOf(virtualArgLE) == translateType(globalState, virtualParamMT));
+
       itablePtrLE = getTablePtrFromInterfaceRef(builder, virtualArgLE);
+
+      buildFlare(FL(), globalState, functionState, builder, "itable: ", ptrToVoidPtrLE(builder, itablePtrLE));
 
       auto objVoidPtrLE =
           LLVMBuildPointerCast(
@@ -244,6 +250,8 @@ LLVMValueRef buildInterfaceCall(
       break;
     }
     case Ownership::WEAK: {
+      buildFlare(FL(), globalState, functionState, builder);
+
       // Disassemble the weak interface ref.
       auto interfaceRefLE =
           getInnerRefFromWeakRef(
@@ -253,24 +261,38 @@ LLVMValueRef buildInterfaceCall(
               virtualParamMT,
               virtualArgLE);
 
+      buildFlare(FL(), globalState, functionState, builder);
+
       itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
+
+      buildFlare(FL(), globalState, functionState, builder);
 
       // Now, reassemble a weak void* ref to the struct.
       auto weakVoidStructRefLE =
           weakInterfaceRefToWeakStructRef(
               globalState, functionState, builder, virtualParamMT, virtualArgLE);
 
+      buildFlare(FL(), globalState, functionState, builder);
+
       argExprsLE[virtualParamIndex] = weakVoidStructRefLE;
+
+      buildFlare(FL(), globalState, functionState, builder);
 
       break;
     }
   }
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
   auto funcPtrPtrLE =
       LLVMBuildStructGEP(
           builder, itablePtrLE, indexInEdge, "methodPtrPtr");
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto funcPtrLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
+
+  buildFlare(FL(), globalState, functionState, builder);
 
   return LLVMBuildCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
@@ -291,13 +313,19 @@ void buildAssertCensusContains(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef refLE) {
+    LLVMValueRef ptrLE) {
   LLVMValueRef resultAsVoidPtrLE =
       LLVMBuildPointerCast(
-          builder, refLE, LLVMPointerType(LLVMVoidType(), 0), "");
+          builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "");
   auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
   auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
-  buildAssert(globalState, functionState, builder, isRegisteredBoolLE, "Object not registered with census!");
+  buildIf(functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
+      [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
+        buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
+        buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+      });
 }
 
 void checkValidReference(
@@ -311,13 +339,21 @@ void checkValidReference(
   assert(LLVMTypeOf(refLE) == translateType(globalState, refM));
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
-      auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+      if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, refLE);
+        buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+      }
+      auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else if (refM->ownership == Ownership::SHARE) {
+      if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, refLE);
+        buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+      }
       if (refM->location == Location::INLINE) {
         // Nothing to do, there's no control block or ref counts or anything.
       } else if (refM->location == Location::YONDER) {
-        auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+        auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);
 
         // We dont check ref count >0 because imm destructors receive with rc=0.
   //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
@@ -327,12 +363,15 @@ void checkValidReference(
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
       } else assert(false);
     } else if (refM->ownership == Ownership::BORROW) {
-      auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+      if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, refLE);
+        buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+      }
+      auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else if (refM->ownership == Ownership::WEAK) {
-      buildCheckWeakRef(globalState, builder, refLE);
+      buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, refLE);
     } else assert(false);
-  } else {
   }
 }
 
@@ -366,6 +405,7 @@ LLVMValueRef buildCall(
 
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
@@ -383,15 +423,18 @@ LLVMValueRef makeInterfaceRefStruct(
           controlBlockPtrLE,
           0,
           "interfaceRefWithOnlyObj");
+  auto itablePtrLE =
+      globalState->getInterfaceTablePtr(
+          globalState->program->getStruct(sourceStructReferendM->fullName)
+              ->getEdgeForInterface(targetInterfaceReferendM->fullName));
   interfaceRefLE =
       LLVMBuildInsertValue(
           builder,
           interfaceRefLE,
-          globalState->getInterfaceTablePtr(
-              globalState->program->getStruct(sourceStructReferendM->fullName)
-                  ->getEdgeForInterface(targetInterfaceReferendM->fullName)),
+          itablePtrLE,
           1,
           "interfaceRef");
+  buildFlare(FL(), globalState, functionState, builder, "itable: ", ptrToVoidPtrLE(builder, itablePtrLE), " for ", sourceStructReferendM->fullName->name, " for ", targetInterfaceReferendM->fullName->name);
 
   return interfaceRefLE;
 }
@@ -415,8 +458,8 @@ LLVMValueRef upcast2(
     case Ownership::SHARE: {
       auto interfaceRefLE =
           makeInterfaceRefStruct(
-              globalState, builder, sourceStructReferendM, targetInterfaceReferendM,
-              getControlBlockPtr(builder, sourceRefLE, sourceStructTypeM));
+              globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM,
+              getControlBlockPtr(builder, sourceRefLE, sourceStructTypeM->referend));
       checkValidReference(
           FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
       return interfaceRefLE;
@@ -456,6 +499,8 @@ Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership o
       return Ownership::WEAK;
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       return Ownership::WEAK;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+      return Ownership::WEAK;
     } else assert(false);
   } else assert(false);
 }
@@ -493,6 +538,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) 
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // All mutables are weakabile in resilient mode
       return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+      // All mutables are weakabile in resilient mode
+      return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
@@ -522,6 +570,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // All mutable structs are weakability in resilient mode
       return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+      // All mutable structs are weakability in resilient mode
+      return Weakability::WEAKABLE;
     } else assert(false);
   }
 }
@@ -549,6 +600,9 @@ Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinitio
       // All mutable structs are weakable in resilient mode
       return Weakability::WEAKABLE;
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+      // All mutable structs are weakable in resilient fast mode
+      return Weakability::WEAKABLE;
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
       // All mutable structs are weakable in resilient fast mode
       return Weakability::WEAKABLE;
     } else assert(false);

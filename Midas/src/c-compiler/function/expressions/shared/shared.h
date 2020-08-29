@@ -68,7 +68,7 @@ LLVMValueRef getControlBlockPtr(
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef referenceLE,
-    Reference* refM);
+    Referend* referendM);
 
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
@@ -176,7 +176,7 @@ void buildAssertCensusContains(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef refLE);
+    LLVMValueRef ptrLE);
 
 void checkValidReference(
     AreaAndFileAndLine checkerAFL,
@@ -223,6 +223,7 @@ LLVMValueRef load(
 
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,

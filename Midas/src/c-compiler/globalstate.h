@@ -13,6 +13,7 @@
 enum class ControlBlockMember {
   UNUSED_32B,
   LGTI,
+  GENERATION,
   WRCI,
   STRONG_RC,
   CENSUS_TYPE_STR,
@@ -100,7 +101,7 @@ public:
 //  int mutWeakableControlBlockTypeStrIndex = -1;
 //  int mutWeakableControlBlockObjIdIndex = -1;
 
-  LLVMTypeRef weakRefHeaderStructL = nullptr; // contains gen index and generation
+  LLVMTypeRef weakRefHeaderStructL = nullptr; // contains generation and maybe gen index
   LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
   LLVMTypeRef mutNonWeakableControlBlockStructL = nullptr;
   LLVMTypeRef mutWeakableControlBlockStructL = nullptr;
@@ -222,6 +223,7 @@ public:
     return iter->second;
   }
   ControlBlockLayout* getControlBlockLayout(Referend* referend);
+  LLVMTypeRef getControlBlockStruct(Referend* referend);
 };
 
 #endif

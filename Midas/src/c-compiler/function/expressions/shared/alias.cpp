@@ -18,13 +18,22 @@ void acquireReference(
     Reference* resultRef,
     LLVMValueRef expr) {
 
-  bool proceed =
-      globalState->opt->regionOverride == RegionOverride::ASSIST ||
-      globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
-      (globalState->opt->regionOverride == RegionOverride::FAST &&
-          (resultRef->ownership == Ownership::SHARE || resultRef->ownership == Ownership::WEAK));
+  bool proceed = false;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      proceed = true;
+      break;
+    case RegionOverride::FAST:
+      proceed = resultRef->ownership == Ownership::SHARE || resultRef->ownership == Ownership::WEAK;
+      break;
+    default:
+      assert(false);
+      break;
+  }
   if (!proceed) {
     return;
   }
@@ -96,7 +105,7 @@ void discardOwningRef(
       // No need to check the RC, we know we're freeing right now.
 
       // Free it!
-      freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           exprLE, sourceTypeM);
       break;
     }
@@ -109,7 +118,7 @@ void discardOwningRef(
           functionState, builder, isZeroLE(builder, rcLE),
           [globalState, functionState, blockState, exprLE, sourceTypeM](
               LLVMBuilderRef thenBuilder) {
-            freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, thenBuilder,
+            freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, thenBuilder,
                 exprLE, sourceTypeM);
           });
       break;
@@ -118,7 +127,7 @@ void discardOwningRef(
       // Do nothing
 
       // Free it!
-      freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           exprLE, sourceTypeM);
       break;
     case RegionOverride::RESILIENT_V0:
@@ -126,19 +135,20 @@ void discardOwningRef(
       // weak RC for owning refs
 
       // Free it!
-      freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           exprLE, sourceTypeM);
       break;
-    case RegionOverride::RESILIENT_V1: {
-      // Mutables in resilient v1 dont have strong RC, and also, they dont adjust
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      // Mutables in resilient v1+2 dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
       // Free it!
-      freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           exprLE, sourceTypeM);
       break;
-      default:
-        assert(false);
+    default:
+      assert(false);
       break;
     }
   }
@@ -154,14 +164,22 @@ void discard(
     LLVMValueRef expr) {
 
   // TODO: Turn this into true composition after the hackathon
-  bool proceed =
-      globalState->opt->regionOverride == RegionOverride::ASSIST ||
-      globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
-      (globalState->opt->regionOverride == RegionOverride::FAST &&
-          (sourceRef->ownership == Ownership::SHARE ||
-          sourceRef->ownership == Ownership::WEAK));
+  bool proceed = false;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      proceed = true;
+      break;
+    case RegionOverride::FAST:
+      proceed = sourceRef->ownership == Ownership::SHARE || sourceRef->ownership == Ownership::WEAK;
+      break;
+    default:
+      assert(false);
+      break;
+  }
   if (!proceed) {
     return;
   }

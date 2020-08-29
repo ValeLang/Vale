@@ -105,6 +105,9 @@ void translateUnknownSizeArray(
     } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
       // In resilient mode, we can have weak refs to arrays
       elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
     } else assert(false);
   } else if (unknownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
     elementsL.push_back(globalState->immControlBlockStructL);

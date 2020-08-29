@@ -171,7 +171,7 @@ void freeConcrete(
     LLVMValueRef refLE,
     Reference* refM) {
 
-  auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM);
+  auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
@@ -248,6 +248,17 @@ void freeConcrete(
       noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+    if (refM->ownership == Ownership::SHARE) {
+      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
+      buildAssert(globalState, functionState, builder, rcIsZeroLE,
+          "Tried to free concrete that had nonzero RC!");
+    } else {
+      assert(refM->ownership == Ownership::OWN);
+
+      // In resilient mode, every mutable is weakable.
+      noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+    }
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
     if (refM->ownership == Ownership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,

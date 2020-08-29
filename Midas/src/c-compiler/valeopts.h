@@ -11,6 +11,7 @@ enum class RegionOverride {
   NAIVE_RC,
   RESILIENT_V0,
   RESILIENT_V1,
+  RESILIENT_V2,
   FAST
 };
 

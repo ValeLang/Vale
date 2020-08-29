@@ -147,9 +147,10 @@ LLVMValueRef translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, unstackify->local->type), resultLE);
     return resultLE;
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
-    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " arg ", argument->argumentIndex);
     auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, argument->resultType), resultLE);
+    buildFlare(FL(), globalState, functionState, builder, "/", typeid(*expr).name());
     return resultLE;
   } else if (auto constantStr = dynamic_cast<ConstantStr*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -449,8 +450,11 @@ LLVMValueRef translateExpressionInner(
     auto resultLE = translateExternCall(globalState, functionState, blockState, builder, externCall);
     return resultLE;
   } else if (auto interfaceCall = dynamic_cast<InterfaceCall*>(expr)) {
-    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", interfaceCall->functionType->name->name);
     auto resultLE = translateInterfaceCall(globalState, functionState, blockState, builder, interfaceCall);
+    if (interfaceCall->functionType->returnType->referend != globalState->metalCache.never) {
+      buildFlare(FL(), globalState, functionState, builder, "/", typeid(*expr).name());
+    }
     return resultLE;
   } else if (auto memberStore = dynamic_cast<MemberStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -528,12 +532,13 @@ LLVMValueRef translateExpressionInner(
         structToInterfaceUpcast->targetInterfaceReferend);
   } else if (auto lockWeak = dynamic_cast<LockWeak*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceType = getEffectiveType(globalState, lockWeak->sourceType);
     auto sourceLE =
         translateExpression(
             globalState, functionState, blockState, builder, lockWeak->sourceExpr);
-    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, lockWeak->sourceType), sourceLE);
+    checkValidReference(FL(), globalState, functionState, builder, sourceType, sourceLE);
 
-    auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceLE);
+    auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceType, sourceLE);
 
     auto resultOptTypeLE = translateType(globalState, getEffectiveType(globalState, lockWeak->resultOptType));
 
@@ -568,7 +573,8 @@ LLVMValueRef translateExpressionInner(
                   break;
                 }
                 case RegionOverride::RESILIENT_V1:
-                case RegionOverride::RESILIENT_V0: {
+                case RegionOverride::RESILIENT_V0:
+                case RegionOverride::RESILIENT_V2: {
                   // The incoming "constraint" ref is actually already a week ref. All we have to
                   // do now is wrap it in a Some.
 
@@ -585,6 +591,9 @@ LLVMValueRef translateExpressionInner(
                   someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {sourceLE});
                   break;
                 }
+                default:
+                  assert(false);
+                  break;
               }
               return upcast2(
                   globalState,

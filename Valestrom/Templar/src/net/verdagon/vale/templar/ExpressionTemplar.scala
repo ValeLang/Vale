@@ -698,11 +698,26 @@ class ExpressionTemplar(
         val sizeRefExpr2 = coerceToReferenceExpression(fate, sizeExpr2)
         vassert(sizeRefExpr2.resultRegister.expectReference().reference == Coord(Share, Int2()))
 
+        val generatorMethod2 =
+          overloadTemplar.scoutExpectedFunctionForPrototype(
+            fate.snapshot, temputs, range,
+            GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
+            List(),
+            List(ParamFilter(generatorExpr2.resultRegister.reference, None), ParamFilter(Coord(Share, Int2()), None)),
+            List(),
+            true) match {
+            case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+              vimpl()
+            }
+            case ScoutExpectedFunctionSuccess(prototype) => prototype
+          }
+
         val constructExpr2 =
           ConstructArray2(
             arrayType,
             sizeRefExpr2,
-            generatorExpr2)
+            generatorExpr2,
+            generatorMethod2)
         (constructExpr2, returnsFromSize ++ returnsFromGenerator)
       }
       case LetAE(rulesA, typeByRune, localRunesA, pattern, sourceExpr1) => {

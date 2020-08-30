@@ -308,6 +308,20 @@ class DestructorTemplar(
         FunctionCall2(constructorPrototype, List()),
         ifunction1InterfaceRef)
 
+
+    val consumerMethod2 =
+      overloadTemplar.scoutExpectedFunctionForPrototype(
+        env, temputs, RangeS.internal(-108),
+        GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
+        List(),
+        List(ParamFilter(ifunctionExpression.resultRegister.reference, None), ParamFilter(sequence.array.memberType, None)),
+        List(), true) match {
+        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+          vimpl()
+        }
+        case ScoutExpectedFunctionSuccess(prototype) => prototype
+      }
+
     val function2 =
       Function2(
         FunctionHeader2(
@@ -322,7 +336,8 @@ class DestructorTemplar(
             DestroyArraySequenceIntoFunction2(
               ArgLookup2(0, arrayRefType),
               sequence,
-              ifunctionExpression),
+              ifunctionExpression,
+              consumerMethod2),
             Return2(VoidLiteral2()))))
 
     temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)
@@ -350,6 +365,19 @@ class DestructorTemplar(
         FunctionCall2(constructorPrototype, List()),
         ifunction1InterfaceRef)
 
+    val consumerMethod2 =
+      overloadTemplar.scoutExpectedFunctionForPrototype(
+        env, temputs, RangeS.internal(-108),
+        GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
+        List(),
+        List(ParamFilter(ifunctionExpression.resultRegister.reference, None), ParamFilter(array.array.memberType, None)),
+        List(), true) match {
+        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+          vimpl(seff.toString)
+        }
+        case ScoutExpectedFunctionSuccess(prototype) => prototype
+      }
+
     val function2 =
       Function2(
         FunctionHeader2(
@@ -364,7 +392,8 @@ class DestructorTemplar(
             DestroyUnknownSizeArray2(
               ArgLookup2(0, arrayRefType2),
               array,
-              ifunctionExpression),
+              ifunctionExpression,
+              consumerMethod2),
             Return2(VoidLiteral2()))))
 
       temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)

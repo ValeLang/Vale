@@ -164,8 +164,13 @@ void foreachArrayElement(
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder) {
-  LLVMValueRef iterationIndexPtrLE = LLVMBuildAlloca(builder, LLVMInt64Type(), "iterationIndex");
-  LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0, false), iterationIndexPtrLE);
+  LLVMValueRef iterationIndexPtrLE =
+      makeMidasLocal(
+          functionState,
+          builder,
+          LLVMInt64Type(),
+          "iterationIndex",
+          LLVMConstInt(LLVMInt64Type(),0, false));
 
   buildWhile(
       functionState,

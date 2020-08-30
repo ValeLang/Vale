@@ -26,7 +26,14 @@ struct AreaAndFileAndLine {
 LLVMValueRef makeNever();
 LLVMTypeRef makeNeverType();
 
-void makeLocal(
+LLVMValueRef makeMidasLocal(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef typeL,
+    const std::string& name,
+    LLVMValueRef valueToStore);
+
+void makeHammerLocal(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -158,9 +165,10 @@ LLVMValueRef buildInterfaceCall(
     int indexInEdge);
 
 
-LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value);
+LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int value);
 
-LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr);
+LLVMValueRef makeConstExpr(
+    FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);
 
 inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);

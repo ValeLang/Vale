@@ -34,15 +34,19 @@ void translateFunction(
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 
-  FunctionState functionState(functionM, functionL, returnTypeL);
 
-  int blockNumber = functionState.nextBlockNumber++;
-  auto blockName = std::string("block") + std::to_string(blockNumber);
-  LLVMBasicBlockRef firstBlockL =
-      LLVMAppendBasicBlock(functionState.containingFuncL, blockName.c_str());
+  auto localsBlockName = std::string("localsBlock");
+  auto localsBuilder = LLVMCreateBuilder();
+  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlock(functionL, localsBlockName.c_str());
+  LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
 
+  auto firstBlockName = std::string("codeStartBlock");
+  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlock(functionL, firstBlockName.c_str());
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
+
+  FunctionState functionState(functionM, functionL, returnTypeL, localsBuilder);
+
   // There are other builders made elsewhere for various blocks in the function,
   // but this is the one for the top level.
   // It's not always pointed at firstBlockL, it can be re-pointed to other
@@ -82,8 +86,11 @@ void translateFunction(
       translateExpression(
           globalState, &functionState, &initialBlockState, bodyTopLevelBuilder, functionM->block);
 
-
   initialBlockState.checkAllIntroducedLocalsWereUnstackified();
+
+  // Now that we've added all the locals we need, lets make the locals block jump to the first
+  // code block.
+  LLVMBuildBr(localsBuilder, firstBlockL);
 
   // This is a total hack, to try and appease LLVM to say that yes, we're sure
   // we'll never reach this statement.

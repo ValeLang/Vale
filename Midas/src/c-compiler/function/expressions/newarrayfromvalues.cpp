@@ -39,7 +39,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
     LLVMTypeRef structLT,
     const std::vector<LLVMValueRef>& membersLE,
     const std::string& typeName) {
-  auto newStructLE = mallocKnownSize(globalState, builder, refM, structLT);
+  auto newStructLE = mallocKnownSize(globalState, functionState, builder, refM, structLT);
   fillControlBlock(
       FL(),
       globalState,

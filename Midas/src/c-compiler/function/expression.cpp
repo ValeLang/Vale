@@ -55,11 +55,11 @@ LLVMValueRef translateExpressionInner(
     Expression* expr) {
   if (auto constantI64 = dynamic_cast<ConstantI64*>(expr)) {
     // See ULTMCIE for why we load and store here.
-    return makeConstIntExpr(builder, LLVMInt64Type(), constantI64->value);
+    return makeConstIntExpr(functionState, builder, LLVMInt64Type(), constantI64->value);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // See ULTMCIE for why this is an add.
-    return makeConstIntExpr(builder, LLVMInt1Type(), constantBool->value);
+    return makeConstIntExpr(functionState, builder, LLVMInt1Type(), constantBool->value);
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateDiscard(globalState, functionState, blockState, builder, discardM);
@@ -81,9 +81,9 @@ LLVMValueRef translateExpressionInner(
     if (stackify->local->type->referend == globalState->metalCache.innt) {
       buildFlare(FL(), globalState, functionState, builder, "Storing ", valueToStoreLE);
     }
-    makeLocal(
+    makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, valueToStoreLE);
-    return makeConstExpr(builder, makeNever());
+    return makeConstExpr(functionState, builder, makeNever());
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
@@ -258,7 +258,7 @@ LLVMValueRef translateExpressionInner(
 
     discard(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerLE);
 
-    return makeConstExpr(builder, makeNever());
+    return makeConstExpr(functionState, builder, makeNever());
   } else if (auto destroyUnknownSizeArrayIntoFunction = dynamic_cast<DestroyUnknownSizeArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto consumerType = getEffectiveType(globalState, destroyUnknownSizeArrayIntoFunction->consumerType);
@@ -304,7 +304,7 @@ LLVMValueRef translateExpressionInner(
 
     discard(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerLE);
 
-    return makeConstExpr(builder, makeNever());
+    return makeConstExpr(functionState, builder, makeNever());
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = getEffectiveType(globalState, knownSizeArrayLoad->arrayType);

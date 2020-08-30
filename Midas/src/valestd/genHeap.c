@@ -67,6 +67,22 @@ static __Heap_Entry* __gen_2_pow_15B_heap_free_head = NULL;
 static GenHeap __gen_2_pow_15B_heap = { 2 << 15, &__gen_2_pow_15B_heap_free_head };
 static __Heap_Entry* __gen_2_pow_16B_heap_free_head = NULL;
 static GenHeap __gen_2_pow_16B_heap = { 2 << 16, &__gen_2_pow_16B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_17B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_17B_heap = { 2 << 17, &__gen_2_pow_17B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_18B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_18B_heap = { 2 << 18, &__gen_2_pow_18B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_19B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_19B_heap = { 2 << 19, &__gen_2_pow_19B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_20B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_20B_heap = { 2 << 20, &__gen_2_pow_20B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_21B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_21B_heap = { 2 << 21, &__gen_2_pow_21B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_22B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_22B_heap = { 2 << 22, &__gen_2_pow_22B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_23B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_23B_heap = { 2 << 23, &__gen_2_pow_23B_heap_free_head };
+static __Heap_Entry* __gen_2_pow_24B_heap_free_head = NULL;
+static GenHeap __gen_2_pow_24B_heap = { 2 << 24, &__gen_2_pow_24B_heap_free_head };
 
 
 static inline void* mallocAndZeroGen(int allocationActualSizeBytes) {
@@ -115,7 +131,24 @@ GenHeap* getGenHeapForDesiredSize(int desiredBytesNotMultipleOf8) {
     return &__gen_2_pow_15B_heap;
   } else if (desiredBytes <= (2 << 16)) {
     return &__gen_2_pow_16B_heap;
+  } else if (desiredBytes <= (2 << 17)) {
+    return &__gen_2_pow_17B_heap;
+  } else if (desiredBytes <= (2 << 18)) {
+    return &__gen_2_pow_18B_heap;
+  } else if (desiredBytes <= (2 << 19)) {
+    return &__gen_2_pow_19B_heap;
+  } else if (desiredBytes <= (2 << 20)) {
+    return &__gen_2_pow_20B_heap;
+  } else if (desiredBytes <= (2 << 21)) {
+    return &__gen_2_pow_21B_heap;
+  } else if (desiredBytes <= (2 << 22)) {
+    return &__gen_2_pow_22B_heap;
+  } else if (desiredBytes <= (2 << 23)) {
+    return &__gen_2_pow_23B_heap;
+  } else if (desiredBytes <= (2 << 24)) {
+    return &__gen_2_pow_24B_heap;
   } else {
+    fprintf(stderr, "Tried to allocate %d bytes!\n", desiredBytesNotMultipleOf8);
     assert(0);
   }
 }

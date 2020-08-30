@@ -7,7 +7,7 @@ void __vprintCStr(const char* str) {
 }
 
 void __vprintI64(int64_t x) {
-  printf("%d", x);
+  printf("%ld", x);
 }
 
 void __vprintBool(int8_t x) {

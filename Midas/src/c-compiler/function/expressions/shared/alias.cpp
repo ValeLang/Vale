@@ -18,12 +18,22 @@ void acquireReference(
     Reference* resultRef,
     LLVMValueRef expr) {
 
-  bool proceed =
-      globalState->opt->regionOverride == RegionOverride::ASSIST ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST ||
-      (globalState->opt->regionOverride == RegionOverride::FAST &&
-          (resultRef->ownership == Ownership::SHARE || resultRef->ownership == Ownership::WEAK));
+  bool proceed = false;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      proceed = true;
+      break;
+    case RegionOverride::FAST:
+      proceed = resultRef->ownership == Ownership::SHARE || resultRef->ownership == Ownership::WEAK;
+      break;
+    default:
+      assert(false);
+      break;
+  }
   if (!proceed) {
     return;
   }
@@ -79,6 +89,71 @@ void acquireReference(
   }
 }
 
+void discardOwningRef(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef builder,
+    Reference* sourceTypeM,
+    LLVMValueRef exprLE) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST: {
+      adjustStrongRc(
+          AFL("Destroy decrementing the owning ref"),
+          globalState, functionState, builder, exprLE, sourceTypeM, -1);
+      // No need to check the RC, we know we're freeing right now.
+
+      // Free it!
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+          exprLE, sourceTypeM);
+      break;
+    }
+    case RegionOverride::NAIVE_RC: {
+      auto rcLE =
+          adjustStrongRc(
+              AFL("Destroy decrementing the owning ref"),
+              globalState, functionState, builder, exprLE, sourceTypeM, -1);
+      buildIf(
+          functionState, builder, isZeroLE(builder, rcLE),
+          [globalState, functionState, blockState, exprLE, sourceTypeM](
+              LLVMBuilderRef thenBuilder) {
+            freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, thenBuilder,
+                exprLE, sourceTypeM);
+          });
+      break;
+    }
+    case RegionOverride::FAST:
+      // Do nothing
+
+      // Free it!
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+          exprLE, sourceTypeM);
+      break;
+    case RegionOverride::RESILIENT_V0:
+      // Mutables in resilient mode dont have strong RC, and also, they dont adjust
+      // weak RC for owning refs
+
+      // Free it!
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+          exprLE, sourceTypeM);
+      break;
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      // Mutables in resilient v1+2 dont have strong RC, and also, they dont adjust
+      // weak RC for owning refs
+
+      // Free it!
+      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+          exprLE, sourceTypeM);
+      break;
+    default:
+      assert(false);
+      break;
+    }
+  }
+}
+
 void discard(
     AreaAndFileAndLine from,
     GlobalState* globalState,
@@ -89,13 +164,22 @@ void discard(
     LLVMValueRef expr) {
 
   // TODO: Turn this into true composition after the hackathon
-  bool proceed =
-      globalState->opt->regionOverride == RegionOverride::ASSIST ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST ||
-      (globalState->opt->regionOverride == RegionOverride::FAST &&
-          (sourceRef->ownership == Ownership::SHARE ||
-          sourceRef->ownership == Ownership::WEAK));
+  bool proceed = false;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      proceed = true;
+      break;
+    case RegionOverride::FAST:
+      proceed = sourceRef->ownership == Ownership::SHARE || sourceRef->ownership == Ownership::WEAK;
+      break;
+    default:
+      assert(false);
+      break;
+  }
   if (!proceed) {
     return;
   }
@@ -111,7 +195,16 @@ void discard(
       // We can't discard owns, they must be destructured.
       assert(false); // impl
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+      auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+      if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+        buildIf(
+            functionState, builder, isZeroLE(builder, rcLE),
+            [globalState, functionState, blockState, expr, sourceRef](
+                LLVMBuilderRef thenBuilder) {
+              freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+                  expr, sourceRef);
+            });
+      }
     } else if (sourceRef->ownership == Ownership::WEAK) {
       discardWeakRef(from, globalState, functionState, builder, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
@@ -148,9 +241,17 @@ void discard(
       assert(false);
     } else if (sourceRef->ownership == Ownership::BORROW) {
       buildFlare(from, globalState, functionState, builder, "Decr strong concrete borrow!");
-      adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+      auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+      if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+        buildIf(
+            functionState, builder, isZeroLE(builder, rcLE),
+            [globalState, functionState, blockState, expr, sourceRef](
+                LLVMBuilderRef thenBuilder) {
+              freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+                  expr, sourceRef);
+            });
+      }
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      buildFlare(from, globalState, functionState, builder, "Decr weak concrete weak!");
       discardWeakRef(from, globalState, functionState, builder, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {

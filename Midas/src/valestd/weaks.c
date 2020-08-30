@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define WRC_LIVE_BIT 0x8000000000000000
+#define WRC_LIVE_BIT 0x80000000
 #define WRC_INITIAL_VALUE WRC_LIVE_BIT
 
 // would be nice to have a free bit, so we can progressively scan and sort the free list somehow.
@@ -29,7 +29,7 @@ uint32_t __getNumWrcs() {
   return __wrc_capacity - numFrees;
 }
 
-uint32_t __expandWrcTable() {
+void __expandWrcTable() {
   uint32_t *oldEntries = __wrc_entries;
   int oldCapacity = __wrc_capacity;
 
@@ -110,7 +110,7 @@ uint32_t __getNumLiveLgtEntries() {
   return __lgt_capacity - numFrees;
 }
 
-uint32_t __expandLgt() {
+void __expandLgt() {
   __LGTEntry *oldEntries = __lgt_entries;
   int oldCapacity = __lgt_capacity;
 

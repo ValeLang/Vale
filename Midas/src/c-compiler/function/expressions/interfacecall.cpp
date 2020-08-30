@@ -23,6 +23,8 @@ LLVMValueRef translateInterfaceCall(
     argsLE.push_back(argLE);
   }
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   auto resultLE =
       buildInterfaceCall(
           globalState,

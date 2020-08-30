@@ -71,9 +71,9 @@ LLVMValueRef translateExternCall(
     // VivemExterns.addFloatFloat
     assert(false);
   } else if (name == "F(\"panic\")") {
-    auto exitCodeLE = makeConstIntExpr(builder, LLVMInt8Type(), 255);
+    auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8Type(), 255);
     LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
-    return makeConstExpr(builder, makeNever());
+    return makeConstExpr(functionState, builder, makeNever());
   } else if (name == "F(\"__multiplyIntInt\",[],[R(*,<,i),R(*,<,i)])") {
     assert(call->argExprs.size() == 2);
     return LLVMBuildMul(
@@ -228,7 +228,12 @@ LLVMValueRef translateExternCall(
 
     int bufferSize = 150;
     auto charsPtrLocalLE =
-        LLVMBuildAlloca(builder, LLVMArrayType(LLVMInt8Type(), bufferSize), "charsPtrLocal");
+        makeMidasLocal(
+            functionState,
+            builder,
+            LLVMArrayType(LLVMInt8Type(), bufferSize),
+            "charsPtrLocal",
+            LLVMGetUndef(LLVMArrayType(LLVMInt8Type(), bufferSize)));
     auto itoaDestPtrLE =
         LLVMBuildPointerCast(
             builder, charsPtrLocalLE, LLVMPointerType(LLVMInt8Type(), 0), "itoaDestPtr");

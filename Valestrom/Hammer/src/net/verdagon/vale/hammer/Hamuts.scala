@@ -5,6 +5,7 @@ import net.verdagon.vale.templar.{FullName2, IName2}
 import net.verdagon.vale.templar.templata.Prototype2
 import net.verdagon.vale.templar.types.{InterfaceRef2, PackT2, StructRef2}
 import net.verdagon.vale.vassert
+import net.verdagon.von.IVonData
 
 
 case class HamutsBox(var inner: Hamuts) {
@@ -57,9 +58,16 @@ case class HamutsBox(var inner: Hamuts) {
   def addExport(fullNameH: FullNameH, exportedName: String): Unit = {
     inner = inner.addExport(fullNameH, exportedName)
   }
+
+  def getNameId(readableName: String, parts: List[IVonData]): Int = {
+    val (newInner, id) = inner.getNameId(readableName, parts)
+    inner = newInner
+    id
+  }
 }
 
 case class Hamuts(
+    idByFullNameByHumanName: Map[String, Map[String, Int]],
     fullNameByExportedName: Map[String, FullNameH],
     structRefsByRef2: Map[StructRef2, StructRefH],
     structDefsByRef2: Map[StructRef2, StructDefinitionH],
@@ -72,6 +80,7 @@ case class Hamuts(
     functionDefs: Map[Prototype2, FunctionH]) {
   def forwardDeclareStruct(structRef2: StructRef2, structRefH: StructRefH): Hamuts = {
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2 + (structRef2 -> structRefH),
       structDefsByRef2,
@@ -87,6 +96,7 @@ case class Hamuts(
   def addStructOriginatingFromTemplar(structRef2: StructRef2, structDefH: StructDefinitionH): Hamuts = {
     vassert(structRefsByRef2.contains(structRef2))
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2 + (structRef2 -> structDefH),
@@ -101,6 +111,7 @@ case class Hamuts(
 
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -115,6 +126,7 @@ case class Hamuts(
 
   def forwardDeclareInterface(interfaceRef2: InterfaceRef2, interfaceRefH: InterfaceRefH): Hamuts = {
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -130,6 +142,7 @@ case class Hamuts(
   def addInterface(interfaceRef2: InterfaceRef2, interfaceDefH: InterfaceDefinitionH): Hamuts = {
     vassert(interfaceRefs.contains(interfaceRef2))
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -144,6 +157,7 @@ case class Hamuts(
 
   def forwardDeclareFunction(functionRef2: Prototype2, functionRefH: FunctionRefH): Hamuts = {
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -160,6 +174,7 @@ case class Hamuts(
     vassert(functionRefs.contains(functionRef2))
 
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -176,6 +191,7 @@ case class Hamuts(
     vassert(!fullNameByExportedName.contains(exportedName))
 
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName + (exportedName -> fullNameH),
       structRefsByRef2,
       structDefsByRef2,
@@ -190,6 +206,7 @@ case class Hamuts(
 
   def addKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): Hamuts = {
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -204,6 +221,7 @@ case class Hamuts(
 
   def addUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): Hamuts = {
     Hamuts(
+      idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
@@ -215,4 +233,38 @@ case class Hamuts(
       functionRefs,
       functionDefs)
   }
+
+  // This returns a unique ID for that specific human name.
+  // Two things with two different human names could result in the same ID here.
+  // This ID is meant to be concatenated onto the human name.
+  def getNameId(readableName: String, parts: List[IVonData]): (Hamuts, Int) = {
+    val namePartsString = FullNameH.namePartsToString(parts)
+    val idByFullNameForHumanName =
+      idByFullNameByHumanName.get(readableName) match {
+        case None => Map[String, Int]()
+        case Some(x) => x
+      }
+    val id =
+      idByFullNameForHumanName.get(namePartsString) match {
+        case None => idByFullNameForHumanName.size
+        case Some(i) => i
+      }
+    val idByFullNameForHumanNameNew = idByFullNameForHumanName + (namePartsString -> id)
+    val idByFullNameByHumanNameNew = idByFullNameByHumanName + (readableName -> idByFullNameForHumanNameNew)
+    val newHamuts =
+      Hamuts(
+        idByFullNameByHumanNameNew,
+        fullNameByExportedName,
+        structRefsByRef2,
+        structDefsByRef2,
+        structDefs,
+        knownSizeArrays,
+        unknownSizeArrays,
+        interfaceRefs,
+        interfaceDefs,
+        functionRefs,
+        functionDefs)
+    (newHamuts, id)
+  }
+
 }

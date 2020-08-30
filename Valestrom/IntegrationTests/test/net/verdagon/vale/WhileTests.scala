@@ -74,7 +74,7 @@ class WhileTests extends FunSuite with Matchers {
         |  while (true) {
         |    ret 9;
         |  }
-        |  = panic();
+        |  = __panic();
         |}
       """.stripMargin)
 

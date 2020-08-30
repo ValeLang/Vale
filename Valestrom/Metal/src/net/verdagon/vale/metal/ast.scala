@@ -8,7 +8,7 @@ import scala.collection.immutable.ListMap
 object ProgramH {
   val emptyTupleStructRef =
     // If the templar ever decides to change this things name, update this to match templar's.
-    StructRefH(FullNameH(List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
+    StructRefH(FullNameH("Tup0", 0, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
   def emptyTupleStructType = ReferenceH(ShareH, InlineH, emptyTupleStructRef)
 }
@@ -39,16 +39,13 @@ case class ProgramH(
   // Abstract or implemented
   def nonExternFunctions = functions.filter(!_.isExtern)
   def getAllUserFunctions = functions.filter(_.isUserFunction)
-  def main() = {
-    val matching = functions.filter(f => f.fullName.toString.startsWith("F(\"main\"") && f.fullName.parts.size == 1)
-    vassert(matching.size == 1)
-    matching.head
-  }
 
   // Convenience function for the tests to look up a function.
   // Function must be at the top level of the program.
   def lookupFunction(humanName: String) = {
-    val matches = functions.filter(_.fullName.toString.startsWith(s"""F("${humanName}""""))
+    val matches = functions.filter(a => {
+      a.fullName.readableName == humanName
+    })
     vassert(matches.size == 1)
     matches.head
   }
@@ -56,7 +53,7 @@ case class ProgramH(
   // Convenience function for the tests to look up a struct.
   // Struct must be at the top level of the program.
   def lookupStruct(humanName: String) = {
-    val matches = structs.filter(_.fullName.toString.startsWith(s"""C("${humanName}""""))
+    val matches = structs.filter(_.fullName.readableName == humanName)
     vassert(matches.size == 1)
     matches.head
   }
@@ -64,7 +61,7 @@ case class ProgramH(
   // Convenience function for the tests to look up an interface.
   // Interface must be at the top level of the program.
   def lookupInterface(humanName: String) = {
-    val matches = interfaces.filter(_.fullName.toString.startsWith(s"""C("${humanName}""""))
+    val matches = interfaces.filter(_.fullName.readableName == humanName)
     vassert(matches.size == 1)
     matches.head
   }
@@ -188,13 +185,19 @@ case class PrototypeH(
 )
 
 // A unique name for something in the program.
-case class FullNameH(parts: List[IVonData]) {
-  // Adds a step to the name.
-  def addStep(s: String) = {
-    FullNameH(parts :+ VonStr(s))
+case class FullNameH(readableName: String, id: Int, parts: List[IVonData]) {
+  def toReadableString(): String = {
+    if (id > 0) {
+      readableName + "_" + id
+    } else {
+      readableName
+    }
   }
+  def toFullString(): String = { FullNameH.namePartsToString(parts) }
+}
 
-  override def toString: String = {
+object FullNameH {
+  def namePartsToString(parts: List[IVonData]) = {
     parts.map(MetalPrinter.print).mkString(":")
   }
 }

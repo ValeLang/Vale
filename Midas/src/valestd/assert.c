@@ -11,11 +11,11 @@ void __vassert(char value, const char* message) {
 
 void __vassertI64Eq(int64_t expected, int64_t actual, const char* message) {
   if (expected != actual) {
-    printf("%s Expected %d but was %d.\n", message, expected, actual);
+    printf("%s Expected %ld but was %ld.\n", message, expected, actual);
     exit(255);
   }
 }
 
 void __vflare_i64(int64_t color, int64_t x) {
-  printf("Flare %d: %d\n", color, x);
+  printf("Flare %ld: %ld\n", color, x);
 }

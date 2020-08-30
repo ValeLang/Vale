@@ -26,7 +26,14 @@ struct AreaAndFileAndLine {
 LLVMValueRef makeNever();
 LLVMTypeRef makeNeverType();
 
-void makeLocal(
+LLVMValueRef makeMidasLocal(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef typeL,
+    const std::string& name,
+    LLVMValueRef valueToStore);
+
+void makeHammerLocal(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -68,7 +75,7 @@ LLVMValueRef getControlBlockPtr(
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef referenceLE,
-    Reference* refM);
+    Referend* referendM);
 
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
@@ -83,8 +90,8 @@ LLVMValueRef adjustStrongRc(
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
-    Reference* refM);
+    Reference* refM,
+    LLVMValueRef exprLE);
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
@@ -158,9 +165,10 @@ LLVMValueRef buildInterfaceCall(
     int indexInEdge);
 
 
-LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value);
+LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int value);
 
-LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr);
+LLVMValueRef makeConstExpr(
+    FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);
 
 inline LLVMValueRef constI64LE(int n) {
   return LLVMConstInt(LLVMInt64Type(), n, false);
@@ -176,7 +184,7 @@ void buildAssertCensusContains(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef refLE);
+    LLVMValueRef ptrLE);
 
 void checkValidReference(
     AreaAndFileAndLine checkerAFL,
@@ -223,6 +231,7 @@ LLVMValueRef load(
 
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
@@ -238,5 +247,14 @@ LLVMValueRef addExtern(
 inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
 }
+
+void discardOwningRef(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef builder,
+    Reference* sourceTypeM,
+    LLVMValueRef exprLE);
 
 #endif

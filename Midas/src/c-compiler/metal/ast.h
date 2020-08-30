@@ -85,6 +85,7 @@ public:
     assert(iter != immDestructorsByKind.end());
     return iter->second;
   }
+  UnconvertedWeakability getReferendWeakability(Referend* referend);
 };
 
 class InterfaceMethod {

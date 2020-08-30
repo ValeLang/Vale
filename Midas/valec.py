@@ -84,6 +84,9 @@ class ValeCompiler(unittest.TestCase):
         if "--flares" in args:
             args.remove("--flares")
             midas_options.append("--flares")
+        if "--gen-heap" in args:
+            args.remove("--gen-heap")
+            midas_options.append("--gen-heap")
         if "--census" in args:
             args.remove("--census")
             midas_options.append("--census")
@@ -128,7 +131,8 @@ class ValeCompiler(unittest.TestCase):
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/stdio.c",
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/str.c",
               os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/census.c",
-              os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/weaks.c"
+              os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/weaks.c",
+              os.path.dirname(os.path.realpath(__file__)) + "/src/valestd/genHeap.c"
             ]
         proc = self.clang(o_files, exe_file)
         # print(proc.stdout)

@@ -119,13 +119,19 @@ public:
   // This is here so we can return an Undef of this when we realize we just
   // called into a Never-returning function.
   LLVMTypeRef returnTypeL;
+  LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
 
-  FunctionState(Function* containingFuncM_, LLVMValueRef containingFuncL_, LLVMTypeRef returnTypeL_) :
-      containingFuncM(containingFuncM_),
-      containingFuncL(containingFuncL_),
-      returnTypeL(returnTypeL_) {}
+  FunctionState(
+      Function* containingFuncM_,
+      LLVMValueRef containingFuncL_,
+      LLVMTypeRef returnTypeL_,
+      LLVMBuilderRef localsBuilder_) :
+    containingFuncM(containingFuncM_),
+    containingFuncL(containingFuncL_),
+    returnTypeL(returnTypeL_),
+    localsBuilder(localsBuilder_) {}
 
   std::string nextBlockName() {
     return std::string("block") + std::to_string(nextBlockNumber++);

@@ -7,11 +7,12 @@
 #include "globalstate.h"
 #include "shared.h"
 
-LLVMValueRef allocateStruct(
+LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
-    LLVMTypeRef structL);
+    Reference* refM,
+    LLVMTypeRef referendLT);
 
 LLVMValueRef mallocUnknownSizeArray(
     GlobalState* globalState,

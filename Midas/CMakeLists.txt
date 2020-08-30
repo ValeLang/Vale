@@ -61,9 +61,11 @@ llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 
 add_executable(valec
 		src/c-compiler/vale.cpp
+		src/c-compiler/globalstate.cpp
 		src/c-compiler/struct/struct.cpp
 		src/c-compiler/struct/array.cpp
 		src/c-compiler/struct/interface.cpp
+		src/c-compiler/metal/ast.cpp
 		src/c-compiler/metal/readjson.cpp
 		src/c-compiler/metal/types.cpp
 		src/c-compiler/translatetype.cpp

@@ -47,6 +47,7 @@ LLVMValueRef getIsAliveFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef weakRefLE);
 
 void noteWeakableDestroyed(
@@ -54,7 +55,7 @@ void noteWeakableDestroyed(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* concreteRefM,
-    LLVMValueRef concreteRefLE);
+    LLVMValueRef controlBlockPtrLE);
 
 LLVMValueRef noteWeakableCreated(
     GlobalState* globalState,
@@ -66,6 +67,7 @@ LLVMValueRef fillWeakableControlBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    Referend* referendM,
     LLVMValueRef controlBlockLE);
 
 
@@ -87,8 +89,11 @@ LLVMValueRef weakStructRefToWeakInterfaceRef(
     Reference* targetInterfaceTypeM);
 
 void buildCheckWeakRef(
+    AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
+    Reference* weakRefM,
     LLVMValueRef weakRefLE);
 
 
@@ -96,9 +101,9 @@ LLVMValueRef assembleInterfaceWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* interfaceTypeM,
+    Reference* sourceType,
     InterfaceReferend* interfaceReferendM,
-    LLVMValueRef fatPtrLE);
+    LLVMValueRef sourceRefLE);
 
 
 LLVMValueRef assembleStructWeakRef(
@@ -120,7 +125,7 @@ LLVMValueRef assembleUnknownSizeArrayWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
+    Reference* sourceType,
     UnknownSizeArrayT* unknownSizeArrayMT,
     LLVMValueRef objPtrLE);
 

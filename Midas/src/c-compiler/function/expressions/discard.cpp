@@ -27,5 +27,5 @@ LLVMValueRef translateDiscard(
       builder,
       getEffectiveType(globalState, discardM->sourceResultType),
       innerLE);
-  return makeConstExpr(builder, makeNever());
+  return makeConstExpr(functionState, builder, makeNever());
 }

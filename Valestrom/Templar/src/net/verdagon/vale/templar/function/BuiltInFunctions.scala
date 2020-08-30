@@ -102,7 +102,7 @@ object BuiltInFunctions {
                 RuneLookupAE(CodeRuneA("N"), IntegerTemplataType)))))),
       FunctionA(
         RangeS.internal(-67),
-        FunctionNameA("panic", s.CodeLocationS.internal(-22)),
+        FunctionNameA("__panic", s.CodeLocationS.internal(-22)),
         List(UserFunctionA),
         FunctionTemplataType,
         Set(),

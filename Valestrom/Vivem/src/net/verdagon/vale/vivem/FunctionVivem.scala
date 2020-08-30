@@ -49,10 +49,10 @@ object FunctionVivem {
   }
 
   def getExternFunction(programH: ProgramH, ref: PrototypeH): (AdapterForExterns, Vector[ReferenceV]) => ReferenceV = {
-    ref.fullName.toString match {
+    ref.fullName.toFullString() match {
       case """F("__addIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.addIntInt
       case """F("__addFloatFloat",[],[R(*,<,f),R(*,<,f)])""" => VivemExterns.addFloatFloat
-      case """F("panic")""" => VivemExterns.panic
+      case """F("__panic")""" => VivemExterns.panic
       case """F("__multiplyIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.multiplyIntInt
       case """F("__subtractFloatFloat",[],[R(*,<,f),R(*,<,f)])""" => VivemExterns.subtractFloatFloat
       case """F("__divideIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.divideIntInt

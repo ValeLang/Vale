@@ -675,7 +675,7 @@ object ExpressionVivem {
         }
         NodeContinue(makeVoid(programH, heap, callId))
       }
-      case cac @ ConstructUnknownSizeArrayH(sizeExpr, generatorInterfaceExpr, arrayRefType) => {
+      case cac @ ConstructUnknownSizeArrayH(sizeExpr, generatorInterfaceExpr, generatorMethod, arrayRefType) => {
         val sizeReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sizeExpr) match {
             case r @ NodeReturn(_) => return r
@@ -699,14 +699,15 @@ object ExpressionVivem {
 
           val indexReference = heap.allocateTransient(ShareH, InlineH, IntV(i))
 
+          val generatorInterfaceDefH =
+            programH.interfaces.find(_.getRef == generatorInterfaceExpr.resultType.kind).get
+
           // We're assuming here that theres only 1 method in the interface.
-          val indexInEdge = 0
+          val indexInEdge = generatorInterfaceDefH.methods.indexWhere(_.prototypeH == generatorMethod)
+          vassert(indexInEdge >= 0)
+          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
           // We're assuming that it takes self then the index int as arguments.
           val virtualParamIndex = 0
-
-          val interfaceDefH =
-            programH.interfaces.find(_.getRef == generatorInterfaceExpr.resultType.kind).get
-          val interfaceMethodPrototype = interfaceDefH.methods.head
 
           heap.vivemDout.println()
 
@@ -723,7 +724,7 @@ object ExpressionVivem {
               virtualParamIndex,
               generatorInterfaceExpr.resultType.kind,
               indexInEdge,
-              interfaceMethodPrototype.prototypeH)
+              generatorMethod)
 
           heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
 
@@ -744,7 +745,7 @@ object ExpressionVivem {
         NodeContinue(arrayReference)
       }
 
-      case DestroyKnownSizeArrayIntoFunctionH(arrayExpr, consumerInterfaceExpr) => {
+      case DestroyKnownSizeArrayIntoFunctionH(arrayExpr, consumerInterfaceExpr, consumerMethod) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -768,7 +769,6 @@ object ExpressionVivem {
 
         val consumerInterfaceDefH =
           programH.interfaces.find(_.getRef == consumerInterfaceExpr.resultType.kind).get
-        val consumerInterfaceMethodPrototype = consumerInterfaceDefH.methods.head
 
         val size = arrayExpr.resultType.kind.size
         (0 until size).foreach(ascendingI => {
@@ -778,7 +778,10 @@ object ExpressionVivem {
           heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (consumer)")
 
           // We're assuming here that theres only 1 method in the interface.
-          val indexInEdge = 0
+          val indexInEdge = consumerInterfaceDefH.methods.indexWhere(_.prototypeH == consumerMethod)
+          vassert(indexInEdge >= 0)
+          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
+
           // We're assuming that it takes self then the index int as arguments.
           val virtualParamIndex = 0
 
@@ -802,7 +805,7 @@ object ExpressionVivem {
               virtualParamIndex,
               consumerInterfaceExpr.resultType.kind,
               indexInEdge,
-              consumerInterfaceMethodPrototype.prototypeH)
+              consumerMethod)
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
           discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
@@ -817,7 +820,7 @@ object ExpressionVivem {
         NodeContinue(makeVoid(programH, heap, callId))
       }
 
-      case cac @ DestroyUnknownSizeArrayH(arrayExpr, consumerInterfaceExpr) => {
+      case cac @ DestroyUnknownSizeArrayH(arrayExpr, consumerInterfaceExpr, consumerMethod) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -841,7 +844,6 @@ object ExpressionVivem {
 
         val consumerInterfaceDefH =
           programH.interfaces.find(_.getRef == consumerInterfaceExpr.resultType.kind).get
-        val consumerInterfaceMethodPrototype = consumerInterfaceDefH.methods.head
 
         val size =
           heap.dereference(arrayReference) match {
@@ -854,7 +856,10 @@ object ExpressionVivem {
           heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (consumer)")
 
           // We're assuming here that theres only 1 method in the interface.
-          val indexInEdge = 0
+          val indexInEdge = consumerInterfaceDefH.methods.indexWhere(_.prototypeH == consumerMethod)
+          vassert(indexInEdge >= 0)
+          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
+
           // We're assuming that it takes self then the index int as arguments.
           val virtualParamIndex = 0
 
@@ -878,7 +883,7 @@ object ExpressionVivem {
               virtualParamIndex,
               consumerInterfaceExpr.resultType.kind,
               indexInEdge,
-              consumerInterfaceMethodPrototype.prototypeH)
+              consumerMethod)
 
           val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
           discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)

@@ -185,7 +185,7 @@ class StructTests extends FunSuite with Matchers {
         |impl<T> Opt<T> for None<T>;
         |
         |fn get<T>(virtual opt &Opt<T>) &T abstract;
-        |fn get<T>(opt &None<T> impl Opt<T>) &T { panic() }
+        |fn get<T>(opt &None<T> impl Opt<T>) &T { __panic() }
         |fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
         |
         |fn main() {

@@ -498,7 +498,7 @@ object ExpressionVivem {
         val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
         NodeContinue(returnRef)
       }
-      case NewStructH(argsExprs, structRefH) => {
+      case NewStructH(argsExprs, targetMemberNames, structRefH) => {
         val structDefH = vassertSome(programH.structs.find(_.getRef == structRefH.kind))
 
         val memberReferences =

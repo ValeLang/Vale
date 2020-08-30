@@ -332,7 +332,7 @@ case class TupleE2(
 // variable should be considered gone. See AUMAP.
 // This can also be used if theres anything after a panic in a block, like
 //   fn main() {
-//     panic();
+//     __panic();
 //     println("hi");
 //   }
 case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceExpression2 {

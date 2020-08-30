@@ -70,7 +70,7 @@ object Vivem {
       vivemDout: PrintStream,
       stdin: () => String,
       stdout: String => Unit): IVonData = {
-    val main = programH.main
+    val main = programH.lookupFunction("main")
 
     val callId = CallId(0, main.prototype)
 

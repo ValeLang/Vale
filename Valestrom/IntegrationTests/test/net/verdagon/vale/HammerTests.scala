@@ -17,7 +17,7 @@ class HammerTests extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
 
     vassert(hamuts.getAllUserFunctions.size == 1)
-    hamuts.getAllUserFunctions.head.prototype.fullName.toString shouldEqual """F("main")"""
+    hamuts.getAllUserFunctions.head.prototype.fullName.toFullString() shouldEqual """F("main")"""
   }
 
 //  // Make sure a ListNode struct made it out
@@ -45,13 +45,13 @@ class HammerTests extends FunSuite with Matchers {
         |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
     val hamuts = compile.getHamuts()
-    hamuts.interfaces.find(_.fullName.toString == """C("MyOption",[TR(R(*,<,i))])""").get;
+    hamuts.interfaces.find(_.fullName.toFullString() == """C("MyOption",[TR(R(*,<,i))])""").get;
 
-    val mySome = hamuts.structs.find(_.fullName.toString == """C("MySome",[TR(R(*,<,i))])""").get;
+    val mySome = hamuts.structs.find(_.fullName.toFullString() == """C("MySome",[TR(R(*,<,i))])""").get;
     vassert(mySome.members.size == 1);
     vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, IntH()))
 
-    val myNone = hamuts.structs.find(_.fullName.toString == """C("MyNone",[TR(R(*,<,i))])""").get;
+    val myNone = hamuts.structs.find(_.fullName.toFullString() == """C("MyNone",[TR(R(*,<,i))])""").get;
     vassert(myNone.members.isEmpty);
   }
 
@@ -68,8 +68,8 @@ class HammerTests extends FunSuite with Matchers {
         |fn wot(b *MyStruct impl Blark) int { 9 }
       """.stripMargin)
     val hamuts = compile.getHamuts()
-    hamuts.nonExternFunctions.find(f => f.prototype.fullName.toString.startsWith("""F("wot"""")).get;
-    hamuts.nonExternFunctions.find(f => f.prototype.fullName.toString == """F("MyStruct")""").get;
+    hamuts.nonExternFunctions.find(f => f.prototype.fullName.toFullString().startsWith("""F("wot"""")).get;
+    hamuts.nonExternFunctions.find(f => f.prototype.fullName.toFullString() == """F("MyStruct")""").get;
     vassert(hamuts.abstractFunctions.size == 2)
     vassert(hamuts.getAllUserImplementedFunctions.size == 1)
     vassert(hamuts.getAllUserFunctions.size == 1)
@@ -79,7 +79,7 @@ class HammerTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn main() int {
-        |  panic();
+        |  __panic();
         |  a = 42;
         |  = a;
         |}
@@ -88,7 +88,7 @@ class HammerTests extends FunSuite with Matchers {
     val main = hamuts.lookupFunction("main")
     main.body match {
       case BlockH(CallH(PrototypeH(fullNameH, List(), ReferenceH(_, _, NeverH())), List())) => {
-        vassert(fullNameH.toString.contains("panic"))
+        vassert(fullNameH.toFullString().contains("__panic"))
       }
     }
   }

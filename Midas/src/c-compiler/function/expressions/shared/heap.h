@@ -9,6 +9,7 @@
 
 LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMTypeRef referendLT);

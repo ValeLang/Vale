@@ -42,6 +42,7 @@ LLVMValueRef callFree(
 
 LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
     LLVMTypeRef referendLT) {
@@ -51,7 +52,7 @@ LLVMValueRef mallocKnownSize(
 
   LLVMValueRef resultPtrLE = nullptr;
   if (refM->location == Location::INLINE) {
-    resultPtrLE = LLVMBuildAlloca(builder, referendLT, "newstruct");
+    resultPtrLE = makeMidasLocal(functionState, builder, referendLT, "newstruct", LLVMGetUndef(referendLT));
   } else if (refM->location == Location::YONDER) {
     size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, referendLT);
     LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
@@ -123,7 +124,7 @@ LLVMValueRef mallocStr(
       LLVMBuildAdd(
           builder,
           lengthLE,
-          makeConstIntExpr(builder,LLVMInt64Type(),  1 + LLVMABISizeOfType(globalState->dataLayout, globalState->stringWrapperStructL)),
+          makeConstIntExpr(functionState, builder,LLVMInt64Type(),  1 + LLVMABISizeOfType(globalState->dataLayout, globalState->stringWrapperStructL)),
           "strMallocSizeBytes");
 
   auto destCharPtrLE = callMalloc(globalState, builder, sizeBytesLE);

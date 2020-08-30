@@ -23,7 +23,22 @@ LLVMValueRef makeNever() {
   return LLVMConstArray(LLVMIntType(NEVER_INT_BITS), empty, 0);
 }
 
-void makeLocal(
+LLVMValueRef makeMidasLocal(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef typeL,
+    const std::string& name,
+    LLVMValueRef valueToStore) {
+  auto localAddr =
+      LLVMBuildAlloca(
+          functionState->localsBuilder,
+          typeL,
+          name.c_str());
+  LLVMBuildStore(builder, valueToStore, localAddr);
+  return localAddr;
+}
+
+void makeHammerLocal(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -31,12 +46,13 @@ void makeLocal(
     Local* local,
     LLVMValueRef valueToStore) {
   auto localAddr =
-      LLVMBuildAlloca(
+      makeMidasLocal(
+          functionState,
           builder,
           translateType(globalState, getEffectiveType(globalState, local->type)),
-          local->id->maybeName.c_str());
+          local->id->maybeName.c_str(),
+          valueToStore);
   blockState->addLocal(local->id, localAddr);
-  LLVMBuildStore(builder, valueToStore, localAddr);
 }
 
 LLVMValueRef adjustCounter(
@@ -298,14 +314,13 @@ LLVMValueRef buildInterfaceCall(
       builder, funcPtrLE, argExprsLE.data(), argExprsLE.size(), "");
 }
 
-LLVMValueRef makeConstExpr(LLVMBuilderRef builder, LLVMValueRef constExpr) {
-  auto localAddr = LLVMBuildAlloca(builder, LLVMTypeOf(constExpr), "");
-  LLVMBuildStore(builder,constExpr,localAddr);
+LLVMValueRef makeConstExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr) {
+  auto localAddr = makeMidasLocal(functionState, builder, LLVMTypeOf(constExpr), "", constExpr);
   return LLVMBuildLoad(builder, localAddr, "");
 }
 
-LLVMValueRef makeConstIntExpr(LLVMBuilderRef builder, LLVMTypeRef type, int value) {
-  return makeConstExpr(builder, LLVMConstInt(type, value, false));
+LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int value) {
+  return makeConstExpr(functionState, builder, LLVMConstInt(type, value, false));
 }
 
 void buildAssertCensusContains(

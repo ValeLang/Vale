@@ -26,12 +26,4 @@ std::vector<LLVMValueRef> translateExpressions(
 
 LLVMValueRef makeNever();
 
-void makeLocal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Local* local,
-    LLVMValueRef valueToStore);
-
 #endif

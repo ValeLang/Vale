@@ -34,17 +34,18 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
+    Reference* refM,
     KnownSizeArrayT* knownSizeArrayT,
     LLVMTypeRef structLT,
     const std::vector<LLVMValueRef>& membersLE,
     const std::string& typeName) {
-  auto newStructLE = allocateStruct(globalState, builder, structTypeM, structLT);
+  auto newStructLE = mallocKnownSize(globalState, functionState, builder, refM, structLT);
   fillControlBlock(
       FL(),
       globalState,
       functionState,
       builder,
+      refM->referend,
       knownSizeArrayT->rawArray->mutability,
       getEffectiveWeakability(globalState, knownSizeArrayT->rawArray),
       getConcreteControlBlockPtr(builder, newStructLE),

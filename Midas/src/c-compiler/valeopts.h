@@ -8,8 +8,10 @@
 
 enum class RegionOverride {
   ASSIST,
-  RESILIENT,
-  RESILIENT_FAST,
+  NAIVE_RC,
+  RESILIENT_V0,
+  RESILIENT_V1,
+  RESILIENT_V2,
   FAST
 };
 
@@ -39,6 +41,7 @@ struct ValeOptions {
     bool docs = false;            // Generate code documentation
     bool census = false;    // Enable census checking
     bool flares = false;    // Enable flare output
+    bool genHeap = false;    // Enables generational heap
 
     RegionOverride regionOverride = RegionOverride::ASSIST;
 };

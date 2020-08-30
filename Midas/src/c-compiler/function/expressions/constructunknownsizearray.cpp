@@ -58,6 +58,7 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
       globalState,
       functionState,
       builder,
+      unknownSizeArrayT,
       unknownSizeArrayT->rawArray->mutability,
       getEffectiveWeakability(globalState, unknownSizeArrayT->rawArray),
       getConcreteControlBlockPtr(builder, usaWrapperPtrLE),

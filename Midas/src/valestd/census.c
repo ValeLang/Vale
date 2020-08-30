@@ -26,6 +26,7 @@ static Census census = { 0, 0, 0, NULL };
 // Returns -1 if not found.
 static int64_t censusFindIndexOf(void* obj) {
   assert(obj);
+  assert(census.entries);
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;
@@ -51,7 +52,10 @@ static int64_t censusFindOpenSpaceIndexFor(void* obj) {
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;
-    assert(census.entries[indexInTable].address != obj);
+    if (census.entries[indexInTable].address == obj) {
+      fprintf(stderr, "Found %p while looking for open census space, it's already present!\n", obj);
+      assert(0);
+    }
     if (census.entries[indexInTable].address == NULL) {
       return indexInTable;
     }
@@ -63,10 +67,6 @@ static int64_t censusFindOpenSpaceIndexFor(void* obj) {
 void censusInnerAdd(void* obj) {
   assert(obj);
   assert(census.size < census.capacity);
-  if (__vcensusContains(obj)) {
-    fprintf(stderr, "Tried to add %p to census, but was already present!\n", obj);
-    assert(0);
-  }
   int64_t index = censusFindOpenSpaceIndexFor(obj);
   assert(index != -1);
   assert(census.entries[index].address == NULL);
@@ -100,6 +100,10 @@ void __vcensusAdd(void* obj) {
   assert(obj);
   if (census.size >= census.capacity) {
     censusExpand();
+  }
+  if (__vcensusContains(obj)) {
+    fprintf(stderr, "Tried to add %p to census, but was already present!\n", obj);
+    assert(0);
   }
   censusInnerAdd(obj);
   census.size++;

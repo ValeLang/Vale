@@ -36,7 +36,7 @@ LLVMValueRef translateDestructure(
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, structM->members[i]->type), memberLE);
-    makeLocal(
+    makeHammerLocal(
         globalState,
       functionState,
       blockState,
@@ -46,29 +46,18 @@ LLVMValueRef translateDestructure(
   }
 
   if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::OWN) {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-      adjustStrongRc(
-          AFL("Destroy decrementing the owning ref"),
-          globalState, functionState, builder, structLE, getEffectiveType(globalState, destructureM->structType), -1);
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      // Do nothing
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT) {
-      // Do nothing, the owning ref doesnt count towards the WRC.
-      //   adjustWeakRc(globalState, builder, structLE, -1);
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_FAST) {
-      // Do nothing, the owning ref doesn't count towards any WRC or anything.
-      // freeConcrete will take care of incrementing the generation.
-    } else assert(false);
+    discardOwningRef(FL(), globalState, functionState, blockState, builder, getEffectiveType(globalState, destructureM->structType), structLE);
   } else if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
+
+    freeConcrete(
+        AFL("Destroy freeing"), globalState, functionState, blockState, builder,
+        structLE, getEffectiveType(globalState, destructureM->structType));
   } else {
     assert(false);
   }
 
   buildFlare(FL(), globalState, functionState, builder);
-  freeConcrete(
-      AFL("Destroy freeing"), globalState, functionState, blockState, builder,
-      structLE, getEffectiveType(globalState, destructureM->structType));
 
-  return makeConstExpr(builder, makeNever());
+  return makeConstExpr(functionState, builder, makeNever());
 }

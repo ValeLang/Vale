@@ -36,7 +36,7 @@ LLVMValueRef translateDestructure(
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, structM->members[i]->type), memberLE);
-    makeLocal(
+    makeHammerLocal(
         globalState,
       functionState,
       blockState,
@@ -59,5 +59,5 @@ LLVMValueRef translateDestructure(
 
   buildFlare(FL(), globalState, functionState, builder);
 
-  return makeConstExpr(builder, makeNever());
+  return makeConstExpr(functionState, builder, makeNever());
 }

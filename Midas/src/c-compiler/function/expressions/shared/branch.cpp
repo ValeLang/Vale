@@ -206,14 +206,14 @@ void buildWhile(
             LLVMInt1Type(),
             false,
             false,
-            [buildBody](LLVMBuilderRef thenBlockBuilder) {
+            [functionState, buildBody](LLVMBuilderRef thenBlockBuilder) {
               buildBody(thenBlockBuilder);
               // Return true, so the while loop will keep executing.
-              return makeConstIntExpr(thenBlockBuilder, LLVMInt1Type(), 1);
+              return makeConstIntExpr(functionState, thenBlockBuilder, LLVMInt1Type(), 1);
             },
-            [](LLVMBuilderRef elseBlockBuilder) {
+            [functionState](LLVMBuilderRef elseBlockBuilder) {
               // Return false, so the while loop will stop executing.
-              return makeConstIntExpr(elseBlockBuilder, LLVMInt1Type(), 0);
+              return makeConstIntExpr(functionState, elseBlockBuilder, LLVMInt1Type(), 0);
             });
       });
 }

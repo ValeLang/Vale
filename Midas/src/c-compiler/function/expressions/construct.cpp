@@ -58,7 +58,7 @@ LLVMValueRef constructCountedStruct(
     std::vector<LLVMValueRef> membersLE) {
   buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
   LLVMValueRef newStructPtrLE =
-      mallocKnownSize(globalState, builder, structTypeM, structL);
+      mallocKnownSize(globalState, functionState, builder, structTypeM, structL);
   fillControlBlock(
       from,
       globalState, functionState, builder,

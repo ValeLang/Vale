@@ -166,7 +166,7 @@ object LoadHammer {
           StructHammer.BOX_MEMBER_INDEX,
           targetOwnership,
           boxedTypeH,
-          NameHammer.addStep(hamuts, varFullNameH, StructHammer.BOX_MEMBER_NAME))
+          NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
     (loadedNodeH, structDeferreds)
   }
 
@@ -242,7 +242,7 @@ object LoadHammer {
           StructHammer.BOX_MEMBER_INDEX,
           targetOwnership,
           localTypeH,
-          NameHammer.addStep(hamuts, varNameH, StructHammer.BOX_MEMBER_NAME))
+          NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
     (loadedNode, List())
   }
 

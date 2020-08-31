@@ -12,7 +12,7 @@ import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, 
 import net.verdagon.vale.scout.Scout
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Err, Ok, Result, Terrain, vassert, vassertSome, vcheck, vfail}
+import net.verdagon.vale.{Err, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
@@ -77,11 +77,11 @@ object Driver {
         if (ok) allLines.append(ln + "\n")
       }
       allLines.toString()
-    } else if (path.startsWith("sample:")) {
-      path.toLowerCase().slice("sample:".length, path.length) match {
-        case "terrain" => Terrain.generatorCode
-        case other => throw InputException("Unknown sample: " + other)
-      }
+    } else if (path.startsWith("v:")) {
+      // For example:
+      //   java -cp out/artifacts/Driver_jar/Driver.jar net.verdagon.vale.driver.Driver run v:roguelike.vale v:genericvirtuals/opt.vale v:genericvirtuals/hashmap.vale v:utils.vale v:generics/arrayutils.vale v:printutils.vale v:castutils.vale v:genericvirtuals/optingarraylist.vale -o built
+      val builtin = path.toLowerCase().slice("v:".length, path.length)
+      Samples.get(builtin)
     } else {
       val file = path
       val bufferedSource = Source.fromFile(file)

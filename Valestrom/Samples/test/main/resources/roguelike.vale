@@ -13,402 +13,16 @@
 //   ##########
 // where the player controls the @. When the player tries to move onto a space
 // already occupied by a goblin ("g"), it will destroy the goblin.
-//
-// Most of this program is implementations for basic STL classes (Opt, List,
-// HashMap), and the actual game code can be found near the end.
 
-
-// Utilities
-
-fn panic(msg str) {
-  println(msg);
-  = __panic();
-}
-
-fn abs(a int) {
-  = if (a < 0) { a * -1 } else { a }
-}
-
-
-// Array Utilities
-
-
-fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) {
-  Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
-}
-
-fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
-  i = 0;
-  while (i < arr.len()) {
-    if ((equator)(arr[i], elem)) {
-      ret true;
-    }
-    mut i = i + 1;
-  }
-  = false;
-}
-
-fn has<E>(arr &Array<_, E>, elem E) bool {
-  has(arr, elem, ==)
-}
-
-fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
-  i = 0;
-  while (i < seq.len()) {
-    if ((equator)(seq[i], elem)) {
-      ret true;
-    }
-    mut i = i + 1;
-  }
-  = false;
-}
-
-fn has<E>(seq &[<_> _ * E], elem E) bool {
-  has(seq, elem, ==)
-}
-
-fn Arr<M, F>(n int, generator &F) Array<M, T>
-rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
-{
-  Array<M>(n, &IFunction1<mut, int, T>(generator))
-}
-
-fn each<M, T, F>(arr &Array<M, T>, func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(arr[i]);
-    mut i = i + 1;
-  }
-}
-
-fn indices<>(arr &Array<_, _>) Array<imm, int> {
-  Arr<imm>(len(arr), {_})
-}
-
-fn eachI<F>(arr &Array<_, _>, func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(i, arr[i]);
-    mut i = i + 1;
-  }
-}
-
-
-// Printing utilities
-
-fn println<A, B>(a A, b B) {
-  print(a);
-  print(b);
-  println("");
-}
-fn println<A, B, C>(a A, b B, c C) {
-  print(a);
-  print(b);
-  print(c);
-  println("");
-}
-fn println<A, B, C, D>(a A, b B, c C, d D) {
-  print(a);
-  print(b);
-  print(c);
-  print(d);
-  println("");
-}
-fn println<A, B, C, D, E>(a A, b B, c C, d D, e E) {
-  print(a);
-  print(b);
-  print(c);
-  print(d);
-  print(e);
-  println("");
-}
-
-
-// Opt<T>
-
-interface Opt<T> rules(T Ref) { }
-struct Some<T> rules(T Ref) { value T; }
-impl<T> Opt<T> for Some<T>;
-struct None<T> rules(T Ref) { }
-impl<T> Opt<T> for None<T>;
-
-fn empty?<T>(virtual opt &Opt<T>) bool abstract;
-fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
-fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
-
-fn get<T>(virtual opt Opt<T>) T abstract;
-fn get<T>(opt None<T> impl Opt<T>) T {
-  panic("Called get on None!");
-}
-fn get<T>(opt Some<T> impl Opt<T>) T {
-  Some<T>(value) = opt;
-  = value;
-}
-
-fn get<T>(virtual opt &Opt<T>) &T abstract;
-fn get<T>(opt &None<T> impl Opt<T>) &T {
-  panic("Called get on None!");
-}
-fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
-
-fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
-fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
-  default
-}
-fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
-  opt.value
-}
-
-fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> abstract;
-fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
-  None<R>()
-}
-fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
-  Some<R>(func(opt.value))
-}
-
-fn getSize<T>(virtual opt &Opt<T>) *int abstract;
-fn getSize<T>(opt &None<T> impl Opt<T>) *int { 0 }
-fn getSize<T>(opt &Some<T> impl Opt<T>) *int { 1 }
-
-
-
-// List<E>
-
-struct List<E> rules(E Ref) {
-  array Array<mut, Opt<E>>;
-  size int;
-}
-fn List<E>() rules(E Ref) {
-  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ __panic()})), 0)
-}
-fn len<E>(list &List<E>) { list.size }
-fn add<E>(list &List<E>, newElement E) {
-  if (list.size == list.len()) {
-    newLen = if (len(list) == 0) { 1 } else { len(list) * 2 };
-    newArray =
-        Array<mut, Opt<E>>(newLen, &IFunction1<mut, int, Opt<E>>((index){
-          = if (index < len(list)) {
-              = (mut list.array[index] = None<E>());
-            } else {
-              result Opt<E> = None<E>();
-              = result;
-            }
-        }));
-    mut list.array = newArray;
-  }
-  mut list.array[list.size] = Some<E>(newElement);
-  mut list.size = list.size + 1;
-}
-// todo make that return a &E
-fn get<E>(list &List<E>, index int) &Opt<E> {
-  a = list.array;
-  = a[index];
-}
-fn set<E>(list &List<E>, index int, value E) void {
-  mut list.array[index] = Some(value);
-}
-fn toArray<M, E>(list &List<E>) Array<M, E> rules(M Mutability) {
-  Array<M, E>(list.len(), &IFunction1<mut, int, E>((i){ list.get(i).get()}))
-}
-fn toList<E>(arr &Array<_, E>) List<E> {
-  list = List<E>();
-  arr each (elem){
-    list.add(elem);
-  };
-  = list;
-}
-
-
-
-// HashMap<K, V, H, E>
-
-struct HashNode<K, V> {
-  key K;
-  value V;
-}
-
-struct HashMap<K, V, H, E> {
-  hasher H;
-  equator E;
-  table Array<mut, Opt<HashNode<K, V>>>;
-  size int;
-}
-
-fn HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
-  HashMap<K, V, H, E>(hasher, equator, 0)
-}
-
-fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
-  HashMap<K, V>(
-      hasher,
-      equator,
-      Array<mut, Opt<HashNode<K, V>>>(
-        capacity,
-        &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
-          opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
-          = opt;
-        })),
-      0)
-}
-
-fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
-  if (map.has(key)) {
-    panic("Map already has given key!");
-  }
-  if ((map.size + 1) * 2 >= map.table.len()) {
-    newSize =
-        if (map.table.len() == 0) { 2 }
-        else { map.table.len() * 2 };
-    newTable =
-        Array<mut, Opt<HashNode<K, V>>>(
-            newSize,
-            &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
-              opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
-              = opt;
-            }));
-    i = 0;
-    while (i < map.table.len()) {
-      if (map.table[i].empty?()) {
-        // do nothing
-      } else {
-        node? = (mut map.table[i] = None<HashNode<K, V>>());
-        node = get(node?);
-        addNodeToTable(&newTable, map.hasher, node);
-      }
-      mut i = i + 1;
-    }
-    mut map.table = newTable;
-  }
-
-  addNodeToTable(map.table, map.hasher, HashNode<K, V>(key, value));
-  mut map.size = map.size + 1;
-}
-
-fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashNode<K, V>>>, hasher H, node HashNode<K, V>) {
-  hash int = (hasher)(node.key);
-  startIndex = abs(hash mod table.len());
-  index = findEmptyIndexForKey(table, startIndex, node.key);
-
-  opt Opt<HashNode<K, V>> = Some(node);
-  mut table[index] = opt;
-}
-
-fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex int, key K) int {
-  i = 0;
-  while (i < table.len()) {
-    index = (startIndex + i) mod table.len();
-    something = table[index];
-    if (something.empty?()) {
-      ret index;
-    }
-    // continue to next node
-    mut i = i + 1;
-  }
-  = panic("findEmptyIndexForKey went past end of table!");
-}
-
-fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
-  i = 0;
-  while (i < table.len()) {
-    index = (startIndex + i) mod table.len();
-    something = table[index];
-    if (something.empty?()) {
-      ret None<int>();
-    }
-    node = something.get();
-    if ((equator)(node.key, key)) {
-      ret Some<int>(index);
-    }
-    // continue to next node
-    mut i = i + 1;
-  }
-  = panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
-}
-
-fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
-  if (self.table.len() == 0) {
-    ret None<&V>();
-  }
-  hash int = (self.hasher)(key);
-  startIndex = abs(hash mod self.table.len());
-  index? = findIndexOfKey(self.table, self.equator, startIndex, key);
-  if (index?.empty?()) {
-    opt Opt<&V> = None<&V>();
-    ret opt;
-  }
-  node = self.table[index?.get()].get();
-  opt Opt<&V> = Some<&V>(node.value);
-  ret opt;
-}
-
-fn has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
-  not(self.get(key).empty?())
-}
-
-fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
-  list = List<K>();
-  index = 0;
-  while (index < self.table.len()) {
-    node? = self.table[index];
-    if (not(node?.empty?())) {
-      list.add(node?.get().key);
-    }
-    mut index = index + 1;
-  }
-  = list.toArray<imm>();
-}
-
-fn innerRemove<K, V, H, E>(
-  table &Array<mut, Opt<HashNode<K, V>>>,
-  hasher H,
-  equator E,
-  key K)
-int {
-  hash int = (hasher)(key);
-  startIndex = abs(hash mod table.len());
-  index? = findIndexOfKey(table, equator, startIndex, key);
-  index = index?.get();
-  mut table[index] = None<HashNode<K, V>>();
-  ret index;
-}
-
-fn remove<K, V, H, E>(
-  map &HashMap<K, V, H, E>,
-  key K)
-void {
-  originalIndex = innerRemove(map.table, map.hasher, map.equator, key);
-  mut map.size = map.size - 1;
-
-  i! = 1;
-  while (i < map.table.len()) {
-    neighborIndex = (originalIndex + i) mod len(map.table);
-    neighbor? = (mut map.table[neighborIndex] = None<HashNode<K, V>>());
-    if (not neighbor?.empty?()) {
-      (neighborKey, neighborValue) = neighbor?^.get();
-      addNodeToTable(map.table, map.hasher, HashNode<K, V>(neighborKey, neighborValue));
-    } else {
-      drop(neighbor?);
-      mut i = map.table.len(); // break
-    }
-    mut i = i + 1;
-  }
-}
-
-
-
-// Roguelike
 
 struct Vec<N, T> rules(N int)
 {
   values [<imm> N * T];
 }
 
-struct Goblin {
-  location Vec<2, int>;
-}
+// struct Goblin {
+//   location Vec<2, int>;
+// }
 
 fn makeBoard() Array<mut, Array<mut, str>> {
   ret
@@ -425,7 +39,7 @@ fn makeBoard() Array<mut, Array<mut, str>> {
 
 fn display(
     board &Array<mut, Array<mut, str>>,
-    goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+    //goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
     playerRow int,
     playerCol int)
 {
@@ -436,16 +50,17 @@ fn display(
 
       if (and(rowI == playerRow, cellI == playerCol)) {
         mut charToPrint = "@";
-      } else {
-        goblins.keys().each((key){
-          goblin? = goblins.get(key);
-          goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
-
-          if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
-            mut charToPrint = "g";
-          }
-        });
       }
+      // else {
+      //   goblins.keys().each((key){
+      //     goblin? = goblins.get(key);
+      //     goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+
+      //     if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
+      //       mut charToPrint = "g";
+      //     }
+      //   });
+      // }
 
       mut toPrint = toPrint + charToPrint;
     }
@@ -477,17 +92,17 @@ fn inputKey() int {
 }
 
 
-fn goblinAt?(
-  goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
-  goblinKey int,
-  row int,
-  col int)
-bool {
-  a = goblins.get(goblinKey);
-  b = a^.get();
-  (goblinCol, goblinRow) = b.location.values;
-  ret and(row == goblinRow, col == goblinCol);
-}
+// fn goblinAt?(
+//   goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+//   goblinKey int,
+//   row int,
+//   col int)
+// bool {
+//   a = goblins.get(goblinKey);
+//   b = a^.get();
+//   (goblinCol, goblinRow) = b.location.values;
+//   ret and(row == goblinRow, col == goblinCol);
+// }
 
 
 fn main() int {
@@ -496,21 +111,25 @@ fn main() int {
   playerRow! = 4;
   playerCol! = 3;
 
-  goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
-  goblins.add(13, Goblin(Vec([6, 3])));
-  goblins.add(14, Goblin(Vec([2, 6])));
-  goblins.add(15, Goblin(Vec([5, 7])));
-  goblins.add(17, Goblin(Vec([2, 5])));
-  goblins.add(19, Goblin(Vec([7, 1])));
-  goblins.add(23, Goblin(Vec([3, 3])));
-  goblins.add(24, Goblin(Vec([1, 7])));
-  goblins.add(25, Goblin(Vec([7, 6])));
-  goblins.add(27, Goblin(Vec([4, 6])));
-  goblins.add(29, Goblin(Vec([7, 4])));
+  // goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
+  // goblins.add(13, Goblin(Vec([6, 3])));
+  // goblins.add(14, Goblin(Vec([2, 6])));
+  // goblins.add(15, Goblin(Vec([5, 7])));
+  // goblins.add(17, Goblin(Vec([2, 5])));
+  // goblins.add(19, Goblin(Vec([7, 1])));
+  // goblins.add(23, Goblin(Vec([3, 3])));
+  // goblins.add(24, Goblin(Vec([1, 7])));
+  // goblins.add(25, Goblin(Vec([7, 6])));
+  // goblins.add(27, Goblin(Vec([4, 6])));
+  // goblins.add(29, Goblin(Vec([7, 4])));
 
   running! = true;
   while (running) {
-    display(&board, &goblins, playerRow, playerCol);
+    display(
+        &board,
+        // &goblins,
+        playerRow,
+        playerCol);
 
     key = inputKey();
     newPlayerRow! = playerRow;
@@ -528,12 +147,12 @@ fn main() int {
     }
 
     killedGoblin! = false;
-    goblins.keys().each((key){
-      if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
-        goblins.remove(key);
-        mut killedGoblin = true;
-      }
-    });
+    // goblins.keys().each((key){
+    //   if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
+    //     goblins.remove(key);
+    //     mut killedGoblin = true;
+    //   }
+    // });
     if (not killedGoblin) {
       if (board[newPlayerRow][newPlayerCol] == ".") {
         mut playerRow = newPlayerRow;

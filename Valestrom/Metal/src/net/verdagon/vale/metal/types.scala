@@ -46,8 +46,8 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
       vassert(location == YonderH)
     }
     case StructRefH(name) => {
-      val isBox = name.toString.startsWith("C(\"__Box\"")
-      val isTup = name.toString.startsWith("Tup")
+      val isBox = name.toFullString.startsWith("C(\"__Box\"")
+      val isTup = name.toFullString.startsWith("Tup")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)
@@ -101,7 +101,7 @@ case class StrH() extends ReferendH
 case class FloatH() extends ReferendH
 // A primitive which can never be instantiated. If something returns this, it
 // means that it will never actually return. For example, the return type of
-// panic() is a NeverH.
+// __panic() is a NeverH.
 // TODO: This feels weird being a referend in metal. Figure out a way to not
 // have this? Perhaps replace all referends with Optional[Optional[ReferendH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.

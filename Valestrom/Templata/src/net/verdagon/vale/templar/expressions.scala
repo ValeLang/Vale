@@ -332,7 +332,7 @@ case class TupleE2(
 // variable should be considered gone. See AUMAP.
 // This can also be used if theres anything after a panic in a block, like
 //   fn main() {
-//     panic();
+//     __panic();
 //     println("hi");
 //   }
 case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceExpression2 {
@@ -620,7 +620,9 @@ case class Construct2(
 case class ConstructArray2(
     arrayType: UnknownSizeArrayT2,
     sizeExpr: ReferenceExpression2,
-    generator: ReferenceExpression2) extends ReferenceExpression2 {
+    generator: ReferenceExpression2,
+    generatorMethod: Prototype2
+) extends ReferenceExpression2 {
   generator.referend match {
     case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(_, CoordTemplata(Coord(Share, Int2())), _)))) =>
     case _ => vfail("Generator has to be an IFunction1<_, Int, T>")
@@ -645,7 +647,8 @@ case class ConstructArray2(
 case class DestroyArraySequenceIntoFunction2(
     arrayExpr: ReferenceExpression2,
     arrayType: KnownSizeArrayT2,
-    consumer: ReferenceExpression2) extends ReferenceExpression2 {
+    consumer: ReferenceExpression2,
+    consumerMethod: Prototype2) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -676,7 +679,9 @@ case class DestroyArraySequenceIntoLocals2(
 case class DestroyUnknownSizeArray2(
     arrayExpr: ReferenceExpression2,
     arrayType: UnknownSizeArrayT2,
-    consumer: ReferenceExpression2) extends ReferenceExpression2 {
+    consumer: ReferenceExpression2,
+    consumerMethod: Prototype2
+) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

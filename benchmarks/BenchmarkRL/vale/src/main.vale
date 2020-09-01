@@ -76,8 +76,8 @@ fn main() {
     seed = 44;// DIFFERENCE
     benchmark_rl(
       seed,
-      200, // 30,
-      200, // 20,
+      30, // 30,
+      20, // 20,
       10,
       false,
       100);

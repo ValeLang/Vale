@@ -15,7 +15,7 @@ LLVMValueRef translateExternCall(
     LLVMBuilderRef builder,
     ExternCall* call) {
   auto name = call->function->name->name;
-  if (name == "F(\"__addIntInt\",[],[R(*,<,i),R(*,<,i)])") {
+  if (name == "__addIntInt") {
     assert(call->argExprs.size() == 2);
     auto leftLE =
         translateExpression(
@@ -25,7 +25,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto result = LLVMBuildAdd(builder, leftLE, rightLE,"add");
     return result;
-  } else if (name == "F(\"__divideIntInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__divideIntInt") {
     assert(call->argExprs.size() == 2);
     auto leftLE =
         translateExpression(
@@ -35,7 +35,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
     return result;
-  } else if (name == "F(\"__eqStrStr\",[],[R(*,>,s),R(*,>,s)])") {
+  } else if (name == "__eqStrStr") {
     assert(call->argExprs.size() == 2);
 
     auto leftStrTypeM = call->argTypes[0];
@@ -67,14 +67,14 @@ LLVMValueRef translateExternCall(
     discard(FL(), globalState, functionState, blockState, builder, getEffectiveType(globalState, rightStrTypeM), rightStrWrapperPtrLE);
 
     return resultBoolLE;
-  } else if (name == "F(\"__addFloatFloat\",[],[R(*,<,f),R(*,<,f)])") {
+  } else if (name == "__addFloatFloat") {
     // VivemExterns.addFloatFloat
     assert(false);
-  } else if (name == "F(\"panic\")") {
+  } else if (name == "__panic") {
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8Type(), 255);
     LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
     return makeConstExpr(functionState, builder, makeNever());
-  } else if (name == "F(\"__multiplyIntInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__multiplyIntInt") {
     assert(call->argExprs.size() == 2);
     return LLVMBuildMul(
         builder,
@@ -83,7 +83,7 @@ LLVMValueRef translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "mul");
-  } else if (name == "F(\"__subtractIntInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__subtractIntInt") {
     assert(call->argExprs.size() == 2);
     return LLVMBuildSub(
         builder,
@@ -92,7 +92,7 @@ LLVMValueRef translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "diff");
-  } else if (name == "F(\"__addStrStr\",[],[R(*,>,s),R(*,>,s)])") {
+  } else if (name == "__addStrStr") {
     assert(call->argExprs.size() == 2);
 
     auto leftStrTypeM = call->argTypes[0];
@@ -127,9 +127,9 @@ LLVMValueRef translateExternCall(
     checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, call->function->returnType), destStrWrapperPtrLE);
 
     return destStrWrapperPtrLE;
-  } else if (name == "F(\"__getch\")") {
+  } else if (name == "__getch") {
     return LLVMBuildCall(builder, globalState->getch, nullptr, 0, "");
-  } else if (name == "F(\"__lessThanInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__lessThanInt") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
         builder,
@@ -140,7 +140,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__greaterThanInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__greaterThanInt") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
         builder,
@@ -151,7 +151,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__greaterThanOrEqInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__greaterThanOrEqInt") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
         builder,
@@ -162,7 +162,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__lessThanOrEqInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__lessThanOrEqInt") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
         builder,
@@ -173,7 +173,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__eqIntInt\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__eqIntInt") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
         builder,
@@ -184,7 +184,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__eqBoolBool\",[],[R(*,<,b),R(*,<,b)])") {
+  } else if (name == "__eqBoolBool") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildICmp(
         builder,
@@ -195,7 +195,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__print\",[],[R(*,>,s)])") {
+  } else if (name == "__print") {
     assert(call->argExprs.size() == 1);
 
     auto argStrTypeM = call->argTypes[0];
@@ -212,7 +212,7 @@ LLVMValueRef translateExternCall(
     discard(FL(), globalState, functionState, blockState, builder, getEffectiveType(globalState, argStrTypeM), argStrWrapperPtrLE);
 
     return LLVMGetUndef(translateType(globalState, getEffectiveType(globalState, call->function->returnType)));
-  } else if (name == "F(\"__not\",[],[R(*,<,b)])") {
+  } else if (name == "__not") {
     assert(call->argExprs.size() == 1);
     auto result = LLVMBuildNot(
         builder,
@@ -220,7 +220,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[0]),
         "");
     return result;
-  } else if (name == "F(\"__castIntStr\",[],[R(*,<,i)])") {
+  } else if (name == "__castIntStr") {
     assert(call->argExprs.size() == 1);
     auto intLE =
         translateExpression(
@@ -249,7 +249,7 @@ LLVMValueRef translateExternCall(
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
     return strWrapperPtrLE;
-  } else if (name == "F(\"__and\",[],[R(*,<,b),R(*,<,b)])") {
+  } else if (name == "__and") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildAnd(
         builder,
@@ -259,7 +259,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__or\",[],[R(*,<,b),R(*,<,b)])") {
+  } else if (name == "__or") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildOr(
         builder,
@@ -269,7 +269,7 @@ LLVMValueRef translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[1]),
         "");
     return result;
-  } else if (name == "F(\"__mod\",[],[R(*,<,i),R(*,<,i)])") {
+  } else if (name == "__mod") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildSRem(
         builder,

@@ -124,7 +124,7 @@ case class Locals(
 
 object Hammer {
   def translate(hinputs: Hinputs): ProgramH = {
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), List(), List(), List(), Map(), Map(), Map(), Map()))
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Map(), List(), List(), List(), Map(), Map(), Map(), Map()))
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, hinputs.emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
     StructHammer.translateInterfaces(hinputs, hamuts);

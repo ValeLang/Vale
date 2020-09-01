@@ -9,14 +9,14 @@ fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
 fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
 
 fn get<T>(virtual opt Opt<T>) T abstract;
-fn get<T>(opt None<T> impl Opt<T>) T { panic() }
+fn get<T>(opt None<T> impl Opt<T>) T { __panic() }
 fn get<T>(opt Some<T> impl Opt<T>) T {
   Some<T>(value) = opt;
   = value;
 }
 
 fn get<T>(virtual opt &Opt<T>) &T abstract;
-fn get<T>(opt &None<T> impl Opt<T>) &T { panic() }
+fn get<T>(opt &None<T> impl Opt<T>) &T { __panic() }
 fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
 
 fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
@@ -43,7 +43,7 @@ struct List<E> rules(E Ref) {
   size int;
 }
 fn List<E>() rules(E Ref) {
-  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ panic()})), 0)
+  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ __panic()})), 0)
 }
 fn len<E>(list &List<E>) { list.size }
 fn add<E>(list &List<E>, newElement E) {
@@ -326,7 +326,7 @@ fn max(a int, b int) int {
 
 fn panic(msg str) {
   println(msg);
-  = panic();
+  = __panic();
 }
 
 fn abs(a int) {
@@ -339,7 +339,7 @@ fn assert(cond bool) void {
 fn assert(cond bool, msg str) void {
   if (cond == false) {
     println(msg);
-    panic();
+    __panic();
   }
 }
 

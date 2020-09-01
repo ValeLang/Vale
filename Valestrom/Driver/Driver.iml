@@ -15,7 +15,7 @@
     <orderEntry type="module" module-name="Hinputs" />
     <orderEntry type="module" module-name="Metal" />
     <orderEntry type="module" module-name="Parser" />
-    <orderEntry type="module" module-name="Samples" />
+    <orderEntry type="module" module-name="Samples" exported="" />
     <orderEntry type="module" module-name="Scout" />
     <orderEntry type="module" module-name="Templar" />
     <orderEntry type="module" module-name="Templata" />

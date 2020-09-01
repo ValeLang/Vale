@@ -492,6 +492,8 @@ case class ConstructUnknownSizeArrayH(
   // should be the only function on it.
   // This is a constraint reference.
   generatorExpression: ExpressionH[InterfaceRefH],
+  // The prototype for the "__call" function to call on the interface for each element.
+  generatorMethod: PrototypeH,
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
@@ -512,7 +514,9 @@ case class DestroyKnownSizeArrayIntoFunctionH(
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  consumerExpression: ExpressionH[InterfaceRefH]
+  consumerExpression: ExpressionH[InterfaceRefH],
+  // The prototype for the "__call" function to call on the interface for each element.
+  consumerMethod: PrototypeH,
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }
@@ -527,7 +531,9 @@ case class DestroyUnknownSizeArrayH(
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  consumerExpression: ExpressionH[InterfaceRefH]
+  consumerExpression: ExpressionH[InterfaceRefH],
+  // The prototype for the "__call" function to call on the interface for each element.
+  consumerMethod: PrototypeH
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
 }

@@ -637,7 +637,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  } else {
         |    ret 9;
         |  }
-        |  = panic();
+        |  = __panic();
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()

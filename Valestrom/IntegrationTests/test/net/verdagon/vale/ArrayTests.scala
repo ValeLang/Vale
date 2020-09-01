@@ -109,7 +109,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("Array")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Int2()), Immutable)), _, _) =>
+      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Int2()), Immutable)), _, _, _) =>
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)

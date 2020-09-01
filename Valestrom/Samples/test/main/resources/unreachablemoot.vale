@@ -6,5 +6,5 @@ fn main() int {
     }
     // Continue
   }
-  panic();
+  __panic();
 }

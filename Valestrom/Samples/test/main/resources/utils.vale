@@ -9,7 +9,7 @@ fn max(a int, b int) int {
 
 fn panic(msg str) {
   println(msg);
-  = panic();
+  = __panic();
 }
 
 fn abs(a int) {
@@ -22,7 +22,7 @@ fn assert(cond bool) void {
 fn assert(cond bool, msg str) void {
   if (cond == false) {
     println(msg);
-    panic();
+    __panic();
   }
 }
 

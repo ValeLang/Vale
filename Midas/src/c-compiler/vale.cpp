@@ -697,7 +697,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto function = p.second;
     LLVMValueRef entryFunctionL = declareFunction(globalState, function);
-    if (function->prototype->name->name == "F(\"main\")") {
+    if (function->prototype->name->name == "main") {
       mainM = function->prototype;
       mainL = entryFunctionL;
     }

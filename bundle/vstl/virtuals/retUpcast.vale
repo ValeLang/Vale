@@ -1,0 +1,13 @@
+
+interface Opt { }
+struct Some { value int; }
+impl Opt for Some;
+
+fn doIt() Opt {
+  ret Some(9);
+}
+
+fn main() {
+  a = doIt();
+  = 3;
+}

@@ -1,0 +1,12 @@
+
+struct Goblin { }
+
+struct GoblinMaker {}
+impl IFunction1<mut, int, Goblin> for GoblinMaker;
+fn __call(this &GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
+fn main() {
+  m = GoblinMaker();
+  arr = Array<mut, Goblin>(1, &m);
+  mut arr.0 = Goblin();
+  = 42;
+}

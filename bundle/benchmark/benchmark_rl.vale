@@ -1,0 +1,106 @@
+fn set_screen_cell(
+    screen &!Screen,
+    game &Game,
+    loc Location) {
+    foreground_color = White();
+    background_color = Black();
+    character! = " ";
+
+    tile? = game.get_current_level().tiles.get(loc);
+    if (not tile?.empty?()) {
+        tile = tile?^.get();
+        if (tile.display_class == "dirt") {
+            mut character = ".";
+            mut foreground_color = Orange();
+        } else if (tile.display_class == "grass") {
+            mut character = ".";
+            mut foreground_color = Green();
+        } else if (tile.display_class == "wall") {
+        // "wall" => {
+            mut character = "#";
+            mut foreground_color = Gray();
+        } else {
+            panic("unrecognized tile display class");
+        }
+    } else {
+        drop(tile?);
+    }
+
+    screen.set_cell(
+        loc.x,
+        loc.y,
+        background_color,
+        foreground_color,
+        character);
+}
+
+fn setup(
+    rand &!LCGRand,
+    max_width int,
+    max_height int,
+    num_levels int)
+Game {
+  game = Game(List<Level>());
+
+  level = make_level(max_width, max_height, &rand);
+  game.levels.add(level);
+  ret game;
+}
+
+fn display(
+        seed int,
+        maybe_screen &!Opt<Screen>,
+        game &Game) {
+    if (not empty?(maybe_screen)) {
+        screen = maybe_screen.get();
+
+        x! = 0;
+        while (x < game.get_current_level().max_width) {
+
+            y! = 0;
+            while (y < game.get_current_level().max_height) {
+                loc = Location(x, y);
+                set_screen_cell(
+                    &screen,
+                    &game,
+                    // &player_visible_locs,
+                    loc);
+
+                mut y = y + 1;
+            }
+
+            mut x = x + 1;
+        }
+        screen.paint_screen();
+    }
+}
+
+
+fn benchmark_rl(
+    seed int,
+    level_width int,
+    level_height int,
+    num_levels int,
+    should_display bool,
+    turn_delay int
+) {
+  rand = LCGRand(seed);
+
+  game = setup(&rand, level_width, level_height, num_levels);
+
+  maybe_screen =
+    if (should_display) {
+      z Opt<Screen> =
+          Some(
+              newScreen(
+              game.get_current_level().max_width,
+              game.get_current_level().max_height));
+      = z;
+    } else {
+      z Opt<Screen> =
+          None<Screen>();
+      = z;
+    };
+
+  display(seed, &maybe_screen, &game);
+}

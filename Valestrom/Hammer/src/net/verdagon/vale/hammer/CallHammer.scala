@@ -73,7 +73,7 @@ object CallHammer {
       locals: LocalsBox,
       constructArray2: ConstructArray2):
   (ExpressionH[ReferendH]) = {
-    val ConstructArray2(arrayType2, sizeExpr2, generatorExpr2) = constructArray2;
+    val ConstructArray2(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
 
     val (sizeRegisterId, sizeDeferreds) =
       ExpressionHammer.translate(
@@ -91,10 +91,14 @@ object CallHammer {
       TypeHammer.translateUnknownSizeArray(hinputs, hamuts, arrayType2)
     vassert(arrayRefTypeH.expectUnknownSizeArrayReference().kind == arrayTypeH)
 
+    val generatorMethodH =
+      FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
+
     val constructArrayCallNode =
         ConstructUnknownSizeArrayH(
           sizeRegisterId.expectIntAccess(),
           generatorRegisterId.expectInterfaceAccess(),
+          generatorMethodH,
           arrayRefTypeH.expectUnknownSizeArrayReference())
 
     ExpressionHammer.translateDeferreds(
@@ -107,7 +111,7 @@ object CallHammer {
       locals: LocalsBox,
       das2: DestroyArraySequenceIntoFunction2):
   ExpressionH[ReferendH] = {
-    val DestroyArraySequenceIntoFunction2(arrayExpr2, arraySequenceType, consumerExpr2) = das2;
+    val DestroyArraySequenceIntoFunction2(arrayExpr2, arraySequenceType, consumerExpr2, consumerMethod2) = das2;
 
     val KnownSizeArrayT2(size, rawArrayType2 @ RawArrayT2(memberType2, mutability)) = arraySequenceType
 
@@ -131,10 +135,14 @@ object CallHammer {
     vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
     vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == arrayTypeH.rawArray.elementType)
 
+    val consumerMethod =
+      FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
+
     val destroyArraySequenceCallNode =
         DestroyKnownSizeArrayIntoFunctionH(
           arrayExprResultLine.expectKnownSizeArrayAccess(),
-          consumerCallableResultLine.expectInterfaceAccess())
+          consumerCallableResultLine.expectInterfaceAccess(),
+          consumerMethod)
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, locals, destroyArraySequenceCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
@@ -146,7 +154,7 @@ object CallHammer {
     locals: LocalsBox,
     das2: DestroyUnknownSizeArray2):
   ExpressionH[ReferendH] = {
-    val DestroyUnknownSizeArray2(arrayExpr2, unknownSizeArrayType2, consumerExpr2) = das2;
+    val DestroyUnknownSizeArray2(arrayExpr2, unknownSizeArrayType2, consumerExpr2, consumerMethod2) = das2;
 
     val UnknownSizeArrayT2(RawArrayT2(memberType2, mutability)) = unknownSizeArrayType2
 
@@ -164,10 +172,14 @@ object CallHammer {
       ExpressionHammer.translate(
         hinputs, hamuts, locals, consumerExpr2);
 
+    val consumerMethod =
+      FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
+
     val destroyArraySequenceCallNode =
         DestroyUnknownSizeArrayH(
           arrayExprResultLine.expectUnknownSizeArrayAccess(),
-          consumerCallableResultLine.expectInterfaceAccess())
+          consumerCallableResultLine.expectInterfaceAccess(),
+          consumerMethod)
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, locals, destroyArraySequenceCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)

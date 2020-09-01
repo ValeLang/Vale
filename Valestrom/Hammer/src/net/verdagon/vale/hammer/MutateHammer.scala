@@ -144,7 +144,7 @@ object MutateHammer {
           loadBoxNode.expectStructAccess(),
           StructHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
-          nameH.addStep(StructHammer.BOX_MEMBER_NAME))
+          NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
     (storeNode, destinationDeferreds)
   }
 
@@ -212,7 +212,7 @@ object MutateHammer {
           loadBoxNode.expectStructAccess(),
           StructHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
-          nameH.addStep(StructHammer.BOX_MEMBER_NAME))
+          NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
     (storeNode, List())
   }
 

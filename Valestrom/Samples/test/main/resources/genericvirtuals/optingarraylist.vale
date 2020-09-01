@@ -3,7 +3,7 @@ struct List<E> rules(E Ref) {
   size int;
 }
 fn List<E>() rules(E Ref) {
-  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ panic()})), 0)
+  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ __panic()})), 0)
 }
 fn len<E>(list &List<E>) { list.size }
 fn add<E>(list &List<E>, newElement E) {

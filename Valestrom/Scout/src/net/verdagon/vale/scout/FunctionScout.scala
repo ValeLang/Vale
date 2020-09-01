@@ -401,7 +401,7 @@ object FunctionScout {
     // If we have a lone lookup node, like "m = Marine(); m;" then that
     // 'm' will be turned into an expression, which means that's how it's
     // destroyed. So, thats how we destroy things before their time.
-    val (NormalResult(block1), selfUses, childUses) =
+    val (NormalResult(_, block1), selfUses, childUses) =
       ExpressionScout.scoutBlock(
         stackFrame,
         body0,

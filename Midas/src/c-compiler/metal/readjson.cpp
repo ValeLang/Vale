@@ -482,7 +482,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
           struuct["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
 
   auto structName = result->name;
-  if (structName->name == std::string("Tup")) {
+  if (structName->name == std::string("Tup0")) {
     cache->emptyTupleStructReferend =
         makeIfNotPresent(
             &cache->structReferends,

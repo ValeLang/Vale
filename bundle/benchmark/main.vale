@@ -1,0 +1,12 @@
+
+fn main() {
+  seed = 44;
+  benchmark_rl(
+    seed,
+    200,
+    100,
+    10,
+    false,
+    100);
+  = 0;
+}

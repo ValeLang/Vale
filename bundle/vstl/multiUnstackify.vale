@@ -1,0 +1,14 @@
+
+fn main() int {
+  playerRow! = 137;
+
+  if (false) {
+    ret 50;
+  } else if (false) {
+    ret 50;
+  } else if (true) {
+    ret 42;
+  }
+  ret playerRow;
+}
+

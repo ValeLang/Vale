@@ -1,0 +1,65 @@
+// From https://stackoverflow.com/a/3062783
+struct LCGRand {
+    seed int;
+}
+fn next(self &!LCGRand) int {
+    a = 1103515245;
+    c = 12345;
+    m = 2147483647;
+    mut self.seed = (a * self.seed + c) mod m;
+    ret self.seed;
+}
+
+struct Game {
+    levels List<Level>;
+}
+
+fn get_current_level(self &Game) &Level {
+    self.levels.get(0).get()
+}
+
+// Get all the locations adjacent to `center`.
+fn get_pattern_adjacent_locations(
+    center Location,
+    consider_corners_adjacent bool)
+List<Location> {
+    result = List<Location>();
+    result.add(Location(center.x - 1, center.y));
+    result.add(Location(center.x, center.y + 1));
+    result.add(Location(center.x, center.y - 1));
+    result.add(Location(center.x + 1, center.y));
+    if (consider_corners_adjacent) {
+        result.add(Location(center.x - 1, center.y - 1));
+        result.add(Location(center.x - 1, center.y + 1));
+        result.add(Location(center.x + 1, center.y - 1));
+        result.add(Location(center.x + 1, center.y + 1));
+    }
+    ret result;
+}
+
+// Get all the locations adjacent to any of the ones in `source_locs`.
+fn get_pattern_locations_adjacent_to_any(
+    source_locs &HashSet<Location, LocationHasher, LocationEquator>,
+    include_source_locs bool,
+    consider_corners_adjacent bool)
+HashSet<Location, LocationHasher, LocationEquator> {
+    result =
+        HashSet<Location, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+    each (source_locs) (original_location){
+        adjacents =
+            get_pattern_adjacent_locations(original_location, consider_corners_adjacent);
+        if (include_source_locs) {
+            adjacents.add(original_location);
+        }
+        each (&adjacents) (adjacent_location){
+            if (include_source_locs or not source_locs.has(adjacent_location)) {
+                // DIFFERENCE our set doesnt let you insert if already there
+                if (not result.has(adjacent_location)) {
+                    result.add(adjacent_location);
+                }
+            }
+        }
+    }
+    ret result;
+}

@@ -1,0 +1,19 @@
+
+interface MyOption<T> rules(T Ref) { }
+
+struct MySome<T> rules(T Ref) {
+  value T;
+}
+impl<T> MyOption<T> for MySome<T>;
+
+struct MyNone<T> rules(T Ref) { }
+impl<T> MyOption<T> for MyNone<T>;
+
+fn getSize<T>(virtual opt &MyOption<T>) int abstract;
+fn getSize<T>(opt &MyNone<T> impl MyOption<T>) int { 0 }
+fn getSize<T>(opt &MySome<T> impl MyOption<T>) int { 1 }
+
+fn main() int {
+  myOpt MyOption<int> = MySome<int>(4);
+  = getSize(&myOpt);
+}

@@ -4,7 +4,7 @@ fn main() {
   benchmark_rl(
     seed,
     200,
-    100,
+    200,
     10,
     false,
     100);

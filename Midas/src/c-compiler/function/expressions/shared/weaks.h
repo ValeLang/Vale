@@ -28,33 +28,33 @@ void discardWeakRef(
     LLVMValueRef exprLE);
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
-LLVMValueRef derefMaybeWeakRef(
+LLVMValueRef lockWeakRef(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef weakRefLE);
 
 LLVMValueRef getInnerRefFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* weakRefM,
+    UnconvertedReference* weakRefM,
     LLVMValueRef weakRefLE);
 
 LLVMValueRef getIsAliveFromWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef weakRefLE);
 
 void noteWeakableDestroyed(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* concreteRefM,
+    UnconvertedReference* concreteRefM,
     LLVMValueRef controlBlockPtrLE);
 
 LLVMValueRef noteWeakableCreated(
@@ -75,7 +75,7 @@ LLVMValueRef weakInterfaceRefToWeakStructRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef exprLE);
 
 LLVMValueRef weakStructRefToWeakInterfaceRef(
@@ -84,16 +84,16 @@ LLVMValueRef weakStructRefToWeakInterfaceRef(
     LLVMBuilderRef builder,
     LLVMValueRef sourceRefLE,
     StructReferend* sourceStructReferendM,
-    Reference* sourceStructTypeM,
+    UnconvertedReference* sourceStructTypeM,
     InterfaceReferend* targetInterfaceReferendM,
-    Reference* targetInterfaceTypeM);
+    UnconvertedReference* targetInterfaceTypeM);
 
 void buildCheckWeakRef(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* weakRefM,
+    UnconvertedReference* weakRefM,
     LLVMValueRef weakRefLE);
 
 
@@ -101,7 +101,7 @@ LLVMValueRef assembleInterfaceWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceType,
+    UnconvertedReference* sourceType,
     InterfaceReferend* interfaceReferendM,
     LLVMValueRef sourceRefLE);
 
@@ -110,14 +110,14 @@ LLVMValueRef assembleStructWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
+    UnconvertedReference* structTypeM,
     StructReferend* structReferendM,
     LLVMValueRef objPtrLE);
 
 LLVMValueRef assembleKnownSizeArrayWeakRef(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
+    UnconvertedReference* structTypeM,
     KnownSizeArrayT* knownSizeArrayMT,
     LLVMValueRef objPtrLE);
 
@@ -125,7 +125,7 @@ LLVMValueRef assembleUnknownSizeArrayWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceType,
+    UnconvertedReference* sourceType,
     UnknownSizeArrayT* unknownSizeArrayMT,
     LLVMValueRef objPtrLE);
 
@@ -160,5 +160,19 @@ void makeKnownSizeArrayWeakRefStruct(
     GlobalState* globalState,
     LLVMTypeRef knownSizeArrayWrapperStruct,
     LLVMTypeRef arrayWeakRefStructL);
+
+LLVMValueRef getWrciFromWeakRef(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE);
+
+LLVMValueRef makeWrciHeader(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMValueRef wrciLE);
+
+LLVMValueRef getHeaderFromWeakRef(
+    LLVMBuilderRef builder,
+    LLVMValueRef weakRefLE);
 
 #endif

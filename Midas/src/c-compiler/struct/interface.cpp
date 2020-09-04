@@ -32,20 +32,44 @@ void declareInterface(
 LLVMTypeRef translateInterfaceMethodToFunctionType(
     GlobalState* globalState,
     InterfaceMethod* method) {
-  auto returnMT = getEffectiveType(globalState, method->prototype->returnType);
-  auto paramsMT = getEffectiveTypes(globalState, method->prototype->params);
+  auto returnMT = method->prototype->returnType;
+  auto paramsMT = method->prototype->params;
   auto returnLT = translateType(globalState, returnMT);
   auto paramsLT = translateTypes(globalState, paramsMT);
 
-  switch (paramsMT[method->virtualParamIndex]->ownership) {
-    case Ownership::BORROW:
-    case Ownership::OWN:
-    case Ownership::SHARE:
-      paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      switch (paramsMT[method->virtualParamIndex]->ownership) {
+        case UnconvertedOwnership::BORROW:
+        case UnconvertedOwnership::OWN:
+        case UnconvertedOwnership::SHARE:
+          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+          break;
+        case UnconvertedOwnership::WEAK:
+          paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
+          break;
+      }
       break;
-    case Ownership::WEAK:
-      paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (paramsMT[method->virtualParamIndex]->ownership) {
+        case UnconvertedOwnership::OWN:
+        case UnconvertedOwnership::SHARE:
+          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+          break;
+        case UnconvertedOwnership::BORROW:
+        case UnconvertedOwnership::WEAK:
+          paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
+          break;
+      }
       break;
+    }
+    default:
+      assert(false);
   }
 
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);

@@ -14,13 +14,13 @@ LLVMValueRef translateDestructure(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Destroy* destructureM) {
-  auto mutability = ownershipToMutability(getEffectiveOwnership(globalState, destructureM->structType->ownership));
+  auto mutability = ownershipToMutability(destructureM->structType->ownership);
 
   auto structLE =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
   checkValidReference(
-      FL(), globalState, functionState, builder, getEffectiveType(globalState, destructureM->structType), structLE);
+      FL(), globalState, functionState, builder, destructureM->structType, structLE);
 //  buildFlare(FL(), globalState, functionState, builder, "structLE is ", structLE);
 
   auto structReferend =
@@ -35,7 +35,7 @@ LLVMValueRef translateDestructure(
     auto memberLE =
         loadInnerStructMember(
             builder, innerStructPtrLE, i, memberName);
-    checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, structM->members[i]->type), memberLE);
+    checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberLE);
     makeHammerLocal(
         globalState,
       functionState,
@@ -45,14 +45,14 @@ LLVMValueRef translateDestructure(
         memberLE);
   }
 
-  if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::OWN) {
-    discardOwningRef(FL(), globalState, functionState, blockState, builder, getEffectiveType(globalState, destructureM->structType), structLE);
-  } else if (getEffectiveOwnership(globalState, destructureM->structType->ownership) == Ownership::SHARE) {
+  if (destructureM->structType->ownership == UnconvertedOwnership::OWN) {
+    discardOwningRef(FL(), globalState, functionState, blockState, builder, destructureM->structType, structLE);
+  } else if (destructureM->structType->ownership == UnconvertedOwnership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
 
     freeConcrete(
         AFL("Destroy freeing"), globalState, functionState, blockState, builder,
-        structLE, getEffectiveType(globalState, destructureM->structType));
+        structLE, destructureM->structType);
   } else {
     assert(false);
   }

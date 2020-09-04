@@ -14,7 +14,7 @@ void fillUnknownSizeArray(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* generatorType,
+    UnconvertedReference* generatorType,
     LLVMValueRef generatorLE,
     LLVMValueRef sizeLE,
     LLVMValueRef usaElementsPtrLE) {
@@ -42,7 +42,7 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
     BlockState* blockState,
     LLVMBuilderRef builder,
     UnknownSizeArrayT* unknownSizeArrayT,
-    Reference* generatorType,
+    UnconvertedReference* generatorType,
     LLVMValueRef generatorLE,
     LLVMTypeRef usaWrapperPtrLT,
     LLVMTypeRef usaElementLT,
@@ -72,7 +72,8 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
       generatorType,
       generatorLE,
       sizeLE,
-      getUnknownSizeArrayContentsPtr(builder, usaWrapperPtrLE));
+      getContentsPtrFromUnknownSizeArrayWrapperPtr(
+          builder, usaWrapperPtrLE));
   return usaWrapperPtrLE;
 }
 
@@ -91,14 +92,14 @@ LLVMValueRef translateConstructUnknownSizeArray(
 
   auto unknownSizeArrayMT = dynamic_cast<UnknownSizeArrayT*>(constructUnknownSizeArray->arrayRefType->referend);
 
-  auto usaWrapperPtrLT = translateType(globalState, getEffectiveType(globalState, constructUnknownSizeArray->arrayRefType));
-  auto usaElementLT = translateType(globalState, getEffectiveType(globalState, unknownSizeArrayMT->rawArray->elementType));
+  auto usaWrapperPtrLT = translateType(globalState, constructUnknownSizeArray->arrayRefType);
+  auto usaElementLT = translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
 
   auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
   auto generatorLE = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
   checkValidReference(FL(), globalState, functionState, builder,
-      getEffectiveType(globalState, constructUnknownSizeArray->generatorType), generatorLE);
+      constructUnknownSizeArray->generatorType, generatorLE);
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
@@ -110,17 +111,17 @@ LLVMValueRef translateConstructUnknownSizeArray(
       blockState,
       builder,
           unknownSizeArrayMT,
-          getEffectiveType(globalState, generatorType),
+          generatorType,
           generatorLE,
           unknownSizeArrayCountedStructLT,
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);
   checkValidReference(FL(), globalState, functionState, builder,
-      getEffectiveType(globalState, constructUnknownSizeArray->arrayRefType), resultLE);
+      constructUnknownSizeArray->arrayRefType, resultLE);
 
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, getEffectiveType(globalState, sizeType), sizeLE);
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, getEffectiveType(globalState, generatorType), generatorLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorType, generatorLE);
 
   return resultLE;
 }

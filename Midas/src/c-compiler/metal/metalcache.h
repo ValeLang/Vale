@@ -58,7 +58,6 @@ public:
   std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
   std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
   std::unordered_map<Referend*, std::unordered_map<UnconvertedOwnership, std::unordered_map<Location, UnconvertedReference*>>> unconvertedReferences;
-  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> references;
   std::unordered_map<Name*, std::unordered_map<UnconvertedReference*, std::unordered_map<std::vector<UnconvertedReference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
   std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
   std::unordered_map<VariableId*, std::unordered_map<UnconvertedReference*, Local*>> locals;
@@ -68,13 +67,6 @@ public:
         &unconvertedReferences[referend][ownership],
         location,
         [&](){ return new UnconvertedReference(ownership, location, referend); });
-  }
-
-  Reference* getReference(Ownership ownership, Location location, Referend* referend) {
-    return makeIfNotPresent(
-        &references[referend][ownership],
-        location,
-        [&](){ return new Reference(ownership, location, referend); });
   }
 };
 

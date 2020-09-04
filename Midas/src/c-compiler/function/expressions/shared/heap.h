@@ -11,7 +11,7 @@ LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    Location location,
     LLVMTypeRef referendLT);
 
 LLVMValueRef mallocUnknownSizeArray(
@@ -35,6 +35,6 @@ void freeConcrete(
     BlockState* blockState,
     LLVMBuilderRef builder,
     LLVMValueRef concreteLE,
-    Reference* concreteRefM);
+    UnconvertedReference* concreteRefM);
 
 #endif

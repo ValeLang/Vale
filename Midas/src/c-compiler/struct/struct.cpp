@@ -38,7 +38,7 @@ void translateStruct(
     innerStructMemberTypesL.push_back(
         translateType(
             globalState,
-            getEffectiveType(globalState, structM->members[i]->type)));
+            structM->members[i]->type));
   }
   LLVMStructSetBody(
       valStructL, innerStructMemberTypesL.data(), innerStructMemberTypesL.size(), false);

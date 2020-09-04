@@ -7,10 +7,10 @@
 
 #include "globalstate.h"
 
-LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM);
+LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* referenceM);
 
 std::vector<LLVMTypeRef> translateTypes(
-    GlobalState* globalState, std::vector<Reference*> referencesM);
+    GlobalState* globalState, std::vector<UnconvertedReference*> referencesM);
 
 
 // We need to pick an arbitrary type to map "Never" to. It shouldn't matter,
@@ -21,9 +21,9 @@ std::vector<LLVMTypeRef> translateTypes(
 // See usages of this int to see where we make those zero-len arrays of these.
 constexpr int NEVER_INT_BITS = 57;
 
-Mutability ownershipToMutability(Ownership ownership);
+Mutability ownershipToMutability(UnconvertedOwnership ownership);
 
-Mutability getMutability(GlobalState* globalState, Reference* referenceM);
+Mutability getMutability(GlobalState* globalState, UnconvertedReference* referenceM);
 
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,

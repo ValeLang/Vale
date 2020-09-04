@@ -10,7 +10,7 @@ LLVMTypeRef makeInnerKnownSizeArrayLT(GlobalState* globalState, KnownSizeArrayT*
   auto elementLT =
       translateType(
           globalState,
-          getEffectiveType(globalState, knownSizeArrayMT->rawArray->elementType));
+          knownSizeArrayMT->rawArray->elementType);
   return LLVMArrayType(elementLT, knownSizeArrayMT->size);
 }
 
@@ -18,7 +18,7 @@ LLVMTypeRef makeInnerUnknownSizeArrayLT(GlobalState* globalState, UnknownSizeArr
   auto elementLT =
       translateType(
           globalState,
-          getEffectiveType(globalState, unknownSizeArrayMT->rawArray->elementType));
+          unknownSizeArrayMT->rawArray->elementType);
   return LLVMArrayType(elementLT, 0);
 }
 

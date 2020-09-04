@@ -16,21 +16,21 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* structRefM,
-    Reference* elementRefM,
+    UnconvertedReference* structRefM,
+    UnconvertedReference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
     LLVMValueRef indexLE,
-    Reference* resultRefM);
+    UnconvertedReference* resultRefM);
 
 LLVMValueRef storeElement(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Reference* elementRefM,
+    UnconvertedReference* arrayRefM,
+    UnconvertedReference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
@@ -45,7 +45,10 @@ void foreachArrayElement(
     std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder);
 
 LLVMValueRef getUnknownSizeArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
+    UnconvertedReference* arrayRefM,
     LLVMValueRef arrayPtrLE);
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
@@ -55,5 +58,14 @@ LLVMValueRef getUnknownSizeArrayLengthPtr(
     LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE);
 
 LLVMValueRef getUnknownSizeArrayContentsPtr(
-    LLVMBuilderRef builder, LLVMValueRef knownSizeArrayWrapperPtrLE);
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    UnconvertedReference* arrayRefM,
+    LLVMValueRef arrayRefLE);
+
+LLVMValueRef getContentsPtrFromUnknownSizeArrayWrapperPtr(
+    LLVMBuilderRef builder,
+    LLVMValueRef arrayWrapperPtrLE);
+
 #endif

@@ -28,7 +28,7 @@ LLVMValueRef translateIf(
           functionState,
           builder,
           conditionExpr,
-          translateType(globalState, getEffectiveType(globalState, iff->commonSupertype)),
+          translateType(globalState, iff->commonSupertype),
           dynamic_cast<Never*>(iff->thenResultType->referend) != nullptr,
           dynamic_cast<Never*>(iff->elseResultType->referend) != nullptr,
           [globalState, functionState, &thenBlockState, iff](LLVMBuilderRef thenBlockBuilder) {
@@ -39,7 +39,7 @@ LLVMValueRef translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, iff->commonSupertype), resultLE);
+  checkValidReference(FL(), globalState, functionState, builder, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;

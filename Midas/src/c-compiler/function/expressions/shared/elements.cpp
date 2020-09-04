@@ -4,6 +4,7 @@
 
 #include "shared.h"
 #include "branch.h"
+#include "weaks.h"
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
     LLVMBuilderRef builder, LLVMValueRef knownSizeArrayWrapperPtrLE) {
@@ -27,16 +28,95 @@ LLVMValueRef getUnknownSizeArrayLengthPtr(
 }
 
 LLVMValueRef getUnknownSizeArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef arrayWrapperPtrLE) {
-  return LLVMBuildLoad(builder, getUnknownSizeArrayLengthPtr(builder, arrayWrapperPtrLE), "usaLen");
+    UnconvertedReference* arrayRefM,
+    LLVMValueRef arrayRefLE) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      return LLVMBuildLoad(builder, getUnknownSizeArrayLengthPtr(builder, arrayRefLE), "usaLen");
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      LLVMValueRef arrayWrapperPtrLE = nullptr;
+      switch (arrayRefM->ownership) {
+        case UnconvertedOwnership::SHARE:
+        case UnconvertedOwnership::OWN:
+          arrayWrapperPtrLE = arrayRefLE;
+          break;
+        case UnconvertedOwnership::BORROW:
+          arrayWrapperPtrLE =
+              lockWeakRef(FL(), globalState, functionState, builder, arrayRefM, arrayRefLE);
+          break;
+        case UnconvertedOwnership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+          break;
+      }
+      return LLVMBuildLoad(builder, getUnknownSizeArrayLengthPtr(builder, arrayWrapperPtrLE), "usaLen");
+      break;
+    }
+    default:
+      assert(false);
+  }
 }
 
 LLVMValueRef getUnknownSizeArrayContentsPtr(
-    LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE) {
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    UnconvertedReference* arrayRefM,
+    LLVMValueRef arrayRefLE) {
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      LLVMValueRef arrayWrapperPtrLE = arrayRefLE;
+      return LLVMBuildStructGEP(
+          builder,
+          arrayWrapperPtrLE,
+          2, // Array is after the control block and length.
+          "usaElemsPtr");
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      LLVMValueRef arrayWrapperPtrLE = nullptr;
+      switch (arrayRefM->ownership) {
+        case UnconvertedOwnership::SHARE:
+        case UnconvertedOwnership::OWN:
+          arrayWrapperPtrLE = arrayRefLE;
+          break;
+        case UnconvertedOwnership::BORROW:
+          arrayWrapperPtrLE =
+              lockWeakRef(FL(), globalState, functionState, builder, arrayRefM, arrayRefLE);
+          break;
+        case UnconvertedOwnership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+          break;
+      }
+      return LLVMBuildStructGEP(
+          builder,
+          arrayWrapperPtrLE,
+          2, // Array is after the control block and length.
+          "usaElemsPtr");
+    }
+    default:
+      assert(false);
+  }
+}
+
+LLVMValueRef getContentsPtrFromUnknownSizeArrayWrapperPtr(
+    LLVMBuilderRef builder,
+    LLVMValueRef arrayWrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      unknownSizeArrayWrapperPtrLE,
+      arrayWrapperPtrLE,
       2, // Array is after the control block and length.
       "usaElemsPtr");
 }
@@ -45,7 +125,7 @@ LLVMValueRef loadInnerArrayMember(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
-    Reference* elementRefM,
+    UnconvertedReference* elementRefM,
     LLVMValueRef indexLE) {
   assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
   LLVMValueRef indices[2] = {
@@ -66,7 +146,6 @@ LLVMValueRef storeInnerArrayMember(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
-    Reference* elementRefM,
     LLVMValueRef indexLE,
     LLVMValueRef sourceLE) {
   assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
@@ -89,13 +168,13 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* structRefM,
-    Reference* elementRefM,
+    UnconvertedReference* structRefM,
+    UnconvertedReference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
     LLVMValueRef indexLE,
-    Reference* resultRefM) {
+    UnconvertedReference* resultRefM) {
 
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
@@ -119,7 +198,9 @@ LLVMValueRef loadElement(
     assert(false);
     return nullptr;
   }
-  return load(globalState, functionState, builder, elementRefM, resultRefM, fromArrayLE);
+  return upgradeLoadResultToRefWithTargetOwnership(globalState, functionState, builder, elementRefM,
+      resultRefM,
+      fromArrayLE);
 }
 
 
@@ -128,8 +209,8 @@ LLVMValueRef storeElement(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Reference* elementRefM,
+    UnconvertedReference* arrayRefM,
+    UnconvertedReference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
@@ -147,10 +228,10 @@ LLVMValueRef storeElement(
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
       return nullptr;
     } else {
-      return storeInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE, sourceLE);
+      return storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    return storeInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE, sourceLE);
+    return storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
   } else {
     assert(false);
     return nullptr;

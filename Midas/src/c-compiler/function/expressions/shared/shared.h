@@ -12,6 +12,7 @@
 #include "function/function.h"
 #include "utils/fileio.h"
 
+
 struct AreaAndFileAndLine {
   std::string area;
   std::string file;
@@ -46,7 +47,7 @@ void acquireReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceRef,
+    UnconvertedReference* sourceRef,
     LLVMValueRef expr);
 
 void discard(
@@ -55,7 +56,7 @@ void discard(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceRef,
+    UnconvertedReference* sourceRef,
     LLVMValueRef expr);
 
 
@@ -84,13 +85,13 @@ LLVMValueRef adjustStrongRc(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
-    Reference* refM,
+    UnconvertedReference* refM,
     int amount);
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef exprLE);
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
@@ -159,7 +160,7 @@ LLVMValueRef buildInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* virtualParamMT,
+    UnconvertedReference* virtualParamMT,
     std::vector<LLVMValueRef> argExprsLE,
     int virtualParamIndex,
     int indexInEdge);
@@ -191,7 +192,7 @@ void checkValidReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef refLE);
 
 
@@ -202,31 +203,18 @@ LLVMValueRef buildCall(
     Prototype* prototype,
     std::vector<LLVMValueRef> argsLE);
 
-LLVMValueRef upcast2(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceStructTypeM,
-    StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceRefLE,
-    Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM);
-
 // TODO move these into region classes
-Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership ownership);
-Reference* getEffectiveType(GlobalState* globalState, UnconvertedReference* refM);
 Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array);
 Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef);
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
-std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
 
 // Loads from either a local or a member, and does the appropriate casting.
-LLVMValueRef load(
+LLVMValueRef upgradeLoadResultToRefWithTargetOwnership(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceType,
-    Reference* targetType,
+    UnconvertedReference* sourceType,
+    UnconvertedReference* targetType,
     LLVMValueRef sourceRefLE);
 
 LLVMValueRef makeInterfaceRefStruct(
@@ -254,7 +242,19 @@ void discardOwningRef(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceTypeM,
+    UnconvertedReference* sourceTypeM,
     LLVMValueRef exprLE);
+
+LLVMValueRef upcast(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+
+    UnconvertedReference* sourceStructTypeM,
+    StructReferend* sourceStructReferendM,
+    LLVMValueRef sourceRefLE,
+
+    UnconvertedReference* targetInterfaceTypeM,
+    InterfaceReferend* targetInterfaceReferendM);
 
 #endif

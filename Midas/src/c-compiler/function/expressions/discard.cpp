@@ -13,7 +13,7 @@ LLVMValueRef translateDiscard(
     LLVMBuilderRef builder,
     Discard* discardM) {
   auto sourceExpr = discardM->sourceExpr;
-  auto sourceResultType = getEffectiveType(globalState, discardM->sourceResultType);
+  auto sourceResultType = discardM->sourceResultType;
 
   auto innerLE =
       translateExpression(
@@ -25,7 +25,7 @@ LLVMValueRef translateDiscard(
       functionState,
       blockState,
       builder,
-      getEffectiveType(globalState, discardM->sourceResultType),
+      discardM->sourceResultType,
       innerLE);
   return makeConstExpr(functionState, builder, makeNever());
 }

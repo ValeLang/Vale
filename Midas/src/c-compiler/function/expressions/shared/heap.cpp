@@ -44,16 +44,16 @@ LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    Location location,
     LLVMTypeRef referendLT) {
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, 1);
   }
 
   LLVMValueRef resultPtrLE = nullptr;
-  if (refM->location == Location::INLINE) {
+  if (location == Location::INLINE) {
     resultPtrLE = makeMidasLocal(functionState, builder, referendLT, "newstruct", LLVMGetUndef(referendLT));
-  } else if (refM->location == Location::YONDER) {
+  } else if (location == Location::YONDER) {
     size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, referendLT);
     LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
 
@@ -170,7 +170,7 @@ void freeConcrete(
     BlockState* blockState,
     LLVMBuilderRef builder,
     LLVMValueRef refLE,
-    Reference* refM) {
+    UnconvertedReference* refM) {
 
   auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);
 
@@ -215,7 +215,7 @@ void freeConcrete(
     }
   } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
     // In fast mode, only shared things are strong RC'd
-    if (refM->ownership == Ownership::SHARE) {
+    if (refM->ownership == UnconvertedOwnership::SHARE) {
       // Only shared stuff is RC'd in fast mode
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
@@ -238,34 +238,34 @@ void freeConcrete(
       }
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-    if (refM->ownership == Ownership::SHARE) {
+    if (refM->ownership == UnconvertedOwnership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
-      assert(refM->ownership == Ownership::OWN);
+      assert(refM->ownership == UnconvertedOwnership::OWN);
 
       // In resilient mode, every mutable is weakable.
       noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-    if (refM->ownership == Ownership::SHARE) {
+    if (refM->ownership == UnconvertedOwnership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
-      assert(refM->ownership == Ownership::OWN);
+      assert(refM->ownership == UnconvertedOwnership::OWN);
 
       // In resilient mode, every mutable is weakable.
       noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-    if (refM->ownership == Ownership::SHARE) {
+    if (refM->ownership == UnconvertedOwnership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
-      assert(refM->ownership == Ownership::OWN);
+      assert(refM->ownership == UnconvertedOwnership::OWN);
 
       // In resilient mode, every mutable is weakable.
       noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);

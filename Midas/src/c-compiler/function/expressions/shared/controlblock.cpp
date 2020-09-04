@@ -22,8 +22,24 @@ LLVMValueRef getControlBlockPtrFromInterfaceRef(
 LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef controlBlockPtr) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+      break;
+    case RegionOverride::FAST:
+      assert(refM->ownership == UnconvertedOwnership::SHARE);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      assert(refM->ownership == UnconvertedOwnership::SHARE);
+      break;
+    default:
+      assert(false);
+  }
+
   return LLVMBuildStructGEP(
       builder,
       controlBlockPtr,
@@ -50,7 +66,7 @@ LLVMValueRef getObjIdFromControlBlockPtr(
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef controlBlockPtr) {
   return LLVMBuildLoad(
       builder,
@@ -65,8 +81,24 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
 LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef structExpr) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+      break;
+    case RegionOverride::FAST:
+      assert(refM->ownership == UnconvertedOwnership::SHARE);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      assert(refM->ownership == UnconvertedOwnership::SHARE);
+      break;
+    default:
+      assert(false);
+  }
+
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, structExpr);
   return LLVMBuildLoad(builder, rcPtrLE, "rc");
 }

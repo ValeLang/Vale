@@ -34,12 +34,12 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     KnownSizeArrayT* knownSizeArrayT,
     LLVMTypeRef structLT,
     const std::vector<LLVMValueRef>& membersLE,
     const std::string& typeName) {
-  auto newStructLE = mallocKnownSize(globalState, functionState, builder, refM, structLT);
+  auto newStructLE = mallocKnownSize(globalState, functionState, builder, refM->location, structLT);
   fillControlBlock(
       FL(),
       globalState,
@@ -69,7 +69,7 @@ LLVMValueRef translateNewArrayFromValues(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
   for (auto elementLE : elementsLE) {
     checkValidReference(FL(), globalState, functionState, builder,
-        getEffectiveType(globalState, newArrayFromValues->arrayReferend->rawArray->elementType), elementLE);
+        newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
   }
 
   auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(newArrayFromValues->arrayRefType->referend);
@@ -97,13 +97,13 @@ LLVMValueRef translateNewArrayFromValues(
                 globalState,
                 functionState,
                 builder,
-                getEffectiveType(globalState, newArrayFromValues->arrayRefType),
+                newArrayFromValues->arrayRefType,
                 newArrayFromValues->arrayReferend,
                 knownSizeArrayCountedStructLT,
                 elementsLE,
                 knownSizeArrayMT->name->name);
         checkValidReference(FL(), globalState, functionState, builder,
-            getEffectiveType(globalState, newArrayFromValues->arrayRefType), resultLE);
+            newArrayFromValues->arrayRefType, resultLE);
         return resultLE;
       }
     }

@@ -17,7 +17,7 @@ void fillInnerStruct(
     LLVMValueRef innerStructPtrLE) {
   for (int i = 0; i < membersLE.size(); i++) {
     auto memberLE = membersLE[i];
-    auto memberType = getEffectiveType(globalState, structM->members[i]->type);
+    auto memberType = structM->members[i]->type;
 
     auto memberName = structM->members[i]->name;
     if (structM->members[i]->type->referend == globalState->metalCache.innt) {
@@ -29,7 +29,7 @@ void fillInnerStruct(
             dynamic_cast<InterfaceReferend*>(memberType->referend) ||
             dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
             dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
-          if (memberType->ownership == Ownership::WEAK) {
+          if (memberType->ownership == UnconvertedOwnership::WEAK) {
 //            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
             buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
           } else {
@@ -53,12 +53,12 @@ LLVMValueRef constructCountedStruct(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMTypeRef structL,
-    Reference* structTypeM,
+    UnconvertedReference* structTypeM,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
   buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
   LLVMValueRef newStructPtrLE =
-      mallocKnownSize(globalState, functionState, builder, structTypeM, structL);
+      mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL);
   fillControlBlock(
       from,
       globalState, functionState, builder,
@@ -109,7 +109,7 @@ LLVMValueRef translateConstruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* desiredReference,
+    UnconvertedReference* desiredReference,
     const std::vector<LLVMValueRef>& membersLE) {
 
   auto structReferend =

@@ -50,39 +50,78 @@ LLVMValueRef loadMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* structRefM,
+    UnconvertedReference* structRefM,
     LLVMValueRef structRefLE,
     Mutability containingStructMutability,
-    Reference* memberType,
+    UnconvertedReference* memberType,
     int memberIndex,
-    Reference* resultType,
+    UnconvertedReference* resultType,
     const std::string& memberName) {
 
   LLVMValueRef sourceRefLE = nullptr;
-  if (structRefM->location == Location::INLINE) {
-    sourceRefLE =
-        LLVMBuildExtractValue(
-            builder, structRefLE, memberIndex, memberName.c_str());
-  } else if (structRefM->location == Location::YONDER) {
-    if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::SHARE) {
-      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
-      sourceRefLE =
-          loadInnerStructMember(
-              builder, innerStructPtrLE, memberIndex, memberName);
-    } else if (structRefM->ownership == Ownership::WEAK) {
-      auto thing = derefMaybeWeakRef(from, globalState, functionState, builder, structRefM,
-          structRefLE);
-      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
-      sourceRefLE =
-          loadInnerStructMember(
-              builder, innerStructPtrLE, memberIndex, memberName);
-    } else assert(false);
-  } else {
-    assert(false);
-    return nullptr;
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      if (structRefM->location == Location::INLINE) {
+        sourceRefLE =
+            LLVMBuildExtractValue(
+                builder, structRefLE, memberIndex, memberName.c_str());
+      } else if (structRefM->location == Location::YONDER) {
+        if (structRefM->ownership == UnconvertedOwnership::OWN || structRefM->ownership == UnconvertedOwnership::BORROW || structRefM->ownership == UnconvertedOwnership::SHARE) {
+          LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
+          sourceRefLE =
+              loadInnerStructMember(
+                  builder, innerStructPtrLE, memberIndex, memberName);
+        } else if (structRefM->ownership == UnconvertedOwnership::WEAK) {
+          auto thing = lockWeakRef(from, globalState, functionState, builder, structRefM,
+              structRefLE);
+          LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
+          sourceRefLE =
+              loadInnerStructMember(
+                  builder, innerStructPtrLE, memberIndex, memberName);
+        } else assert(false);
+      } else {
+        assert(false);
+        return nullptr;
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      if (structRefM->location == Location::INLINE) {
+        sourceRefLE =
+            LLVMBuildExtractValue(
+                builder, structRefLE, memberIndex, memberName.c_str());
+      } else if (structRefM->location == Location::YONDER) {
+        if (structRefM->ownership == UnconvertedOwnership::OWN || structRefM->ownership == UnconvertedOwnership::SHARE) {
+          LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
+          sourceRefLE =
+              loadInnerStructMember(
+                  builder, innerStructPtrLE, memberIndex, memberName);
+        } else if (structRefM->ownership == UnconvertedOwnership::BORROW || structRefM->ownership == UnconvertedOwnership::WEAK) {
+          auto thing = lockWeakRef(from, globalState, functionState, builder, structRefM,
+              structRefLE);
+          LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
+          sourceRefLE =
+              loadInnerStructMember(
+                  builder, innerStructPtrLE, memberIndex, memberName);
+        } else assert(false);
+      } else {
+        assert(false);
+        return nullptr;
+      }
+      break;
+    }
+    default:
+      assert(false);
   }
 
-  auto resultRefLE = load(globalState, functionState, builder, memberType, resultType, sourceRefLE);
+  auto resultRefLE = upgradeLoadResultToRefWithTargetOwnership(globalState, functionState, builder,
+      memberType,
+      resultType, sourceRefLE);
   acquireReference(from, globalState, functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }
@@ -92,13 +131,30 @@ LLVMValueRef swapMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    Reference* structRefM,
+    UnconvertedReference* structRefM,
     LLVMValueRef structRefLE,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newMemberLE) {
 
-  LLVMValueRef objPtrLE = derefMaybeWeakRef(FL(), globalState, functionState, builder, structRefM, structRefLE);
+  assert(structRefM->ownership == UnconvertedOwnership::BORROW);
+
+  LLVMValueRef objPtrLE;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      objPtrLE = structRefLE;
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      objPtrLE = lockWeakRef(FL(), globalState, functionState, builder, structRefM, structRefLE);
+      break;
+    }
+  }
+
   auto innerStructPtrLE = getStructContentsPtr(builder, objPtrLE);
 
   assert(structDefM->mutability == Mutability::MUTABLE);

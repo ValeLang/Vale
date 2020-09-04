@@ -11,7 +11,7 @@ class Name;
 class CodeLocation;
 
 // Defined in this file
-class Reference;
+class UnconvertedReference;
 class Referend;
 class Int;
 class Bool;
@@ -26,13 +26,6 @@ class KnownSizeArrayT;
 class UnknownSizeArrayT;
 
 enum class UnconvertedOwnership {
-  OWN,
-  BORROW,
-  WEAK,
-  SHARE
-};
-
-enum class Ownership {
   OWN,
   BORROW,
   WEAK,
@@ -96,35 +89,6 @@ public:
   {
 
     if (ownership == UnconvertedOwnership::BORROW || ownership == UnconvertedOwnership::WEAK) {
-      assert(location == Location::YONDER);
-    }
-  }
-
-  // Someday, have a nice way to print out this Reference...
-  std::string str() { return ""; }
-};
-
-// Interned
-class Reference {
-public:
-  Ownership ownership;
-  Location location;
-  Referend* referend;
-//  std::string debugStr;
-
-  Reference(
-      Ownership ownership_,
-      Location location_,
-      Referend* referend_
-//      , const std::string& debugStr_
-      ) :
-    ownership(ownership_),
-    location(location_),
-    referend(referend_)
-//    , debugStr(debugStr_)
-    {
-
-    if (ownership == Ownership::BORROW || ownership == Ownership::WEAK) {
       assert(location == Location::YONDER);
     }
   }

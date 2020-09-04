@@ -23,7 +23,7 @@ LLVMValueRef getControlBlockPtrFromInterfaceRef(
 LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef controlBlockPtr);
 
 LLVMValueRef getObjIdFromControlBlockPtr(
@@ -36,7 +36,7 @@ LLVMValueRef getObjIdFromControlBlockPtr(
 LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    UnconvertedReference* refM,
     LLVMValueRef controlBlockPtrLE);
 
 // Returns object ID
@@ -50,10 +50,5 @@ void fillControlBlock(
     Weakability weakable,
     LLVMValueRef controlBlockPtrLE,
     const std::string& typeName);
-
-LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef controlBlockPtr);
 
 #endif //VALEC_CONTROLBLOCK_H

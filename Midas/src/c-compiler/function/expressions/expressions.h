@@ -31,7 +31,7 @@ LLVMValueRef translateConstruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* desiredReference,
+    UnconvertedReference* desiredReference,
     const std::vector<LLVMValueRef>& membersLE);
 
 LLVMValueRef translateCall(

@@ -561,10 +561,10 @@ LLVMValueRef translateExpressionInner(
 
     auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceType, sourceLE);
 
-    auto resultOptTypeLE = translateType(globalState, lockWeak->resultOptType);
+    auto resultOptTypeLE = functionState->defaultRegion->translateType(globalState, lockWeak->resultOptType);
 
     auto resultOptLE =
-        functionState->defaultRegion.lockWeak(globalState, functionState, builder,
+        functionState->defaultRegion->lockWeak(globalState, functionState, builder,
             false, false, lockWeak->resultOptType,
             sourceTypeAsConstraintRefM,
             lockWeak->sourceType,

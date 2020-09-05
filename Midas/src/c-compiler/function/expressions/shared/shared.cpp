@@ -51,7 +51,7 @@ void makeHammerLocal(
       makeMidasLocal(
           functionState,
           builder,
-          translateType(globalState, local->type),
+          functionState->defaultRegion->translateType(globalState, local->type),
           local->id->maybeName.c_str(),
           valueToStore);
   blockState->addLocal(local->id, localAddr);
@@ -248,7 +248,7 @@ LLVMValueRef getItablePtrFromInterfacePtr(
     Reference* virtualParamMT,
     LLVMValueRef virtualArgLE) {
   buildFlare(FL(), globalState, functionState, builder);
-  assert(LLVMTypeOf(virtualArgLE) == translateType(globalState, virtualParamMT));
+  assert(LLVMTypeOf(virtualArgLE) == functionState->defaultRegion->translateType(globalState, virtualParamMT));
   return getTablePtrFromInterfaceRef(builder, virtualArgLE);
 }
 
@@ -258,7 +258,7 @@ LLVMValueRef getObjPtrFromInterfacePtr(
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     LLVMValueRef virtualArgLE) {
-  assert(LLVMTypeOf(virtualArgLE) == translateType(globalState, virtualParamMT));
+  assert(LLVMTypeOf(virtualArgLE) == functionState->defaultRegion->translateType(globalState, virtualParamMT));
   return LLVMBuildPointerCast(
           builder,
           getControlBlockPtrFromInterfaceRef(builder, virtualArgLE),
@@ -275,7 +275,7 @@ LLVMValueRef buildInterfaceCall(
     int virtualParamIndex,
     int indexInEdge) {
   auto virtualArgLE = argExprsLE[virtualParamIndex];
-  assert(LLVMTypeOf(virtualArgLE) == translateType(globalState, virtualParamMT));
+  assert(LLVMTypeOf(virtualArgLE) == functionState->defaultRegion->translateType(globalState, virtualParamMT));
 
   LLVMValueRef itablePtrLE = nullptr;
   LLVMValueRef newVirtualArgLE = nullptr;
@@ -394,7 +394,7 @@ void checkValidReference(
     Reference* refM,
     LLVMValueRef refLE) {
   assert(refLE != nullptr);
-  assert(LLVMTypeOf(refLE) == translateType(globalState, refM));
+  assert(LLVMTypeOf(refLE) == functionState->defaultRegion->translateType(globalState, refM));
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {

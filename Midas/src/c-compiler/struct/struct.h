@@ -9,20 +9,4 @@
 #include "metal/instructions.h"
 #include "globalstate.h"
 
-void declareStruct(
-    GlobalState* globalState,
-    StructDefinition* structM);
-
-void translateStruct(
-    GlobalState* globalState,
-    StructDefinition* structM);
-
-void declareEdge(
-    GlobalState* globalState,
-    Edge* edge);
-
-void translateEdge(
-    GlobalState* globalState,
-    Edge* edge);
-
 #endif

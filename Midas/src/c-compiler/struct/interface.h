@@ -8,12 +8,4 @@
 #include "metal/ast.h"
 #include "globalstate.h"
 
-void declareInterface(
-    GlobalState* globalState,
-    InterfaceDefinition* interfaceM);
-
-void translateInterface(
-    GlobalState* globalState,
-    InterfaceDefinition* interfaceM);
-
 #endif

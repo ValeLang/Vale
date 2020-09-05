@@ -92,8 +92,8 @@ LLVMValueRef translateConstructUnknownSizeArray(
 
   auto unknownSizeArrayMT = dynamic_cast<UnknownSizeArrayT*>(constructUnknownSizeArray->arrayRefType->referend);
 
-  auto usaWrapperPtrLT = translateType(globalState, constructUnknownSizeArray->arrayRefType);
-  auto usaElementLT = translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
+  auto usaWrapperPtrLT = functionState->defaultRegion->translateType(globalState, constructUnknownSizeArray->arrayRefType);
+  auto usaElementLT = functionState->defaultRegion->translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
 
   auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 

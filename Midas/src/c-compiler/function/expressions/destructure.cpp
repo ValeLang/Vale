@@ -45,9 +45,9 @@ LLVMValueRef translateDestructure(
         memberLE);
   }
 
-  if (destructureM->structType->ownership == UnconvertedOwnership::OWN) {
+  if (destructureM->structType->ownership == Ownership::OWN) {
     discardOwningRef(FL(), globalState, functionState, blockState, builder, destructureM->structType, structLE);
-  } else if (destructureM->structType->ownership == UnconvertedOwnership::SHARE) {
+  } else if (destructureM->structType->ownership == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
 
     freeConcrete(

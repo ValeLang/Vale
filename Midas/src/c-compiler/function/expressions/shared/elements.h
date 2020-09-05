@@ -16,21 +16,21 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* structRefM,
-    UnconvertedReference* elementRefM,
+    Reference* structRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
     LLVMValueRef indexLE,
-    UnconvertedReference* resultRefM);
+    Reference* resultRefM);
 
 LLVMValueRef storeElement(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* arrayRefM,
-    UnconvertedReference* elementRefM,
+    Reference* arrayRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
@@ -48,7 +48,7 @@ LLVMValueRef getUnknownSizeArrayLength(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* arrayRefM,
+    Reference* arrayRefM,
     LLVMValueRef arrayPtrLE);
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
@@ -61,7 +61,7 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* arrayRefM,
+    Reference* arrayRefM,
     LLVMValueRef arrayRefLE);
 
 LLVMValueRef getContentsPtrFromUnknownSizeArrayWrapperPtr(

@@ -8,8 +8,8 @@
 // for convenience
 using json = nlohmann::json;
 
-UnconvertedReference* readReference(MetalCache* cache, const json& reference);
-UnconvertedOwnership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
+Reference* readReference(MetalCache* cache, const json& reference);
+Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
 Location readLocation(MetalCache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 
@@ -136,7 +136,7 @@ Referend* readReferend(MetalCache* cache, const json& referend) {
   }
 }
 
-UnconvertedReference* readReference(MetalCache* cache, const json& reference) {
+Reference* readReference(MetalCache* cache, const json& reference) {
   assert(reference.is_object());
   assert(reference["__type"] == "Ref");
 
@@ -145,7 +145,7 @@ UnconvertedReference* readReference(MetalCache* cache, const json& reference) {
   auto referend = readReferend(cache, reference["referend"]);
 //  std::string debugStr = reference["debugStr"];
 
-  return cache->getUnconvertedReference(ownership, location, referend);
+  return cache->getReference(ownership, location, referend);
 }
 
 Mutability readMutability(const json& mutability) {
@@ -170,17 +170,17 @@ Variability readVariability(const json& variability) {
   }
 }
 
-UnconvertedOwnership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
+Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
   assert(ownership.is_object());
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
-    return UnconvertedOwnership::OWN;
+    return Ownership::OWN;
   } else if (ownership["__type"].get<std::string>() == "Borrow") {
-    return UnconvertedOwnership::BORROW;
+    return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
-    return UnconvertedOwnership::WEAK;
+    return Ownership::WEAK;
   } else if (ownership["__type"].get<std::string>() == "Share") {
-    return UnconvertedOwnership::SHARE;
+    return Ownership::SHARE;
   } else {
     assert(false);
   }

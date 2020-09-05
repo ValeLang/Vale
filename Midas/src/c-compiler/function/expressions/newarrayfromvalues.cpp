@@ -34,7 +34,7 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* refM,
+    Reference* refM,
     KnownSizeArrayT* knownSizeArrayT,
     LLVMTypeRef structLT,
     const std::vector<LLVMValueRef>& membersLE,

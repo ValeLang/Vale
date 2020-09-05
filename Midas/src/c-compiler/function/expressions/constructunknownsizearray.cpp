@@ -14,7 +14,7 @@ void fillUnknownSizeArray(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* generatorType,
+    Reference* generatorType,
     LLVMValueRef generatorLE,
     LLVMValueRef sizeLE,
     LLVMValueRef usaElementsPtrLE) {
@@ -42,7 +42,7 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
     BlockState* blockState,
     LLVMBuilderRef builder,
     UnknownSizeArrayT* unknownSizeArrayT,
-    UnconvertedReference* generatorType,
+    Reference* generatorType,
     LLVMValueRef generatorLE,
     LLVMTypeRef usaWrapperPtrLT,
     LLVMTypeRef usaElementLT,

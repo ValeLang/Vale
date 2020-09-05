@@ -11,40 +11,20 @@ LLVMValueRef weakStructPtrToGenWeakInterfacePtr(
     LLVMBuilderRef builder,
     LLVMValueRef sourceRefLE,
     StructReferend* sourceStructReferendM,
-    UnconvertedReference* sourceStructTypeM,
+    Reference* sourceStructTypeM,
     InterfaceReferend* targetInterfaceReferendM,
-    UnconvertedReference* targetInterfaceTypeM);
-
-LLVMValueRef weakStructPtrToLgtiWeakInterfacePtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    LLVMValueRef sourceRefLE,
-    StructReferend* sourceStructReferendM,
-    UnconvertedReference* sourceStructTypeM,
-    InterfaceReferend* targetInterfaceReferendM,
-    UnconvertedReference* targetInterfaceTypeM);
-
-LLVMValueRef weakStructPtrToWrciWeakInterfacePtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    LLVMValueRef sourceRefLE,
-    StructReferend* sourceStructReferendM,
-    UnconvertedReference* sourceStructTypeM,
-    InterfaceReferend* targetInterfaceReferendM,
-    UnconvertedReference* targetInterfaceTypeM);
+    Reference* targetInterfaceTypeM);
 
 LLVMValueRef upcastThinPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
-    UnconvertedReference* sourceStructTypeM,
+    Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
     LLVMValueRef sourceRefLE,
 
-    UnconvertedReference* targetInterfaceTypeM,
+    Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);
 
 LLVMValueRef upcastWeakFatPtr(
@@ -52,11 +32,11 @@ LLVMValueRef upcastWeakFatPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
-    UnconvertedReference* sourceStructTypeM,
+    Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
     LLVMValueRef sourceRefLE,
 
-    UnconvertedReference* targetInterfaceTypeM,
+    Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);
 
 #endif

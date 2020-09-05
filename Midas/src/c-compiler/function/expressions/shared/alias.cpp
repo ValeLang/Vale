@@ -16,7 +16,7 @@ void acquireReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* resultRef,
+    Reference* resultRef,
     LLVMValueRef expr) {
 
   auto sourceRnd = resultRef->referend;
@@ -33,14 +33,14 @@ void acquireReference(
     switch (globalState->opt->regionOverride) {
       case RegionOverride::ASSIST:
       case RegionOverride::NAIVE_RC: {
-        if (resultRef->ownership == UnconvertedOwnership::OWN) {
+        if (resultRef->ownership == Ownership::OWN) {
           // We might be loading a member as an own if we're destructuring.
           // Don't adjust the RC, since we're only moving it.
-        } else if (resultRef->ownership == UnconvertedOwnership::BORROW) {
+        } else if (resultRef->ownership == Ownership::BORROW) {
           adjustStrongRc(from, globalState, functionState, builder, expr, resultRef, 1);
-        } else if (resultRef->ownership == UnconvertedOwnership::WEAK) {
+        } else if (resultRef->ownership == Ownership::WEAK) {
           aliasWeakRef(from, globalState, functionState, builder, expr);
-        } else if (resultRef->ownership == UnconvertedOwnership::SHARE) {
+        } else if (resultRef->ownership == Ownership::SHARE) {
           if (resultRef->location == Location::INLINE) {
             // Do nothing, we can just let inline structs disappear
           } else {
@@ -51,14 +51,14 @@ void acquireReference(
         break;
       }
       case RegionOverride::FAST: {
-        if (resultRef->ownership == UnconvertedOwnership::OWN) {
+        if (resultRef->ownership == Ownership::OWN) {
           // We might be loading a member as an own if we're destructuring.
           // Don't adjust the RC, since we're only moving it.
-        } else if (resultRef->ownership == UnconvertedOwnership::BORROW) {
+        } else if (resultRef->ownership == Ownership::BORROW) {
           // Do nothing, fast mode doesn't do stuff for borrow refs.
-        } else if (resultRef->ownership == UnconvertedOwnership::WEAK) {
+        } else if (resultRef->ownership == Ownership::WEAK) {
           aliasWeakRef(from, globalState, functionState, builder, expr);
-        } else if (resultRef->ownership == UnconvertedOwnership::SHARE) {
+        } else if (resultRef->ownership == Ownership::SHARE) {
           if (resultRef->location == Location::INLINE) {
             // Do nothing, we can just let inline structs disappear
           } else {
@@ -71,13 +71,13 @@ void acquireReference(
       case RegionOverride::RESILIENT_V0:
       case RegionOverride::RESILIENT_V1:
       case RegionOverride::RESILIENT_V2: {
-        if (resultRef->ownership == UnconvertedOwnership::OWN) {
+        if (resultRef->ownership == Ownership::OWN) {
           // We might be loading a member as an own if we're destructuring.
           // Don't adjust the RC, since we're only moving it.
-        } else if (resultRef->ownership == UnconvertedOwnership::BORROW ||
-            resultRef->ownership == UnconvertedOwnership::WEAK) {
+        } else if (resultRef->ownership == Ownership::BORROW ||
+            resultRef->ownership == Ownership::WEAK) {
           aliasWeakRef(from, globalState, functionState, builder, expr);
-        } else if (resultRef->ownership == UnconvertedOwnership::SHARE) {
+        } else if (resultRef->ownership == Ownership::SHARE) {
           if (resultRef->location == Location::INLINE) {
             // Do nothing, we can just let inline structs disappear
           } else {
@@ -103,7 +103,7 @@ void discardOwningRef(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* sourceTypeM,
+    Reference* sourceTypeM,
     LLVMValueRef exprLE) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST: {
@@ -168,7 +168,7 @@ void discard(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* sourceRef,
+    Reference* sourceRef,
     LLVMValueRef expr) {
   auto sourceRnd = sourceRef->referend;
 
@@ -177,10 +177,10 @@ void discard(
       dynamic_cast<Float*>(sourceRnd)) {
     // Do nothing for these, they're always inlined and copied.
   } else if (auto interfaceRnd = dynamic_cast<InterfaceReferend*>(sourceRnd)) {
-    if (sourceRef->ownership == UnconvertedOwnership::OWN) {
+    if (sourceRef->ownership == Ownership::OWN) {
       // We can't discard owns, they must be destructured.
       assert(false); // impl
-    } else if (sourceRef->ownership == UnconvertedOwnership::BORROW) {
+    } else if (sourceRef->ownership == Ownership::BORROW) {
       switch (globalState->opt->regionOverride) {
         case RegionOverride::FAST:
           // Do nothing, unsafe mode has no strong rc for constraint refs
@@ -208,9 +208,9 @@ void discard(
         default:
           assert(false);
       }
-    } else if (sourceRef->ownership == UnconvertedOwnership::WEAK) {
+    } else if (sourceRef->ownership == Ownership::WEAK) {
       discardWeakRef(from, globalState, functionState, builder, expr);
-    } else if (sourceRef->ownership == UnconvertedOwnership::SHARE) {
+    } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
       } else {
@@ -239,10 +239,10 @@ void discard(
   } else if (dynamic_cast<StructReferend*>(sourceRnd) ||
       dynamic_cast<KnownSizeArrayT*>(sourceRnd) ||
       dynamic_cast<UnknownSizeArrayT*>(sourceRnd)) {
-    if (sourceRef->ownership == UnconvertedOwnership::OWN) {
+    if (sourceRef->ownership == Ownership::OWN) {
       // We can't discard owns, they must be destructured.
       assert(false);
-    } else if (sourceRef->ownership == UnconvertedOwnership::BORROW) {
+    } else if (sourceRef->ownership == Ownership::BORROW) {
 
       switch (globalState->opt->regionOverride) {
         case RegionOverride::FAST:
@@ -273,9 +273,9 @@ void discard(
           assert(false);
       }
 
-    } else if (sourceRef->ownership == UnconvertedOwnership::WEAK) {
+    } else if (sourceRef->ownership == Ownership::WEAK) {
       discardWeakRef(from, globalState, functionState, builder, expr);
-    } else if (sourceRef->ownership == UnconvertedOwnership::SHARE) {
+    } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
@@ -293,7 +293,7 @@ void discard(
       }
     } else assert(false);
   } else if (dynamic_cast<Str*>(sourceRnd)) {
-    assert(sourceRef->ownership == UnconvertedOwnership::SHARE);
+    assert(sourceRef->ownership == Ownership::SHARE);
     auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
     buildIf(
         functionState,

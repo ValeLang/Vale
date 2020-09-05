@@ -1,46 +1,43 @@
-#ifndef REGION_IREGION_H_
-#define REGION_IREGION_H_
+#ifndef REGION_ASSIST_ASSIST_H_
+#define REGION_ASSIST_ASSIST_H_
 
 #include <llvm-c/Core.h>
 #include <function/expressions/shared/afl.h>
 #include "globalstate.h"
 #include "function/function.h"
+#include "../iregion.h"
 
-class FunctionState;
-class BlockState;
-class GlobalState;
-
-class IRegion {
+class Assist : public IRegion {
 public:
-  virtual ~IRegion() = default;
+  ~Assist() override = default;
 
-  virtual LLVMValueRef allocate(
+  LLVMValueRef allocate(
       AreaAndFileAndLine from,
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* desiredReference,
-      const std::vector<LLVMValueRef>& membersLE) = 0;
+      const std::vector<LLVMValueRef>& membersLE) override;
 
-  virtual LLVMValueRef alias(
+  LLVMValueRef alias(
       AreaAndFileAndLine from,
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRef,
       Reference* targetRef,
-      LLVMValueRef expr) = 0;
+      LLVMValueRef expr) override;
 
-  virtual void dealias(
+  void dealias(
       AreaAndFileAndLine from,
       GlobalState* globalState,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* sourceRef,
-      LLVMValueRef expr) = 0;
+      LLVMValueRef expr) override;
 
-  virtual LLVMValueRef loadMember(
+  LLVMValueRef loadMember(
       AreaAndFileAndLine from,
       GlobalState* globalState,
       FunctionState* functionState,
@@ -50,9 +47,9 @@ public:
       Mutability mutability,
       Reference* memberType,
       int memberIndex,
-      const std::string& memberName) = 0;
+      const std::string& memberName) override;
 
-  virtual LLVMValueRef storeMember(
+  LLVMValueRef storeMember(
       AreaAndFileAndLine from,
       GlobalState* globalState,
       FunctionState* functionState,
@@ -64,22 +61,23 @@ public:
       Reference* memberType,
       int memberIndex,
       const std::string& memberName,
-      LLVMValueRef sourceLE) = 0;
+      LLVMValueRef sourceLE) override;
 
-  virtual std::vector<LLVMValueRef> destructure(
+  std::vector<LLVMValueRef> destructure(
       GlobalState* globalState,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structType,
-      LLVMValueRef structLE) = 0;
+      LLVMValueRef structLE) override;
 
   // Suitable for passing in to an interface method
-  virtual LLVMValueRef getConcreteRefFromInterfaceRef(
+  LLVMValueRef getConcreteRefFromInterfaceRef(
       LLVMBuilderRef builder,
-      LLVMValueRef refLE) = 0;
+      LLVMValueRef refLE) override;
 
-  virtual LLVMValueRef upcastWeak(
+
+  LLVMValueRef upcastWeak(
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -87,9 +85,9 @@ public:
       StructReferend* sourceStructReferendM,
       Reference* sourceStructTypeM,
       InterfaceReferend* targetInterfaceReferendM,
-      Reference* targetInterfaceTypeM) = 0;
+      Reference* targetInterfaceTypeM) override;
 
-  virtual LLVMValueRef upcast(
+  LLVMValueRef upcast(
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -99,9 +97,9 @@ public:
       LLVMValueRef sourceStructLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) = 0;
+      InterfaceReferend* targetInterfaceReferendM) override;
 
-  virtual LLVMValueRef lockWeak(
+  LLVMValueRef lockWeak(
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -113,83 +111,83 @@ public:
       Reference* sourceWeakRefMT,
       LLVMValueRef sourceWeakRefLE,
       std::function<LLVMValueRef(LLVMBuilderRef, LLVMValueRef)> buildThen,
-      std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) = 0;
+      std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) override;
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  virtual LLVMValueRef constructString(
+  LLVMValueRef constructString(
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      LLVMValueRef lengthLE) = 0;
+      LLVMValueRef lengthLE) override;
 
   // Returns a LLVMValueRef for a pointer to the strings contents bytes
-  virtual LLVMValueRef getStringBytesPtr(
+  LLVMValueRef getStringBytesPtr(
       LLVMBuilderRef builder,
-      LLVMValueRef stringRefLE) = 0;
+      LLVMValueRef stringRefLE) override;
 
-  virtual LLVMValueRef getStringLength(
+  LLVMValueRef getStringLength(
       LLVMBuilderRef builder,
-      LLVMValueRef stringRefLE) = 0;
+      LLVMValueRef stringRefLE) override;
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  virtual LLVMValueRef constructKnownSizeArray(
+  LLVMValueRef constructKnownSizeArray(
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
       KnownSizeArrayT* referendM,
-      const std::vector<LLVMValueRef>& membersLE) = 0;
+      const std::vector<LLVMValueRef>& membersLE) override;
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  virtual LLVMValueRef constructUnknownSizeArray(
+  LLVMValueRef constructUnknownSizeArray(
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* usaMT,
       LLVMValueRef sizeLE,
-      const std::string& typeName) = 0;
+      const std::string& typeName) override;
 
   // should expose a dereference thing instead
-//  virtual LLVMValueRef getKnownSizeArrayElementsPtr(
+//  LLVMValueRef getKnownSizeArrayElementsPtr(
 //      LLVMBuilderRef builder,
-//      LLVMValueRef knownSizeArrayWrapperPtrLE) = 0;
-//  virtual LLVMValueRef getUnknownSizeArrayElementsPtr(
+//      LLVMValueRef knownSizeArrayWrapperPtrLE) override;
+//  LLVMValueRef getUnknownSizeArrayElementsPtr(
 //      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) = 0;
-//  virtual LLVMValueRef getUnknownSizeArrayLength(
+//      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
+//  LLVMValueRef getUnknownSizeArrayLength(
 //      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) = 0;
+//      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
 
-  virtual void destroyArray(
+  void destroyArray(
       GlobalState* globalState,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* arrayType,
-      LLVMValueRef arrayWrapperLE) = 0;
+      LLVMValueRef arrayWrapperLE) override;
 
-  virtual LLVMTypeRef getKnownSizeArrayRefType(
+  LLVMTypeRef getKnownSizeArrayRefType(
       GlobalState* globalState,
       Reference* referenceM,
-      KnownSizeArrayT* knownSizeArrayMT) = 0;
+      KnownSizeArrayT* knownSizeArrayMT) override;
 
-  virtual LLVMTypeRef getUnknownSizeArrayRefType(
+  LLVMTypeRef getUnknownSizeArrayRefType(
       GlobalState* globalState,
       Reference* referenceM,
-      UnknownSizeArrayT* unknownSizeArrayMT) = 0;
+      UnknownSizeArrayT* unknownSizeArrayMT) override;
 
-  virtual void checkValidReference(
+  void checkValidReference(
       AreaAndFileAndLine checkerAFL,
       GlobalState* globalState,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      LLVMValueRef refLE) = 0;
+      LLVMValueRef refLE) override;
 
-  virtual LLVMValueRef loadElement(
+  LLVMValueRef loadElement(
       GlobalState* globalState,
       FunctionState* functionState,
       BlockState* blockState,
@@ -199,9 +197,9 @@ public:
       LLVMValueRef sizeIntLE,
       LLVMValueRef arrayCRefLE,
       Mutability mutability,
-      LLVMValueRef indexIntLE) = 0;
+      LLVMValueRef indexIntLE) override;
 
-  virtual LLVMValueRef storeElement(
+  LLVMValueRef storeElement(
       GlobalState* globalState,
       FunctionState* functionState,
       BlockState* blockState,
@@ -212,46 +210,44 @@ public:
       LLVMValueRef arrayCRefLE,
       Mutability mutability,
       LLVMValueRef indexIntLE,
-      LLVMValueRef sourceLE) = 0;
+      LLVMValueRef sourceLE) override;
 
 
 
-  virtual LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) = 0;
+  LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) override;
 
 
-  virtual void declareEdge(
+  void declareEdge(
       GlobalState* globalState,
-      Edge* edge) = 0;
+      Edge* edge) override;
 
-  virtual void translateEdge(
+  void translateEdge(
       GlobalState* globalState,
-      Edge* edge) = 0;
+      Edge* edge) override;
 
-  virtual LLVMTypeRef getStructRefType(
+  LLVMTypeRef getStructRefType(
       GlobalState* globalState,
       Reference* refM,
-      StructReferend* structReferendM) = 0;
+      StructReferend* structReferendM) override;
 
-  virtual void translateStruct(
+  void translateStruct(
       GlobalState* globalState,
-      StructDefinition* structM) = 0;
+      StructDefinition* structM) override;
 
-  virtual void declareStruct(
+  void declareStruct(
       GlobalState* globalState,
-      StructDefinition* structM) = 0;
+      StructDefinition* structM) override;
 
-  virtual void translateInterface(
+  void translateInterface(
       GlobalState* globalState,
-      InterfaceDefinition* interfaceM) = 0;
+      InterfaceDefinition* interfaceM) override;
 
 
-  virtual void declareInterface(
+  void declareInterface(
       GlobalState* globalState,
-      InterfaceDefinition* interfaceM) = 0;
+      InterfaceDefinition* interfaceM) override;
 
-  virtual LLVMTypeRef getStringRefType() const = 0;
-
-//  LLVMValueRef initStr, addStr, eqStr, printStr;
+  LLVMTypeRef getStringRefType() const override;
 };
 
 #endif

@@ -50,12 +50,12 @@ LLVMValueRef loadMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* structRefM,
+    Reference* structRefM,
     LLVMValueRef structRefLE,
     Mutability containingStructMutability,
-    UnconvertedReference* memberType,
+    Reference* memberType,
     int memberIndex,
-    UnconvertedReference* resultType,
+    Reference* resultType,
     const std::string& memberName) {
 
   LLVMValueRef sourceRefLE = nullptr;
@@ -69,12 +69,12 @@ LLVMValueRef loadMember(
             LLVMBuildExtractValue(
                 builder, structRefLE, memberIndex, memberName.c_str());
       } else if (structRefM->location == Location::YONDER) {
-        if (structRefM->ownership == UnconvertedOwnership::OWN || structRefM->ownership == UnconvertedOwnership::BORROW || structRefM->ownership == UnconvertedOwnership::SHARE) {
+        if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::SHARE) {
           LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
           sourceRefLE =
               loadInnerStructMember(
                   builder, innerStructPtrLE, memberIndex, memberName);
-        } else if (structRefM->ownership == UnconvertedOwnership::WEAK) {
+        } else if (structRefM->ownership == Ownership::WEAK) {
           auto thing = lockWeakRef(from, globalState, functionState, builder, structRefM,
               structRefLE);
           LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
@@ -96,12 +96,12 @@ LLVMValueRef loadMember(
             LLVMBuildExtractValue(
                 builder, structRefLE, memberIndex, memberName.c_str());
       } else if (structRefM->location == Location::YONDER) {
-        if (structRefM->ownership == UnconvertedOwnership::OWN || structRefM->ownership == UnconvertedOwnership::SHARE) {
+        if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::SHARE) {
           LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
           sourceRefLE =
               loadInnerStructMember(
                   builder, innerStructPtrLE, memberIndex, memberName);
-        } else if (structRefM->ownership == UnconvertedOwnership::BORROW || structRefM->ownership == UnconvertedOwnership::WEAK) {
+        } else if (structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::WEAK) {
           auto thing = lockWeakRef(from, globalState, functionState, builder, structRefM,
               structRefLE);
           LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
@@ -131,13 +131,13 @@ LLVMValueRef swapMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    UnconvertedReference* structRefM,
+    Reference* structRefM,
     LLVMValueRef structRefLE,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newMemberLE) {
 
-  assert(structRefM->ownership == UnconvertedOwnership::BORROW);
+  assert(structRefM->ownership == Ownership::BORROW);
 
   LLVMValueRef objPtrLE;
   switch (globalState->opt->regionOverride) {

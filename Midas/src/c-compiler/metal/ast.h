@@ -151,12 +151,12 @@ class StructMember {
 public:
     std::string name;
     Variability variability;
-    UnconvertedReference* type;
+    Reference* type;
 
     StructMember(
         std::string name_,
         Variability variability_,
-        UnconvertedReference* type_) :
+        Reference* type_) :
         name(name_),
         variability(variability_),
         type(type_) {}
@@ -202,13 +202,13 @@ public:
 class Prototype {
 public:
     Name* name;
-    std::vector<UnconvertedReference*> params;
-    UnconvertedReference* returnType;
+    std::vector<Reference*> params;
+    Reference* returnType;
 
     Prototype(
         Name* name_,
-        std::vector<UnconvertedReference*> params_,
-        UnconvertedReference* returnType_) :
+        std::vector<Reference*> params_,
+        Reference* returnType_) :
       name(name_),
       params(std::move(params_)),
       returnType(returnType_) {}

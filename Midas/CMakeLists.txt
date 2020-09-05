@@ -99,6 +99,11 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/controlblock.cpp
 
 		src/c-compiler/region/common/common.cpp
+		src/c-compiler/region/common/lgtweaks/lgtweaks.cpp
+		src/c-compiler/region/common/wrcweaks/wrcweaks.cpp
+		src/c-compiler/region/common/hgm/hgm.cpp
+		src/c-compiler/region/common/fatweaks/fatweaks.cpp
+		src/c-compiler/region/assist/assist.cpp
 		src/c-compiler/region/regions.cpp
 
 		src/c-compiler/utils/fileio.cpp

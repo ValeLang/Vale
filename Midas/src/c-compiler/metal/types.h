@@ -11,7 +11,7 @@ class Name;
 class CodeLocation;
 
 // Defined in this file
-class UnconvertedReference;
+class Reference;
 class Referend;
 class Int;
 class Bool;
@@ -25,7 +25,7 @@ class RawArrayT;
 class KnownSizeArrayT;
 class UnknownSizeArrayT;
 
-enum class UnconvertedOwnership {
+enum class Ownership {
   OWN,
   BORROW,
   WEAK,
@@ -69,15 +69,15 @@ enum class Variability {
 };
 
 // Interned
-class UnconvertedReference {
+class Reference {
 public:
-  UnconvertedOwnership ownership;
+  Ownership ownership;
   Location location;
   Referend* referend;
 //  std::string debugStr;
 
-  UnconvertedReference(
-      UnconvertedOwnership ownership_,
+  Reference(
+      Ownership ownership_,
       Location location_,
       Referend* referend_
 //      , const std::string& debugStr_
@@ -88,7 +88,7 @@ public:
 //    , debugStr(debugStr_)
   {
 
-    if (ownership == UnconvertedOwnership::BORROW || ownership == UnconvertedOwnership::WEAK) {
+    if (ownership == Ownership::BORROW || ownership == Ownership::WEAK) {
       assert(location == Location::YONDER);
     }
   }
@@ -149,11 +149,11 @@ public:
 class RawArrayT {
 public:
   Mutability mutability;
-  UnconvertedReference* elementType;
+  Reference* elementType;
 
   RawArrayT(
       Mutability mutability_,
-      UnconvertedReference* elementType_) :
+      Reference* elementType_) :
       mutability(mutability_),
       elementType(elementType_) {}
 };

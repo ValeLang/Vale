@@ -19,8 +19,8 @@ LLVMValueRef translateLocalLoad(
   auto localName = localLoad->localName;
   auto localType = local->type;
   auto targetOwnership = localLoad->targetOwnership;
-  auto targetLocation = targetOwnership == UnconvertedOwnership::SHARE ? localType->location : Location::YONDER;
-  auto resultType = globalState->metalCache.getUnconvertedReference(targetOwnership, targetLocation, localType->referend);
+  auto targetLocation = targetOwnership == Ownership::SHARE ? localType->location : Location::YONDER;
+  auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, localType->referend);
 
   auto localAddr = blockState->getLocalAddr(localId);
 

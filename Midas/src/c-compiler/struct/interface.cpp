@@ -42,12 +42,12 @@ LLVMTypeRef translateInterfaceMethodToFunctionType(
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
       switch (paramsMT[method->virtualParamIndex]->ownership) {
-        case UnconvertedOwnership::BORROW:
-        case UnconvertedOwnership::OWN:
-        case UnconvertedOwnership::SHARE:
+        case Ownership::BORROW:
+        case Ownership::OWN:
+        case Ownership::SHARE:
           paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
           break;
-        case UnconvertedOwnership::WEAK:
+        case Ownership::WEAK:
           paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
           break;
       }
@@ -57,12 +57,12 @@ LLVMTypeRef translateInterfaceMethodToFunctionType(
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
       switch (paramsMT[method->virtualParamIndex]->ownership) {
-        case UnconvertedOwnership::OWN:
-        case UnconvertedOwnership::SHARE:
+        case Ownership::OWN:
+        case Ownership::SHARE:
           paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
           break;
-        case UnconvertedOwnership::BORROW:
-        case UnconvertedOwnership::WEAK:
+        case Ownership::BORROW:
+        case Ownership::WEAK:
           paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
           break;
       }

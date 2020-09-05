@@ -23,7 +23,7 @@ LLVMValueRef getControlBlockPtrFromInterfaceRef(
 LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    UnconvertedReference* refM,
+    Reference* refM,
     LLVMValueRef controlBlockPtr);
 
 LLVMValueRef getObjIdFromControlBlockPtr(
@@ -36,7 +36,7 @@ LLVMValueRef getObjIdFromControlBlockPtr(
 LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    UnconvertedReference* refM,
+    Reference* refM,
     LLVMValueRef controlBlockPtrLE);
 
 // Returns object ID

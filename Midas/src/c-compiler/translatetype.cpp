@@ -3,15 +3,15 @@
 
 #include "translatetype.h"
 
-LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* referenceM) {
+LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
   if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
-    assert(referenceM->ownership == UnconvertedOwnership::SHARE);
+    assert(referenceM->ownership == Ownership::SHARE);
     return LLVMInt64Type();
   } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
-    assert(referenceM->ownership == UnconvertedOwnership::SHARE);
+    assert(referenceM->ownership == Ownership::SHARE);
     return LLVMInt1Type();
   } else if (dynamic_cast<Str*>(referenceM->referend) != nullptr) {
-    assert(referenceM->ownership == UnconvertedOwnership::SHARE);
+    assert(referenceM->ownership == Ownership::SHARE);
     return LLVMPointerType(globalState->stringWrapperStructL, 0);
   } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
     return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
@@ -25,9 +25,9 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
       if (referenceM->location == Location::INLINE) {
         return knownSizeArrayCountedStructLT;
       } else {
-        if (referenceM->ownership == UnconvertedOwnership::OWN) {
+        if (referenceM->ownership == Ownership::OWN) {
           return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-        } else if (referenceM->ownership == UnconvertedOwnership::BORROW) {
+        } else if (referenceM->ownership == Ownership::BORROW) {
           switch (globalState->opt->regionOverride) {
             case RegionOverride::ASSIST:
             case RegionOverride::NAIVE_RC:
@@ -45,9 +45,9 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
               assert(false);
               return nullptr;
           }
-        } else if (referenceM->ownership == UnconvertedOwnership::SHARE) {
+        } else if (referenceM->ownership == Ownership::SHARE) {
           return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-        } else if (referenceM->ownership == UnconvertedOwnership::WEAK) {
+        } else if (referenceM->ownership == Ownership::WEAK) {
           return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
         } else assert(false);
       }
@@ -55,9 +55,9 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
   } else if (auto unknownSizeArrayMT =
       dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
     auto unknownSizeArrayCountedStructLT = globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
-    if (referenceM->ownership == UnconvertedOwnership::OWN) {
+    if (referenceM->ownership == Ownership::OWN) {
       return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-    } else if (referenceM->ownership == UnconvertedOwnership::BORROW) {
+    } else if (referenceM->ownership == Ownership::BORROW) {
       switch (globalState->opt->regionOverride) {
         case RegionOverride::ASSIST:
         case RegionOverride::NAIVE_RC:
@@ -73,9 +73,9 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
           assert(false);
           return nullptr;
       }
-    } else if (referenceM->ownership == UnconvertedOwnership::SHARE) {
+    } else if (referenceM->ownership == Ownership::SHARE) {
       return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-    } else if (referenceM->ownership == UnconvertedOwnership::WEAK) {
+    } else if (referenceM->ownership == Ownership::WEAK) {
       return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
     } else {
       assert(false);
@@ -87,9 +87,9 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
     auto structM = globalState->program->getStruct(structReferend->fullName);
     if (structM->mutability == Mutability::MUTABLE) {
       auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
-      if (referenceM->ownership == UnconvertedOwnership::OWN) {
+      if (referenceM->ownership == Ownership::OWN) {
         return LLVMPointerType(countedStructL, 0);
-      } else if (referenceM->ownership == UnconvertedOwnership::BORROW) {
+      } else if (referenceM->ownership == Ownership::BORROW) {
         switch (globalState->opt->regionOverride) {
           case RegionOverride::ASSIST:
           case RegionOverride::NAIVE_RC:
@@ -107,7 +107,7 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
             assert(false);
             return nullptr;
         }
-      } else if (referenceM->ownership == UnconvertedOwnership::WEAK) {
+      } else if (referenceM->ownership == Ownership::WEAK) {
         return globalState->getStructWeakRefStruct(structM->name);
       } else {
         assert(false);
@@ -128,9 +128,9 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
     auto interfaceRefStructL =
         globalState->getInterfaceRefStruct(interfaceReferend->fullName);
     if (interfaceM->mutability == Mutability::MUTABLE) {
-      if (referenceM->ownership == UnconvertedOwnership::OWN) {
+      if (referenceM->ownership == Ownership::OWN) {
         return interfaceRefStructL;
-      } else if (referenceM->ownership == UnconvertedOwnership::BORROW) {
+      } else if (referenceM->ownership == Ownership::BORROW) {
         switch (globalState->opt->regionOverride) {
           case RegionOverride::ASSIST:
           case RegionOverride::NAIVE_RC:
@@ -146,7 +146,7 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
             assert(false);
             return nullptr;
         }
-      } else if (referenceM->ownership == UnconvertedOwnership::WEAK) {
+      } else if (referenceM->ownership == Ownership::WEAK) {
         return globalState->getInterfaceWeakRefStruct(interfaceM->name);
       } else {
         assert(false);
@@ -162,7 +162,7 @@ LLVMTypeRef translateType(GlobalState* globalState, UnconvertedReference* refere
   }
 }
 
-std::vector<LLVMTypeRef> translateTypes(GlobalState* globalState, std::vector<UnconvertedReference*> referencesM) {
+std::vector<LLVMTypeRef> translateTypes(GlobalState* globalState, std::vector<Reference*> referencesM) {
   std::vector<LLVMTypeRef> result;
   for (auto referenceM : referencesM) {
     result.push_back(translateType(globalState, referenceM));
@@ -170,20 +170,20 @@ std::vector<LLVMTypeRef> translateTypes(GlobalState* globalState, std::vector<Un
   return result;
 }
 
-Mutability ownershipToMutability(UnconvertedOwnership ownership) {
+Mutability ownershipToMutability(Ownership ownership) {
   switch (ownership) {
-    case UnconvertedOwnership::SHARE:
+    case Ownership::SHARE:
       return Mutability::IMMUTABLE;
-    case UnconvertedOwnership::BORROW:
-    case UnconvertedOwnership::OWN:
-    case UnconvertedOwnership::WEAK:
+    case Ownership::BORROW:
+    case Ownership::OWN:
+    case Ownership::WEAK:
       return Mutability::MUTABLE;
     default:
       assert(false);
   }
 }
 
-Mutability getMutability(GlobalState* globalState, UnconvertedReference* referenceM) {
+Mutability getMutability(GlobalState* globalState, Reference* referenceM) {
   if (dynamic_cast<Int*>(referenceM->referend) ||
       dynamic_cast<Bool*>(referenceM->referend) ||
       dynamic_cast<Float*>(referenceM->referend)) {

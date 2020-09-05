@@ -13,17 +13,6 @@
 #include "utils/fileio.h"
 
 
-struct AreaAndFileAndLine {
-  std::string area;
-  std::string file;
-  int line;
-};
-
-// File and Line
-#define FL() (AreaAndFileAndLine{ "", __FILE__, __LINE__ })
-// Area and File and Line
-#define AFL(area) (AreaAndFileAndLine{ (area), __FILE__, __LINE__ })
-
 LLVMValueRef makeNever();
 LLVMTypeRef makeNeverType();
 
@@ -47,7 +36,7 @@ void acquireReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* sourceRef,
+    Reference* sourceRef,
     LLVMValueRef expr);
 
 void discard(
@@ -56,7 +45,7 @@ void discard(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* sourceRef,
+    Reference* sourceRef,
     LLVMValueRef expr);
 
 
@@ -85,13 +74,13 @@ LLVMValueRef adjustStrongRc(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE,
-    UnconvertedReference* refM,
+    Reference* refM,
     int amount);
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    UnconvertedReference* refM,
+    Reference* refM,
     LLVMValueRef exprLE);
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
@@ -160,7 +149,7 @@ LLVMValueRef buildInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* virtualParamMT,
+    Reference* virtualParamMT,
     std::vector<LLVMValueRef> argExprsLE,
     int virtualParamIndex,
     int indexInEdge);
@@ -192,7 +181,7 @@ void checkValidReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* refM,
+    Reference* refM,
     LLVMValueRef refLE);
 
 
@@ -213,8 +202,8 @@ LLVMValueRef upgradeLoadResultToRefWithTargetOwnership(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* sourceType,
-    UnconvertedReference* targetType,
+    Reference* sourceType,
+    Reference* targetType,
     LLVMValueRef sourceRefLE);
 
 LLVMValueRef makeInterfaceRefStruct(
@@ -242,7 +231,7 @@ void discardOwningRef(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* sourceTypeM,
+    Reference* sourceTypeM,
     LLVMValueRef exprLE);
 
 LLVMValueRef upcast(
@@ -250,11 +239,11 @@ LLVMValueRef upcast(
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
-    UnconvertedReference* sourceStructTypeM,
+    Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
     LLVMValueRef sourceRefLE,
 
-    UnconvertedReference* targetInterfaceTypeM,
+    Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);
 
 #endif

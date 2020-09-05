@@ -125,14 +125,16 @@ public:
   LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
-  Assist defaultRegion;
+  IRegion* defaultRegion;
 
   FunctionState(
       Function* containingFuncM_,
+      IRegion* defaultRegion_,
       LLVMValueRef containingFuncL_,
       LLVMTypeRef returnTypeL_,
       LLVMBuilderRef localsBuilder_) :
     containingFuncM(containingFuncM_),
+    defaultRegion(defaultRegion_),
     containingFuncL(containingFuncL_),
     returnTypeL(returnTypeL_),
     localsBuilder(localsBuilder_) {}
@@ -144,10 +146,12 @@ public:
 
 void translateFunction(
     GlobalState* globalState,
+    IRegion* region,
     Function* functionM);
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
+    IRegion* region,
     Function* functionM);
 
 #endif

@@ -3,8 +3,6 @@
 
 #include <llvm-c/Core.h>
 #include <function/expressions/shared/afl.h>
-#include "globalstate.h"
-#include "function/function.h"
 
 class FunctionState;
 class BlockState;
@@ -214,9 +212,23 @@ public:
       LLVMValueRef indexIntLE,
       LLVMValueRef sourceLE) = 0;
 
-
-
   virtual LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) = 0;
+
+  virtual void translateKnownSizeArray(
+      GlobalState* globalState,
+      KnownSizeArrayT* knownSizeArrayMT) = 0;
+
+  virtual void declareKnownSizeArray(
+      GlobalState* globalState,
+      KnownSizeArrayT* knownSizeArrayMT) = 0;
+
+  virtual void declareUnknownSizeArray(
+      GlobalState* globalState,
+      UnknownSizeArrayT* unknownSizeArrayMT) = 0;
+
+  virtual void translateUnknownSizeArray(
+      GlobalState* globalState,
+      UnknownSizeArrayT* unknownSizeArrayMT) = 0;
 
 
   virtual void declareEdge(
@@ -243,7 +255,6 @@ public:
   virtual void translateInterface(
       GlobalState* globalState,
       InterfaceDefinition* interfaceM) = 0;
-
 
   virtual void declareInterface(
       GlobalState* globalState,

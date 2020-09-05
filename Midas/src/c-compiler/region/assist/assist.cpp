@@ -117,7 +117,7 @@ LLVMValueRef Assist::lockWeak(
 
   auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT, sourceWeakRefLE);
 
-  auto resultOptTypeLE = ::translateType(globalState, resultOptTypeM);
+  auto resultOptTypeLE = translateType(globalState, resultOptTypeM);
 
   return buildIfElse(functionState, builder, isAliveLE, resultOptTypeLE, false, false,
       [this, globalState, functionState, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
@@ -277,50 +277,169 @@ LLVMValueRef Assist::storeElement(
 }
 
 LLVMTypeRef Assist::translateType(GlobalState* globalState, Reference* referenceM) {
-  assert(false);
+  if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
+    assert(referenceM->ownership == Ownership::SHARE);
+    return LLVMInt64Type();
+  } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
+    assert(referenceM->ownership == Ownership::SHARE);
+    return LLVMInt1Type();
+  } else if (dynamic_cast<Str*>(referenceM->referend) != nullptr) {
+    assert(referenceM->ownership == Ownership::SHARE);
+    return LLVMPointerType(globalState->stringWrapperStructL, 0);
+  } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
+    return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
+  } else if (auto knownSizeArrayMT =
+      dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
+    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+      assert(false);
+      return nullptr;
+    } else {
+      auto knownSizeArrayCountedStructLT = globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
+      if (referenceM->location == Location::INLINE) {
+        return knownSizeArrayCountedStructLT;
+      } else {
+        if (referenceM->ownership == Ownership::OWN) {
+          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+        } else if (referenceM->ownership == Ownership::BORROW) {
+          switch (globalState->opt->regionOverride) {
+            case RegionOverride::ASSIST:
+            case RegionOverride::NAIVE_RC:
+            case RegionOverride::FAST: {
+              return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+              break;
+            }
+            case RegionOverride::RESILIENT_V0:
+            case RegionOverride::RESILIENT_V1:
+            case RegionOverride::RESILIENT_V2: {
+              return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
+              break;
+            }
+            default:
+              assert(false);
+              return nullptr;
+          }
+        } else if (referenceM->ownership == Ownership::SHARE) {
+          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
+        } else if (referenceM->ownership == Ownership::WEAK) {
+          return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
+        } else assert(false);
+      }
+    }
+  } else if (auto unknownSizeArrayMT =
+      dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
+    auto unknownSizeArrayCountedStructLT = globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
+    if (referenceM->ownership == Ownership::OWN) {
+      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+    } else if (referenceM->ownership == Ownership::BORROW) {
+      switch (globalState->opt->regionOverride) {
+        case RegionOverride::ASSIST:
+        case RegionOverride::NAIVE_RC:
+        case RegionOverride::FAST:
+          return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+          break;
+        case RegionOverride::RESILIENT_V0:
+        case RegionOverride::RESILIENT_V1:
+        case RegionOverride::RESILIENT_V2:
+          return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
+          break;
+        default:
+          assert(false);
+          return nullptr;
+      }
+    } else if (referenceM->ownership == Ownership::SHARE) {
+      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+    } else if (referenceM->ownership == Ownership::WEAK) {
+      return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
+    } else {
+      assert(false);
+      return nullptr;
+    }
+  } else if (auto structReferend =
+      dynamic_cast<StructReferend*>(referenceM->referend)) {
+
+    auto structM = globalState->program->getStruct(structReferend->fullName);
+    if (structM->mutability == Mutability::MUTABLE) {
+      auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
+      if (referenceM->ownership == Ownership::OWN) {
+        return LLVMPointerType(countedStructL, 0);
+      } else if (referenceM->ownership == Ownership::BORROW) {
+        switch (globalState->opt->regionOverride) {
+          case RegionOverride::ASSIST:
+          case RegionOverride::NAIVE_RC:
+          case RegionOverride::FAST: {
+            return LLVMPointerType(countedStructL, 0);
+            break;
+          }
+          case RegionOverride::RESILIENT_V0:
+          case RegionOverride::RESILIENT_V1:
+          case RegionOverride::RESILIENT_V2: {
+            return globalState->getStructWeakRefStruct(structM->name);
+            break;
+          }
+          default:
+            assert(false);
+            return nullptr;
+        }
+      } else if (referenceM->ownership == Ownership::WEAK) {
+        return globalState->getStructWeakRefStruct(structM->name);
+      } else {
+        assert(false);
+        return nullptr;
+      }
+    } else {
+      auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
+      if (referenceM->location == Location::INLINE) {
+        return globalState->getInnerStruct(structReferend->fullName);
+      } else {
+        auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
+        return LLVMPointerType(countedStructL, 0);
+      }
+    }
+  } else if (auto interfaceReferend =
+      dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
+    auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
+    auto interfaceRefStructL =
+        globalState->getInterfaceRefStruct(interfaceReferend->fullName);
+    if (interfaceM->mutability == Mutability::MUTABLE) {
+      if (referenceM->ownership == Ownership::OWN) {
+        return interfaceRefStructL;
+      } else if (referenceM->ownership == Ownership::BORROW) {
+        switch (globalState->opt->regionOverride) {
+          case RegionOverride::ASSIST:
+          case RegionOverride::NAIVE_RC:
+          case RegionOverride::FAST: {
+            return interfaceRefStructL;
+          }
+          case RegionOverride::RESILIENT_V0:
+          case RegionOverride::RESILIENT_V1:
+          case RegionOverride::RESILIENT_V2: {
+            return globalState->getInterfaceWeakRefStruct(interfaceM->name);
+          }
+          default:
+            assert(false);
+            return nullptr;
+        }
+      } else if (referenceM->ownership == Ownership::WEAK) {
+        return globalState->getInterfaceWeakRefStruct(interfaceM->name);
+      } else {
+        assert(false);
+        return nullptr;
+      }
+    } else {
+      return interfaceRefStructL;
+    }
+  } else {
+    std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
+    assert(false);
+    return nullptr;
+  }
 }
 
-void Assist::declareEdge(
-    GlobalState* globalState,
-    Edge* edge) {
-  assert(false);
-}
-
-void Assist::translateEdge(
-    GlobalState* globalState,
-    Edge* edge) {
-  assert(false);
-}
 
 LLVMTypeRef Assist::getStructRefType(
     GlobalState* globalState,
     Reference* refM,
     StructReferend* structReferendM) {
-  assert(false);
-}
-
-void Assist::translateStruct(
-    GlobalState* globalState,
-    StructDefinition* structM) {
-  assert(false);
-}
-
-void Assist::declareStruct(
-    GlobalState* globalState,
-    StructDefinition* structM) {
-  assert(false);
-}
-
-void Assist::translateInterface(
-    GlobalState* globalState,
-    InterfaceDefinition* interfaceM) {
-  assert(false);
-}
-
-
-void Assist::declareInterface(
-    GlobalState* globalState,
-    InterfaceDefinition* interfaceM) {
   assert(false);
 }
 
@@ -361,4 +480,326 @@ LLVMValueRef Assist::upcastWeak(
       assert(false);
       break;
   }
+}
+
+void Assist::declareKnownSizeArray(
+    GlobalState* globalState,
+    KnownSizeArrayT* knownSizeArrayMT) {
+
+  auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), knownSizeArrayMT->name->name.c_str());
+  globalState->knownSizeArrayWrapperStructs.emplace(knownSizeArrayMT->name->name, countedStruct).first;
+
+  auto weakRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (knownSizeArrayMT->name->name + "w").c_str());
+  assert(globalState->knownSizeArrayWeakRefStructs.count(knownSizeArrayMT->name->name) == 0);
+  globalState->knownSizeArrayWeakRefStructs.emplace(knownSizeArrayMT->name->name, weakRefStructL);
+}
+
+void Assist::declareUnknownSizeArray(
+    GlobalState* globalState,
+    UnknownSizeArrayT* unknownSizeArrayMT) {
+  auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "rc").c_str());
+  globalState->unknownSizeArrayWrapperStructs.emplace(unknownSizeArrayMT->name->name, countedStruct).first;
+
+  auto weakRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "w").c_str());
+  assert(globalState->unknownSizeArrayWeakRefStructs.count(unknownSizeArrayMT->name->name) == 0);
+  globalState->unknownSizeArrayWeakRefStructs.emplace(unknownSizeArrayMT->name->name, weakRefStructL);
+}
+
+void Assist::translateUnknownSizeArray(
+    GlobalState* globalState,
+    UnknownSizeArrayT* unknownSizeArrayMT) {
+
+  auto unknownSizeArrayWrapperStruct = globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
+  auto elementLT =
+      translateType(
+          globalState,
+          unknownSizeArrayMT->rawArray->elementType);
+  auto innerArrayLT = LLVMArrayType(elementLT, 0);
+
+  std::vector<LLVMTypeRef> elementsL;
+
+  if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else assert(false);
+  } else if (unknownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
+    elementsL.push_back(globalState->immControlBlockStructL);
+  } else assert(false);
+
+  elementsL.push_back(LLVMInt64Type());
+
+  elementsL.push_back(innerArrayLT);
+
+  LLVMStructSetBody(unknownSizeArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
+
+  auto arrayWeakRefStructL = globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
+  makeUnknownSizeArrayWeakRefStruct(globalState, unknownSizeArrayWrapperStruct, arrayWeakRefStructL);
+}
+
+void Assist::translateKnownSizeArray(
+    GlobalState* globalState,
+    KnownSizeArrayT* knownSizeArrayMT) {
+  auto knownSizeArrayWrapperStruct = globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
+
+  auto elementLT =
+      translateType(
+          globalState,
+          knownSizeArrayMT->rawArray->elementType);
+  auto innerArrayLT = LLVMArrayType(elementLT, knownSizeArrayMT->size);
+
+  std::vector<LLVMTypeRef> elementsL;
+
+  if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+      elementsL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+      // In resilient mode, we can have weak refs to arrays
+      elementsL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else assert(false);
+  } else if (knownSizeArrayMT->rawArray->mutability == Mutability::IMMUTABLE) {
+    elementsL.push_back(globalState->immControlBlockStructL);
+  } else assert(false);
+
+  elementsL.push_back(innerArrayLT);
+
+  LLVMStructSetBody(knownSizeArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
+
+  auto arrayWeakRefStructL = globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
+  makeKnownSizeArrayWeakRefStruct(globalState, knownSizeArrayWrapperStruct, arrayWeakRefStructL);
+}
+
+void Assist::declareStruct(
+    GlobalState* globalState,
+    StructDefinition* structM) {
+
+  auto innerStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), structM->name->name.c_str());
+  assert(globalState->innerStructs.count(structM->name->name) == 0);
+  globalState->innerStructs.emplace(structM->name->name, innerStructL);
+
+  auto wrapperStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (structM->name->name + "rc").c_str());
+  assert(globalState->wrapperStructs.count(structM->name->name) == 0);
+  globalState->wrapperStructs.emplace(structM->name->name, wrapperStructL);
+
+  auto structWeakRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (structM->name->name + "w").c_str());
+  assert(globalState->structWeakRefStructs.count(structM->name->name) == 0);
+  globalState->structWeakRefStructs.emplace(structM->name->name, structWeakRefStructL);
+}
+
+void Assist::translateStruct(
+    GlobalState* globalState,
+    StructDefinition* structM) {
+  LLVMTypeRef valStructL = globalState->getInnerStruct(structM->name);
+  std::vector<LLVMTypeRef> innerStructMemberTypesL;
+  for (int i = 0; i < structM->members.size(); i++) {
+    innerStructMemberTypesL.push_back(
+        translateType(
+            globalState,
+            structM->members[i]->type));
+  }
+  LLVMStructSetBody(
+      valStructL, innerStructMemberTypesL.data(), innerStructMemberTypesL.size(), false);
+
+  LLVMTypeRef wrapperStructL = globalState->getWrapperStruct(structM->name);
+  std::vector<LLVMTypeRef> wrapperStructMemberTypesL;
+
+  // First member is a ref counts struct. We don't include the int directly
+  // because we want fat pointers to point to this struct, so they can reach
+  // into it and increment without doing any casting.
+  if (structM->mutability == Mutability::MUTABLE) {
+    if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+      wrapperStructMemberTypesL.push_back(globalState->mutWeakableControlBlockStructL);
+    } else {
+      wrapperStructMemberTypesL.push_back(globalState->mutNonWeakableControlBlockStructL);
+    }
+  } else if (structM->mutability == Mutability::IMMUTABLE) {
+    wrapperStructMemberTypesL.push_back(globalState->immControlBlockStructL);
+  } else assert(false);
+
+  wrapperStructMemberTypesL.push_back(valStructL);
+
+  LLVMStructSetBody(
+      wrapperStructL, wrapperStructMemberTypesL.data(), wrapperStructMemberTypesL.size(), false);
+
+  auto structWeakRefStructL = globalState->getStructWeakRefStruct(structM->name);
+  makeStructWeakRefStruct(globalState, structWeakRefStructL, wrapperStructL);
+}
+
+void Assist::declareEdge(
+    GlobalState* globalState,
+    Edge* edge) {
+
+  auto interfaceTableStructL =
+      globalState->getInterfaceTableStruct(edge->interfaceName->fullName);
+
+  auto edgeName =
+      edge->structName->fullName->name + edge->interfaceName->fullName->name;
+  auto itablePtr =
+      LLVMAddGlobal(globalState->mod, interfaceTableStructL, edgeName.c_str());
+  LLVMSetLinkage(itablePtr, LLVMExternalLinkage);
+
+  globalState->interfaceTablePtrs.emplace(edge, itablePtr);
+}
+
+void Assist::translateEdge(
+    GlobalState* globalState,
+    Edge* edge) {
+
+  auto interfaceTableStructL =
+      globalState->getInterfaceTableStruct(edge->interfaceName->fullName);
+
+  auto builder = LLVMCreateBuilder();
+  auto itableLE = LLVMGetUndef(interfaceTableStructL);
+  for (int i = 0; i < edge->structPrototypesByInterfaceMethod.size(); i++) {
+    auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
+    itableLE = LLVMBuildInsertValue(
+        builder,
+        itableLE,
+        globalState->getFunction(funcName),
+        i,
+        std::to_string(i).c_str());
+  }
+  LLVMDisposeBuilder(builder);
+
+  auto itablePtr = globalState->getInterfaceTablePtr(edge);
+  LLVMSetInitializer(itablePtr,  itableLE);
+}
+
+void Assist::declareInterface(
+    GlobalState* globalState,
+    InterfaceDefinition* interfaceM) {
+
+  auto interfaceRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), interfaceM->name->name.c_str());
+  assert(globalState->interfaceRefStructs.count(interfaceM->name->name) == 0);
+  globalState->interfaceRefStructs.emplace(interfaceM->name->name, interfaceRefStructL);
+
+  auto interfaceTableStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (interfaceM->name->name + "itable").c_str());
+  assert(globalState->interfaceTableStructs.count(interfaceM->name->name) == 0);
+  globalState->interfaceTableStructs.emplace(interfaceM->name->name, interfaceTableStructL);
+
+  auto interfaceWeakRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), (interfaceM->name->name + "w").c_str());
+  assert(globalState->interfaceWeakRefStructs.count(interfaceM->name->name) == 0);
+  globalState->interfaceWeakRefStructs.emplace(interfaceM->name->name, interfaceWeakRefStructL);
+}
+
+LLVMTypeRef Assist::translateInterfaceMethodToFunctionType(
+    GlobalState* globalState,
+    InterfaceMethod* method) {
+  auto returnMT = method->prototype->returnType;
+  auto paramsMT = method->prototype->params;
+  auto returnLT = translateType(globalState, returnMT);
+  auto paramsLT = translateTypes(globalState, this, paramsMT);
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      switch (paramsMT[method->virtualParamIndex]->ownership) {
+        case Ownership::BORROW:
+        case Ownership::OWN:
+        case Ownership::SHARE:
+          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+          break;
+        case Ownership::WEAK:
+          paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
+          break;
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (paramsMT[method->virtualParamIndex]->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE:
+          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+          break;
+        case Ownership::BORROW:
+        case Ownership::WEAK:
+          paramsLT[method->virtualParamIndex] = globalState->weakVoidRefStructL;
+          break;
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+
+  return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
+}
+
+void Assist::translateInterface(
+    GlobalState* globalState,
+    InterfaceDefinition* interfaceM) {
+  LLVMTypeRef itableStruct =
+      globalState->getInterfaceTableStruct(interfaceM->name);
+  std::vector<LLVMTypeRef> interfaceMethodTypesL;
+  for (int i = 0; i < interfaceM->methods.size(); i++) {
+    interfaceMethodTypesL.push_back(
+        LLVMPointerType(
+            translateInterfaceMethodToFunctionType(
+                globalState, interfaceM->methods[i]),
+            0));
+  }
+  LLVMStructSetBody(
+      itableStruct, interfaceMethodTypesL.data(), interfaceMethodTypesL.size(), false);
+
+  LLVMTypeRef refStructL = globalState->getInterfaceRefStruct(interfaceM->name);
+  std::vector<LLVMTypeRef> refStructMemberTypesL;
+
+  // this points to the control block.
+  // It makes it easier to increment and decrement ref counts.
+  if (interfaceM->mutability == Mutability::MUTABLE) {
+    if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
+      refStructMemberTypesL.push_back(LLVMPointerType(globalState->mutWeakableControlBlockStructL, 0));
+    } else {
+      refStructMemberTypesL.push_back(LLVMPointerType(globalState->mutNonWeakableControlBlockStructL, 0));
+    }
+  } else if (interfaceM->mutability == Mutability::IMMUTABLE) {
+    refStructMemberTypesL.push_back(LLVMPointerType(globalState->immControlBlockStructL, 0));
+  } else assert(false);
+
+
+  refStructMemberTypesL.push_back(LLVMPointerType(itableStruct, 0));
+  LLVMStructSetBody(
+      refStructL,
+      refStructMemberTypesL.data(),
+      refStructMemberTypesL.size(),
+      false);
+
+  auto interfaceWeakRefStructL = globalState->getInterfaceWeakRefStruct(interfaceM->name);
+  makeInterfaceWeakRefStruct(globalState, interfaceWeakRefStructL, refStructL);
 }

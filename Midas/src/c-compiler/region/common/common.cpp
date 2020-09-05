@@ -77,7 +77,7 @@ LLVMValueRef upcastWeakFatPtr(
     }
   }
 
-  return functionState->defaultRegion.upcastWeak(
+  return functionState->defaultRegion->upcastWeak(
       globalState,
       functionState,
       builder,

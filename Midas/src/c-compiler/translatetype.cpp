@@ -3,169 +3,13 @@
 
 #include "translatetype.h"
 
-LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) {
-  if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
-    assert(referenceM->ownership == Ownership::SHARE);
-    return LLVMInt64Type();
-  } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
-    assert(referenceM->ownership == Ownership::SHARE);
-    return LLVMInt1Type();
-  } else if (dynamic_cast<Str*>(referenceM->referend) != nullptr) {
-    assert(referenceM->ownership == Ownership::SHARE);
-    return LLVMPointerType(globalState->stringWrapperStructL, 0);
-  } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
-    return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
-  } else if (auto knownSizeArrayMT =
-      dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
-    if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-      assert(false);
-      return nullptr;
-    } else {
-      auto knownSizeArrayCountedStructLT = globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
-      if (referenceM->location == Location::INLINE) {
-        return knownSizeArrayCountedStructLT;
-      } else {
-        if (referenceM->ownership == Ownership::OWN) {
-          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-        } else if (referenceM->ownership == Ownership::BORROW) {
-          switch (globalState->opt->regionOverride) {
-            case RegionOverride::ASSIST:
-            case RegionOverride::NAIVE_RC:
-            case RegionOverride::FAST: {
-              return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-              break;
-            }
-            case RegionOverride::RESILIENT_V0:
-            case RegionOverride::RESILIENT_V1:
-            case RegionOverride::RESILIENT_V2: {
-              return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
-              break;
-            }
-            default:
-              assert(false);
-              return nullptr;
-          }
-        } else if (referenceM->ownership == Ownership::SHARE) {
-          return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-        } else if (referenceM->ownership == Ownership::WEAK) {
-          return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
-        } else assert(false);
-      }
-    }
-  } else if (auto unknownSizeArrayMT =
-      dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
-    auto unknownSizeArrayCountedStructLT = globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
-    if (referenceM->ownership == Ownership::OWN) {
-      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-    } else if (referenceM->ownership == Ownership::BORROW) {
-      switch (globalState->opt->regionOverride) {
-        case RegionOverride::ASSIST:
-        case RegionOverride::NAIVE_RC:
-        case RegionOverride::FAST:
-          return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-          break;
-        case RegionOverride::RESILIENT_V0:
-        case RegionOverride::RESILIENT_V1:
-        case RegionOverride::RESILIENT_V2:
-          return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
-          break;
-        default:
-          assert(false);
-          return nullptr;
-      }
-    } else if (referenceM->ownership == Ownership::SHARE) {
-      return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-    } else if (referenceM->ownership == Ownership::WEAK) {
-      return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
-    } else {
-      assert(false);
-      return nullptr;
-    }
-  } else if (auto structReferend =
-      dynamic_cast<StructReferend*>(referenceM->referend)) {
-
-    auto structM = globalState->program->getStruct(structReferend->fullName);
-    if (structM->mutability == Mutability::MUTABLE) {
-      auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
-      if (referenceM->ownership == Ownership::OWN) {
-        return LLVMPointerType(countedStructL, 0);
-      } else if (referenceM->ownership == Ownership::BORROW) {
-        switch (globalState->opt->regionOverride) {
-          case RegionOverride::ASSIST:
-          case RegionOverride::NAIVE_RC:
-          case RegionOverride::FAST: {
-            return LLVMPointerType(countedStructL, 0);
-            break;
-          }
-          case RegionOverride::RESILIENT_V0:
-          case RegionOverride::RESILIENT_V1:
-          case RegionOverride::RESILIENT_V2: {
-            return globalState->getStructWeakRefStruct(structM->name);
-            break;
-          }
-          default:
-            assert(false);
-            return nullptr;
-        }
-      } else if (referenceM->ownership == Ownership::WEAK) {
-        return globalState->getStructWeakRefStruct(structM->name);
-      } else {
-        assert(false);
-        return nullptr;
-      }
-    } else {
-      auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
-      if (referenceM->location == Location::INLINE) {
-        return globalState->getInnerStruct(structReferend->fullName);
-      } else {
-        auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
-        return LLVMPointerType(countedStructL, 0);
-      }
-    }
-  } else if (auto interfaceReferend =
-      dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
-    auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
-    auto interfaceRefStructL =
-        globalState->getInterfaceRefStruct(interfaceReferend->fullName);
-    if (interfaceM->mutability == Mutability::MUTABLE) {
-      if (referenceM->ownership == Ownership::OWN) {
-        return interfaceRefStructL;
-      } else if (referenceM->ownership == Ownership::BORROW) {
-        switch (globalState->opt->regionOverride) {
-          case RegionOverride::ASSIST:
-          case RegionOverride::NAIVE_RC:
-          case RegionOverride::FAST: {
-            return interfaceRefStructL;
-          }
-          case RegionOverride::RESILIENT_V0:
-          case RegionOverride::RESILIENT_V1:
-          case RegionOverride::RESILIENT_V2: {
-            return globalState->getInterfaceWeakRefStruct(interfaceM->name);
-          }
-          default:
-            assert(false);
-            return nullptr;
-        }
-      } else if (referenceM->ownership == Ownership::WEAK) {
-        return globalState->getInterfaceWeakRefStruct(interfaceM->name);
-      } else {
-        assert(false);
-        return nullptr;
-      }
-    } else {
-      return interfaceRefStructL;
-    }
-  } else {
-    std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
-    assert(false);
-    return nullptr;
-  }
-}
-
-std::vector<LLVMTypeRef> translateTypes(GlobalState* globalState, std::vector<Reference*> referencesM) {
+std::vector<LLVMTypeRef> translateTypes(
+    GlobalState* globalState,
+    IRegion* region,
+    std::vector<Reference*> referencesM) {
   std::vector<LLVMTypeRef> result;
   for (auto referenceM : referencesM) {
-    result.push_back(translateType(globalState, referenceM));
+    result.push_back(region->translateType(globalState, referenceM));
   }
   return result;
 }
@@ -208,8 +52,9 @@ Mutability getMutability(GlobalState* globalState, Reference* referenceM) {
 
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
+    IRegion* region,
     Prototype* prototype) {
-  auto returnLT = translateType(globalState, prototype->returnType);
-  auto paramsLT = translateTypes(globalState, prototype->params);
+  auto returnLT = region->translateType(globalState, prototype->returnType);
+  auto paramsLT = translateTypes(globalState, region, prototype->params);
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }

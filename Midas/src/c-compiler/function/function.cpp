@@ -8,11 +8,12 @@
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
+    IRegion* region,
     Function* functionM) {
 
-  auto paramTypesL = translateTypes(globalState, functionM->prototype->params);
+  auto paramTypesL = translateTypes(globalState, region, functionM->prototype->params);
   auto returnTypeL =
-      translateType(globalState, functionM->prototype->returnType);
+      region->translateType(globalState, functionM->prototype->returnType);
   auto nameL = functionM->prototype->name->name;
 
   LLVMTypeRef functionTypeL =
@@ -27,10 +28,11 @@ LLVMValueRef declareFunction(
 
 void translateFunction(
     GlobalState* globalState,
+    IRegion* region,
     Function* functionM) {
 
   auto functionL = globalState->getFunction(functionM->prototype->name);
-  auto returnTypeL = translateType(globalState, functionM->prototype->returnType);
+  auto returnTypeL = region->translateType(globalState, functionM->prototype->returnType);
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 
@@ -45,7 +47,7 @@ void translateFunction(
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
-  FunctionState functionState(functionM, functionL, returnTypeL, localsBuilder);
+  FunctionState functionState(functionM, region, functionL, returnTypeL, localsBuilder);
 
   // There are other builders made elsewhere for various blocks in the function,
   // but this is the one for the top level.
@@ -97,7 +99,7 @@ void translateFunction(
   // In .ll we can call a noreturn function and then put an unreachable block,
   // but I can't figure out how to specify noreturn with the LLVM C API.
   if (LLVMTypeOf(resultLE) == makeNeverType()) {
-    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(translateType(globalState, functionM->prototype->returnType)));
+    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(region->translateType(globalState, functionM->prototype->returnType)));
   }
 
   LLVMDisposeBuilder(bodyTopLevelBuilder);

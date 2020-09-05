@@ -6,11 +6,12 @@
 #include <llvm-c/Core.h>
 
 #include "globalstate.h"
-
-LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM);
+#include "region/iregion.h"
 
 std::vector<LLVMTypeRef> translateTypes(
-    GlobalState* globalState, std::vector<Reference*> referencesM);
+    GlobalState* globalState,
+    IRegion* region,
+    std::vector<Reference*> referencesM);
 
 
 // We need to pick an arbitrary type to map "Never" to. It shouldn't matter,
@@ -27,6 +28,7 @@ Mutability getMutability(GlobalState* globalState, Reference* referenceM);
 
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
+    IRegion* region,
     Prototype* prototype);
 
 #endif

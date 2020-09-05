@@ -99,6 +99,24 @@ public:
       Reference* targetInterfaceTypeM,
       InterfaceReferend* targetInterfaceReferendM) override;
 
+
+  void translateKnownSizeArray(
+      GlobalState* globalState,
+      KnownSizeArrayT* knownSizeArrayMT) override;
+
+  void declareKnownSizeArray(
+      GlobalState* globalState,
+      KnownSizeArrayT* knownSizeArrayMT) override;
+
+  void declareUnknownSizeArray(
+      GlobalState* globalState,
+      UnknownSizeArrayT* unknownSizeArrayMT) override;
+
+  void translateUnknownSizeArray(
+      GlobalState* globalState,
+      UnknownSizeArrayT* unknownSizeArrayMT) override;
+
+
   LLVMValueRef lockWeak(
       GlobalState* globalState,
       FunctionState* functionState,
@@ -248,6 +266,11 @@ public:
       InterfaceDefinition* interfaceM) override;
 
   LLVMTypeRef getStringRefType() const override;
+
+private:
+  LLVMTypeRef translateInterfaceMethodToFunctionType(
+      GlobalState* globalState,
+      InterfaceMethod* method);
 };
 
 #endif

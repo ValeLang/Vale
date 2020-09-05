@@ -113,11 +113,11 @@ LLVMValueRef translateExpressionInner(
       case RegionOverride::ASSIST:
       case RegionOverride::NAIVE_RC:
       case RegionOverride::FAST: {
-        if (weakAlias->sourceType->ownership == UnconvertedOwnership::SHARE) {
+        if (weakAlias->sourceType->ownership == Ownership::SHARE) {
           assert(false);
-        } else if (weakAlias->sourceType->ownership == UnconvertedOwnership::OWN) {
+        } else if (weakAlias->sourceType->ownership == Ownership::OWN) {
           assert(false);
-        } else if (weakAlias->sourceType->ownership == UnconvertedOwnership::BORROW) {
+        } else if (weakAlias->sourceType->ownership == Ownership::BORROW) {
           if (auto structReferendM = dynamic_cast<StructReferend*>(weakAlias->sourceType->referend)) {
             auto objPtrLE = sourceLE;
             auto weakRefLE =
@@ -131,7 +131,7 @@ LLVMValueRef translateExpressionInner(
           } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(weakAlias->sourceType->referend)) {
             assert(false); // impl
           } else assert(false);
-        } else if (weakAlias->sourceType->ownership == UnconvertedOwnership::WEAK) {
+        } else if (weakAlias->sourceType->ownership == Ownership::WEAK) {
           // Nothing to do!
           return sourceLE;
         } else {
@@ -142,12 +142,12 @@ LLVMValueRef translateExpressionInner(
       case RegionOverride::RESILIENT_V0:
       case RegionOverride::RESILIENT_V1:
       case RegionOverride::RESILIENT_V2: {
-        if (weakAlias->sourceType->ownership == UnconvertedOwnership::SHARE) {
+        if (weakAlias->sourceType->ownership == Ownership::SHARE) {
           assert(false);
-        } else if (weakAlias->sourceType->ownership == UnconvertedOwnership::OWN) {
+        } else if (weakAlias->sourceType->ownership == Ownership::OWN) {
           assert(false);
-        } else if (weakAlias->sourceType->ownership == UnconvertedOwnership::BORROW ||
-            weakAlias->sourceType->ownership == UnconvertedOwnership::WEAK) {
+        } else if (weakAlias->sourceType->ownership == Ownership::BORROW ||
+            weakAlias->sourceType->ownership == Ownership::WEAK) {
           // Nothing to do!
           return sourceLE;
         } else {
@@ -271,9 +271,9 @@ LLVMValueRef translateExpressionInner(
           buildInterfaceCall(globalState, functionState, bodyBuilder, consumerType, argExprsLE, 0, 0);
         });
 
-    if (arrayType->ownership == UnconvertedOwnership::OWN) {
+    if (arrayType->ownership == Ownership::OWN) {
       discardOwningRef(FL(), globalState, functionState, blockState, builder, arrayType, arrayWrapperLE);
-    } else if (arrayType->ownership == UnconvertedOwnership::SHARE) {
+    } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
       freeConcrete(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
@@ -317,9 +317,9 @@ LLVMValueRef translateExpressionInner(
           buildInterfaceCall(globalState, functionState, bodyBuilder, consumerType, argExprsLE, 0, 0);
         });
 
-    if (arrayType->ownership == UnconvertedOwnership::OWN) {
+    if (arrayType->ownership == Ownership::OWN) {
       discardOwningRef(FL(), globalState, functionState, blockState, builder, arrayType, arrayWrapperLE);
-    } else if (arrayType->ownership == UnconvertedOwnership::SHARE) {
+    } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
       // Free it!
@@ -340,8 +340,8 @@ LLVMValueRef translateExpressionInner(
     auto arrayReferend = knownSizeArrayLoad->arrayReferend;
     auto elementType = arrayReferend->rawArray->elementType;
     auto targetOwnership = knownSizeArrayLoad->targetOwnership;
-    auto targetLocation = targetOwnership == UnconvertedOwnership::SHARE ? elementType->location : Location::YONDER;
-    auto resultType = globalState->metalCache.getUnconvertedReference(targetOwnership, targetLocation, elementType->referend);
+    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, elementType->referend);
 
     auto arrayWrapperPtrLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayWrapperPtrLE);
@@ -368,8 +368,8 @@ LLVMValueRef translateExpressionInner(
     auto arrayReferend = unknownSizeArrayLoad->arrayReferend;
     auto elementType = arrayReferend->rawArray->elementType;
     auto targetOwnership = unknownSizeArrayLoad->targetOwnership;
-    auto targetLocation = targetOwnership == UnconvertedOwnership::SHARE ? elementType->location : Location::YONDER;
-    auto resultType = globalState->metalCache.getUnconvertedReference(targetOwnership, targetLocation, elementType->referend);
+    auto targetLocation = targetOwnership == Ownership::SHARE ? elementType->location : Location::YONDER;
+    auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, elementType->referend);
 
     auto arrayRefLE = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
 
@@ -546,69 +546,39 @@ LLVMValueRef translateExpressionInner(
         structToInterfaceUpcast->targetInterfaceReferend);
   } else if (auto lockWeak = dynamic_cast<LockWeak*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+
     auto sourceType = lockWeak->sourceType;
     auto sourceLE =
         translateExpression(
             globalState, functionState, blockState, builder, lockWeak->sourceExpr);
     checkValidReference(FL(), globalState, functionState, builder, sourceType, sourceLE);
 
+    auto sourceTypeAsConstraintRefM =
+        globalState->metalCache.getReference(
+            Ownership::BORROW,
+            sourceType->location,
+            sourceType->referend);
+
     auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceType, sourceLE);
 
     auto resultOptTypeLE = translateType(globalState, lockWeak->resultOptType);
 
     auto resultOptLE =
-        buildIfElse(functionState, builder, isAliveLE, resultOptTypeLE, false, false,
-            [globalState, functionState, lockWeak, sourceLE](LLVMBuilderRef thenBuilder) {
-
-              // TODO extract more of this common code out?
-              LLVMValueRef someLE = nullptr;
-              switch (globalState->opt->regionOverride) {
-                case RegionOverride::ASSIST:
-                case RegionOverride::NAIVE_RC:
-                case RegionOverride::FAST: {
-                  auto sourceTypeM = lockWeak->sourceType;
-                  auto someConstructor = lockWeak->someConstructor;
-                  auto constraintRefLE =
-                      getInnerRefFromWeakRef(
-                          globalState,
-                          functionState,
-                          thenBuilder,
-                          sourceTypeM,
-                          sourceLE);
-                  checkValidReference(FL(), globalState, functionState, thenBuilder,
-                      someConstructor->params[0],
-                      constraintRefLE);
-                  acquireReference(
-                      FL(), globalState, functionState, thenBuilder,
-                      someConstructor->params[0],
-                      constraintRefLE);
-                  // If we get here, object is alive, return a Some.
-                  someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {constraintRefLE});
-                  break;
-                }
-                case RegionOverride::RESILIENT_V1:
-                case RegionOverride::RESILIENT_V0:
-                case RegionOverride::RESILIENT_V2: {
-                  // The incoming "constraint" ref is actually already a week ref. All we have to
-                  // do now is wrap it in a Some.
-
-                  auto sourceTypeM = lockWeak->sourceType;
-                  auto someConstructor = lockWeak->someConstructor;
-                  checkValidReference(FL(), globalState, functionState, thenBuilder,
-                      someConstructor->params[0],
-                      sourceLE);
-                  acquireReference(
-                      FL(), globalState, functionState, thenBuilder,
-                      someConstructor->params[0],
-                      sourceLE);
-                  // If we get here, object is alive, return a Some.
-                  someLE = buildCall(globalState, functionState, thenBuilder, someConstructor, {sourceLE});
-                  break;
-                }
-                default:
-                  assert(false);
-                  break;
-              }
+        functionState->defaultRegion.lockWeak(globalState, functionState, builder,
+            false, false, lockWeak->resultOptType,
+            sourceTypeAsConstraintRefM,
+            lockWeak->sourceType,
+            sourceLE,
+            [globalState, functionState, lockWeak, sourceLE](LLVMBuilderRef thenBuilder, LLVMValueRef constraintRefLE) {
+              checkValidReference(FL(), globalState, functionState, thenBuilder,
+                  lockWeak->someConstructor->params[0],
+                  constraintRefLE);
+              acquireReference(
+                  FL(), globalState, functionState, thenBuilder,
+                  lockWeak->someConstructor->params[0],
+                  constraintRefLE);
+              // If we get here, object is alive, return a Some.
+              auto someLE = buildCall(globalState, functionState, thenBuilder, lockWeak->someConstructor, {constraintRefLE});
               return upcastThinPtr(
                   globalState,
                   functionState,

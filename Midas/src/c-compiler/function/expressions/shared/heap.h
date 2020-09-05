@@ -35,6 +35,6 @@ void freeConcrete(
     BlockState* blockState,
     LLVMBuilderRef builder,
     LLVMValueRef concreteLE,
-    UnconvertedReference* concreteRefM);
+    Reference* concreteRefM);
 
 #endif

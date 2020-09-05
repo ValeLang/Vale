@@ -31,7 +31,7 @@ LLVMValueRef getUnknownSizeArrayLength(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* arrayRefM,
+    Reference* arrayRefM,
     LLVMValueRef arrayRefLE) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
@@ -45,15 +45,15 @@ LLVMValueRef getUnknownSizeArrayLength(
     case RegionOverride::RESILIENT_V2: {
       LLVMValueRef arrayWrapperPtrLE = nullptr;
       switch (arrayRefM->ownership) {
-        case UnconvertedOwnership::SHARE:
-        case UnconvertedOwnership::OWN:
+        case Ownership::SHARE:
+        case Ownership::OWN:
           arrayWrapperPtrLE = arrayRefLE;
           break;
-        case UnconvertedOwnership::BORROW:
+        case Ownership::BORROW:
           arrayWrapperPtrLE =
               lockWeakRef(FL(), globalState, functionState, builder, arrayRefM, arrayRefLE);
           break;
-        case UnconvertedOwnership::WEAK:
+        case Ownership::WEAK:
           assert(false); // VIR never loads from a weak ref
           break;
       }
@@ -69,7 +69,7 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* arrayRefM,
+    Reference* arrayRefM,
     LLVMValueRef arrayRefLE) {
 
   switch (globalState->opt->regionOverride) {
@@ -88,15 +88,15 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
     case RegionOverride::RESILIENT_V2: {
       LLVMValueRef arrayWrapperPtrLE = nullptr;
       switch (arrayRefM->ownership) {
-        case UnconvertedOwnership::SHARE:
-        case UnconvertedOwnership::OWN:
+        case Ownership::SHARE:
+        case Ownership::OWN:
           arrayWrapperPtrLE = arrayRefLE;
           break;
-        case UnconvertedOwnership::BORROW:
+        case Ownership::BORROW:
           arrayWrapperPtrLE =
               lockWeakRef(FL(), globalState, functionState, builder, arrayRefM, arrayRefLE);
           break;
-        case UnconvertedOwnership::WEAK:
+        case Ownership::WEAK:
           assert(false); // VIR never loads from a weak ref
           break;
       }
@@ -125,7 +125,7 @@ LLVMValueRef loadInnerArrayMember(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
-    UnconvertedReference* elementRefM,
+    Reference* elementRefM,
     LLVMValueRef indexLE) {
   assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
   LLVMValueRef indices[2] = {
@@ -168,13 +168,13 @@ LLVMValueRef loadElement(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* structRefM,
-    UnconvertedReference* elementRefM,
+    Reference* structRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
     LLVMValueRef indexLE,
-    UnconvertedReference* resultRefM) {
+    Reference* resultRefM) {
 
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
@@ -209,8 +209,8 @@ LLVMValueRef storeElement(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    UnconvertedReference* arrayRefM,
-    UnconvertedReference* elementRefM,
+    Reference* arrayRefM,
+    Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,

@@ -29,7 +29,7 @@ void fillInnerStruct(
             dynamic_cast<InterfaceReferend*>(memberType->referend) ||
             dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
             dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
-          if (memberType->ownership == UnconvertedOwnership::WEAK) {
+          if (memberType->ownership == Ownership::WEAK) {
 //            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
             buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
           } else {
@@ -53,7 +53,7 @@ LLVMValueRef constructCountedStruct(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMTypeRef structL,
-    UnconvertedReference* structTypeM,
+    Reference* structTypeM,
     StructDefinition* structM,
     std::vector<LLVMValueRef> membersLE) {
   buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
@@ -109,7 +109,7 @@ LLVMValueRef translateConstruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    UnconvertedReference* desiredReference,
+    Reference* desiredReference,
     const std::vector<LLVMValueRef>& membersLE) {
 
   auto structReferend =

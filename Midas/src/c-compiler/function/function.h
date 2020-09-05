@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
+#include <region/assist/assist.h>
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
@@ -18,6 +19,8 @@ private:
   std::unordered_set<VariableId*> unstackifiedLocalIds;
 
 public:
+//  LLVMBuilderRef builder;
+
   BlockState(const BlockState&) = delete;
 
   BlockState(BlockState* maybeParentBlockState_) :
@@ -122,6 +125,7 @@ public:
   LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
+  Assist defaultRegion;
 
   FunctionState(
       Function* containingFuncM_,

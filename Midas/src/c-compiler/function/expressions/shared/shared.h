@@ -11,6 +11,7 @@
 #include "globalstate.h"
 #include "function/function.h"
 #include "utils/fileio.h"
+#include "ref.h"
 
 
 LLVMValueRef makeNever();
@@ -29,7 +30,7 @@ void makeHammerLocal(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
-    LLVMValueRef valueToStore);
+    Ref valueToStore);
 
 void acquireReference(
     AreaAndFileAndLine from,
@@ -37,7 +38,7 @@ void acquireReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
-    LLVMValueRef expr);
+    Ref expr);
 
 void discard(
     AreaAndFileAndLine from,
@@ -45,11 +46,8 @@ void discard(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceRef,
-    LLVMValueRef expr);
+    Ref sourceLE);
 
-
-LLVMValueRef getStructContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE);
 
 LLVMValueRef adjustCounter(
     LLVMBuilderRef builder,
@@ -59,13 +57,15 @@ LLVMValueRef adjustCounter(
 
 LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE);
+    Ref interfaceRefLE);
 
 LLVMValueRef getControlBlockPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef referenceLE,
-    Referend* referendM);
+    Ref referenceLE,
+    Reference* referenceM);
 
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
@@ -73,7 +73,7 @@ LLVMValueRef adjustStrongRc(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
+    Ref exprLE,
     Reference* refM,
     int amount);
 
@@ -97,6 +97,7 @@ void buildAssert(
 
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
+void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, int num);
 
 template<typename First, typename... Rest>
@@ -145,12 +146,12 @@ inline void buildFlare(
   }
 }
 
-LLVMValueRef buildInterfaceCall(
+Ref buildInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* virtualParamMT,
-    std::vector<LLVMValueRef> argExprsLE,
+    Prototype* prototype,
+    std::vector<Ref> argRefs,
     int virtualParamIndex,
     int indexInEdge);
 
@@ -176,21 +177,21 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 
-void checkValidReference(
+LLVMValueRef checkValidReference(
     AreaAndFileAndLine checkerAFL,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef refLE);
+    Ref refLE);
 
 
-LLVMValueRef buildCall(
+Ref buildCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
-    std::vector<LLVMValueRef> argsLE);
+    std::vector<Ref> argRefs);
 
 // TODO move these into region classes
 Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array);
@@ -198,7 +199,7 @@ Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* 
 Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
 
 // Loads from either a local or a member, and does the appropriate casting.
-LLVMValueRef upgradeLoadResultToRefWithTargetOwnership(
+Ref upgradeLoadResultToRefWithTargetOwnership(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -232,16 +233,15 @@ void discardOwningRef(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* sourceTypeM,
-    LLVMValueRef exprLE);
+    Ref exprLE);
 
-LLVMValueRef upcast(
+Ref upcast(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
-    Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceRefLE,
+    Ref sourceRefLE,
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);

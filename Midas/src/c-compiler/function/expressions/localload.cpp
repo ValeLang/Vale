@@ -8,7 +8,7 @@
 #include "function/expressions/shared/shared.h"
 #include "function/expressions/shared/heap.h"
 
-LLVMValueRef translateLocalLoad(
+Ref translateLocalLoad(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -25,13 +25,13 @@ LLVMValueRef translateLocalLoad(
   auto localAddr = blockState->getLocalAddr(localId);
 
 
-  auto sourceRefLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-  checkValidReference(FL(), globalState, functionState, builder, localType, sourceRefLE);
+  auto sourceLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
+  auto sourceRef = wrap(functionState->defaultRegion, localType, sourceLE);
+  checkValidReference(FL(), globalState, functionState, builder, localType, sourceRef);
 
-
-  auto resultRefLE = upgradeLoadResultToRefWithTargetOwnership(globalState, functionState, builder,
-      localType,
-      resultType, sourceRefLE);
+  auto resultRefLE =
+      upgradeLoadResultToRefWithTargetOwnership(
+          globalState, functionState, builder, localType, resultType, sourceLE);
   acquireReference(FL(), globalState, functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }

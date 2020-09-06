@@ -12,7 +12,7 @@ constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
 // A concrete is a struct, known size array, unknown size array, or Str.
 LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef concretePtrLE);
+    WrapperPtrLE wrapperPtrLE);
 
 LLVMValueRef getControlBlockPtrFromInterfaceRef(
     LLVMBuilderRef builder,

@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
-#include <region/assist/assist.h>
+#include <region/iregion.h>
 
 #include "metal/ast.h"
 #include "metal/instructions.h"

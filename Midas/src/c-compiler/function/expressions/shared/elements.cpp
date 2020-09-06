@@ -5,59 +5,59 @@
 #include "shared.h"
 #include "branch.h"
 #include "weaks.h"
+#include "elements.h"
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
-    LLVMBuilderRef builder, LLVMValueRef knownSizeArrayWrapperPtrLE) {
+    LLVMBuilderRef builder,
+    WrapperPtrLE knownSizeArrayWrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      knownSizeArrayWrapperPtrLE,
+      knownSizeArrayWrapperPtrLE.refLE,
       1, // Array is after the control block.
       "ksaElemsPtr");
 }
 
+LLVMValueRef getUnknownSizeArrayContentsPtr(
+    LLVMBuilderRef builder,
+    WrapperPtrLE arrayWrapperPtrLE) {
+
+  return LLVMBuildStructGEP(
+      builder,
+      arrayWrapperPtrLE.refLE,
+      2, // Array is after the control block and length.
+      "usaElemsPtr");
+}
+
 LLVMValueRef getUnknownSizeArrayLengthPtr(
-    LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE) {
+    LLVMBuilderRef builder,
+    WrapperPtrLE unknownSizeArrayWrapperPtrLE) {
   auto resultLE =
       LLVMBuildStructGEP(
           builder,
-          unknownSizeArrayWrapperPtrLE,
+          unknownSizeArrayWrapperPtrLE.refLE,
           1, // Length is after the control block and before contents.
           "usaLenPtr");
   assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt64Type(), 0));
   return resultLE;
 }
 
-LLVMValueRef getUnknownSizeArrayLength(
+WrapperPtrLE getKnownSizeArrayWrapperPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    LLVMValueRef arrayRefLE) {
+    Reference* ksaMT,
+    Ref ksaRef) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      return LLVMBuildLoad(builder, getUnknownSizeArrayLengthPtr(builder, arrayRefLE), "usaLen");
+      return WrapperPtrLE(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
       break;
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      LLVMValueRef arrayWrapperPtrLE = nullptr;
-      switch (arrayRefM->ownership) {
-        case Ownership::SHARE:
-        case Ownership::OWN:
-          arrayWrapperPtrLE = arrayRefLE;
-          break;
-        case Ownership::BORROW:
-          arrayWrapperPtrLE =
-              lockWeakRef(FL(), globalState, functionState, builder, arrayRefM, arrayRefLE);
-          break;
-        case Ownership::WEAK:
-          assert(false); // VIR never loads from a weak ref
-          break;
-      }
-      return LLVMBuildLoad(builder, getUnknownSizeArrayLengthPtr(builder, arrayWrapperPtrLE), "usaLen");
+      return WrapperPtrLE(ksaMT, lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef));
       break;
     }
     default:
@@ -65,60 +65,55 @@ LLVMValueRef getUnknownSizeArrayLength(
   }
 }
 
-LLVMValueRef getUnknownSizeArrayContentsPtr(
+WrapperPtrLE getUnknownSizeArrayWrapperPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    LLVMValueRef arrayRefLE) {
-
+    Reference* arrayRefMT,
+    Ref arrayRef) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      LLVMValueRef arrayWrapperPtrLE = arrayRefLE;
-      return LLVMBuildStructGEP(
-          builder,
-          arrayWrapperPtrLE,
-          2, // Array is after the control block and length.
-          "usaElemsPtr");
+      return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      LLVMValueRef arrayWrapperPtrLE = nullptr;
-      switch (arrayRefM->ownership) {
+      switch (arrayRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN:
-          arrayWrapperPtrLE = arrayRefLE;
-          break;
+          return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
         case Ownership::BORROW:
-          arrayWrapperPtrLE =
-              lockWeakRef(FL(), globalState, functionState, builder, arrayRefM, arrayRefLE);
-          break;
+          return WrapperPtrLE(arrayRefMT, lockWeakRef(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
         case Ownership::WEAK:
           assert(false); // VIR never loads from a weak ref
-          break;
       }
-      return LLVMBuildStructGEP(
-          builder,
-          arrayWrapperPtrLE,
-          2, // Array is after the control block and length.
-          "usaElemsPtr");
+      break;
     }
     default:
       assert(false);
   }
 }
 
-LLVMValueRef getContentsPtrFromUnknownSizeArrayWrapperPtr(
+Ref getUnknownSizeArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef arrayWrapperPtrLE) {
-  return LLVMBuildStructGEP(
-      builder,
-      arrayWrapperPtrLE,
-      2, // Array is after the control block and length.
-      "usaElemsPtr");
+    WrapperPtrLE arrayRefLE) {
+  auto lengthPtrLE = getUnknownSizeArrayLengthPtr(builder, arrayRefLE);
+  auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "usaLen");
+  return wrap(functionState->defaultRegion, globalState->metalCache.intRef, intLE);
+}
+
+Ref getUnknownSizeArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefM,
+    Ref arrayRef) {
+  auto wrapperPtrLE = getUnknownSizeArrayWrapperPtr(globalState, functionState, builder, arrayRefM, arrayRef);
+  return getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
 }
 
 LLVMValueRef loadInnerArrayMember(
@@ -163,12 +158,12 @@ LLVMValueRef storeInnerArrayMember(
   return resultLE;
 }
 
-LLVMValueRef loadElement(
+Ref loadElement(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* structRefM,
+    Reference* arrayRefM,
     Reference* elementRefM,
     LLVMValueRef sizeLE,
     LLVMValueRef arrayPtrLE,
@@ -185,10 +180,9 @@ LLVMValueRef loadElement(
 
   LLVMValueRef fromArrayLE = nullptr;
   if (mutability == Mutability::IMMUTABLE) {
-    if (structRefM->location == Location::INLINE) {
+    if (arrayRefM->location == Location::INLINE) {
       assert(false);
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
-      return nullptr;
     } else {
       fromArrayLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
     }
@@ -196,7 +190,6 @@ LLVMValueRef loadElement(
     fromArrayLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
   } else {
     assert(false);
-    return nullptr;
   }
   return upgradeLoadResultToRefWithTargetOwnership(globalState, functionState, builder, elementRefM,
       resultRefM,
@@ -212,15 +205,19 @@ LLVMValueRef storeElement(
     Reference* arrayRefM,
     Reference* elementRefM,
     LLVMValueRef sizeLE,
-    LLVMValueRef arrayPtrLE,
+    Ref arrayRef,
     Mutability mutability,
-    LLVMValueRef indexLE,
-    LLVMValueRef sourceLE) {
+    Ref indexRef,
+    Ref sourceRef) {
 
+  auto indexLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, indexRef);
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
   buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
+
+  auto arrayPtrLE = checkValidReference(FL(), globalState, functionState, builder, arrayRefM, arrayRef);
+  auto sourceLE = checkValidReference(FL(), globalState, functionState, builder, elementRefM, sourceRef);
 
   if (mutability == Mutability::IMMUTABLE) {
     if (arrayRefM->location == Location::INLINE) {
@@ -240,11 +237,12 @@ LLVMValueRef storeElement(
 
 
 void foreachArrayElement(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef sizeLE,
+    Ref sizeRef,
     LLVMValueRef arrayPtrLE,
-    std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder) {
+    std::function<void(Ref, LLVMBuilderRef)> iterationBuilder) {
   LLVMValueRef iterationIndexPtrLE =
       makeMidasLocal(
           functionState,
@@ -253,20 +251,23 @@ void foreachArrayElement(
           "iterationIndex",
           LLVMConstInt(LLVMInt64Type(),0, false));
 
+  auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
+
   buildWhile(
       functionState,
       builder,
-      [sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {
+      [globalState, functionState, sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {
         auto iterationIndexLE =
             LLVMBuildLoad(conditionBuilder, iterationIndexPtrLE, "iterationIndex");
         auto isBeforeEndLE =
             LLVMBuildICmp(
                 conditionBuilder,LLVMIntSLT,iterationIndexLE,sizeLE,"iterationIndexIsBeforeEnd");
-        return isBeforeEndLE;
+        return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isBeforeEndLE);
       },
-      [iterationBuilder, iterationIndexPtrLE, arrayPtrLE](LLVMBuilderRef bodyBuilder) {
+      [globalState, functionState, iterationBuilder, iterationIndexPtrLE, arrayPtrLE](LLVMBuilderRef bodyBuilder) {
         auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
-        iterationBuilder(iterationIndexLE, bodyBuilder);
+        auto iterationIndexRef = wrap(functionState->defaultRegion, globalState->metalCache.boolRef, iterationIndexLE);
+        iterationBuilder(iterationIndexRef, bodyBuilder);
         adjustCounter(bodyBuilder, iterationIndexPtrLE, 1);
       });
 }

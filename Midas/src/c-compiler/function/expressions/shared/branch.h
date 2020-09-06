@@ -11,15 +11,16 @@
 #include "globalstate.h"
 #include "function/function.h"
 
-LLVMValueRef buildIfElse(
+Ref buildIfElse(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef conditionLE,
+    Ref conditionRef,
     LLVMTypeRef resultTypeL,
-    bool thenResultIsNever,
-    bool elseResultIsNever,
-    std::function<LLVMValueRef(LLVMBuilderRef)> buildThen,
-    std::function<LLVMValueRef(LLVMBuilderRef)> buildElse);
+    Reference* thenResultMT,
+    Reference* elseResultMT,
+    std::function<Ref(LLVMBuilderRef)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse);
 
 void buildIf(
     FunctionState* functionState,
@@ -29,14 +30,16 @@ void buildIf(
 
 
 void buildWhile(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    std::function<LLVMValueRef(LLVMBuilderRef)> buildBody);
+    std::function<Ref(LLVMBuilderRef)> buildBody);
 
 void buildWhile(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    std::function<LLVMValueRef(LLVMBuilderRef)> buildCondition,
+    std::function<Ref(LLVMBuilderRef)> buildCondition,
     std::function<void(LLVMBuilderRef)> buildBody);
 
 #endif

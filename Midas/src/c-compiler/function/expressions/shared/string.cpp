@@ -10,7 +10,7 @@ LLVMValueRef getInnerStrPtrFromWrapperPtr(
 
 LLVMValueRef getLenPtrFromStrWrapperPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef strWrapperPtrLE) {
+    Ref strWrapperPtrLE) {
   auto innerStringPtrLE =
       getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
   auto lenPtrLE =
@@ -20,7 +20,7 @@ LLVMValueRef getLenPtrFromStrWrapperPtr(
 
 LLVMValueRef getLenFromStrWrapperPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef strWrapperPtrLE) {
+    Ref strWrapperPtrLE) {
   return LLVMBuildLoad(builder, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE), "len");
 }
 

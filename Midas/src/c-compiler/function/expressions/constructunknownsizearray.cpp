@@ -14,45 +14,59 @@ void fillUnknownSizeArray(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
+    UnknownSizeArrayT* usaMT,
     Reference* generatorType,
-    LLVMValueRef generatorLE,
-    LLVMValueRef sizeLE,
+    Prototype* generatorMethod,
+    Ref generatorLE,
+    Ref sizeLE,
     LLVMValueRef usaElementsPtrLE) {
 
   foreachArrayElement(
       functionState, builder, sizeLE, usaElementsPtrLE,
-      [globalState, functionState, generatorType, usaElementsPtrLE, generatorLE](LLVMValueRef indexLE, LLVMBuilderRef bodyBuilder) {
+      [globalState, functionState, usaMT, generatorMethod, generatorType, usaElementsPtrLE, generatorLE](Ref indexRef, LLVMBuilderRef bodyBuilder) {
         acquireReference(
             AFL("ConstructUSA generate iteration"),
             globalState, functionState, bodyBuilder, generatorType, generatorLE);
 
+        auto indexLE =
+            checkValidReference(
+                FL(), globalState, functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
         std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
+
         auto elementPtrLE =
             LLVMBuildGEP(
                 bodyBuilder, usaElementsPtrLE, indices.data(), indices.size(), "elementPtr");
-        std::vector<LLVMValueRef> argExprsLE = { generatorLE, indexLE };
-        auto elementLE = buildInterfaceCall(globalState, functionState, bodyBuilder, generatorType, argExprsLE, 0, 0);
+        std::vector<Ref> argExprsLE = { generatorLE, indexRef };
+        auto elementRef = buildInterfaceCall(globalState, functionState, bodyBuilder, generatorMethod, argExprsLE, 0, 0);
+        auto elementLE =
+            checkValidReference(FL(), globalState, functionState, bodyBuilder, usaMT->rawArray->elementType, elementRef);
         LLVMBuildStore(bodyBuilder, elementLE, elementPtrLE);
       });
 }
 
-LLVMValueRef constructUnknownSizeArrayCountedStruct(
+Ref constructUnknownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
+    Reference* usaMT,
     UnknownSizeArrayT* unknownSizeArrayT,
     Reference* generatorType,
-    LLVMValueRef generatorLE,
+    Prototype* generatorMethod,
+    Ref generatorRef,
     LLVMTypeRef usaWrapperPtrLT,
     LLVMTypeRef usaElementLT,
-    LLVMValueRef sizeLE,
+    Ref sizeRef,
     const std::string& typeName) {
   buildFlare(FL(), globalState, functionState, builder, "Constructing USA!");
 
+  auto sizeLE =
+      checkValidReference(FL(),globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
   auto usaWrapperPtrLE =
-      mallocUnknownSizeArray(
-          globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
+      WrapperPtrLE(
+          usaMT,
+          mallocUnknownSizeArray(
+              globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE));
   fillControlBlock(
       FL(),
       globalState,
@@ -63,21 +77,22 @@ LLVMValueRef constructUnknownSizeArrayCountedStruct(
       getEffectiveWeakability(globalState, unknownSizeArrayT->rawArray),
       getConcreteControlBlockPtr(builder, usaWrapperPtrLE),
       typeName);
-  LLVMBuildStore(builder, sizeLE, LLVMBuildStructGEP(builder, usaWrapperPtrLE, 1, "lenPtr"));
+  LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(builder, usaWrapperPtrLE));
   fillUnknownSizeArray(
       globalState,
       functionState,
       blockState,
       builder,
+      unknownSizeArrayT,
       generatorType,
-      generatorLE,
-      sizeLE,
-      getContentsPtrFromUnknownSizeArrayWrapperPtr(
-          builder, usaWrapperPtrLE));
-  return usaWrapperPtrLE;
+      generatorMethod,
+      generatorRef,
+      sizeRef,
+      getUnknownSizeArrayContentsPtr(builder, usaWrapperPtrLE));
+  return wrap(functionState->defaultRegion, usaMT, usaWrapperPtrLE.refLE);
 }
 
-LLVMValueRef translateConstructUnknownSizeArray(
+Ref translateConstructUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -92,8 +107,8 @@ LLVMValueRef translateConstructUnknownSizeArray(
 
   auto unknownSizeArrayMT = dynamic_cast<UnknownSizeArrayT*>(constructUnknownSizeArray->arrayRefType->referend);
 
-  auto usaWrapperPtrLT = functionState->defaultRegion->translateType(globalState, constructUnknownSizeArray->arrayRefType);
-  auto usaElementLT = functionState->defaultRegion->translateType(globalState, unknownSizeArrayMT->rawArray->elementType);
+  auto usaWrapperPtrLT = functionState->defaultRegion->translateType(constructUnknownSizeArray->arrayRefType);
+  auto usaElementLT = functionState->defaultRegion->translateType(unknownSizeArrayMT->rawArray->elementType);
 
   auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
@@ -104,24 +119,26 @@ LLVMValueRef translateConstructUnknownSizeArray(
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
       globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
-  auto resultLE =
+  auto usaRef =
       constructUnknownSizeArrayCountedStruct(
           globalState,
-      functionState,
-      blockState,
-      builder,
+          functionState,
+          blockState,
+          builder,
+          constructUnknownSizeArray->arrayRefType,
           unknownSizeArrayMT,
           generatorType,
+          constructUnknownSizeArray->generatorMethod,
           generatorLE,
           unknownSizeArrayCountedStructLT,
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);
   checkValidReference(FL(), globalState, functionState, builder,
-      constructUnknownSizeArray->arrayRefType, resultLE);
+      constructUnknownSizeArray->arrayRefType, usaRef);
 
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorType, generatorLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorLE);
 
-  return resultLE;
+  return usaRef;
 }

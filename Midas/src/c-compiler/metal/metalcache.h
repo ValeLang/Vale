@@ -42,11 +42,24 @@ struct RefVecEquals {
 
 class MetalCache {
 public:
+  MetalCache() {
+    intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
+    boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
+    strRef = getReference(Ownership::SHARE, Location::YONDER, str);
+    voidRef = getReference(Ownership::SHARE, Location::INLINE, vooid);
+    neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
+  }
+
   Int* innt = new Int();
+  Reference* intRef = nullptr;
   Bool* boool = new Bool();
+  Reference* boolRef = nullptr;
   Str* str = new Str();
+  Reference* strRef = nullptr;
   Void* vooid = new Void();
+  Reference* voidRef = nullptr;
   Never* never = new Never();
+  Reference* neverRef = nullptr;
   StructReferend* emptyTupleStructReferend = nullptr;
 
   std::unordered_map<Name*, StructReferend*> structReferends;

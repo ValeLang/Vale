@@ -6,13 +6,13 @@
 #include "function/expression.h"
 
 
-LLVMValueRef translateCall(
+Ref translateCall(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Call* call) {
-  auto argsLE = std::vector<LLVMValueRef>{};
+  auto argsLE = std::vector<Ref>{};
   argsLE.reserve(call->argExprs.size());
   for (int i = 0; i < call->argExprs.size(); i++) {
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);

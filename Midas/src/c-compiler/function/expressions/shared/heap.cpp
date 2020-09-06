@@ -169,7 +169,7 @@ void freeConcrete(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    LLVMValueRef refLE,
+    Ref refLE,
     Reference* refM) {
 
   auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);

@@ -12,8 +12,7 @@ LLVMValueRef declareFunction(
     Function* functionM) {
 
   auto paramTypesL = translateTypes(globalState, region, functionM->prototype->params);
-  auto returnTypeL =
-      region->translateType(globalState, functionM->prototype->returnType);
+  auto returnTypeL = region->translateType(functionM->prototype->returnType);
   auto nameL = functionM->prototype->name->name;
 
   LLVMTypeRef functionTypeL =
@@ -32,7 +31,7 @@ void translateFunction(
     Function* functionM) {
 
   auto functionL = globalState->getFunction(functionM->prototype->name);
-  auto returnTypeL = region->translateType(globalState, functionM->prototype->returnType);
+  auto returnTypeL = region->translateType(functionM->prototype->returnType);
 
   auto localAddrByLocalId = std::unordered_map<int, LLVMValueRef>{};
 
@@ -98,8 +97,8 @@ void translateFunction(
   // we'll never reach this statement.
   // In .ll we can call a noreturn function and then put an unreachable block,
   // but I can't figure out how to specify noreturn with the LLVM C API.
-  if (LLVMTypeOf(resultLE) == makeNeverType()) {
-    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(region->translateType(globalState, functionM->prototype->returnType)));
+  if (dynamic_cast<Never*>(functionM->prototype->returnType->referend)) {
+    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(region->translateType(functionM->prototype->returnType)));
   }
 
   LLVMDisposeBuilder(bodyTopLevelBuilder);

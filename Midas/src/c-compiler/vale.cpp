@@ -29,6 +29,8 @@
 #include <llvm-c/Transforms/IPO.h>
 #include <struct/array.h>
 #include <function/expressions/shared/weaks.h>
+#include <region/assist/assist.h>
+#include <region/mega/mega.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -634,61 +636,63 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   initInternalStructs(globalState);
   initInternalExterns(globalState);
 
-  Assist defaultRegion;
+  Assist assistRegion(globalState);
+  Mega megaRegion(globalState);
+  IRegion* defaultRegion = &assistRegion;
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    defaultRegion.declareStruct(globalState, structM);
+    defaultRegion->declareStruct(structM);
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    defaultRegion.declareInterface(globalState, interfaceM);
+    defaultRegion->declareInterface(interfaceM);
   }
 
   for (auto p : program->knownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion.declareKnownSizeArray(globalState, arrayM);
+    defaultRegion->declareKnownSizeArray(arrayM);
   }
 
   for (auto p : program->unknownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion.declareUnknownSizeArray(globalState, arrayM);
+    defaultRegion->declareUnknownSizeArray(arrayM);
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    defaultRegion.translateStruct(globalState, structM);
+    defaultRegion->translateStruct(structM);
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    defaultRegion.translateInterface(globalState, interfaceM);
+    defaultRegion->translateInterface(interfaceM);
   }
 
   for (auto p : program->knownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion.translateKnownSizeArray(globalState, arrayM);
+    defaultRegion->translateKnownSizeArray(arrayM);
   }
 
   for (auto p : program->unknownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion.translateUnknownSizeArray(globalState, arrayM);
+    defaultRegion->translateUnknownSizeArray(arrayM);
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      defaultRegion.declareEdge(globalState, e);
+      defaultRegion->declareEdge(e);
     }
   }
 
@@ -698,7 +702,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    LLVMValueRef entryFunctionL = declareFunction(globalState, &defaultRegion, function);
+    LLVMValueRef entryFunctionL = declareFunction(globalState, defaultRegion, function);
     if (function->prototype->name->name == "main") {
       mainM = function->prototype;
       mainL = entryFunctionL;
@@ -713,14 +717,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      defaultRegion.translateEdge(globalState, e);
+      defaultRegion->translateEdge(e);
     }
   }
 
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    translateFunction(globalState, &defaultRegion, function);
+    translateFunction(globalState, defaultRegion, function);
   }
 
 

@@ -7,7 +7,7 @@
 #include "function/expression.h"
 #include "expressions.h"
 
-LLVMValueRef translateIf(
+Ref translateIf(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* parentBlockState,
@@ -25,12 +25,13 @@ LLVMValueRef translateIf(
 
   auto resultLE =
       buildIfElse(
+          globalState,
           functionState,
           builder,
           conditionExpr,
-          functionState->defaultRegion->translateType(globalState, iff->commonSupertype),
-          dynamic_cast<Never*>(iff->thenResultType->referend) != nullptr,
-          dynamic_cast<Never*>(iff->elseResultType->referend) != nullptr,
+          functionState->defaultRegion->translateType(iff->commonSupertype),
+          iff->thenResultType,
+          iff->elseResultType,
           [globalState, functionState, &thenBlockState, iff](LLVMBuilderRef thenBlockBuilder) {
             return translateExpression(
                 globalState, functionState, &thenBlockState, thenBlockBuilder, iff->thenExpr);

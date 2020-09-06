@@ -3,6 +3,7 @@
 
 #include "translatetype.h"
 
+#include "function/expressions/shared/ref.h"
 #include "function/expressions/shared/members.h"
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
@@ -13,15 +14,15 @@ void fillInnerStruct(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structM,
-    std::vector<LLVMValueRef> membersLE,
+    std::vector<Ref> membersLE,
     LLVMValueRef innerStructPtrLE) {
   for (int i = 0; i < membersLE.size(); i++) {
-    auto memberLE = membersLE[i];
+    auto memberRef = membersLE[i];
     auto memberType = structM->members[i]->type;
 
     auto memberName = structM->members[i]->name;
     if (structM->members[i]->type->referend == globalState->metalCache.innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", memberName, ": ", memberLE);
+      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", memberName, ": ", memberRef);
     }
     if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
       if (globalState->opt->census) {
@@ -30,10 +31,10 @@ void fillInnerStruct(
             dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
             dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
           if (memberType->ownership == Ownership::WEAK) {
-//            auto wrciLE = getWrciFromWeakRef(builder, memberLE);
+//            auto wrciLE = getWrciFromWeakRef(builder, memberRef);
             buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
           } else {
-            auto controlBlockPtrLE = getControlBlockPtr(builder, memberLE, memberType->referend);
+            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, memberRef, memberType);
             buildFlare(FL(), globalState, functionState, builder,
                 "Member ", i, ": ",
                 getObjIdFromControlBlockPtr(globalState, builder, memberType->referend, controlBlockPtrLE));
@@ -43,11 +44,13 @@ void fillInnerStruct(
     }
     auto ptrLE =
         LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
+    auto memberLE =
+        checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberRef);
     LLVMBuildStore(builder, memberLE, ptrLE);
   }
 }
 
-LLVMValueRef constructCountedStruct(
+Ref constructCountedStruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
@@ -55,23 +58,25 @@ LLVMValueRef constructCountedStruct(
     LLVMTypeRef structL,
     Reference* structTypeM,
     StructDefinition* structM,
-    std::vector<LLVMValueRef> membersLE) {
+    std::vector<Ref> membersLE) {
   buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
-  LLVMValueRef newStructPtrLE =
-      mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL);
+  WrapperPtrLE newStructWrapperPtrLE =
+      WrapperPtrLE(
+          structTypeM,
+          mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL));
   fillControlBlock(
       from,
       globalState, functionState, builder,
       structTypeM->referend,
       structM->mutability,
       getEffectiveWeakability(globalState, structM),
-      getConcreteControlBlockPtr(builder, newStructPtrLE), structM->name->name);
+      getConcreteControlBlockPtr(builder, newStructWrapperPtrLE), structM->name->name);
   fillInnerStruct(
       globalState, functionState,
       builder, structM, membersLE,
-      getStructContentsPtr(builder, newStructPtrLE));
+      getStructContentsPtr(builder, newStructWrapperPtrLE));
   buildFlare(FL(), globalState, functionState, builder, "Done filling new struct");
-  return newStructPtrLE;
+  return wrap(functionState->defaultRegion, structTypeM, newStructWrapperPtrLE.refLE);
 }
 
 LLVMValueRef constructInnerStruct(
@@ -80,15 +85,17 @@ LLVMValueRef constructInnerStruct(
     LLVMBuilderRef builder,
     StructDefinition* structM,
     LLVMTypeRef valStructL,
-    const std::vector<LLVMValueRef>& membersLE) {
+    const std::vector<Ref>& memberRefs) {
 
   // We always start with an undef, and then fill in its fields one at a
   // time.
   LLVMValueRef structValueBeingInitialized = LLVMGetUndef(valStructL);
-  for (int i = 0; i < membersLE.size(); i++) {
+  for (int i = 0; i < memberRefs.size(); i++) {
     if (structM->members[i]->type->referend == globalState->metalCache.innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", i, ": ", membersLE[i]);
+      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", i, ": ", memberRefs[i]);
     }
+    auto memberLE =
+        checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberRefs[i]);
     auto memberName = structM->members[i]->name;
     // Every time we fill in a field, it actually makes a new entire
     // struct value, and gives us a LLVMValueRef for the new value.
@@ -97,20 +104,20 @@ LLVMValueRef constructInnerStruct(
         LLVMBuildInsertValue(
             builder,
             structValueBeingInitialized,
-            membersLE[i],
+            memberLE,
             i,
             memberName.c_str());
   }
   return structValueBeingInitialized;
 }
 
-LLVMValueRef translateConstruct(
+Ref translateConstruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
-    const std::vector<LLVMValueRef>& membersLE) {
+    const std::vector<Ref>& membersLE) {
 
   auto structReferend =
       dynamic_cast<StructReferend*>(desiredReference->referend);
@@ -128,8 +135,10 @@ LLVMValueRef translateConstruct(
       if (desiredReference->location == Location::INLINE) {
         auto valStructL =
             globalState->getInnerStruct(structReferend->fullName);
-        return constructInnerStruct(
-            globalState, functionState, builder, structM, valStructL, membersLE);
+        auto innerStructLE =
+            constructInnerStruct(
+                globalState, functionState, builder, structM, valStructL, membersLE);
+        return Ref(desiredReference, innerStructLE);
       } else {
         auto countedStructL =
             globalState->getWrapperStruct(structReferend->fullName);
@@ -139,7 +148,6 @@ LLVMValueRef translateConstruct(
     }
     default:
       assert(false);
-      return nullptr;
   }
   assert(false);
 }

@@ -6,7 +6,7 @@
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
 
-LLVMValueRef translateDiscard(
+Ref translateDiscard(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -25,7 +25,7 @@ LLVMValueRef translateDiscard(
       functionState,
       blockState,
       builder,
-      discardM->sourceResultType,
       innerLE);
-  return makeConstExpr(functionState, builder, makeNever());
+  auto resultLE = makeConstExpr(functionState, builder, makeNever());
+  return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, resultLE);
 }

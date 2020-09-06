@@ -10,9 +10,12 @@
 #include "function/expressions/shared/heap.h"
 
 void fillKnownSizeArray(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
+    Reference* elementMT,
     LLVMValueRef arrayLE,
-    const std::vector<LLVMValueRef>& elementsLE) {
+    const std::vector<Ref>& elementsLE) {
 
   for (int i = 0; i < elementsLE.size(); i++) {
     auto memberName = std::string("element") + std::to_string(i);
@@ -20,26 +23,28 @@ void fillKnownSizeArray(
         LLVMConstInt(LLVMInt64Type(), 0, false),
         LLVMConstInt(LLVMInt64Type(), i, false),
     };
+    auto elementLE = checkValidReference(FL(), globalState, functionState, builder, elementMT, elementsLE[i]);
     // Every time we fill in a field, it actually makes a new entire
     // struct value, and gives us a LLVMValueRef for the new value.
     // So, `structValueBeingInitialized` contains the latest one.
     LLVMBuildStore(
         builder,
-        elementsLE[i],
+        elementLE,
         LLVMBuildGEP(builder, arrayLE, indices, 2, memberName.c_str()));
   }
 }
 
-LLVMValueRef constructKnownSizeArrayCountedStruct(
+Ref constructKnownSizeArrayCountedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
     KnownSizeArrayT* knownSizeArrayT,
     LLVMTypeRef structLT,
-    const std::vector<LLVMValueRef>& membersLE,
+    const std::vector<Ref>& membersLE,
     const std::string& typeName) {
-  auto newStructLE = mallocKnownSize(globalState, functionState, builder, refM->location, structLT);
+  auto newStructLE =
+      WrapperPtrLE(refM, mallocKnownSize(globalState, functionState, builder, refM->location, structLT));
   fillControlBlock(
       FL(),
       globalState,
@@ -51,13 +56,16 @@ LLVMValueRef constructKnownSizeArrayCountedStruct(
       getConcreteControlBlockPtr(builder, newStructLE),
       typeName);
   fillKnownSizeArray(
+      globalState,
+      functionState,
       builder,
+      knownSizeArrayT->rawArray->elementType,
       getKnownSizeArrayContentsPtr(builder, newStructLE),
       membersLE);
-  return newStructLE;
+  return wrap(functionState->defaultRegion, refM, newStructLE.refLE);
 }
 
-LLVMValueRef translateNewArrayFromValues(
+Ref translateNewArrayFromValues(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -87,7 +95,6 @@ LLVMValueRef translateNewArrayFromValues(
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
         assert(false);
-        return nullptr;
       } else {
         // If we get here, arrayLT is a pointer to our counted struct.
         auto knownSizeArrayCountedStructLT =
@@ -109,6 +116,5 @@ LLVMValueRef translateNewArrayFromValues(
     }
     default:
       assert(false);
-      return nullptr;
   }
 }

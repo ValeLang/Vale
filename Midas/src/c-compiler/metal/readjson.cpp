@@ -291,7 +291,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new WeakAlias(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
-        readReferend(cache, expression["sourceReferend"]));
+        readReferend(cache, expression["sourceReferend"]),
+        readReference(cache, expression["resultType"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),
@@ -381,6 +382,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
         readInterfaceReferend(cache, expression["generatorReferend"]),
+        readPrototype(cache, expression["generatorMethod"]),
         readReference(cache, expression["resultType"]));
   } else if (type == "DestroyUnknownSizeArray") {
     return new DestroyUnknownSizeArray(
@@ -389,7 +391,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readUnknownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
-        readInterfaceReferend(cache, expression["consumerReferend"]));
+        readInterfaceReferend(cache, expression["consumerReferend"]),
+        readPrototype(cache, expression["consumerMethod"]));
   } else if (type == "ArrayLength") {
     return new ArrayLength(
         readExpression(cache, expression["sourceExpr"]),
@@ -407,7 +410,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["arrayType"]),
         readKnownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["consumerExpr"]),
-        readReference(cache, expression["consumerType"]));
+        readReference(cache, expression["consumerType"]),
+        readPrototype(cache, expression["consumerMethod"]));
   } else if (type == "InterfaceCall") {
     return new InterfaceCall(
         readArray(cache, expression["argExprs"], readExpression),

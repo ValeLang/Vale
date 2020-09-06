@@ -6,7 +6,7 @@
 
 #include "function/expression.h"
 
-LLVMValueRef translateInterfaceCall(
+Ref translateInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -15,7 +15,7 @@ LLVMValueRef translateInterfaceCall(
   auto argExprsLE =
       translateExpressions(globalState, functionState, blockState, builder, call->argExprs);
 
-  auto argsLE = std::vector<LLVMValueRef>{};
+  auto argsLE = std::vector<Ref>{};
   argsLE.reserve(call->argExprs.size());
   for (int i = 0; i < call->argExprs.size(); i++) {
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
@@ -30,14 +30,17 @@ LLVMValueRef translateInterfaceCall(
           globalState,
           functionState,
           builder,
-          call->functionType->params[call->virtualParamIndex],
+          call->functionType,
           argExprsLE,
           call->virtualParamIndex,
           call->indexInEdge);
   checkValidReference(FL(), globalState, functionState, builder, call->functionType->returnType, resultLE);
 
   if (call->functionType->returnType->referend == globalState->metalCache.never) {
-    return LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
+    return wrap(
+        functionState->defaultRegion,
+        globalState->metalCache.neverRef,
+        LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL)));
   } else {
     return resultLE;
   }

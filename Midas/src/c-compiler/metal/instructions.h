@@ -182,14 +182,17 @@ public:
   Expression* sourceExpr;
   Reference* sourceType;
   Referend* sourceReferend;
+  Reference* resultType;
 
   WeakAlias(
       Expression* sourceExpr_,
       Reference* sourceType_,
-      Referend* sourceReferend_) :
+      Referend* sourceReferend_,
+      Reference* resultType_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
-    sourceReferend(sourceReferend_) {}
+    sourceReferend(sourceReferend_),
+    resultType(resultType_) {}
 };
 
 
@@ -484,6 +487,7 @@ public:
   Expression* generatorExpr;
   Reference* generatorType;
   InterfaceReferend* generatorReferend;
+  Prototype* generatorMethod;
   Reference* arrayRefType;
 
   ConstructUnknownSizeArray(
@@ -493,6 +497,7 @@ public:
       Expression* generatorExpr_,
       Reference* generatorType_,
       InterfaceReferend* generatorReferend_,
+      Prototype* generatorMethod_,
       Reference* arrayRefType_) :
     sizeExpr(sizeExpr_),
     sizeType(sizeType_),
@@ -500,6 +505,7 @@ public:
     generatorExpr(generatorExpr_),
     generatorType(generatorType_),
     generatorReferend(generatorReferend_),
+    generatorMethod(generatorMethod_),
     arrayRefType(arrayRefType_) {}
 };
 
@@ -510,18 +516,21 @@ public:
   KnownSizeArrayT* arrayReferend;
   Expression* consumerExpr;
   Reference* consumerType;
+  Prototype* consumerMethod;
 
   DestroyKnownSizeArrayIntoFunction(
       Expression* arrayExpr_,
       Reference* arrayType_,
       KnownSizeArrayT* arrayReferend_,
       Expression* consumerExpr_,
-      Reference* consumerType_) :
+      Reference* consumerType_,
+      Prototype* consumerMethod_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
     consumerExpr(consumerExpr_),
-    consumerType(consumerType_) {}
+    consumerType(consumerType_),
+    consumerMethod(consumerMethod_) {}
 };
 
 class DestroyKnownSizeArrayIntoLocals : public Expression {
@@ -538,6 +547,7 @@ public:
   Expression* consumerExpr;
   Reference* consumerType;
   InterfaceReferend* consumerReferend;
+  Prototype* consumerMethod;
 
   DestroyUnknownSizeArray(
       Expression* arrayExpr_,
@@ -545,13 +555,15 @@ public:
       UnknownSizeArrayT* arrayReferend_,
       Expression* consumerExpr_,
       Reference* consumerType_,
-      InterfaceReferend* consumerReferend_) :
+      InterfaceReferend* consumerReferend_,
+      Prototype* consumerMethod_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
-    consumerReferend(consumerReferend_) {}
+    consumerReferend(consumerReferend_),
+    consumerMethod(consumerMethod_) {}
 };
 
 class NewStruct : public Expression {

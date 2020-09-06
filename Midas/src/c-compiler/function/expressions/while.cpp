@@ -12,7 +12,9 @@ LLVMValueRef translateWhile(
     BlockState* blockState,
     LLVMBuilderRef builder,
     While* whiile) {
-  buildWhile(functionState, builder,
+  buildWhile(
+      globalState,
+      functionState, builder,
       [globalState, functionState, blockState, whiile](LLVMBuilderRef bodyBuilder) {
         return translateExpression(
             globalState, functionState, blockState, bodyBuilder, whiile->bodyExpr);

@@ -4,9 +4,9 @@
 
 LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef concretePtrLE) {
+    WrapperPtrLE wrapperPtrLE) {
   // Control block is always the 0th element of every concrete struct.
-  return LLVMBuildStructGEP(builder, concretePtrLE, 0, "controlPtr");
+  return LLVMBuildStructGEP(builder, wrapperPtrLE, 0, "controlPtr");
 }
 
 LLVMValueRef getControlBlockPtrFromInterfaceRef(

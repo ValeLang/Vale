@@ -78,7 +78,6 @@ LLVMValueRef upcastWeakFatPtr(
   }
 
   return functionState->defaultRegion->upcastWeak(
-      globalState,
       functionState,
       builder,
       sourceRefLE,
@@ -86,4 +85,39 @@ LLVMValueRef upcastWeakFatPtr(
       sourceStructTypeM,
       targetInterfaceReferendM,
       targetInterfaceTypeM);
+}
+
+LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referend) {
+  if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
+    assert(false); // impl
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
+    auto unknownSizeArrayCountedStructLT =
+        globalState->getUnknownSizeArrayWrapperStruct(usaMT->name);
+    return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+  } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
+    auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
+    return LLVMPointerType(countedStructL, 0);
+  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
+    auto interfaceRefStructL =
+        globalState->getInterfaceRefStruct(interfaceReferend->fullName);
+    return interfaceRefStructL;
+  } else {
+    std::cerr << "Unimplemented type: " << typeid(*referend).name() << std::endl;
+    assert(false);
+    return nullptr;
+  }
+}
+
+LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend) {
+  if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
+    assert(false); // impl
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
+    return globalState->getUnknownSizeArrayWeakRefStruct(usaMT->name);
+  } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
+    return globalState->getStructWeakRefStruct(structReferend->fullName);
+  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
+    return globalState->getInterfaceWeakRefStruct(interfaceReferend->fullName);
+  } else {
+    assert(false);
+  }
 }

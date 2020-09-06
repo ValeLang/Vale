@@ -17,7 +17,7 @@ void acquireReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* resultRef,
-    LLVMValueRef expr) {
+    Ref expr) {
 
   auto sourceRnd = resultRef->referend;
 
@@ -104,7 +104,7 @@ void discardOwningRef(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* sourceTypeM,
-    LLVMValueRef exprLE) {
+    Ref exprLE) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST: {
       adjustStrongRc(
@@ -168,9 +168,9 @@ void discard(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceRef,
-    LLVMValueRef expr) {
-  auto sourceRnd = sourceRef->referend;
+    Ref sourceRefLE) {
+  auto sourceRnd = sourceRefLE.refM->referend;
+  auto sourceRef = sourceRefLE.refM;
 
   if (dynamic_cast<Int*>(sourceRnd) ||
       dynamic_cast<Bool*>(sourceRnd) ||
@@ -187,14 +187,14 @@ void discard(
           break;
         case RegionOverride::ASSIST:
         case RegionOverride::NAIVE_RC: {
-          auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+          auto rcLE = adjustStrongRc(from, globalState, functionState, builder, sourceRefLE, sourceRef, -1);
           if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
             buildIf(
                 functionState, builder, isZeroLE(builder, rcLE),
-                [globalState, functionState, blockState, expr, sourceRef](
+                [globalState, functionState, blockState, sourceRefLE, sourceRef](
                     LLVMBuilderRef thenBuilder) {
                   freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
-                      expr, sourceRef);
+                      sourceRefLE, sourceRef);
                 });
           }
           break;
@@ -202,24 +202,24 @@ void discard(
         case RegionOverride::RESILIENT_V0:
         case RegionOverride::RESILIENT_V1:
         case RegionOverride::RESILIENT_V2: {
-          discardWeakRef(from, globalState, functionState, builder, expr);
+          discardWeakRef(from, globalState, functionState, builder, sourceRefLE);
           break;
         }
         default:
           assert(false);
       }
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      discardWeakRef(from, globalState, functionState, builder, expr);
+      discardWeakRef(from, globalState, functionState, builder, sourceRefLE);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         assert(false); // impl
       } else {
-        auto rcLE = adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, -1);
+        auto rcLE = adjustStrongRc(from, globalState, functionState, builder, sourceRefLE, sourceRef, -1);
         buildIf(
             functionState,
             builder,
             isZeroLE(builder, rcLE),
-            [globalState, functionState, expr, interfaceRnd, sourceRef](LLVMBuilderRef thenBuilder) {
+            [globalState, functionState, sourceRefLE, interfaceRnd, sourceRef](LLVMBuilderRef thenBuilder) {
               auto immDestructor = globalState->program->getImmDestructor(sourceRef->referend);
 
               auto interfaceM = globalState->program->getInterface(interfaceRnd->fullName);
@@ -231,7 +231,7 @@ void discard(
               }
               assert(indexInEdge >= 0);
 
-              std::vector<LLVMValueRef> argExprsL = { expr };
+              std::vector<Ref> argExprsL = { sourceRefLE };
               buildInterfaceCall(globalState, functionState, thenBuilder, sourceRef, argExprsL, 0, indexInEdge);
             });
       }

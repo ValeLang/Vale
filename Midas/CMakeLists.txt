@@ -104,6 +104,7 @@ add_executable(valec
 		src/c-compiler/region/common/hgm/hgm.cpp
 		src/c-compiler/region/common/fatweaks/fatweaks.cpp
 		src/c-compiler/region/assist/assist.cpp
+		src/c-compiler/region/mega/mega.cpp
 		src/c-compiler/region/regions.cpp
 
 		src/c-compiler/utils/fileio.cpp

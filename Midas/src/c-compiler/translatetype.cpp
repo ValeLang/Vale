@@ -9,7 +9,7 @@ std::vector<LLVMTypeRef> translateTypes(
     std::vector<Reference*> referencesM) {
   std::vector<LLVMTypeRef> result;
   for (auto referenceM : referencesM) {
-    result.push_back(region->translateType(globalState, referenceM));
+    result.push_back(region->translateType(referenceM));
   }
   return result;
 }
@@ -54,7 +54,7 @@ LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
     IRegion* region,
     Prototype* prototype) {
-  auto returnLT = region->translateType(globalState, prototype->returnType);
+  auto returnLT = region->translateType(prototype->returnType);
   auto paramsLT = translateTypes(globalState, region, prototype->params);
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }

@@ -97,6 +97,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/string.cpp
 		src/c-compiler/function/expressions/shared/heap.cpp
 		src/c-compiler/function/expressions/shared/controlblock.cpp
+		src/c-compiler/function/expressions/shared/ref.cpp
 
 		src/c-compiler/region/common/common.cpp
 		src/c-compiler/region/common/lgtweaks/lgtweaks.cpp

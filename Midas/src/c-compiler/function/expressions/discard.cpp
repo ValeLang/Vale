@@ -15,17 +15,18 @@ Ref translateDiscard(
   auto sourceExpr = discardM->sourceExpr;
   auto sourceResultType = discardM->sourceResultType;
 
-  auto innerLE =
+  auto sourceRef =
       translateExpression(
           globalState, functionState, blockState, builder, sourceExpr);
-  checkValidReference(FL(), globalState, functionState, builder, sourceResultType, innerLE);
+  checkValidReference(FL(), globalState, functionState, builder, sourceResultType, sourceRef);
   discard(
       AFL(std::string("Discard ") + std::to_string((int)discardM->sourceResultType->ownership) + " " + typeid(*discardM->sourceResultType->referend).name() + " from " + typeid(*sourceExpr).name()),
       globalState,
       functionState,
       blockState,
       builder,
-      innerLE);
+      sourceResultType,
+      sourceRef);
   auto resultLE = makeConstExpr(functionState, builder, makeNever());
   return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, resultLE);
 }

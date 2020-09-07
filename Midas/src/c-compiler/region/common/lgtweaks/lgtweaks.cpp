@@ -31,13 +31,15 @@ LLVMValueRef LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
       break;
   }
 
-  checkValidReference(
-      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
+//  checkValidReference(
+//      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
   auto controlBlockPtr =
       getConcreteControlBlockPtr(
           builder,
-          fatWeaks_.getInnerRefFromWeakRef(
-              globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
+          WrapperPtrLE(
+              sourceStructTypeM,
+              fatWeaks_.getInnerRefFromWeakRef(
+                  globalState, functionState, builder, sourceStructTypeM, sourceRefLE)));
 
   auto interfaceRefLT =
       globalState->getInterfaceWeakRefStruct(
@@ -62,7 +64,7 @@ LLVMValueRef LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
               controlBlockPtr),
           WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
           "interfaceRef");
-  checkValidReference(
-      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
+//  checkValidReference(
+//      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
   return interfaceWeakRefLE;
 }

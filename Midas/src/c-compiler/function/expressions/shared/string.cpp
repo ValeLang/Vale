@@ -3,14 +3,14 @@
 
 LLVMValueRef getInnerStrPtrFromWrapperPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef strWrapperPtrLE) {
+    WrapperPtrLE strWrapperPtrLE) {
   return LLVMBuildStructGEP(
-      builder, strWrapperPtrLE, 1, "strInnerStructPtr");
+      builder, strWrapperPtrLE.refLE, 1, "strInnerStructPtr");
 }
 
 LLVMValueRef getLenPtrFromStrWrapperPtr(
     LLVMBuilderRef builder,
-    Ref strWrapperPtrLE) {
+    WrapperPtrLE strWrapperPtrLE) {
   auto innerStringPtrLE =
       getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
   auto lenPtrLE =
@@ -20,11 +20,11 @@ LLVMValueRef getLenPtrFromStrWrapperPtr(
 
 LLVMValueRef getLenFromStrWrapperPtr(
     LLVMBuilderRef builder,
-    Ref strWrapperPtrLE) {
+    WrapperPtrLE strWrapperPtrLE) {
   return LLVMBuildLoad(builder, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE), "len");
 }
 
-LLVMValueRef buildConstantVStr(
+WrapperPtrLE buildConstantVStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

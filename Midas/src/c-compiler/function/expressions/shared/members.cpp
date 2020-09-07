@@ -168,7 +168,7 @@ Ref swapMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    Reference* structRefM,
+    Reference* structRefMT,
     Ref structRef,
     int memberIndex,
     const std::string& memberName,
@@ -177,7 +177,10 @@ Ref swapMember(
 
   structRef.assertOwnership(Ownership::BORROW);
 
-  auto objPtrLE = checkValidReference(FL(), globalState, functionState, builder, structRefM, structRef);
+  auto objPtrLE =
+      WrapperPtrLE(
+          structRefMT,
+          checkValidReference(FL(), globalState, functionState, builder, structRefMT, structRef));
   auto innerStructPtrLE = getStructContentsPtr(builder, objPtrLE);
 
   assert(structDefM->mutability == Mutability::MUTABLE);
@@ -188,7 +191,8 @@ Ref swapMember(
   // We don't adjust the oldMember's RC here because even though we're acquiring
   // a reference to it, the struct is losing its reference, so it cancels out.
 
-  auto newMemberLE = checkValidReference(FL(), globalState, functionState, builder, memberRefMT, newMemberRef);
+  auto newMemberLE =
+      checkValidReference(FL(), globalState, functionState, builder, memberRefMT, newMemberRef);
   storeInnerStructMember(
       builder, innerStructPtrLE, memberIndex, memberName, newMemberLE);
   // We don't adjust the newMember's RC here because even though the struct is

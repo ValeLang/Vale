@@ -22,7 +22,7 @@ void fillUnknownSizeArray(
     LLVMValueRef usaElementsPtrLE) {
 
   foreachArrayElement(
-      functionState, builder, sizeLE, usaElementsPtrLE,
+      globalState, functionState, builder, sizeLE, usaElementsPtrLE,
       [globalState, functionState, usaMT, generatorMethod, generatorType, usaElementsPtrLE, generatorLE](Ref indexRef, LLVMBuilderRef bodyBuilder) {
         acquireReference(
             AFL("ConstructUSA generate iteration"),
@@ -137,8 +137,8 @@ Ref translateConstructUnknownSizeArray(
   checkValidReference(FL(), globalState, functionState, builder,
       constructUnknownSizeArray->arrayRefType, usaRef);
 
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeLE);
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);
+  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorType, generatorLE);
 
   return usaRef;
 }

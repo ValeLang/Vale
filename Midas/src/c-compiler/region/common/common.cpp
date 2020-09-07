@@ -4,6 +4,7 @@
 #include <function/expressions/shared/shared.h>
 #include <function/expressions/shared/weaks.h>
 #include <function/expressions/shared/controlblock.h>
+#include <region/common/fatweaks/fatweaks.h>
 #include "common.h"
 
 LLVMValueRef upcastThinPtr(
@@ -13,12 +14,13 @@ LLVMValueRef upcastThinPtr(
 
     Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceRefLE,
+    WrapperPtrLE sourceRefLE,
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM) {
   assert(sourceStructTypeM->location != Location::INLINE);
 
+  LLVMValueRef controlBlockPtrLE;
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
@@ -26,6 +28,7 @@ LLVMValueRef upcastThinPtr(
       assert(sourceStructTypeM->ownership == Ownership::SHARE ||
           sourceStructTypeM->ownership == Ownership::OWN ||
           sourceStructTypeM->ownership == Ownership::BORROW);
+      controlBlockPtrLE = getConcreteControlBlockPtr(builder, sourceRefLE);
       break;
     }
     case RegionOverride::RESILIENT_V0:
@@ -33,6 +36,7 @@ LLVMValueRef upcastThinPtr(
     case RegionOverride::RESILIENT_V2: {
       assert(sourceStructTypeM->ownership == Ownership::SHARE ||
           sourceStructTypeM->ownership == Ownership::OWN);
+      controlBlockPtrLE = getConcreteControlBlockPtr(builder, sourceRefLE);
       break;
     }
     default:
@@ -42,9 +46,7 @@ LLVMValueRef upcastThinPtr(
   auto interfaceRefLE =
       makeInterfaceRefStruct(
           globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM,
-          getControlBlockPtr(builder, sourceRefLE, sourceStructTypeM->referend));
-  checkValidReference(
-      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceRefLE);
+          controlBlockPtrLE);
   return interfaceRefLE;
 }
 

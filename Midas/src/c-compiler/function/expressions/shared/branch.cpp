@@ -215,10 +215,13 @@ void buildWhile(
             LLVMInt1Type(),
             globalState->metalCache.boolRef,
             globalState->metalCache.boolRef,
-            [functionState, buildBody](LLVMBuilderRef thenBlockBuilder) {
+            [globalState, functionState, buildBody](LLVMBuilderRef thenBlockBuilder) {
               buildBody(thenBlockBuilder);
               // Return true, so the while loop will keep executing.
-              return makeConstIntExpr(functionState, thenBlockBuilder, LLVMInt1Type(), 1);
+              return wrap(
+                  functionState->defaultRegion,
+                  globalState->metalCache.boolRef,
+                  makeConstIntExpr(functionState, thenBlockBuilder, LLVMInt1Type(), 1));
             },
             [globalState, functionState](LLVMBuilderRef elseBlockBuilder) -> Ref {
               // Return false, so the while loop will stop executing.

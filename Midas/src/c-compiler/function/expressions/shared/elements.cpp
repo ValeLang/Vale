@@ -57,7 +57,7 @@ WrapperPtrLE getKnownSizeArrayWrapperPtr(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      return WrapperPtrLE(ksaMT, lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef));
+      return lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef);
       break;
     }
     default:
@@ -85,7 +85,7 @@ WrapperPtrLE getUnknownSizeArrayWrapperPtr(
         case Ownership::OWN:
           return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
         case Ownership::BORROW:
-          return WrapperPtrLE(arrayRefMT, lockWeakRef(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
+          return lockWeakRef(FL(), globalState, functionState, builder, arrayRefMT, arrayRef);
         case Ownership::WEAK:
           assert(false); // VIR never loads from a weak ref
       }
@@ -94,6 +94,7 @@ WrapperPtrLE getUnknownSizeArrayWrapperPtr(
     default:
       assert(false);
   }
+  assert(false);
 }
 
 Ref getUnknownSizeArrayLength(
@@ -165,11 +166,13 @@ Ref loadElement(
     LLVMBuilderRef builder,
     Reference* arrayRefM,
     Reference* elementRefM,
-    LLVMValueRef sizeLE,
+    Ref sizeRef,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
-    LLVMValueRef indexLE,
+    Ref indexRef,
     Reference* resultRefM) {
+  auto indexLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, indexRef);
+  auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
 
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
@@ -197,18 +200,19 @@ Ref loadElement(
 }
 
 
-LLVMValueRef storeElement(
+Ref storeElement(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* arrayRefM,
     Reference* elementRefM,
-    LLVMValueRef sizeLE,
-    Ref arrayRef,
+    Ref sizeRef,
+    LLVMValueRef arrayPtrLE,
     Mutability mutability,
     Ref indexRef,
     Ref sourceRef) {
+  auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
 
   auto indexLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, indexRef);
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
@@ -216,22 +220,22 @@ LLVMValueRef storeElement(
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
   buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
-  auto arrayPtrLE = checkValidReference(FL(), globalState, functionState, builder, arrayRefM, arrayRef);
+//  auto arrayPtrLE = checkValidReference(FL(), globalState, functionState, builder, arrayRefM, arrayRef);
   auto sourceLE = checkValidReference(FL(), globalState, functionState, builder, elementRefM, sourceRef);
 
   if (mutability == Mutability::IMMUTABLE) {
     if (arrayRefM->location == Location::INLINE) {
       assert(false);
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
-      return nullptr;
     } else {
-      return storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+      auto resultLE = storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+      return wrap(functionState->defaultRegion, elementRefM, resultLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    return storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+    auto resultLE = storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+    return wrap(functionState->defaultRegion, elementRefM, resultLE);
   } else {
     assert(false);
-    return nullptr;
   }
 }
 
@@ -254,6 +258,7 @@ void foreachArrayElement(
   auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
 
   buildWhile(
+      globalState,
       functionState,
       builder,
       [globalState, functionState, sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {

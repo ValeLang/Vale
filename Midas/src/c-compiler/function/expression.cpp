@@ -130,15 +130,21 @@ Ref translateExpressionInner(
           assert(false);
         } else if (weakAlias->sourceType->ownership == Ownership::BORROW) {
           if (auto structReferendM = dynamic_cast<StructReferend*>(weakAlias->sourceType->referend)) {
-            auto objPtrLE = checkValidReference(FL(), globalState, functionState, builder, weakAlias->sourceType, sourceRefLE);
+            auto objPtrLE =
+                WrapperPtrLE(
+                    weakAlias->sourceType,
+                    checkValidReference(FL(), globalState, functionState, builder, weakAlias->sourceType, sourceRefLE));
             auto weakRefLE =
-                assembleStructWeakRef(
-                    globalState, functionState, builder,
-                    weakAlias->sourceType, weakAlias->resultType, structReferendM, objPtrLE);
-            aliasWeakRef(FL(), globalState, functionState, builder, weakRefLE);
+                wrap(
+                    functionState->defaultRegion,
+                    weakAlias->resultType,
+                    assembleStructWeakRef(
+                        globalState, functionState, builder,
+                        weakAlias->sourceType, weakAlias->resultType, structReferendM, objPtrLE));
+            aliasWeakRef(FL(), globalState, functionState, builder, weakAlias->resultType, weakRefLE);
             discard(
                 AFL("WeakAlias drop constraintref"),
-                globalState, functionState, blockState, builder, sourceRefLE);
+                globalState, functionState, blockState, builder, weakAlias->sourceType, sourceRefLE);
             return weakRefLE;
           } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(weakAlias->sourceType->referend)) {
             assert(false); // impl
@@ -251,7 +257,7 @@ Ref translateExpressionInner(
     }
     discard(
         AFL("MemberLoad drop struct"),
-        globalState, functionState, blockState, builder, structRef);
+        globalState, functionState, blockState, builder, memberLoad->structType, structRef);
     return resultRef;
   } else if (auto destroyKnownSizeArrayIntoFunction = dynamic_cast<DestroyKnownSizeArrayIntoFunction*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -276,7 +282,7 @@ Ref translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, consumerType, consumerRef);
 
     foreachArrayElement(
-        functionState, builder, sizeRef, arrayPtrLE,
+        globalState, functionState, builder, sizeRef, arrayPtrLE,
         [globalState, functionState, blockState, consumerType, consumerMethod, arrayReferend, arrayPtrLE, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
           acquireReference(
               AFL("DestroyKSAIntoF consume iteration"),
@@ -298,8 +304,10 @@ Ref translateExpressionInner(
       // We dont decrement anything here, we're only here because we already hit zero.
 
       auto arrayWrapperLE =
-          checkValidReference(
-              FL(), globalState, functionState, builder, arrayType, arrayRef);
+          WrapperPtrLE(
+              arrayType,
+              checkValidReference(
+                  FL(), globalState, functionState, builder, arrayType, arrayRef));
       freeConcrete(
           AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
           arrayWrapperLE, arrayType);
@@ -308,7 +316,7 @@ Ref translateExpressionInner(
     }
 
 
-    discard(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder, consumerRef);
+    discard(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, makeConstExpr(functionState, builder, makeNever()));
   } else if (auto destroyUnknownSizeArrayIntoFunction = dynamic_cast<DestroyUnknownSizeArray*>(expr)) {
@@ -333,7 +341,7 @@ Ref translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, consumerType, consumerRef);
 
     foreachArrayElement(
-        functionState, builder, arrayLenRef, arrayPtrLE,
+        globalState, functionState, builder, arrayLenRef, arrayPtrLE,
         [globalState, functionState, blockState, consumerType, consumerMethod, arrayReferend, arrayPtrLE, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
           auto indexLE =
               checkValidReference(
@@ -359,7 +367,9 @@ Ref translateExpressionInner(
       // We dont decrement anything here, we're only here because we already hit zero.
 
       auto arrayWrapperLE =
-          checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRef);
+          WrapperPtrLE(
+              arrayType,
+              checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRef));
       // Free it!
       freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
           arrayWrapperLE, arrayType);
@@ -367,7 +377,7 @@ Ref translateExpressionInner(
       assert(false);
     }
 
-    discard(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder, consumerRef);
+    discard(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, makeConstExpr(functionState, builder, makeNever()));
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
@@ -391,7 +401,7 @@ Ref translateExpressionInner(
             constI64LE(dynamic_cast<KnownSizeArrayT*>(knownSizeArrayLoad->arrayType->referend)->size));
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
-    discard(AFL("KSALoad"), globalState, functionState, blockState, builder, arrayRef);
+    discard(AFL("KSALoad"), globalState, functionState, blockState, builder, arrayType, arrayRef);
 
     LLVMValueRef arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
     auto resultLE =
@@ -430,7 +440,7 @@ Ref translateExpressionInner(
 
     checkValidReference(FL(), globalState, functionState, builder, resultType, resultLE);
 
-    discard(AFL("USALoad"), globalState, functionState, blockState, builder, arrayRef);
+    discard(AFL("USALoad"), globalState, functionState, blockState, builder, arrayType, arrayRef);
 
     return resultLE;
   } else if (auto unknownSizeArrayStore = dynamic_cast<UnknownSizeArrayStore*>(expr)) {
@@ -481,7 +491,7 @@ Ref translateExpressionInner(
         globalState, functionState, blockState, builder,
         arrayType, arrayReferend->rawArray->elementType, sizeRef, arrayPtrLE, mutability, indexRef, valueToStoreLE);
 
-    discard(AFL("USAStore"), globalState, functionState, blockState, builder, arrayRefLE);
+    discard(AFL("USAStore"), globalState, functionState, blockState, builder, arrayType, arrayRefLE);
 
 
     return oldValueLE;
@@ -495,7 +505,7 @@ Ref translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRefLE);
 
     auto sizeLE = getUnknownSizeArrayLength(globalState, functionState, builder, arrayType, arrayRefLE);
-    discard(AFL("USALen"), globalState, functionState, blockState, builder, arrayRefLE);
+    discard(AFL("USALen"), globalState, functionState, blockState, builder, arrayType, arrayRefLE);
 
     return sizeLE;
   } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
@@ -541,11 +551,11 @@ Ref translateExpressionInner(
 
     auto oldMemberLE =
         swapMember(
-            globalState, functionState, builder, structDefM, structExpr, memberIndex, memberName, sourceExpr);
+            globalState, functionState, builder, structDefM, structType, structExpr, memberIndex, memberName, sourceExpr);
     checkValidReference(FL(), globalState, functionState, builder, memberType, oldMemberLE);
     discard(
         AFL("MemberStore discard struct"), globalState, functionState, blockState, builder,
-        structExpr);
+        structType, structExpr);
     return oldMemberLE;
   } else if (auto structToInterfaceUpcast = dynamic_cast<StructToInterfaceUpcast*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -588,6 +598,7 @@ Ref translateExpressionInner(
         globalState,
         functionState,
         builder,
+        structToInterfaceUpcast->sourceStructType,
         structToInterfaceUpcast->sourceStructReferend,
         sourceLE,
         structToInterfaceUpcast->targetInterfaceType,
@@ -615,6 +626,7 @@ Ref translateExpressionInner(
         functionState->defaultRegion->lockWeak(functionState, builder,
             false, false, lockWeak->resultOptType,
             sourceTypeAsConstraintRefM,
+            sourceType,
             sourceLE,
             [globalState, functionState, lockWeak, sourceLE](LLVMBuilderRef thenBuilder, Ref constraintRef) -> Ref {
               checkValidReference(FL(), globalState, functionState, thenBuilder,
@@ -633,6 +645,7 @@ Ref translateExpressionInner(
                   globalState,
                   functionState,
                   thenBuilder,
+                  lockWeak->someType,
                   lockWeak->someReferend,
                   someRef,
                   lockWeak->resultOptType,
@@ -648,6 +661,7 @@ Ref translateExpressionInner(
                   globalState,
                   functionState,
                   elseBuilder,
+                  lockWeak->noneType,
                   lockWeak->noneReferend,
                   noneRef,
                   lockWeak->resultOptType,
@@ -656,7 +670,7 @@ Ref translateExpressionInner(
 
     discard(
         AFL("LockWeak drop weak ref"),
-        globalState, functionState, blockState, builder, sourceLE);
+        globalState, functionState, blockState, builder, sourceType, sourceLE);
 
     return resultOptLE;
   } else {

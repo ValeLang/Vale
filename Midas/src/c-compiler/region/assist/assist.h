@@ -18,20 +18,20 @@ public:
   Assist(GlobalState* globalState);
   ~Assist() override = default;
 
-  LLVMValueRef lockWeak(
+  Ref lockWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       bool thenResultIsNever,
       bool elseResultIsNever,
       Reference* resultOptTypeM,
 //      LLVMTypeRef resultOptTypeL,
-      Reference* constraintRefMT,
+      Reference* constraintRefM,
       Reference* sourceWeakRefMT,
-      LLVMValueRef sourceWeakRefLE,
-      std::function<LLVMValueRef(LLVMBuilderRef, LLVMValueRef)> buildThen,
-      std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) override;
+      Ref sourceWeakRefLE,
+      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+      std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
-  LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) override;
+  LLVMTypeRef translateType(Reference* referenceM) override;
 
   LLVMValueRef upcastWeak(
       FunctionState* functionState,

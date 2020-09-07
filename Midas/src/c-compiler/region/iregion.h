@@ -102,6 +102,7 @@ public:
       Reference* resultOptTypeM,
 //      LLVMTypeRef resultOptTypeL,
       Reference* constraintRefM,
+      Reference* sourceWeakRefMT,
       Ref sourceWeakRefLE,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
@@ -166,12 +167,12 @@ public:
       Reference* referenceM,
       UnknownSizeArrayT* unknownSizeArrayMT) = 0;
 
-  virtual void checkValidReference(
+  virtual LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      LLVMValueRef refLE) = 0;
+      Ref refLE) = 0;
 
   virtual LLVMValueRef loadElement(
       FunctionState* functionState,

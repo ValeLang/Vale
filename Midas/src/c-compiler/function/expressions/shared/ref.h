@@ -3,6 +3,7 @@
 
 #include <llvm-c/Core.h>
 #include "metal/types.h"
+#include "afl.h"
 
 class FunctionState;
 class GlobalState;
@@ -34,6 +35,14 @@ private:
       GlobalState* globalState,
       LLVMBuilderRef builder,
       Ref ref);
+
+  friend void buildCheckWeakRef(
+      AreaAndFileAndLine checkerAFL,
+      GlobalState* globalState,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef);
 };
 
 Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);
@@ -44,5 +53,16 @@ struct WrapperPtrLE {
 
   WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
 };
+
+Ref wrap(IRegion* region, Reference* refM, WrapperPtrLE exprLE);
+
+struct InterfaceFatPtrLE {
+  Reference* const refM;
+  LLVMValueRef const refLE;
+
+  InterfaceFatPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
+};
+
+Ref wrap(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
 
 #endif

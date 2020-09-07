@@ -118,7 +118,7 @@ public:
 //      LLVMTypeRef resultOptTypeL,
       Reference* constraintRefM,
       Reference* sourceWeakRefMT,
-      LLVMValueRef sourceWeakRefLE,
+      Ref sourceWeakRefLE,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
@@ -182,12 +182,12 @@ public:
       Reference* referenceM,
       UnknownSizeArrayT* unknownSizeArrayMT) override;
 
-  void checkValidReference(
+  LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      LLVMValueRef refLE) override;
+      Ref refLE) override;
 
   LLVMValueRef loadElement(
       FunctionState* functionState,
@@ -214,7 +214,7 @@ public:
 
 
 
-  LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM) override;
+  LLVMTypeRef translateType(Reference* referenceM) override;
 
 
   void declareEdge(

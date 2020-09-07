@@ -51,14 +51,18 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto leftStrWrapperPtrLE =
-        checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
+        WrapperPtrLE(
+            globalState->metalCache.strRef,
+            checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, leftStrWrapperRef));
 
     auto rightStrTypeM = call->argTypes[1];
     auto rightStrWrapperRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto rightStrWrapperPtrLE =
-        checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
+        WrapperPtrLE(
+            globalState->metalCache.strRef,
+            checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, leftStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
@@ -73,8 +77,8 @@ Ref translateExternCall(
             "eqStrResult");
     auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8Type(), 0, false), "");
 
-    discard(FL(), globalState, functionState, blockState, builder, leftStrWrapperRef);
-    discard(FL(), globalState, functionState, blockState, builder, rightStrWrapperRef);
+    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
+    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultBoolLE);
   } else if (name == "__addFloatFloat") {
@@ -122,7 +126,9 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto leftStrWrapperPtrLE =
-        checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperRef);
+        WrapperPtrLE(
+            globalState->metalCache.strRef,
+            checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperRef));
     auto leftStrLenLE = getLenFromStrWrapperPtr(builder, leftStrWrapperPtrLE);
 
     auto rightStrTypeM = call->argTypes[1];
@@ -130,8 +136,10 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto rightStrWrapperPtrLE =
-        checkValidReference(
-            FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperRef);
+        WrapperPtrLE(
+            globalState->metalCache.strRef,
+            checkValidReference(
+                FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperRef));
     auto rightStrLenLE = getLenFromStrWrapperPtr(builder, rightStrWrapperPtrLE);
 
     auto combinedLenLE =
@@ -146,8 +154,8 @@ Ref translateExternCall(
     };
     LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
 
-    discard(FL(), globalState, functionState, blockState, builder, leftStrWrapperRef);
-    discard(FL(), globalState, functionState, blockState, builder, rightStrWrapperRef);
+    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
+    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
 
     auto destStrRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, destStrWrapperPtrLE);
     checkValidReference(FL(), globalState, functionState, builder, call->function->returnType, destStrRef);
@@ -254,15 +262,17 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto argStrWrapperPtrLE =
-        checkValidReference(
-            FL(), globalState, functionState, builder, call->argTypes[0], argStrWrapperRef);
+        WrapperPtrLE(
+            globalState->metalCache.strRef,
+            checkValidReference(
+                FL(), globalState, functionState, builder, call->argTypes[0], argStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->printVStr, argsLE.data(), argsLE.size(), "");
 
-    discard(FL(), globalState, functionState, blockState, builder, argStrWrapperRef);
+    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, argStrWrapperRef);
 
     assert(call->function->returnType == globalState->metalCache.voidRef);
 

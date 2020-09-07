@@ -21,7 +21,7 @@ LLVMValueRef mallocUnknownSizeArray(
     LLVMTypeRef usaElementLT,
     LLVMValueRef lengthLE);
 
-LLVMValueRef mallocStr(
+WrapperPtrLE mallocStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -34,7 +34,7 @@ void freeConcrete(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    LLVMValueRef concreteLE,
+    WrapperPtrLE concreteLE,
     Reference* concreteRefM);
 
 #endif

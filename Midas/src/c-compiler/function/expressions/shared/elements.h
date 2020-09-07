@@ -38,9 +38,10 @@ Ref storeElement(
     Ref sourceLE);
 
 void foreachArrayElement(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Ref sizeLE,
+    Ref sizeRef,
     LLVMValueRef arrayPtrLE,
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
 

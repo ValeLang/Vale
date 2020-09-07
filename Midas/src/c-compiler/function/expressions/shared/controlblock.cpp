@@ -6,16 +6,16 @@ LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE wrapperPtrLE) {
   // Control block is always the 0th element of every concrete struct.
-  return LLVMBuildStructGEP(builder, wrapperPtrLE, 0, "controlPtr");
+  return LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr");
 }
 
-LLVMValueRef getControlBlockPtrFromInterfaceRef(
+LLVMValueRef getControlBlockPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE) {
+    InterfaceFatPtrLE interfaceFatPtrLE) {
   // Interface fat pointer's first element points directly at the control block,
   // and we dont have to cast it. We would have to cast if we were accessing the
   // actual object though.
-  return LLVMBuildExtractValue(builder, interfaceRefLE, 0, "controlPtr");
+  return LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr");
 }
 
 // See CRCISFAORC for why we don't take in a mutability.

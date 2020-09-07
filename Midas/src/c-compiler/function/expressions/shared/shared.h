@@ -46,7 +46,8 @@ void discard(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Ref sourceLE);
+    Reference* sourceRef,
+    Ref sourceRefLE);
 
 
 LLVMValueRef adjustCounter(
@@ -57,7 +58,15 @@ LLVMValueRef adjustCounter(
 
 LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
-    Ref interfaceRefLE);
+    InterfaceFatPtrLE interfaceFatPtrLE);
+
+LLVMValueRef getControlBlockPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    LLVMValueRef ref,
+    Reference* referenceM);
 
 LLVMValueRef getControlBlockPtr(
     GlobalState* globalState,
@@ -240,6 +249,7 @@ Ref upcast(
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
+    Reference* sourceStructMT,
     StructReferend* sourceStructReferendM,
     Ref sourceRefLE,
 

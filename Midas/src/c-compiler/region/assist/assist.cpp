@@ -13,32 +13,37 @@ Assist::Assist(GlobalState* globalState_) :
     Mega(globalState_) {
 }
 
-LLVMValueRef Assist::lockWeak(
+Ref Assist::lockWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     bool thenResultIsNever,
     bool elseResultIsNever,
     Reference* resultOptTypeM,
-    Reference* constraintRefMT,
+    Reference* constraintRefM,
     Reference* sourceWeakRefMT,
-    LLVMValueRef sourceWeakRefLE,
-    std::function<LLVMValueRef(LLVMBuilderRef, LLVMValueRef)> buildThen,
-    std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) {
-  auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT,
-      sourceWeakRefLE);
-  auto resultOptTypeLE = translateType(globalState, resultOptTypeM);
-  return buildIfElse(functionState, builder, isAliveLE, resultOptTypeLE, false, false,
-      [this, functionState, sourceWeakRefLE, sourceWeakRefMT, buildThen](
-          LLVMBuilderRef thenBuilder) {
+    Ref sourceWeakRef,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  auto isAliveLE =
+      getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT, sourceWeakRef);
+  auto resultOptTypeLE = translateType(resultOptTypeM);
+  return buildIfElse(
+      globalState, functionState, builder, isAliveLE, resultOptTypeLE, resultOptTypeM, resultOptTypeM,
+      [this, functionState, sourceWeakRef, constraintRefM, sourceWeakRefMT, buildThen](
+          LLVMBuilderRef thenBuilder) -> Ref {
+        auto sourceWeakRefLE =
+            checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRef);
         auto constraintRefLE =
             fatWeaks.getInnerRefFromWeakRef(
                 globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE);
-        return buildThen(thenBuilder, constraintRefLE);
+        auto constraintRef =
+            wrap(functionState->defaultRegion, constraintRefM, constraintRefLE);
+        return buildThen(thenBuilder, constraintRef);
       },
       buildElse);
 }
 
-LLVMTypeRef Assist::translateType(GlobalState* globalState, Reference* referenceM) {
+LLVMTypeRef Assist::translateType(Reference* referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:
       return immutables.translateType(globalState, referenceM);
@@ -81,7 +86,6 @@ void Assist::translateUnknownSizeArray(
     UnknownSizeArrayT* unknownSizeArrayMT) {
   auto elementLT =
       translateType(
-          globalState,
           unknownSizeArrayMT->rawArray->elementType);
   defaultLayout.translateUnknownSizeArray(unknownSizeArrayMT, elementLT);
 }
@@ -90,7 +94,6 @@ void Assist::translateKnownSizeArray(
     KnownSizeArrayT* knownSizeArrayMT) {
   auto elementLT =
       translateType(
-          globalState,
           knownSizeArrayMT->rawArray->elementType);
   defaultLayout.translateKnownSizeArray(knownSizeArrayMT, elementLT);
 }
@@ -106,7 +109,6 @@ void Assist::translateStruct(
   for (int i = 0; i < structM->members.size(); i++) {
     innerStructMemberTypesL.push_back(
         translateType(
-            globalState,
             structM->members[i]->type));
   }
   defaultLayout.translateStruct(
@@ -156,7 +158,7 @@ LLVMTypeRef Assist::translateInterfaceMethodToFunctionType(
     InterfaceMethod* method) {
   auto returnMT = method->prototype->returnType;
   auto paramsMT = method->prototype->params;
-  auto returnLT = translateType(globalState, returnMT);
+  auto returnLT = translateType(returnMT);
   auto paramsLT = translateTypes(globalState, this, paramsMT);
 
   switch (paramsMT[method->virtualParamIndex]->ownership) {

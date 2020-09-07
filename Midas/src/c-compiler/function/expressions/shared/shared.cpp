@@ -88,8 +88,37 @@ LLVMValueRef adjustCounter(
 
 LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE) {
-  return LLVMBuildExtractValue(builder, interfaceRefLE, 1, "itablePtr");
+    InterfaceFatPtrLE interfaceRefLE) {
+  return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, 1, "itablePtr");
+}
+
+LLVMValueRef getControlBlockPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    LLVMValueRef ref,
+    Reference* referenceM) {
+  auto referendM = referenceM->referend;
+  if (dynamic_cast<InterfaceReferend*>(referendM)) {
+    auto referenceLE = InterfaceFatPtrLE(referenceM, ref);
+    return getControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<StructReferend*>(referendM)) {
+    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
+    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else if (dynamic_cast<Str*>(referendM)) {
+    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    return getConcreteControlBlockPtr(builder, referenceLE);
+  } else {
+    assert(false);
+    return nullptr;
+  }
 }
 
 LLVMValueRef getControlBlockPtr(
@@ -99,18 +128,36 @@ LLVMValueRef getControlBlockPtr(
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     Ref ref,
     Reference* referenceM) {
-  auto referenceLE =
-      checkValidReference(FL(), globalState, functionState, builder, referenceM, ref);
   auto referendM = referenceM->referend;
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
-    return getControlBlockPtrFromInterfaceRef(builder, referenceLE);
+    auto referenceLE =
+        InterfaceFatPtrLE(
+            referenceM,
+            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
+    return getControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
+    auto referenceLE =
+        WrapperPtrLE(
+            referenceM,
+            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
+    auto referenceLE =
+        WrapperPtrLE(
+            referenceM,
+            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+    auto referenceLE =
+        WrapperPtrLE(
+            referenceM,
+            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(builder, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
+    auto referenceLE =
+        WrapperPtrLE(
+            referenceM,
+            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(builder, referenceLE);
   } else {
     assert(false);
@@ -261,9 +308,9 @@ LLVMValueRef getItablePtrFromInterfacePtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
-    LLVMValueRef virtualArgLE) {
+    InterfaceFatPtrLE virtualArgLE) {
   buildFlare(FL(), globalState, functionState, builder);
-  assert(LLVMTypeOf(virtualArgLE) == functionState->defaultRegion->translateType(virtualParamMT));
+  assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
   return getTablePtrFromInterfaceRef(builder, virtualArgLE);
 }
 
@@ -272,11 +319,11 @@ LLVMValueRef getObjPtrFromInterfacePtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
-    LLVMValueRef virtualArgLE) {
-  assert(LLVMTypeOf(virtualArgLE) == functionState->defaultRegion->translateType(virtualParamMT));
+    InterfaceFatPtrLE virtualArgLE) {
+  assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
   return LLVMBuildPointerCast(
           builder,
-          getControlBlockPtrFromInterfaceRef(builder, virtualArgLE),
+          getControlBlockPtr(builder, virtualArgLE),
           LLVMPointerType(LLVMVoidType(), 0),
           "objAsVoidPtr");
 }
@@ -304,18 +351,21 @@ Ref buildInterfaceCall(
         case Ownership::OWN:
         case Ownership::BORROW:
         case Ownership::SHARE: {
+          auto virtualArgInterfaceFatPtrLE = InterfaceFatPtrLE(virtualParamMT, virtualArgLE);
           itablePtrLE =
               getItablePtrFromInterfacePtr(
-                  globalState, functionState, builder, virtualParamMT, virtualArgLE);
-          auto objVoidPtrLE = getObjPtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgLE);
+                  globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = getObjPtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
         case Ownership::WEAK: {
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              FatWeaks().getInnerRefFromWeakRef(
-                  globalState, functionState, builder, virtualParamMT, virtualArgLE);
+              InterfaceFatPtrLE(
+                  virtualParamMT,
+                  FatWeaks().getInnerRefFromWeakRef(
+                      globalState, functionState, builder, virtualParamMT, virtualArgLE));
           itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
           // Now, reassemble a weak void* ref to the struct.
           auto weakVoidStructRefLE =
@@ -333,8 +383,9 @@ Ref buildInterfaceCall(
       switch (virtualParamMT->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE: {
-          itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgLE);
-          auto objVoidPtrLE = getObjPtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgLE);
+          auto virtualArgInterfaceFatPtrLE = InterfaceFatPtrLE(virtualParamMT, virtualArgLE);
+          itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = getObjPtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
@@ -342,8 +393,10 @@ Ref buildInterfaceCall(
         case Ownership::WEAK: {
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              FatWeaks().getInnerRefFromWeakRef(
-                  globalState, functionState, builder, virtualParamMT, virtualArgLE);
+              InterfaceFatPtrLE(
+                  virtualParamMT,
+                  FatWeaks().getInnerRefFromWeakRef(
+                      globalState, functionState, builder, virtualParamMT, virtualArgLE));
           itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
           // Now, reassemble a weak void* ref to the struct.
           auto weakVoidStructRefLE =
@@ -428,7 +481,8 @@ LLVMValueRef checkValidReference(
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, ref);
+        auto interfaceFatPtrLE = InterfaceFatPtrLE(refM, refLE);
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
       auto controlBlockPtrLE =
@@ -436,7 +490,8 @@ LLVMValueRef checkValidReference(
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else if (refM->ownership == Ownership::SHARE) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, ref);
+        auto interfaceFatPtrLE = InterfaceFatPtrLE(refM, refLE);
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
       if (refM->location == Location::INLINE) {
@@ -461,14 +516,15 @@ LLVMValueRef checkValidReference(
         case RegionOverride::FAST: {
           if (refM->ownership == Ownership::BORROW) {
             if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-              auto itablePtrLE = getTablePtrFromInterfaceRef(builder, refLE);
+              auto interfaceFatPtrLE = InterfaceFatPtrLE(refM, refLE);
+              auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
               buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
             }
             auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, ref, refM);
             buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
                 controlBlockPtrLE);
           } else if (refM->ownership == Ownership::WEAK) {
-            buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, refLE);
+            buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
           } else
             assert(false);
           break;
@@ -476,7 +532,7 @@ LLVMValueRef checkValidReference(
         case RegionOverride::RESILIENT_V0:
         case RegionOverride::RESILIENT_V1:
         case RegionOverride::RESILIENT_V2: {
-          buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, refLE);
+          buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
           break;
         }
         default:
@@ -523,6 +579,7 @@ Ref buildCall(
   }
 }
 
+// Not returning Ref because we might need to wrap it in something else like a weak fat ptr
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -564,6 +621,7 @@ Ref upcast(
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
+    Reference* sourceStructMT,
     StructReferend* sourceStructReferendM,
     Ref sourceRefLE,
 
@@ -574,15 +632,32 @@ Ref upcast(
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      switch (sourceStructTypeM->ownership) {
+      switch (sourceStructMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN:
-        case Ownership::BORROW:
-          return upcastThinPtr(globalState, functionState, builder, sourceStructTypeM, sourceStructReferendM, sourceRefLE, targetInterfaceTypeM, targetInterfaceReferendM);
-          break;
-        case Ownership::WEAK:
-          return upcastWeakFatPtr(globalState, functionState, builder, sourceStructTypeM, sourceStructReferendM, sourceRefLE, targetInterfaceTypeM, targetInterfaceReferendM);
-          break;
+        case Ownership::BORROW: {
+          auto sourceStructWrapperPtrLE =
+              WrapperPtrLE(
+                  sourceStructMT,
+                  checkValidReference(
+                      FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
+          auto resultInterfaceFatPtrLE =
+              upcastThinPtr(
+                  globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
+                  sourceStructWrapperPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
+          return wrap(functionState->defaultRegion, targetInterfaceTypeM, resultInterfaceFatPtrLE);
+        }
+        case Ownership::WEAK: {
+          auto sourceWeakStructFatPtrLE =
+              checkValidReference(
+                  FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE);
+          auto sourceWeakInterfaceFatPtrLE =
+              upcastWeakFatPtr(
+                  globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
+                  sourceWeakStructFatPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
+          return wrap(
+              functionState->defaultRegion, targetInterfaceTypeM, sourceWeakInterfaceFatPtrLE);
+        }
         default:
           assert(false);
       }
@@ -591,15 +666,32 @@ Ref upcast(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      switch (sourceStructTypeM->ownership) {
+      switch (sourceStructMT->ownership) {
         case Ownership::SHARE:
-        case Ownership::OWN:
-          return upcastThinPtr(globalState, functionState, builder, sourceStructTypeM, sourceStructReferendM, sourceRefLE, targetInterfaceTypeM, targetInterfaceReferendM);
-          break;
+        case Ownership::OWN: {
+          auto sourceStructWrapperPtrLE =
+              WrapperPtrLE(
+                  sourceStructMT,
+                  checkValidReference(
+                      FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
+          auto resultInterfaceFatPtrLE =
+              upcastThinPtr(
+                  globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
+                  sourceStructWrapperPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
+          return wrap(functionState->defaultRegion, targetInterfaceTypeM, resultInterfaceFatPtrLE);
+        }
         case Ownership::BORROW:
-        case Ownership::WEAK:
-          return upcastWeakFatPtr(globalState, functionState, builder, sourceStructTypeM, sourceStructReferendM, sourceRefLE, targetInterfaceTypeM, targetInterfaceReferendM);
-          break;
+        case Ownership::WEAK: {
+          auto sourceWeakStructPtrLE =
+              checkValidReference(
+                  FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE);
+          auto resultWeakInterfaceFatPtrLE =
+              upcastWeakFatPtr(
+                  globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
+                  sourceWeakStructPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
+          return wrap(
+              functionState->defaultRegion, targetInterfaceTypeM, resultWeakInterfaceFatPtrLE);
+        }
         default:
           assert(false);
       }
@@ -762,17 +854,29 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
         } else if (targetOwnership == Ownership::WEAK) {
           // Now we need to package it up into a weak ref.
           if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
-            return assembleStructWeakRef(
-                globalState, functionState, builder, sourceType, targetType, structReferend, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleStructWeakRef(
+                    globalState, functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-            return assembleInterfaceWeakRef(
-                globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceRefLE);
+            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleInterfaceWeakRef(
+                    globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
-            return assembleKnownSizeArrayWeakRef(
-                globalState, builder, sourceType, targetType, knownSizeArray, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleKnownSizeArrayWeakRef(
+                    globalState, functionState, builder, sourceType, knownSizeArray, sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
-            return assembleUnknownSizeArrayWeakRef(
-                globalState, functionState, builder, sourceType, targetType, unknownSizeArray, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleUnknownSizeArrayWeakRef(
+                    globalState, functionState, builder, sourceType, unknownSizeArray, sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else assert(false);
         } else {
           assert(false);
@@ -797,11 +901,18 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
           if (auto structReferendM = dynamic_cast<StructReferend*>(sourceType->referend)) {
             // We do the same thing for inline and yonder muts, the only difference is
             // where the memory lives.
-            return assembleStructWeakRef(
-                globalState, functionState, builder, sourceType, targetType, structReferendM, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleStructWeakRef(
+                    globalState, functionState, builder, sourceType, targetType, structReferendM,
+                    sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-            return assembleInterfaceWeakRef(
-                globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceRefLE);
+            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleInterfaceWeakRef(
+                    globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else assert(false);
         } else {
           assert(false);
@@ -855,17 +966,29 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
             || targetOwnership == Ownership::WEAK) {
           // Now we need to package it up into a weak ref.
           if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
-            return assembleStructWeakRef(
-                    globalState, functionState, builder, sourceType, targetType, structReferend, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleStructWeakRef(
+                    globalState, functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-            return assembleInterfaceWeakRef(
-                    globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceRefLE);
+            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleInterfaceWeakRef(
+                    globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
-            return assembleKnownSizeArrayWeakRef(
-                globalState, builder, sourceType, targetType, knownSizeArray, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleKnownSizeArrayWeakRef(
+                    globalState, functionState, builder, sourceType, knownSizeArray, sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
-            return assembleUnknownSizeArrayWeakRef(
-                    globalState, functionState, builder, sourceType, targetType, unknownSizeArray, sourceRefLE);
+            auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
+            auto resultLE =
+                assembleUnknownSizeArrayWeakRef(
+                    globalState, functionState, builder, sourceType, unknownSizeArray, sourceWrapperPtrLE);
+            return wrap(functionState->defaultRegion, targetType, resultLE);
           } else assert(false);
         } else {
           assert(false);

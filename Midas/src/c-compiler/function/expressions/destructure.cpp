@@ -55,8 +55,10 @@ LLVMValueRef translateDestructure(
     // We dont decrement anything here, we're only here because we already hit zero.
 
     auto structRefLE =
-        checkValidReference(
-            FL(), globalState, functionState, builder, destructureM->structType, structRef);
+        WrapperPtrLE(
+            destructureM->structType,
+            checkValidReference(
+                FL(), globalState, functionState, builder, destructureM->structType, structRef));
     freeConcrete(
         AFL("Destroy freeing"), globalState, functionState, blockState, builder,
         structRefLE, destructureM->structType);

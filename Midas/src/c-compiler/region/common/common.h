@@ -20,8 +20,9 @@ LLVMValueRef upcastThinPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
 
+    Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
-    Ref sourceRefLE,
+    WrapperPtrLE sourceRefLE,
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);

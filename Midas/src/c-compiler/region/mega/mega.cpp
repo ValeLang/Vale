@@ -100,38 +100,44 @@ LLVMValueRef Mega::upcast(
   assert(false);
 }
 
-LLVMValueRef Mega::lockWeak(
+Ref Mega::lockWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     bool thenResultIsNever,
     bool elseResultIsNever,
     Reference* resultOptTypeM,
-//      LLVMTypeRef resultOptTypeL,
-    Reference* constraintRefMT,
+    Reference* constraintRefM,
     Reference* sourceWeakRefMT,
-    LLVMValueRef sourceWeakRefLE,
-    std::function<LLVMValueRef(LLVMBuilderRef, LLVMValueRef)> buildThen,
-    std::function<LLVMValueRef(LLVMBuilderRef)> buildElse) {
+    Ref sourceWeakRefLE,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
 
   auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT, sourceWeakRefLE);
 
-  auto resultOptTypeLE = translateType(globalState, resultOptTypeM);
+  auto resultOptTypeLE = translateType(resultOptTypeM);
 
-  return buildIfElse(functionState, builder, isAliveLE, resultOptTypeLE, false, false,
-      [this, functionState, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
+  return buildIfElse(
+      globalState, functionState, builder, isAliveLE,
+      resultOptTypeLE, resultOptTypeM, resultOptTypeM,
+      [this, functionState, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
         // TODO extract more of this common code out?
         LLVMValueRef someLE = nullptr;
         switch (globalState->opt->regionOverride) {
           case RegionOverride::NAIVE_RC:
           case RegionOverride::FAST: {
+            auto weakFatPtrLE =
+                checkValidReference(
+                    FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE);
             auto constraintRefLE =
                 FatWeaks().getInnerRefFromWeakRef(
                     globalState,
                     functionState,
                     thenBuilder,
                     sourceWeakRefMT,
-                    sourceWeakRefLE);
-            return buildThen(thenBuilder, constraintRefLE);
+                    weakFatPtrLE);
+            auto constraintRef =
+                wrap(functionState->defaultRegion, constraintRefM, constraintRefLE);
+            return buildThen(thenBuilder, constraintRef);
           }
           case RegionOverride::RESILIENT_V1:
           case RegionOverride::RESILIENT_V0:
@@ -229,12 +235,12 @@ LLVMTypeRef Mega::getUnknownSizeArrayRefType(
   assert(false);
 }
 
-void Mega::checkValidReference(
+LLVMValueRef Mega::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef refLE) {
+    Ref refLE) {
   assert(false);
 }
 
@@ -265,7 +271,7 @@ LLVMValueRef Mega::storeElement(
   assert(false);
 }
 
-LLVMTypeRef Mega::translateType(GlobalState* globalState, Reference* referenceM) {
+LLVMTypeRef Mega::translateType(Reference* referenceM) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
@@ -450,7 +456,6 @@ void Mega::translateUnknownSizeArray(
     UnknownSizeArrayT* unknownSizeArrayMT) {
   auto elementLT =
       translateType(
-          globalState,
           unknownSizeArrayMT->rawArray->elementType);
   defaultLayout.translateUnknownSizeArray(unknownSizeArrayMT, elementLT);
 }
@@ -459,7 +464,6 @@ void Mega::translateKnownSizeArray(
     KnownSizeArrayT* knownSizeArrayMT) {
   auto elementLT =
       translateType(
-          globalState,
           knownSizeArrayMT->rawArray->elementType);
   defaultLayout.translateKnownSizeArray(knownSizeArrayMT, elementLT);
 }
@@ -475,7 +479,6 @@ void Mega::translateStruct(
   for (int i = 0; i < structM->members.size(); i++) {
     innerStructMemberTypesL.push_back(
         translateType(
-            globalState,
             structM->members[i]->type));
   }
   defaultLayout.translateStruct(
@@ -525,7 +528,7 @@ LLVMTypeRef Mega::translateInterfaceMethodToFunctionType(
     InterfaceMethod* method) {
   auto returnMT = method->prototype->returnType;
   auto paramsMT = method->prototype->params;
-  auto returnLT = translateType(globalState, returnMT);
+  auto returnLT = translateType(returnMT);
   auto paramsLT = translateTypes(globalState, this, paramsMT);
 
   switch (globalState->opt->regionOverride) {

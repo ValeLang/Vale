@@ -47,6 +47,7 @@ Ref swapMember(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
+    Reference* structRefMT,
     Ref structRefLE,
     int memberIndex,
     const std::string& memberName,

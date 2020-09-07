@@ -113,7 +113,7 @@ LLVMValueRef mallocUnknownSizeArray(
       "newstruct");
 }
 
-LLVMValueRef mallocStr(
+WrapperPtrLE mallocStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -134,11 +134,13 @@ LLVMValueRef mallocStr(
   }
 
   auto newStrWrapperPtrLE =
-      LLVMBuildBitCast(
-          builder,
-          destCharPtrLE,
-          LLVMPointerType(globalState->stringWrapperStructL, 0),
-          "newStrWrapperPtr");
+      WrapperPtrLE(
+          globalState->metalCache.strRef,
+          LLVMBuildBitCast(
+              builder,
+              destCharPtrLE,
+              LLVMPointerType(globalState->stringWrapperStructL, 0),
+              "newStrWrapperPtr"));
   fillControlBlock(
       FL(),
       globalState, functionState, builder,
@@ -151,7 +153,7 @@ LLVMValueRef mallocStr(
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
-            builder, newStrWrapperPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+            builder, newStrWrapperPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
     LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
@@ -169,10 +171,10 @@ void freeConcrete(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Ref refLE,
+    WrapperPtrLE refLE,
     Reference* refM) {
 
-  auto controlBlockPtrLE = getControlBlockPtr(builder, refLE, refM->referend);
+  auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, refLE);
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =

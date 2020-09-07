@@ -14,9 +14,9 @@ LLVMValueRef getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE wrapperPtrLE);
 
-LLVMValueRef getControlBlockPtrFromInterfaceRef(
+LLVMValueRef getControlBlockPtr(
     LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE);
+    InterfaceFatPtrLE interfaceFatPtrLE);
 
 // See CRCISFAORC for why we don't take in a mutability.
 // Strong means owning or borrow or shared; things that control the lifetime.

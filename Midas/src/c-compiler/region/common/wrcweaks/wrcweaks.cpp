@@ -10,7 +10,7 @@ LLVMValueRef WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef sourceRefLE,
+    LLVMValueRef sourceWeakStructFatPtrLE,
     StructReferend* sourceStructReferendM,
     Reference* sourceStructTypeM,
     InterfaceReferend* targetInterfaceReferendM,
@@ -32,18 +32,20 @@ LLVMValueRef WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
       break;
   }
 
-  checkValidReference(
-      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
+//  checkValidReference(
+//      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
   auto controlBlockPtr =
       getConcreteControlBlockPtr(
           builder,
-          fatWeaks_.getInnerRefFromWeakRef(
-              globalState, functionState, builder, sourceStructTypeM, sourceRefLE));
+          WrapperPtrLE(
+              sourceStructTypeM,
+              fatWeaks_.getInnerRefFromWeakRef(
+                  globalState, functionState, builder, sourceStructTypeM, sourceWeakStructFatPtrLE)));
 
   auto interfaceRefLT =
       globalState->getInterfaceWeakRefStruct(
           targetInterfaceReferendM->fullName);
-  auto wrciLE = getWrciFromWeakRef(globalState, builder, sourceRefLE);
+  auto wrciLE = getWrciFromWeakRef(globalState, builder, sourceWeakStructFatPtrLE);
   auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
   auto interfaceWeakRefLE = LLVMGetUndef(interfaceRefLT);
@@ -64,7 +66,7 @@ LLVMValueRef WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
               controlBlockPtr),
           WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
           "interfaceRef");
-  checkValidReference(
-      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
+//  checkValidReference(
+//      FL(), globalState, functionState, builder, targetInterfaceTypeM, interfaceWeakRefLE);
   return interfaceWeakRefLE;
 }

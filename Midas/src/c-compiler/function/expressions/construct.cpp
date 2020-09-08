@@ -138,7 +138,7 @@ Ref translateConstruct(
         auto innerStructLE =
             constructInnerStruct(
                 globalState, functionState, builder, structM, valStructL, membersLE);
-        return Ref(desiredReference, innerStructLE);
+        return wrap(functionState->defaultRegion, desiredReference, innerStructLE);
       } else {
         auto countedStructL =
             globalState->getWrapperStruct(structReferend->fullName);

@@ -29,10 +29,11 @@ public:
         return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
       } else if (auto structReferend =
           dynamic_cast<StructReferend *>(referenceM->referend)) {
-        auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
         if (referenceM->location == Location::INLINE) {
-          return countedStructL;
+          auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
+          return innerStructL;
         } else {
+          auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
           return LLVMPointerType(countedStructL, 0);
         }
       } else if (auto interfaceReferend =
@@ -41,6 +42,10 @@ public:
         auto interfaceRefStructL =
             globalState->getInterfaceRefStruct(interfaceReferend->fullName);
         return interfaceRefStructL;
+      } else if (dynamic_cast<Never*>(referenceM->referend)) {
+        auto result = LLVMPointerType(makeNeverType(), 0);
+        assert(LLVMTypeOf(globalState->neverPtr) == result);
+        return result;
       } else {
         std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
         assert(false);

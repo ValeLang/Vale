@@ -138,7 +138,7 @@ LLVMValueRef loadInnerArrayMember(
   return resultLE;
 }
 
-LLVMValueRef storeInnerArrayMember(
+void storeInnerArrayMember(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
@@ -149,14 +149,12 @@ LLVMValueRef storeInnerArrayMember(
       constI64LE(0),
       indexLE
   };
-  auto resultLE =
-      LLVMBuildStore(
-          builder,
-          sourceLE,
-          LLVMBuildGEP(
-              builder, elemsPtrLE, indices, 2, "indexPtr"));
+  LLVMBuildStore(
+      builder,
+      sourceLE,
+      LLVMBuildGEP(
+          builder, elemsPtrLE, indices, 2, "indexPtr"));
 
-  return resultLE;
 }
 
 Ref loadElement(
@@ -228,11 +226,13 @@ Ref storeElement(
       assert(false);
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
     } else {
-      auto resultLE = storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+      auto resultLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+      storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
       return wrap(functionState->defaultRegion, elementRefM, resultLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    auto resultLE = storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+    auto resultLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+    storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
     return wrap(functionState->defaultRegion, elementRefM, resultLE);
   } else {
     assert(false);
@@ -271,7 +271,7 @@ void foreachArrayElement(
       },
       [globalState, functionState, iterationBuilder, iterationIndexPtrLE, arrayPtrLE](LLVMBuilderRef bodyBuilder) {
         auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
-        auto iterationIndexRef = wrap(functionState->defaultRegion, globalState->metalCache.boolRef, iterationIndexLE);
+        auto iterationIndexRef = wrap(functionState->defaultRegion, globalState->metalCache.intRef, iterationIndexLE);
         iterationBuilder(iterationIndexRef, bodyBuilder);
         adjustCounter(bodyBuilder, iterationIndexPtrLE, 1);
       });

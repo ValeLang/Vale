@@ -46,7 +46,7 @@ public:
     std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays;
     // Get rid of this; since there's no IDs anymore we can have a stable
     // hardcoded NameH("__Pack", Some(List()), None, None).
-    StructReferend* emptyPackStructRef;
+    StructReferend* emptyTupleStructRef;
     std::unordered_map<std::string, Prototype*> externs;
     std::unordered_map<std::string, Function*> functions;
     std::unordered_map<Referend*, Prototype*> immDestructorsByKind;
@@ -56,7 +56,7 @@ public:
       std::unordered_map<std::string, StructDefinition*> structs_,
       std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays_,
       std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays_,
-      StructReferend* emptyPackStructRef_,
+      StructReferend* emptyTupleStructRef_,
       std::unordered_map<std::string, Prototype*> externs_,
       std::unordered_map<std::string, Function*> functions_,
         std::unordered_map<Referend*, Prototype*> immDestructorsByKind_) :
@@ -64,7 +64,7 @@ public:
         structs(move(structs_)),
         knownSizeArrays(move(knownSizeArrays_)),
         unknownSizeArrays(move(unknownSizeArrays_)),
-        emptyPackStructRef(emptyPackStructRef_),
+        emptyTupleStructRef(emptyTupleStructRef_),
         externs(move(externs_)),
         functions(move(functions_)),
         immDestructorsByKind(move(immDestructorsByKind_)) {}

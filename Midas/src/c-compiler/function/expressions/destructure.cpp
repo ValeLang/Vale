@@ -8,7 +8,7 @@
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
 
-LLVMValueRef translateDestructure(
+Ref translateDestructure(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -68,5 +68,5 @@ LLVMValueRef translateDestructure(
 
   buildFlare(FL(), globalState, functionState, builder);
 
-  return makeConstExpr(functionState, builder, makeNever());
+  return makeEmptyTupleRef(globalState, functionState, builder);
 }

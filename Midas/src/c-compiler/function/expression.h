@@ -25,6 +25,4 @@ std::vector<Ref> translateExpressions(
     LLVMBuilderRef builder,
     std::vector<Expression*> exprs);
 
-LLVMValueRef makeNever();
-
 #endif

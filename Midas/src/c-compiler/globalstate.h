@@ -79,6 +79,10 @@ public:
   LLVMValueRef wrcCapacityPtr = nullptr, wrcFirstFreeWrciPtr = nullptr, wrcEntriesArrayPtr = nullptr;
   LLVMValueRef lgtCapacityPtr = nullptr, lgtFirstFreeLgtiPtr = nullptr, lgtEntriesArrayPtr = nullptr;
 
+  // This is a global, we can return this when we want to return never. It should never actually be
+  // used as an input to any expression in any function though.
+  LLVMValueRef neverPtr = nullptr;
+
   ControlBlockLayout immControlBlockLayout;
   ControlBlockLayout mutNonWeakableControlBlockLayout;
   ControlBlockLayout mutWeakableControlBlockLayout;

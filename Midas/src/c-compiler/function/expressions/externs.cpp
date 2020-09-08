@@ -87,7 +87,7 @@ Ref translateExternCall(
   } else if (name == "__panic") {
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8Type(), 255);
     LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
-    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, makeConstExpr(functionState, builder, makeNever()));
+    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
   } else if (name == "__multiplyIntInt") {
     assert(call->argExprs.size() == 2);
     auto resultIntLE =
@@ -274,11 +274,7 @@ Ref translateExternCall(
 
     discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, argStrWrapperRef);
 
-    assert(call->function->returnType == globalState->metalCache.voidRef);
-
-    return wrap(functionState->defaultRegion, globalState->metalCache.voidRef,
-        LLVMGetUndef(
-            functionState->defaultRegion->translateType(globalState->metalCache.voidRef)));
+    return makeEmptyTupleRef(globalState, functionState, builder);
   } else if (name == "__not") {
     assert(call->argExprs.size() == 1);
     auto result = LLVMBuildNot(

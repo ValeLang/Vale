@@ -487,11 +487,13 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
 
   auto structName = result->name;
   if (structName->name == std::string("Tup0")) {
-    cache->emptyTupleStructReferend =
+    cache->emptyTupleStruct =
         makeIfNotPresent(
             &cache->structReferends,
             structName,
             [&]() { return new StructReferend(structName); });
+    cache->emptyTupleStructRef =
+        cache->getReference(Ownership::SHARE, Location::INLINE, cache->emptyTupleStruct);
   }
 
   return result;
@@ -556,7 +558,7 @@ Program* readProgram(MetalCache* cache, const json& program) {
             auto s = readUnknownSizeArray(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      nullptr,//readStructName(program["emptyPackStructRef"]),
+      readStructReferend(cache, program["emptyTupleStructReferend"]),
       {},//readArray<readExtern>(program["externs"]),
       readArrayIntoMap<std::string, Function*>(
           cache,

@@ -6,7 +6,7 @@
 
 #include "function/expression.h"
 
-LLVMValueRef translateWhile(
+Ref translateWhile(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -20,5 +20,5 @@ LLVMValueRef translateWhile(
             globalState, functionState, blockState, bodyBuilder, whiile->bodyExpr);
       });
   // Nobody should use a result of a while, so we'll just return a Never.
-  return makeConstExpr(functionState, builder, makeNever());
+  return makeEmptyTupleRef(globalState, functionState, builder);
 }

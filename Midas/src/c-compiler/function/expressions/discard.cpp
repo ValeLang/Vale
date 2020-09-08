@@ -18,6 +18,11 @@ Ref translateDiscard(
   auto sourceRef =
       translateExpression(
           globalState, functionState, blockState, builder, sourceExpr);
+
+  if (sourceResultType == globalState->metalCache.emptyTupleStructRef) {
+    return sourceRef;
+  }
+
   checkValidReference(FL(), globalState, functionState, builder, sourceResultType, sourceRef);
   discard(
       AFL(std::string("Discard ") + std::to_string((int)discardM->sourceResultType->ownership) + " " + typeid(*discardM->sourceResultType->referend).name() + " from " + typeid(*sourceExpr).name()),
@@ -27,6 +32,5 @@ Ref translateDiscard(
       builder,
       sourceResultType,
       sourceRef);
-  auto resultLE = makeConstExpr(functionState, builder, makeNever());
-  return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, resultLE);
+  return makeEmptyTupleRef(globalState, functionState, builder);
 }

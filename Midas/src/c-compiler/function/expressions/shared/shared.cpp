@@ -17,12 +17,15 @@ LLVMTypeRef makeNeverType() {
   // We could use an empty struct instead, but this'll do.
   return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
 }
-LLVMValueRef makeNever() {
-  LLVMValueRef empty[1] = {};
-  // We arbitrarily use a zero-len array of i57 here because it's zero sized and
-  // very unlikely to be used anywhere else.
-  // We could use an empty struct instead, but this'll do.
-  return LLVMConstArray(LLVMIntType(NEVER_INT_BITS), empty, 0);
+
+LLVMValueRef makeEmptyTuple(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder) {
+  return LLVMGetUndef(
+      functionState->defaultRegion->translateType(globalState->metalCache.emptyTupleStructRef));
+}
+
+Ref makeEmptyTupleRef(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder) {
+  auto emptyTupleLE = makeEmptyTuple(globalState, functionState, builder);
+  return wrap(functionState->defaultRegion, globalState->metalCache.emptyTupleStructRef, emptyTupleLE);
 }
 
 LLVMValueRef makeMidasLocal(
@@ -486,7 +489,7 @@ LLVMValueRef checkValidReference(
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
       auto controlBlockPtrLE =
-          getControlBlockPtr(globalState, functionState, builder, ref, refM);
+          getControlBlockPtr(globalState, functionState, builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
     } else if (refM->ownership == Ownership::SHARE) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
@@ -498,7 +501,7 @@ LLVMValueRef checkValidReference(
         // Nothing to do, there's no control block or ref counts or anything.
       } else if (refM->location == Location::YONDER) {
         auto controlBlockPtrLE =
-            getControlBlockPtr(globalState, functionState, builder, ref, refM);
+            getControlBlockPtr(globalState, functionState, builder, refLE, refM);
 
         // We dont check ref count >0 because imm destructors receive with rc=0.
         //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
@@ -520,7 +523,7 @@ LLVMValueRef checkValidReference(
               auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
               buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
             }
-            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, ref, refM);
+            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, refLE, refM);
             buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
                 controlBlockPtrLE);
           } else if (refM->ownership == Ownership::WEAK) {
@@ -570,8 +573,8 @@ Ref buildCall(
   if (prototype->returnType->referend == globalState->metalCache.never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
-
-    return wrap(functionState->defaultRegion, prototype->returnType, LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL)));
+    LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
+    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
   } else {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);

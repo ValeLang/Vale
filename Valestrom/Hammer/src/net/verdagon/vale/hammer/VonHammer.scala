@@ -23,6 +23,7 @@ object VonHammer {
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
         VonMember("knownSizeArrays", VonArray(None, knownSizeArrays.map(vonifyKind).toVector)),
         VonMember("unknownSizeArrays", VonArray(None, unknownSizeArrays.map(vonifyKind).toVector)),
+        VonMember("emptyTupleStructReferend", vonifyKind(ProgramH.emptyTupleStructRef)),
         VonMember(
           "immDestructorsByReferend",
           VonArray(

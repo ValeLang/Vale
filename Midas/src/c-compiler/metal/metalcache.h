@@ -60,7 +60,8 @@ public:
   Reference* voidRef = nullptr;
   Never* never = new Never();
   Reference* neverRef = nullptr;
-  StructReferend* emptyTupleStructReferend = nullptr;
+  StructReferend* emptyTupleStruct = nullptr;
+  Reference* emptyTupleStructRef = nullptr;
 
   std::unordered_map<Name*, StructReferend*> structReferends;
   std::unordered_map<Name*, InterfaceReferend*> interfaceReferends;

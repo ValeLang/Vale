@@ -40,6 +40,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
   return innerRefLE;
 }
 
+//start here, put a WeakRefLE struct around this
 LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
     GlobalState* globalState,
     FunctionState* functionState,

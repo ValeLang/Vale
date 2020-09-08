@@ -14,8 +14,13 @@
 #include "ref.h"
 
 
-LLVMValueRef makeNever();
 LLVMTypeRef makeNeverType();
+
+LLVMValueRef makeEmptyTuple(
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
+
+Ref makeEmptyTupleRef(
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
 
 LLVMValueRef makeMidasLocal(
     FunctionState* functionState,

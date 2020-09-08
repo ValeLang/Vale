@@ -73,7 +73,8 @@ Ref translateExpressionInner(
       return sourceRef;
     } else {
       auto toReturnLE = checkValidReference(FL(), globalState, functionState, builder, ret->sourceType, sourceRef);
-      return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, LLVMBuildRet(builder, toReturnLE));
+      LLVMBuildRet(builder, toReturnLE);
+      return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
     }
   } else if (auto stackify = dynamic_cast<Stackify*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -86,7 +87,7 @@ Ref translateExpressionInner(
     }
     makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, refToStore);
-    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, makeConstExpr(functionState, builder, makeNever()));
+    return makeEmptyTupleRef(globalState, functionState, builder);
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // The purpose of LocalStore is to put a swap value into a local, and give
@@ -318,7 +319,7 @@ Ref translateExpressionInner(
 
     discard(AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerRef);
 
-    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, makeConstExpr(functionState, builder, makeNever()));
+    return makeEmptyTupleRef(globalState, functionState, builder);
   } else if (auto destroyUnknownSizeArrayIntoFunction = dynamic_cast<DestroyUnknownSizeArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto consumerType = destroyUnknownSizeArrayIntoFunction->consumerType;
@@ -379,7 +380,7 @@ Ref translateExpressionInner(
 
     discard(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder, consumerType, consumerRef);
 
-    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, makeConstExpr(functionState, builder, makeNever()));
+    return makeEmptyTupleRef(globalState, functionState, builder);
   } else if (auto knownSizeArrayLoad = dynamic_cast<KnownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     auto arrayType = knownSizeArrayLoad->arrayType;

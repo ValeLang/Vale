@@ -22,6 +22,7 @@
 #include "struct/struct.h"
 #include "metal/readjson.h"
 #include "error.h"
+#include "translatetype.h"
 
 #include <cstring>
 #include <llvm-c/Transforms/Scalar.h>
@@ -585,7 +586,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto programJ = json::parse(str.c_str());
   auto program = readProgram(&globalState->metalCache, programJ);
 
-  assert(globalState->metalCache.emptyTupleStructReferend != nullptr);
+  assert(globalState->metalCache.emptyTupleStruct != nullptr);
+  assert(globalState->metalCache.emptyTupleStructRef != nullptr);
 
 
   // Start making the entry function. We make it up here because we want its
@@ -629,6 +631,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "derefCounter");
   LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
+  globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(), "__never");
+  LLVMValueRef empty[1] = {};
+  LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntType(NEVER_INT_BITS), empty, 0));
+
   globalState->mutRcAdjustCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
   LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
@@ -639,6 +645,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   Assist assistRegion(globalState);
   Mega megaRegion(globalState);
   IRegion* defaultRegion = &assistRegion;
+
+  assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
 
   for (auto p : program->structs) {
     auto name = p.first;
@@ -794,7 +802,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   if (mainM->returnType->referend == globalState->metalCache.vooid) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
-  } else if (mainM->returnType->referend == globalState->metalCache.emptyTupleStructReferend) {
+  } else if (mainM->returnType->referend == globalState->metalCache.emptyTupleStruct) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
   } else if (mainM->returnType->referend == globalState->metalCache.innt) {
     LLVMBuildRet(entryBuilder, mainResult);

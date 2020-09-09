@@ -53,7 +53,7 @@ Ref constructKnownSizeArrayCountedStruct(
       refM->referend,
       knownSizeArrayT->rawArray->mutability,
       getEffectiveWeakability(globalState, knownSizeArrayT->rawArray),
-      getConcreteControlBlockPtr(builder, newStructLE),
+      getConcreteControlBlockPtr(globalState, builder, newStructLE),
       typeName);
   fillKnownSizeArray(
       globalState,

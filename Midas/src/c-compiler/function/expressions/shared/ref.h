@@ -9,6 +9,39 @@ class FunctionState;
 class GlobalState;
 class IRegion;
 
+
+struct WrapperPtrLE {
+  Reference* const refM;
+  LLVMValueRef const refLE;
+
+  WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
+};
+
+
+struct ControlBlockPtrLE {
+  Referend* const referendM;
+  // TODO rename to ptrLE
+  LLVMValueRef const refLE;
+
+  ControlBlockPtrLE(GlobalState* globalState, Referend* refM_, LLVMValueRef refLE_);
+};
+
+struct InterfaceFatPtrLE {
+  Reference* const refM;
+  LLVMValueRef const refLE;
+
+  InterfaceFatPtrLE(GlobalState* globalState, Reference* refM_, LLVMValueRef refLE_);
+};
+
+struct WeakFatPtrLE {
+  Reference* const refM;
+  LLVMValueRef const refLE;
+
+  WeakFatPtrLE(GlobalState* globalState, Reference* refM_, LLVMValueRef refLE_);
+};
+
+
+
 // An LLVM register, which contains a reference.
 struct Ref {
   Ref(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
@@ -46,32 +79,9 @@ private:
 };
 
 Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);
-
-struct WrapperPtrLE {
-  Reference* const refM;
-  LLVMValueRef const refLE;
-
-  WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
-};
-
 Ref wrap(IRegion* region, Reference* refM, WrapperPtrLE exprLE);
-
-struct InterfaceFatPtrLE {
-  Reference* const refM;
-  LLVMValueRef const refLE;
-
-  InterfaceFatPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
-};
-
 Ref wrap(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
-
-struct WeakFatPtrLE {
-  Reference* const refM;
-  LLVMValueRef const refLE;
-
-  WeakFatPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
-};
-
 Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE exprLE);
+
 
 #endif

@@ -28,12 +28,30 @@ WrapperPtrLE getStructWrapperPtr(
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      return WrapperPtrLE(refM, checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE:
+        case Ownership::BORROW:
+          return WrapperPtrLE(refM, checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
+        case Ownership::WEAK:
+          return lockWeakRef(FL(), globalState, functionState, builder, refM, refLE);
+        default:
+          assert(false);
+      }
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      return lockWeakRef(FL(), globalState, functionState, builder, refM, refLE);
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE:
+          return WrapperPtrLE(refM, checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
+        case Ownership::BORROW:
+        case Ownership::WEAK:
+          return lockWeakRef(FL(), globalState, functionState, builder, refM, refLE);
+        default:
+          assert(false);
+      }
     }
     default:
       assert(false);

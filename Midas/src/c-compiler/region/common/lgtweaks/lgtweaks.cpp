@@ -34,7 +34,7 @@ LLVMValueRef LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
 //  checkValidReference(
 //      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
   auto controlBlockPtr =
-      getConcreteControlBlockPtr(
+      getConcreteControlBlockPtr(globalState,
           builder,
           WrapperPtrLE(
               sourceStructTypeM,

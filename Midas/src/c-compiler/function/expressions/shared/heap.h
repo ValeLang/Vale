@@ -28,13 +28,14 @@ WrapperPtrLE mallocStr(
     LLVMValueRef lengthLE);
 
 // A concrete is a struct, known size array, unknown size array, or Str.
+// Takes in a control block ptr so we can free interface refs with this (useful for RC mode)
 void freeConcrete(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    WrapperPtrLE concreteLE,
+    ControlBlockPtrLE concreteLE,
     Reference* concreteRefM);
 
 #endif

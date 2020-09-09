@@ -127,6 +127,7 @@ Ref Mega::lockWeak(
           case RegionOverride::FAST: {
             auto weakFatPtrLE =
                 WeakFatPtrLE(
+                    globalState,
                     sourceWeakRefMT,
                     checkValidReference(
                         FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));

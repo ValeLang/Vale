@@ -100,6 +100,55 @@ LLVMValueRef Mega::upcast(
   assert(false);
 }
 
+// Transmutes a weak ref of one ownership (such as borrow) to another ownership (such as weak).
+Ref Mega::transmuteWeakRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceWeakRefMT,
+    Reference* targetWeakRefMT,
+    Ref sourceWeakRef) {
+  // The WeakFatPtrLE constructors here will make sure that its a safe and valid transmutation.
+  auto sourceWeakFatPtrLE =
+      WeakFatPtrLE(
+          globalState,
+          sourceWeakRefMT,
+          ::checkValidReference(
+              FL(), globalState, functionState, builder, sourceWeakRefMT, sourceWeakRef));
+  auto sourceWeakFatPtrRawLE = sourceWeakFatPtrLE.refLE;
+  auto targetWeakFatPtrLE = WeakFatPtrLE(globalState, targetWeakRefMT, sourceWeakFatPtrRawLE);
+  auto targetWeakRef = wrap(functionState->defaultRegion, targetWeakRefMT, targetWeakFatPtrLE);
+  return targetWeakRef;
+}
+
+Ref Mega::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
+  assert(sourceRefMT->ownership == Ownership::BORROW);
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      if (auto structReferendM = dynamic_cast<StructReferend*>(sourceRefMT->referend)) {
+        auto objPtrLE =
+            WrapperPtrLE(
+                sourceRefMT,
+                ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT, sourceRef));
+        return wrap(
+            functionState->defaultRegion,
+            targetRefMT,
+            assembleStructWeakRef(
+                globalState, functionState, builder,
+                sourceRefMT, targetRefMT, structReferendM, objPtrLE));
+      } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(sourceRefMT->referend)) {
+        assert(false); // impl
+      } else assert(false);
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      return transmuteWeakRef(functionState, builder, sourceRefMT, targetRefMT, sourceRef);
+    default:
+      assert(false);
+  }
+}
+
 Ref Mega::lockWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -112,6 +161,25 @@ Ref Mega::lockWeak(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
 
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      assert(sourceWeakRefMT->ownership == Ownership::WEAK);
+      break;
+    }
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V2: {
+      assert(sourceWeakRefMT->ownership == Ownership::BORROW ||
+          sourceWeakRefMT->ownership == Ownership::WEAK);
+      break;
+    }
+    case RegionOverride::ASSIST:
+    default:
+      assert(false);
+      break;
+  }
+
   auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT, sourceWeakRefLE);
 
   auto resultOptTypeLE = translateType(resultOptTypeM);
@@ -121,7 +189,6 @@ Ref Mega::lockWeak(
       resultOptTypeLE, resultOptTypeM, resultOptTypeM,
       [this, functionState, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
         // TODO extract more of this common code out?
-        LLVMValueRef someLE = nullptr;
         switch (globalState->opt->regionOverride) {
           case RegionOverride::NAIVE_RC:
           case RegionOverride::FAST: {
@@ -129,8 +196,8 @@ Ref Mega::lockWeak(
                 WeakFatPtrLE(
                     globalState,
                     sourceWeakRefMT,
-                    checkValidReference(
-                        FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
+                    ::checkValidReference(
+                        FL(), globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
             auto constraintRefLE =
                 FatWeaks().getInnerRefFromWeakRef(
                     globalState,
@@ -145,10 +212,13 @@ Ref Mega::lockWeak(
           case RegionOverride::RESILIENT_V1:
           case RegionOverride::RESILIENT_V0:
           case RegionOverride::RESILIENT_V2: {
-            // The incoming "constraint" ref is actually already a week ref. All we have to
-            // do now is wrap it in a Some.
-            auto constraintRefLE = sourceWeakRefLE;
-            return buildThen(thenBuilder, constraintRefLE);
+            // The incoming "constraint" ref is actually already a week ref, so just return it
+            // (after wrapping it in a different Ref that actually thinks/knows it's a weak
+            // reference).
+            auto constraintRef =
+                transmuteWeakRef(
+                    functionState, thenBuilder, sourceWeakRefMT, constraintRefM, sourceWeakRefLE);
+            return buildThen(thenBuilder, constraintRef);
           }
           case RegionOverride::ASSIST:
           default:
@@ -275,6 +345,9 @@ LLVMValueRef Mega::storeElement(
 }
 
 LLVMTypeRef Mega::translateType(Reference* referenceM) {
+  if (referenceM->ownership == Ownership::SHARE) {
+    return immutables.translateType(globalState, referenceM);
+  }
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:

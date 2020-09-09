@@ -59,9 +59,10 @@ Ref translateDestructure(
             destructureM->structType,
             checkValidReference(
                 FL(), globalState, functionState, builder, destructureM->structType, structRef));
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, structRefLE);
     freeConcrete(
         AFL("Destroy freeing"), globalState, functionState, blockState, builder,
-        structRefLE, destructureM->structType);
+        controlBlockPtrLE, destructureM->structType);
   } else {
     assert(false);
   }

@@ -95,7 +95,7 @@ LLVMValueRef getTablePtrFromInterfaceRef(
   return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, 1, "itablePtr");
 }
 
-LLVMValueRef getControlBlockPtr(
+ControlBlockPtrLE getControlBlockPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -104,27 +104,26 @@ LLVMValueRef getControlBlockPtr(
     Reference* referenceM) {
   auto referendM = referenceM->referend;
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
-    auto referenceLE = InterfaceFatPtrLE(referenceM, ref);
-    return getControlBlockPtr(builder, referenceLE);
+    auto referenceLE = InterfaceFatPtrLE(globalState, referenceM, ref);
+    return getControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
     auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
     auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
     auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
     auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else {
     assert(false);
-    return nullptr;
   }
 }
 
-LLVMValueRef getControlBlockPtr(
+ControlBlockPtrLE getControlBlockPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -134,37 +133,36 @@ LLVMValueRef getControlBlockPtr(
   auto referendM = referenceM->referend;
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
     auto referenceLE =
-        InterfaceFatPtrLE(
+        InterfaceFatPtrLE(globalState,
             referenceM,
             checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getControlBlockPtr(builder, referenceLE);
+    return getControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
     auto referenceLE =
         WrapperPtrLE(
             referenceM,
             checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
     auto referenceLE =
         WrapperPtrLE(
             referenceM,
             checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
     auto referenceLE =
         WrapperPtrLE(
             referenceM,
             checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
     auto referenceLE =
         WrapperPtrLE(
             referenceM,
             checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(builder, referenceLE);
+    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else {
     assert(false);
-    return nullptr;
   }
 }
 
@@ -206,7 +204,7 @@ LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtrLE) {
+    ControlBlockPtrLE controlBlockPtrLE) {
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
@@ -317,7 +315,7 @@ LLVMValueRef getItablePtrFromInterfacePtr(
   return getTablePtrFromInterfaceRef(builder, virtualArgLE);
 }
 
-LLVMValueRef getObjPtrFromInterfacePtr(
+LLVMValueRef getVoidPtrFromInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -326,7 +324,7 @@ LLVMValueRef getObjPtrFromInterfacePtr(
   assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
   return LLVMBuildPointerCast(
           builder,
-          getControlBlockPtr(builder, virtualArgLE),
+          getControlBlockPtr(globalState, builder, virtualArgLE).refLE,
           LLVMPointerType(LLVMVoidType(), 0),
           "objAsVoidPtr");
 }
@@ -354,19 +352,20 @@ Ref buildInterfaceCall(
         case Ownership::OWN:
         case Ownership::BORROW:
         case Ownership::SHARE: {
-          auto virtualArgInterfaceFatPtrLE = InterfaceFatPtrLE(virtualParamMT, virtualArgLE);
+          auto virtualArgInterfaceFatPtrLE = InterfaceFatPtrLE(globalState, virtualParamMT, virtualArgLE);
           itablePtrLE =
               getItablePtrFromInterfacePtr(
                   globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-          auto objVoidPtrLE = getObjPtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
+              virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
         case Ownership::WEAK: {
-          auto weakFatPtrLE = WeakFatPtrLE(virtualParamMT, virtualArgLE);
+          auto weakFatPtrLE = WeakFatPtrLE(globalState, virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              InterfaceFatPtrLE(
+              InterfaceFatPtrLE(globalState,
                   virtualParamMT,
                   FatWeaks().getInnerRefFromWeakRef(
                       globalState, functionState, builder, virtualParamMT, weakFatPtrLE));
@@ -387,18 +386,19 @@ Ref buildInterfaceCall(
       switch (virtualParamMT->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE: {
-          auto virtualArgInterfaceFatPtrLE = InterfaceFatPtrLE(virtualParamMT, virtualArgLE);
+          auto virtualArgInterfaceFatPtrLE = InterfaceFatPtrLE(globalState, virtualParamMT, virtualArgLE);
           itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-          auto objVoidPtrLE = getObjPtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
+              virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
-          auto virtualArgWeakRef = WeakFatPtrLE(virtualParamMT, virtualArgLE);
+          auto virtualArgWeakRef = WeakFatPtrLE(globalState, virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              InterfaceFatPtrLE(
+              InterfaceFatPtrLE(globalState,
                   virtualParamMT,
                   FatWeaks().getInnerRefFromWeakRef(
                       globalState, functionState, builder, virtualParamMT, virtualArgWeakRef));
@@ -486,16 +486,16 @@ LLVMValueRef checkValidReference(
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto interfaceFatPtrLE = InterfaceFatPtrLE(refM, refLE);
+        auto interfaceFatPtrLE = InterfaceFatPtrLE(globalState, refM, refLE);
         auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
       auto controlBlockPtrLE =
           getControlBlockPtr(globalState, functionState, builder, refLE, refM);
-      buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+      buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto interfaceFatPtrLE = InterfaceFatPtrLE(refM, refLE);
+        auto interfaceFatPtrLE = InterfaceFatPtrLE(globalState, refM, refLE);
         auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
@@ -511,7 +511,7 @@ LLVMValueRef checkValidReference(
         //      buildAssert(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
 
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
-            controlBlockPtrLE);
+            controlBlockPtrLE.refLE);
       } else
         assert(false);
     } else {
@@ -521,13 +521,13 @@ LLVMValueRef checkValidReference(
         case RegionOverride::FAST: {
           if (refM->ownership == Ownership::BORROW) {
             if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-              auto interfaceFatPtrLE = InterfaceFatPtrLE(refM, refLE);
+              auto interfaceFatPtrLE = InterfaceFatPtrLE(globalState, refM, refLE);
               auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
               buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
             }
             auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, refLE, refM);
             buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
-                controlBlockPtrLE);
+                controlBlockPtrLE.refLE);
           } else if (refM->ownership == Ownership::WEAK) {
             buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
           } else
@@ -591,7 +591,7 @@ LLVMValueRef makeInterfaceRefStruct(
     LLVMBuilderRef builder,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
-    LLVMValueRef controlBlockPtrLE) {
+    ControlBlockPtrLE controlBlockPtrLE) {
 
   auto interfaceRefLT =
       globalState->getInterfaceRefStruct(
@@ -602,7 +602,7 @@ LLVMValueRef makeInterfaceRefStruct(
       LLVMBuildInsertValue(
           builder,
           interfaceRefLE,
-          controlBlockPtrLE,
+          controlBlockPtrLE.refLE,
           0,
           "interfaceRefWithOnlyObj");
   auto itablePtrLE =
@@ -655,6 +655,7 @@ Ref upcast(
         case Ownership::WEAK: {
           auto sourceWeakStructFatPtrLE =
               WeakFatPtrLE(
+                  globalState,
                   sourceStructMT,
                   checkValidReference(
                       FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
@@ -691,6 +692,7 @@ Ref upcast(
         case Ownership::WEAK: {
           auto sourceWeakStructPtrLE =
               WeakFatPtrLE(
+                  globalState,
                   sourceStructMT,
                   checkValidReference(
                       FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
@@ -869,7 +871,7 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
                     globalState, functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(sourceType, sourceRefLE);
+            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(globalState, sourceType, sourceRefLE);
             auto resultLE =
                 assembleInterfaceWeakRef(
                     globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
@@ -917,7 +919,7 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
                     sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(sourceType, sourceRefLE);
+            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(globalState, sourceType, sourceRefLE);
             auto resultLE =
                 assembleInterfaceWeakRef(
                     globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
@@ -981,7 +983,7 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
                     globalState, functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(sourceType, sourceRefLE);
+            auto sourceInterfaceFatPtrLE = InterfaceFatPtrLE(globalState, sourceType, sourceRefLE);
             auto resultLE =
                 assembleInterfaceWeakRef(
                     globalState, functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);

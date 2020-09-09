@@ -103,64 +103,90 @@ void discardOwningRef(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceTypeM,
-    Ref exprLE) {
+    Reference* sourceMT,
+    Ref sourceRef) {
   auto exprWrapperPtrLE =
       WrapperPtrLE(
-          sourceTypeM,
-          checkValidReference(FL(), globalState, functionState, builder, sourceTypeM, exprLE));
+          sourceMT,
+          checkValidReference(FL(), globalState, functionState, builder, sourceMT, sourceRef));
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST: {
       adjustStrongRc(
           AFL("Destroy decrementing the owning ref"),
-          globalState, functionState, builder, exprLE, sourceTypeM, -1);
+          globalState, functionState, builder, sourceRef, sourceMT, -1);
       // No need to check the RC, we know we're freeing right now.
 
       // Free it!
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
-          exprWrapperPtrLE, sourceTypeM);
+          controlBlockPtrLE, sourceMT);
       break;
     }
     case RegionOverride::NAIVE_RC: {
       auto rcLE =
           adjustStrongRc(
               AFL("Destroy decrementing the owning ref"),
-              globalState, functionState, builder, exprLE, sourceTypeM, -1);
+              globalState, functionState, builder, sourceRef, sourceMT, -1);
       buildIf(
           functionState, builder, isZeroLE(builder, rcLE),
-          [globalState, functionState, blockState, exprLE, exprWrapperPtrLE, sourceTypeM](
+          [globalState, functionState, blockState, sourceRef, exprWrapperPtrLE, sourceMT](
               LLVMBuilderRef thenBuilder) {
-            freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, thenBuilder,
-                exprWrapperPtrLE, sourceTypeM);
+            if (dynamic_cast<InterfaceReferend*>(sourceMT->referend)) {
+              auto sourceInterfacePtrLE =
+                  InterfaceFatPtrLE(globalState,
+                      sourceMT,
+                      checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+              auto controlBlockPtrLE = getControlBlockPtr(globalState, thenBuilder, sourceInterfacePtrLE);
+              freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+                  controlBlockPtrLE, sourceMT);
+            } else if (dynamic_cast<StructReferend*>(sourceMT->referend) ||
+                dynamic_cast<KnownSizeArrayT*>(sourceMT->referend) ||
+                dynamic_cast<UnknownSizeArrayT*>(sourceMT->referend)) {
+              auto sourceWrapperPtrLE =
+                  WrapperPtrLE(
+                      sourceMT,
+                      checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+              auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
+              freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+                  controlBlockPtrLE, sourceMT);
+            } else {
+              assert(false);
+            }
           });
       break;
     }
-    case RegionOverride::FAST:
+    case RegionOverride::FAST: {
       // Do nothing
 
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       // Free it!
       freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
-          exprWrapperPtrLE, sourceTypeM);
+          controlBlockPtrLE, sourceMT);
       break;
-    case RegionOverride::RESILIENT_V0:
+    }
+    case RegionOverride::RESILIENT_V0: {
       // Mutables in resilient mode dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       // Free it!
       freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
-          exprWrapperPtrLE, sourceTypeM);
+          controlBlockPtrLE, sourceMT);
       break;
+    }
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
       // Mutables in resilient v1+2 dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       // Free it!
       freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
-          exprWrapperPtrLE, sourceTypeM);
+          controlBlockPtrLE, sourceMT);
       break;
-    default:
+    }
+    default: {
       assert(false);
       break;
     }
@@ -198,12 +224,27 @@ void discard(
                 functionState, builder, isZeroLE(builder, rcLE),
                 [globalState, functionState, blockState, sourceRef, sourceMT](
                     LLVMBuilderRef thenBuilder) {
-                  auto sourceWrapperPtrLE =
-                      WrapperPtrLE(
-                          sourceMT,
-                          checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
-                  freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
-                      sourceWrapperPtrLE, sourceMT);
+                  if (dynamic_cast<InterfaceReferend*>(sourceMT->referend)) {
+                    auto sourceInterfacePtrLE =
+                        InterfaceFatPtrLE(globalState,
+                            sourceMT,
+                            checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+                    auto controlBlockPtrLE = getControlBlockPtr(globalState, thenBuilder, sourceInterfacePtrLE);
+                    freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+                        controlBlockPtrLE, sourceMT);
+                  } else if (dynamic_cast<StructReferend*>(sourceMT->referend) ||
+                      dynamic_cast<KnownSizeArrayT*>(sourceMT->referend) ||
+                      dynamic_cast<UnknownSizeArrayT*>(sourceMT->referend)) {
+                    auto sourceWrapperPtrLE =
+                        WrapperPtrLE(
+                            sourceMT,
+                            checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+                    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
+                    freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+                        controlBlockPtrLE, sourceMT);
+                  } else {
+                    assert(false);
+                  }
                 });
           }
           break;
@@ -270,8 +311,9 @@ void discard(
                       WrapperPtrLE(
                           sourceMT,
                           checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+                  auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
                   freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
-                      sourceWrapperPtrLE, sourceMT);
+                      controlBlockPtrLE, sourceMT);
                 });
           }
           break;
@@ -322,8 +364,9 @@ void discard(
               WrapperPtrLE(
                   sourceMT,
                   checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+          auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
           freeConcrete(
-              from, globalState, functionState, blockState, thenBuilder, sourceWrapperPtrLE, sourceMT);
+              from, globalState, functionState, blockState, thenBuilder, controlBlockPtrLE, sourceMT);
         });
   } else {
     std::cerr << "Unimplemented type in discard: "

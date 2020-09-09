@@ -57,7 +57,7 @@ void noteWeakableDestroyed(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* concreteRefM,
-    LLVMValueRef controlBlockPtrLE);
+    ControlBlockPtrLE controlBlockPtrLE);
 
 LLVMValueRef noteWeakableCreated(
     GlobalState* globalState,
@@ -131,7 +131,7 @@ WeakFatPtrLE assembleVoidStructWeakRef(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtrLE,
+    ControlBlockPtrLE controlBlockPtrLE,
     LLVMValueRef wrciLE);
 
 // Makes the part of the weak ref that contains information on how to know if the contained thing

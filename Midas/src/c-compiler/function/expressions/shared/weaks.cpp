@@ -94,7 +94,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtr) {
+    ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
 
   if (refM->ownership == Ownership::SHARE) {
@@ -104,7 +104,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
     auto lgtiPtrLE =
         LLVMBuildStructGEP(
             builder,
-            controlBlockPtr,
+            controlBlockPtr.refLE,
             globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
             "lgtiPtr");
     return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
@@ -115,14 +115,14 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Referend* referendM,
-    LLVMValueRef controlBlockPtr) {
+    ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2);
-  assert(LLVMTypeOf(controlBlockPtr) == LLVMPointerType(globalState->getControlBlockStruct(referendM), 0));
+  assert(LLVMTypeOf(controlBlockPtr.refLE) == LLVMPointerType(globalState->getControlBlockStruct(referendM), 0));
 
   auto genPtrLE =
       LLVMBuildStructGEP(
           builder,
-          controlBlockPtr,
+          controlBlockPtr.refLE,
           globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::GENERATION),
           "genPtr");
   return LLVMBuildLoad(builder, genPtrLE, "gen");
@@ -132,7 +132,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtr) {
+    ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
 
   if (refM->ownership == Ownership::SHARE) {
@@ -142,7 +142,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
     auto wrciPtrLE =
         LLVMBuildStructGEP(
             builder,
-            controlBlockPtr,
+            controlBlockPtr.refLE,
             globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::WRCI),
             "wrciPtr");
     return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
@@ -277,7 +277,7 @@ void aliasWeakRef(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::FAST: {
       auto weakFatPtrLE =
-          WeakFatPtrLE(
+          WeakFatPtrLE(globalState,
               weakRefMT,
               checkValidReference(FL(), globalState, functionState, builder, weakRefMT, weakRef));
       auto wrciLE = getWrciFromWeakRef(globalState, builder, weakFatPtrLE);
@@ -308,7 +308,7 @@ void discardWeakRef(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::FAST: {
       auto weakFatPtrLE =
-          WeakFatPtrLE(
+          WeakFatPtrLE(globalState,
               weakRefMT,
               checkValidReference(FL(), globalState, functionState, builder, weakRefMT, weakRef));
       auto wrciLE = getWrciFromWeakRef(globalState, builder, weakFatPtrLE);
@@ -471,7 +471,7 @@ WrapperPtrLE lockWeakRef(
           break;
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              WeakFatPtrLE(
+              WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
           return WrapperPtrLE(refM,
@@ -492,7 +492,7 @@ WrapperPtrLE lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              WeakFatPtrLE(
+              WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
           return WrapperPtrLE(refM,
@@ -513,7 +513,7 @@ WrapperPtrLE lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              WeakFatPtrLE(
+              WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
           return WrapperPtrLE(refM, lockLgtiFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
@@ -535,7 +535,7 @@ WrapperPtrLE lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              WeakFatPtrLE(
+              WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
           return WrapperPtrLE(refM, lockGenFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
@@ -557,7 +557,7 @@ void noteWeakableDestroyed(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* concreteRefM,
-    LLVMValueRef controlBlockPtrLE) {
+    ControlBlockPtrLE controlBlockPtrLE) {
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
@@ -704,7 +704,7 @@ Ref getIsAliveFromWeakRef(
   }
 
   auto weakFatPtrLE =
-      WeakFatPtrLE(
+      WeakFatPtrLE(globalState,
           weakRefM,
           checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(globalState, functionState, builder, weakRefM, weakFatPtrLE);
@@ -862,7 +862,7 @@ WeakFatPtrLE weakInterfaceRefToWeakStructRef(
     auto headerLE = getHeaderFromWeakRef(builder, weakInterfaceFatPtrLE);
 
     auto interfaceFatPtrLE =
-        InterfaceFatPtrLE(
+        InterfaceFatPtrLE(globalState,
             weakInterfaceRefMT, // It's still conceptually weak even though its not in a weak pointer.
             FatWeaks().getInnerRefFromWeakRef(
                 globalState,
@@ -870,7 +870,7 @@ WeakFatPtrLE weakInterfaceRefToWeakStructRef(
                 builder,
                 weakInterfaceRefMT,
                 weakInterfaceFatPtrLE));
-    auto controlBlockPtrLE = getControlBlockPtr(builder, interfaceFatPtrLE);
+    auto controlBlockPtrLE = getControlBlockPtr(globalState, builder, interfaceFatPtrLE);
 
     // Now, reassemble a weak void* ref to the struct.
     auto weakVoidStructRefLE =
@@ -884,7 +884,7 @@ WeakFatPtrLE weakInterfaceRefToWeakStructRef(
     // Disassemble the weak interface ref.
     auto wrciLE = getWrciFromWeakRef(globalState, builder, weakInterfaceFatPtrLE);
     auto interfaceRefLE =
-        InterfaceFatPtrLE(
+        InterfaceFatPtrLE(globalState,
             weakInterfaceRefMT, // It's still conceptually weak even though its not in a weak pointer.
             FatWeaks().getInnerRefFromWeakRef(
                 globalState,
@@ -892,7 +892,7 @@ WeakFatPtrLE weakInterfaceRefToWeakStructRef(
                 builder,
                 weakInterfaceRefMT,
                 weakInterfaceFatPtrLE));
-    auto controlBlockPtrLE = getControlBlockPtr(builder, interfaceRefLE);
+    auto controlBlockPtrLE = getControlBlockPtr(globalState, builder, interfaceRefLE);
 
     auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
@@ -935,7 +935,7 @@ void buildCheckWeakRef(
     LLVMBuilderRef builder,
     Reference* weakRefM,
     Ref weakRef) {
-  auto weakFatPtrLE = WeakFatPtrLE(weakRefM, weakRef.refLE);
+  auto weakFatPtrLE = WeakFatPtrLE(globalState, weakRefM, weakRef.refLE);
   auto innerLE =
       FatWeaks().getInnerRefFromWeakRefWithoutCheck(
           globalState, functionState, builder, weakRefM, weakFatPtrLE);
@@ -966,7 +966,7 @@ void buildCheckWeakRef(
 
   // This will also run for objects which have since died, which is fine.
   if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(weakRefM->referend)) {
-    auto interfaceFatPtrLE = InterfaceFatPtrLE(weakRefM, innerLE);
+    auto interfaceFatPtrLE = InterfaceFatPtrLE(globalState, weakRefM, innerLE);
     auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
   }
@@ -985,7 +985,7 @@ WeakFatPtrLE assembleInterfaceWeakRef(
     assert(sourceType->ownership == Ownership::OWN || sourceType->ownership == Ownership::SHARE);
     // curious, if its a borrow, do we just return sourceRefLE?
 
-    auto controlBlockPtrLE = getControlBlockPtr(builder, sourceInterfaceFatPtrLE);
+    auto controlBlockPtrLE = getControlBlockPtr(globalState, builder, sourceInterfaceFatPtrLE);
     auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, sourceType,
         controlBlockPtrLE);
     auto currentGenLE = getActualGenFromLGT(globalState, functionState, builder, lgtiLE);
@@ -998,14 +998,14 @@ WeakFatPtrLE assembleInterfaceWeakRef(
         LLVMBuildInsertValue(
             builder, weakRefLE, sourceInterfaceFatPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
 
-    return WeakFatPtrLE(targetType, weakRefLE);
+    return WeakFatPtrLE(globalState, targetType, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
     assert(sourceType->ownership == Ownership::OWN || sourceType->ownership == Ownership::SHARE);
     // curious, if its a borrow, do we just return sourceRefLE?
 
     LLVMValueRef genLE = nullptr;
     if (sourceType->ownership == Ownership::OWN) {
-      auto controlBlockPtrLE = getControlBlockPtr(builder, sourceInterfaceFatPtrLE);
+      auto controlBlockPtrLE = getControlBlockPtr(globalState, builder, sourceInterfaceFatPtrLE);
       genLE = getGenerationFromControlBlockPtr(globalState, builder, sourceType->referend, controlBlockPtrLE);
     } else if (sourceType->ownership == Ownership::BORROW) {
       assert(false); // impl
@@ -1020,14 +1020,14 @@ WeakFatPtrLE assembleInterfaceWeakRef(
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, sourceInterfaceFatPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
         "");
 
-    return WeakFatPtrLE(targetType, weakRefLE);
+    return WeakFatPtrLE(globalState, targetType, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
     if (sourceType->ownership == Ownership::BORROW) {
       assert(false); // curiosity, wouldnt we just return sourceRefLE?
     }
     assert(sourceType->ownership == Ownership::SHARE || sourceType->ownership == Ownership::OWN);
 
-    auto controlBlockPtrLE = getControlBlockPtr(builder, sourceInterfaceFatPtrLE);
+    auto controlBlockPtrLE = getControlBlockPtr(globalState, builder, sourceInterfaceFatPtrLE);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceType,
         controlBlockPtrLE);
     auto headerLE = LLVMGetUndef(globalState->weakRefHeaderStructL);
@@ -1039,11 +1039,11 @@ WeakFatPtrLE assembleInterfaceWeakRef(
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, sourceInterfaceFatPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
         "");
 
-    return WeakFatPtrLE(targetType, weakRefLE);
+    return WeakFatPtrLE(globalState, targetType, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::FAST) {
-    auto controlBlockPtrLE = getControlBlockPtr(builder, sourceInterfaceFatPtrLE);
+    auto controlBlockPtrLE = getControlBlockPtr(globalState, builder, sourceInterfaceFatPtrLE);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceType,
         controlBlockPtrLE);
     auto headerLE = LLVMGetUndef(globalState->weakRefHeaderStructL);
@@ -1055,7 +1055,7 @@ WeakFatPtrLE assembleInterfaceWeakRef(
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, sourceInterfaceFatPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
         "");
 
-    return WeakFatPtrLE(targetType, weakRefLE);
+    return WeakFatPtrLE(globalState, targetType, weakRefLE);
   } else {
     assert(false);
   }
@@ -1073,18 +1073,18 @@ WeakFatPtrLE assembleStructWeakRef(
     assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
     // curious, if its a borrow, do we just return sourceRefLE?
 
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, objPtrLE);
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, objPtrLE);
     auto currentGenLE = getGenerationFromControlBlockPtr(globalState, builder, structTypeM->referend, controlBlockPtrLE);
     auto headerLE = makeGenHeader(globalState, builder, currentGenLE);
     auto weakRefLE = LLVMGetUndef(globalState->getStructWeakRefStruct(structReferendM->fullName));
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
-    return WeakFatPtrLE(targetTypeM, weakRefLE);
+    return WeakFatPtrLE(globalState, targetTypeM, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
     // curious, if its a borrow, do we just return sourceRefLE?
 
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, objPtrLE);
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, objPtrLE);
     auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, structTypeM,
         controlBlockPtrLE);
     buildFlare(FL(), globalState, functionState, builder, lgtiLE);
@@ -1096,7 +1096,7 @@ WeakFatPtrLE assembleStructWeakRef(
     weakRefLE =
         LLVMBuildInsertValue(builder, weakRefLE, objPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
 
-    return WeakFatPtrLE(targetTypeM, weakRefLE);
+    return WeakFatPtrLE(globalState, targetTypeM, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::FAST ||
@@ -1110,7 +1110,7 @@ WeakFatPtrLE assembleStructWeakRef(
       assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE || structTypeM->ownership == Ownership::BORROW);
     } else assert(false);
 
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, objPtrLE);
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, objPtrLE);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
     auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
@@ -1120,7 +1120,7 @@ WeakFatPtrLE assembleStructWeakRef(
     weakRefLE =
         LLVMBuildInsertValue(builder, weakRefLE, objPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
 
-    return WeakFatPtrLE(targetTypeM, weakRefLE);
+    return WeakFatPtrLE(globalState, targetTypeM, weakRefLE);
   } else assert(false);
 }
 
@@ -1136,7 +1136,7 @@ WeakFatPtrLE assembleKnownSizeArrayWeakRef(
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, objPtrLE);
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, objPtrLE);
       auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceKSAMT, controlBlockPtrLE);
       auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
@@ -1146,7 +1146,7 @@ WeakFatPtrLE assembleKnownSizeArrayWeakRef(
       weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
           "");
 
-      return WeakFatPtrLE(targetKSAWeakRefMT, weakRefLE);
+      return WeakFatPtrLE(globalState, targetKSAWeakRefMT, weakRefLE);
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
@@ -1158,7 +1158,7 @@ WeakFatPtrLE assembleKnownSizeArrayWeakRef(
         // impl
         assert(false);
       } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-        auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, objPtrLE);
+        auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, objPtrLE);
         auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceKSAMT, controlBlockPtrLE);
         auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
@@ -1168,7 +1168,7 @@ WeakFatPtrLE assembleKnownSizeArrayWeakRef(
         weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, objPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
             "");
 
-        return WeakFatPtrLE(targetKSAWeakRefMT, weakRefLE);
+        return WeakFatPtrLE(globalState, targetKSAWeakRefMT, weakRefLE);
       } else {
         assert(false);
       }
@@ -1188,7 +1188,7 @@ WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
     Reference* targetUSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, sourceRefLE);
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, sourceRefLE);
     auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, sourceType, controlBlockPtrLE);
     auto targetGenLE = getActualGenFromLGT(globalState, functionState, builder, lgtiLE);
     auto headerLE = makeLgtiHeader(globalState, builder, lgtiLE, targetGenLE);
@@ -1200,12 +1200,12 @@ WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
     weakRefLE =
         LLVMBuildInsertValue(builder, weakRefLE, sourceRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
 
-    return WeakFatPtrLE(targetUSAWeakRefMT, weakRefLE);
+    return WeakFatPtrLE(globalState, targetUSAWeakRefMT, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
 
     LLVMValueRef genLE = nullptr;
     if (sourceType->ownership == Ownership::OWN) {
-      auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, sourceRefLE);
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, sourceRefLE);
       genLE = getGenerationFromControlBlockPtr(globalState, builder, sourceType->referend, controlBlockPtrLE);
     } else if (sourceType->ownership == Ownership::BORROW) {
       assert(false); // impl
@@ -1221,12 +1221,12 @@ WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
     weakRefLE =
         LLVMBuildInsertValue(builder, weakRefLE, sourceRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
 
-    return WeakFatPtrLE(targetUSAWeakRefMT, weakRefLE);
+    return WeakFatPtrLE(globalState, targetUSAWeakRefMT, weakRefLE);
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::FAST) {
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(builder, sourceRefLE);
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, sourceRefLE);
     auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceType, controlBlockPtrLE);
     auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 
@@ -1236,7 +1236,7 @@ WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
     weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, sourceRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,
         "");
 
-    return WeakFatPtrLE(targetUSAWeakRefMT, weakRefLE);
+    return WeakFatPtrLE(globalState, targetUSAWeakRefMT, weakRefLE);
   } else {
     assert(false);
   }
@@ -1247,12 +1247,12 @@ WeakFatPtrLE assembleVoidStructWeakRef(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtrLE,
+    ControlBlockPtrLE controlBlockPtrLE,
     LLVMValueRef headerLE) {
   auto objVoidPtrLE =
       LLVMBuildPointerCast(
           builder,
-          controlBlockPtrLE,
+          controlBlockPtrLE.refLE,
           LLVMPointerType(LLVMVoidType(), 0),
           "objAsVoidPtr");
 
@@ -1261,7 +1261,7 @@ WeakFatPtrLE assembleVoidStructWeakRef(
   weakRefLE =
       LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
 
-  return WeakFatPtrLE(refM, weakRefLE);
+  return WeakFatPtrLE(globalState, refM, weakRefLE);
 }
 
 

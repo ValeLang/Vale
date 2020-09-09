@@ -75,7 +75,7 @@ Ref constructUnknownSizeArrayCountedStruct(
       unknownSizeArrayT,
       unknownSizeArrayT->rawArray->mutability,
       getEffectiveWeakability(globalState, unknownSizeArrayT->rawArray),
-      getConcreteControlBlockPtr(builder, usaWrapperPtrLE),
+      getConcreteControlBlockPtr(globalState, builder, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(builder, usaWrapperPtrLE));
   fillUnknownSizeArray(

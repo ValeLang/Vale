@@ -33,6 +33,7 @@ Ref Assist::lockWeak(
           LLVMBuilderRef thenBuilder) -> Ref {
         auto sourceWeakRefLE =
             WeakFatPtrLE(
+                globalState,
                 sourceWeakRefMT,
                 ::checkValidReference(FL(), globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRef));
         auto constraintRefLE =

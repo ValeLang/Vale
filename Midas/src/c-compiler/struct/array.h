@@ -10,20 +10,4 @@
 #include "globalstate.h"
 
 
-void declareKnownSizeArray(
-    GlobalState* globalState,
-    KnownSizeArrayT* knownSizeArrayMT);
-
-void translateKnownSizeArray(
-    GlobalState* globalState,
-    KnownSizeArrayT* knownSizeArrayMT);
-
-void declareUnknownSizeArray(
-    GlobalState* globalState,
-    UnknownSizeArrayT* unknownSizeArrayMT);
-
-void translateUnknownSizeArray(
-    GlobalState* globalState,
-    UnknownSizeArrayT* unknownSizeArrayMT);
-
 #endif

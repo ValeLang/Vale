@@ -1,0 +1,17 @@
+
+struct Bork {}
+
+fn main() int {
+  originalIndex = 9;
+
+  i! = 1;
+  block {
+    neighborIndex = 10;
+    bork = Bork();
+    block {
+      drop(bork);
+    }
+  }
+
+  = 42;
+}

@@ -1,0 +1,19 @@
+
+interface Opt<T> rules(T Ref) { }
+struct Some<T> rules(T Ref) { value T; }
+impl<T> Opt<T> for Some<T>;
+struct None<T> rules(T Ref) { }
+impl<T> Opt<T> for None<T>;
+
+fn getOr<T>(virtual opt &Opt<*T>, default *T) *T abstract;
+fn getOr<T>(opt &None<*T> impl Opt<*T>, default *T) *T {
+  default
+}
+fn getOr<T>(opt &Some<*T> impl Opt<*T>, default *T) *T {
+  opt.value
+}
+
+fn main() {
+  a Opt<int> = Some(9);
+  = a.getOr<int>(12);
+}

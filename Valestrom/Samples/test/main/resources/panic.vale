@@ -1,7 +1,5 @@
 
 fn main() {
-  if (false) {
-    __panic();
-  }
-  = 42;
+  __panic();
+  = 73;
 }

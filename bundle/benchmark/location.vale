@@ -1,0 +1,68 @@
+
+struct LocationHasher { }
+fn __call(this &LocationHasher, loc Location) {
+  hash = 0;
+  mut hash = 41 * hash + loc.x;
+  mut hash = 41 * hash + loc.y;
+  = hash;
+}
+
+struct LocationEquator { }
+fn __call(this &LocationEquator, a Location, b Location) {
+  (a.x == b.x) and (a.y == b.y)
+}
+
+fn str(loc Location) {
+    "(" + str(loc.x) + ", " + str(loc.y) + ")"
+}
+
+fn ==(a Location, b Location) bool {
+    a.x == b.x and a.y == b.y
+}
+
+struct Location imm {
+    x int;
+    y int;
+}
+fn dist_squared(self Location, other Location) int {
+    diffX = self.x - other.x;
+    diffY = self.y - other.y;
+    ret diffX * diffX + diffY * diffY;
+}
+fn next_to(
+    self Location,
+    other Location,
+    consider_corners_adjacent bool,
+    include_self bool
+) bool {
+    dist_squared = self.dist_squared(other);
+    min_squared_distance = if (include_self) { 0 } else { 1 };
+    max_squared_distance = if (consider_corners_adjacent) { 2 } else { 1 };
+    ret dist_squared >= min_squared_distance and dist_squared <= max_squared_distance;
+}
+
+// This is different than the normal manhattan distance.
+// Normal manhattan distance will give you the difference in x plus the difference
+// in y.
+// This allows us to go diagonal as well.
+//
+// Normal manhattan distance     Diagonal manhattan distance
+//
+//     ..................            ..................
+//     ...............g..            ...............g..
+//     ...............|..            ............../...
+//     ...............|..            ............./....
+//     ...............|..            ............/.....
+//     .@--------------..            .@----------......
+//     ..................            ..................
+//
+// The 100 means times 100, for better precision.
+//
+fn diagonal_manhattan_distance_100(&self, other Location) int {
+    x_dist = (self.x - other.x).abs();
+    y_dist = (self.y - other.y).abs();
+    diagonal_dist = min(x_dist, y_dist); // 100 sqrt 2
+    remaining_x_dist = x_dist - diagonal_dist;
+    remaining_y_dist = y_dist - diagonal_dist;
+    ret diagonal_dist * 144 + remaining_x_dist * 100 + remaining_y_dist * 100;
+}

@@ -11,7 +11,7 @@ LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* refM,
+    Location location,
     LLVMTypeRef referendLT);
 
 LLVMValueRef mallocUnknownSizeArray(
@@ -21,20 +21,21 @@ LLVMValueRef mallocUnknownSizeArray(
     LLVMTypeRef usaElementLT,
     LLVMValueRef lengthLE);
 
-LLVMValueRef mallocStr(
+WrapperPtrLE mallocStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE);
 
 // A concrete is a struct, known size array, unknown size array, or Str.
+// Takes in a control block ptr so we can free interface refs with this (useful for RC mode)
 void freeConcrete(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    LLVMValueRef concreteLE,
+    ControlBlockPtrLE concreteLE,
     Reference* concreteRefM);
 
 #endif

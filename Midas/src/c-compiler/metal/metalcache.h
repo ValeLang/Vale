@@ -18,7 +18,7 @@ V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeEl
 }
 
 struct HashRefVec {
-  size_t operator()(const std::vector<UnconvertedReference *> &refs) const {
+  size_t operator()(const std::vector<Reference *> &refs) const {
     size_t result = 1337;
     for (auto el : refs) {
       result += (size_t) el;
@@ -28,8 +28,8 @@ struct HashRefVec {
 };
 struct RefVecEquals {
   bool operator()(
-      const std::vector<UnconvertedReference *> &a,
-      const std::vector<UnconvertedReference *> &b) const {
+      const std::vector<Reference *> &a,
+      const std::vector<Reference *> &b) const {
     if (a.size() != b.size())
       return false;
     for (size_t i = 0; i < a.size(); i++) {
@@ -42,37 +42,43 @@ struct RefVecEquals {
 
 class MetalCache {
 public:
+  MetalCache() {
+    intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
+    boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
+    strRef = getReference(Ownership::SHARE, Location::YONDER, str);
+    voidRef = getReference(Ownership::SHARE, Location::INLINE, vooid);
+    neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
+  }
+
   Int* innt = new Int();
+  Reference* intRef = nullptr;
   Bool* boool = new Bool();
+  Reference* boolRef = nullptr;
   Str* str = new Str();
+  Reference* strRef = nullptr;
   Void* vooid = new Void();
+  Reference* voidRef = nullptr;
   Never* never = new Never();
-  StructReferend* emptyTupleStructReferend = nullptr;
+  Reference* neverRef = nullptr;
+  StructReferend* emptyTupleStruct = nullptr;
+  Reference* emptyTupleStructRef = nullptr;
 
   std::unordered_map<Name*, StructReferend*> structReferends;
   std::unordered_map<Name*, InterfaceReferend*> interfaceReferends;
   std::unordered_map<std::string, Name*> names;
 
   // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
-  std::unordered_map<UnconvertedReference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
+  std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
   std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
   std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
-  std::unordered_map<Referend*, std::unordered_map<UnconvertedOwnership, std::unordered_map<Location, UnconvertedReference*>>> unconvertedReferences;
-  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> references;
-  std::unordered_map<Name*, std::unordered_map<UnconvertedReference*, std::unordered_map<std::vector<UnconvertedReference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
+  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> unconvertedReferences;
+  std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
   std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
-  std::unordered_map<VariableId*, std::unordered_map<UnconvertedReference*, Local*>> locals;
-
-  UnconvertedReference* getUnconvertedReference(UnconvertedOwnership ownership, Location location, Referend* referend) {
-    return makeIfNotPresent(
-        &unconvertedReferences[referend][ownership],
-        location,
-        [&](){ return new UnconvertedReference(ownership, location, referend); });
-  }
+  std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
 
   Reference* getReference(Ownership ownership, Location location, Referend* referend) {
     return makeIfNotPresent(
-        &references[referend][ownership],
+        &unconvertedReferences[referend][ownership],
         location,
         [&](){ return new Reference(ownership, location, referend); });
   }

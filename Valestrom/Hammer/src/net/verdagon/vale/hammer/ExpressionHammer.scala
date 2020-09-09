@@ -255,7 +255,7 @@ object ExpressionHammer {
         (maybeAccess, List())
       }
 
-      case ca2 @ ConstructArray2(_, _, _) => {
+      case ca2 @ ConstructArray2(_, _, _, _) => {
         val access =
           CallHammer.translateConstructArray(
             hinputs, hamuts, locals, ca2)
@@ -411,14 +411,14 @@ object ExpressionHammer {
         (argNode, List())
       }
 
-      case das2 @ DestroyArraySequenceIntoFunction2(_, _, _) => {
+      case das2 @ DestroyArraySequenceIntoFunction2(_, _, _, _) => {
         val dasH =
             CallHammer.translateDestroyArraySequence(
               hinputs, hamuts, locals, das2)
         (dasH, List())
       }
 
-      case das2 @ DestroyUnknownSizeArray2(_, _, _) => {
+      case das2 @ DestroyUnknownSizeArray2(_, _, _, _) => {
         val dusaH =
             CallHammer.translateDestroyUnknownSizeArray(
               hinputs, hamuts, locals, das2)

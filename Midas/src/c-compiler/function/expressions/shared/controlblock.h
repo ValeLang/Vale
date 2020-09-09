@@ -10,13 +10,15 @@ constexpr int WEAK_REF_MEMBER_INDEX_FOR_HEADER = 0;
 constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
 
 // A concrete is a struct, known size array, unknown size array, or Str.
-LLVMValueRef getConcreteControlBlockPtr(
+ControlBlockPtrLE getConcreteControlBlockPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef concretePtrLE);
+    WrapperPtrLE wrapperPtrLE);
 
-LLVMValueRef getControlBlockPtrFromInterfaceRef(
+ControlBlockPtrLE getControlBlockPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE);
+    InterfaceFatPtrLE interfaceFatPtrLE);
 
 // See CRCISFAORC for why we don't take in a mutability.
 // Strong means owning or borrow or shared; things that control the lifetime.
@@ -24,20 +26,20 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtr);
+    ControlBlockPtrLE controlBlockPtr);
 
 LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Referend* referendM,
-    LLVMValueRef controlBlockPtr);
+    ControlBlockPtrLE controlBlockPtr);
 
 // Strong means owning or borrow or shared; things that control the lifetime.
 LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtrLE);
+    ControlBlockPtrLE controlBlockPtrLE);
 
 // Returns object ID
 void fillControlBlock(
@@ -48,12 +50,7 @@ void fillControlBlock(
     Referend* referendM,
     Mutability mutability,
     Weakability weakable,
-    LLVMValueRef controlBlockPtrLE,
+    ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName);
-
-LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    LLVMValueRef controlBlockPtr);
 
 #endif //VALEC_CONTROLBLOCK_H

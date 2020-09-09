@@ -10,11 +10,13 @@ constexpr int WEAK_REF_MEMBER_INDEX_FOR_HEADER = 0;
 constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
 
 // A concrete is a struct, known size array, unknown size array, or Str.
-LLVMValueRef getConcreteControlBlockPtr(
+ControlBlockPtrLE getConcreteControlBlockPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE wrapperPtrLE);
 
-LLVMValueRef getControlBlockPtr(
+ControlBlockPtrLE getControlBlockPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceFatPtrLE);
 
@@ -24,20 +26,20 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtr);
+    ControlBlockPtrLE controlBlockPtr);
 
 LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Referend* referendM,
-    LLVMValueRef controlBlockPtr);
+    ControlBlockPtrLE controlBlockPtr);
 
 // Strong means owning or borrow or shared; things that control the lifetime.
 LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtrLE);
+    ControlBlockPtrLE controlBlockPtrLE);
 
 // Returns object ID
 void fillControlBlock(
@@ -48,7 +50,7 @@ void fillControlBlock(
     Referend* referendM,
     Mutability mutability,
     Weakability weakable,
-    LLVMValueRef controlBlockPtrLE,
+    ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName);
 
 #endif //VALEC_CONTROLBLOCK_H

@@ -65,7 +65,7 @@ LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceFatPtrLE);
 
-LLVMValueRef getControlBlockPtr(
+ControlBlockPtrLE getControlBlockPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -73,7 +73,7 @@ LLVMValueRef getControlBlockPtr(
     LLVMValueRef ref,
     Reference* referenceM);
 
-LLVMValueRef getControlBlockPtr(
+ControlBlockPtrLE getControlBlockPtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -95,7 +95,7 @@ LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef exprLE);
+    ControlBlockPtrLE exprLE);
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
@@ -227,7 +227,7 @@ LLVMValueRef makeInterfaceRefStruct(
     LLVMBuilderRef builder,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
-    LLVMValueRef controlBlockPtrLE);
+    ControlBlockPtrLE controlBlockPtrLE);
 
 
 LLVMValueRef addExtern(
@@ -246,8 +246,8 @@ void discardOwningRef(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceTypeM,
-    Ref exprLE);
+    Reference* sourceMT,
+    Ref sourceRef);
 
 Ref upcast(
     GlobalState* globalState,

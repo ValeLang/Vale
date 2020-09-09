@@ -309,9 +309,10 @@ Ref translateExpressionInner(
               arrayType,
               checkValidReference(
                   FL(), globalState, functionState, builder, arrayType, arrayRef));
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, arrayWrapperLE);
       freeConcrete(
           AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
-          arrayWrapperLE, arrayType);
+          controlBlockPtrLE, arrayType);
     } else {
       assert(false);
     }
@@ -371,9 +372,10 @@ Ref translateExpressionInner(
           WrapperPtrLE(
               arrayType,
               checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRef));
+      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, arrayWrapperLE);
       // Free it!
       freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
-          arrayWrapperLE, arrayType);
+          controlBlockPtrLE, arrayType);
     } else {
       assert(false);
     }

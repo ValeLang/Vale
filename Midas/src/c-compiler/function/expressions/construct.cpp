@@ -70,7 +70,7 @@ Ref constructCountedStruct(
       structTypeM->referend,
       structM->mutability,
       getEffectiveWeakability(globalState, structM),
-      getConcreteControlBlockPtr(builder, newStructWrapperPtrLE), structM->name->name);
+      getConcreteControlBlockPtr(globalState, builder, newStructWrapperPtrLE), structM->name->name);
   fillInnerStruct(
       globalState, functionState,
       builder, structM, membersLE,

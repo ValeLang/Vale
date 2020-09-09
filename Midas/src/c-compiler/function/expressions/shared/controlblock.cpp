@@ -2,20 +2,22 @@
 #include "shared.h"
 #include "weaks.h"
 
-LLVMValueRef getConcreteControlBlockPtr(
+ControlBlockPtrLE getConcreteControlBlockPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE wrapperPtrLE) {
   // Control block is always the 0th element of every concrete struct.
-  return LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr");
+  return ControlBlockPtrLE(globalState, wrapperPtrLE.refM->referend, LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
 }
 
-LLVMValueRef getControlBlockPtr(
+ControlBlockPtrLE getControlBlockPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceFatPtrLE) {
   // Interface fat pointer's first element points directly at the control block,
   // and we dont have to cast it. We would have to cast if we were accessing the
   // actual object though.
-  return LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr");
+  return ControlBlockPtrLE(globalState, interfaceFatPtrLE.refM->referend, LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
@@ -23,7 +25,7 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtr) {
+    ControlBlockPtrLE controlBlockPtr) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
@@ -42,7 +44,7 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
 
   return LLVMBuildStructGEP(
       builder,
-      controlBlockPtr,
+      controlBlockPtr.refLE,
       globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::STRONG_RC),
       "rcPtr");
 }
@@ -51,13 +53,13 @@ LLVMValueRef getObjIdFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Referend* referendM,
-    LLVMValueRef controlBlockPtr) {
+    ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->census);
   return LLVMBuildLoad(
       builder,
       LLVMBuildStructGEP(
           builder,
-          controlBlockPtr,
+          controlBlockPtr.refLE,
           globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
           "objIdPtr"),
       "objId");
@@ -67,12 +69,12 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef controlBlockPtr) {
+    ControlBlockPtrLE controlBlockPtr) {
   return LLVMBuildLoad(
       builder,
       LLVMBuildStructGEP(
           builder,
-          controlBlockPtr,
+          controlBlockPtr.refLE,
           globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
           "typeNameStrPtrPtr"),
       "typeNameStrPtr");
@@ -82,7 +84,7 @@ LLVMValueRef getStrongRcFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef structExpr) {
+    ControlBlockPtrLE structExpr) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
@@ -112,7 +114,7 @@ void fillControlBlock(
     Referend* referendM,
     Mutability mutability,
     Weakability weakability,
-    LLVMValueRef controlBlockPtrLE,
+    ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName) {
 
   LLVMValueRef newControlBlockLE = nullptr;
@@ -175,5 +177,5 @@ void fillControlBlock(
   LLVMBuildStore(
       builder,
       newControlBlockLE,
-      controlBlockPtrLE);
+      controlBlockPtrLE.refLE);
 }

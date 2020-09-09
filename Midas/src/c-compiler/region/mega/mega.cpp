@@ -126,8 +126,10 @@ Ref Mega::lockWeak(
           case RegionOverride::NAIVE_RC:
           case RegionOverride::FAST: {
             auto weakFatPtrLE =
-                checkValidReference(
-                    FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE);
+                WeakFatPtrLE(
+                    sourceWeakRefMT,
+                    checkValidReference(
+                        FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
             auto constraintRefLE =
                 FatWeaks().getInnerRefFromWeakRef(
                     globalState,
@@ -412,7 +414,7 @@ LLVMTypeRef Mega::getStringRefType() const {
 LLVMValueRef Mega::upcastWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef sourceRefLE,
+    WeakFatPtrLE sourceRefLE,
     StructReferend* sourceStructReferendM,
     Reference* sourceStructTypeM,
     InterfaceReferend* targetInterfaceReferendM,

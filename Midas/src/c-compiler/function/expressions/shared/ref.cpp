@@ -12,3 +12,9 @@ Ref wrap(IRegion* region, Reference* refM, WrapperPtrLE wrapperPtr) {
   assert(LLVMTypeOf(wrapperPtr.refLE) == region->translateType(refM));
   return Ref(refM, wrapperPtr.refLE);
 }
+
+Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE weakFatPtrLE) {
+  assert(refM == weakFatPtrLE.refM);
+  assert(LLVMTypeOf(weakFatPtrLE.refLE) == region->translateType(refM));
+  return Ref(refM, weakFatPtrLE.refLE);
+}

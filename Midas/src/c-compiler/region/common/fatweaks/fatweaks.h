@@ -3,6 +3,7 @@
 
 #include <llvm-c/Core.h>
 #include <function/expressions/shared/afl.h>
+#include <function/expressions/shared/ref.h>
 #include "globalstate.h"
 #include "function/function.h"
 
@@ -13,14 +14,14 @@ public:
       FunctionState *functionState,
       LLVMBuilderRef builder,
       Reference *weakRefM,
-      LLVMValueRef weakRefLE);
+      WeakFatPtrLE weakRefLE);
 
   LLVMValueRef getInnerRefFromWeakRefWithoutCheck(
       GlobalState *globalState,
       FunctionState *functionState,
       LLVMBuilderRef builder,
       Reference *weakRefM,
-      LLVMValueRef weakRefLE);
+      WeakFatPtrLE weakRefLE);
 };
 
 #endif

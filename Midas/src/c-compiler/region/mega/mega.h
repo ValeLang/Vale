@@ -78,7 +78,7 @@ public:
   LLVMValueRef upcastWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      LLVMValueRef sourceRefLE,
+      WeakFatPtrLE sourceRefLE,
       StructReferend* sourceStructReferendM,
       Reference* sourceStructTypeM,
       InterfaceReferend* targetInterfaceReferendM,

@@ -93,13 +93,13 @@ void translateFunction(
   // code block.
   LLVMBuildBr(localsBuilder, firstBlockL);
 
-  // This is a total hack, to try and appease LLVM to say that yes, we're sure
-  // we'll never reach this statement.
-  // In .ll we can call a noreturn function and then put an unreachable block,
-  // but I can't figure out how to specify noreturn with the LLVM C API.
-  if (dynamic_cast<Never*>(functionM->prototype->returnType->referend)) {
-    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(region->translateType(functionM->prototype->returnType)));
-  }
+//  // This is a total hack, to try and appease LLVM to say that yes, we're sure
+//  // we'll never reach this statement.
+//  // In .ll we can call a noreturn function and then put an unreachable block,
+//  // but I can't figure out how to specify noreturn with the LLVM C API.
+//  if (dynamic_cast<Never*>(functionM->prototype->returnType->referend)) {
+//    LLVMBuildRet(bodyTopLevelBuilder, LLVMGetUndef(region->translateType(functionM->prototype->returnType)));
+//  }
 
   LLVMDisposeBuilder(bodyTopLevelBuilder);
 }

@@ -831,6 +831,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
   } else if (mainM->returnType->referend == globalState->metalCache.innt) {
     LLVMBuildRet(entryBuilder, mainResult);
+  } else if (mainM->returnType->referend == globalState->metalCache.never) {
+    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
   } else {
     assert(false);
   }

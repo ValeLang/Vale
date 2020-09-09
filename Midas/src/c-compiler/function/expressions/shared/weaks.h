@@ -43,7 +43,7 @@ LLVMValueRef getIsAliveFromWeakFatPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    LLVMValueRef weakFatPtrLE);
+    WeakFatPtrLE weakFatPtrLE);
 
 Ref getIsAliveFromWeakRef(
     GlobalState* globalState,
@@ -73,12 +73,12 @@ LLVMValueRef fillWeakableControlBlock(
     LLVMValueRef controlBlockLE);
 
 
-LLVMValueRef weakInterfaceRefToWeakStructRef(
+WeakFatPtrLE weakInterfaceRefToWeakStructRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef exprLE);
+    WeakFatPtrLE exprLE);
 
 void buildCheckWeakRef(
     AreaAndFileAndLine checkerAFL,
@@ -89,7 +89,7 @@ void buildCheckWeakRef(
     Ref weakRefLE);
 
 
-LLVMValueRef assembleInterfaceWeakRef(
+WeakFatPtrLE assembleInterfaceWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -99,35 +99,38 @@ LLVMValueRef assembleInterfaceWeakRef(
     InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
 
-LLVMValueRef assembleStructWeakRef(
+WeakFatPtrLE assembleStructWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structTypeM,
-    Reference* resultTypeM,
+    Reference* targetTypeM,
     StructReferend* structReferendM,
     WrapperPtrLE objPtrLE);
 
-LLVMValueRef assembleKnownSizeArrayWeakRef(
+WeakFatPtrLE assembleKnownSizeArrayWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* structTypeM,
+    Reference* sourceKSAMT,
     KnownSizeArrayT* knownSizeArrayMT,
+    Reference* targetKSAWeakRefMT,
     WrapperPtrLE objPtrLE);
 
-LLVMValueRef assembleUnknownSizeArrayWeakRef(
+WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceType,
     UnknownSizeArrayT* unknownSizeArrayMT,
+    Reference* targetUSAWeakRefMT,
     WrapperPtrLE sourceRefLE);
 
 // Used in interface calling, when we dont know what the underlying struct type is yet.
-LLVMValueRef assembleVoidStructWeakRef(
+WeakFatPtrLE assembleVoidStructWeakRef(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Reference* refM,
     LLVMValueRef controlBlockPtrLE,
     LLVMValueRef wrciLE);
 
@@ -159,7 +162,7 @@ void makeKnownSizeArrayWeakRefStruct(
 LLVMValueRef getWrciFromWeakRef(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE);
+    WeakFatPtrLE weakRefLE);
 
 LLVMValueRef makeWrciHeader(
     GlobalState* globalState,
@@ -168,6 +171,6 @@ LLVMValueRef makeWrciHeader(
 
 LLVMValueRef getHeaderFromWeakRef(
     LLVMBuilderRef builder,
-    LLVMValueRef weakRefLE);
+    WeakFatPtrLE weakRefLE);
 
 #endif

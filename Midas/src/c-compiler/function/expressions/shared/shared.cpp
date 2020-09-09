@@ -363,18 +363,19 @@ Ref buildInterfaceCall(
           break;
         }
         case Ownership::WEAK: {
+          auto weakFatPtrLE = WeakFatPtrLE(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
               InterfaceFatPtrLE(
                   virtualParamMT,
                   FatWeaks().getInnerRefFromWeakRef(
-                      globalState, functionState, builder, virtualParamMT, virtualArgLE));
+                      globalState, functionState, builder, virtualParamMT, weakFatPtrLE));
           itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
           // Now, reassemble a weak void* ref to the struct.
           auto weakVoidStructRefLE =
               weakInterfaceRefToWeakStructRef(
-                  globalState, functionState, builder, virtualParamMT, virtualArgLE);
-          newVirtualArgLE = weakVoidStructRefLE;
+                  globalState, functionState, builder, virtualParamMT, weakFatPtrLE);
+          newVirtualArgLE = weakVoidStructRefLE.refLE;
           break;
         }
       }
@@ -394,18 +395,19 @@ Ref buildInterfaceCall(
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
+          auto virtualArgWeakRef = WeakFatPtrLE(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
               InterfaceFatPtrLE(
                   virtualParamMT,
                   FatWeaks().getInnerRefFromWeakRef(
-                      globalState, functionState, builder, virtualParamMT, virtualArgLE));
+                      globalState, functionState, builder, virtualParamMT, virtualArgWeakRef));
           itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
           // Now, reassemble a weak void* ref to the struct.
           auto weakVoidStructRefLE =
               weakInterfaceRefToWeakStructRef(
-                  globalState, functionState, builder, virtualParamMT, virtualArgLE);
-          newVirtualArgLE = weakVoidStructRefLE;
+                  globalState, functionState, builder, virtualParamMT, virtualArgWeakRef);
+          newVirtualArgLE = weakVoidStructRefLE.refLE;
           break;
         }
       }
@@ -652,8 +654,10 @@ Ref upcast(
         }
         case Ownership::WEAK: {
           auto sourceWeakStructFatPtrLE =
-              checkValidReference(
-                  FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE);
+              WeakFatPtrLE(
+                  sourceStructMT,
+                  checkValidReference(
+                      FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
           auto sourceWeakInterfaceFatPtrLE =
               upcastWeakFatPtr(
                   globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
@@ -686,8 +690,10 @@ Ref upcast(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto sourceWeakStructPtrLE =
-              checkValidReference(
-                  FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE);
+              WeakFatPtrLE(
+                  sourceStructMT,
+                  checkValidReference(
+                      FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
           auto resultWeakInterfaceFatPtrLE =
               upcastWeakFatPtr(
                   globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
@@ -872,13 +878,13 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
             auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
             auto resultLE =
                 assembleKnownSizeArrayWeakRef(
-                    globalState, functionState, builder, sourceType, knownSizeArray, sourceWrapperPtrLE);
+                    globalState, functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
             auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
             auto resultLE =
                 assembleUnknownSizeArrayWeakRef(
-                    globalState, functionState, builder, sourceType, unknownSizeArray, sourceWrapperPtrLE);
+                    globalState, functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else assert(false);
         } else {
@@ -984,13 +990,13 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
             auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
             auto resultLE =
                 assembleKnownSizeArrayWeakRef(
-                    globalState, functionState, builder, sourceType, knownSizeArray, sourceWrapperPtrLE);
+                    globalState, functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
             auto sourceWrapperPtrLE = WrapperPtrLE(sourceType, sourceRefLE);
             auto resultLE =
                 assembleUnknownSizeArrayWeakRef(
-                    globalState, functionState, builder, sourceType, unknownSizeArray, sourceWrapperPtrLE);
+                    globalState, functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);
             return wrap(functionState->defaultRegion, targetType, resultLE);
           } else assert(false);
         } else {

@@ -32,7 +32,9 @@ Ref Assist::lockWeak(
       [this, functionState, sourceWeakRef, constraintRefM, sourceWeakRefMT, buildThen](
           LLVMBuilderRef thenBuilder) -> Ref {
         auto sourceWeakRefLE =
-            checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRef);
+            WeakFatPtrLE(
+                sourceWeakRefMT,
+                ::checkValidReference(FL(), globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRef));
         auto constraintRefLE =
             fatWeaks.getInnerRefFromWeakRef(
                 globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE);
@@ -62,7 +64,7 @@ LLVMTypeRef Assist::translateType(Reference* referenceM) {
 LLVMValueRef Assist::upcastWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef sourceRefLE,
+    WeakFatPtrLE sourceRefLE,
     StructReferend* sourceStructReferendM,
     Reference* sourceStructTypeM,
     InterfaceReferend* targetInterfaceReferendM,

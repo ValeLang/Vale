@@ -13,7 +13,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    LLVMValueRef weakFatPtrLE) {
+    WeakFatPtrLE weakFatPtrLE) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
@@ -34,19 +34,18 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
 
 //  checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakFatPtrLE);
 
-  auto innerRefLE = LLVMBuildExtractValue(builder, weakFatPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
+  auto innerRefLE = LLVMBuildExtractValue(builder, weakFatPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
   // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
   // a valid reference.
   return innerRefLE;
 }
 
-//start here, put a WeakRefLE struct around this
 LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    LLVMValueRef weakRefLE) {
+    WeakFatPtrLE weakRefLE) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
@@ -71,7 +70,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
           // Census does this to get at a weak interface ref's itable, even for a dead object.
               globalState->opt->census);
-  auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
+  auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
   // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
   // a valid reference.
   return innerRefLE;

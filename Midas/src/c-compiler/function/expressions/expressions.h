@@ -4,6 +4,7 @@
 #include <llvm-c/Core.h>
 #include <functional>
 #include <unordered_map>
+#include <function/expressions/shared/ref.h>
 
 #include "metal/ast.h"
 #include "metal/instructions.h"
@@ -12,92 +13,92 @@
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
 
-LLVMValueRef translateBlock(
+Ref translateBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* parentBlockState,
     LLVMBuilderRef builder,
     Block* block);
 
-LLVMValueRef translateDestructure(
+Ref translateDestructure(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Destroy* destructureM);
 
-LLVMValueRef translateConstruct(
+Ref translateConstruct(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
-    const std::vector<LLVMValueRef>& membersLE);
+    const std::vector<Ref>& membersLE);
 
-LLVMValueRef translateCall(
+Ref translateCall(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Call* call);
 
-LLVMValueRef translateInterfaceCall(
+Ref translateInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     InterfaceCall* call);
 
-LLVMValueRef translateExternCall(
+Ref translateExternCall(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     ExternCall* expr);
 
-LLVMValueRef translateIf(
+Ref translateIf(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     If* iff);
 
-LLVMValueRef translateWhile(
+Ref translateWhile(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     While* whiile);
 
-LLVMValueRef translateDiscard(
+Ref translateDiscard(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Discard* discardM);
 
-LLVMValueRef translateNewArrayFromValues(
+Ref translateNewArrayFromValues(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     NewArrayFromValues* newArrayFromValues);
 
-LLVMValueRef translateConstructUnknownSizeArray(
+Ref translateConstructUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     ConstructUnknownSizeArray* constructUnknownSizeArray);
 
-LLVMValueRef translateConstantStr(
+Ref translateConstantStr(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     ConstantStr* constantStr);
 
-LLVMValueRef translateLocalLoad(
+Ref translateLocalLoad(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,

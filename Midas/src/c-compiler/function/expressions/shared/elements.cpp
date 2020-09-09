@@ -4,41 +4,125 @@
 
 #include "shared.h"
 #include "branch.h"
+#include "weaks.h"
+#include "elements.h"
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
-    LLVMBuilderRef builder, LLVMValueRef knownSizeArrayWrapperPtrLE) {
+    LLVMBuilderRef builder,
+    WrapperPtrLE knownSizeArrayWrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      knownSizeArrayWrapperPtrLE,
+      knownSizeArrayWrapperPtrLE.refLE,
       1, // Array is after the control block.
       "ksaElemsPtr");
 }
 
+LLVMValueRef getUnknownSizeArrayContentsPtr(
+    LLVMBuilderRef builder,
+    WrapperPtrLE arrayWrapperPtrLE) {
+
+  return LLVMBuildStructGEP(
+      builder,
+      arrayWrapperPtrLE.refLE,
+      2, // Array is after the control block and length.
+      "usaElemsPtr");
+}
+
 LLVMValueRef getUnknownSizeArrayLengthPtr(
-    LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE) {
+    LLVMBuilderRef builder,
+    WrapperPtrLE unknownSizeArrayWrapperPtrLE) {
   auto resultLE =
       LLVMBuildStructGEP(
           builder,
-          unknownSizeArrayWrapperPtrLE,
+          unknownSizeArrayWrapperPtrLE.refLE,
           1, // Length is after the control block and before contents.
           "usaLenPtr");
   assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt64Type(), 0));
   return resultLE;
 }
 
-LLVMValueRef getUnknownSizeArrayLength(
+WrapperPtrLE getKnownSizeArrayWrapperPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef arrayWrapperPtrLE) {
-  return LLVMBuildLoad(builder, getUnknownSizeArrayLengthPtr(builder, arrayWrapperPtrLE), "usaLen");
+    Reference* ksaMT,
+    Ref ksaRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      return WrapperPtrLE(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (ksaMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          return WrapperPtrLE(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
+        case Ownership::BORROW:
+          return lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef);
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+      }
+      assert(false);
+    }
+    default:
+      assert(false);
+  }
 }
 
-LLVMValueRef getUnknownSizeArrayContentsPtr(
-    LLVMBuilderRef builder, LLVMValueRef unknownSizeArrayWrapperPtrLE) {
-  return LLVMBuildStructGEP(
-      builder,
-      unknownSizeArrayWrapperPtrLE,
-      2, // Array is after the control block and length.
-      "usaElemsPtr");
+WrapperPtrLE getUnknownSizeArrayWrapperPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefMT,
+    Ref arrayRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (arrayRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
+        case Ownership::BORROW:
+          return lockWeakRef(FL(), globalState, functionState, builder, arrayRefMT, arrayRef);
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+  assert(false);
+}
+
+Ref getUnknownSizeArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE arrayRefLE) {
+  auto lengthPtrLE = getUnknownSizeArrayLengthPtr(builder, arrayRefLE);
+  auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "usaLen");
+  return wrap(functionState->defaultRegion, globalState->metalCache.intRef, intLE);
+}
+
+Ref getUnknownSizeArrayLength(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefM,
+    Ref arrayRef) {
+  auto wrapperPtrLE = getUnknownSizeArrayWrapperPtr(globalState, functionState, builder, arrayRefM, arrayRef);
+  return getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
 }
 
 LLVMValueRef loadInnerArrayMember(
@@ -62,11 +146,10 @@ LLVMValueRef loadInnerArrayMember(
   return resultLE;
 }
 
-LLVMValueRef storeInnerArrayMember(
+void storeInnerArrayMember(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
-    Reference* elementRefM,
     LLVMValueRef indexLE,
     LLVMValueRef sourceLE) {
   assert(LLVMGetTypeKind(LLVMTypeOf(elemsPtrLE)) == LLVMPointerTypeKind);
@@ -74,28 +157,28 @@ LLVMValueRef storeInnerArrayMember(
       constI64LE(0),
       indexLE
   };
-  auto resultLE =
-      LLVMBuildStore(
-          builder,
-          sourceLE,
-          LLVMBuildGEP(
-              builder, elemsPtrLE, indices, 2, "indexPtr"));
+  LLVMBuildStore(
+      builder,
+      sourceLE,
+      LLVMBuildGEP(
+          builder, elemsPtrLE, indices, 2, "indexPtr"));
 
-  return resultLE;
 }
 
-LLVMValueRef loadElement(
+Ref loadElement(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* structRefM,
+    Reference* arrayRefM,
     Reference* elementRefM,
-    LLVMValueRef sizeLE,
+    Ref sizeRef,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
-    LLVMValueRef indexLE,
+    Ref indexRef,
     Reference* resultRefM) {
+  auto indexLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, indexRef);
+  auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
 
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
@@ -106,10 +189,9 @@ LLVMValueRef loadElement(
 
   LLVMValueRef fromArrayLE = nullptr;
   if (mutability == Mutability::IMMUTABLE) {
-    if (structRefM->location == Location::INLINE) {
+    if (arrayRefM->location == Location::INLINE) {
       assert(false);
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
-      return nullptr;
     } else {
       fromArrayLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
     }
@@ -117,53 +199,62 @@ LLVMValueRef loadElement(
     fromArrayLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
   } else {
     assert(false);
-    return nullptr;
   }
-  return load(globalState, functionState, builder, elementRefM, resultRefM, fromArrayLE);
+  return upgradeLoadResultToRefWithTargetOwnership(globalState, functionState, builder, elementRefM,
+      resultRefM,
+      fromArrayLE);
 }
 
 
-LLVMValueRef storeElement(
+Ref storeElement(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* arrayRefM,
     Reference* elementRefM,
-    LLVMValueRef sizeLE,
+    Ref sizeRef,
     LLVMValueRef arrayPtrLE,
     Mutability mutability,
-    LLVMValueRef indexLE,
-    LLVMValueRef sourceLE) {
+    Ref indexRef,
+    Ref sourceRef) {
+  auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
 
+  auto indexLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, indexRef);
   auto isNonNegativeLE = LLVMBuildICmp(builder, LLVMIntSGE, indexLE, constI64LE(0), "isNonNegative");
   auto isUnderLength = LLVMBuildICmp(builder, LLVMIntSLT, indexLE, sizeLE, "isUnderLength");
   auto isWithinBounds = LLVMBuildAnd(builder, isNonNegativeLE, isUnderLength, "isWithinBounds");
   buildAssert(globalState, functionState, builder, isWithinBounds, "Index out of bounds!");
 
+//  auto arrayPtrLE = checkValidReference(FL(), globalState, functionState, builder, arrayRefM, arrayRef);
+  auto sourceLE = checkValidReference(FL(), globalState, functionState, builder, elementRefM, sourceRef);
+
   if (mutability == Mutability::IMMUTABLE) {
     if (arrayRefM->location == Location::INLINE) {
       assert(false);
 //      return LLVMBuildExtractValue(builder, structExpr, indexLE, "index");
-      return nullptr;
     } else {
-      return storeInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE, sourceLE);
+      auto resultLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+      storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+      return wrap(functionState->defaultRegion, elementRefM, resultLE);
     }
   } else if (mutability == Mutability::MUTABLE) {
-    return storeInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE, sourceLE);
+    auto resultLE = loadInnerArrayMember(globalState, builder, arrayPtrLE, elementRefM, indexLE);
+    storeInnerArrayMember(globalState, builder, arrayPtrLE, indexLE, sourceLE);
+    return wrap(functionState->defaultRegion, elementRefM, resultLE);
   } else {
     assert(false);
-    return nullptr;
   }
 }
 
 
 void foreachArrayElement(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef sizeLE,
+    Ref sizeRef,
     LLVMValueRef arrayPtrLE,
-    std::function<void(LLVMValueRef, LLVMBuilderRef)> iterationBuilder) {
+    std::function<void(Ref, LLVMBuilderRef)> iterationBuilder) {
   LLVMValueRef iterationIndexPtrLE =
       makeMidasLocal(
           functionState,
@@ -172,20 +263,24 @@ void foreachArrayElement(
           "iterationIndex",
           LLVMConstInt(LLVMInt64Type(),0, false));
 
+  auto sizeLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
+
   buildWhile(
+      globalState,
       functionState,
       builder,
-      [sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {
+      [globalState, functionState, sizeLE, iterationIndexPtrLE](LLVMBuilderRef conditionBuilder) {
         auto iterationIndexLE =
             LLVMBuildLoad(conditionBuilder, iterationIndexPtrLE, "iterationIndex");
         auto isBeforeEndLE =
             LLVMBuildICmp(
                 conditionBuilder,LLVMIntSLT,iterationIndexLE,sizeLE,"iterationIndexIsBeforeEnd");
-        return isBeforeEndLE;
+        return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isBeforeEndLE);
       },
-      [iterationBuilder, iterationIndexPtrLE, arrayPtrLE](LLVMBuilderRef bodyBuilder) {
+      [globalState, functionState, iterationBuilder, iterationIndexPtrLE, arrayPtrLE](LLVMBuilderRef bodyBuilder) {
         auto iterationIndexLE = LLVMBuildLoad(bodyBuilder, iterationIndexPtrLE, "iterationIndex");
-        iterationBuilder(iterationIndexLE, bodyBuilder);
+        auto iterationIndexRef = wrap(functionState->defaultRegion, globalState->metalCache.intRef, iterationIndexLE);
+        iterationBuilder(iterationIndexRef, bodyBuilder);
         adjustCounter(bodyBuilder, iterationIndexPtrLE, 1);
       });
 }

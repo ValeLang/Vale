@@ -1,0 +1,204 @@
+// roguelike.vale - A simple Roguelike game, made in Vale.
+//
+// This program displays a map like:
+//   ##########
+//   #......g.#
+//   #........#
+//   #..g..g..#
+//   #..@...g.#
+//   #.g......#
+//   #.g.g..g.#
+//   #g...g...#
+//   #........#
+//   ##########
+// where the player controls the @. When the player tries to move onto a space
+// already occupied by a goblin ("g"), it will destroy the goblin.
+
+// Pseudo-random number generator, from https://stackoverflow.com/a/3062783
+struct LCGRand {
+    seed int;
+}
+fn next(self &!LCGRand) int {
+    a = 1103515245;
+    c = 12345;
+    m = 2147483647;
+    mut self.seed = (a * self.seed + c) mod m;
+    ret self.seed;
+}
+
+// Arbitrary Vector, using const generics
+struct Vec<N, T> rules(N int) {
+  values [<imm> N * T];
+}
+
+
+struct Goblin {
+  location Vec<2, int>;
+}
+
+
+fn main() int {
+  println("");
+  println("Welcome to the Tiny Vale Roguelike!");
+  println("w+enter: Up");
+  println("a+enter: Left");
+  println("s+enter: Down");
+  println("d+enter: Right");
+  println("Q+enter: Quit");
+  println("");
+  board = makeBoard();
+  rand = LCGRand(1337);
+
+  playerRow! = 4;
+  playerCol! = 3;
+
+  goblins = HashMap<int, Goblin, IntHasher, IntEquator>(IntHasher(), IntEquator());
+  goblins.add(13, Goblin(Vec([6, 3])));
+  goblins.add(14, Goblin(Vec([2, 6])));
+  goblins.add(15, Goblin(Vec([5, 7])));
+  goblins.add(17, Goblin(Vec([2, 5])));
+  goblins.add(19, Goblin(Vec([7, 1])));
+  goblins.add(23, Goblin(Vec([3, 3])));
+  goblins.add(24, Goblin(Vec([1, 7])));
+  goblins.add(25, Goblin(Vec([7, 6])));
+  goblins.add(27, Goblin(Vec([4, 6])));
+  goblins.add(29, Goblin(Vec([7, 4])));
+
+  running! = true;
+  while (running) {
+    display(
+        &board,
+        &goblins,
+        playerRow,
+        playerCol);
+
+    key = inputKey();
+    newPlayerRow! = playerRow;
+    newPlayerCol! = playerCol;
+    if (key == 81) {
+      mut running = false;
+    } else if (key == 119) {
+      mut newPlayerRow = newPlayerRow - 1;
+    } else if (key == 115) {
+      mut newPlayerRow = newPlayerRow + 1;
+    } else if (key == 97) {
+      mut newPlayerCol = newPlayerCol - 1;
+    } else if (key == 100) {
+      mut newPlayerCol = newPlayerCol + 1;
+    }
+
+    killedGoblin! = false;
+    goblins.keys().each((key){
+      if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
+        goblins.remove(key);
+        mut killedGoblin = true;
+      }
+    });
+    if (not killedGoblin) {
+      if (board[newPlayerRow][newPlayerCol] == ".") {
+        mut playerRow = newPlayerRow;
+        mut playerCol = newPlayerCol;
+      }
+    }
+
+    goblins.keys().each((key){
+      goblin = goblins.get(key)^.get();
+      direction = rand.next() mod 4;
+      (newGoblinRow!, newGoblinCol!) = goblin.location.values;
+      if (direction == 0) {
+        mut newGoblinRow = newGoblinRow - 1;
+      } else if (direction == 1) {
+        mut newGoblinRow = newGoblinRow + 1;
+      } else if (direction == 2) {
+        mut newGoblinRow = newGoblinCol - 1;
+      } else if (direction == 3) {
+        mut newGoblinRow = newGoblinCol + 1;
+      }
+      if (board[newGoblinRow][newGoblinRow] == ".") {
+        mut goblin.location = Vec([newGoblinRow, newGoblinCol]);
+      }
+    });
+  }
+  = 0;
+}
+
+
+fn makeBoard() Array<mut, Array<mut, str>> {
+  ret
+    Arr<mut>(10, (row){
+      Arr<mut>(10, (col){
+        = if (row == 0) { "#" }
+          else if (col == 0) { "#" }
+          else if (row == 9) { "#" }
+          else if (col == 9) { "#" }
+          else { "." }
+      })
+    });
+}
+
+fn display(
+    board &Array<mut, Array<mut, str>>,
+    goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+    playerRow int,
+    playerCol int)
+{
+  toPrint! = "";
+  eachI (&board) (rowI, row){
+    eachI (&row) (cellI, cell){
+      charToPrint! = cell;
+
+      if (and(rowI == playerRow, cellI == playerCol)) {
+        mut charToPrint = "@";
+      } else {
+        goblins.keys().each((key){
+          goblin? = goblins.get(key);
+          goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+
+          if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
+            mut charToPrint = "g";
+          }
+        });
+      }
+
+      mut toPrint = toPrint + charToPrint;
+    }
+    mut toPrint = toPrint + "\n";
+  }
+  print(toPrint);
+}
+
+fn inputKey() int {
+  key! = 0;
+  while (true) {
+    mut key = __getch();
+    if (key == 81) {
+      ret key;
+    } else if (key == 119) {
+      ret key;
+    } else if (key == 115) {
+      ret key;
+    } else if (key == 97) {
+      ret key;
+    } else if (key == 100) {
+      ret key;
+    } else if (key == 10) {
+      // Enter key, do nothing
+    }
+    // Continue
+  }
+  __panic();
+}
+
+
+fn goblinAt?(
+  goblins &HashMap<int, Goblin, IntHasher, IntEquator>,
+  goblinKey int,
+  row int,
+  col int)
+bool {
+  a = goblins.get(goblinKey);
+  b = a^.get();
+  (goblinCol, goblinRow) = b.location.values;
+  ret and(row == goblinRow, col == goblinCol);
+}
+

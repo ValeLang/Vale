@@ -1,0 +1,12 @@
+// immutable unknown-size-array
+
+fn Arr<M, F>(n int, generator &F) Array<M, T>
+rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+{
+  Array<M>(n, &IFunction1<mut, int, T>(generator))
+}
+
+fn main() {
+  a = Arr<imm>(5, {_});
+  = a[3];
+}

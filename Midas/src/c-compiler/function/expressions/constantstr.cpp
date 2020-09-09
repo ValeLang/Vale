@@ -5,11 +5,13 @@
 #include "function/expressions/shared/shared.h"
 #include "function/expressions/shared/heap.h"
 
-LLVMValueRef translateConstantStr(
+Ref translateConstantStr(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     ConstantStr* constantStr) {
-  return buildConstantVStr(globalState, functionState, builder, constantStr->value);
+  auto strWrapperPtrLE =
+      buildConstantVStr(globalState, functionState, builder, constantStr->value);
+  return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
 }

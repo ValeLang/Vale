@@ -8,8 +8,8 @@
 // for convenience
 using json = nlohmann::json;
 
-UnconvertedReference* readReference(MetalCache* cache, const json& reference);
-UnconvertedOwnership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
+Reference* readReference(MetalCache* cache, const json& reference);
+Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
 Location readLocation(MetalCache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 
@@ -136,7 +136,7 @@ Referend* readReferend(MetalCache* cache, const json& referend) {
   }
 }
 
-UnconvertedReference* readReference(MetalCache* cache, const json& reference) {
+Reference* readReference(MetalCache* cache, const json& reference) {
   assert(reference.is_object());
   assert(reference["__type"] == "Ref");
 
@@ -145,7 +145,7 @@ UnconvertedReference* readReference(MetalCache* cache, const json& reference) {
   auto referend = readReferend(cache, reference["referend"]);
 //  std::string debugStr = reference["debugStr"];
 
-  return cache->getUnconvertedReference(ownership, location, referend);
+  return cache->getReference(ownership, location, referend);
 }
 
 Mutability readMutability(const json& mutability) {
@@ -170,17 +170,17 @@ Variability readVariability(const json& variability) {
   }
 }
 
-UnconvertedOwnership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
+Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership) {
   assert(ownership.is_object());
 //  std::cout << ownership.type() << std::endl;
   if (ownership["__type"].get<std::string>() == "Own") {
-    return UnconvertedOwnership::OWN;
+    return Ownership::OWN;
   } else if (ownership["__type"].get<std::string>() == "Borrow") {
-    return UnconvertedOwnership::BORROW;
+    return Ownership::BORROW;
   } else if (ownership["__type"].get<std::string>() == "Weak") {
-    return UnconvertedOwnership::WEAK;
+    return Ownership::WEAK;
   } else if (ownership["__type"].get<std::string>() == "Share") {
-    return UnconvertedOwnership::SHARE;
+    return Ownership::SHARE;
   } else {
     assert(false);
   }
@@ -291,7 +291,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new WeakAlias(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
-        readReferend(cache, expression["sourceReferend"]));
+        readReferend(cache, expression["sourceReferend"]),
+        readReference(cache, expression["resultType"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),
@@ -381,6 +382,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
         readInterfaceReferend(cache, expression["generatorReferend"]),
+        readPrototype(cache, expression["generatorMethod"]),
         readReference(cache, expression["resultType"]));
   } else if (type == "DestroyUnknownSizeArray") {
     return new DestroyUnknownSizeArray(
@@ -389,7 +391,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readUnknownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
-        readInterfaceReferend(cache, expression["consumerReferend"]));
+        readInterfaceReferend(cache, expression["consumerReferend"]),
+        readPrototype(cache, expression["consumerMethod"]));
   } else if (type == "ArrayLength") {
     return new ArrayLength(
         readExpression(cache, expression["sourceExpr"]),
@@ -407,7 +410,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["arrayType"]),
         readKnownSizeArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["consumerExpr"]),
-        readReference(cache, expression["consumerType"]));
+        readReference(cache, expression["consumerType"]),
+        readPrototype(cache, expression["consumerMethod"]));
   } else if (type == "InterfaceCall") {
     return new InterfaceCall(
         readArray(cache, expression["argExprs"], readExpression),
@@ -483,11 +487,13 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
 
   auto structName = result->name;
   if (structName->name == std::string("Tup0")) {
-    cache->emptyTupleStructReferend =
+    cache->emptyTupleStruct =
         makeIfNotPresent(
             &cache->structReferends,
             structName,
             [&]() { return new StructReferend(structName); });
+    cache->emptyTupleStructRef =
+        cache->getReference(Ownership::SHARE, Location::INLINE, cache->emptyTupleStruct);
   }
 
   return result;
@@ -552,7 +558,7 @@ Program* readProgram(MetalCache* cache, const json& program) {
             auto s = readUnknownSizeArray(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      nullptr,//readStructName(program["emptyPackStructRef"]),
+      readStructReferend(cache, program["emptyTupleStructReferend"]),
       {},//readArray<readExtern>(program["externs"]),
       readArrayIntoMap<std::string, Function*>(
           cache,

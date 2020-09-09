@@ -1,0 +1,8 @@
+struct Tile {
+    walkable bool;
+
+    // A string that the UI can recognize so it knows what to display. This should
+    // ONLY be read by the UI, and not by any special logic. Any special logic
+    // should be specified in components on the tile (which we don't have yet).
+    display_class str;
+}

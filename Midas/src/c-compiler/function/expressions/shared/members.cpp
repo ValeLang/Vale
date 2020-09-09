@@ -195,11 +195,8 @@ Ref swapMember(
 
   structRef.assertOwnership(Ownership::BORROW);
 
-  auto objPtrLE =
-      WrapperPtrLE(
-          structRefMT,
-          checkValidReference(FL(), globalState, functionState, builder, structRefMT, structRef));
-  auto innerStructPtrLE = getStructContentsPtr(builder, objPtrLE);
+  auto innerStructPtrLE =
+      getStructContentsPtr(globalState, functionState, builder, structRefMT, structRef);
 
   assert(structDefM->mutability == Mutability::MUTABLE);
 

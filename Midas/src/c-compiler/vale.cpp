@@ -644,7 +644,32 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   Assist assistRegion(globalState);
   Mega megaRegion(globalState);
-  IRegion* defaultRegion = &assistRegion;
+  IRegion* defaultRegion = &megaRegion;
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      defaultRegion = &assistRegion;
+      break;
+    case RegionOverride::NAIVE_RC:
+      std::cout << "Region override: naive-rc" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V0:
+      std::cout << "Region override: resilient-v0" << std::endl;
+      break;
+    case RegionOverride::FAST:
+      std::cout << "Region override: fast" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V1:
+      std::cout << "Region override: resilient-v1" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V2:
+      std::cout << "Region override: resilient-v2" << std::endl;
+      break;
+    default:
+      assert(false);
+      break;
+  }
+
 
   assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
 

@@ -72,6 +72,9 @@ public:
   void translateInterface(
       InterfaceDefinition* interfaceM) override;
 
+  Ref weakAlias(
+      FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) override;
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);

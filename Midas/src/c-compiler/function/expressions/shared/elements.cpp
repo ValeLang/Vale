@@ -57,8 +57,16 @@ WrapperPtrLE getKnownSizeArrayWrapperPtr(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      return lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef);
-      break;
+      switch (ksaMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          return WrapperPtrLE(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
+        case Ownership::BORROW:
+          return lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef);
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+      }
+      assert(false);
     }
     default:
       assert(false);

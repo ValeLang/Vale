@@ -115,68 +115,18 @@ Ref translateExpressionInner(
   } else if (auto weakAlias = dynamic_cast<WeakAlias*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 
-    auto sourceRefLE =
+    auto sourceRef =
         translateExpression(
             globalState, functionState, blockState, builder, weakAlias->sourceExpr);
 
-    checkValidReference(FL(), globalState, functionState, builder, weakAlias->sourceType, sourceRefLE);
+    checkValidReference(FL(), globalState, functionState, builder, weakAlias->sourceType, sourceRef);
 
-    switch (globalState->opt->regionOverride) {
-      case RegionOverride::ASSIST:
-      case RegionOverride::NAIVE_RC:
-      case RegionOverride::FAST: {
-        if (weakAlias->sourceType->ownership == Ownership::SHARE) {
-          assert(false);
-        } else if (weakAlias->sourceType->ownership == Ownership::OWN) {
-          assert(false);
-        } else if (weakAlias->sourceType->ownership == Ownership::BORROW) {
-          if (auto structReferendM = dynamic_cast<StructReferend*>(weakAlias->sourceType->referend)) {
-            auto objPtrLE =
-                WrapperPtrLE(
-                    weakAlias->sourceType,
-                    checkValidReference(FL(), globalState, functionState, builder, weakAlias->sourceType, sourceRefLE));
-            auto weakRefLE =
-                wrap(
-                    functionState->defaultRegion,
-                    weakAlias->resultType,
-                    assembleStructWeakRef(
-                        globalState, functionState, builder,
-                        weakAlias->sourceType, weakAlias->resultType, structReferendM, objPtrLE));
-            aliasWeakRef(FL(), globalState, functionState, builder, weakAlias->resultType, weakRefLE);
-            discard(
-                AFL("WeakAlias drop constraintref"),
-                globalState, functionState, blockState, builder, weakAlias->sourceType, sourceRefLE);
-            return weakRefLE;
-          } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(weakAlias->sourceType->referend)) {
-            assert(false); // impl
-          } else assert(false);
-        } else if (weakAlias->sourceType->ownership == Ownership::WEAK) {
-          // Nothing to do!
-          return sourceRefLE;
-        } else {
-          assert(false);
-        }
-        break;
-      }
-      case RegionOverride::RESILIENT_V0:
-      case RegionOverride::RESILIENT_V1:
-      case RegionOverride::RESILIENT_V2: {
-        if (weakAlias->sourceType->ownership == Ownership::SHARE) {
-          assert(false);
-        } else if (weakAlias->sourceType->ownership == Ownership::OWN) {
-          assert(false);
-        } else if (weakAlias->sourceType->ownership == Ownership::BORROW ||
-            weakAlias->sourceType->ownership == Ownership::WEAK) {
-          // Nothing to do!
-          return sourceRefLE;
-        } else {
-          assert(false);
-        }
-        break;
-      }
-      default:
-        assert(false);
-    }
+    auto resultRef = functionState->defaultRegion->weakAlias(functionState, builder, weakAlias->sourceType, weakAlias->resultType, sourceRef);
+    aliasWeakRef(FL(), globalState, functionState, builder, weakAlias->resultType, resultRef);
+    discard(
+        AFL("WeakAlias drop constraintref"),
+        globalState, functionState, blockState, builder, weakAlias->sourceType, sourceRef);
+    return resultRef;
   } else if (auto localLoad = dynamic_cast<LocalLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", localLoad->localName);
 

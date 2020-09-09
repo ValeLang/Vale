@@ -22,6 +22,7 @@
 #include "struct/struct.h"
 #include "metal/readjson.h"
 #include "error.h"
+#include "translatetype.h"
 
 #include <cstring>
 #include <llvm-c/Transforms/Scalar.h>
@@ -29,6 +30,8 @@
 #include <llvm-c/Transforms/IPO.h>
 #include <struct/array.h>
 #include <function/expressions/shared/weaks.h>
+#include <region/assist/assist.h>
+#include <region/mega/mega.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -583,7 +586,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto programJ = json::parse(str.c_str());
   auto program = readProgram(&globalState->metalCache, programJ);
 
-  assert(globalState->metalCache.emptyTupleStructReferend != nullptr);
+  assert(globalState->metalCache.emptyTupleStruct != nullptr);
+  assert(globalState->metalCache.emptyTupleStructRef != nullptr);
 
 
   // Start making the entry function. We make it up here because we want its
@@ -627,6 +631,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "derefCounter");
   LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
+  globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(), "__never");
+  LLVMValueRef empty[1] = {};
+  LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntType(NEVER_INT_BITS), empty, 0));
+
   globalState->mutRcAdjustCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
   LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
@@ -634,59 +642,90 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   initInternalStructs(globalState);
   initInternalExterns(globalState);
 
+  Assist assistRegion(globalState);
+  Mega megaRegion(globalState);
+  IRegion* defaultRegion = &megaRegion;
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      defaultRegion = &assistRegion;
+      break;
+    case RegionOverride::NAIVE_RC:
+      std::cout << "Region override: naive-rc" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V0:
+      std::cout << "Region override: resilient-v0" << std::endl;
+      break;
+    case RegionOverride::FAST:
+      std::cout << "Region override: fast" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V1:
+      std::cout << "Region override: resilient-v1" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V2:
+      std::cout << "Region override: resilient-v2" << std::endl;
+      break;
+    default:
+      assert(false);
+      break;
+  }
+
+
+  assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
+
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    declareStruct(globalState, structM);
+    defaultRegion->declareStruct(structM);
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    declareInterface(globalState, interfaceM);
+    defaultRegion->declareInterface(interfaceM);
   }
 
   for (auto p : program->knownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    declareKnownSizeArray(globalState, arrayM);
+    defaultRegion->declareKnownSizeArray(arrayM);
   }
 
   for (auto p : program->unknownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    declareUnknownSizeArray(globalState, arrayM);
+    defaultRegion->declareUnknownSizeArray(arrayM);
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    translateStruct(globalState, structM);
+    defaultRegion->translateStruct(structM);
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    translateInterface(globalState, interfaceM);
+    defaultRegion->translateInterface(interfaceM);
   }
 
   for (auto p : program->knownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    translateKnownSizeArray(globalState, arrayM);
+    defaultRegion->translateKnownSizeArray(arrayM);
   }
 
   for (auto p : program->unknownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    translateUnknownSizeArray(globalState, arrayM);
+    defaultRegion->translateUnknownSizeArray(arrayM);
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      declareEdge(globalState, e);
+      defaultRegion->declareEdge(e);
     }
   }
 
@@ -696,7 +735,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    LLVMValueRef entryFunctionL = declareFunction(globalState, function);
+    LLVMValueRef entryFunctionL = declareFunction(globalState, defaultRegion, function);
     if (function->prototype->name->name == "main") {
       mainM = function->prototype;
       mainL = entryFunctionL;
@@ -711,14 +750,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      translateEdge(globalState, e);
+      defaultRegion->translateEdge(e);
     }
   }
 
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    translateFunction(globalState, function);
+    translateFunction(globalState, defaultRegion, function);
   }
 
 
@@ -788,10 +827,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   if (mainM->returnType->referend == globalState->metalCache.vooid) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
-  } else if (mainM->returnType->referend == globalState->metalCache.emptyTupleStructReferend) {
+  } else if (mainM->returnType->referend == globalState->metalCache.emptyTupleStruct) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
   } else if (mainM->returnType->referend == globalState->metalCache.innt) {
     LLVMBuildRet(entryBuilder, mainResult);
+  } else if (mainM->returnType->referend == globalState->metalCache.never) {
+    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
   } else {
     assert(false);
   }

@@ -7,7 +7,7 @@
 #include "function/expression.h"
 #include "expressions.h"
 
-LLVMValueRef translateBlock(
+Ref translateBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* parentBlockState,

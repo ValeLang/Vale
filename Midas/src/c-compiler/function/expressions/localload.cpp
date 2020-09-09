@@ -8,7 +8,7 @@
 #include "function/expressions/shared/shared.h"
 #include "function/expressions/shared/heap.h"
 
-LLVMValueRef translateLocalLoad(
+Ref translateLocalLoad(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -17,19 +17,21 @@ LLVMValueRef translateLocalLoad(
   auto local = localLoad->local;
   auto localId = local->id;
   auto localName = localLoad->localName;
-  auto localType = getEffectiveType(globalState, local->type);
-  auto targetOwnership = getEffectiveOwnership(globalState, localLoad->targetOwnership);
+  auto localType = local->type;
+  auto targetOwnership = localLoad->targetOwnership;
   auto targetLocation = targetOwnership == Ownership::SHARE ? localType->location : Location::YONDER;
   auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, localType->referend);
 
   auto localAddr = blockState->getLocalAddr(localId);
 
 
-  auto sourceRefLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-  checkValidReference(FL(), globalState, functionState, builder, localType, sourceRefLE);
+  auto sourceLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
+  auto sourceRef = wrap(functionState->defaultRegion, localType, sourceLE);
+  checkValidReference(FL(), globalState, functionState, builder, localType, sourceRef);
 
-
-  auto resultRefLE = load(globalState, functionState, builder, localType, resultType, sourceRefLE);
+  auto resultRefLE =
+      upgradeLoadResultToRefWithTargetOwnership(
+          globalState, functionState, builder, localType, resultType, sourceLE);
   acquireReference(FL(), globalState, functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }

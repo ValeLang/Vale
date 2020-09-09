@@ -12,13 +12,24 @@
 #include "function/function.h"
 #include "shared.h"
 
-LLVMValueRef loadMember(
+LLVMValueRef getStructContentsPtr(
+    LLVMBuilderRef builder,
+    WrapperPtrLE wrapperPtrLE);
+
+LLVMValueRef getStructContentsPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref refLE);
+
+Ref loadMember(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
-    LLVMValueRef structRefLE,
+    Ref structRef,
     Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
@@ -31,15 +42,15 @@ LLVMValueRef loadInnerStructMember(
     int memberIndex,
     const std::string& memberName);
 
-LLVMValueRef swapMember(
+Ref swapMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    Reference* structRefM,
-    LLVMValueRef structRefLE,
+    Reference* structRefMT,
+    Ref structRefLE,
     int memberIndex,
     const std::string& memberName,
-    LLVMValueRef newMemberLE);
+    Ref newMemberLE);
 
 #endif

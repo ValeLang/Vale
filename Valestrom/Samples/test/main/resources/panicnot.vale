@@ -1,0 +1,7 @@
+
+fn main() {
+  if (false) {
+    __panic();
+  }
+  = 42;
+}

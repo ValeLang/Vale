@@ -1,0 +1,12 @@
+
+struct Marine {
+  hp int;
+  cool bool;
+}
+fn Marine() {
+  this.hp = 10;
+  this.cool = true;
+}
+fn main() {
+  Marine().hp
+}

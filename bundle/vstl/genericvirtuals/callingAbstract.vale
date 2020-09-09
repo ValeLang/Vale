@@ -1,0 +1,14 @@
+
+interface MyInterface<T> rules(T Ref) { }
+fn doThing<T>(virtual x MyInterface<T>) int abstract;
+
+struct MyStruct<T> rules(T Ref) { }
+impl<T> MyInterface<T> for MyStruct<T>;
+fn doThing<T>(x MyStruct<T> impl MyInterface<T>) int {4}
+
+fn main() {
+  x = MyStruct<int>();
+  y = MyStruct<str>();
+  doThing(x);
+  = doThing(y);
+}

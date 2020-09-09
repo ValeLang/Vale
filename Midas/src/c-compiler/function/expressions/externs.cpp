@@ -87,6 +87,7 @@ Ref translateExternCall(
   } else if (name == "__panic") {
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8Type(), 255);
     LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
+    LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
   } else if (name == "__multiplyIntInt") {
     assert(call->argExprs.size() == 2);

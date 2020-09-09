@@ -34,7 +34,7 @@ LLVMValueRef upcastWeakFatPtr(
 
     Reference* sourceStructTypeM,
     StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceRefLE,
+    WeakFatPtrLE sourceRefLE,
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);

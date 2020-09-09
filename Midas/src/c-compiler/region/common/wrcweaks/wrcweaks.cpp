@@ -10,7 +10,7 @@ LLVMValueRef WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef sourceWeakStructFatPtrLE,
+    WeakFatPtrLE sourceWeakStructFatPtrLE,
     StructReferend* sourceStructReferendM,
     Reference* sourceStructTypeM,
     InterfaceReferend* targetInterfaceReferendM,

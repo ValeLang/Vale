@@ -323,14 +323,16 @@ object VonHammer {
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
-      case WeakAliasH(sourceExpr) => {
+      case wa @ WeakAliasH(sourceExpr) => {
         VonObject(
           "WeakAlias",
           None,
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
-            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind))))
+            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind)),
+            VonMember("resultType", vonifyCoord(wa.resultType)),
+            VonMember("resultReferend", vonifyKind(wa.resultType.kind))))
       }
       case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
         VonObject(

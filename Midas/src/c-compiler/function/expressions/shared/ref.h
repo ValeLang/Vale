@@ -65,4 +65,13 @@ struct InterfaceFatPtrLE {
 
 Ref wrap(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
 
+struct WeakFatPtrLE {
+  Reference* const refM;
+  LLVMValueRef const refLE;
+
+  WeakFatPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
+};
+
+Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE exprLE);
+
 #endif

@@ -236,6 +236,8 @@ public:
 
   virtual LLVMTypeRef getStringRefType() const = 0;
 
+  virtual Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) = 0;
+
 //  LLVMValueRef initStr, addStr, eqStr, printStr;
 };
 

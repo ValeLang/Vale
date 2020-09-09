@@ -177,3 +177,21 @@ LLVMTypeRef Assist::translateInterfaceMethodToFunctionType(
 
   return LLVMFunctionType(returnLT, paramsLT.data(), paramsLT.size(), false);
 }
+
+Ref Assist::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
+  assert(sourceRefMT->ownership == Ownership::BORROW);
+  if (auto structReferendM = dynamic_cast<StructReferend*>(sourceRefMT->referend)) {
+    auto objPtrLE =
+        WrapperPtrLE(
+            sourceRefMT,
+            ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT, sourceRef));
+    return wrap(
+        functionState->defaultRegion,
+        targetRefMT,
+        assembleStructWeakRef(
+            globalState, functionState, builder,
+            sourceRefMT, targetRefMT, structReferendM, objPtrLE));
+  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(sourceRefMT->referend)) {
+    assert(false); // impl
+  } else assert(false);
+}

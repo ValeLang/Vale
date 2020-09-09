@@ -24,24 +24,24 @@ void fillInnerStruct(
     if (structM->members[i]->type->referend == globalState->metalCache.innt) {
       buildFlare(FL(), globalState, functionState, builder, "Initialized member ", memberName, ": ", memberRef);
     }
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      if (globalState->opt->census) {
-        if (dynamic_cast<StructReferend*>(memberType->referend) ||
-            dynamic_cast<InterfaceReferend*>(memberType->referend) ||
-            dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
-            dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
-          if (memberType->ownership == Ownership::WEAK) {
-//            auto wrciLE = getWrciFromWeakRef(builder, memberRef);
-            buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
-          } else {
-            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, memberRef, memberType);
-            buildFlare(FL(), globalState, functionState, builder,
-                "Member ", i, ": ",
-                getObjIdFromControlBlockPtr(globalState, builder, memberType->referend, controlBlockPtrLE));
-          }
-        }
-      }
-    }
+//    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//      if (globalState->opt->census) {
+//        if (dynamic_cast<StructReferend*>(memberType->referend) ||
+//            dynamic_cast<InterfaceReferend*>(memberType->referend) ||
+//            dynamic_cast<KnownSizeArrayT*>(memberType->referend) ||
+//            dynamic_cast<UnknownSizeArrayT*>(memberType->referend)) {
+//          if (memberType->ownership == Ownership::WEAK) {
+////            auto wrciLE = getWrciFromWeakRef(builder, memberRef);
+//            buildFlare(FL(), globalState, functionState, builder, "Member ", i, ": WRCI ", "impl");//, wrciLE);
+//          } else {
+//            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, memberRef, memberType);
+//            buildFlare(FL(), globalState, functionState, builder,
+//                "Member ", i, ": ",
+//                getObjIdFromControlBlockPtr(globalState, builder, memberType->referend, controlBlockPtrLE));
+//          }
+//        }
+//      }
+//    }
     auto ptrLE =
         LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
     auto memberLE =

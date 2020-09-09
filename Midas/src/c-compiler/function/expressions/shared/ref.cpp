@@ -62,7 +62,7 @@ WeakFatPtrLE::WeakFatPtrLE(
   } else if (auto ksaT = dynamic_cast<KnownSizeArrayT*>(referenceM_->referend)) {
     assert(LLVMTypeOf(ptrLE) == globalState->getKnownSizeArrayWeakRefStruct(ksaT->name));
   } else if (auto usaT = dynamic_cast<UnknownSizeArrayT*>(referenceM_->referend)) {
-    assert(LLVMTypeOf(ptrLE) == globalState->getKnownSizeArrayWeakRefStruct(usaT->name));
+    assert(LLVMTypeOf(ptrLE) == globalState->getUnknownSizeArrayWeakRefStruct(usaT->name));
   } else {
     assert(false);
   }

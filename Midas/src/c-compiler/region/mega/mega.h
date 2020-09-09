@@ -242,6 +242,16 @@ public:
 
   LLVMTypeRef getStringRefType() const override;
 
+  Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) override;
+
+// Transmutes a weak ref of one ownership (such as borrow) to another ownership (such as weak).
+  Ref transmuteWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* sourceWeakRefMT,
+      Reference* targetWeakRefMT,
+      Ref sourceWeakRef);
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);

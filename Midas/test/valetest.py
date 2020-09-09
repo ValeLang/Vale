@@ -350,6 +350,19 @@ class ValeTest(unittest.TestCase):
     def test_stradd_naiverc(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "naive-rc", 42)
 
+    def test_strneq_assist(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "assist", 42)
+    def test_strneq_unsafefast(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "unsafe-fast", 42)
+    def test_strneq_resilientv0(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "resilient-v0", 42)
+    def test_strneq_resilientv1(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "resilient-v1", 42)
+    def test_strneq_resilientv2(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "resilient-v2", 42)
+    def test_strneq_naiverc(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "naive-rc", 42)
+
     def test_lambdamut_assist(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "assist", 42)
     def test_lambdamut_unsafefast(self) -> None:
@@ -442,17 +455,30 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "naive-rc", 42)
 
     def test_panic_assist(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "assist", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "assist", 255)
     def test_panic_unsafefast(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "unsafe-fast", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "unsafe-fast", 255)
     def test_panic_resilientv0(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v0", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v0", 255)
     def test_panic_resilientv1(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v1", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v1", 255)
     def test_panic_resilientv2(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v2", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v2", 255)
     def test_panic_naiverc(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "naive-rc", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "naive-rc", 255)
+
+    def test_panicnot_assist(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "assist", 42)
+    def test_panicnot_unsafefast(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "unsafe-fast", 42)
+    def test_panicnot_resilientv0(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "resilient-v0", 42)
+    def test_panicnot_resilientv1(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "resilient-v1", 42)
+    def test_panicnot_resilientv2(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "resilient-v2", 42)
+    def test_panicnot_naiverc(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "naive-rc", 42)
 
     def test_nestedblocks_assist(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "assist", 42)

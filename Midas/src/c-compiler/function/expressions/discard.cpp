@@ -24,9 +24,8 @@ Ref translateDiscard(
   }
 
   checkValidReference(FL(), globalState, functionState, builder, sourceResultType, sourceRef);
-  discard(
+  functionState->defaultRegion->dealias(
       AFL(std::string("Discard ") + std::to_string((int)discardM->sourceResultType->ownership) + " " + typeid(*discardM->sourceResultType->referend).name() + " from " + typeid(*sourceExpr).name()),
-      globalState,
       functionState,
       blockState,
       builder,

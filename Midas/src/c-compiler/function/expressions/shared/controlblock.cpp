@@ -1,6 +1,7 @@
 #include "controlblock.h"
 #include "shared.h"
 #include "weaks.h"
+#include "utils/counters.h"
 
 ControlBlockPtrLE getConcreteControlBlockPtr(
     GlobalState* globalState,

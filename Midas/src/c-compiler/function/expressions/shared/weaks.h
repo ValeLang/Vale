@@ -10,7 +10,7 @@
 #include "metal/instructions.h"
 #include "globalstate.h"
 #include "function/function.h"
-#include "utils/fileio.h"
+#include "fileio.h"
 #include "shared.h"
 
 void aliasWeakRef(

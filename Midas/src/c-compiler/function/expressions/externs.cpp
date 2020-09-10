@@ -62,7 +62,7 @@ Ref translateExternCall(
     auto rightStrWrapperPtrLE =
         WrapperPtrLE(
             globalState->metalCache.strRef,
-            checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, leftStrWrapperRef));
+            checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, rightStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
@@ -77,8 +77,8 @@ Ref translateExternCall(
             "eqStrResult");
     auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8Type(), 0, false), "");
 
-    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
-    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultBoolLE);
   } else if (name == "__addFloatFloat") {
@@ -155,8 +155,8 @@ Ref translateExternCall(
     };
     LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
 
-    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
-    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
 
     auto destStrRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, destStrWrapperPtrLE);
     checkValidReference(FL(), globalState, functionState, builder, call->function->returnType, destStrRef);
@@ -273,7 +273,7 @@ Ref translateExternCall(
     };
     LLVMBuildCall(builder, globalState->printVStr, argsLE.data(), argsLE.size(), "");
 
-    discard(FL(), globalState, functionState, blockState, builder, globalState->metalCache.strRef, argStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, argStrWrapperRef);
 
     return makeEmptyTupleRef(globalState, functionState, builder);
   } else if (name == "__not") {

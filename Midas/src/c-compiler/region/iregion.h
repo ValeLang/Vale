@@ -22,21 +22,20 @@ public:
       Reference* desiredReference,
       const std::vector<LLVMValueRef>& membersLE) = 0;
 
-  virtual LLVMValueRef alias(
+  virtual void alias(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRef,
-      Reference* targetRef,
-      LLVMValueRef expr) = 0;
+      Ref expr) = 0;
 
   virtual void dealias(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
-      Reference* sourceRef,
-      LLVMValueRef expr) = 0;
+      Reference* sourceMT,
+      Ref sourceRef) = 0;
 
   virtual LLVMValueRef loadMember(
       AreaAndFileAndLine from,

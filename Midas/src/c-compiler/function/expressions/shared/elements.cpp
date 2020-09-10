@@ -6,6 +6,7 @@
 #include "branch.h"
 #include "weaks.h"
 #include "elements.h"
+#include "utils/counters.h"
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
     LLVMBuilderRef builder,

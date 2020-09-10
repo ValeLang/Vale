@@ -1,5 +1,6 @@
 #include <region/common/fatweaks/fatweaks.h>
 #include "shared.h"
+#include "utils/counters.h"
 #include "weaks.h"
 
 #include "translatetype.h"

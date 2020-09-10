@@ -177,7 +177,7 @@ Ref loadMember(
   auto resultRefLE = upgradeLoadResultToRefWithTargetOwnership(globalState, functionState, builder,
       memberType,
       resultType, sourceMemberLE);
-  acquireReference(from, globalState, functionState, builder, resultType, resultRefLE);
+  functionState->defaultRegion->alias(from, functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }
 

@@ -13,6 +13,63 @@ Assist::Assist(GlobalState* globalState_) :
     Mega(globalState_) {
 }
 
+void Assist::alias(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceRef,
+    Ref expr) {
+  auto sourceRnd = sourceRef->referend;
+
+  if (dynamic_cast<Int *>(sourceRnd) ||
+      dynamic_cast<Bool *>(sourceRnd) ||
+      dynamic_cast<Float *>(sourceRnd)) {
+    // Do nothing for these, they're always inlined and copied.
+  } else if (dynamic_cast<InterfaceReferend *>(sourceRnd) ||
+      dynamic_cast<StructReferend *>(sourceRnd) ||
+      dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
+      dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
+      dynamic_cast<Str *>(sourceRnd)) {
+    if (sourceRef->ownership == Ownership::OWN) {
+      // We might be loading a member as an own if we're destructuring.
+      // Don't adjust the RC, since we're only moving it.
+    } else if (sourceRef->ownership == Ownership::BORROW) {
+      adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+    } else if (sourceRef->ownership == Ownership::WEAK) {
+      aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+    } else if (sourceRef->ownership == Ownership::SHARE) {
+      if (sourceRef->location == Location::INLINE) {
+        // Do nothing, we can just let inline structs disappear
+      } else {
+        adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+      }
+    } else
+      assert(false);
+  } else {
+    std::cerr << "Unimplemented type in acquireReference: "
+        << typeid(*sourceRef->referend).name() << std::endl;
+    assert(false);
+  }
+}
+
+
+void Assist::dealias(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef builder,
+    Reference* sourceMT,
+    Ref sourceRef) {
+  if (sourceMT->ownership == Ownership::OWN) {
+    // We can't discard owns, they must be destructured.
+    assert(false);
+  } else if (sourceMT->ownership == Ownership::BORROW) {
+    adjustStrongRc(from, globalState, functionState, builder, sourceRef, sourceMT, -1);
+  } else if (sourceMT->ownership == Ownership::WEAK) {
+    discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+  } else assert(false);
+}
+
 Ref Assist::lockWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -49,7 +106,7 @@ Ref Assist::lockWeak(
 LLVMTypeRef Assist::translateType(Reference* referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:
-      return immutables.translateType(globalState, referenceM);
+      return defaultRefCounting.translateType(globalState, referenceM);
     case Ownership::OWN:
     case Ownership::BORROW:
       assert(referenceM->location != Location::INLINE);

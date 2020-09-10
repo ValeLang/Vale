@@ -32,6 +32,6 @@ Ref translateLocalLoad(
   auto resultRefLE =
       upgradeLoadResultToRefWithTargetOwnership(
           globalState, functionState, builder, localType, resultType, sourceLE);
-  acquireReference(FL(), globalState, functionState, builder, resultType, resultRefLE);
+  functionState->defaultRegion->alias(FL(), functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }

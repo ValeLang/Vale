@@ -18,6 +18,22 @@ public:
   Assist(GlobalState* globalState);
   ~Assist() override = default;
 
+
+  void alias(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* sourceRef,
+      Ref expr) override;
+
+  void dealias(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef builder,
+      Reference* sourceMT,
+      Ref sourceRef) override;
+
   Ref lockWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,

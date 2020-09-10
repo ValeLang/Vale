@@ -24,9 +24,9 @@ void fillUnknownSizeArray(
   foreachArrayElement(
       globalState, functionState, builder, sizeLE, usaElementsPtrLE,
       [globalState, functionState, usaMT, generatorMethod, generatorType, usaElementsPtrLE, generatorLE](Ref indexRef, LLVMBuilderRef bodyBuilder) {
-        acquireReference(
+        functionState->defaultRegion->alias(
             AFL("ConstructUSA generate iteration"),
-            globalState, functionState, bodyBuilder, generatorType, generatorLE);
+            functionState, bodyBuilder, generatorType, generatorLE);
 
         auto indexLE =
             checkValidReference(
@@ -137,8 +137,8 @@ Ref translateConstructUnknownSizeArray(
   checkValidReference(FL(), globalState, functionState, builder,
       constructUnknownSizeArray->arrayRefType, usaRef);
 
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, sizeType, sizeLE);
-  discard(AFL("ConstructUSA"), globalState, functionState, blockState, builder, generatorType, generatorLE);
+  functionState->defaultRegion->dealias(AFL("ConstructUSA"), functionState, blockState, builder, sizeType, sizeLE);
+  functionState->defaultRegion->dealias(AFL("ConstructUSA"), functionState, blockState, builder, generatorType, generatorLE);
 
   return usaRef;
 }

@@ -71,6 +71,8 @@ add_executable(valec
 		src/c-compiler/translatetype.cpp
         src/c-compiler/valeopts.cpp
 
+		src/c-compiler/utils/counters.cpp
+
 		src/c-compiler/function/function.cpp
 		src/c-compiler/function/expression.cpp
 
@@ -100,6 +102,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/ref.cpp
 
 		src/c-compiler/region/common/common.cpp
+		src/c-compiler/region/common/defaultrefcounting/defaultrefcounting.cpp
 		src/c-compiler/region/common/lgtweaks/lgtweaks.cpp
 		src/c-compiler/region/common/wrcweaks/wrcweaks.cpp
 		src/c-compiler/region/common/hgm/hgm.cpp
@@ -108,8 +111,8 @@ add_executable(valec
 		src/c-compiler/region/mega/mega.cpp
 		src/c-compiler/region/regions.cpp
 
-		src/c-compiler/utils/fileio.cpp
-		src/c-compiler/utils/options.cpp)
+        src/c-compiler/fileio.cpp
+        src/c-compiler/options.cpp)
 
 target_link_libraries(valec ${llvm_libs} nlohmann_json::nlohmann_json)
 

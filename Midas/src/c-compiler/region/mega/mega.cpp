@@ -6,6 +6,9 @@
 #include <region/common/wrcweaks/wrcweaks.h>
 #include <translatetype.h>
 #include <region/common/common.h>
+#include <function/expressions/shared/controlblock.h>
+#include <function/expressions/shared/heap.h>
+#include <utils/counters.h>
 #include "mega.h"
 
 
@@ -23,14 +26,147 @@ LLVMValueRef Mega::allocate(
   assert(false);
 }
 
-LLVMValueRef Mega::alias(
+void Mega::alias(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
-    Reference* targetRef,
-    LLVMValueRef expr) {
-  assert(false);
+    Ref expr) {
+  auto sourceRnd = sourceRef->referend;
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC: {
+      if (dynamic_cast<Int *>(sourceRnd) ||
+          dynamic_cast<Bool *>(sourceRnd) ||
+          dynamic_cast<Float *>(sourceRnd)) {
+        // Do nothing for these, they're always inlined and copied.
+      } else if (dynamic_cast<InterfaceReferend *>(sourceRnd) ||
+          dynamic_cast<StructReferend *>(sourceRnd) ||
+          dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
+          dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
+          dynamic_cast<Str *>(sourceRnd)) {
+        if (sourceRef->ownership == Ownership::OWN) {
+          // We might be loading a member as an own if we're destructuring.
+          // Don't adjust the RC, since we're only moving it.
+        } else if (sourceRef->ownership == Ownership::BORROW) {
+          adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+        } else if (sourceRef->ownership == Ownership::WEAK) {
+          aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+        } else if (sourceRef->ownership == Ownership::SHARE) {
+          if (sourceRef->location == Location::INLINE) {
+            // Do nothing, we can just let inline structs disappear
+          } else {
+            adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+          }
+        } else
+          assert(false);
+      } else {
+        std::cerr << "Unimplemented type in acquireReference: "
+            << typeid(*sourceRef->referend).name() << std::endl;
+        assert(false);
+      }
+      break;
+    }
+    case RegionOverride::FAST: {
+      if (dynamic_cast<Int *>(sourceRnd) ||
+          dynamic_cast<Bool *>(sourceRnd) ||
+          dynamic_cast<Float *>(sourceRnd)) {
+        // Do nothing for these, they're always inlined and copied.
+      } else if (dynamic_cast<InterfaceReferend *>(sourceRnd) ||
+          dynamic_cast<StructReferend *>(sourceRnd) ||
+          dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
+          dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
+          dynamic_cast<Str *>(sourceRnd)) {
+        if (sourceRef->ownership == Ownership::OWN) {
+          // We might be loading a member as an own if we're destructuring.
+          // Don't adjust the RC, since we're only moving it.
+        } else if (sourceRef->ownership == Ownership::BORROW) {
+          // Do nothing, fast mode doesn't do stuff for borrow refs.
+        } else if (sourceRef->ownership == Ownership::WEAK) {
+          aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+        } else if (sourceRef->ownership == Ownership::SHARE) {
+          if (sourceRef->location == Location::INLINE) {
+            // Do nothing, we can just let inline structs disappear
+          } else {
+            adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+          }
+        } else
+          assert(false);
+      } else {
+        std::cerr << "Unimplemented type in acquireReference: "
+            << typeid(*sourceRef->referend).name() << std::endl;
+        assert(false);
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      if (dynamic_cast<Int *>(sourceRnd) ||
+          dynamic_cast<Bool *>(sourceRnd) ||
+          dynamic_cast<Float *>(sourceRnd)) {
+        // Do nothing for these, they're always inlined and copied.
+      } else if (dynamic_cast<InterfaceReferend *>(sourceRnd) ||
+          dynamic_cast<StructReferend *>(sourceRnd) ||
+          dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
+          dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
+          dynamic_cast<Str *>(sourceRnd)) {
+        if (sourceRef->ownership == Ownership::OWN) {
+          // We might be loading a member as an own if we're destructuring.
+          // Don't adjust the RC, since we're only moving it.
+        } else if (sourceRef->ownership == Ownership::BORROW ||
+            sourceRef->ownership == Ownership::WEAK) {
+          aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+        } else if (sourceRef->ownership == Ownership::SHARE) {
+          if (sourceRef->location == Location::INLINE) {
+            // Do nothing, we can just let inline structs disappear
+          } else {
+            adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+          }
+        } else
+          assert(false);
+      } else {
+        std::cerr << "Unimplemented type in acquireReference: "
+            << typeid(*sourceRef->referend).name() << std::endl;
+        assert(false);
+      }
+      break;
+    }
+    default: assert(false);
+  }
+}
+
+void naiveRcFree(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef thenBuilder,
+    Reference* sourceMT,
+    Ref sourceRef) {
+  if (dynamic_cast<InterfaceReferend *>(sourceMT->referend)) {
+    auto sourceInterfacePtrLE =
+        InterfaceFatPtrLE(globalState,
+            sourceMT,
+            checkValidReference(FL(), globalState, functionState, thenBuilder,
+                sourceMT, sourceRef));
+    auto controlBlockPtrLE = getControlBlockPtr(globalState, thenBuilder,
+        sourceInterfacePtrLE);
+    freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+        controlBlockPtrLE, sourceMT);
+  } else if (dynamic_cast<StructReferend *>(sourceMT->referend) ||
+      dynamic_cast<KnownSizeArrayT *>(sourceMT->referend) ||
+      dynamic_cast<UnknownSizeArrayT *>(sourceMT->referend)) {
+    auto sourceWrapperPtrLE =
+        WrapperPtrLE(
+            sourceMT,
+            checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
+    freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+        controlBlockPtrLE, sourceMT);
+  } else {
+    assert(false);
+  }
 }
 
 void Mega::dealias(
@@ -38,10 +174,61 @@ void Mega::dealias(
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
-    Reference* sourceRef,
-    LLVMValueRef expr) {
-  assert(false);
+    Reference* sourceMT,
+    Ref sourceRef) {
+  auto sourceRnd = sourceMT->referend;
+
+  if (sourceMT->ownership == Ownership::SHARE) {
+    defaultRefCounting.discard(
+        from, globalState, functionState, blockState, builder, sourceMT, sourceRef);
+  } else {
+    switch (globalState->opt->regionOverride) {
+      case RegionOverride::NAIVE_RC: {
+        if (sourceMT->ownership == Ownership::OWN) {
+          // We can't discard owns, they must be destructured.
+          assert(false); // impl
+        } else if (sourceMT->ownership == Ownership::BORROW) {
+          auto rcLE = adjustStrongRc(from, globalState, functionState, builder, sourceRef, sourceMT, -1);
+          buildIf(
+              functionState, builder, isZeroLE(builder, rcLE),
+              [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
+                naiveRcFree(globalState, functionState, blockState, thenBuilder, sourceMT, sourceRef);
+              });
+        } else if (sourceMT->ownership == Ownership::WEAK) {
+          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+        } else assert(false);
+        break;
+      }
+      case RegionOverride::FAST: {
+        if (sourceMT->ownership == Ownership::OWN) {
+          // We can't discard owns, they must be destructured.
+          assert(false);
+        } else if (sourceMT->ownership == Ownership::BORROW) {
+          // Do nothing!
+        } else if (sourceMT->ownership == Ownership::WEAK) {
+          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+        } else assert(false);
+        break;
+      }
+      case RegionOverride::RESILIENT_V0:
+      case RegionOverride::RESILIENT_V1:
+      case RegionOverride::RESILIENT_V2: {
+        if (sourceMT->ownership == Ownership::OWN) {
+          // We can't discard owns, they must be destructured.
+          assert(false); // impl
+        } else if (sourceMT->ownership == Ownership::BORROW) {
+          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+        } else if (sourceMT->ownership == Ownership::WEAK) {
+          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+        } else assert(false);
+        break;
+      }
+      default:
+        assert(false);
+    }
+  }
 }
+
 
 LLVMValueRef Mega::loadMember(
     AreaAndFileAndLine from,
@@ -174,7 +361,6 @@ Ref Mega::lockWeak(
           sourceWeakRefMT->ownership == Ownership::WEAK);
       break;
     }
-    case RegionOverride::ASSIST:
     default:
       assert(false);
       break;
@@ -220,7 +406,6 @@ Ref Mega::lockWeak(
                     functionState, thenBuilder, sourceWeakRefMT, constraintRefM, sourceWeakRefLE);
             return buildThen(thenBuilder, constraintRef);
           }
-          case RegionOverride::ASSIST:
           default:
             assert(false);
             break;
@@ -345,127 +530,39 @@ LLVMValueRef Mega::storeElement(
 }
 
 LLVMTypeRef Mega::translateType(Reference* referenceM) {
-  if (referenceM->ownership == Ownership::SHARE) {
-    return immutables.translateType(globalState, referenceM);
-  }
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      assert(referenceM->location != Location::INLINE);
       switch (referenceM->ownership) {
         case Ownership::SHARE:
-          return immutables.translateType(globalState, referenceM);
+          return defaultRefCounting.translateType(globalState, referenceM);
         case Ownership::OWN:
         case Ownership::BORROW:
+          assert(referenceM->location != Location::INLINE);
           return translateReferenceSimple(globalState, referenceM->referend);
         case Ownership::WEAK:
+          assert(referenceM->location != Location::INLINE);
           return translateWeakReference(globalState, referenceM->referend);
         default:
           assert(false);
       }
-      break;
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
-        assert(referenceM->ownership == Ownership::SHARE);
-        return LLVMInt64Type();
-      } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
-        assert(referenceM->ownership == Ownership::SHARE);
-        return LLVMInt1Type();
-      } else if (dynamic_cast<Str*>(referenceM->referend) != nullptr) {
-        assert(referenceM->ownership == Ownership::SHARE);
-        return LLVMPointerType(globalState->stringWrapperStructL, 0);
-      } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
-        return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
-      } else if (auto knownSizeArrayMT =
-          dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
-        if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+      switch (referenceM->ownership) {
+        case Ownership::SHARE:
+          return defaultRefCounting.translateType(globalState, referenceM);
+        case Ownership::OWN:
+          assert(referenceM->location != Location::INLINE);
+          return translateReferenceSimple(globalState, referenceM->referend);
+        case Ownership::BORROW:
+        case Ownership::WEAK:
+          assert(referenceM->location != Location::INLINE);
+          return translateWeakReference(globalState, referenceM->referend);
+        default:
           assert(false);
-          return nullptr;
-        } else {
-          auto knownSizeArrayCountedStructLT = globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
-          if (referenceM->location == Location::INLINE) {
-            return knownSizeArrayCountedStructLT;
-          } else {
-            if (referenceM->ownership == Ownership::OWN) {
-              return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-            } else if (referenceM->ownership == Ownership::BORROW) {
-              return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
-            } else if (referenceM->ownership == Ownership::SHARE) {
-              return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-            } else if (referenceM->ownership == Ownership::WEAK) {
-              return globalState->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->name);
-            } else assert(false);
-          }
-        }
-      } else if (auto unknownSizeArrayMT =
-          dynamic_cast<UnknownSizeArrayT*>(referenceM->referend)) {
-        auto unknownSizeArrayCountedStructLT = globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
-        if (referenceM->ownership == Ownership::OWN) {
-          return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-        } else if (referenceM->ownership == Ownership::BORROW) {
-          return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
-        } else if (referenceM->ownership == Ownership::SHARE) {
-          return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
-        } else if (referenceM->ownership == Ownership::WEAK) {
-          return globalState->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->name);
-        } else {
-          assert(false);
-          return nullptr;
-        }
-      } else if (auto structReferend =
-          dynamic_cast<StructReferend*>(referenceM->referend)) {
-
-        auto structM = globalState->program->getStruct(structReferend->fullName);
-        if (structM->mutability == Mutability::MUTABLE) {
-          auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
-          if (referenceM->ownership == Ownership::OWN) {
-            return LLVMPointerType(countedStructL, 0);
-          } else if (referenceM->ownership == Ownership::BORROW) {
-            return globalState->getStructWeakRefStruct(structM->name);
-          } else if (referenceM->ownership == Ownership::WEAK) {
-            return globalState->getStructWeakRefStruct(structM->name);
-          } else {
-            assert(false);
-            return nullptr;
-          }
-        } else {
-          auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
-          if (referenceM->location == Location::INLINE) {
-            return globalState->getInnerStruct(structReferend->fullName);
-          } else {
-            auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
-            return LLVMPointerType(countedStructL, 0);
-          }
-        }
-      } else if (auto interfaceReferend =
-          dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
-        auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
-        auto interfaceRefStructL =
-            globalState->getInterfaceRefStruct(interfaceReferend->fullName);
-        if (interfaceM->mutability == Mutability::MUTABLE) {
-          if (referenceM->ownership == Ownership::OWN) {
-            return interfaceRefStructL;
-          } else if (referenceM->ownership == Ownership::BORROW) {
-            return globalState->getInterfaceWeakRefStruct(interfaceM->name);
-          } else if (referenceM->ownership == Ownership::WEAK) {
-            return globalState->getInterfaceWeakRefStruct(interfaceM->name);
-          } else {
-            assert(false);
-            return nullptr;
-          }
-        } else {
-          return interfaceRefStructL;
-        }
-      } else {
-        std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
-        assert(false);
-        return nullptr;
       }
-      break;
     }
     default:
       assert(false);
@@ -506,8 +603,7 @@ LLVMValueRef Mega::upcastWeak(
     }
     case RegionOverride::FAST:
     case RegionOverride::RESILIENT_V0:
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::ASSIST: {
+    case RegionOverride::NAIVE_RC: {
       return WrcWeaks().weakStructPtrToWrciWeakInterfacePtr(
           globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
           sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
@@ -608,7 +704,6 @@ LLVMTypeRef Mega::translateInterfaceMethodToFunctionType(
   auto paramsLT = translateTypes(globalState, this, paramsMT);
 
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
       switch (paramsMT[method->virtualParamIndex]->ownership) {

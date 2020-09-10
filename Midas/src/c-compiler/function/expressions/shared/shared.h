@@ -10,7 +10,7 @@
 #include "metal/instructions.h"
 #include "globalstate.h"
 #include "function/function.h"
-#include "utils/fileio.h"
+#include "fileio.h"
 #include "ref.h"
 
 
@@ -37,29 +37,6 @@ void makeHammerLocal(
     Local* local,
     Ref valueToStore);
 
-void acquireReference(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceRef,
-    Ref expr);
-
-void discard(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* sourceRef,
-    Ref sourceRefLE);
-
-
-LLVMValueRef adjustCounter(
-    LLVMBuilderRef builder,
-    LLVMValueRef counterPtrLE,
-    // Amount to add. Can be negative.
-    int adjustAmount);
 
 LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
@@ -96,9 +73,6 @@ LLVMValueRef strongRcIsZero(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE exprLE);
-
-LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
-LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
 
 
 void buildAssert(

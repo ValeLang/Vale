@@ -22,21 +22,20 @@ public:
       Reference* desiredReference,
       const std::vector<LLVMValueRef>& membersLE) override;
 
-  LLVMValueRef alias(
+  void alias(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRef,
-      Reference* targetRef,
-      LLVMValueRef expr) override;
+      Ref expr) override;
 
   void dealias(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
-      Reference* sourceRef,
-      LLVMValueRef expr) override;
+      Reference* sourceMT,
+      Ref sourceRef) override;
 
   LLVMValueRef loadMember(
       AreaAndFileAndLine from,
@@ -258,7 +257,7 @@ private:
 
 protected:
   GlobalState* globalState;
-  DefaultRefCounting immutables;
+  DefaultRefCounting defaultRefCounting;
   FatWeaks fatWeaks;
   WrcWeaks wrcWeaks;
   DefaultLayoutter defaultLayout;

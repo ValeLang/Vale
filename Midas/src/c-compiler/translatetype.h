@@ -24,8 +24,6 @@ constexpr int NEVER_INT_BITS = 57;
 
 Mutability ownershipToMutability(Ownership ownership);
 
-Mutability getMutability(GlobalState* globalState, Reference* referenceM);
-
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
     IRegion* region,

@@ -483,7 +483,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
           readMutability(struuct["mutability"]),
           readArray(cache, struuct["edges"], readEdge),
           readArray(cache, struuct["members"], readStructMember),
-          struuct["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
+          struuct["weakable"] ? Weakability::WEAKABLE : Weakability::NON_WEAKABLE);
 
   auto structName = result->name;
   if (structName->name == std::string("Tup0")) {
@@ -507,7 +507,7 @@ InterfaceDefinition* readInterface(MetalCache* cache, const json& interface) {
       readMutability(interface["mutability"]),
       {},
       readArray(cache, interface["methods"], readInterfaceMethod),
-      interface["weakable"] ? UnconvertedWeakability::WEAKABLE : UnconvertedWeakability::NON_WEAKABLE);
+      interface["weakable"] ? Weakability::WEAKABLE : Weakability::NON_WEAKABLE);
 }
 
 Function* readFunction(MetalCache* cache, const json& function) {

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "function/expressions/shared/controlblock.h"
+#include "region/common/controlblock.h"
 #include "function/expressions/shared/elements.h"
 
 #include "translatetype.h"
@@ -7,7 +7,7 @@
 #include "function/expressions/shared/members.h"
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 void fillKnownSizeArray(
     GlobalState* globalState,
@@ -34,37 +34,6 @@ void fillKnownSizeArray(
   }
 }
 
-Ref constructKnownSizeArrayCountedStruct(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    KnownSizeArrayT* knownSizeArrayT,
-    LLVMTypeRef structLT,
-    const std::vector<Ref>& membersLE,
-    const std::string& typeName) {
-  auto newStructLE =
-      WrapperPtrLE(refM, mallocKnownSize(globalState, functionState, builder, refM->location, structLT));
-  fillControlBlock(
-      FL(),
-      globalState,
-      functionState,
-      builder,
-      refM->referend,
-      knownSizeArrayT->rawArray->mutability,
-      getEffectiveWeakability(globalState, knownSizeArrayT->rawArray),
-      getConcreteControlBlockPtr(globalState, builder, newStructLE),
-      typeName);
-  fillKnownSizeArray(
-      globalState,
-      functionState,
-      builder,
-      knownSizeArrayT->rawArray->elementType,
-      getKnownSizeArrayContentsPtr(builder, newStructLE),
-      membersLE);
-  return wrap(functionState->defaultRegion, refM, newStructLE.refLE);
-}
-
 Ref translateNewArrayFromValues(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -82,6 +51,26 @@ Ref translateNewArrayFromValues(
 
   auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(newArrayFromValues->arrayRefType->referend);
 
+  Weakability effectiveWeakability = Weakability::WEAKABLE;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      effectiveWeakability = Weakability::NON_WEAKABLE;
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      if (knownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+        effectiveWeakability = Weakability::WEAKABLE;
+      } else {
+        effectiveWeakability = Weakability::NON_WEAKABLE;
+      }
+      break;
+    default:
+      assert(false);
+  }
+
   switch (newArrayFromValues->arrayReferend->rawArray->mutability) {
 //    case Mutability::MUTABLE: {
 //      auto countedArrayL = globalState->getWrapperStruct(structReferend->fullName);
@@ -97,18 +86,13 @@ Ref translateNewArrayFromValues(
         assert(false);
       } else {
         // If we get here, arrayLT is a pointer to our counted struct.
-        auto knownSizeArrayCountedStructLT =
-                globalState->getKnownSizeArrayWrapperStruct(knownSizeArrayMT->name);
         auto resultLE =
-            constructKnownSizeArrayCountedStruct(
-                globalState,
+            functionState->defaultRegion->constructKnownSizeArray(
                 functionState,
                 builder,
                 newArrayFromValues->arrayRefType,
                 newArrayFromValues->arrayReferend,
-                knownSizeArrayCountedStructLT,
-                elementsLE,
-                knownSizeArrayMT->name->name);
+                elementsLE);
         checkValidReference(FL(), globalState, functionState, builder,
             newArrayFromValues->arrayRefType, resultLE);
         return resultLE;

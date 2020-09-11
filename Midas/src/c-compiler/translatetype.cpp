@@ -1,5 +1,5 @@
 #include <iostream>
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 #include "translatetype.h"
 
@@ -24,29 +24,6 @@ Mutability ownershipToMutability(Ownership ownership) {
       return Mutability::MUTABLE;
     default:
       assert(false);
-  }
-}
-
-Mutability getMutability(GlobalState* globalState, Reference* referenceM) {
-  if (dynamic_cast<Int*>(referenceM->referend) ||
-      dynamic_cast<Bool*>(referenceM->referend) ||
-      dynamic_cast<Float*>(referenceM->referend)) {
-    return Mutability::IMMUTABLE;
-  } else if (
-      auto structRnd = dynamic_cast<StructReferend*>(referenceM->referend)) {
-    auto structM = globalState->program->getStruct(structRnd->fullName);
-    return structM->mutability;
-  } else if (
-      auto interfaceRnd = dynamic_cast<InterfaceReferend*>(referenceM->referend)) {
-    auto interfaceM = globalState->program->getInterface(interfaceRnd->fullName);
-    return interfaceM->mutability;
-  } else if (
-      auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(referenceM->referend)) {
-    return knownSizeArrayMT->rawArray->mutability;
-  } else {
-    std::cerr << typeid(*referenceM->referend).name() << std::endl;
-    assert(false);
-    return Mutability::MUTABLE;
   }
 }
 

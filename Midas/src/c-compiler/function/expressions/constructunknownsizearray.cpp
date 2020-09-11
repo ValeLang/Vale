@@ -1,5 +1,5 @@
 #include <iostream>
-#include "function/expressions/shared/controlblock.h"
+#include "region/common/controlblock.h"
 #include "function/expressions/shared/elements.h"
 
 #include "translatetype.h"
@@ -7,7 +7,7 @@
 #include "function/expressions/shared/members.h"
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 void fillUnknownSizeArray(
     GlobalState* globalState,
@@ -51,6 +51,7 @@ Ref constructUnknownSizeArrayCountedStruct(
     LLVMBuilderRef builder,
     Reference* usaMT,
     UnknownSizeArrayT* unknownSizeArrayT,
+    Weakability effectiveWeakability,
     Reference* generatorType,
     Prototype* generatorMethod,
     Ref generatorRef,
@@ -63,7 +64,7 @@ Ref constructUnknownSizeArrayCountedStruct(
   auto sizeLE =
       checkValidReference(FL(),globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
   auto usaWrapperPtrLE =
-      WrapperPtrLE(
+      functionState->defaultRegion->makeWrapperPtr(
           usaMT,
           mallocUnknownSizeArray(
               globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE));
@@ -74,7 +75,7 @@ Ref constructUnknownSizeArrayCountedStruct(
       builder,
       unknownSizeArrayT,
       unknownSizeArrayT->rawArray->mutability,
-      getEffectiveWeakability(globalState, unknownSizeArrayT->rawArray),
+      effectiveWeakability,
       getConcreteControlBlockPtr(globalState, builder, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(builder, usaWrapperPtrLE));
@@ -116,6 +117,26 @@ Ref translateConstructUnknownSizeArray(
   checkValidReference(FL(), globalState, functionState, builder,
       constructUnknownSizeArray->generatorType, generatorLE);
 
+  Weakability effectiveWeakability = Weakability::WEAKABLE;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      effectiveWeakability = Weakability::NON_WEAKABLE;
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
+        effectiveWeakability = Weakability::WEAKABLE;
+      } else {
+        effectiveWeakability = Weakability::NON_WEAKABLE;
+      }
+      break;
+    default:
+      assert(false);
+  }
+
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
       globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
@@ -127,6 +148,7 @@ Ref translateConstructUnknownSizeArray(
           builder,
           constructUnknownSizeArray->arrayRefType,
           unknownSizeArrayMT,
+          effectiveWeakability,
           generatorType,
           constructUnknownSizeArray->generatorMethod,
           generatorLE,

@@ -6,9 +6,9 @@
 #include <region/mega/mega.h>
 #include <region/common/fatweaks/fatweaks.h>
 #include <region/common/primitives.h>
-#include <region/common/defaultrefcounting/defaultrefcounting.h>
+#include <region/common/defaultimmutables//defaultimmutables.h>
 #include <region/common/wrcweaks/wrcweaks.h>
-#include <region/common/defaultlayout/defaultlayout.h>
+#include <region/common/defaultlayout/structsrouter.h>
 #include "globalstate.h"
 #include "function/function.h"
 #include "../iregion.h"
@@ -49,7 +49,7 @@ public:
 
   LLVMTypeRef translateType(Reference* referenceM) override;
 
-  LLVMValueRef upcastWeak(
+  Ref upcastWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,

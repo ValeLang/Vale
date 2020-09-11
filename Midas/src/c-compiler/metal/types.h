@@ -37,11 +37,6 @@ enum class Weakability {
   NON_WEAKABLE,
 };
 
-enum class UnconvertedWeakability {
-  WEAKABLE,
-  NON_WEAKABLE,
-};
-
 enum class Permission {
     READONLY,
     READWRITE,

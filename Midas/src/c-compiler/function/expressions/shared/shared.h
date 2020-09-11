@@ -42,22 +42,6 @@ LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceFatPtrLE);
 
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef ref,
-    Reference* referenceM);
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    Ref referenceLE,
-    Reference* referenceM);
-
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
@@ -182,9 +166,7 @@ Ref buildCall(
     std::vector<Ref> argRefs);
 
 // TODO move these into region classes
-Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array);
-Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef);
-Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
+Weakability getWeakability(GlobalState* globalState, Referend* referend);
 
 // Loads from either a local or a member, and does the appropriate casting.
 Ref upgradeLoadResultToRefWithTargetOwnership(

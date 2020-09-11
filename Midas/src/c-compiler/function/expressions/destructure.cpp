@@ -1,7 +1,7 @@
 #include <iostream>
-#include <function/expressions/shared/controlblock.h>
+#include <region/common/controlblock.h>
 #include "function/expressions/shared/members.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 #include "translatetype.h"
 
@@ -55,13 +55,13 @@ Ref translateDestructure(
     // We dont decrement anything here, we're only here because we already hit zero.
 
     auto structRefLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             destructureM->structType,
             checkValidReference(
                 FL(), globalState, functionState, builder, destructureM->structType, structRef));
     auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, structRefLE);
-    freeConcrete(
-        AFL("Destroy freeing"), globalState, functionState, blockState, builder,
+    deallocate(
+        AFL("Destroy freeing"), globalState, functionState, builder,
         controlBlockPtrLE, destructureM->structType);
   } else {
     assert(false);

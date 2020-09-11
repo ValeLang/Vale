@@ -4,8 +4,8 @@
 #include "weaks.h"
 
 #include "translatetype.h"
-#include "controlblock.h"
-#include "branch.h"
+#include "region/common/controlblock.h"
+#include "utils/branch.h"
 
 constexpr uint32_t WRC_ALIVE_BIT = 0x80000000;
 constexpr uint32_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
@@ -106,7 +106,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
+            globalState->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
             "lgtiPtr");
     return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
   }
@@ -124,7 +124,7 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::GENERATION),
+          globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::GENERATION),
           "genPtr");
   return LLVMBuildLoad(builder, genPtrLE, "gen");
 }
@@ -144,7 +144,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            globalState->getControlBlockLayout(refM->referend)->getMemberIndex(ControlBlockMember::WRCI),
+            globalState->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::WRCI),
             "wrciPtr");
     return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
   }
@@ -475,7 +475,7 @@ WrapperPtrLE lockWeakRef(
               WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
-          return WrapperPtrLE(refM,
+          return functionState->defaultRegion->makeWrapperPtr(refM,
               lockWrciFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
         default:
@@ -496,7 +496,7 @@ WrapperPtrLE lockWeakRef(
               WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
-          return WrapperPtrLE(refM,
+          return functionState->defaultRegion->makeWrapperPtr(refM,
               lockWrciFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
         default:
@@ -517,7 +517,7 @@ WrapperPtrLE lockWeakRef(
               WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
-          return WrapperPtrLE(refM, lockLgtiFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
+          return functionState->defaultRegion->makeWrapperPtr(refM, lockLgtiFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
         default:
           assert(false);
@@ -531,7 +531,7 @@ WrapperPtrLE lockWeakRef(
           auto objPtrLE = weakRefLE;
           auto weakFatPtrLE =
               checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE);
-          return WrapperPtrLE(refM, weakFatPtrLE);
+          return functionState->defaultRegion->makeWrapperPtr(refM, weakFatPtrLE);
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
@@ -539,7 +539,7 @@ WrapperPtrLE lockWeakRef(
               WeakFatPtrLE(globalState,
                   refM,
                   checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
-          return WrapperPtrLE(refM, lockGenFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
+          return functionState->defaultRegion->makeWrapperPtr(refM, lockGenFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
         default:
           assert(false);
@@ -553,7 +553,7 @@ WrapperPtrLE lockWeakRef(
   assert(false);
 }
 
-void noteWeakableDestroyed(
+void innerNoteWeakableDestroyed(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -816,7 +816,7 @@ LLVMValueRef fillWeakableControlBlock(
         builder,
         controlBlockLE,
         geniLE,
-        globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::LGTI),
+        globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::LGTI),
         "controlBlockWithLgti");
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
     // The generation was already incremented when we freed it (or malloc'd it for the first time),
@@ -831,7 +831,7 @@ LLVMValueRef fillWeakableControlBlock(
         builder,
         controlBlockLE,
         wrciLE,
-        globalState->getControlBlockLayout(referendM)->getMemberIndex(ControlBlockMember::WRCI),
+        globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::WRCI),
         "weakableControlBlockWithWrci");
   } else assert(false);
 }
@@ -1345,6 +1345,14 @@ void makeWeakRefStructs(GlobalState* globalState) {
   } else {
     assert(false);
   }
+
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  globalState->weakVoidRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), "__Weak_VoidP");
+  makeVoidPtrWeakRefStruct(globalState, globalState->weakVoidRefStructL);
 }
 
 void initWeakInternalExterns(GlobalState* globalState) {
@@ -1386,19 +1394,6 @@ void initWeakInternalExterns(GlobalState* globalState) {
   }
 }
 
-void makeStructWeakRefStruct(GlobalState* globalState, LLVMTypeRef structWeakRefStructL, LLVMTypeRef wrapperStructL) {
-  std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
-  structWeakRefStructMemberTypesL.push_back(globalState->weakRefHeaderStructL);
-  structWeakRefStructMemberTypesL.push_back(LLVMPointerType(wrapperStructL, 0));
-  LLVMStructSetBody(structWeakRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
-}
-
-void makeInterfaceWeakRefStruct(GlobalState* globalState, LLVMTypeRef interfaceWeakRefStructL, LLVMTypeRef refStructL) {
-  std::vector<LLVMTypeRef> interfaceWeakRefStructMemberTypesL;
-  interfaceWeakRefStructMemberTypesL.push_back(globalState->weakRefHeaderStructL);
-  interfaceWeakRefStructMemberTypesL.push_back(refStructL);
-  LLVMStructSetBody(interfaceWeakRefStructL, interfaceWeakRefStructMemberTypesL.data(), interfaceWeakRefStructMemberTypesL.size(), false);
-}
 
 void makeVoidPtrWeakRefStruct(GlobalState* globalState, LLVMTypeRef weakVoidRefStructL) {
   std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
@@ -1407,22 +1402,3 @@ void makeVoidPtrWeakRefStruct(GlobalState* globalState, LLVMTypeRef weakVoidRefS
   LLVMStructSetBody(weakVoidRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
 
-void makeUnknownSizeArrayWeakRefStruct(
-    GlobalState* globalState,
-    LLVMTypeRef unknownSizeArrayWrapperStruct,
-    LLVMTypeRef arrayWeakRefStructL) {
-  std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
-  arrayWeakRefStructMemberTypesL.push_back(globalState->weakRefHeaderStructL);
-  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(unknownSizeArrayWrapperStruct, 0));
-  LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
-}
-
-void makeKnownSizeArrayWeakRefStruct(
-    GlobalState* globalState,
-    LLVMTypeRef knownSizeArrayWrapperStruct,
-    LLVMTypeRef arrayWeakRefStructL) {
-  std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
-  arrayWeakRefStructMemberTypesL.push_back(globalState->weakRefHeaderStructL);
-  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(knownSizeArrayWrapperStruct, 0));
-  LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
-}

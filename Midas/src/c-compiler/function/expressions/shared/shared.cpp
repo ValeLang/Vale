@@ -4,8 +4,8 @@
 #include "shared.h"
 
 #include "translatetype.h"
-#include "controlblock.h"
-#include "branch.h"
+#include "region/common/controlblock.h"
+#include "utils/branch.h"
 #include "weaks.h"
 
 // A "Never" is something that should never be read.
@@ -68,77 +68,6 @@ LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceRefLE) {
   return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, 1, "itablePtr");
-}
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef ref,
-    Reference* referenceM) {
-  auto referendM = referenceM->referend;
-  if (dynamic_cast<InterfaceReferend*>(referendM)) {
-    auto referenceLE = InterfaceFatPtrLE(globalState, referenceM, ref);
-    return getControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<StructReferend*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<Str*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else {
-    assert(false);
-  }
-}
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    Ref ref,
-    Reference* referenceM) {
-  auto referendM = referenceM->referend;
-  if (dynamic_cast<InterfaceReferend*>(referendM)) {
-    auto referenceLE =
-        InterfaceFatPtrLE(globalState,
-            referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<StructReferend*>(referendM)) {
-    auto referenceLE =
-        WrapperPtrLE(
-            referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
-    auto referenceLE =
-        WrapperPtrLE(
-            referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
-    auto referenceLE =
-        WrapperPtrLE(
-            referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else if (dynamic_cast<Str*>(referendM)) {
-    auto referenceLE =
-        WrapperPtrLE(
-            referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(globalState, builder, referenceLE);
-  } else {
-    assert(false);
-  }
 }
 
 // Returns the new RC
@@ -453,7 +382,7 @@ LLVMValueRef checkValidReference(
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto interfaceFatPtrLE = InterfaceFatPtrLE(globalState, refM, refLE);
+        auto interfaceFatPtrLE = InterfaceFatPtrLE(functionState->defaultRegion, refM, refLE);
         auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
@@ -600,7 +529,7 @@ Ref upcast(
         case Ownership::OWN:
         case Ownership::BORROW: {
           auto sourceStructWrapperPtrLE =
-              WrapperPtrLE(
+              functionState->defaultRegion->makeWrapperPtr(
                   sourceStructMT,
                   checkValidReference(
                       FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
@@ -636,7 +565,7 @@ Ref upcast(
         case Ownership::SHARE:
         case Ownership::OWN: {
           auto sourceStructWrapperPtrLE =
-              WrapperPtrLE(
+              functionState->defaultRegion->makeWrapperPtr(
                   sourceStructMT,
                   checkValidReference(
                       FL(), globalState, functionState, builder, sourceStructMT, sourceRefLE));
@@ -672,92 +601,102 @@ Ref upcast(
 
 }
 
-// TODO move into region classes
-Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) {
-  if (array->mutability == Mutability::IMMUTABLE) {
-    return Weakability::NON_WEAKABLE;
+Weakability getWeakability(GlobalState* globalState, Referend* referend) {
+  if (auto structReferend = dynamic_cast<StructReferend*>(referend)) {
+    return globalState->program->getStruct(structReferend->fullName)->weakability;
+  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
+    return globalState->program->getStruct(interfaceReferend->fullName)->weakability;
   } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-      return Weakability::NON_WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      return Weakability::NON_WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      // All mutables are weakabile in resilient mode
-      return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      // All mutables are weakabile in resilient mode
-      return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-      // All mutables are weakabile in resilient mode
-      return Weakability::WEAKABLE;
-    } else assert(false);
+    return Weakability::NON_WEAKABLE;
   }
 }
 
-// TODO move into region classes
-Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef) {
-  if (structDef->mutability == Mutability::IMMUTABLE) {
-    assert(structDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
-    return Weakability::NON_WEAKABLE;
-  } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-      if (structDef->weakability == UnconvertedWeakability::WEAKABLE) {
-        return Weakability::WEAKABLE;
-      } else {
-        return Weakability::NON_WEAKABLE;
-      }
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      if (structDef->weakability == UnconvertedWeakability::WEAKABLE) {
-        return Weakability::WEAKABLE;
-      } else {
-        return Weakability::NON_WEAKABLE;
-      }
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      // All mutable structs are weakability in resilient mode
-      return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      // All mutable structs are weakability in resilient mode
-      return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-      // All mutable structs are weakability in resilient mode
-      return Weakability::WEAKABLE;
-    } else assert(false);
-  }
-}
-
-// TODO move into region classes
-Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef) {
-  if (interfaceDef->mutability == Mutability::IMMUTABLE) {
-    assert(interfaceDef->weakability == UnconvertedWeakability::NON_WEAKABLE);
-    return Weakability::NON_WEAKABLE;
-  } else {
-    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-      if (interfaceDef->weakability == UnconvertedWeakability::WEAKABLE) {
-        return Weakability::WEAKABLE;
-      } else {
-        return Weakability::NON_WEAKABLE;
-      }
-    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-      if (interfaceDef->weakability == UnconvertedWeakability::WEAKABLE) {
-        return Weakability::WEAKABLE;
-      } else {
-        return Weakability::NON_WEAKABLE;
-      }
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-      // All mutable structs are weakable in resilient mode
-      return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      // All mutable structs are weakable in resilient fast mode
-      return Weakability::WEAKABLE;
-    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-      // All mutable structs are weakable in resilient fast mode
-      return Weakability::WEAKABLE;
-    } else assert(false);
-  }
-}
+//// TODO move into region classes
+//Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array) {
+//  if (array->mutability == Mutability::IMMUTABLE) {
+//    return Weakability::NON_WEAKABLE;
+//  } else {
+//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+//      return Weakability::NON_WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+//      return Weakability::NON_WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//      // All mutables are weakabile in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+//      // All mutables are weakabile in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+//      // All mutables are weakabile in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else assert(false);
+//  }
+//}
+//
+//// TODO move into region classes
+//Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef) {
+//  if (structDef->mutability == Mutability::IMMUTABLE) {
+//    assert(structDef->weakability == Weakability::NON_WEAKABLE);
+//    return Weakability::NON_WEAKABLE;
+//  } else {
+//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+//      if (structDef->weakability == Weakability::WEAKABLE) {
+//        return Weakability::WEAKABLE;
+//      } else {
+//        return Weakability::NON_WEAKABLE;
+//      }
+//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+//      if (structDef->weakability == Weakability::WEAKABLE) {
+//        return Weakability::WEAKABLE;
+//      } else {
+//        return Weakability::NON_WEAKABLE;
+//      }
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//      // All mutable structs are weakability in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+//      // All mutable structs are weakability in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+//      // All mutable structs are weakability in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else assert(false);
+//  }
+//}
+//
+//// TODO move into region classes
+//Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef) {
+//  if (interfaceDef->mutability == Mutability::IMMUTABLE) {
+//    assert(interfaceDef->weakability == Weakability::NON_WEAKABLE);
+//    return Weakability::NON_WEAKABLE;
+//  } else {
+//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+//      if (interfaceDef->weakability == Weakability::WEAKABLE) {
+//        return Weakability::WEAKABLE;
+//      } else {
+//        return Weakability::NON_WEAKABLE;
+//      }
+//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
+//      if (interfaceDef->weakability == Weakability::WEAKABLE) {
+//        return Weakability::WEAKABLE;
+//      } else {
+//        return Weakability::NON_WEAKABLE;
+//      }
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//      // All mutable structs are weakable in resilient mode
+//      return Weakability::WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+//      // All mutable structs are weakable in resilient fast mode
+//      return Weakability::WEAKABLE;
+//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+//      // All mutable structs are weakable in resilient fast mode
+//      return Weakability::WEAKABLE;
+//    } else assert(false);
+//  }
+//}
 
 
 // TODO maybe combine with alias/acquireReference?

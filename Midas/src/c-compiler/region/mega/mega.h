@@ -3,8 +3,8 @@
 
 #include <llvm-c/Core.h>
 #include <function/expressions/shared/afl.h>
-#include <region/common/defaultrefcounting/defaultrefcounting.h>
-#include <region/common/defaultlayout/defaultlayout.h>
+#include <region/common/defaultimmutables/defaultimmutables.h>
+#include <region/common/defaultlayout/structsrouter.h>
 #include <region/common/wrcweaks/wrcweaks.h>
 #include "globalstate.h"
 #include "function/function.h"
@@ -15,12 +15,12 @@ public:
   Mega(GlobalState* globalState);
   ~Mega() override = default;
 
-  LLVMValueRef allocate(
+  Ref allocate(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* desiredReference,
-      const std::vector<LLVMValueRef>& membersLE) override;
+      const std::vector<Ref>& membersLE) override;
 
   void alias(
       AreaAndFileAndLine from,
@@ -37,44 +37,52 @@ public:
       Reference* sourceMT,
       Ref sourceRef) override;
 
-  LLVMValueRef loadMember(
+  Ref loadMember(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* structRefM,
-      LLVMValueRef structExpr,
+      Ref structExpr,
       Mutability mutability,
       Reference* memberType,
       int memberIndex,
-      const std::string& memberName) override;
+      const std::string& memberName) override {
+    assert(false);
+  }
 
-  LLVMValueRef storeMember(
+  Ref storeMember(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structRefM,
-      LLVMValueRef structExpr,
+      Ref structExpr,
       Mutability mutability,
       Reference* memberType,
       int memberIndex,
       const std::string& memberName,
-      LLVMValueRef sourceLE) override;
+      Ref sourceLE) override {
+    assert(false);
+  }
 
-  std::vector<LLVMValueRef> destructure(
+  std::vector<Ref> destructure(
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structType,
-      LLVMValueRef structLE) override;
+      Ref structLE) override {
+    assert(false);
+  }
 
   // Suitable for passing in to an interface method
   LLVMValueRef getConcreteRefFromInterfaceRef(
       LLVMBuilderRef builder,
-      LLVMValueRef refLE) override;
+      LLVMValueRef refLE) override {
+    assert(false);
+  }
 
 
-  LLVMValueRef upcastWeak(
+  Ref upcastWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
@@ -83,16 +91,18 @@ public:
       InterfaceReferend* targetInterfaceReferendM,
       Reference* targetInterfaceTypeM) override;
 
-  LLVMValueRef upcast(
+  Ref upcast(
       FunctionState* functionState,
       LLVMBuilderRef builder,
 
       Reference* sourceStructTypeM,
       StructReferend* sourceStructReferendM,
-      LLVMValueRef sourceStructLE,
+      Ref sourceStructLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) override;
+      InterfaceReferend* targetInterfaceReferendM) override {
+    assert(false);
+  }
 
 
   void translateKnownSizeArray(
@@ -123,37 +133,45 @@ public:
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  LLVMValueRef constructString(
+  Ref constructString(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      LLVMValueRef lengthLE) override;
+      Ref lengthLE) override {
+    assert(false);
+  }
 
   // Returns a LLVMValueRef for a pointer to the strings contents bytes
-  LLVMValueRef getStringBytesPtr(
+  Ref getStringBytesPtr(
       LLVMBuilderRef builder,
-      LLVMValueRef stringRefLE) override;
+      Ref stringRefLE) override {
+    assert(false);
+  }
 
-  LLVMValueRef getStringLength(
+  Ref getStringLength(
       LLVMBuilderRef builder,
-      LLVMValueRef stringRefLE) override;
+      Ref stringRefLE) override {
+    assert(false);
+  }
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  LLVMValueRef constructKnownSizeArray(
+  Ref constructKnownSizeArray(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
       KnownSizeArrayT* referendM,
-      const std::vector<LLVMValueRef>& membersLE) override;
+      const std::vector<Ref>& membersLE) override;
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  LLVMValueRef constructUnknownSizeArray(
+  Ref constructUnknownSizeArray(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* usaMT,
-      LLVMValueRef sizeLE,
-      const std::string& typeName) override;
+      Ref sizeLE,
+      const std::string& typeName) override {
+    assert(false);
+  }
 
   // should expose a dereference thing instead
 //  LLVMValueRef getKnownSizeArrayElementsPtr(
@@ -171,45 +189,57 @@ public:
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* arrayType,
-      LLVMValueRef arrayWrapperLE) override;
+      Ref arrayWrapperLE) override {
+    assert(false);
+  }
 
   LLVMTypeRef getKnownSizeArrayRefType(
       Reference* referenceM,
-      KnownSizeArrayT* knownSizeArrayMT) override;
+      KnownSizeArrayT* knownSizeArrayMT) override {
+    assert(false);
+  }
 
   LLVMTypeRef getUnknownSizeArrayRefType(
       Reference* referenceM,
-      UnknownSizeArrayT* unknownSizeArrayMT) override;
+      UnknownSizeArrayT* unknownSizeArrayMT) override {
+    assert(false);
+  }
 
   LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      Ref refLE) override;
+      Ref refLE) override {
+    return ::checkValidReference(checkerAFL, globalState, functionState, builder, refM, refLE);
+  }
 
-  LLVMValueRef loadElement(
+  Ref loadElement(
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structRefM,
       Reference* elementRefM,
-      LLVMValueRef sizeIntLE,
-      LLVMValueRef arrayCRefLE,
+      Ref sizeIntLE,
+      Ref arrayCRefLE,
       Mutability mutability,
-      LLVMValueRef indexIntLE) override;
+      Ref indexIntLE) override {
+    assert(false);
+  }
 
-  LLVMValueRef storeElement(
+  Ref storeElement(
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* arrayRefM,
       Reference* elementRefM,
-      LLVMValueRef sizeIntLE,
-      LLVMValueRef arrayCRefLE,
+      Ref sizeIntLE,
+      Ref arrayCRefLE,
       Mutability mutability,
-      LLVMValueRef indexIntLE,
-      LLVMValueRef sourceLE) override;
+      Ref indexIntLE,
+      Ref sourceLE) override {
+    assert(false);
+  }
 
 
 
@@ -224,7 +254,9 @@ public:
 
   LLVMTypeRef getStructRefType(
       Reference* refM,
-      StructReferend* structReferendM) override;
+      StructReferend* structReferendM) override {
+    assert(false);
+  }
 
   void translateStruct(
       StructDefinition* structM) override;
@@ -239,7 +271,9 @@ public:
   void declareInterface(
       InterfaceDefinition* interfaceM) override;
 
-  LLVMTypeRef getStringRefType() const override;
+  LLVMTypeRef getStringRefType() const override {
+    assert(false);
+  }
 
   Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) override;
 
@@ -251,16 +285,50 @@ public:
       Reference* targetWeakRefMT,
       Ref sourceWeakRef);
 
+  // TODO Make these private once refactor is done
+  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
+    return weakFatPtrMaker.make(referenceM_, ptrLE);
+  }
+  InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
+    return interfaceFatPtrMaker.make(referenceM_, ptrLE);
+  }
+  ControlBlockPtrLE makeControlBlockPtr(Referend* referendM_, LLVMValueRef ptrLE) override {
+    return controlBlockPtrMaker.make(referendM_, ptrLE);
+  }
+  WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
+    return wrapperPtrMaker.make(referenceM_, ptrLE);
+  }
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);
 
+  void naiveRcFree(
+      GlobalState* globalState,
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef thenBuilder,
+      Reference* sourceMT,
+      Ref sourceRef);
+
 protected:
   GlobalState* globalState;
-  DefaultRefCounting defaultRefCounting;
+
+  ReferendStructs immStructs;
+  ReferendStructs mutNonWeakableStructs;
+  WeakableReferendStructs mutWeakableStructs;
+
+  DefaultImmutables defaultImmutables;
   FatWeaks fatWeaks;
   WrcWeaks wrcWeaks;
-  DefaultLayoutter defaultLayout;
+
+  ReferendStructsRouter referendStructs;
+  WeakRefStructsRouter weakRefStructs;
+
+  WeakFatPtrLEMaker weakFatPtrMaker;
+  InterfaceFatPtrLEMaker interfaceFatPtrMaker;
+  ControlBlockPtrLEMaker controlBlockPtrMaker;
+  WrapperPtrLEMaker wrapperPtrMaker;
 };
 
 #endif

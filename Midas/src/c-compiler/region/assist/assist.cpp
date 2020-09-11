@@ -1,5 +1,5 @@
 #include <function/expressions/shared/weaks.h>
-#include <function/expressions/shared/branch.h>
+#include <utils/branch.h>
 #include <region/common/fatweaks/fatweaks.h>
 #include <region/common/hgm/hgm.h>
 #include <region/common/lgtweaks/lgtweaks.h>
@@ -106,7 +106,7 @@ Ref Assist::lockWeak(
 LLVMTypeRef Assist::translateType(Reference* referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:
-      return defaultRefCounting.translateType(globalState, referenceM);
+      return defaultImmutables.translateType(globalState, referenceM);
     case Ownership::OWN:
     case Ownership::BORROW:
       assert(referenceM->location != Location::INLINE);
@@ -239,9 +239,10 @@ Ref Assist::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refe
   assert(sourceRefMT->ownership == Ownership::BORROW);
   if (auto structReferendM = dynamic_cast<StructReferend*>(sourceRefMT->referend)) {
     auto objPtrLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             sourceRefMT,
-            ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT, sourceRef));
+            ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT,
+                sourceRef));
     return wrap(
         functionState->defaultRegion,
         targetRefMT,

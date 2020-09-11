@@ -1,10 +1,10 @@
 #include <iostream>
 #include <region/common/common.h>
-#include "function/expressions/shared/branch.h"
+#include "utils/branch.h"
 #include "function/expressions/shared/elements.h"
-#include "function/expressions/shared/controlblock.h"
+#include "region/common/controlblock.h"
 #include "function/expressions/shared/members.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 #include "function/expressions/shared/weaks.h"
 
 #include "translatetype.h"
@@ -254,14 +254,34 @@ Ref translateExpressionInner(
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
+      Weakability effectiveWeakability = Weakability::WEAKABLE;
+      switch (globalState->opt->regionOverride) {
+        case RegionOverride::ASSIST:
+        case RegionOverride::NAIVE_RC:
+        case RegionOverride::FAST:
+          effectiveWeakability = Weakability::NON_WEAKABLE;
+          break;
+        case RegionOverride::RESILIENT_V0:
+        case RegionOverride::RESILIENT_V1:
+        case RegionOverride::RESILIENT_V2:
+          if (arrayType->ownership == Ownership::SHARE) {
+            effectiveWeakability = Weakability::NON_WEAKABLE;
+          } else {
+            effectiveWeakability = Weakability::WEAKABLE;
+          }
+          break;
+        default:
+          assert(false);
+      }
+
       auto arrayWrapperLE =
-          WrapperPtrLE(
+          functionState->defaultRegion->makeWrapperPtr(
               arrayType,
               checkValidReference(
                   FL(), globalState, functionState, builder, arrayType, arrayRef));
       auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, arrayWrapperLE);
-      freeConcrete(
-          AFL("DestroyKSAIntoF"), globalState, functionState, blockState, builder,
+      deallocate(
+          AFL("DestroyKSAIntoF"), globalState, functionState, builder,
           controlBlockPtrLE, arrayType);
     } else {
       assert(false);
@@ -319,13 +339,33 @@ Ref translateExpressionInner(
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
+      Weakability effectiveWeakability = Weakability::WEAKABLE;
+      switch (globalState->opt->regionOverride) {
+        case RegionOverride::ASSIST:
+        case RegionOverride::NAIVE_RC:
+        case RegionOverride::FAST:
+          effectiveWeakability = Weakability::NON_WEAKABLE;
+          break;
+        case RegionOverride::RESILIENT_V0:
+        case RegionOverride::RESILIENT_V1:
+        case RegionOverride::RESILIENT_V2:
+          if (arrayType->ownership == Ownership::SHARE) {
+            effectiveWeakability = Weakability::NON_WEAKABLE;
+          } else {
+            effectiveWeakability = Weakability::WEAKABLE;
+          }
+          break;
+        default:
+          assert(false);
+      }
+
       auto arrayWrapperLE =
-          WrapperPtrLE(
+          functionState->defaultRegion->makeWrapperPtr(
               arrayType,
               checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRef));
       auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, arrayWrapperLE);
       // Free it!
-      freeConcrete(AFL("DestroyUSAIntoF"), globalState, functionState, blockState, builder,
+      deallocate(AFL("DestroyUSAIntoF"), globalState, functionState, builder,
           controlBlockPtrLE, arrayType);
     } else {
       assert(false);

@@ -1,8 +1,8 @@
 #include <iostream>
 #include "function/expressions/shared/shared.h"
 #include "function/expressions/shared/string.h"
-#include "function/expressions/shared/controlblock.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/controlblock.h"
+#include "region/common/heap.h"
 
 #include "translatetype.h"
 
@@ -51,18 +51,20 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto leftStrWrapperPtrLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             globalState->metalCache.strRef,
-            checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, leftStrWrapperRef));
+            checkValidReference(FL(), globalState, functionState, builder,
+                globalState->metalCache.strRef, leftStrWrapperRef));
 
     auto rightStrTypeM = call->argTypes[1];
     auto rightStrWrapperRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto rightStrWrapperPtrLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             globalState->metalCache.strRef,
-            checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.strRef, rightStrWrapperRef));
+            checkValidReference(FL(), globalState, functionState, builder,
+                globalState->metalCache.strRef, rightStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
         getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
@@ -127,9 +129,10 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto leftStrWrapperPtrLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             globalState->metalCache.strRef,
-            checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0], leftStrWrapperRef));
+            checkValidReference(FL(), globalState, functionState, builder, call->argTypes[0],
+                leftStrWrapperRef));
     auto leftStrLenLE = getLenFromStrWrapperPtr(builder, leftStrWrapperPtrLE);
 
     auto rightStrTypeM = call->argTypes[1];
@@ -137,7 +140,7 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]);
     auto rightStrWrapperPtrLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             globalState->metalCache.strRef,
             checkValidReference(
                 FL(), globalState, functionState, builder, call->argTypes[1], rightStrWrapperRef));
@@ -263,7 +266,7 @@ Ref translateExternCall(
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto argStrWrapperPtrLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             globalState->metalCache.strRef,
             checkValidReference(
                 FL(), globalState, functionState, builder, call->argTypes[0], argStrWrapperRef));

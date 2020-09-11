@@ -3,7 +3,7 @@
 #include <function/function.h>
 #include <function/expressions/shared/shared.h>
 #include <function/expressions/shared/weaks.h>
-#include <function/expressions/shared/controlblock.h>
+#include <region/common/controlblock.h>
 #include "hgm.h"
 
 LLVMValueRef HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
@@ -36,7 +36,7 @@ LLVMValueRef HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
   auto controlBlockPtr =
       getConcreteControlBlockPtr(globalState,
           builder,
-          WrapperPtrLE(
+          functionState->defaultRegion->makeWrapperPtr(
               sourceStructTypeM,
               fatWeaks_.getInnerRefFromWeakRef(
                   globalState, functionState, builder, sourceStructTypeM, sourceRefLE)));

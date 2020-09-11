@@ -5,10 +5,10 @@
 
 #include "shared.h"
 #include "members.h"
-#include "branch.h"
-#include "controlblock.h"
+#include "utils/branch.h"
+#include "region/common/controlblock.h"
 #include "weaks.h"
-#include "heap.h"
+#include "region/common/heap.h"
 
 
 void discardOwningRef(
@@ -20,7 +20,7 @@ void discardOwningRef(
     Reference* sourceMT,
     Ref sourceRef) {
   auto exprWrapperPtrLE =
-      WrapperPtrLE(
+      functionState->defaultRegion->makeWrapperPtr(
           sourceMT,
           checkValidReference(FL(), globalState, functionState, builder, sourceMT, sourceRef));
 
@@ -33,8 +33,10 @@ void discardOwningRef(
 
       // Free it!
       auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
-      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
-          controlBlockPtrLE, sourceMT);
+      deallocate(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+          controlBlockPtrLE,
+          sourceMT,
+      );
       break;
     }
     case RegionOverride::NAIVE_RC: {
@@ -52,17 +54,18 @@ void discardOwningRef(
                       sourceMT,
                       checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
               auto controlBlockPtrLE = getControlBlockPtr(globalState, thenBuilder, sourceInterfacePtrLE);
-              freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+              deallocate(FL(), globalState, functionState, blockState, thenBuilder,
                   controlBlockPtrLE, sourceMT);
             } else if (dynamic_cast<StructReferend*>(sourceMT->referend) ||
                 dynamic_cast<KnownSizeArrayT*>(sourceMT->referend) ||
                 dynamic_cast<UnknownSizeArrayT*>(sourceMT->referend)) {
               auto sourceWrapperPtrLE =
-                  WrapperPtrLE(
+                  functionState->defaultRegion->makeWrapperPtr(
                       sourceMT,
-                      checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+                      checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT,
+                          sourceRef));
               auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
-              freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+              deallocate(FL(), globalState, functionState, blockState, thenBuilder,
                   controlBlockPtrLE, sourceMT);
             } else {
               assert(false);
@@ -75,7 +78,7 @@ void discardOwningRef(
 
       auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       // Free it!
-      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+      deallocate(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           controlBlockPtrLE, sourceMT);
       break;
     }
@@ -85,7 +88,7 @@ void discardOwningRef(
 
       auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       // Free it!
-      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+      deallocate(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           controlBlockPtrLE, sourceMT);
       break;
     }
@@ -96,7 +99,7 @@ void discardOwningRef(
 
       auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, exprWrapperPtrLE);
       // Free it!
-      freeConcrete(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
+      deallocate(AFL("discardOwningRef"), globalState, functionState, blockState, builder,
           controlBlockPtrLE, sourceMT);
       break;
     }

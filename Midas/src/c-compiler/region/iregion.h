@@ -15,12 +15,12 @@ class IRegion {
 public:
   virtual ~IRegion() = default;
 
-  virtual LLVMValueRef allocate(
+  virtual Ref allocate(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* desiredReference,
-      const std::vector<LLVMValueRef>& membersLE) = 0;
+      const std::vector<Ref>& membersLE) = 0;
 
   virtual void alias(
       AreaAndFileAndLine from,
@@ -37,43 +37,43 @@ public:
       Reference* sourceMT,
       Ref sourceRef) = 0;
 
-  virtual LLVMValueRef loadMember(
+  virtual Ref loadMember(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* structRefM,
-      LLVMValueRef structExpr,
+      Ref structExpr,
       Mutability mutability,
       Reference* memberType,
       int memberIndex,
       const std::string& memberName) = 0;
 
-  virtual LLVMValueRef storeMember(
+  virtual Ref storeMember(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structRefM,
-      LLVMValueRef structExpr,
+      Ref structExpr,
       Mutability mutability,
       Reference* memberType,
       int memberIndex,
       const std::string& memberName,
-      LLVMValueRef sourceLE) = 0;
+      Ref sourceLE) = 0;
 
-  virtual std::vector<LLVMValueRef> destructure(
+  virtual std::vector<Ref> destructure(
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structType,
-      LLVMValueRef structLE) = 0;
+      Ref structLE) = 0;
 
   // Suitable for passing in to an interface method
   virtual LLVMValueRef getConcreteRefFromInterfaceRef(
       LLVMBuilderRef builder,
       LLVMValueRef refLE) = 0;
 
-  virtual LLVMValueRef upcastWeak(
+  virtual Ref upcastWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
@@ -82,13 +82,13 @@ public:
       InterfaceReferend* targetInterfaceReferendM,
       Reference* targetInterfaceTypeM) = 0;
 
-  virtual LLVMValueRef upcast(
+  virtual Ref upcast(
       FunctionState* functionState,
       LLVMBuilderRef builder,
 
       Reference* sourceStructTypeM,
       StructReferend* sourceStructReferendM,
-      LLVMValueRef sourceStructLE,
+      Ref sourceStructLE,
 
       Reference* targetInterfaceTypeM,
       InterfaceReferend* targetInterfaceReferendM) = 0;
@@ -108,36 +108,36 @@ public:
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  virtual LLVMValueRef constructString(
+  virtual Ref constructString(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      LLVMValueRef lengthLE) = 0;
+      Ref lengthLE) = 0;
 
   // Returns a LLVMValueRef for a pointer to the strings contents bytes
-  virtual LLVMValueRef getStringBytesPtr(
+  virtual Ref getStringBytesPtr(
       LLVMBuilderRef builder,
-      LLVMValueRef stringRefLE) = 0;
+      Ref stringRefLE) = 0;
 
-  virtual LLVMValueRef getStringLength(
+  virtual Ref getStringLength(
       LLVMBuilderRef builder,
-      LLVMValueRef stringRefLE) = 0;
+      Ref stringRefLE) = 0;
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  virtual LLVMValueRef constructKnownSizeArray(
+  virtual Ref constructKnownSizeArray(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
       KnownSizeArrayT* referendM,
-      const std::vector<LLVMValueRef>& membersLE) = 0;
+      const std::vector<Ref>& membersLE) = 0;
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  virtual LLVMValueRef constructUnknownSizeArray(
+  virtual Ref constructUnknownSizeArray(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* usaMT,
-      LLVMValueRef sizeLE,
+      Ref sizeLE,
       const std::string& typeName) = 0;
 
   // should expose a dereference thing instead
@@ -156,7 +156,7 @@ public:
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* arrayType,
-      LLVMValueRef arrayWrapperLE) = 0;
+      Ref arrayWrapperLE) = 0;
 
   virtual LLVMTypeRef getKnownSizeArrayRefType(
       Reference* referenceM,
@@ -173,28 +173,28 @@ public:
       Reference* refM,
       Ref refLE) = 0;
 
-  virtual LLVMValueRef loadElement(
+  virtual Ref loadElement(
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* structRefM,
       Reference* elementRefM,
-      LLVMValueRef sizeIntLE,
-      LLVMValueRef arrayCRefLE,
+      Ref sizeIntLE,
+      Ref arrayCRefLE,
       Mutability mutability,
-      LLVMValueRef indexIntLE) = 0;
+      Ref indexIntLE) = 0;
 
-  virtual LLVMValueRef storeElement(
+  virtual Ref storeElement(
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef builder,
       Reference* arrayRefM,
       Reference* elementRefM,
-      LLVMValueRef sizeIntLE,
-      LLVMValueRef arrayCRefLE,
+      Ref sizeIntLE,
+      Ref arrayCRefLE,
       Mutability mutability,
-      LLVMValueRef indexIntLE,
-      LLVMValueRef sourceLE) = 0;
+      Ref indexIntLE,
+      Ref sourceLE) = 0;
 
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
@@ -237,7 +237,11 @@ public:
 
   virtual Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) = 0;
 
-//  LLVMValueRef initStr, addStr, eqStr, printStr;
+  // TODO Get rid of these once refactor is done
+  virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
+  virtual InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
+  virtual ControlBlockPtrLE makeControlBlockPtr(Referend* referendM_, LLVMValueRef ptrLE) = 0;
+  virtual WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
 };
 
 #endif

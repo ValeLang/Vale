@@ -20,8 +20,13 @@ enum class ControlBlockMember {
   CENSUS_OBJ_ID
 };
 
-class ControlBlockLayout {
+class ControlBlock {
 public:
+  // structL should *not* have a body yet, this will fill it.
+  ControlBlock(LLVMTypeRef structL_) :
+      structL(structL_),
+      built(false) {}
+
   int getMemberIndex(ControlBlockMember member) {
     for (int i = 0; i < members.size(); i++) {
       if (members[i] == member) {
@@ -35,12 +40,55 @@ public:
     members.push_back(member);
   }
 
-  std::vector<ControlBlockMember> getMembers() const {
-    return members;
+  void build() {
+    assert(!built);
+
+    auto voidLT = LLVMVoidType();
+    auto voidPtrLT = LLVMPointerType(voidLT, 0);
+    auto int1LT = LLVMInt1Type();
+    auto int8LT = LLVMInt8Type();
+    auto int32LT = LLVMInt32Type();
+    auto int64LT = LLVMInt64Type();
+    auto int8PtrLT = LLVMPointerType(int8LT, 0);
+    auto int64PtrLT = LLVMPointerType(int64LT, 0);
+
+    std::vector<LLVMTypeRef> membersL;
+    for (auto member : members) {
+      switch (member) {
+        case ControlBlockMember::UNUSED_32B:
+          membersL.push_back(int32LT);
+          break;
+        case ControlBlockMember::GENERATION:
+          assert(membersL.empty()); // Generation should be at the top of the object
+          membersL.push_back(int32LT);
+          break;
+        case ControlBlockMember::LGTI:
+          membersL.push_back(int32LT);
+          break;
+        case ControlBlockMember::WRCI:
+          membersL.push_back(int32LT);
+          break;
+        case ControlBlockMember::STRONG_RC:
+          membersL.push_back(int32LT);
+          break;
+        case ControlBlockMember::CENSUS_OBJ_ID:
+          membersL.push_back(int64LT);
+          break;
+        case ControlBlockMember::CENSUS_TYPE_STR:
+          membersL.push_back(int8PtrLT);
+          break;
+      }
+    }
+
+    LLVMStructSetBody(structL, membersL.data(), membersL.size(), false);
+
+    built = true;
   }
 
 private:
   std::vector<ControlBlockMember> members;
+  LLVMTypeRef structL;
+  bool built;
 };
 
 class GlobalState {
@@ -82,10 +130,10 @@ public:
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
   LLVMValueRef neverPtr = nullptr;
-
-  ControlBlockLayout immControlBlockLayout;
-  ControlBlockLayout mutNonWeakableControlBlockLayout;
-  ControlBlockLayout mutWeakableControlBlockLayout;
+//
+//  ControlBlock immControlBlock;
+//  ControlBlock mutNonWeakableControlBlock;
+//  ControlBlock mutWeakableControlBlock;
 
 //  int immControlBlockRcMemberIndex = -1;
 //  // 1th member is an unused 32 bits of padding, see genHeap.c
@@ -104,47 +152,21 @@ public:
 //  int mutWeakableControlBlockRcMemberIndex = -1;
 //  int mutWeakableControlBlockTypeStrIndex = -1;
 //  int mutWeakableControlBlockObjIdIndex = -1;
-
-  LLVMTypeRef weakRefHeaderStructL = nullptr; // contains generation and maybe gen index
+//
+//  LLVMTypeRef weakRefHeaderStructL = nullptr; // contains generation and maybe gen index
   LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
-  LLVMTypeRef mutNonWeakableControlBlockStructL = nullptr;
-  LLVMTypeRef mutWeakableControlBlockStructL = nullptr;
-  LLVMTypeRef immControlBlockStructL = nullptr;
-  LLVMTypeRef stringWrapperStructL = nullptr;
-  LLVMTypeRef stringInnerStructL = nullptr;
-  // This is a weak ref to a void*. When we're calling an interface method on a weak,
-  // we have no idea who the receiver is. They'll receive this struct as the correctly
-  // typed flavor of it (from structWeakRefStructs).
-  LLVMTypeRef weakVoidRefStructL = nullptr;
+//  LLVMTypeRef mutNonWeakableControlBlockStructL = nullptr;
+//  LLVMTypeRef mutWeakableControlBlockStructL = nullptr;
+//  LLVMTypeRef immControlBlockStructL = nullptr;
+//  LLVMTypeRef stringWrapperStructL = nullptr;
+//  LLVMTypeRef stringInnerStructL = nullptr;
+//  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+//  // we have no idea who the receiver is. They'll receive this struct as the correctly
+//  // typed flavor of it (from structWeakRefStructs).
+//  LLVMTypeRef weakVoidRefStructL = nullptr;
 
   LLVMBuilderRef stringConstantBuilder = nullptr;
   std::unordered_map<std::string, LLVMValueRef> stringConstants;
-
-  // These don't have a ref count.
-  // They're used directly for inl imm references, and
-  // also used inside the below wrapperStructs.
-  std::unordered_map<std::string, LLVMTypeRef> innerStructs;
-  // These contain a ref count and the above val struct. Yon references
-  // point to these.
-  std::unordered_map<std::string, LLVMTypeRef> wrapperStructs;
-  // These contain a pointer to the interface table struct below and a void*
-  // to the underlying struct.
-  std::unordered_map<std::string, LLVMTypeRef> interfaceRefStructs;
-  // These contain a bunch of function pointer fields.
-  std::unordered_map<std::string, LLVMTypeRef> interfaceTableStructs;
-  // These contain a pointer to the weak ref count int, and a pointer to the underlying struct.
-  std::unordered_map<std::string, LLVMTypeRef> structWeakRefStructs;
-  // These contain a pointer to the weak ref count int, and a pointer to the underlying known size array.
-  std::unordered_map<std::string, LLVMTypeRef> knownSizeArrayWeakRefStructs;
-  // These contain a pointer to the weak ref count int, and a pointer to the underlying unknown size array.
-  std::unordered_map<std::string, LLVMTypeRef> unknownSizeArrayWeakRefStructs;
-  // These contain a pointer to the weak ref count int, and then a regular interface ref struct.
-  std::unordered_map<std::string, LLVMTypeRef> interfaceWeakRefStructs;
-
-  // These contain a ref count and an array type. Yon references
-  // point to these.
-  std::unordered_map<std::string, LLVMTypeRef> knownSizeArrayWrapperStructs;
-  std::unordered_map<std::string, LLVMTypeRef> unknownSizeArrayWrapperStructs;
 
   std::unordered_map<Edge*, LLVMValueRef> interfaceTablePtrs;
 
@@ -156,56 +178,6 @@ public:
     return functionIter->second;
   }
 
-  LLVMTypeRef getInnerStruct(Name* name) {
-    auto structIter = innerStructs.find(name->name);
-    assert(structIter != innerStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getWrapperStruct(Name* name) {
-    auto structIter = wrapperStructs.find(name->name);
-    assert(structIter != wrapperStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getStructWeakRefStruct(Name* name) {
-    auto structIter = structWeakRefStructs.find(name->name);
-    assert(structIter != structWeakRefStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getKnownSizeArrayWeakRefStruct(Name* name) {
-    auto structIter = knownSizeArrayWeakRefStructs.find(name->name);
-    assert(structIter != knownSizeArrayWeakRefStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getUnknownSizeArrayWeakRefStruct(Name* name) {
-    auto structIter = unknownSizeArrayWeakRefStructs.find(name->name);
-    assert(structIter != unknownSizeArrayWeakRefStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getKnownSizeArrayWrapperStruct(Name* name) {
-    auto structIter = knownSizeArrayWrapperStructs.find(name->name);
-    assert(structIter != knownSizeArrayWrapperStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getUnknownSizeArrayWrapperStruct(Name* name) {
-    auto structIter = unknownSizeArrayWrapperStructs.find(name->name);
-    assert(structIter != unknownSizeArrayWrapperStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getInterfaceRefStruct(Name* name) {
-    auto structIter = interfaceRefStructs.find(name->name);
-    assert(structIter != interfaceRefStructs.end());
-    return structIter->second;
-  }
-  LLVMTypeRef getInterfaceWeakRefStruct(Name* name) {
-    auto interfaceIter = interfaceWeakRefStructs.find(name->name);
-    assert(interfaceIter != interfaceWeakRefStructs.end());
-    return interfaceIter->second;
-  }
-  LLVMTypeRef getInterfaceTableStruct(Name* name) {
-    auto structIter = interfaceTableStructs.find(name->name);
-    assert(structIter != interfaceTableStructs.end());
-    return structIter->second;
-  }
   LLVMValueRef getInterfaceTablePtr(Edge* edge) {
     auto iter = interfaceTablePtrs.find(edge);
     assert(iter != interfaceTablePtrs.end());
@@ -226,8 +198,8 @@ public:
     }
     return iter->second;
   }
-  ControlBlockLayout* getControlBlockLayout(Referend* referend);
-  LLVMTypeRef getControlBlockStruct(Referend* referend);
+  ControlBlock* getControlBlock(Referend* referend, Weakability effectiveWeakability);
+  LLVMTypeRef getControlBlockStruct(Referend* referend, Weakability effectiveWeakability);
 };
 
 #endif

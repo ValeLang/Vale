@@ -1,12 +1,12 @@
 #include <iostream>
-#include "function/expressions/shared/controlblock.h"
+#include "region/common/controlblock.h"
 
 #include "translatetype.h"
 
 #include "function/expressions/shared/members.h"
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 Ref translateLocalLoad(
     GlobalState* globalState,

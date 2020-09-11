@@ -3,7 +3,7 @@
 #include "translatetype.h"
 
 #include "shared.h"
-#include "branch.h"
+#include "utils/branch.h"
 #include "weaks.h"
 #include "elements.h"
 #include "utils/counters.h"
@@ -52,7 +52,8 @@ WrapperPtrLE getKnownSizeArrayWrapperPtr(
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      return WrapperPtrLE(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
+      return functionState->defaultRegion->makeWrapperPtr(ksaMT,
+          checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
       break;
     }
     case RegionOverride::RESILIENT_V0:
@@ -61,7 +62,7 @@ WrapperPtrLE getKnownSizeArrayWrapperPtr(
       switch (ksaMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN:
-          return WrapperPtrLE(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
+          return functionState->defaultRegion->makeWrapperPtr(ksaMT, checkValidReference(FL(), globalState, functionState, builder, ksaMT, ksaRef));
         case Ownership::BORROW:
           return lockWeakRef(FL(), globalState, functionState, builder, ksaMT, ksaRef);
         case Ownership::WEAK:
@@ -84,7 +85,7 @@ WrapperPtrLE getUnknownSizeArrayWrapperPtr(
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
+      return functionState->defaultRegion->makeWrapperPtr(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
@@ -92,7 +93,7 @@ WrapperPtrLE getUnknownSizeArrayWrapperPtr(
       switch (arrayRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN:
-          return WrapperPtrLE(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
+          return functionState->defaultRegion->makeWrapperPtr(arrayRefMT, checkValidReference(FL(), globalState, functionState, builder, arrayRefMT, arrayRef));
         case Ownership::BORROW:
           return lockWeakRef(FL(), globalState, functionState, builder, arrayRefMT, arrayRef);
         case Ownership::WEAK:

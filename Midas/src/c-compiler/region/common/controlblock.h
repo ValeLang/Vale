@@ -2,23 +2,12 @@
 #define FUNCTION_EXPRESSIONS_SHARED_CONTROLBLOCK_H_
 
 #include "globalstate.h"
-#include "shared.h"
+#include "function/expressions/shared/shared.h"
 #include <llvm-c/Core.h>
 #include <function/function.h>
 
 constexpr int WEAK_REF_MEMBER_INDEX_FOR_HEADER = 0;
 constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
-
-// A concrete is a struct, known size array, unknown size array, or Str.
-ControlBlockPtrLE getConcreteControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    WrapperPtrLE wrapperPtrLE);
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    InterfaceFatPtrLE interfaceFatPtrLE);
 
 // See CRCISFAORC for why we don't take in a mutability.
 // Strong means owning or borrow or shared; things that control the lifetime.
@@ -52,5 +41,31 @@ void fillControlBlock(
     Weakability weakable,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName);
+
+ControlBlockPtrLE getConcreteControlBlockPtr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE wrapperPtrLE);
+
+ControlBlockPtrLE getControlBlockPtr(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    InterfaceFatPtrLE interfaceFatPtrLE);
+
+ControlBlockPtrLE getControlBlockPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    Ref ref,
+    Reference* referenceM);
+
+ControlBlockPtrLE getControlBlockPtr(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    LLVMValueRef ref,
+    Reference* referenceM);
 
 #endif //VALEC_CONTROLBLOCK_H

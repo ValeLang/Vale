@@ -4,7 +4,7 @@
 
 #include "shared.h"
 #include "weaks.h"
-#include "controlblock.h"
+#include "region/common/controlblock.h"
 
 
 LLVMValueRef getStructContentsPtr(
@@ -32,7 +32,8 @@ WrapperPtrLE getStructWrapperPtr(
         case Ownership::OWN:
         case Ownership::SHARE:
         case Ownership::BORROW:
-          return WrapperPtrLE(refM, checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
+          return functionState->defaultRegion->makeWrapperPtr(refM,
+              checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
         case Ownership::WEAK:
           return lockWeakRef(FL(), globalState, functionState, builder, refM, refLE);
         default:
@@ -45,7 +46,8 @@ WrapperPtrLE getStructWrapperPtr(
       switch (refM->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE:
-          return WrapperPtrLE(refM, checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
+          return functionState->defaultRegion->makeWrapperPtr(refM,
+              checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
         case Ownership::BORROW:
         case Ownership::WEAK:
           return lockWeakRef(FL(), globalState, functionState, builder, refM, refLE);

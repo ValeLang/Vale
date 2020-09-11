@@ -1,28 +1,394 @@
-#include <function/expressions/shared/weaks.h>
-#include <function/expressions/shared/branch.h>
 #include <region/common/fatweaks/fatweaks.h>
 #include <region/common/hgm/hgm.h>
 #include <region/common/lgtweaks/lgtweaks.h>
 #include <region/common/wrcweaks/wrcweaks.h>
 #include <translatetype.h>
 #include <region/common/common.h>
-#include <function/expressions/shared/controlblock.h>
-#include <function/expressions/shared/heap.h>
 #include <utils/counters.h>
+#include <region/common/controlblock.h>
+#include <utils/branch.h>
+#include <region/common/heap.h>
+#include <function/expressions/shared/members.h>
 #include "mega.h"
 
+ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock"));
+  controlBlock.addMember(ControlBlockMember::STRONG_RC);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.build();
+  return controlBlock;
+}
+
+ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock"));
+  controlBlock.addMember(ControlBlockMember::STRONG_RC);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.addMember(ControlBlockMember::WRCI);
+  // We could add this in to avoid an InstructionCombiningPass bug where when it inlines things
+  // it doesnt seem to realize that there's padding at the end of structs.
+  // To see it, make loadFromWeakable test in fast mode, see its .ll and its .opt.ll, it seems
+  // to get the wrong pointer for the first member.
+  // mutWeakableControlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  controlBlock.build();
+  return controlBlock;
+}
+// TODO see if we can combine this with assist+naiverc weakable.
+ControlBlock makeFastWeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock"));
+  // Fast mode mutables have no strong RC
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.addMember(ControlBlockMember::WRCI);
+  controlBlock.build();
+  return controlBlock;
+}
+
+ControlBlock makeFastNonWeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock"));
+  // Fast mode mutables have no strong RC
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.build();
+  return controlBlock;
+}
+
+
+ControlBlock makeResilientV0WeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock"));
+  controlBlock.addMember(ControlBlockMember::WRCI);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.build();
+  return controlBlock;
+}
+ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock"));
+  controlBlock.addMember(ControlBlockMember::LGTI);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.build();
+  return controlBlock;
+}
+ControlBlock makeResilientV2WeakableControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock"));
+  controlBlock.addMember(ControlBlockMember::GENERATION);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.build();
+  return controlBlock;
+}
+
+//StructsRouter makeAssistAndNaiveRCModeLayoutter(GlobalState* globalState) {
+//  return StructsRouter(
+//      globalState,
+//      makeImmControlBlock(globalState),
+//      makeAssistAndNaiveRCWeakableControlBlock(globalState),
+//      makeAssistAndNaiveRCNonWeakableControlBlock(globalState));
+//}
+//StructsRouter makeFastModeLayoutter(GlobalState* globalState) {
+//  return StructsRouter(
+//      globalState,
+//      makeImmControlBlock(globalState),
+//      makeFastNonWeakableControlBlock(globalState),
+//      makeFastWeakableControlBlock(globalState));
+//}
+//StructsRouter makeResilientV0Layoutter(GlobalState* globalState) {
+//  return StructsRouter(
+//      globalState,
+//      makeImmControlBlock(globalState),
+//      makeResilientV0WeakableControlBlock(globalState),
+//      makeResilientV0WeakableControlBlock(globalState));
+//}
+//StructsRouter makeResilientV1Layoutter(GlobalState* globalState) {
+//  return StructsRouter(
+//      globalState,
+//      makeImmControlBlock(globalState),
+//      makeResilientV1WeakableControlBlock(globalState),
+//      makeResilientV1WeakableControlBlock(globalState));
+//}
+//StructsRouter makeResilientV2Layoutter(GlobalState* globalState) {
+//  return StructsRouter(
+//      globalState,
+//      makeImmControlBlock(globalState),
+//      makeResilientV2WeakableControlBlock(globalState),
+//      makeResilientV2WeakableControlBlock(globalState));
+//}
+
+ControlBlock makeMutNonWeakableControlBlock(GlobalState* globalState) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+      return makeAssistAndNaiveRCNonWeakableControlBlock(globalState);
+    case RegionOverride::FAST:
+      return makeFastNonWeakableControlBlock(globalState);
+    case RegionOverride::RESILIENT_V0:
+      return makeResilientV0WeakableControlBlock(globalState);
+    case RegionOverride::RESILIENT_V1:
+      return makeResilientV0WeakableControlBlock(globalState);
+    case RegionOverride::RESILIENT_V2:
+      return makeResilientV0WeakableControlBlock(globalState);
+    default:
+      assert(false);
+  }
+}
+
+ControlBlock makeMutWeakableControlBlock(GlobalState* globalState) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+      return makeAssistAndNaiveRCWeakableControlBlock(globalState);
+    case RegionOverride::FAST:
+      return makeFastWeakableControlBlock(globalState);
+    case RegionOverride::RESILIENT_V0:
+      return makeResilientV0WeakableControlBlock(globalState);
+    case RegionOverride::RESILIENT_V1:
+      return makeResilientV0WeakableControlBlock(globalState);
+    case RegionOverride::RESILIENT_V2:
+      return makeResilientV0WeakableControlBlock(globalState);
+    default:
+      assert(false);
+  }
+}
 
 Mega::Mega(GlobalState* globalState_) :
     globalState(globalState_),
-    defaultLayout(globalState_) {
+    immStructs(globalState, makeImmControlBlock(globalState)),
+    mutNonWeakableStructs(globalState, makeMutNonWeakableControlBlock(globalState)),
+    mutWeakableStructs(globalState, makeMutWeakableControlBlock(globalState)),
+    defaultImmutables(globalState, &immStructs),
+    referendStructs(
+        [this](Referend* referend) -> IReferendStructsSource* {
+          switch (globalState->opt->regionOverride) {
+            case RegionOverride::ASSIST:
+            case RegionOverride::NAIVE_RC:
+            case RegionOverride::FAST:
+              if (globalState->program->getReferendMutability(referend) == Mutability::IMMUTABLE) {
+                return &immStructs;
+              } else {
+                if (globalState->program->getReferendWeakability(referend) == Weakability::NON_WEAKABLE) {
+                  return &mutNonWeakableStructs;
+                } else {
+                  return &mutWeakableStructs;
+                }
+              }
+            case RegionOverride::RESILIENT_V0:
+            case RegionOverride::RESILIENT_V1:
+            case RegionOverride::RESILIENT_V2:
+              if (globalState->program->getReferendMutability(referend) == Mutability::IMMUTABLE) {
+                return &immStructs;
+              } else {
+                return &mutWeakableStructs;
+              }
+            default:
+              assert(false);
+          }
+        }),
+    weakRefStructs(
+        [this](Referend* referend) -> IWeakRefStructsSource* {
+          switch (globalState->opt->regionOverride) {
+            case RegionOverride::ASSIST:
+            case RegionOverride::NAIVE_RC:
+            case RegionOverride::FAST:
+              if (globalState->program->getReferendMutability(referend) == Mutability::IMMUTABLE) {
+                assert(false);
+              } else {
+                if (globalState->program->getReferendWeakability(referend) == Weakability::NON_WEAKABLE) {
+                  assert(false);
+                } else {
+                  return &mutWeakableStructs;
+                }
+              }
+            case RegionOverride::RESILIENT_V0:
+            case RegionOverride::RESILIENT_V1:
+            case RegionOverride::RESILIENT_V2:
+              if (globalState->program->getReferendMutability(referend) == Mutability::IMMUTABLE) {
+                assert(false);
+              } else {
+                return &mutWeakableStructs;
+              }
+            default:
+              assert(false);
+          }
+        }) {
 }
 
-LLVMValueRef Mega::allocate(
+void fillInnerStruct(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    StructDefinition* structM,
+    std::vector<Ref> membersLE,
+    LLVMValueRef innerStructPtrLE) {
+  for (int i = 0; i < membersLE.size(); i++) {
+    auto memberRef = membersLE[i];
+    auto memberType = structM->members[i]->type;
+
+    auto memberName = structM->members[i]->name;
+    if (structM->members[i]->type->referend == globalState->metalCache.innt) {
+      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", memberName, ": ", memberRef);
+    }
+    auto ptrLE =
+        LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
+    auto memberLE =
+        checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberRef);
+    LLVMBuildStore(builder, memberLE, ptrLE);
+  }
+}
+
+Ref constructCountedStruct(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef structL,
+    Reference* structTypeM,
+    StructDefinition* structM,
+    Weakability effectiveWeakability,
+    std::vector<Ref> membersLE) {
+  buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
+  WrapperPtrLE newStructWrapperPtrLE =
+      functionState->defaultRegion->makeWrapperPtr(
+          structTypeM,
+          mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL));
+  fillControlBlock(
+      from,
+      globalState, functionState, builder,
+      structTypeM->referend,
+      structM->mutability,
+      effectiveWeakability,
+      getConcreteControlBlockPtr(globalState, builder, newStructWrapperPtrLE), structM->name->name);
+  fillInnerStruct(
+      globalState, functionState,
+      builder, structM, membersLE,
+      getStructContentsPtr(builder, newStructWrapperPtrLE));
+  buildFlare(FL(), globalState, functionState, builder, "Done filling new struct");
+  return wrap(functionState->defaultRegion, structTypeM, newStructWrapperPtrLE.refLE);
+}
+
+LLVMValueRef constructInnerStruct(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    StructDefinition* structM,
+    LLVMTypeRef valStructL,
+    const std::vector<Ref>& memberRefs) {
+
+  // We always start with an undef, and then fill in its fields one at a
+  // time.
+  LLVMValueRef structValueBeingInitialized = LLVMGetUndef(valStructL);
+  for (int i = 0; i < memberRefs.size(); i++) {
+    if (structM->members[i]->type->referend == globalState->metalCache.innt) {
+      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", i, ": ", memberRefs[i]);
+    }
+    auto memberLE =
+        checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberRefs[i]);
+    auto memberName = structM->members[i]->name;
+    // Every time we fill in a field, it actually makes a new entire
+    // struct value, and gives us a LLVMValueRef for the new value.
+    // So, `structValueBeingInitialized` contains the latest one.
+    structValueBeingInitialized =
+        LLVMBuildInsertValue(
+            builder,
+            structValueBeingInitialized,
+            memberLE,
+            i,
+            memberName.c_str());
+  }
+  return structValueBeingInitialized;
+}
+
+Ref Mega::allocate(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
-    const std::vector<LLVMValueRef>& membersLE) {
+    const std::vector<Ref>& membersLE) {
+  auto structReferend = dynamic_cast<StructReferend*>(desiredReference->referend);
+  auto structM = globalState->program->getStruct(structReferend->fullName);
+
+  Weakability effectiveWeakability = Weakability::WEAKABLE;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      effectiveWeakability = structM->weakability;
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      if (structM->mutability == Mutability::MUTABLE) {
+        effectiveWeakability = Weakability::WEAKABLE;
+      } else {
+        effectiveWeakability = Weakability::NON_WEAKABLE;
+      }
+      break;
+    default:
+      assert(false);
+  }
+
+  switch (structM->mutability) {
+    case Mutability::MUTABLE: {
+      auto countedStructL = referendStructs.getWrapperStruct(structReferend);
+      return constructCountedStruct(
+          from, globalState, functionState, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE);
+    }
+    case Mutability::IMMUTABLE: {
+      if (desiredReference->location == Location::INLINE) {
+        auto valStructL =
+            referendStructs.getInnerStruct(structReferend);
+        auto innerStructLE =
+            constructInnerStruct(
+                globalState, functionState, builder, structM, valStructL, membersLE);
+        return wrap(functionState->defaultRegion, desiredReference, innerStructLE);
+      } else {
+        auto countedStructL =
+            referendStructs.getWrapperStruct(structReferend);
+        return constructCountedStruct(
+            from, globalState, functionState, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE);
+      }
+    }
+    default:
+      assert(false);
+  }
   assert(false);
 }
 
@@ -137,7 +503,7 @@ void Mega::alias(
   }
 }
 
-void naiveRcFree(
+void Mega::naiveRcFree(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -146,23 +512,22 @@ void naiveRcFree(
     Ref sourceRef) {
   if (dynamic_cast<InterfaceReferend *>(sourceMT->referend)) {
     auto sourceInterfacePtrLE =
-        InterfaceFatPtrLE(globalState,
+        makeInterfaceFatPtr(
             sourceMT,
-            checkValidReference(FL(), globalState, functionState, thenBuilder,
-                sourceMT, sourceRef));
+            checkValidReference(FL(), functionState, thenBuilder, sourceMT, sourceRef));
     auto controlBlockPtrLE = getControlBlockPtr(globalState, thenBuilder,
         sourceInterfacePtrLE);
-    freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+    deallocate(FL(), globalState, functionState, thenBuilder,
         controlBlockPtrLE, sourceMT);
   } else if (dynamic_cast<StructReferend *>(sourceMT->referend) ||
       dynamic_cast<KnownSizeArrayT *>(sourceMT->referend) ||
       dynamic_cast<UnknownSizeArrayT *>(sourceMT->referend)) {
     auto sourceWrapperPtrLE =
-        WrapperPtrLE(
+        makeWrapperPtr(
             sourceMT,
-            checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef));
+            checkValidReference(FL(), functionState, thenBuilder, sourceMT, sourceRef));
     auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder, sourceWrapperPtrLE);
-    freeConcrete(FL(), globalState, functionState, blockState, thenBuilder,
+    deallocate(FL(), globalState, functionState, thenBuilder,
         controlBlockPtrLE, sourceMT);
   } else {
     assert(false);
@@ -179,7 +544,7 @@ void Mega::dealias(
   auto sourceRnd = sourceMT->referend;
 
   if (sourceMT->ownership == Ownership::SHARE) {
-    defaultRefCounting.discard(
+    defaultImmutables.discard(
         from, globalState, functionState, blockState, builder, sourceMT, sourceRef);
   } else {
     switch (globalState->opt->regionOverride) {
@@ -230,63 +595,6 @@ void Mega::dealias(
 }
 
 
-LLVMValueRef Mega::loadMember(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* structRefM,
-    LLVMValueRef structExpr,
-    Mutability mutability,
-    Reference* memberType,
-    int memberIndex,
-    const std::string& memberName) {
-  assert(false);
-}
-
-LLVMValueRef Mega::storeMember(
-    AreaAndFileAndLine from,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* structRefM,
-    LLVMValueRef structExpr,
-    Mutability mutability,
-    Reference* memberType,
-    int memberIndex,
-    const std::string& memberName,
-    LLVMValueRef sourceLE) {
-  assert(false);
-}
-
-std::vector<LLVMValueRef> Mega::destructure(
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* structType,
-    LLVMValueRef structLE) {
-  assert(false);
-}
-
-// Suitable for passing in to an interface method
-LLVMValueRef Mega::getConcreteRefFromInterfaceRef(
-    LLVMBuilderRef builder,
-    LLVMValueRef refLE) {
-  assert(false);
-}
-
-LLVMValueRef Mega::upcast(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-
-    Reference* sourceStructTypeM,
-    StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceStructLE,
-
-    Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM) {
-  assert(false);
-}
-
 // Transmutes a weak ref of one ownership (such as borrow) to another ownership (such as weak).
 Ref Mega::transmuteWeakRef(
     FunctionState* functionState,
@@ -296,13 +604,11 @@ Ref Mega::transmuteWeakRef(
     Ref sourceWeakRef) {
   // The WeakFatPtrLE constructors here will make sure that its a safe and valid transmutation.
   auto sourceWeakFatPtrLE =
-      WeakFatPtrLE(
-          globalState,
+      makeWeakFatPtr(
           sourceWeakRefMT,
-          ::checkValidReference(
-              FL(), globalState, functionState, builder, sourceWeakRefMT, sourceWeakRef));
+          checkValidReference(FL(), functionState, builder, sourceWeakRefMT, sourceWeakRef));
   auto sourceWeakFatPtrRawLE = sourceWeakFatPtrLE.refLE;
-  auto targetWeakFatPtrLE = WeakFatPtrLE(globalState, targetWeakRefMT, sourceWeakFatPtrRawLE);
+  auto targetWeakFatPtrLE = makeWeakFatPtr(targetWeakRefMT, sourceWeakFatPtrRawLE);
   auto targetWeakRef = wrap(functionState->defaultRegion, targetWeakRefMT, targetWeakFatPtrLE);
   return targetWeakRef;
 }
@@ -314,9 +620,10 @@ Ref Mega::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refere
     case RegionOverride::FAST: {
       if (auto structReferendM = dynamic_cast<StructReferend*>(sourceRefMT->referend)) {
         auto objPtrLE =
-            WrapperPtrLE(
+            functionState->defaultRegion->makeWrapperPtr(
                 sourceRefMT,
-                ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT, sourceRef));
+                ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT,
+                    sourceRef));
         return wrap(
             functionState->defaultRegion,
             targetRefMT,
@@ -379,11 +686,9 @@ Ref Mega::lockWeak(
           case RegionOverride::NAIVE_RC:
           case RegionOverride::FAST: {
             auto weakFatPtrLE =
-                WeakFatPtrLE(
-                    globalState,
+                makeWeakFatPtr(
                     sourceWeakRefMT,
-                    ::checkValidReference(
-                        FL(), globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
+                    checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
             auto constraintRefLE =
                 FatWeaks().getInnerRefFromWeakRef(
                     globalState,
@@ -416,117 +721,38 @@ Ref Mega::lockWeak(
 
 // Returns a LLVMValueRef for a ref to the string object.
 // The caller should then use getStringBytesPtr to then fill the string's contents.
-LLVMValueRef Mega::constructString(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    LLVMValueRef lengthLE) {
-  assert(false);
-}
-
-// Returns a LLVMValueRef for a pointer to the strings contents bytes
-LLVMValueRef Mega::getStringBytesPtr(
-    LLVMBuilderRef builder,
-    LLVMValueRef stringRefLE) {
-  assert(false);
-}
-
-LLVMValueRef Mega::getStringLength(
-    LLVMBuilderRef builder,
-    LLVMValueRef stringRefLE) {
-  assert(false);
-}
-
-// Returns a LLVMValueRef for a ref to the string object.
-// The caller should then use getStringBytesPtr to then fill the string's contents.
-LLVMValueRef Mega::constructKnownSizeArray(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* referenceM,
-    KnownSizeArrayT* referendM,
-    const std::vector<LLVMValueRef>& membersLE) {
-  assert(false);
-}
-
-// Returns a LLVMValueRef for a ref to the string object.
-// The caller should then use getStringBytesPtr to then fill the string's contents.
-LLVMValueRef Mega::constructUnknownSizeArray(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* usaMT,
-    LLVMValueRef sizeLE,
-    const std::string& typeName) {
-  assert(false);
-}
-
-// should expose a dereference thing instead
-//  LLVMValueRef getKnownSizeArrayElementsPtr(
-//      LLVMBuilderRef builder,
-//      LLVMValueRef knownSizeArrayWrapperPtrLE) {
-
-//  LLVMValueRef getUnknownSizeArrayElementsPtr(
-//      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) {
-
-//  LLVMValueRef getUnknownSizeArrayLength(
-//      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) {
-
-
-void Mega::destroyArray(
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* arrayType,
-    LLVMValueRef arrayWrapperLE) {
-  assert(false);
-}
-
-LLVMTypeRef Mega::getKnownSizeArrayRefType(
-    Reference* referenceM,
-    KnownSizeArrayT* knownSizeArrayMT) {
-  assert(false);
-}
-
-LLVMTypeRef Mega::getUnknownSizeArrayRefType(
-    Reference* referenceM,
-    UnknownSizeArrayT* unknownSizeArrayMT) {
-  assert(false);
-}
-
-LLVMValueRef Mega::checkValidReference(
-    AreaAndFileAndLine checkerAFL,
+Ref Mega::constructKnownSizeArray(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    Ref refLE) {
-  assert(false);
-}
+    KnownSizeArrayT* ksaMT,
+    const std::vector<Ref>& membersLE) {
 
-LLVMValueRef Mega::loadElement(
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* structRefM,
-    Reference* elementRefM,
-    LLVMValueRef sizeIntLE,
-    LLVMValueRef arrayCRefLE,
-    Mutability mutability,
-    LLVMValueRef indexIntLE) {
-  assert(false);
-}
+    auto structLT =
+        referendStructs.getKnownSizeArrayWrapperStruct(ksaMT);
+    auto newStructLE =
+        functionState->defaultRegion->makeWrapperPtr(
+            refM, mallocKnownSize(globalState, functionState, builder, refM->location, structLT));
+    fillControlBlock(
+        FL(),
+        globalState,
+        functionState,
+        builder,
+        refM->referend,
+        ksaMT->rawArray->mutability,
+        effectiveWeakability,
+        getConcreteControlBlockPtr(globalState, builder, newStructLE),
+        ksaMT->name->name);
+    fillKnownSizeArray(
+        globalState,
+        functionState,
+        builder,
+        ksaMT->rawArray->elementType,
+        getKnownSizeArrayContentsPtr(builder, newStructLE),
+        membersLE);
+    return wrap(functionState->defaultRegion, refM, newStructLE.refLE);
+//  }
 
-LLVMValueRef Mega::storeElement(
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Reference* elementRefM,
-    LLVMValueRef sizeIntLE,
-    LLVMValueRef arrayCRefLE,
-    Mutability mutability,
-    LLVMValueRef indexIntLE,
-    LLVMValueRef sourceLE) {
-  assert(false);
 }
 
 LLVMTypeRef Mega::translateType(Reference* referenceM) {
@@ -535,7 +761,7 @@ LLVMTypeRef Mega::translateType(Reference* referenceM) {
     case RegionOverride::FAST: {
       switch (referenceM->ownership) {
         case Ownership::SHARE:
-          return defaultRefCounting.translateType(globalState, referenceM);
+          return defaultImmutables.translateType(globalState, referenceM);
         case Ownership::OWN:
         case Ownership::BORROW:
           assert(referenceM->location != Location::INLINE);
@@ -552,7 +778,7 @@ LLVMTypeRef Mega::translateType(Reference* referenceM) {
     case RegionOverride::RESILIENT_V2: {
       switch (referenceM->ownership) {
         case Ownership::SHARE:
-          return defaultRefCounting.translateType(globalState, referenceM);
+          return defaultImmutables.translateType(globalState, referenceM);
         case Ownership::OWN:
           assert(referenceM->location != Location::INLINE);
           return translateReferenceSimple(globalState, referenceM->referend);
@@ -570,19 +796,7 @@ LLVMTypeRef Mega::translateType(Reference* referenceM) {
   }
 }
 
-
-LLVMTypeRef Mega::getStructRefType(
-    Reference* refM,
-    StructReferend* structReferendM) {
-  assert(false);
-}
-
-LLVMTypeRef Mega::getStringRefType() const {
-  assert(false);
-}
-
-
-LLVMValueRef Mega::upcastWeak(
+Ref Mega::upcastWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WeakFatPtrLE sourceRefLE,
@@ -592,21 +806,27 @@ LLVMValueRef Mega::upcastWeak(
     Reference* targetInterfaceTypeM) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::RESILIENT_V2: {
-      return HybridGenerationalMemory().weakStructPtrToGenWeakInterfacePtr(
-          globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
-          sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
+      auto resultWeakInterfaceFatPtr =
+          HybridGenerationalMemory().weakStructPtrToGenWeakInterfacePtr(
+              globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
+              sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
+      return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
     }
     case RegionOverride::RESILIENT_V1: {
-      return LgtWeaks().weakStructPtrToLgtiWeakInterfacePtr(
-          globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
-          sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
+      auto resultWeakInterfaceFatPtr =
+          LgtWeaks().weakStructPtrToLgtiWeakInterfacePtr(
+              globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
+              sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
+      return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
     }
     case RegionOverride::FAST:
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::NAIVE_RC: {
-      return WrcWeaks().weakStructPtrToWrciWeakInterfacePtr(
-          globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
-          sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
+      auto resultWeakInterfaceFatPtr =
+          WrcWeaks().weakStructPtrToWrciWeakInterfacePtr(
+              globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
+              sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
+      return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
     }
     default:
       assert(false);
@@ -616,12 +836,12 @@ LLVMValueRef Mega::upcastWeak(
 
 void Mega::declareKnownSizeArray(
     KnownSizeArrayT* knownSizeArrayMT) {
-  defaultLayout.declareKnownSizeArray(knownSizeArrayMT);
+  referendStructs.declareKnownSizeArray(knownSizeArrayMT);
 }
 
 void Mega::declareUnknownSizeArray(
     UnknownSizeArrayT* unknownSizeArrayMT) {
-  defaultLayout.declareUnknownSizeArray(unknownSizeArrayMT);
+  referendStructs.declareUnknownSizeArray(unknownSizeArrayMT);
 }
 
 void Mega::translateUnknownSizeArray(
@@ -629,7 +849,7 @@ void Mega::translateUnknownSizeArray(
   auto elementLT =
       translateType(
           unknownSizeArrayMT->rawArray->elementType);
-  defaultLayout.translateUnknownSizeArray(unknownSizeArrayMT, elementLT);
+  referendStructs.translateUnknownSizeArray(unknownSizeArrayMT, elementLT);
 }
 
 void Mega::translateKnownSizeArray(
@@ -637,12 +857,12 @@ void Mega::translateKnownSizeArray(
   auto elementLT =
       translateType(
           knownSizeArrayMT->rawArray->elementType);
-  defaultLayout.translateKnownSizeArray(knownSizeArrayMT, elementLT);
+  referendStructs.translateKnownSizeArray(knownSizeArrayMT, elementLT);
 }
 
 void Mega::declareStruct(
     StructDefinition* structM) {
-  defaultLayout.declareStruct(structM);
+  referendStructs.declareStruct(structM);
 }
 
 void Mega::translateStruct(
@@ -653,7 +873,7 @@ void Mega::translateStruct(
         translateType(
             structM->members[i]->type));
   }
-  defaultLayout.translateStruct(
+  referendStructs.translateStruct(
       structM->name,
       structM->mutability,
       getEffectiveWeakability(globalState, structM),
@@ -662,7 +882,7 @@ void Mega::translateStruct(
 
 void Mega::declareEdge(
     Edge* edge) {
-  defaultLayout.declareEdge(edge);
+  referendStructs.declareEdge(edge);
 }
 
 void Mega::translateEdge(
@@ -672,12 +892,12 @@ void Mega::translateEdge(
     auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
     functions.push_back(globalState->getFunction(funcName));
   }
-  defaultLayout.translateEdge(edge, functions);
+  referendStructs.translateEdge(edge, functions);
 }
 
 void Mega::declareInterface(
     InterfaceDefinition* interfaceM) {
-  defaultLayout.declareInterface(interfaceM->name);
+  referendStructs.declareInterface(interfaceM->name);
 }
 
 void Mega::translateInterface(
@@ -689,10 +909,8 @@ void Mega::translateInterface(
             translateInterfaceMethodToFunctionType(interfaceM->methods[i]),
             0));
   }
-  defaultLayout.translateInterface(
-      interfaceM->name,
-      interfaceM->mutability,
-      getEffectiveWeakability(globalState, interfaceM),
+  referendStructs.translateInterface(
+      interfaceM,
       interfaceMethodTypesL);
 }
 

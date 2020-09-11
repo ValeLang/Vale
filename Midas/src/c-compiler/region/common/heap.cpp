@@ -1,11 +1,11 @@
 #include <utils/counters.h>
 #include "fileio.h"
 #include "heap.h"
-#include "members.h"
-#include "shared.h"
-#include "controlblock.h"
-#include "string.h"
-#include "weaks.h"
+#include "function/expressions/shared/members.h"
+#include "function/expressions/shared/shared.h"
+#include "region/common/controlblock.h"
+#include "function/expressions/shared/string.h"
+#include "function/expressions/shared/weaks.h"
 
 LLVMValueRef callMalloc(
     GlobalState* globalState,
@@ -135,7 +135,7 @@ WrapperPtrLE mallocStr(
   }
 
   auto newStrWrapperPtrLE =
-      WrapperPtrLE(
+      functionState->defaultRegion->makeWrapperPtr(
           globalState->metalCache.strRef,
           LLVMBuildBitCast(
               builder,
@@ -164,25 +164,12 @@ WrapperPtrLE mallocStr(
 }
 
 
-
-
-void freeConcrete(
-    AreaAndFileAndLine from,
+void noteWeakableDestroyed(
     GlobalState* globalState,
     FunctionState* functionState,
-    BlockState* blockState,
     LLVMBuilderRef builder,
-    ControlBlockPtrLE controlBlockPtrLE,
-    Reference* refM) {
-
-  if (globalState->opt->census) {
-    LLVMValueRef resultAsVoidPtrLE =
-        LLVMBuildBitCast(
-            builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
-    LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
-        "");
-  }
-
+    Reference* refM,
+    Ref ref) {
   if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
     auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
     buildAssert(globalState, functionState, builder, rcIsZeroLE,
@@ -190,11 +177,11 @@ void freeConcrete(
 
     if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
       auto structM = globalState->program->getStruct(structReferendM->fullName);
-      if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+      if (structM->weakability == Weakability::WEAKABLE) {
         noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
-      assert(false); // Do we ever freeConcrete an interface?
+      assert(false); // Do we ever deallocate an interface?
     } else {
       // Do nothing, only structs and interfaces are weakable in assist mode.
     }
@@ -203,12 +190,12 @@ void freeConcrete(
 
     if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
       auto structM = globalState->program->getStruct(structReferendM->fullName);
-      if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+      if (structM->weakability == Weakability::WEAKABLE) {
         noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
       auto interfaceM = globalState->program->getInterface(interfaceReferendM->fullName);
-      if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
+      if (interfaceM->weakability == Weakability::WEAKABLE) {
         noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
       }
     } else {
@@ -226,12 +213,12 @@ void freeConcrete(
 
       if (auto structReferendM = dynamic_cast<StructReferend *>(refM->referend)) {
         auto structM = globalState->program->getStruct(structReferendM->fullName);
-        if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
+        if (structM->weakability == Weakability::WEAKABLE) {
           noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
         }
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
         auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
-        if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
+        if (interfaceM->weakability == Weakability::WEAKABLE) {
           noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
         }
       } else {
@@ -272,6 +259,25 @@ void freeConcrete(
       noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
     }
   } else assert(false);
+}
+
+void deallocate(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    ControlBlockPtrLE controlBlockPtrLE,
+    Reference* refM) {
+
+  noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+
+  if (globalState->opt->census) {
+    LLVMValueRef resultAsVoidPtrLE =
+        LLVMBuildBitCast(
+            builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
+    LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
+        "");
+  }
 
   if (refM->location == Location::INLINE) {
     // Do nothing, it was alloca'd.

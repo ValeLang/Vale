@@ -1,11 +1,53 @@
 #include <function/expressions/shared/shared.h>
 #include <utils/counters.h>
-#include <function/expressions/shared/branch.h>
-#include <function/expressions/shared/controlblock.h>
-#include <function/expressions/shared/heap.h>
-#include "defaultrefcounting.h"
+#include <utils/branch.h>
+#include <region/common/controlblock.h>
+#include <region/common/heap.h>
+#include "defaultimmutables.h"
 
-void DefaultRefCounting::discard(
+ControlBlock makeImmControlBlock(GlobalState* globalState) {
+  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock"));
+  controlBlock.addMember(ControlBlockMember::STRONG_RC);
+  // This is where we put the size in the current generational heap, we can use it for something
+  // else until we get rid of that.
+  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
+  if (globalState->opt->census) {
+    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
+    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
+  }
+  controlBlock.build();
+  return controlBlock;
+}
+
+DefaultImmutables::DefaultImmutables(GlobalState* globalState_, ReferendStructs* wrappedStructs_)
+  : globalState(globalState_),
+    wrappedStructs(wrappedStructs_) {
+  auto int8LT = LLVMInt8Type();
+
+  {
+    stringInnerStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "__Str");
+    std::vector<LLVMTypeRef> memberTypesL;
+    memberTypesL.push_back(LLVMInt64Type());
+    memberTypesL.push_back(LLVMArrayType(int8LT, 0));
+    LLVMStructSetBody(
+        stringInnerStructL, memberTypesL.data(), memberTypesL.size(), false);
+  }
+
+  {
+    stringWrapperStructL =
+        LLVMStructCreateNamed(
+            LLVMGetGlobalContext(), "__Str_rc");
+    std::vector<LLVMTypeRef> memberTypesL;
+    memberTypesL.push_back(wrappedStructs.controlBlockStructL);
+    memberTypesL.push_back(stringInnerStructL);
+    LLVMStructSetBody(
+        stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
+  }
+}
+
+void DefaultImmutables::discard(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
@@ -84,15 +126,13 @@ void DefaultRefCounting::discard(
             LLVMBuilderRef thenBuilder) {
           buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
           auto sourceWrapperPtrLE =
-              WrapperPtrLE(
+              functionState->defaultRegion->makeWrapperPtr(
                   sourceMT,
                   checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT,
                       sourceRef));
           auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder,
               sourceWrapperPtrLE);
-          freeConcrete(
-              from, globalState, functionState, blockState, thenBuilder, controlBlockPtrLE,
-              sourceMT);
+          deallocate(from, globalState, functionState, thenBuilder, controlBlockPtrLE, sourceMT);
         });
   } else {
     std::cerr << "Unimplemented type in discard: "
@@ -102,39 +142,38 @@ void DefaultRefCounting::discard(
 }
 
 
-LLVMTypeRef DefaultRefCounting::translateType(GlobalState* globalState, Reference* referenceM) {
+LLVMTypeRef DefaultImmutables::translateType(GlobalState* globalState, Reference* referenceM) {
   if (primitives.isPrimitive(referenceM)) {
     return primitives.translatePrimitive(referenceM);
   } else {
     if (dynamic_cast<Str *>(referenceM->referend) != nullptr) {
       assert(referenceM->location != Location::INLINE);
       assert(referenceM->ownership == Ownership::SHARE);
-      return LLVMPointerType(globalState->stringWrapperStructL, 0);
+      return LLVMPointerType(stringWrapperStructL, 0);
     } else if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referenceM->referend)) {
       assert(referenceM->location != Location::INLINE);
-      auto knownSizeArrayCountedStructLT = globalState->getKnownSizeArrayWrapperStruct(
-          knownSizeArrayMT->name);
+      auto knownSizeArrayCountedStructLT = wrappedStructs.getKnownSizeArrayWrapperStruct(knownSizeArrayMT);
       return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
     } else if (auto unknownSizeArrayMT =
         dynamic_cast<UnknownSizeArrayT *>(referenceM->referend)) {
       assert(referenceM->location != Location::INLINE);
       auto unknownSizeArrayCountedStructLT =
-          globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
+          wrappedStructs.getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
       return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
     } else if (auto structReferend =
         dynamic_cast<StructReferend *>(referenceM->referend)) {
       if (referenceM->location == Location::INLINE) {
-        auto innerStructL = globalState->getInnerStruct(structReferend->fullName);
+        auto innerStructL = wrappedStructs.getInnerStruct(structReferend);
         return innerStructL;
       } else {
-        auto countedStructL = globalState->getWrapperStruct(structReferend->fullName);
+        auto countedStructL = wrappedStructs.getWrapperStruct(structReferend);
         return LLVMPointerType(countedStructL, 0);
       }
     } else if (auto interfaceReferend =
         dynamic_cast<InterfaceReferend *>(referenceM->referend)) {
       assert(referenceM->location != Location::INLINE);
       auto interfaceRefStructL =
-          globalState->getInterfaceRefStruct(interfaceReferend->fullName);
+          wrappedStructs.getInterfaceRefStruct(interfaceReferend);
       return interfaceRefStructL;
     } else if (dynamic_cast<Never*>(referenceM->referend)) {
       auto result = LLVMPointerType(makeNeverType(), 0);
@@ -146,4 +185,41 @@ LLVMTypeRef DefaultRefCounting::translateType(GlobalState* globalState, Referenc
       return nullptr;
     }
   }
+}
+
+
+LLVMTypeRef DefaultImmutables::getControlBlockStruct(Referend* referend) {
+  if (auto structReferend = dynamic_cast<StructReferend*>(referend)) {
+    auto structM = globalState->program->getStruct(structReferend->fullName);
+    assert(structM->mutability == Mutability::IMMUTABLE);
+  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
+    auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
+    assert(interfaceM->mutability == Mutability::IMMUTABLE);
+  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(referend)) {
+    assert(ksaMT->rawArray->mutability == Mutability::IMMUTABLE);
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(referend)) {
+    assert(usaMT->rawArray->mutability == Mutability::IMMUTABLE);
+  } else if (auto strMT = dynamic_cast<Str*>(referend)) {
+  } else {
+    assert(false);
+  }
+  return wrappedStructs.controlBlockStructL;
+}
+
+ControlBlock* DefaultImmutables::getControlBlock(Referend* referend) {
+  if (auto structReferend = dynamic_cast<StructReferend*>(referend)) {
+    auto structM = globalState->program->getStruct(structReferend->fullName);
+    assert(structM->mutability == Mutability::IMMUTABLE);
+  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
+    auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
+    assert(interfaceM->mutability == Mutability::IMMUTABLE);
+  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(referend)) {
+    assert(ksaMT->rawArray->mutability == Mutability::IMMUTABLE);
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(referend)) {
+    assert(usaMT->rawArray->mutability == Mutability::IMMUTABLE);
+  } else if (auto strMT = dynamic_cast<Str*>(referend)) {
+  } else {
+    assert(false);
+  }
+  return &wrappedStructs.controlBlock;
 }

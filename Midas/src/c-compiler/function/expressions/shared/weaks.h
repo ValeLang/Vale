@@ -52,7 +52,7 @@ Ref getIsAliveFromWeakRef(
     Reference* refM,
     Ref weakRefLE);
 
-void noteWeakableDestroyed(
+void innerNoteWeakableDestroyed(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -144,20 +144,8 @@ void initWeakInternalExterns(GlobalState* globalState);
 
 void makeStructWeakRefStruct(GlobalState* globalState, LLVMTypeRef structWeakRefStructL, LLVMTypeRef wrapperStructL);
 
-void makeInterfaceWeakRefStruct(GlobalState* globalState, LLVMTypeRef interfaceWeakRefStructL, LLVMTypeRef refStructL);
-
 void makeVoidPtrWeakRefStruct(GlobalState* globalState, LLVMTypeRef weakVoidRefStructL);
 
-
-void makeUnknownSizeArrayWeakRefStruct(
-    GlobalState* globalState,
-    LLVMTypeRef unknownSizeArrayWrapperStruct,
-    LLVMTypeRef arrayWeakRefStructL);
-
-void makeKnownSizeArrayWeakRefStruct(
-    GlobalState* globalState,
-    LLVMTypeRef knownSizeArrayWrapperStruct,
-    LLVMTypeRef arrayWeakRefStructL);
 
 LLVMValueRef getWrciFromWeakRef(
     GlobalState* globalState,

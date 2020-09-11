@@ -12,10 +12,26 @@ class IRegion;
 
 struct WrapperPtrLE {
   Reference* const refM;
+  // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
+private:
+  WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_)
+      : refM(refM_), refLE(refLE_) { }
+
+  friend struct WrapperPtrLEMaker;
 };
+
+struct WrapperPtrLEMaker {
+  WrapperPtrLE make(Reference* referenceM_, LLVMValueRef controlBlockPtrLE_) {
+    assert(LLVMTypeOf(controlBlockPtrLE_) == LLVMPointerType(getWrapperStruct(referenceM_), 0));
+    return WrapperPtrLE(referenceM_, controlBlockPtrLE_);
+  }
+
+private:
+  std::function<LLVMTypeRef(Reference*)> getWrapperStruct;
+};
+
 
 
 struct ControlBlockPtrLE {
@@ -23,21 +39,90 @@ struct ControlBlockPtrLE {
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  ControlBlockPtrLE(GlobalState* globalState, Referend* refM_, LLVMValueRef refLE_);
+private:
+  ControlBlockPtrLE(Referend* refM_, LLVMValueRef refLE_)
+    : referendM(refM_), refLE(refLE_) { }
+
+  friend struct ControlBlockPtrLEMaker;
 };
+
+struct ControlBlockPtrLEMaker {
+  ControlBlockPtrLE make(Referend* referendM_, LLVMValueRef controlBlockPtrLE_) {
+    assert(LLVMTypeOf(controlBlockPtrLE_) == LLVMPointerType(getControlBlockStruct(referendM_), 0));
+    return ControlBlockPtrLE(referendM_, controlBlockPtrLE_);
+  }
+
+private:
+  std::function<LLVMTypeRef(Referend*)> getControlBlockStruct;
+};
+
+
+
 
 struct InterfaceFatPtrLE {
   Reference* const refM;
+  // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  InterfaceFatPtrLE(GlobalState* globalState, Reference* refM_, LLVMValueRef refLE_);
+private:
+  InterfaceFatPtrLE(Reference* refM_, LLVMValueRef refLE_)
+      : refM(refM_), refLE(refLE_) { }
+
+  friend struct InterfaceFatPtrLEMaker;
 };
+
+struct InterfaceFatPtrLEMaker {
+  InterfaceFatPtrLE make(Reference* referenceM_, LLVMValueRef controlBlockPtrLE_) {
+    auto interfaceReferenceM = dynamic_cast<InterfaceReferend*>(referenceM_->referend);
+    assert(interfaceReferenceM);
+    assert(
+        LLVMTypeOf(controlBlockPtrLE_) == getInterfaceFatPtrStruct(interfaceReferenceM));
+    return InterfaceFatPtrLE(referenceM_, controlBlockPtrLE_);
+  }
+
+private:
+  std::function<LLVMTypeRef(Referend*)> getInterfaceFatPtrStruct;
+};
+
+
+
 
 struct WeakFatPtrLE {
   Reference* const refM;
+  // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-  WeakFatPtrLE(GlobalState* globalState, Reference* refM_, LLVMValueRef refLE_);
+private:
+  WeakFatPtrLE(Reference* refM_, LLVMValueRef refLE_)
+      : refM(refM_), refLE(refLE_) { }
+
+  friend struct WeakFatPtrLEMaker;
+};
+
+struct WeakFatPtrLEMaker {
+  WeakFatPtrLE make(Reference* referenceM_, LLVMValueRef ptrLE) {
+    if (auto structReferendM = dynamic_cast<StructReferend*>(referenceM_->referend)) {
+      assert(LLVMTypeOf(ptrLE) == getStructWeakRefStruct(structReferendM));
+    } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(referenceM_->referend)) {
+      assert(
+          LLVMTypeOf(ptrLE) == getWeakVoidRefStruct() ||
+              LLVMTypeOf(ptrLE) == getInterfaceWeakRefStruct(interfaceReferendM));
+    } else if (auto ksaT = dynamic_cast<KnownSizeArrayT*>(referenceM_->referend)) {
+      assert(LLVMTypeOf(ptrLE) == getKnownSizeArrayWeakRefStruct(ksaT));
+    } else if (auto usaT = dynamic_cast<UnknownSizeArrayT*>(referenceM_->referend)) {
+      assert(LLVMTypeOf(ptrLE) == getUnknownSizeArrayWeakRefStruct(usaT));
+    } else {
+      assert(false);
+    }
+    return WeakFatPtrLE(referenceM_, ptrLE);
+  }
+
+private:
+  std::function<LLVMTypeRef()> getWeakVoidRefStruct;
+  std::function<LLVMTypeRef(StructReferend*)> getStructWeakRefStruct;
+  std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceWeakRefStruct;
+  std::function<LLVMTypeRef(KnownSizeArrayT*)> getKnownSizeArrayWeakRefStruct;
+  std::function<LLVMTypeRef(UnknownSizeArrayT*)> getUnknownSizeArrayWeakRefStruct;
 };
 
 

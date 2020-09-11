@@ -3,7 +3,7 @@
 #include <function/function.h>
 #include <function/expressions/shared/shared.h>
 #include <function/expressions/shared/weaks.h>
-#include <function/expressions/shared/controlblock.h>
+#include <region/common/controlblock.h>
 #include <region/common/fatweaks/fatweaks.h>
 #include "common.h"
 

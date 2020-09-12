@@ -6,6 +6,8 @@
 #include <region/common/defaultimmutables/defaultimmutables.h>
 #include <region/common/defaultlayout/structsrouter.h>
 #include <region/common/wrcweaks/wrcweaks.h>
+#include <region/common/lgtweaks/lgtweaks.h>
+#include <region/common/hgm/hgm.h>
 #include "globalstate.h"
 #include "function/function.h"
 #include "../iregion.h"
@@ -95,14 +97,12 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
 
-      Reference* sourceStructTypeM,
+      Reference* sourceStructMT,
       StructReferend* sourceStructReferendM,
-      Ref sourceStructLE,
+      Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) override {
-    assert(false);
-  }
+      InterfaceReferend* targetInterfaceReferendM);
 
 
   void translateKnownSizeArray(
@@ -117,6 +117,12 @@ public:
   void translateUnknownSizeArray(
       UnknownSizeArrayT* unknownSizeArrayMT) override;
 
+  WrapperPtrLE lockWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref weakRefLE) override;
 
   Ref lockWeak(
       FunctionState* functionState,
@@ -228,21 +234,6 @@ public:
     assert(false);
   }
 
-  Ref storeElement(
-      FunctionState* functionState,
-      BlockState* blockState,
-      LLVMBuilderRef builder,
-      Reference* arrayRefM,
-      Reference* elementRefM,
-      Ref sizeIntLE,
-      Ref arrayCRefLE,
-      Mutability mutability,
-      Ref indexIntLE,
-      Ref sourceLE) override {
-    assert(false);
-  }
-
-
 
   LLVMTypeRef translateType(Reference* referenceM) override;
 
@@ -321,13 +312,88 @@ public:
       const std::string& memberName) override;
 
 
-// Gets the itable PTR and the new value that we should put into the virtual param's slot
-// (such as a void* or a weak void ref)
+  // Gets the itable PTR and the new value that we should put into the virtual param's slot
+  // (such as a void* or a weak void ref)
   std::tuple<LLVMValueRef, LLVMValueRef> explodeInterfaceRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* virtualParamMT,
       Ref virtualArgRef) override;
+
+
+  // TODO maybe combine with alias/acquireReference?
+  // After we load from a local, member, or element, we can feed the result through this
+  // function to turn it into a desired ownership.
+  // Example:
+  // - Can load from an owning ref member to get a constraint ref.
+  // - Can load from a constraint ref member to get a weak ref.
+  Ref upgradeLoadResultToRefWithTargetOwnership(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* sourceType,
+      Reference* targetType,
+      Ref sourceRef) override;
+
+  void aliasWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      Ref weakRef) override;
+
+  void discardWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      Ref weakRef) override;
+
+  Ref getIsAliveFromWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef) override;
+
+  Ref loadElementFromKSAWithUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      Ref indexRef,
+      Reference* targetType) override;
+  Ref loadElementFromKSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      Ref indexRef) override;
+  Ref loadElementFromUSAWithUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      Ref indexRef,
+      Reference* targetType) override;
+  Ref loadElementFromUSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      Ref indexRef) override;
+
+
+  Ref storeElementInUSA(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      Ref indexRef,
+      Ref elementRef) override;
 
   // TODO Make these private once refactor is done
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
@@ -364,18 +430,26 @@ public:
   LLVMTypeRef getWeakVoidRefStruct() override {
     return mutWeakableStructs.weakVoidRefStructL;
   }
+  void fillControlBlock(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      Mutability mutability,
+      ControlBlockPtrLE controlBlockPtrLE,
+      const std::string& typeName) override;
 
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);
 
   void naiveRcFree(
-      GlobalState* globalState,
       FunctionState* functionState,
       BlockState* blockState,
       LLVMBuilderRef thenBuilder,
       Reference* sourceMT,
       Ref sourceRef);
+
 
 protected:
   GlobalState* globalState;
@@ -387,6 +461,8 @@ protected:
   DefaultImmutables defaultImmutables;
   FatWeaks fatWeaks;
   WrcWeaks wrcWeaks;
+  LgtWeaks lgtWeaks;
+  HybridGenerationalMemory hgmWeaks;
 
   ReferendStructsRouter referendStructs;
   WeakRefStructsRouter weakRefStructs;

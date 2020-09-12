@@ -95,8 +95,6 @@ void initInternalExterns(GlobalState* globalState) {
       {voidPtrLT});
   globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
   globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
-
-  initWeakInternalExterns(globalState);
 }
 
 
@@ -109,8 +107,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 //  std::cout << "OVERRIDING census to true!" << std::endl;
 //  globalState->opt->census = true;
-//  std::cout << "OVERRIDING flares to true!" << std::endl;
-//  globalState->opt->flares = true;
+  std::cout << "OVERRIDING flares to true!" << std::endl;
+  globalState->opt->flares = true;
 
 //  std::cout << "OVERRIDING gen-heap to true!" << std::endl;
 //  globalState->opt->genHeap = true;
@@ -190,6 +188,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
   LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
   LLVMBuilderRef entryBuilder = LLVMCreateBuilder();
+  globalState->valeMainBuilder = entryBuilder;
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlock(entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
@@ -392,34 +391,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
         globalState->getOrMakeStringConstant("Memory leaks!"),
     };
     LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-  }
-
-  if (globalState->opt->census) {
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      LLVMValueRef args[3] = {
-          LLVMConstInt(LLVMInt64Type(), 0, false),
-          LLVMBuildZExt(
-              entryBuilder,
-              LLVMBuildCall(
-                  entryBuilder, globalState->getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
-              LLVMInt64Type(),
-              ""),
-          globalState->getOrMakeStringConstant("WRC leaks!"),
-      };
-      LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-    } else {
-      LLVMValueRef args[3] = {
-          LLVMConstInt(LLVMInt64Type(), 0, false),
-          LLVMBuildZExt(
-              entryBuilder,
-              LLVMBuildCall(
-                  entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs"),
-              LLVMInt64Type(),
-              ""),
-          globalState->getOrMakeStringConstant("WRC leaks!"),
-      };
-      LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-    }
   }
 
   if (mainM->returnType->referend == globalState->metalCache.vooid) {

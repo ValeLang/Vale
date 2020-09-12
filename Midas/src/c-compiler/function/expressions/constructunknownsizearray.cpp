@@ -68,9 +68,8 @@ Ref constructUnknownSizeArrayCountedStruct(
           usaMT,
           mallocUnknownSizeArray(
               globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE));
-  fillControlBlock(
+  globalState->region->fillControlBlock(
       FL(),
-      globalState,
       functionState,
       builder,
       unknownSizeArrayT,
@@ -118,7 +117,7 @@ Ref translateConstructUnknownSizeArray(
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
-      globalState->getReferendStructsSource()->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
+      globalState->region->getReferendStructsSource()->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
   auto usaRef =
       constructUnknownSizeArrayCountedStruct(
           globalState,

@@ -26,6 +26,14 @@ public:
       Reference* desiredReference,
       const std::vector<Ref>& membersLE) = 0;
 
+
+  virtual WrapperPtrLE lockWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref weakRefLE) = 0;
+
   virtual void alias(
       AreaAndFileAndLine from,
       FunctionState* functionState,
@@ -85,9 +93,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
 
-      Reference* sourceStructTypeM,
+      Reference* sourceStructMT,
       StructReferend* sourceStructReferendM,
-      Ref sourceStructLE,
+      Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
       InterfaceReferend* targetInterfaceReferendM) = 0;
@@ -185,18 +193,6 @@ public:
       Mutability mutability,
       Ref indexIntLE) = 0;
 
-  virtual Ref storeElement(
-      FunctionState* functionState,
-      BlockState* blockState,
-      LLVMBuilderRef builder,
-      Reference* arrayRefM,
-      Reference* elementRefM,
-      Ref sizeIntLE,
-      Ref arrayCRefLE,
-      Mutability mutability,
-      Ref indexIntLE,
-      Ref sourceLE) = 0;
-
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
   virtual void translateKnownSizeArray(
@@ -261,6 +257,67 @@ public:
       Reference* virtualParamMT,
       Ref virtualArgRef) = 0;
 
+  virtual void aliasWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      Ref weakRef) = 0;
+
+  virtual void discardWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      Ref weakRef) = 0;
+
+  virtual Ref getIsAliveFromWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef) = 0;
+
+  virtual Ref loadElementFromKSAWithUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      Ref indexRef,
+      Reference* targetType) = 0;
+  virtual Ref loadElementFromKSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      Ref indexRef) = 0;
+  virtual Ref loadElementFromUSAWithUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      Ref indexRef,
+      Reference* targetType) = 0;
+
+  virtual Ref loadElementFromUSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      Ref indexRef) = 0;
+
+  virtual Ref storeElementInUSA(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      Ref indexRef,
+      Ref elementRef) = 0;
+
   // TODO Get rid of these once refactor is done
   virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
   virtual InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
@@ -273,6 +330,20 @@ public:
   virtual LLVMTypeRef getStringWrapperStruct() = 0;
   virtual LLVMTypeRef getWeakRefHeaderStruct() = 0;
   virtual LLVMTypeRef getWeakVoidRefStruct() = 0;
+  virtual Ref upgradeLoadResultToRefWithTargetOwnership(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* sourceType,
+      Reference* targetType,
+      Ref sourceRef) = 0;
+  virtual void fillControlBlock(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      Mutability mutability,
+      ControlBlockPtrLE controlBlockPtrLE,
+      const std::string& typeName) = 0;
 };
 
 #endif

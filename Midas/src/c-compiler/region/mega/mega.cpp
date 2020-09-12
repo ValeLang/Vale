@@ -295,7 +295,7 @@ void fillInnerStruct(
     auto ptrLE =
         LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
     auto memberLE =
-        checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberRef);
+        globalState->region->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRef);
     LLVMBuildStore(builder, memberLE, ptrLE);
   }
 }
@@ -345,7 +345,7 @@ LLVMValueRef constructInnerStruct(
       buildFlare(FL(), globalState, functionState, builder, "Initialized member ", i, ": ", memberRefs[i]);
     }
     auto memberLE =
-        checkValidReference(FL(), globalState, functionState, builder, structM->members[i]->type, memberRefs[i]);
+        globalState->region->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRefs[i]);
     auto memberName = structM->members[i]->name;
     // Every time we fill in a field, it actually makes a new entire
     // struct value, and gives us a LLVMValueRef for the new value.
@@ -647,7 +647,7 @@ Ref Mega::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refere
         auto objPtrLE =
             this->makeWrapperPtr(
                 sourceRefMT,
-                ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT,
+                globalState->region->checkValidReference(FL(), functionState, builder, sourceRefMT,
                     sourceRef));
         return wrap(
             this,
@@ -758,7 +758,7 @@ void fillKnownSizeArray(
         LLVMConstInt(LLVMInt64Type(), 0, false),
         LLVMConstInt(LLVMInt64Type(), i, false),
     };
-    auto elementLE = ::checkValidReference(FL(), globalState, functionState, builder, elementMT, elementsLE[i]);
+    auto elementLE = globalState->region->checkValidReference(FL(), functionState, builder, elementMT, elementsLE[i]);
     // Every time we fill in a field, it actually makes a new entire
     // struct value, and gives us a LLVMValueRef for the new value.
     // So, `structValueBeingInitialized` contains the latest one.
@@ -1182,34 +1182,56 @@ Ref Mega::loadMember(
   switch (globalState->opt->regionOverride) {
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST: {
-      switch (structRefMT->ownership) {
-        case Ownership::OWN:
-        case Ownership::SHARE:
-        case Ownership::BORROW:
-          innerStructPtrLE = getStructContentsPtrNormal(globalState, functionState, builder, structRefMT, structRef);
-          break;
-        case Ownership::WEAK:
-          innerStructPtrLE = getStructContentsPtrForce(globalState, functionState, builder, structRefMT, structRef);
-          break;
-        default:
-          assert(false);
+      if (structRefMT->location == Location::INLINE) {
+        auto structRefLE = checkValidReference(FL(), functionState, builder,
+            structRefMT, structRef);
+        return wrap(globalState->region, expectedMemberType,
+            LLVMBuildExtractValue(
+                builder, structRefLE, memberIndex, memberName.c_str()));
+      } else {
+        switch (structRefMT->ownership) {
+          case Ownership::OWN:
+          case Ownership::SHARE:
+          case Ownership::BORROW:
+            innerStructPtrLE = getStructContentsPtrNormal(globalState, functionState, builder,
+                structRefMT, structRef);
+            break;
+          case Ownership::WEAK:
+            assert(false); // we arent supposed to force in naive/fast
+//            innerStructPtrLE = getStructContentsPtrForce(globalState, functionState, builder,
+//                structRefMT, structRef);
+            break;
+          default:
+            assert(false);
+        }
       }
       break;
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2: {
-      switch (structRefMT->ownership) {
-        case Ownership::OWN:
-        case Ownership::SHARE:
-          innerStructPtrLE = getStructContentsPtrNormal(globalState, functionState, builder, structRefMT, structRef);
-          break;
-        case Ownership::BORROW:
-        case Ownership::WEAK:
-          innerStructPtrLE = getStructContentsPtrForce(globalState, functionState, builder, structRefMT, structRef);
-          break;
-        default:
-          assert(false);
+
+      if (structRefMT->location == Location::INLINE) {
+        auto structRefLE = checkValidReference(FL(), functionState, builder,
+            structRefMT, structRef);
+        return wrap(globalState->region, expectedMemberType,
+            LLVMBuildExtractValue(
+                builder, structRefLE, memberIndex, memberName.c_str()));
+      } else {
+        switch (structRefMT->ownership) {
+          case Ownership::OWN:
+          case Ownership::SHARE:
+            innerStructPtrLE = getStructContentsPtrNormal(globalState, functionState, builder,
+                structRefMT, structRef);
+            break;
+          case Ownership::BORROW:
+          case Ownership::WEAK:
+            innerStructPtrLE = getStructContentsPtrForce(globalState, functionState, builder,
+                structRefMT, structRef);
+            break;
+          default:
+            assert(false);
+        }
       }
       break;
     }
@@ -1359,4 +1381,120 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
       assert(false);
   }
   return std::make_tuple(itablePtrLE, newVirtualArgLE);
+}
+
+
+Ref Mega::getUnknownSizeArrayLength(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    Ref arrayRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      return getUnknownSizeArrayLengthNormal(globalState, functionState, builder, usaRefMT, arrayRef);
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (usaRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          return getUnknownSizeArrayLengthNormal(globalState, functionState, builder, usaRefMT, arrayRef);
+        case Ownership::BORROW:
+          return getUnknownSizeArrayLengthForce(globalState, functionState, builder, usaRefMT, arrayRef);
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+  assert(false);
+}
+
+std::tuple<Reference*, LLVMValueRef> megaGetRefInnards(Ref ref) {
+  Reference* refM = ref.refM;
+  LLVMValueRef refLE = ref.refLE;
+  return std::make_tuple(refM, refLE);
+}
+
+LLVMValueRef Mega::checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref ref) {
+  Reference* actualRefM = nullptr;
+  LLVMValueRef refLE = nullptr;
+  std::tie(actualRefM, refLE) = megaGetRefInnards(ref);
+  assert(actualRefM == refM);
+
+  assert(refLE != nullptr);
+  assert(LLVMTypeOf(refLE) == functionState->defaultRegion->translateType(refM));
+  if (globalState->opt->census) {
+    if (refM->ownership == Ownership::OWN) {
+      if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
+        auto interfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(refM, refLE);
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
+        buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+      }
+      auto controlBlockPtrLE =
+          getControlBlockPtr(globalState, functionState, builder, refLE, refM);
+      buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
+    } else if (refM->ownership == Ownership::SHARE) {
+      if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
+        auto interfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(refM, refLE);
+        auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
+        buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+      }
+      if (refM->location == Location::INLINE) {
+        // Nothing to do, there's no control block or ref counts or anything.
+      } else if (refM->location == Location::YONDER) {
+        auto controlBlockPtrLE =
+            getControlBlockPtr(globalState, functionState, builder, refLE, refM);
+
+        // We dont check ref count >0 because imm destructors receive with rc=0.
+        //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
+        //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(0), "");
+        //      buildAssert(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
+
+        buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
+            controlBlockPtrLE.refLE);
+      } else
+        assert(false);
+    } else {
+      switch (globalState->opt->regionOverride) {
+        case RegionOverride::ASSIST:
+        case RegionOverride::NAIVE_RC:
+        case RegionOverride::FAST: {
+          if (refM->ownership == Ownership::BORROW) {
+            if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
+              auto interfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(refM, refLE);
+              auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
+              buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+            }
+            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, refLE, refM);
+            buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
+                controlBlockPtrLE.refLE);
+          } else if (refM->ownership == Ownership::WEAK) {
+            buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
+          } else
+            assert(false);
+          break;
+        }
+        case RegionOverride::RESILIENT_V0:
+        case RegionOverride::RESILIENT_V1:
+        case RegionOverride::RESILIENT_V2: {
+          buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
+          break;
+        }
+        default:
+          assert(false);
+      }
+    }
+  }
+  return refLE;
 }

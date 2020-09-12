@@ -146,9 +146,11 @@ public:
 //  virtual LLVMValueRef getUnknownSizeArrayElementsPtr(
 //      LLVMBuilderRef builder,
 //      LLVMValueRef unknownSizeArrayWrapperPtrLE) = 0;
-//  virtual LLVMValueRef getUnknownSizeArrayLength(
-//      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) = 0;
+  virtual Ref getUnknownSizeArrayLength(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      Ref arrayRef) = 0;
 
   virtual void destroyArray(
       FunctionState* functionState,

@@ -149,15 +149,6 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 
-LLVMValueRef checkValidReference(
-    AreaAndFileAndLine checkerAFL,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE);
-
-
 Ref buildCall(
     GlobalState* globalState,
     FunctionState* functionState,

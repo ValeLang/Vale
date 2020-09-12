@@ -29,8 +29,8 @@ void fillUnknownSizeArray(
             functionState, bodyBuilder, generatorType, generatorLE);
 
         auto indexLE =
-            checkValidReference(
-                FL(), globalState, functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
+            globalState->region->checkValidReference(FL(),
+                functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
         std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
 
         auto elementPtrLE =
@@ -39,7 +39,7 @@ void fillUnknownSizeArray(
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
         auto elementRef = buildInterfaceCall(globalState, functionState, bodyBuilder, generatorMethod, argExprsLE, 0, 0);
         auto elementLE =
-            checkValidReference(FL(), globalState, functionState, bodyBuilder, usaMT->rawArray->elementType, elementRef);
+            globalState->region->checkValidReference(FL(), functionState, bodyBuilder, usaMT->rawArray->elementType, elementRef);
         LLVMBuildStore(bodyBuilder, elementLE, elementPtrLE);
       });
 }
@@ -61,7 +61,8 @@ Ref constructUnknownSizeArrayCountedStruct(
   buildFlare(FL(), globalState, functionState, builder, "Constructing USA!");
 
   auto sizeLE =
-      checkValidReference(FL(),globalState, functionState, builder, globalState->metalCache.intRef, sizeRef);
+      globalState->region->checkValidReference(FL(),
+          functionState, builder, globalState->metalCache.intRef, sizeRef);
   auto usaWrapperPtrLE =
       functionState->defaultRegion->makeWrapperPtr(
           usaMT,
@@ -112,28 +113,8 @@ Ref translateConstructUnknownSizeArray(
   auto sizeLE = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 
   auto generatorLE = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
-  checkValidReference(FL(), globalState, functionState, builder,
+  globalState->region->checkValidReference(FL(), functionState, builder,
       constructUnknownSizeArray->generatorType, generatorLE);
-
-  Weakability effectiveWeakability = Weakability::WEAKABLE;
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::FAST:
-      effectiveWeakability = Weakability::NON_WEAKABLE;
-      break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-      if (unknownSizeArrayMT->rawArray->mutability == Mutability::MUTABLE) {
-        effectiveWeakability = Weakability::WEAKABLE;
-      } else {
-        effectiveWeakability = Weakability::NON_WEAKABLE;
-      }
-      break;
-    default:
-      assert(false);
-  }
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
@@ -153,7 +134,7 @@ Ref translateConstructUnknownSizeArray(
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);
-  checkValidReference(FL(), globalState, functionState, builder,
+  globalState->region->checkValidReference(FL(), functionState, builder,
       constructUnknownSizeArray->arrayRefType, usaRef);
 
   functionState->defaultRegion->dealias(AFL("ConstructUSA"), functionState, blockState, builder, sizeType, sizeLE);

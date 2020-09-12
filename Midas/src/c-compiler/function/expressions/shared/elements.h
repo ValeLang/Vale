@@ -11,6 +11,44 @@
 #include "globalstate.h"
 #include "function/function.h"
 
+Ref loadElementtttFromUSAWithoutUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef);
+
+Ref loadElementtttFromKSAWithoutUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef);
+
+Ref loadElementtttFromKSAWithUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Reference* targetType);
+
+Ref loadElementtttFromUSAWithUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Reference* targetType);
+
 Ref loadElementWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -38,7 +76,6 @@ Ref loadElementWithUpgrade(
 Ref storeElement(
     GlobalState* globalState,
     FunctionState* functionState,
-    BlockState* blockState,
     LLVMBuilderRef builder,
     Reference* arrayRefM,
     Reference* elementRefM,
@@ -48,6 +85,27 @@ Ref storeElement(
     Ref indexLE,
     Ref sourceLE);
 
+
+
+Ref storeElementtttInUSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Ref elementRef);
+
+Ref storeElementtttInKSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Ref elementRef);
 
 LLVMValueRef loadInnerArrayMember(
     LLVMBuilderRef builder,
@@ -73,20 +131,40 @@ LLVMValueRef getUnknownSizeArrayLengthPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE unknownSizeArrayWrapperPtrLE);
 
-WrapperPtrLE getUnknownSizeArrayWrapperPtr(
+WrapperPtrLE getUnknownSizeArrayWrapperPtrForce(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* arrayRefMT,
     Ref arrayRef);
 
-Ref getUnknownSizeArrayLength(
+WrapperPtrLE getUnknownSizeArrayWrapperPtrNormal(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefMT,
+    Ref arrayRef);
+
+Ref getUnknownSizeArrayLengthNormal(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE arrayRefLE);
 
-Ref getUnknownSizeArrayLength(
+Ref getUnknownSizeArrayLengthNormal(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefM,
+    Ref arrayRef);
+
+Ref getUnknownSizeArrayLengthForce(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    WrapperPtrLE arrayRefLE);
+
+Ref getUnknownSizeArrayLengthForce(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

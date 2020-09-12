@@ -10,6 +10,10 @@
 class FunctionState;
 class BlockState;
 class GlobalState;
+// TODO remove once refactor is done
+class ControlBlock;
+class IReferendStructsSource;
+class IWeakRefStructsSource;
 
 class IRegion {
 public:
@@ -37,29 +41,24 @@ public:
       Reference* sourceMT,
       Ref sourceRef) = 0;
 
-  virtual Ref loadMember(
-      AreaAndFileAndLine from,
+  virtual void storeMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* structRefM,
-      Ref structExpr,
-      Mutability mutability,
-      Reference* memberType,
-      int memberIndex,
-      const std::string& memberName) = 0;
-
-  virtual Ref storeMember(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      BlockState* blockState,
-      LLVMBuilderRef builder,
-      Reference* structRefM,
-      Ref structExpr,
-      Mutability mutability,
-      Reference* memberType,
+      Reference* structRefMT,
+      Ref structRef,
       int memberIndex,
       const std::string& memberName,
-      Ref sourceLE) = 0;
+      LLVMValueRef newValueLE) = 0;
+
+  virtual Ref loadMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      Reference* expectedMemberType,
+      Reference* targetMemberType,
+      const std::string& memberName) = 0;
 
   virtual std::vector<Ref> destructure(
       FunctionState* functionState,
@@ -237,11 +236,41 @@ public:
 
   virtual Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) = 0;
 
+
+  virtual void discardOwningRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef builder,
+      Reference* sourceMT,
+      Ref sourceRef) = 0;
+
+  virtual void noteWeakableDestroyed(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtrLE) = 0;
+
+  // Gets the itable PTR and the new value that we should put into the virtual param's slot
+  // (such as a void* or a weak void ref)
+  virtual std::tuple<LLVMValueRef, LLVMValueRef> explodeInterfaceRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* virtualParamMT,
+      Ref virtualArgRef) = 0;
+
   // TODO Get rid of these once refactor is done
   virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
   virtual InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
   virtual ControlBlockPtrLE makeControlBlockPtr(Referend* referendM_, LLVMValueRef ptrLE) = 0;
   virtual WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
+  virtual ControlBlock* getControlBlock(Referend* referend) = 0;
+  virtual IReferendStructsSource* getReferendStructsSource() = 0;
+  virtual IWeakRefStructsSource* getWeakRefStructsSource() = 0;
+  virtual LLVMTypeRef getStringInnerStruct() = 0;
+  virtual LLVMTypeRef getStringWrapperStruct() = 0;
+  virtual LLVMTypeRef getWeakRefHeaderStruct() = 0;
+  virtual LLVMTypeRef getWeakVoidRefStruct() = 0;
 };
 
 #endif

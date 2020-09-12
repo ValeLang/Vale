@@ -60,7 +60,7 @@ void initInternalExterns(GlobalState* globalState) {
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  auto stringInnerStructPtrLT = LLVMPointerType(globalState->stringInnerStructL, 0);
+  auto stringInnerStructPtrLT = LLVMPointerType(globalState->region->getStringInnerStruct(), 0);
 
   globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
   globalState->genFree = addExtern(globalState->mod, "__genFree", voidLT, {voidPtrLT});
@@ -78,7 +78,7 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->printBool = addExtern(globalState->mod, "__vprintBool", voidLT, {int1LT});
   globalState->initStr =
       addExtern(globalState->mod, "__vinitStr", voidLT,
-          {stringInnerStructPtrLT, int8PtrLT,});
+          {stringInnerStructPtrLT, int8PtrLT});
   globalState->addStr =
       addExtern(globalState->mod, "__vaddStr", voidLT,
           {stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT});
@@ -222,16 +222,30 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
   LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
-  Assist assistRegion(globalState);
-  Mega megaRegion(globalState);
-  IRegion* defaultRegion = &megaRegion;
+//  Assist assistRegion(globalState);
+//  Mega megaRegion(globalState);
+  IRegion* defaultRegion = nullptr;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      defaultRegion = new Assist(globalState);
+      break;
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      defaultRegion = new Mega(globalState);
+      break;
+    default:
+      assert(false);
+  }
+  globalState->region = defaultRegion;
 
-  makeWeakRefStructs(globalState);
   initInternalExterns(globalState);
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
-      defaultRegion = &assistRegion;
+      std::cout << "Region override: assist" << std::endl;
       break;
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;

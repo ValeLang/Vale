@@ -22,7 +22,7 @@ void fillUnknownSizeArray(
     LLVMValueRef usaElementsPtrLE) {
 
   foreachArrayElement(
-      globalState, functionState, builder, sizeLE, usaElementsPtrLE,
+      globalState, functionState, builder, sizeLE,
       [globalState, functionState, usaMT, generatorMethod, generatorType, usaElementsPtrLE, generatorLE](Ref indexRef, LLVMBuilderRef bodyBuilder) {
         functionState->defaultRegion->alias(
             AFL("ConstructUSA generate iteration"),
@@ -51,7 +51,6 @@ Ref constructUnknownSizeArrayCountedStruct(
     LLVMBuilderRef builder,
     Reference* usaMT,
     UnknownSizeArrayT* unknownSizeArrayT,
-    Weakability effectiveWeakability,
     Reference* generatorType,
     Prototype* generatorMethod,
     Ref generatorRef,
@@ -75,7 +74,6 @@ Ref constructUnknownSizeArrayCountedStruct(
       builder,
       unknownSizeArrayT,
       unknownSizeArrayT->rawArray->mutability,
-      effectiveWeakability,
       getConcreteControlBlockPtr(globalState, builder, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(builder, usaWrapperPtrLE));
@@ -139,7 +137,7 @@ Ref translateConstructUnknownSizeArray(
 
   // If we get here, arrayLT is a pointer to our counted struct.
   auto unknownSizeArrayCountedStructLT =
-      globalState->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->name);
+      globalState->getReferendStructsSource()->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
   auto usaRef =
       constructUnknownSizeArrayCountedStruct(
           globalState,
@@ -148,7 +146,6 @@ Ref translateConstructUnknownSizeArray(
           builder,
           constructUnknownSizeArray->arrayRefType,
           unknownSizeArrayMT,
-          effectiveWeakability,
           generatorType,
           constructUnknownSizeArray->generatorMethod,
           generatorLE,

@@ -480,6 +480,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
   auto result =
       new StructDefinition(
           readName(cache, struuct["name"]),
+          readStructReferend(cache, struuct["referend"]),
           readMutability(struuct["mutability"]),
           readArray(cache, struuct["edges"], readEdge),
           readArray(cache, struuct["members"], readStructMember),
@@ -504,6 +505,7 @@ InterfaceDefinition* readInterface(MetalCache* cache, const json& interface) {
   assert(interface["__type"] == "Interface");
   return new InterfaceDefinition(
       readName(cache, interface["name"]),
+      readInterfaceReferend(cache, interface["referend"]),
       readMutability(interface["mutability"]),
       {},
       readArray(cache, interface["methods"], readInterfaceMethod),

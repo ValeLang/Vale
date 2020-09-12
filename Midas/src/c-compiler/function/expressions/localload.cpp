@@ -27,7 +27,7 @@ Ref translateLocalLoad(
 
   auto sourceLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
   auto sourceRef = wrap(functionState->defaultRegion, localType, sourceLE);
-  checkValidReference(FL(), globalState, functionState, builder, localType, sourceRef);
+  globalState->region->checkValidReference(FL(), functionState, builder, localType, sourceRef);
 
   auto resultRefLE =
       upgradeLoadResultToRefWithTargetOwnership(

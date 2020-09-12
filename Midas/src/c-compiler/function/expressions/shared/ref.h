@@ -150,7 +150,6 @@ private:
 };
 
 
-
 // An LLVM register, which contains a reference.
 struct Ref {
   Ref(Reference* refM_, LLVMValueRef refLE_) : refM(refM_), refLE(refLE_) {}
@@ -165,13 +164,7 @@ private:
   Reference* const refM;
   LLVMValueRef const refLE;
 
-  friend LLVMValueRef checkValidReference(
-      AreaAndFileAndLine checkerAFL,
-      GlobalState* globalState,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* refM,
-      Ref ref);
+  friend std::tuple<Reference*, LLVMValueRef> megaGetRefInnards(Ref ref);
 
   friend void buildPrint(
       GlobalState* globalState,

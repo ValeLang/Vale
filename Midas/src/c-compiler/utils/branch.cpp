@@ -86,7 +86,7 @@ Ref buildIfElse(
   LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
   // Now, we fill in the "then" block.
   auto thenResultRef = buildThen(thenBlockBuilder);
-  auto thenResultLE = checkValidReference(FL(), globalState, functionState, thenBlockBuilder, thenResultMT, thenResultRef);
+  auto thenResultLE = globalState->region->checkValidReference(FL(), functionState, thenBlockBuilder, thenResultMT, thenResultRef);
   // A builder can point to different blocks, so get the latest one so we can
   // pull from it for the phi.
   auto thenFinalBlockL = LLVMGetInsertBlock(thenBlockBuilder);
@@ -100,12 +100,12 @@ Ref buildIfElse(
   LLVMPositionBuilderAtEnd(elseBlockBuilder, elseStartBlockL);
   // Now, we fill in the "else" block.
   auto elseResultRef = buildElse(elseBlockBuilder);
-  auto elseResultLE = checkValidReference(FL(), globalState, functionState, elseBlockBuilder, elseResultMT, elseResultRef);
+  auto elseResultLE = globalState->region->checkValidReference(FL(), functionState, elseBlockBuilder, elseResultMT, elseResultRef);
   // A builder can point to different blocks, so get the latest one so we can
   // pull from it for the phi.
   auto elseFinalBlockL = LLVMGetInsertBlock(elseBlockBuilder);
 
-  auto conditionLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.boolRef, conditionRef);
+  auto conditionLE = globalState->region->checkValidReference(FL(), functionState, builder, globalState->metalCache.boolRef, conditionRef);
   LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, elseStartBlockL);
 
   LLVMBasicBlockRef afterwardBlockL =
@@ -183,7 +183,7 @@ void buildWhile(
   LLVMBuildBr(builder, bodyStartBlockL);
 
   auto continueRef = buildBody(bodyBlockBuilder);
-  auto continueLE = checkValidReference(FL(), globalState, functionState, builder, globalState->metalCache.boolRef, continueRef);
+  auto continueLE = globalState->region->checkValidReference(FL(), functionState, builder, globalState->metalCache.boolRef, continueRef);
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlock(

@@ -19,8 +19,8 @@ Ref translateDestructure(
   auto structRef =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
-  checkValidReference(
-      FL(), globalState, functionState, builder, destructureM->structType, structRef);
+  globalState->region->checkValidReference(FL(),
+      functionState, builder, destructureM->structType, structRef);
 //  buildFlare(FL(), globalState, functionState, builder, "structLE is ", structLE);
 
   auto structReferend =
@@ -52,8 +52,8 @@ Ref translateDestructure(
     auto structRefLE =
         functionState->defaultRegion->makeWrapperPtr(
             destructureM->structType,
-            checkValidReference(
-                FL(), globalState, functionState, builder, destructureM->structType, structRef));
+            globalState->region->checkValidReference(FL(),
+                functionState, builder, destructureM->structType, structRef));
     auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, structRefLE);
     deallocate(
         AFL("Destroy freeing"), globalState, functionState, builder,

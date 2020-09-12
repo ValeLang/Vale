@@ -280,7 +280,7 @@ void aliasWeakRef(
       auto weakFatPtrLE =
           functionState->defaultRegion->makeWeakFatPtr(
               weakRefMT,
-              checkValidReference(FL(), globalState, functionState, builder, weakRefMT, weakRef));
+              globalState->region->checkValidReference(FL(), functionState, builder, weakRefMT, weakRef));
       auto wrciLE = getWrciFromWeakRef(globalState, builder, weakFatPtrLE);
       if (globalState->opt->census) {
         buildCheckWrc(globalState, builder, wrciLE);
@@ -310,7 +310,7 @@ void discardWeakRef(
     case RegionOverride::FAST: {
       auto weakFatPtrLE =
           functionState->defaultRegion->makeWeakFatPtr(              weakRefMT,
-              checkValidReference(FL(), globalState, functionState, builder, weakRefMT, weakRef));
+              globalState->region->checkValidReference(FL(), functionState, builder, weakRefMT, weakRef));
       auto wrciLE = getWrciFromWeakRef(globalState, builder, weakFatPtrLE);
       if (globalState->opt->census) {
         buildCheckWrc(globalState, builder, wrciLE);
@@ -472,7 +472,7 @@ WrapperPtrLE lockWeakRef(
         case Ownership::WEAK: {
           auto weakFatPtrLE =
               functionState->defaultRegion->makeWeakFatPtr(                  refM,
-                  checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(refM,
               lockWrciFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
@@ -492,7 +492,7 @@ WrapperPtrLE lockWeakRef(
         case Ownership::WEAK: {
           auto weakFatPtrLE =
               functionState->defaultRegion->makeWeakFatPtr(                  refM,
-                  checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(refM,
               lockWrciFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
@@ -512,7 +512,7 @@ WrapperPtrLE lockWeakRef(
         case Ownership::WEAK: {
           auto weakFatPtrLE =
               functionState->defaultRegion->makeWeakFatPtr(                  refM,
-                  checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(refM, lockLgtiFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
         default:
@@ -526,14 +526,14 @@ WrapperPtrLE lockWeakRef(
         case Ownership::SHARE: {
           auto objPtrLE = weakRefLE;
           auto weakFatPtrLE =
-              checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE);
+              globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE);
           return functionState->defaultRegion->makeWrapperPtr(refM, weakFatPtrLE);
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
               functionState->defaultRegion->makeWeakFatPtr(                  refM,
-                  checkValidReference(FL(), globalState, functionState, builder, refM, weakRefLE));
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(refM, lockGenFatPtr(from, globalState, functionState, builder, refM, weakFatPtrLE));
         }
         default:
@@ -701,7 +701,7 @@ Ref getIsAliveFromWeakRef(
 
   auto weakFatPtrLE =
       functionState->defaultRegion->makeWeakFatPtr(          weakRefM,
-          checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakRef));
+          globalState->region->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(globalState, functionState, builder, weakRefM, weakFatPtrLE);
   return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
 }

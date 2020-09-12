@@ -92,7 +92,7 @@ LLVMValueRef getStructContentsPtrNormal(
     Ref refLE) {
   auto wrapperPtrLE =
       functionState->defaultRegion->makeWrapperPtr(refM,
-          checkValidReference(FL(), globalState, functionState, builder, refM, refLE));
+          globalState->region->checkValidReference(FL(), functionState, builder, refM, refLE));
   return getStructContentsPtr(builder, wrapperPtrLE);
 }
 

@@ -3,13 +3,11 @@
 #include "structsrouter.h"
 
 ReferendStructsRouter::ReferendStructsRouter(
-    GetReferendStructsSource referendStructsRouter_,
-    GetWeakRefStructsSource weakRefStructsRouter_)
-    : getReferendStructsSource(referendStructsRouter_),
-      weakRefStructsRouter(weakRefStructsRouter_) {}
+    GetReferendStructsSource getReferendStructsSource_)
+  : getReferendStructsSource(getReferendStructsSource_) {}
 
 ControlBlock* ReferendStructsRouter::getControlBlock(Referend* referend) {
-  return &getReferendStructsSource(referend)->getControlBlock(referend);
+  return getReferendStructsSource(referend)->getControlBlock(referend);
 }
 LLVMTypeRef ReferendStructsRouter::getInnerStruct(StructReferend* structReferend) {
   return getReferendStructsSource(structReferend)->getInnerStruct(structReferend);
@@ -29,11 +27,11 @@ LLVMTypeRef ReferendStructsRouter::getInterfaceRefStruct(InterfaceReferend* inte
 LLVMTypeRef ReferendStructsRouter::getInterfaceTableStruct(InterfaceReferend* interfaceReferend) {
   return getReferendStructsSource(interfaceReferend)->getInterfaceTableStruct(interfaceReferend);
 }
-void ReferendStructsRouter::translateStruct(StructReferend* structReferend, std::vector<LLVMTypeRef> membersLT) {
-  return getReferendStructsSource(structReferend)->translateStruct(structReferend, membersLT);
+void ReferendStructsRouter::translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) {
+  return getReferendStructsSource(structM->referend)->translateStruct(structM, membersLT);
 }
 void ReferendStructsRouter::declareStruct(StructDefinition* structM) {
-  return getReferendStructsSource(structM)->declareStruct(structM);
+  return getReferendStructsSource(structM->referend)->declareStruct(structM);
 }
 void ReferendStructsRouter::declareEdge(Edge* edge) {
   return getReferendStructsSource(edge->structName)->declareEdge(edge);
@@ -41,11 +39,11 @@ void ReferendStructsRouter::declareEdge(Edge* edge) {
 void ReferendStructsRouter::translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) {
   return getReferendStructsSource(edge->structName)->translateEdge(edge, functions);
 }
-void ReferendStructsRouter::declareInterface(InterfaceReferend* name) {
-  return getReferendStructsSource(name)->declareInterface(name);
+void ReferendStructsRouter::declareInterface(InterfaceDefinition* interfaceM) {
+  return getReferendStructsSource(interfaceM->referend)->declareInterface(interfaceM);
 }
-void ReferendStructsRouter::translateInterface(InterfaceReferend* interfaceReferend, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
-  return getReferendStructsSource(interfaceReferend)->translateInterface(interfaceReferend, interfaceMethodTypesL);
+void ReferendStructsRouter::translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
+  return getReferendStructsSource(interface->referend)->translateInterface(interface, interfaceMethodTypesL);
 }
 void ReferendStructsRouter::declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) {
   return getReferendStructsSource(knownSizeArrayMT)->declareKnownSizeArray(knownSizeArrayMT);

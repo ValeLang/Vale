@@ -36,34 +36,34 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceMT,
       Ref sourceRef) override;
-
-  Ref loadMember(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* structRefM,
-      Ref structExpr,
-      Mutability mutability,
-      Reference* memberType,
-      int memberIndex,
-      const std::string& memberName) override {
-    assert(false);
-  }
-
-  Ref storeMember(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      BlockState* blockState,
-      LLVMBuilderRef builder,
-      Reference* structRefM,
-      Ref structExpr,
-      Mutability mutability,
-      Reference* memberType,
-      int memberIndex,
-      const std::string& memberName,
-      Ref sourceLE) override {
-    assert(false);
-  }
+//
+//  Ref loadMember(
+//      AreaAndFileAndLine from,
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Reference* structRefM,
+//      Ref structExpr,
+//      Mutability mutability,
+//      Reference* memberType,
+//      int memberIndex,
+//      const std::string& memberName) override {
+//    assert(false);
+//  }
+//
+//  Ref storeMember(
+//      AreaAndFileAndLine from,
+//      FunctionState* functionState,
+//      BlockState* blockState,
+//      LLVMBuilderRef builder,
+//      Reference* structRefM,
+//      Ref structExpr,
+//      Mutability mutability,
+//      Reference* memberType,
+//      int memberIndex,
+//      const std::string& memberName,
+//      Ref sourceLE) override {
+//    assert(false);
+//  }
 
   std::vector<Ref> destructure(
       FunctionState* functionState,
@@ -285,6 +285,49 @@ public:
       Reference* targetWeakRefMT,
       Ref sourceWeakRef);
 
+
+  void discardOwningRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef builder,
+      Reference* sourceMT,
+      Ref sourceRef) override;
+
+  void noteWeakableDestroyed(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtrLE) override;
+
+  void storeMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      const std::string& memberName,
+      LLVMValueRef newValueLE) override;
+
+  Ref loadMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      Reference* expectedMemberType,
+      Reference* targetType,
+      const std::string& memberName) override;
+
+
+// Gets the itable PTR and the new value that we should put into the virtual param's slot
+// (such as a void* or a weak void ref)
+  std::tuple<LLVMValueRef, LLVMValueRef> explodeInterfaceRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* virtualParamMT,
+      Ref virtualArgRef) override;
+
   // TODO Make these private once refactor is done
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
     return weakFatPtrMaker.make(referenceM_, ptrLE);
@@ -297,6 +340,28 @@ public:
   }
   WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
     return wrapperPtrMaker.make(referenceM_, ptrLE);
+  }
+  // TODO get rid of these once refactor is done
+  ControlBlock* getControlBlock(Referend* referend) override {
+    return referendStructs.getControlBlock(referend);
+  }
+  IReferendStructsSource* getReferendStructsSource() override {
+    return &referendStructs;
+  }
+  IWeakRefStructsSource* getWeakRefStructsSource() override {
+    return &weakRefStructs;
+  }
+  LLVMTypeRef getStringInnerStruct() override {
+    return defaultImmutables.getStringInnerStructL();
+  }
+  LLVMTypeRef getStringWrapperStruct() override {
+    return defaultImmutables.getStringWrapperStructL();
+  }
+  LLVMTypeRef getWeakRefHeaderStruct() override {
+    return mutWeakableStructs.weakRefHeaderStructL;
+  }
+  LLVMTypeRef getWeakVoidRefStruct() override {
+    return mutWeakableStructs.weakVoidRefStructL;
   }
 
 private:
@@ -325,6 +390,7 @@ protected:
   ReferendStructsRouter referendStructs;
   WeakRefStructsRouter weakRefStructs;
 
+  // TODO see if we can just use referendStructs/weakRefStructs instead of having these?
   WeakFatPtrLEMaker weakFatPtrMaker;
   InterfaceFatPtrLEMaker interfaceFatPtrMaker;
   ControlBlockPtrLEMaker controlBlockPtrMaker;

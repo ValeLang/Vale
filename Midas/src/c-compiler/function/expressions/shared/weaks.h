@@ -134,17 +134,10 @@ WeakFatPtrLE assembleVoidStructWeakRef(
     ControlBlockPtrLE controlBlockPtrLE,
     LLVMValueRef wrciLE);
 
-// Makes the part of the weak ref that contains information on how to know if the contained thing
-// is weakable.
-// A "weak reference" contains this and also the actual object pointer.
-void makeWeakRefStructs(GlobalState* globalState);
-
 void initWeakInternalExterns(GlobalState* globalState);
 
 
 void makeStructWeakRefStruct(GlobalState* globalState, LLVMTypeRef structWeakRefStructL, LLVMTypeRef wrapperStructL);
-
-void makeVoidPtrWeakRefStruct(GlobalState* globalState, LLVMTypeRef weakVoidRefStructL);
 
 
 LLVMValueRef getWrciFromWeakRef(

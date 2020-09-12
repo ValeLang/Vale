@@ -14,6 +14,146 @@
 #include "expressions/shared/members.h"
 #include "expression.h"
 
+Ref loadElementtttFromUSAWithoutUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef) {
+  LLVMValueRef arrayElementsPtrLE = nullptr;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      arrayElementsPtrLE =
+          getUnknownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+                  usaRefMT,
+                  checkValidReference(FL(), globalState, functionState, builder, usaRefMT, arrayRef)));
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (usaRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+                  usaRefMT,
+                  checkValidReference(FL(), globalState, functionState, builder, usaRefMT, arrayRef)));
+          break;
+        case Ownership::BORROW:
+          arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder, lockWeakRef(FL(), globalState, functionState, builder, usaRefMT, arrayRef));
+          break;
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+        default:
+          assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+
+  auto sizeRef = getUnknownSizeArrayLength(globalState, functionState, builder, usaRefMT, arrayRef);
+
+  return loadElementWithoutUpgrade(
+      globalState, functionState, builder, usaRefMT,
+      usaMT->rawArray->elementType,
+      sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+}
+
+Ref loadElementtttFromKSAWithoutUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef) {
+  LLVMValueRef arrayElementsPtrLE = nullptr;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      arrayElementsPtrLE =
+          getKnownSizeArrayContentsPtr(builder,
+          functionState->defaultRegion->makeWrapperPtr(
+          ksaRefMT,
+          checkValidReference(FL(), globalState, functionState, builder, ksaRefMT, arrayRef)));
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (ksaRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+              ksaRefMT,
+              checkValidReference(FL(), globalState, functionState, builder, ksaRefMT, arrayRef)));
+          break;
+        case Ownership::BORROW:
+          arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder, lockWeakRef(FL(), globalState, functionState, builder, ksaRefMT, arrayRef));
+          break;
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+        default:
+          assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+
+  auto sizeRef =
+      wrap(
+          functionState->defaultRegion,
+          globalState->metalCache.intRef,
+          LLVMConstInt(LLVMInt64Type(), ksaMT->size, false));
+
+  return loadElementWithoutUpgrade(
+          globalState, functionState, builder, ksaRefMT,
+          ksaMT->rawArray->elementType,
+      sizeRef, arrayElementsPtrLE, ksaMT->rawArray->mutability, indexRef);
+}
+
+Ref loadElementtttFromKSAWithUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Reference* targetType) {
+  Ref memberRef = loadElementtttFromKSAWithoutUpgrade(globalState, functionState, builder, ksaRefMT,
+      ksaMT, arrayRef, indexRef);
+  return upgradeLoadResultToRefWithTargetOwnership(
+      globalState, functionState, builder, ksaMT->rawArray->elementType, targetType, memberRef);
+}
+
+Ref loadElementtttFromUSAWithUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Reference* targetType) {
+  Ref memberRef = loadElementtttFromUSAWithoutUpgrade(globalState, functionState, builder, usaRefMT,
+      usaMT, arrayRef, indexRef);
+  return upgradeLoadResultToRefWithTargetOwnership(
+      globalState, functionState, builder, usaMT->rawArray->elementType, targetType, memberRef);
+}
+
 Ref translateExpressionInner(
     GlobalState* globalState,
     FunctionState* constraintRef,
@@ -226,31 +366,27 @@ Ref translateExpressionInner(
             LLVMConstInt(LLVMInt64Type(), arrayReferend->size, false));
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
-    auto arrayWrapperPtrLE = getKnownSizeArrayWrapperPtr(globalState, functionState, builder, arrayType, arrayRef);
-    auto arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
 
     auto consumerRef = translateExpression(globalState, functionState, blockState, builder, consumerExpr);
     checkValidReference(FL(), globalState, functionState, builder, consumerType, consumerRef);
 
     foreachArrayElement(
-        globalState, functionState, builder, sizeRef, arrayPtrLE,
-        [globalState, functionState, blockState, consumerType, consumerMethod, arrayReferend, arrayPtrLE, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
+        globalState, functionState, builder, sizeRef,
+        [globalState, functionState, blockState, consumerType, consumerMethod, arrayType, arrayReferend, consumerRef, arrayRef](
+            Ref indexRef, LLVMBuilderRef bodyBuilder) {
           functionState->defaultRegion->alias(
               AFL("DestroyKSAIntoF consume iteration"),
               functionState, bodyBuilder, consumerType, consumerRef);
 
-          auto indexLE = checkValidReference(FL(), globalState, functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
-          std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
-          auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
-          auto elementLE = LLVMBuildLoad(bodyBuilder, elementPtrLE, "element");
-          auto elementRef = wrap(functionState->defaultRegion, arrayReferend->rawArray->elementType, elementLE);
+          auto elementRef = loadElementtttFromKSAWithoutUpgrade(globalState, functionState,
+              bodyBuilder, arrayType, arrayReferend, arrayRef, indexRef);
           checkValidReference(FL(), globalState, functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
           buildInterfaceCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs, 0, 0);
         });
 
     if (arrayType->ownership == Ownership::OWN) {
-      discardOwningRef(FL(), globalState, functionState, blockState, builder, arrayType, arrayRef);
+      functionState->defaultRegion->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayRef);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
@@ -303,8 +439,6 @@ Ref translateExpressionInner(
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRef);
-    auto arrayWrapperPtrLE = getUnknownSizeArrayWrapperPtr(globalState, functionState, builder, arrayType, arrayRef);
-    auto arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
     auto arrayLenRef = getUnknownSizeArrayLength(globalState, functionState, builder, arrayType, arrayRef);
     auto arrayLenLE =
         checkValidReference(
@@ -314,28 +448,19 @@ Ref translateExpressionInner(
     checkValidReference(FL(), globalState, functionState, builder, consumerType, consumerRef);
 
     foreachArrayElement(
-        globalState, functionState, builder, arrayLenRef, arrayPtrLE,
-        [globalState, functionState, blockState, consumerType, consumerMethod, arrayReferend, arrayPtrLE, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
-          auto indexLE =
-              checkValidReference(
-                  FL(), globalState, functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
+        globalState, functionState, builder, arrayLenRef,
+        [globalState, functionState, blockState, consumerType, consumerMethod, arrayReferend, arrayType, arrayRef, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
           functionState->defaultRegion->alias(
               AFL("DestroyUSAIntoF consume iteration"),
               functionState, bodyBuilder, consumerType, consumerRef);
 
-          std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
-          auto elementPtrLE = LLVMBuildGEP(bodyBuilder, arrayPtrLE, indices.data(), indices.size(), "elementPtr");
-          auto elementLE = LLVMBuildLoad(bodyBuilder, elementPtrLE, "element");
-          auto elementRef =
-              wrap(functionState->defaultRegion, arrayReferend->rawArray->elementType, elementLE);
-          checkValidReference(
-              FL(), globalState, functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementRef);
+          auto elementRef = loadElementtttFromUSAWithoutUpgrade(globalState, functionState, bodyBuilder, arrayType, arrayReferend, arrayRef, indexRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
           buildInterfaceCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs, 0, 0);
         });
 
     if (arrayType->ownership == Ownership::OWN) {
-      discardOwningRef(FL(), globalState, functionState, blockState, builder, arrayType, arrayRef);
+      functionState->defaultRegion->discardOwningRef(FL(), functionState, blockState, builder, arrayType, arrayRef);
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
@@ -387,7 +512,9 @@ Ref translateExpressionInner(
     auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, elementType->referend);
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
-    auto arrayWrapperPtrLE = getKnownSizeArrayWrapperPtr(globalState, functionState, builder, arrayType, arrayRef);
+
+
+
     checkValidReference(FL(), globalState, functionState, builder, arrayType, arrayRef);
     auto sizeLE =
         wrap(
@@ -398,13 +525,7 @@ Ref translateExpressionInner(
     auto mutability = ownershipToMutability(arrayType->ownership);
     functionState->defaultRegion->dealias(AFL("KSALoad"), functionState, blockState, builder, arrayType, arrayRef);
 
-    LLVMValueRef arrayPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
-    auto resultLE =
-        loadElement(
-            globalState, functionState, blockState, builder, arrayType,
-            arrayReferend->rawArray->elementType,
-            sizeLE, arrayPtrLE, mutability, indexLE,
-            resultType);
+    auto resultLE = loadElementtttFromKSAWithUpgrade(globalState, functionState, builder, arrayType, arrayReferend, arrayRef, indexLE, knownSizeArrayLoad->resultType);
     functionState->defaultRegion->alias(FL(), functionState, builder, arrayReferend->rawArray->elementType, resultLE);
     checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, resultLE);
     return resultLE;
@@ -427,9 +548,7 @@ Ref translateExpressionInner(
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
 
-    auto arrayWrapperPtrLE = getUnknownSizeArrayWrapperPtr(globalState, functionState, builder, arrayType, arrayRef);
-    LLVMValueRef arrayPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
-    auto resultLE = loadElement(globalState, functionState, blockState, builder, arrayType, elementType, sizeLE, arrayPtrLE, mutability, indexLE, resultType);
+    auto resultLE = loadElementtttFromUSAWithUpgrade(globalState, functionState, builder, arrayType, arrayReferend, arrayRef, indexLE, resultType);
 
     functionState->defaultRegion->alias(FL(), functionState, builder, resultType, resultLE);
 
@@ -467,10 +586,9 @@ Ref translateExpressionInner(
 
 
     auto oldValueLE =
-        loadElement(
-            globalState, functionState, blockState, builder, arrayType,
-            elementType, sizeRef, arrayPtrLE, mutability, indexRef,
-            elementType);
+        loadElementtttFromUSAWithoutUpgrade(
+            globalState, functionState, builder, arrayType, arrayReferend,
+            arrayRefLE, indexRef);
     checkValidReference(FL(), globalState, functionState, builder, arrayReferend->rawArray->elementType, oldValueLE);
     // We dont acquireReference here because we aren't aliasing the reference, we're moving it out.
 

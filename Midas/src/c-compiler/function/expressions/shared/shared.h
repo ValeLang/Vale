@@ -175,7 +175,7 @@ Ref upgradeLoadResultToRefWithTargetOwnership(
     LLVMBuilderRef builder,
     Reference* sourceType,
     Reference* targetType,
-    LLVMValueRef sourceRefLE);
+    Ref sourceRefLE);
 
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
@@ -195,15 +195,6 @@ LLVMValueRef addExtern(
 inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
 }
-
-void discardOwningRef(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* sourceMT,
-    Ref sourceRef);
 
 Ref upcast(
     GlobalState* globalState,

@@ -11,7 +11,18 @@
 #include "globalstate.h"
 #include "function/function.h"
 
-Ref loadElement(
+Ref loadElementWithoutUpgrade(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* arrayRefM,
+    Reference* elementRefM,
+    Ref sizeLE,
+    LLVMValueRef arrayPtrLE,
+    Mutability mutability,
+    Ref indexLE);
+
+Ref loadElementWithUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
@@ -37,12 +48,17 @@ Ref storeElement(
     Ref indexLE,
     Ref sourceLE);
 
+
+LLVMValueRef loadInnerArrayMember(
+    LLVMBuilderRef builder,
+    LLVMValueRef elemsPtrLE,
+    LLVMValueRef indexLE);
+
 void foreachArrayElement(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Ref sizeRef,
-    LLVMValueRef arrayPtrLE,
     std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
 
 LLVMValueRef getKnownSizeArrayContentsPtr(
@@ -56,13 +72,6 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
 LLVMValueRef getUnknownSizeArrayLengthPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE unknownSizeArrayWrapperPtrLE);
-
-WrapperPtrLE getKnownSizeArrayWrapperPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaMT,
-    Ref ksaRef);
 
 WrapperPtrLE getUnknownSizeArrayWrapperPtr(
     GlobalState* globalState,

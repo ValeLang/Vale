@@ -13,7 +13,8 @@ Weakability Program::getReferendWeakability(Referend* referend) {
 Mutability Program::getReferendMutability(Referend* referendM) {
   if (dynamic_cast<Int*>(referendM) ||
       dynamic_cast<Bool*>(referendM) ||
-      dynamic_cast<Float*>(referendM)) {
+      dynamic_cast<Float*>(referendM) ||
+      dynamic_cast<Str*>(referendM)) {
     return Mutability::IMMUTABLE;
   } else if (
       auto structRnd = dynamic_cast<StructReferend*>(referendM)) {
@@ -26,6 +27,9 @@ Mutability Program::getReferendMutability(Referend* referendM) {
   } else if (
       auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(referendM)) {
     return knownSizeArrayMT->rawArray->mutability;
+  } else if (
+      auto unknownSizeArrayMT = dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+    return unknownSizeArrayMT->rawArray->mutability;
   } else {
     std::cerr << typeid(*referendM).name() << std::endl;
     assert(false);

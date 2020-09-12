@@ -1,5 +1,5 @@
 #include <iostream>
-#include <function/expressions/shared/controlblock.h>
+#include <region/common/controlblock.h>
 
 #include "translatetype.h"
 
@@ -23,10 +23,9 @@ Ref translateDiscard(
     return sourceRef;
   }
 
-  checkValidReference(FL(), globalState, functionState, builder, sourceResultType, sourceRef);
-  discard(
+  globalState->region->checkValidReference(FL(), functionState, builder, sourceResultType, sourceRef);
+  functionState->defaultRegion->dealias(
       AFL(std::string("Discard ") + std::to_string((int)discardM->sourceResultType->ownership) + " " + typeid(*discardM->sourceResultType->referend).name() + " from " + typeid(*sourceExpr).name()),
-      globalState,
       functionState,
       blockState,
       builder,

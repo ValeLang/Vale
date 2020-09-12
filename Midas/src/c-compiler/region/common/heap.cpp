@@ -1,10 +1,11 @@
-#include "utils/fileio.h"
+#include <utils/counters.h>
+#include "fileio.h"
 #include "heap.h"
-#include "members.h"
-#include "shared.h"
-#include "controlblock.h"
-#include "string.h"
-#include "weaks.h"
+#include "function/expressions/shared/members.h"
+#include "function/expressions/shared/shared.h"
+#include "region/common/controlblock.h"
+#include "function/expressions/shared/string.h"
+#include "function/expressions/shared/weaks.h"
 
 LLVMValueRef callMalloc(
     GlobalState* globalState,
@@ -124,7 +125,10 @@ WrapperPtrLE mallocStr(
       LLVMBuildAdd(
           builder,
           lengthLE,
-          makeConstIntExpr(functionState, builder,LLVMInt64Type(),  1 + LLVMABISizeOfType(globalState->dataLayout, globalState->stringWrapperStructL)),
+          makeConstIntExpr(
+              functionState,
+              builder,LLVMInt64Type(),
+              1 + LLVMABISizeOfType(globalState->dataLayout, globalState->region->getStringWrapperStruct())),
           "strMallocSizeBytes");
 
   auto destCharPtrLE = callMalloc(globalState, builder, sizeBytesLE);
@@ -134,19 +138,18 @@ WrapperPtrLE mallocStr(
   }
 
   auto newStrWrapperPtrLE =
-      WrapperPtrLE(
+      functionState->defaultRegion->makeWrapperPtr(
           globalState->metalCache.strRef,
           LLVMBuildBitCast(
               builder,
               destCharPtrLE,
-              LLVMPointerType(globalState->stringWrapperStructL, 0),
+              LLVMPointerType(globalState->region->getStringWrapperStruct(), 0),
               "newStrWrapperPtr"));
-  fillControlBlock(
+  globalState->region->fillControlBlock(
       FL(),
-      globalState, functionState, builder,
+      functionState, builder,
       globalState->metalCache.str,
       Mutability::IMMUTABLE,
-      Weakability::NON_WEAKABLE,
       getConcreteControlBlockPtr(globalState, builder, newStrWrapperPtrLE), "Str");
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
@@ -163,16 +166,15 @@ WrapperPtrLE mallocStr(
 }
 
 
-
-
-void freeConcrete(
+void deallocate(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    BlockState* blockState,
     LLVMBuilderRef builder,
     ControlBlockPtrLE controlBlockPtrLE,
     Reference* refM) {
+
+  functionState->defaultRegion->noteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
@@ -181,96 +183,6 @@ void freeConcrete(
     LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
         "");
   }
-
-  if (globalState->opt->regionOverride == RegionOverride::ASSIST) {
-    auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
-    buildAssert(globalState, functionState, builder, rcIsZeroLE,
-        "Tried to free concrete that had nonzero RC!");
-
-    if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
-      auto structM = globalState->program->getStruct(structReferendM->fullName);
-      if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-        noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-      }
-    } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
-      assert(false); // Do we ever freeConcrete an interface?
-    } else {
-      // Do nothing, only structs and interfaces are weakable in assist mode.
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-    // Dont need to assert that the strong RC is zero, thats the only way we'd get here.
-
-    if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
-      auto structM = globalState->program->getStruct(structReferendM->fullName);
-      if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-        noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-      }
-    } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
-      auto interfaceM = globalState->program->getInterface(interfaceReferendM->fullName);
-      if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
-        noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-      }
-    } else {
-      // Do nothing, only structs and interfaces are weakable in naive-rc mode.
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-    // In fast mode, only shared things are strong RC'd
-    if (refM->ownership == Ownership::SHARE) {
-      // Only shared stuff is RC'd in fast mode
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
-      buildAssert(globalState, functionState, builder, rcIsZeroLE,
-          "Tried to free concrete that had nonzero RC!");
-    } else {
-      // It's a mutable, so mark WRCs dead
-
-      if (auto structReferendM = dynamic_cast<StructReferend *>(refM->referend)) {
-        auto structM = globalState->program->getStruct(structReferendM->fullName);
-        if (getEffectiveWeakability(globalState, structM) == Weakability::WEAKABLE) {
-          noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-        }
-      } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
-        if (getEffectiveWeakability(globalState, interfaceM) == Weakability::WEAKABLE) {
-          noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-        }
-      } else {
-        // Do nothing, only structs and interfaces are weakable in assist mode.
-      }
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-    if (refM->ownership == Ownership::SHARE) {
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
-      buildAssert(globalState, functionState, builder, rcIsZeroLE,
-          "Tried to free concrete that had nonzero RC!");
-    } else {
-      assert(refM->ownership == Ownership::OWN);
-
-      // In resilient mode, every mutable is weakable.
-      noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-    if (refM->ownership == Ownership::SHARE) {
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
-      buildAssert(globalState, functionState, builder, rcIsZeroLE,
-          "Tried to free concrete that had nonzero RC!");
-    } else {
-      assert(refM->ownership == Ownership::OWN);
-
-      // In resilient mode, every mutable is weakable.
-      noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-    if (refM->ownership == Ownership::SHARE) {
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
-      buildAssert(globalState, functionState, builder, rcIsZeroLE,
-          "Tried to free concrete that had nonzero RC!");
-    } else {
-      assert(refM->ownership == Ownership::OWN);
-
-      // In resilient mode, every mutable is weakable.
-      noteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
-    }
-  } else assert(false);
 
   if (refM->location == Location::INLINE) {
     // Do nothing, it was alloca'd.

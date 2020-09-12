@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "function/expressions/shared/branch.h"
+#include "utils/branch.h"
 
 #include "translatetype.h"
 
@@ -40,7 +40,7 @@ Ref translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  checkValidReference(FL(), globalState, functionState, builder, iff->commonSupertype, resultLE);
+  globalState->region->checkValidReference(FL(), functionState, builder, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;

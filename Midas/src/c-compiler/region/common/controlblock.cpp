@@ -28,7 +28,7 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
   return LLVMBuildStructGEP(
       builder,
       controlBlockPtr.refLE,
-      globalState->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::STRONG_RC),
+      globalState->region->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::STRONG_RC),
       "rcPtr");
 }
 
@@ -43,7 +43,7 @@ LLVMValueRef getObjIdFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
+          globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
           "objIdPtr"),
       "objId");
 }
@@ -58,7 +58,7 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          globalState->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
+          globalState->region->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
           "typeNameStrPtrPtr"),
       "typeNameStrPtr");
 }
@@ -86,96 +86,6 @@ LLVMValueRef getStrongRcFromControlBlockPtr(
 
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, structExpr);
   return LLVMBuildLoad(builder, rcPtrLE, "rc");
-}
-
-// Returns object ID
-void fillControlBlock(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Referend* referendM,
-    Mutability mutability,
-    ControlBlockPtrLE controlBlockPtrLE,
-    const std::string& typeName) {
-
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->getControlBlockStruct(referendM));
-//  nullptr;
-//  if (mutability == Mutability::MUTABLE) {
-//    if (weakability == Weakability::WEAKABLE) {
-//      newControlBlockLE = LLVMGetUndef(globalState->mutWeakableControlBlockStructL);
-//    } else {
-//      newControlBlockLE = LLVMGetUndef(globalState->mutNonWeakableControlBlockStructL);
-//    }
-//  } else {
-//    newControlBlockLE = LLVMGetUndef(globalState->immControlBlockStructL);
-//  }
-
-  if (mutability == Mutability::IMMUTABLE) {
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            // Start at 1, 0 would mean it's dead.
-            LLVMConstInt(LLVMInt32Type(), 1, false),
-            globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
-            "controlBlockWithRc");
-  } else {
-    bool hasStrongRc =
-        globalState->opt->regionOverride == RegionOverride::ASSIST ||
-        globalState->opt->regionOverride == RegionOverride::NAIVE_RC;
-    if (hasStrongRc) {
-      newControlBlockLE =
-          LLVMBuildInsertValue(
-              builder,
-              newControlBlockLE,
-              // Start at 1, 0 would mean it's dead.
-              LLVMConstInt(LLVMInt32Type(), 1, false),
-              globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
-              "controlBlockWithRc");
-    }
-  }
-
-  if (globalState->opt->census) {
-    auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            objIdLE,
-            globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
-            "strControlBlockWithObjId");
-    newControlBlockLE =
-        LLVMBuildInsertValue(
-            builder,
-            newControlBlockLE,
-            globalState->getOrMakeStringConstant(typeName),
-            globalState->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
-            "strControlBlockWithTypeStr");
-    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
-  }
-  bool fillWeakable = false;
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::FAST:
-      fillWeakable = globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE;
-      break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-      fillWeakable = globalState->program->getReferendMutability(referendM) == Mutability::MUTABLE;
-      break;
-    default:
-      assert(false);
-  }
-  if (fillWeakable) {
-    newControlBlockLE = fillWeakableControlBlock(globalState, functionState, builder, referendM, newControlBlockLE);
-  }
-  LLVMBuildStore(
-      builder,
-      newControlBlockLE,
-      controlBlockPtrLE.refLE);
 }
 
 ControlBlockPtrLE getConcreteControlBlockPtr(

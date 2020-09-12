@@ -2,16 +2,10 @@
 #include "structs.h"
 
 
-constexpr uint32_t WRC_ALIVE_BIT = 0x80000000;
-constexpr uint32_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
-
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI = 0;
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
-
-constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
-constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
 
 
 ControlBlock* ReferendStructs::getControlBlock(Referend* referend) {
@@ -49,90 +43,15 @@ LLVMTypeRef ReferendStructs::getInterfaceTableStruct(InterfaceReferend* interfac
 }
 
 
-LLVMTypeRef makeLgtEntryStruct(GlobalState* globalState) {
-  auto lgtEntryStructL = LLVMStructCreateNamed(globalState->context, "__LgtEntry");
-
-  std::vector<LLVMTypeRef> memberTypesL;
-
-  assert(LGT_ENTRY_MEMBER_INDEX_FOR_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
-
-  assert(LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
-
-  LLVMStructSetBody(lgtEntryStructL, memberTypesL.data(), memberTypesL.size(), false);
-
-  return lgtEntryStructL;
-}
-
-LLVMTypeRef makeResilientV1GenRefStruct(GlobalState* globalState) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
-  auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
-
-  std::vector<LLVMTypeRef> memberTypesL;
-
-  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
-
-  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
-
-  LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
-
-  assert(
-      LLVMABISizeOfType(globalState->dataLayout, genRefStructL) ==
-          LLVMABISizeOfType(globalState->dataLayout, LLVMInt64Type()));
-
-  return genRefStructL;
-}
-
-LLVMTypeRef makeResilientV2GenRefStruct(GlobalState* globalState) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2);
-  auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
-
-  std::vector<LLVMTypeRef> memberTypesL;
-
-  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
-
-  LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
-
-  return genRefStructL;
-}
-
-LLVMTypeRef makeWrciStruct(GlobalState* globalState) {
-  auto wrciRefStructL = LLVMStructCreateNamed(globalState->context, "__WrciRef");
-
-  std::vector<LLVMTypeRef> memberTypesL;
-
-  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
-
-  LLVMStructSetBody(wrciRefStructL, memberTypesL.data(), memberTypesL.size(), false);
-
-  return wrciRefStructL;
-}
-
 WeakableReferendStructs::WeakableReferendStructs(
   GlobalState* globalState_,
-  ControlBlock controlBlock)
+  ControlBlock controlBlock,
+  LLVMTypeRef weakRefHeaderStructL_)
 : globalState(globalState_),
-  referendStructs(globalState_, std::move(controlBlock)) {
+  referendStructs(globalState_, std::move(controlBlock)),
+  weakRefHeaderStructL(weakRefHeaderStructL_) {
 
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-    globalState->lgtEntryStructL = makeLgtEntryStruct(globalState);
-
-    weakRefHeaderStructL = makeResilientV1GenRefStruct(globalState);
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-    weakRefHeaderStructL = makeResilientV2GenRefStruct(globalState);
-  } else if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-      globalState->opt->regionOverride == RegionOverride::FAST ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
-      globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-    weakRefHeaderStructL = makeWrciStruct(globalState);
-  } else {
-    assert(false);
-  }
+  assert(weakRefHeaderStructL);
 
   // This is a weak ref to a void*. When we're calling an interface method on a weak,
   // we have no idea who the receiver is. They'll receive this struct as the correctly
@@ -362,6 +281,8 @@ void ReferendStructs::translateKnownSizeArray(
 void WeakableReferendStructs::translateStruct(
     StructDefinition* struuct,
     std::vector<LLVMTypeRef> membersLT) {
+  assert(weakRefHeaderStructL);
+
   referendStructs.translateStruct(struuct, membersLT);
 
   LLVMTypeRef wrapperStructL = getWrapperStruct(struuct->referend);
@@ -408,6 +329,8 @@ void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
 void WeakableReferendStructs::translateInterface(
     InterfaceDefinition* interface,
     std::vector<LLVMTypeRef> interfaceMethodTypesL) {
+  assert(weakRefHeaderStructL);
+
   referendStructs.translateInterface(interface, interfaceMethodTypesL);
 
   LLVMTypeRef refStructL = getInterfaceRefStruct(interface->referend);
@@ -445,6 +368,8 @@ void WeakableReferendStructs::declareUnknownSizeArray(
 void WeakableReferendStructs::translateUnknownSizeArray(
     UnknownSizeArrayT* unknownSizeArrayMT,
     LLVMTypeRef elementLT) {
+  assert(weakRefHeaderStructL);
+
   referendStructs.translateUnknownSizeArray(unknownSizeArrayMT, elementLT);
 
   auto unknownSizeArrayWrapperStruct = getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
@@ -459,6 +384,8 @@ void WeakableReferendStructs::translateUnknownSizeArray(
 void WeakableReferendStructs::translateKnownSizeArray(
     KnownSizeArrayT* knownSizeArrayMT,
     LLVMTypeRef elementLT) {
+  assert(weakRefHeaderStructL);
+
   referendStructs.translateKnownSizeArray(knownSizeArrayMT, elementLT);
 
   auto knownSizeArrayWrapperStruct = getKnownSizeArrayWrapperStruct(knownSizeArrayMT);

@@ -65,4 +65,58 @@ LLVMValueRef getVoidPtrFromInterfacePtr(
     Reference* virtualParamMT,
     InterfaceFatPtrLE virtualArgLE);
 
+
+LLVMValueRef fillControlBlockCensusFields(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    LLVMValueRef newControlBlockLE,
+    const std::string& typeName);
+
+LLVMValueRef insertStrongRc(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    LLVMValueRef newControlBlockLE);
+
+Ref loadElementFromKSAWithoutUpgradeNormal(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef);
+
+Ref loadElementFromKSAWithoutUpgradeForce(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef);
+
+void buildCheckGen(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef targetGenLE,
+    LLVMValueRef actualGenLE);
+
+
+LLVMValueRef makeInterfaceRefStruct(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    StructReferend* sourceStructReferendM,
+    InterfaceReferend* targetInterfaceReferendM,
+    ControlBlockPtrLE controlBlockPtrLE);
+
+LLVMValueRef getTablePtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    InterfaceFatPtrLE interfaceFatPtrLE);
+
 #endif

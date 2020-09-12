@@ -145,9 +145,9 @@ WrapperPtrLE mallocStr(
               destCharPtrLE,
               LLVMPointerType(globalState->region->getStringWrapperStruct(), 0),
               "newStrWrapperPtr"));
-  fillControlBlock(
+  globalState->region->fillControlBlock(
       FL(),
-      globalState, functionState, builder,
+      functionState, builder,
       globalState->metalCache.str,
       Mutability::IMMUTABLE,
       getConcreteControlBlockPtr(globalState, builder, newStrWrapperPtrLE), "Str");

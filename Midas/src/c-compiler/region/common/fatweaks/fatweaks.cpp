@@ -6,10 +6,11 @@
 #include <region/common/controlblock.h>
 #include "fatweaks.h"
 
+constexpr int WEAK_REF_MEMBER_INDEX_FOR_HEADER = 0;
+constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
 
 // Dont use this function for V2
 LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
-    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
@@ -41,7 +42,6 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
 }
 
 LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
-    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
@@ -74,4 +74,44 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
   // We dont check that its valid because if it's a weak ref, it might *not* be pointing at
   // a valid reference.
   return innerRefLE;
+}
+
+LLVMValueRef FatWeaks::getHeaderFromWeakRef(
+    LLVMBuilderRef builder,
+    WeakFatPtrLE weakRefLE) {
+  return LLVMBuildExtractValue(builder, weakRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "weakRefHeader");
+}
+
+WeakFatPtrLE FatWeaks::assembleWeakFatPtr(
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefMT,
+    LLVMTypeRef weakRefStruct,
+    LLVMValueRef headerLE,
+    LLVMValueRef innerRefLE) {
+  auto weakRefLE = LLVMGetUndef(weakRefStruct);
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, innerRefLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
+  return functionState->defaultRegion->makeWeakFatPtr(weakRefMT, weakRefLE);
+}
+
+// Used in interface calling, when we dont know what the underlying struct type is yet.
+WeakFatPtrLE FatWeaks::assembleVoidStructWeakRef(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE controlBlockPtrLE,
+    LLVMValueRef headerLE) {
+  auto objVoidPtrLE =
+      LLVMBuildPointerCast(
+          builder,
+          controlBlockPtrLE.refLE,
+          LLVMPointerType(LLVMVoidType(), 0),
+          "objAsVoidPtr");
+
+  auto weakRefLE = LLVMGetUndef(globalState->region->getWeakVoidRefStruct());
+  weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
+  weakRefLE =
+      LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
+
+  return globalState->region->makeWeakFatPtr(refM, weakRefLE);
 }

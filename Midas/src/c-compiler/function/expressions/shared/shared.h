@@ -38,10 +38,6 @@ void makeHammerLocal(
     Ref valueToStore);
 
 
-LLVMValueRef getTablePtrFromInterfaceRef(
-    LLVMBuilderRef builder,
-    InterfaceFatPtrLE interfaceFatPtrLE);
-
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
@@ -156,26 +152,6 @@ Ref buildCall(
     Prototype* prototype,
     std::vector<Ref> argRefs);
 
-// TODO move these into region classes
-Weakability getWeakability(GlobalState* globalState, Referend* referend);
-
-// Loads from either a local or a member, and does the appropriate casting.
-Ref upgradeLoadResultToRefWithTargetOwnership(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceType,
-    Reference* targetType,
-    Ref sourceRefLE);
-
-LLVMValueRef makeInterfaceRefStruct(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    StructReferend* sourceStructReferendM,
-    InterfaceReferend* targetInterfaceReferendM,
-    ControlBlockPtrLE controlBlockPtrLE);
-
 
 LLVMValueRef addExtern(
     LLVMModuleRef mod,
@@ -186,17 +162,5 @@ LLVMValueRef addExtern(
 inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
 }
-
-Ref upcast(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-
-    Reference* sourceStructMT,
-    StructReferend* sourceStructReferendM,
-    Ref sourceRefLE,
-
-    Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM);
 
 #endif

@@ -98,9 +98,6 @@ private:
   bool built;
 };
 
-constexpr int WEAK_REF_MEMBER_INDEX_FOR_HEADER = 0;
-constexpr int WEAK_REF_MEMBER_INDEX_FOR_OBJPTR = 1;
-
 // See CRCISFAORC for why we don't take in a mutability.
 // Strong means owning or borrow or shared; things that control the lifetime.
 LLVMValueRef getStrongRcPtrFromControlBlockPtr(
@@ -121,17 +118,6 @@ LLVMValueRef getStrongRcFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE);
-
-// Returns object ID
-void fillControlBlock(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Referend* referendM,
-    Mutability mutability,
-    ControlBlockPtrLE controlBlockPtrLE,
-    const std::string& typeName);
 
 ControlBlockPtrLE getConcreteControlBlockPtr(
     GlobalState* globalState,

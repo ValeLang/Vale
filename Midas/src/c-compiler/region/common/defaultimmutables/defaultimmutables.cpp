@@ -108,8 +108,8 @@ void DefaultImmutables::discard(
             auto funcL = globalState->getFunction(immDestructor->name);
 
             auto sourceLE =
-                checkValidReference(
-                    FL(), globalState, functionState, thenBuilder, sourceMT, sourceRef);
+                globalState->region->checkValidReference(FL(),
+                    functionState, thenBuilder, sourceMT, sourceRef);
             std::vector<LLVMValueRef> argExprsL = {sourceLE};
             return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
           });
@@ -128,7 +128,7 @@ void DefaultImmutables::discard(
           auto sourceWrapperPtrLE =
               functionState->defaultRegion->makeWrapperPtr(
                   sourceMT,
-                  checkValidReference(FL(), globalState, functionState, thenBuilder, sourceMT,
+                  globalState->region->checkValidReference(FL(), functionState, thenBuilder, sourceMT,
                       sourceRef));
           auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, thenBuilder,
               sourceWrapperPtrLE);

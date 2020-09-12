@@ -180,9 +180,12 @@ public:
 //  LLVMValueRef getUnknownSizeArrayElementsPtr(
 //      LLVMBuilderRef builder,
 //      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
-//  LLVMValueRef getUnknownSizeArrayLength(
-//      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
+
+  Ref getUnknownSizeArrayLength(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      Ref arrayRef) override;
 
   void destroyArray(
       FunctionState* functionState,
@@ -210,9 +213,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      Ref refLE) override {
-    return ::checkValidReference(checkerAFL, globalState, functionState, builder, refM, refLE);
-  }
+      Ref refLE) override;
 
   Ref loadElement(
       FunctionState* functionState,

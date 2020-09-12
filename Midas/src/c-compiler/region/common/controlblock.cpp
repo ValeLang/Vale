@@ -208,31 +208,31 @@ ControlBlockPtrLE getControlBlockPtr(
     auto referenceLE =
         functionState->defaultRegion->makeInterfaceFatPtr(
             referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
+            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
     return getControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
     auto referenceLE =
         functionState->defaultRegion->makeWrapperPtr(
             referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
+            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
     auto referenceLE =
         functionState->defaultRegion->makeWrapperPtr(
             referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
+            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
     auto referenceLE =
         functionState->defaultRegion->makeWrapperPtr(
             referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
+            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
     auto referenceLE =
         functionState->defaultRegion->makeWrapperPtr(
             referenceM,
-            checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
+            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else {
     assert(false);

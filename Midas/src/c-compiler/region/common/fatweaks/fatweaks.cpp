@@ -32,7 +32,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
       break;
   }
 
-//  checkValidReference(FL(), globalState, functionState, builder, weakRefM, weakFatPtrLE);
+//  globalState->region->checkValidReference(FL(), functionState, builder, weakRefM, weakFatPtrLE);
 
   auto innerRefLE = LLVMBuildExtractValue(builder, weakFatPtrLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
   // We dont check that its valid because if it's a weak ref, it might *not* be pointing at

@@ -242,7 +242,7 @@ Ref Assist::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refe
     auto objPtrLE =
         makeWrapperPtr(
             sourceRefMT,
-            ::checkValidReference(FL(), globalState, functionState, builder, sourceRefMT,
+            globalState->region->checkValidReference(FL(), functionState, builder, sourceRefMT,
                 sourceRef));
     return wrap(
         this,

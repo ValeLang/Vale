@@ -107,8 +107,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 //  std::cout << "OVERRIDING census to true!" << std::endl;
 //  globalState->opt->census = true;
-  std::cout << "OVERRIDING flares to true!" << std::endl;
-  globalState->opt->flares = true;
+//  std::cout << "OVERRIDING flares to true!" << std::endl;
+//  globalState->opt->flares = true;
 
 //  std::cout << "OVERRIDING gen-heap to true!" << std::endl;
 //  globalState->opt->genHeap = true;

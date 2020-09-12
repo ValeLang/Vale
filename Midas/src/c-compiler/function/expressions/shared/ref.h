@@ -164,20 +164,15 @@ private:
   Reference* const refM;
   LLVMValueRef const refLE;
 
-  friend std::tuple<Reference*, LLVMValueRef> megaGetRefInnards(Ref ref);
+  friend std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref);
+  friend std::tuple<Reference*, LLVMValueRef> hgmGetRefInnardsForChecking(Ref ref);
+  friend std::tuple<Reference*, LLVMValueRef> lgtGetRefInnardsForChecking(Ref ref);
+  friend std::tuple<Reference*, LLVMValueRef> wrcGetRefInnardsForChecking(Ref ref);
 
   friend void buildPrint(
       GlobalState* globalState,
       LLVMBuilderRef builder,
       Ref ref);
-
-  friend void buildCheckWeakRef(
-      AreaAndFileAndLine checkerAFL,
-      GlobalState* globalState,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* weakRefM,
-      Ref weakRef);
 };
 
 Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);

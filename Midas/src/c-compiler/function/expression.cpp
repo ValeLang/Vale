@@ -122,7 +122,7 @@ Ref translateExpressionInner(
     globalState->region->checkValidReference(FL(), functionState, builder, weakAlias->sourceType, sourceRef);
 
     auto resultRef = functionState->defaultRegion->weakAlias(functionState, builder, weakAlias->sourceType, weakAlias->resultType, sourceRef);
-    aliasWeakRef(FL(), globalState, functionState, builder, weakAlias->resultType, resultRef);
+    globalState->region->aliasWeakRef(FL(), functionState, builder, weakAlias->resultType, resultRef);
     functionState->defaultRegion->dealias(
         AFL("WeakAlias drop constraintref"),
         functionState, blockState, builder, weakAlias->sourceType, sourceRef);
@@ -238,7 +238,7 @@ Ref translateExpressionInner(
               AFL("DestroyKSAIntoF consume iteration"),
               functionState, bodyBuilder, consumerType, consumerRef);
 
-          auto elementRef = loadElementtttFromKSAWithoutUpgrade(globalState, functionState,
+          auto elementRef = globalState->region->loadElementFromKSAWithoutUpgrade(functionState,
               bodyBuilder, arrayType, arrayReferend, arrayRef, indexRef);
           globalState->region->checkValidReference(FL(), functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
@@ -294,7 +294,7 @@ Ref translateExpressionInner(
               AFL("DestroyUSAIntoF consume iteration"),
               functionState, bodyBuilder, consumerType, consumerRef);
 
-          auto elementRef = loadElementtttFromUSAWithoutUpgrade(globalState, functionState, bodyBuilder, arrayType, arrayReferend, arrayRef, indexRef);
+          auto elementRef = globalState->region->loadElementFromUSAWithoutUpgrade(functionState, bodyBuilder, arrayType, arrayReferend, arrayRef, indexRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
           buildInterfaceCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs, 0, 0);
         });
@@ -345,7 +345,7 @@ Ref translateExpressionInner(
     auto mutability = ownershipToMutability(arrayType->ownership);
     functionState->defaultRegion->dealias(AFL("KSALoad"), functionState, blockState, builder, arrayType, arrayRef);
 
-    auto resultLE = loadElementtttFromKSAWithUpgrade(globalState, functionState, builder, arrayType, arrayReferend, arrayRef, indexLE, knownSizeArrayLoad->resultType);
+    auto resultLE = globalState->region->loadElementFromKSAWithUpgrade(functionState, builder, arrayType, arrayReferend, arrayRef, indexLE, knownSizeArrayLoad->resultType);
     functionState->defaultRegion->alias(FL(), functionState, builder, arrayReferend->rawArray->elementType, resultLE);
     globalState->region->checkValidReference(FL(), functionState, builder, arrayReferend->rawArray->elementType, resultLE);
     return resultLE;
@@ -368,7 +368,7 @@ Ref translateExpressionInner(
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
 
-    auto resultLE = loadElementtttFromUSAWithUpgrade(globalState, functionState, builder, arrayType, arrayReferend, arrayRef, indexLE, resultType);
+    auto resultLE = globalState->region->loadElementFromUSAWithUpgrade(functionState, builder, arrayType, arrayReferend, arrayRef, indexLE, resultType);
 
     functionState->defaultRegion->alias(FL(), functionState, builder, resultType, resultLE);
 
@@ -404,8 +404,8 @@ Ref translateExpressionInner(
 
 
     auto oldValueLE =
-        loadElementtttFromUSAWithoutUpgrade(
-            globalState, functionState, builder, arrayType, arrayReferend,
+        globalState->region->loadElementFromUSAWithoutUpgrade(
+            functionState, builder, arrayType, arrayReferend,
             arrayRefLE, indexRef);
     globalState->region->checkValidReference(FL(), functionState, builder, arrayReferend->rawArray->elementType, oldValueLE);
     // We dont acquireReference here because we aren't aliasing the reference, we're moving it out.
@@ -417,8 +417,8 @@ Ref translateExpressionInner(
 
     globalState->region->checkValidReference(FL(), functionState, builder, arrayReferend->rawArray->elementType, valueToStoreLE);
 
-    storeElementtttInUSA(
-        globalState, functionState, builder,
+    globalState->region->storeElementInUSA(
+        functionState, builder,
         arrayType, arrayReferend, arrayRefLE, indexRef, valueToStoreLE);
 
     functionState->defaultRegion->dealias(AFL("USAStore"), functionState, blockState, builder, arrayType, arrayRefLE);
@@ -524,8 +524,7 @@ Ref translateExpressionInner(
     // maybe function params that are inl can take a pointer, and they can
     // just copy it immediately?
 
-    return upcast(
-        globalState,
+    return globalState->region->upcast(
         functionState,
         builder,
         structToInterfaceUpcast->sourceStructType,
@@ -548,7 +547,7 @@ Ref translateExpressionInner(
             sourceType->location,
             sourceType->referend);
 
-    auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceType, sourceLE);
+    auto isAliveLE = globalState->region->getIsAliveFromWeakRef(functionState, builder, sourceType, sourceLE);
 
     auto resultOptTypeLE = functionState->defaultRegion->translateType(lockWeak->resultOptType);
 
@@ -571,8 +570,7 @@ Ref translateExpressionInner(
               globalState->region->checkValidReference(FL(), functionState, thenBuilder,
                   lockWeak->someType,
                   someRef);
-              return upcast(
-                  globalState,
+              return globalState->region->upcast(
                   functionState,
                   thenBuilder,
                   lockWeak->someType,
@@ -587,8 +585,7 @@ Ref translateExpressionInner(
               auto noneRef = buildCall(globalState, functionState, elseBuilder, noneConstructor, {});
               globalState->region->checkValidReference(FL(),
                   functionState, elseBuilder, lockWeak->noneType, noneRef);
-              return upcast(
-                  globalState,
+              return globalState->region->upcast(
                   functionState,
                   elseBuilder,
                   lockWeak->noneType,

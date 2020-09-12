@@ -1,4 +1,3 @@
-#include <function/expressions/shared/weaks.h>
 #include <utils/branch.h>
 #include <region/common/fatweaks/fatweaks.h>
 #include <region/common/hgm/hgm.h>
@@ -37,7 +36,7 @@ void Assist::alias(
     } else if (sourceRef->ownership == Ownership::BORROW) {
       adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+      aliasWeakRef(from, functionState, builder, sourceRef, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
@@ -69,7 +68,7 @@ void Assist::dealias(
   } else if (sourceMT->ownership == Ownership::BORROW) {
     adjustStrongRc(from, globalState, functionState, builder, sourceRef, sourceMT, -1);
   } else if (sourceMT->ownership == Ownership::WEAK) {
-    discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+    discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
   } else assert(false);
 }
 
@@ -85,7 +84,7 @@ Ref Assist::lockWeak(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   auto isAliveLE =
-      getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT, sourceWeakRef);
+      getIsAliveFromWeakRef(functionState, builder, sourceWeakRefMT, sourceWeakRef);
   auto resultOptTypeLE = translateType(resultOptTypeM);
   return buildIfElse(
       globalState, functionState, builder, isAliveLE, resultOptTypeLE, resultOptTypeM, resultOptTypeM,
@@ -97,7 +96,7 @@ Ref Assist::lockWeak(
                 checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRef));
         auto constraintRefLE =
             fatWeaks.getInnerRefFromWeakRef(
-                globalState, functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE);
+                functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE);
         auto constraintRef =
             wrap(this, constraintRefM, constraintRefLE);
         return buildThen(thenBuilder, constraintRef);
@@ -247,8 +246,8 @@ Ref Assist::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refe
     return wrap(
         this,
         targetRefMT,
-        assembleStructWeakRef(
-            globalState, functionState, builder,
+        wrcWeaks.assembleStructWeakRef(
+            functionState, builder,
             sourceRefMT, targetRefMT, structReferendM, objPtrLE));
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(sourceRefMT->referend)) {
     assert(false); // impl
@@ -289,7 +288,7 @@ void Assist::noteWeakableDestroyed(
   if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
     auto structM = globalState->program->getStruct(structReferendM->fullName);
     if (structM->weakability == Weakability::WEAKABLE) {
-      innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+      wrcWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
     }
   } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
     assert(false); // Do we ever deallocate an interface?
@@ -324,7 +323,7 @@ Ref Assist::loadMember(
       loadInnerInnerStructMember(this, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
   auto resultRef =
       upgradeLoadResultToRefWithTargetOwnership(
-          globalState, functionState, builder, expectedMemberType, targetType, memberLE);
+          functionState, builder, expectedMemberType, targetType, memberLE);
   return resultRef;
 }
 
@@ -384,16 +383,42 @@ std::tuple<LLVMValueRef, LLVMValueRef> Assist::explodeInterfaceRef(
       auto interfaceRefLE =
           functionState->defaultRegion->makeInterfaceFatPtr(
               virtualParamMT,
-              FatWeaks().getInnerRefFromWeakRef(
-                  globalState, functionState, builder, virtualParamMT, weakFatPtrLE));
+              fatWeaks.getInnerRefFromWeakRef(
+                  functionState, builder, virtualParamMT, weakFatPtrLE));
       itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
       // Now, reassemble a weak void* ref to the struct.
       auto weakVoidStructRefLE =
-          weakInterfaceRefToWeakStructRef(
-              globalState, functionState, builder, virtualParamMT, weakFatPtrLE);
+          wrcWeaks.weakInterfaceRefToWeakStructRef(
+              functionState, builder, virtualParamMT, weakFatPtrLE);
       newVirtualArgLE = weakVoidStructRefLE.refLE;
       break;
     }
   }
   return std::make_tuple(itablePtrLE, newVirtualArgLE);
+}
+
+void Assist::aliasWeakRef(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefMT,
+    Ref weakRef) {
+  return wrcWeaks.aliasWeakRef(from, functionState, builder, weakRefMT, weakRef);
+}
+
+void Assist::discardWeakRef(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefMT,
+    Ref weakRef) {
+  return wrcWeaks.discardWeakRef(from, functionState, builder, weakRefMT, weakRef);
+}
+
+Ref Assist::getIsAliveFromWeakRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefM,
+    Ref weakRef) {
+  return wrcWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
 }

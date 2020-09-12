@@ -99,8 +99,10 @@ public:
 // (Keep in mind, in resilient modes, all muts are weakable)
 class WeakableReferendStructs : public IReferendStructsSource, public IWeakRefStructsSource {
 public:
-  WeakableReferendStructs(GlobalState* globalState_, ControlBlock controlBlock);
-
+  WeakableReferendStructs(
+      GlobalState* globalState_,
+      ControlBlock controlBlock,
+      LLVMTypeRef weakRefHeaderStructL_);
 
   ControlBlock* getControlBlock(Referend* referend) override;
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;

@@ -11,44 +11,6 @@
 #include "globalstate.h"
 #include "function/function.h"
 
-Ref loadElementtttFromUSAWithoutUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
-    Ref arrayRef,
-    Ref indexRef);
-
-Ref loadElementtttFromKSAWithoutUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef);
-
-Ref loadElementtttFromKSAWithUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef,
-    Reference* targetType);
-
-Ref loadElementtttFromUSAWithUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
-    Ref arrayRef,
-    Ref indexRef,
-    Reference* targetType);
-
 Ref loadElementWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -60,18 +22,18 @@ Ref loadElementWithoutUpgrade(
     Mutability mutability,
     Ref indexLE);
 
-Ref loadElementWithUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Reference* elementRefM,
-    Ref sizeLE,
-    LLVMValueRef arrayPtrLE,
-    Mutability mutability,
-    Ref indexLE,
-    Reference* resultRefM);
+//Ref loadElementWithUpgrade(
+//    GlobalState* globalState,
+//    FunctionState* functionState,
+//    BlockState* blockState,
+//    LLVMBuilderRef builder,
+//    Reference* arrayRefM,
+//    Reference* elementRefM,
+//    Ref sizeLE,
+//    LLVMValueRef arrayPtrLE,
+//    Mutability mutability,
+//    Ref indexLE,
+//    Reference* resultRefM);
 
 Ref storeElement(
     GlobalState* globalState,
@@ -86,26 +48,6 @@ Ref storeElement(
     Ref sourceLE);
 
 
-
-Ref storeElementtttInUSA(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
-    Ref arrayRef,
-    Ref indexRef,
-    Ref elementRef);
-
-Ref storeElementtttInKSA(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef,
-    Ref elementRef);
 
 LLVMValueRef loadInnerArrayMember(
     LLVMBuilderRef builder,

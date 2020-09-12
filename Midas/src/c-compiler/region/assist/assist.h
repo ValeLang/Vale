@@ -131,6 +131,27 @@ public:
       Reference* virtualParamMT,
       Ref virtualArgRef) override;
 
+
+  void aliasWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      Ref weakRef) override;
+
+  void discardWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      Ref weakRef) override;
+
+  Ref getIsAliveFromWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef) override;
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);

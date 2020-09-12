@@ -30,8 +30,8 @@ Ref translateLocalLoad(
   globalState->region->checkValidReference(FL(), functionState, builder, localType, sourceRef);
 
   auto resultRefLE =
-      upgradeLoadResultToRefWithTargetOwnership(
-          globalState, functionState, builder, localType, resultType, sourceRef);
+      globalState->region->upgradeLoadResultToRefWithTargetOwnership(
+          functionState, builder, localType, resultType, sourceRef);
   functionState->defaultRegion->alias(FL(), functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }

@@ -12,6 +12,21 @@
 #include <function/expressions/shared/elements.h>
 #include "mega.h"
 
+// Transmutes a ptr of one ownership (such as own) to another ownership (such as borrow).
+Ref transmutePtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceRefMT,
+    Reference* targetRefMT,
+    Ref sourceRef) {
+  // The WrapperPtrLE constructors here will make sure that its a safe and valid transmutation.
+  auto sourcePtrRawLE =
+      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
+  auto targetWeakRef = wrap(functionState->defaultRegion, targetRefMT, sourcePtrRawLE);
+  return targetWeakRef;
+}
+
+
 ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock"));
   controlBlock.addMember(ControlBlockMember::STRONG_RC);
@@ -190,12 +205,34 @@ ControlBlock makeMutWeakableControlBlock(GlobalState* globalState) {
   }
 }
 
+LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState) {
+  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+    return LgtWeaks::makeWeakRefHeaderStruct(globalState);
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+    return HybridGenerationalMemory::makeWeakRefHeaderStruct(globalState);
+  } else if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+      globalState->opt->regionOverride == RegionOverride::FAST ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
+      globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+    return WrcWeaks::makeWeakRefHeaderStruct(globalState);
+  } else {
+    assert(false);
+  }
+}
+
 Mega::Mega(GlobalState* globalState_) :
     globalState(globalState_),
     immStructs(globalState, makeImmControlBlock(globalState)),
     mutNonWeakableStructs(globalState, makeMutNonWeakableControlBlock(globalState)),
-    mutWeakableStructs(globalState, makeMutWeakableControlBlock(globalState)),
+    mutWeakableStructs(
+        globalState,
+        makeMutWeakableControlBlock(globalState),
+        makeWeakRefHeaderStruct(globalState)),
     defaultImmutables(globalState, &immStructs),
+    fatWeaks(globalState_),
+    wrcWeaks(globalState_),
+    lgtWeaks(globalState_),
+    hgmWeaks(globalState_),
     referendStructs(
         [this](Referend* referend) -> IReferendStructsSource* {
           switch (globalState->opt->regionOverride) {
@@ -315,9 +352,9 @@ Ref constructCountedStruct(
       functionState->defaultRegion->makeWrapperPtr(
           structTypeM,
           mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL));
-  fillControlBlock(
+  globalState->region->fillControlBlock(
       from,
-      globalState, functionState, builder,
+      functionState, builder,
       structTypeM->referend,
       structM->mutability,
       getConcreteControlBlockPtr(globalState, builder, newStructWrapperPtrLE), structM->name->name);
@@ -443,7 +480,7 @@ void Mega::alias(
         } else if (sourceRef->ownership == Ownership::BORROW) {
           adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
         } else if (sourceRef->ownership == Ownership::WEAK) {
-          aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+          aliasWeakRef(from, functionState, builder, sourceRef, expr);
         } else if (sourceRef->ownership == Ownership::SHARE) {
           if (sourceRef->location == Location::INLINE) {
             // Do nothing, we can just let inline structs disappear
@@ -475,7 +512,7 @@ void Mega::alias(
         } else if (sourceRef->ownership == Ownership::BORROW) {
           // Do nothing, fast mode doesn't do stuff for borrow refs.
         } else if (sourceRef->ownership == Ownership::WEAK) {
-          aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+          aliasWeakRef(from, functionState, builder, sourceRef, expr);
         } else if (sourceRef->ownership == Ownership::SHARE) {
           if (sourceRef->location == Location::INLINE) {
             // Do nothing, we can just let inline structs disappear
@@ -508,7 +545,7 @@ void Mega::alias(
           // Don't adjust the RC, since we're only moving it.
         } else if (sourceRef->ownership == Ownership::BORROW ||
             sourceRef->ownership == Ownership::WEAK) {
-          aliasWeakRef(from, globalState, functionState, builder, sourceRef, expr);
+          aliasWeakRef(from, functionState, builder, sourceRef, expr);
         } else if (sourceRef->ownership == Ownership::SHARE) {
           if (sourceRef->location == Location::INLINE) {
             // Do nothing, we can just let inline structs disappear
@@ -529,7 +566,6 @@ void Mega::alias(
 }
 
 void Mega::naiveRcFree(
-    GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef thenBuilder,
@@ -582,10 +618,10 @@ void Mega::dealias(
           buildIf(
               functionState, builder, isZeroLE(builder, rcLE),
               [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
-                naiveRcFree(globalState, functionState, blockState, thenBuilder, sourceMT, sourceRef);
+                naiveRcFree(functionState, blockState, thenBuilder, sourceMT, sourceRef);
               });
         } else if (sourceMT->ownership == Ownership::WEAK) {
-          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+          discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
         } else assert(false);
         break;
       }
@@ -596,7 +632,7 @@ void Mega::dealias(
         } else if (sourceMT->ownership == Ownership::BORROW) {
           // Do nothing!
         } else if (sourceMT->ownership == Ownership::WEAK) {
-          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+          discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
         } else assert(false);
         break;
       }
@@ -607,9 +643,9 @@ void Mega::dealias(
           // We can't discard owns, they must be destructured.
           assert(false); // impl
         } else if (sourceMT->ownership == Ownership::BORROW) {
-          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+          discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
         } else if (sourceMT->ownership == Ownership::WEAK) {
-          discardWeakRef(from, globalState, functionState, builder, sourceMT, sourceRef);
+          discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
         } else assert(false);
         break;
       }
@@ -652,8 +688,8 @@ Ref Mega::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refere
         return wrap(
             this,
             targetRefMT,
-            assembleStructWeakRef(
-                globalState, functionState, builder,
+            wrcWeaks.assembleStructWeakRef(
+                functionState, builder,
                 sourceRefMT, targetRefMT, structReferendM, objPtrLE));
       } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(sourceRefMT->referend)) {
         assert(false); // impl
@@ -666,6 +702,107 @@ Ref Mega::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refere
     default:
       assert(false);
   }
+}
+
+// Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
+WrapperPtrLE Mega::lockWeakRef(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref weakRefLE) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::FAST:
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC: {
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE:
+        case Ownership::BORROW:
+          assert(false);
+          break;
+        case Ownership::WEAK: {
+          auto weakFatPtrLE =
+              functionState->defaultRegion->makeWeakFatPtr(                  refM,
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+          return functionState->defaultRegion->makeWrapperPtr(refM,
+              wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
+        }
+        default:
+          assert(false);
+          break;
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V0: {
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE:
+          assert(false);
+          break;
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto weakFatPtrLE =
+              functionState->defaultRegion->makeWeakFatPtr(
+                  refM,
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+          return functionState->defaultRegion->makeWrapperPtr(refM,
+              wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
+        }
+        default:
+          assert(false);
+          break;
+      }
+    }
+    case RegionOverride::RESILIENT_V1: {
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE: {
+          assert(false);
+          break;
+        }
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto weakFatPtrLE =
+              functionState->defaultRegion->makeWeakFatPtr(                  refM,
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+          return functionState->defaultRegion->makeWrapperPtr(
+              refM,
+              lgtWeaks.lockLgtiFatPtr(from, functionState, builder, refM, weakFatPtrLE));
+        }
+        default:
+          assert(false);
+          break;
+      }
+    }
+    case RegionOverride::RESILIENT_V2: {
+      switch (refM->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE: {
+          auto objPtrLE = weakRefLE;
+          auto weakFatPtrLE =
+              globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE);
+          return functionState->defaultRegion->makeWrapperPtr(refM, weakFatPtrLE);
+        }
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto weakFatPtrLE =
+              functionState->defaultRegion->makeWeakFatPtr(                  refM,
+                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+          return functionState->defaultRegion->makeWrapperPtr(
+              refM,
+              hgmWeaks.lockGenFatPtr(from, functionState, builder, refM, weakFatPtrLE));
+        }
+        default:
+          assert(false);
+          break;
+      }
+    }
+    default:
+      assert(false);
+      break;
+  }
+  assert(false);
 }
 
 Ref Mega::lockWeak(
@@ -698,7 +835,7 @@ Ref Mega::lockWeak(
       break;
   }
 
-  auto isAliveLE = getIsAliveFromWeakRef(globalState, functionState, builder, sourceWeakRefMT, sourceWeakRefLE);
+  auto isAliveLE = getIsAliveFromWeakRef(functionState, builder, sourceWeakRefMT, sourceWeakRefLE);
 
   auto resultOptTypeLE = translateType(resultOptTypeM);
 
@@ -715,8 +852,7 @@ Ref Mega::lockWeak(
                     sourceWeakRefMT,
                     checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
             auto constraintRefLE =
-                FatWeaks().getInnerRefFromWeakRef(
-                    globalState,
+                fatWeaks.getInnerRefFromWeakRef(
                     functionState,
                     thenBuilder,
                     sourceWeakRefMT,
@@ -785,7 +921,6 @@ Ref Mega::constructKnownSizeArray(
           refM, mallocKnownSize(globalState, functionState, builder, refM->location, structLT));
   fillControlBlock(
       FL(),
-      globalState,
       functionState,
       builder,
       refM->referend,
@@ -854,14 +989,14 @@ Ref Mega::upcastWeak(
   switch (globalState->opt->regionOverride) {
     case RegionOverride::RESILIENT_V2: {
       auto resultWeakInterfaceFatPtr =
-          HybridGenerationalMemory().weakStructPtrToGenWeakInterfacePtr(
+          hgmWeaks.weakStructPtrToGenWeakInterfacePtr(
               globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
               sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
       return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
     }
     case RegionOverride::RESILIENT_V1: {
       auto resultWeakInterfaceFatPtr =
-          LgtWeaks().weakStructPtrToLgtiWeakInterfacePtr(
+          lgtWeaks.weakStructPtrToLgtiWeakInterfacePtr(
               globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
               sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
       return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
@@ -870,7 +1005,7 @@ Ref Mega::upcastWeak(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::NAIVE_RC: {
       auto resultWeakInterfaceFatPtr =
-          WrcWeaks().weakStructPtrToWrciWeakInterfacePtr(
+          wrcWeaks.weakStructPtrToWrciWeakInterfacePtr(
               globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
               sourceStructTypeM, targetInterfaceReferendM, targetInterfaceTypeM);
       return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
@@ -1098,12 +1233,12 @@ void Mega::noteWeakableDestroyed(
     if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
       auto structM = globalState->program->getStruct(structReferendM->fullName);
       if (structM->weakability == Weakability::WEAKABLE) {
-        innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+        wrcWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
       }
     } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(refM->referend)) {
       auto interfaceM = globalState->program->getInterface(interfaceReferendM->fullName);
       if (interfaceM->weakability == Weakability::WEAKABLE) {
-        innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+        wrcWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
       }
     } else {
       // Do nothing, only structs and interfaces are weakable in naive-rc mode.
@@ -1121,12 +1256,12 @@ void Mega::noteWeakableDestroyed(
       if (auto structReferendM = dynamic_cast<StructReferend *>(refM->referend)) {
         auto structM = globalState->program->getStruct(structReferendM->fullName);
         if (structM->weakability == Weakability::WEAKABLE) {
-          innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+          wrcWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
         }
       } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
         auto interfaceM = globalState->program->getStruct(interfaceReferendM->fullName);
         if (interfaceM->weakability == Weakability::WEAKABLE) {
-          innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+          wrcWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
         }
       } else {
         // Do nothing, only structs and interfaces are weakable in assist mode.
@@ -1141,7 +1276,7 @@ void Mega::noteWeakableDestroyed(
       assert(refM->ownership == Ownership::OWN);
 
       // In resilient mode, every mutable is weakable.
-      innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+      wrcWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     if (refM->ownership == Ownership::SHARE) {
@@ -1152,7 +1287,7 @@ void Mega::noteWeakableDestroyed(
       assert(refM->ownership == Ownership::OWN);
 
       // In resilient mode, every mutable is weakable.
-      innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+      lgtWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
     if (refM->ownership == Ownership::SHARE) {
@@ -1163,7 +1298,7 @@ void Mega::noteWeakableDestroyed(
       assert(refM->ownership == Ownership::OWN);
 
       // In resilient mode, every mutable is weakable.
-      innerNoteWeakableDestroyed(globalState, functionState, builder, refM, controlBlockPtrLE);
+      hgmWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
     }
   } else assert(false);
 }
@@ -1242,7 +1377,7 @@ Ref Mega::loadMember(
   auto memberLE = loadInnerInnerStructMember(this, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
   auto resultRef =
       upgradeLoadResultToRefWithTargetOwnership(
-          globalState, functionState, builder, expectedMemberType, targetType, memberLE);
+          functionState, builder, expectedMemberType, targetType, memberLE);
   return resultRef;
 }
 
@@ -1331,21 +1466,81 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           auto interfaceRefLE =
               functionState->defaultRegion->makeInterfaceFatPtr(
                   virtualParamMT,
-                  FatWeaks().getInnerRefFromWeakRef(
-                      globalState, functionState, builder, virtualParamMT, weakFatPtrLE));
+                  fatWeaks.getInnerRefFromWeakRef(
+                      functionState, builder, virtualParamMT, weakFatPtrLE));
           itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
           // Now, reassemble a weak void* ref to the struct.
           auto weakVoidStructRefLE =
-              weakInterfaceRefToWeakStructRef(
-                  globalState, functionState, builder, virtualParamMT, weakFatPtrLE);
+              wrcWeaks.weakInterfaceRefToWeakStructRef(
+                  functionState, builder, virtualParamMT, weakFatPtrLE);
           newVirtualArgLE = weakVoidStructRefLE.refLE;
           break;
         }
       }
       break;
     }
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V0: {
+      switch (virtualParamMT->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE: {
+          auto virtualArgInterfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(virtualParamMT, virtualArgLE);
+          itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
+              virtualParamMT, virtualArgInterfaceFatPtrLE);
+          newVirtualArgLE = objVoidPtrLE;
+          break;
+        }
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto virtualArgWeakRef = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+          // Disassemble the weak interface ref.
+          auto interfaceRefLE =
+              functionState->defaultRegion->makeInterfaceFatPtr(
+                  virtualParamMT,
+                  fatWeaks.getInnerRefFromWeakRef(
+                      functionState, builder, virtualParamMT, virtualArgWeakRef));
+          itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
+          // Now, reassemble a weak void* ref to the struct.
+          auto weakVoidStructRefLE =
+              wrcWeaks.weakInterfaceRefToWeakStructRef(
+                  functionState, builder, virtualParamMT, virtualArgWeakRef);
+          newVirtualArgLE = weakVoidStructRefLE.refLE;
+          break;
+        }
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V1: {
+      switch (virtualParamMT->ownership) {
+        case Ownership::OWN:
+        case Ownership::SHARE: {
+          auto virtualArgInterfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(virtualParamMT, virtualArgLE);
+          itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
+              virtualParamMT, virtualArgInterfaceFatPtrLE);
+          newVirtualArgLE = objVoidPtrLE;
+          break;
+        }
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto virtualArgWeakRef = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+          // Disassemble the weak interface ref.
+          auto interfaceRefLE =
+              functionState->defaultRegion->makeInterfaceFatPtr(
+                  virtualParamMT,
+                  fatWeaks.getInnerRefFromWeakRef(
+                      functionState, builder, virtualParamMT, virtualArgWeakRef));
+          itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
+          // Now, reassemble a weak void* ref to the struct.
+          auto weakVoidStructRefLE =
+              lgtWeaks.weakInterfaceRefToWeakStructRef(
+                  functionState, builder, virtualParamMT, virtualArgWeakRef);
+          newVirtualArgLE = weakVoidStructRefLE.refLE;
+          break;
+        }
+      }
+      break;
+    }
     case RegionOverride::RESILIENT_V2: {
       switch (virtualParamMT->ownership) {
         case Ownership::OWN:
@@ -1364,13 +1559,13 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           auto interfaceRefLE =
               functionState->defaultRegion->makeInterfaceFatPtr(
                   virtualParamMT,
-                  FatWeaks().getInnerRefFromWeakRef(
-                      globalState, functionState, builder, virtualParamMT, virtualArgWeakRef));
+                  fatWeaks.getInnerRefFromWeakRef(
+                      functionState, builder, virtualParamMT, virtualArgWeakRef));
           itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceRefLE);
           // Now, reassemble a weak void* ref to the struct.
           auto weakVoidStructRefLE =
-              weakInterfaceRefToWeakStructRef(
-                  globalState, functionState, builder, virtualParamMT, virtualArgWeakRef);
+              hgmWeaks.weakInterfaceRefToWeakStructRef(
+                  functionState, builder, virtualParamMT, virtualArgWeakRef);
           newVirtualArgLE = weakVoidStructRefLE.refLE;
           break;
         }
@@ -1415,7 +1610,7 @@ Ref Mega::getUnknownSizeArrayLength(
   assert(false);
 }
 
-std::tuple<Reference*, LLVMValueRef> megaGetRefInnards(Ref ref) {
+std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref) {
   Reference* refM = ref.refM;
   LLVMValueRef refLE = ref.refLE;
   return std::make_tuple(refM, refLE);
@@ -1429,7 +1624,7 @@ LLVMValueRef Mega::checkValidReference(
     Ref ref) {
   Reference* actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
-  std::tie(actualRefM, refLE) = megaGetRefInnards(ref);
+  std::tie(actualRefM, refLE) = megaGetRefInnardsForChecking(ref);
   assert(actualRefM == refM);
 
   assert(refLE != nullptr);
@@ -1480,15 +1675,21 @@ LLVMValueRef Mega::checkValidReference(
             buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
                 controlBlockPtrLE.refLE);
           } else if (refM->ownership == Ownership::WEAK) {
-            buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
+            wrcWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
           } else
             assert(false);
           break;
         }
-        case RegionOverride::RESILIENT_V0:
-        case RegionOverride::RESILIENT_V1:
+        case RegionOverride::RESILIENT_V0: {
+          wrcWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
+          break;
+        }
+        case RegionOverride::RESILIENT_V1: {
+          lgtWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
+          break;
+        }
         case RegionOverride::RESILIENT_V2: {
-          buildCheckWeakRef(checkerAFL, globalState, functionState, builder, refM, ref);
+          hgmWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
           break;
         }
         default:
@@ -1497,4 +1698,584 @@ LLVMValueRef Mega::checkValidReference(
     }
   }
   return refLE;
+}
+
+// TODO maybe combine with alias/acquireReference?
+// After we load from a local, member, or element, we can feed the result through this
+// function to turn it into a desired ownership.
+// Example:
+// - Can load from an owning ref member to get a constraint ref.
+// - Can load from a constraint ref member to get a weak ref.
+Ref Mega::upgradeLoadResultToRefWithTargetOwnership(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceType,
+    Reference* targetType,
+    Ref sourceRef) {
+  auto sourceOwnership = sourceType->ownership;
+  auto sourceLocation = sourceType->location;
+  auto targetOwnership = targetType->ownership;
+  auto targetLocation = targetType->location;
+//  assert(sourceLocation == targetLocation); // unimplemented
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      if (sourceOwnership == Ownership::SHARE) {
+        if (sourceLocation == Location::INLINE) {
+          return sourceRef;
+        } else {
+          return sourceRef;
+        }
+      } else if (sourceOwnership == Ownership::OWN) {
+        if (targetOwnership == Ownership::OWN) {
+          // We can never "load" an owning ref from any of these:
+          // - We can only get owning refs from locals by unstackifying
+          // - We can only get owning refs from structs by destroying
+          // - We can only get owning refs from elements by destroying
+          // However, we CAN load owning refs by:
+          // - Swapping from a local
+          // - Swapping from an element
+          // - Swapping from a member
+          return sourceRef;
+        } else if (targetOwnership == Ownership::BORROW) {
+          auto resultRef = transmutePtr(functionState, builder, sourceType, targetType, sourceRef);
+          globalState->region->checkValidReference(FL(),
+              functionState, builder, targetType, resultRef);
+          return resultRef;
+        } else if (targetOwnership == Ownership::WEAK) {
+          return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
+        } else {
+          assert(false);
+        }
+      } else if (sourceOwnership == Ownership::BORROW) {
+        buildFlare(FL(), globalState, functionState, builder);
+
+        if (targetOwnership == Ownership::OWN) {
+          assert(false); // Cant load an owning reference from a constraint ref local.
+        } else if (targetOwnership == Ownership::BORROW) {
+          return sourceRef;
+        } else if (targetOwnership == Ownership::WEAK) {
+          // Making a weak ref from a constraint ref local.
+          assert(dynamic_cast<StructReferend*>(sourceType->referend) || dynamic_cast<InterfaceReferend*>(sourceType->referend));
+          return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
+        } else {
+          assert(false);
+        }
+      } else if (sourceOwnership == Ownership::WEAK) {
+        assert(targetOwnership == Ownership::WEAK);
+        return sourceRef;
+      } else {
+        assert(false);
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V0: {
+      if (sourceOwnership == Ownership::SHARE) {
+        if (sourceLocation == Location::INLINE) {
+          return sourceRef;
+        } else {
+          return sourceRef;
+        }
+      } else if (sourceOwnership == Ownership::OWN) {
+        if (targetOwnership == Ownership::OWN) {
+          // We can never "load" an owning ref from any of these:
+          // - We can only get owning refs from locals by unstackifying
+          // - We can only get owning refs from structs by destroying
+          // - We can only get owning refs from elements by destroying
+          // However, we CAN load owning refs by:
+          // - Swapping from a local
+          // - Swapping from an element
+          // - Swapping from a member
+          return sourceRef;
+        } else if (targetOwnership == Ownership::BORROW
+            || targetOwnership == Ownership::WEAK) {
+          // Now we need to package it up into a weak ref.
+          return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
+        } else {
+          assert(false);
+        }
+      } else if (sourceOwnership == Ownership::BORROW || sourceOwnership == Ownership::WEAK) {
+        assert(targetOwnership == Ownership::BORROW || targetOwnership == Ownership::WEAK);
+
+        return transmutePtr(functionState, builder, sourceType, targetType, sourceRef);
+      } else {
+        assert(false);
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V1: {
+      if (sourceOwnership == Ownership::SHARE) {
+        if (sourceLocation == Location::INLINE) {
+          return sourceRef;
+        } else {
+          return sourceRef;
+        }
+      } else if (sourceOwnership == Ownership::OWN) {
+        if (targetOwnership == Ownership::OWN) {
+          // We can never "load" an owning ref from any of these:
+          // - We can only get owning refs from locals by unstackifying
+          // - We can only get owning refs from structs by destroying
+          // - We can only get owning refs from elements by destroying
+          // However, we CAN load owning refs by:
+          // - Swapping from a local
+          // - Swapping from an element
+          // - Swapping from a member
+          return sourceRef;
+        } else if (targetOwnership == Ownership::BORROW
+            || targetOwnership == Ownership::WEAK) {
+          // Now we need to package it up into a weak ref.
+          return lgtWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
+        } else {
+          assert(false);
+        }
+      } else if (sourceOwnership == Ownership::BORROW || sourceOwnership == Ownership::WEAK) {
+        assert(targetOwnership == Ownership::BORROW || targetOwnership == Ownership::WEAK);
+
+        return transmutePtr(functionState, builder, sourceType, targetType, sourceRef);
+      } else {
+        assert(false);
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V2: {
+      if (sourceOwnership == Ownership::SHARE) {
+        if (sourceLocation == Location::INLINE) {
+          return sourceRef;
+        } else {
+          return sourceRef;
+        }
+      } else if (sourceOwnership == Ownership::OWN) {
+        if (targetOwnership == Ownership::OWN) {
+          // We can never "load" an owning ref from any of these:
+          // - We can only get owning refs from locals by unstackifying
+          // - We can only get owning refs from structs by destroying
+          // - We can only get owning refs from elements by destroying
+          // However, we CAN load owning refs by:
+          // - Swapping from a local
+          // - Swapping from an element
+          // - Swapping from a member
+          return sourceRef;
+        } else if (targetOwnership == Ownership::BORROW
+            || targetOwnership == Ownership::WEAK) {
+          // Now we need to package it up into a weak ref.
+          return hgmWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
+        } else {
+          assert(false);
+        }
+      } else if (sourceOwnership == Ownership::BORROW || sourceOwnership == Ownership::WEAK) {
+        assert(targetOwnership == Ownership::BORROW || targetOwnership == Ownership::WEAK);
+
+        return transmutePtr(functionState, builder, sourceType, targetType, sourceRef);
+      } else {
+        assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+}
+
+void Mega::aliasWeakRef(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefMT,
+    Ref weakRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+    case RegionOverride::RESILIENT_V0:
+      return wrcWeaks.aliasWeakRef(from, functionState, builder, weakRefMT, weakRef);
+    case RegionOverride::RESILIENT_V1:
+      return lgtWeaks.aliasWeakRef(from, functionState, builder, weakRefMT, weakRef);
+    case RegionOverride::RESILIENT_V2:
+      return hgmWeaks.aliasWeakRef(from, functionState, builder, weakRefMT, weakRef);
+    default:
+      assert(false);
+  }
+}
+
+void Mega::discardWeakRef(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefMT,
+    Ref weakRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+    case RegionOverride::RESILIENT_V0:
+      return wrcWeaks.discardWeakRef(from, functionState, builder, weakRefMT, weakRef);
+    case RegionOverride::RESILIENT_V1:
+      return lgtWeaks.discardWeakRef(from, functionState, builder, weakRefMT, weakRef);
+    case RegionOverride::RESILIENT_V2:
+      return hgmWeaks.discardWeakRef(from, functionState, builder, weakRefMT, weakRef);
+    default:
+      assert(false);
+  }
+}
+
+Ref Mega::getIsAliveFromWeakRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* weakRefM,
+    Ref weakRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+    case RegionOverride::RESILIENT_V0:
+      return wrcWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
+    case RegionOverride::RESILIENT_V1:
+      return lgtWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
+    case RegionOverride::RESILIENT_V2:
+      return hgmWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
+    default:
+      assert(false);
+  }
+}
+
+// Returns object ID
+void Mega::fillControlBlock(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    Mutability mutability,
+    ControlBlockPtrLE controlBlockPtrLE,
+    const std::string& typeName) {
+
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->region->getControlBlock(referendM)->getStruct());
+
+  newControlBlockLE =
+      fillControlBlockCensusFields(
+          from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+
+  if (mutability == Mutability::IMMUTABLE) {
+    newControlBlockLE =
+        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+  } else {
+    switch (globalState->opt->regionOverride) {
+      case RegionOverride::ASSIST:
+      case RegionOverride::NAIVE_RC:
+        newControlBlockLE =
+            insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        if (globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
+          newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
+        }
+        break;
+      case RegionOverride::FAST:
+        if (globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
+          newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
+        }
+        break;
+      case RegionOverride::RESILIENT_V0:
+        newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
+        break;
+      case RegionOverride::RESILIENT_V1:
+        newControlBlockLE = lgtWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
+        break;
+      case RegionOverride::RESILIENT_V2:
+        newControlBlockLE = hgmWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
+        break;
+      default:
+        assert(false);
+    }
+  }
+  LLVMBuildStore(
+      builder,
+      newControlBlockLE,
+      controlBlockPtrLE.refLE);
+}
+
+Ref Mega::loadElementFromKSAWithUpgrade(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Reference* targetType) {
+  Ref memberRef = loadElementFromKSAWithoutUpgrade(functionState, builder, ksaRefMT,
+      ksaMT, arrayRef, indexRef);
+  return upgradeLoadResultToRefWithTargetOwnership(
+      functionState, builder, ksaMT->rawArray->elementType, targetType, memberRef);
+}
+
+Ref Mega::loadElementFromKSAWithoutUpgrade(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref arrayRef,
+    Ref indexRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      return loadElementFromKSAWithoutUpgradeNormal(globalState, functionState, builder, ksaRefMT, ksaMT, arrayRef, indexRef);
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (ksaRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+          return loadElementFromKSAWithoutUpgradeNormal(globalState, functionState, builder, ksaRefMT, ksaMT, arrayRef, indexRef);
+          break;
+        case Ownership::BORROW:
+          return loadElementFromKSAWithoutUpgradeForce(globalState, functionState, builder, ksaRefMT, ksaMT, arrayRef, indexRef);
+          break;
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+        default:
+          assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+}
+
+Ref Mega::loadElementFromUSAWithUpgrade(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Reference* targetType) {
+  Ref memberRef = loadElementFromUSAWithoutUpgrade(functionState, builder, usaRefMT,
+      usaMT, arrayRef, indexRef);
+  return upgradeLoadResultToRefWithTargetOwnership(
+      functionState, builder, usaMT->rawArray->elementType, targetType, memberRef);
+}
+
+Ref Mega::loadElementFromUSAWithoutUpgrade(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      auto sizeRef = std::make_shared<Ref>(getUnknownSizeArrayLengthNormal(globalState, functionState, builder, usaRefMT, arrayRef));
+      auto arrayElementsPtrLE =
+          getUnknownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+                  usaRefMT,
+                  globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef)));
+      return loadElementWithoutUpgrade(
+          globalState, functionState, builder, usaRefMT,
+          usaMT->rawArray->elementType,
+          *sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (usaRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN: {
+          auto sizeRef = std::make_shared<Ref>(
+              getUnknownSizeArrayLengthNormal(globalState, functionState, builder, usaRefMT,
+                  arrayRef));
+          auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+                  usaRefMT,
+                  globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT,
+                      arrayRef)));
+          return loadElementWithoutUpgrade(
+              globalState, functionState, builder, usaRefMT,
+              usaMT->rawArray->elementType,
+              *sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+          break;
+        }
+        case Ownership::BORROW: {
+          auto sizeRef = std::make_shared<Ref>(
+              getUnknownSizeArrayLengthForce(globalState, functionState, builder, usaRefMT,
+                  arrayRef));
+          auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
+              globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef));
+          return loadElementWithoutUpgrade(
+              globalState, functionState, builder, usaRefMT,
+              usaMT->rawArray->elementType,
+              *sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+          break;
+        }
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+        default:
+          assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+}
+
+Ref Mega::storeElementInUSA(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* usaRefMT,
+    UnknownSizeArrayT* usaMT,
+    Ref arrayRef,
+    Ref indexRef,
+    Ref elementRef) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      auto sizeRef = std::make_shared<Ref>(getUnknownSizeArrayLengthNormal(globalState, functionState, builder, usaRefMT, arrayRef));
+      auto arrayElementsPtrLE =
+          getUnknownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+                  usaRefMT,
+                  globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef)));
+      return storeElement(
+          globalState, functionState, builder, usaRefMT,
+          usaMT->rawArray->elementType,
+          *sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef, elementRef);
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (usaRefMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN: {
+          auto sizeRef = std::make_shared<Ref>(
+              getUnknownSizeArrayLengthNormal(globalState, functionState, builder, usaRefMT,
+                  arrayRef));
+          auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
+              functionState->defaultRegion->makeWrapperPtr(
+                  usaRefMT,
+                  globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT,
+                      arrayRef)));
+          break;
+        }
+        case Ownership::BORROW: {
+          auto sizeRef = std::make_shared<Ref>(
+              getUnknownSizeArrayLengthForce(globalState, functionState, builder, usaRefMT,
+                  arrayRef));
+          auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
+              globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef));
+
+          return storeElement(
+              globalState, functionState, builder, usaRefMT,
+              usaMT->rawArray->elementType,
+              *sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef, elementRef);
+        }
+        case Ownership::WEAK:
+          assert(false); // VIR never loads from a weak ref
+        default:
+          assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+  assert(false);
+}
+
+Ref Mega::upcast(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+
+    Reference* sourceStructMT,
+    StructReferend* sourceStructReferendM,
+    Ref sourceRefLE,
+
+    Reference* targetInterfaceTypeM,
+    InterfaceReferend* targetInterfaceReferendM) {
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST: {
+      switch (sourceStructMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN:
+        case Ownership::BORROW: {
+          auto sourceStructWrapperPtrLE =
+              functionState->defaultRegion->makeWrapperPtr(
+                  sourceStructMT,
+                  globalState->region->checkValidReference(FL(),
+                      functionState, builder, sourceStructMT, sourceRefLE));
+          auto resultInterfaceFatPtrLE =
+              upcastThinPtr(
+                  globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
+                  sourceStructWrapperPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
+          return wrap(functionState->defaultRegion, targetInterfaceTypeM, resultInterfaceFatPtrLE);
+        }
+        case Ownership::WEAK: {
+          auto sourceWeakStructFatPtrLE =
+              functionState->defaultRegion->makeWeakFatPtr(
+                  sourceStructMT,
+                  globalState->region->checkValidReference(FL(),
+                      functionState, builder, sourceStructMT, sourceRefLE));
+          return functionState->defaultRegion->upcastWeak(
+              functionState,
+              builder,
+              sourceWeakStructFatPtrLE,
+              sourceStructReferendM,
+              sourceStructMT,
+              targetInterfaceReferendM,
+              targetInterfaceTypeM);
+        }
+        default:
+          assert(false);
+      }
+      break;
+    }
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2: {
+      switch (sourceStructMT->ownership) {
+        case Ownership::SHARE:
+        case Ownership::OWN: {
+          auto sourceStructWrapperPtrLE =
+              functionState->defaultRegion->makeWrapperPtr(
+                  sourceStructMT,
+                  globalState->region->checkValidReference(FL(),
+                      functionState, builder, sourceStructMT, sourceRefLE));
+          auto resultInterfaceFatPtrLE =
+              upcastThinPtr(
+                  globalState, functionState, builder, sourceStructMT, sourceStructReferendM,
+                  sourceStructWrapperPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
+          return wrap(functionState->defaultRegion, targetInterfaceTypeM, resultInterfaceFatPtrLE);
+        }
+        case Ownership::BORROW:
+        case Ownership::WEAK: {
+          auto sourceWeakStructFatPtrLE =
+              functionState->defaultRegion->makeWeakFatPtr(
+                  sourceStructMT,
+                  globalState->region->checkValidReference(FL(),
+                      functionState, builder, sourceStructMT, sourceRefLE));
+          return functionState->defaultRegion->upcastWeak(
+              functionState,
+              builder,
+              sourceWeakStructFatPtrLE,
+              sourceStructReferendM,
+              sourceStructMT,
+              targetInterfaceReferendM,
+              targetInterfaceTypeM);
+        }
+        default:
+          assert(false);
+      }
+      break;
+    }
+    default:
+      assert(false);
+  }
+
 }

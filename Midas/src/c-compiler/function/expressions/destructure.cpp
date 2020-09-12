@@ -1,7 +1,7 @@
 #include <iostream>
-#include <function/expressions/shared/controlblock.h>
+#include <region/common/controlblock.h>
 #include "function/expressions/shared/members.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 #include "translatetype.h"
 
@@ -19,8 +19,8 @@ Ref translateDestructure(
   auto structRef =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
-  checkValidReference(
-      FL(), globalState, functionState, builder, destructureM->structType, structRef);
+  globalState->region->checkValidReference(FL(),
+      functionState, builder, destructureM->structType, structRef);
 //  buildFlare(FL(), globalState, functionState, builder, "structLE is ", structLE);
 
   auto structReferend =
@@ -31,37 +31,32 @@ Ref translateDestructure(
 
   for (int i = 0; i < structM->members.size(); i++) {
     auto memberName = structM->members[i]->name;
-    LLVMValueRef innerStructPtrLE =
-        getStructContentsPtr(
-            globalState, functionState, builder, destructureM->structType, structRef);
+    auto memberType = structM->members[i]->type;
     auto memberLE =
-        loadInnerStructMember(
-            builder, innerStructPtrLE, i, memberName);
-    auto resultRef =
-        upgradeLoadResultToRefWithTargetOwnership(
-            globalState, functionState, builder, structM->members[i]->type, structM->members[i]->type, memberLE);
+        functionState->defaultRegion->loadMember(
+            functionState, builder, destructureM->structType, structRef, i, memberType, memberType, memberName);
     makeHammerLocal(
         globalState,
         functionState,
         blockState,
         builder,
         destructureM->localIndices[i],
-        resultRef);
+        memberLE);
   }
 
   if (destructureM->structType->ownership == Ownership::OWN) {
-    discardOwningRef(FL(), globalState, functionState, blockState, builder, destructureM->structType, structRef);
+    functionState->defaultRegion->discardOwningRef(FL(), functionState, blockState, builder, destructureM->structType, structRef);
   } else if (destructureM->structType->ownership == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
 
     auto structRefLE =
-        WrapperPtrLE(
+        functionState->defaultRegion->makeWrapperPtr(
             destructureM->structType,
-            checkValidReference(
-                FL(), globalState, functionState, builder, destructureM->structType, structRef));
+            globalState->region->checkValidReference(FL(),
+                functionState, builder, destructureM->structType, structRef));
     auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, structRefLE);
-    freeConcrete(
-        AFL("Destroy freeing"), globalState, functionState, blockState, builder,
+    deallocate(
+        AFL("Destroy freeing"), globalState, functionState, builder,
         controlBlockPtrLE, destructureM->structType);
   } else {
     assert(false);

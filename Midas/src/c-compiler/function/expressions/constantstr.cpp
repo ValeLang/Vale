@@ -1,9 +1,9 @@
 #include <iostream>
-#include "function/expressions/shared/controlblock.h"
+#include "region/common/controlblock.h"
 #include "function/expressions/shared/string.h"
 
 #include "function/expressions/shared/shared.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 Ref translateConstantStr(
     AreaAndFileAndLine from,

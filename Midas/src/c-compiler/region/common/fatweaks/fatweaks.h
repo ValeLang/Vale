@@ -9,19 +9,41 @@
 
 class FatWeaks {
 public:
+  FatWeaks(GlobalState* globalState_)
+  : globalState(globalState_) {}
+
   LLVMValueRef getInnerRefFromWeakRef(
-      GlobalState *globalState,
       FunctionState *functionState,
       LLVMBuilderRef builder,
       Reference *weakRefM,
       WeakFatPtrLE weakRefLE);
 
   LLVMValueRef getInnerRefFromWeakRefWithoutCheck(
-      GlobalState *globalState,
       FunctionState *functionState,
       LLVMBuilderRef builder,
       Reference *weakRefM,
       WeakFatPtrLE weakRefLE);
+
+  WeakFatPtrLE assembleWeakFatPtr(
+      FunctionState *functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefMT,
+      LLVMTypeRef weakRefStruct,
+      LLVMValueRef headerLE,
+      LLVMValueRef innerRefLE);
+
+  LLVMValueRef getHeaderFromWeakRef(
+      LLVMBuilderRef builder,
+      WeakFatPtrLE weakRefLE);
+
+  WeakFatPtrLE assembleVoidStructWeakRef(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtrLE,
+      LLVMValueRef headerLE);
+
+private:
+  GlobalState* globalState;
 };
 
 #endif

@@ -14,6 +14,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <iostream>
 
 using std::move;
 
@@ -85,7 +86,8 @@ public:
     assert(iter != immDestructorsByKind.end());
     return iter->second;
   }
-  UnconvertedWeakability getReferendWeakability(Referend* referend);
+  Weakability getReferendWeakability(Referend* referend);
+  Mutability getReferendMutability(Referend* referendM);
 };
 
 class InterfaceMethod {
@@ -120,18 +122,21 @@ public:
 class StructDefinition {
 public:
     Name* name;
+    StructReferend* referend;
     Mutability mutability;
     std::vector<Edge*> edges;
     std::vector<StructMember*> members;
-    UnconvertedWeakability weakability;
+    Weakability weakability;
 
     StructDefinition(
         Name* name_,
+        StructReferend* referend_,
         Mutability mutability_,
         std::vector<Edge*> edges_,
         std::vector<StructMember*> members_,
-        UnconvertedWeakability weakable_) :
+        Weakability weakable_) :
         name(name_),
+        referend(referend_),
         mutability(mutability_),
         edges(edges_),
         members(members_),
@@ -166,18 +171,21 @@ public:
 class InterfaceDefinition {
 public:
     Name* name;
+    InterfaceReferend* referend;
     Mutability mutability;
     std::vector<Name*> superInterfaces;
     std::vector<InterfaceMethod*> methods;
-    UnconvertedWeakability weakability;
+    Weakability weakability;
 
     InterfaceDefinition(
         Name* name_,
+        InterfaceReferend* referend_,
         Mutability mutability_,
         const std::vector<Name*>& superInterfaces_,
         const std::vector<InterfaceMethod*>& methods_,
-        UnconvertedWeakability weakable_) :
+        Weakability weakable_) :
       name(name_),
+      referend(referend_),
       mutability(mutability_),
       superInterfaces(superInterfaces_),
       methods(methods_),

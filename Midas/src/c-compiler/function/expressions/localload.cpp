@@ -1,12 +1,12 @@
 #include <iostream>
-#include "function/expressions/shared/controlblock.h"
+#include "region/common/controlblock.h"
 
 #include "translatetype.h"
 
 #include "function/expressions/shared/members.h"
 #include "function/expression.h"
 #include "function/expressions/shared/shared.h"
-#include "function/expressions/shared/heap.h"
+#include "region/common/heap.h"
 
 Ref translateLocalLoad(
     GlobalState* globalState,
@@ -27,11 +27,11 @@ Ref translateLocalLoad(
 
   auto sourceLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
   auto sourceRef = wrap(functionState->defaultRegion, localType, sourceLE);
-  checkValidReference(FL(), globalState, functionState, builder, localType, sourceRef);
+  globalState->region->checkValidReference(FL(), functionState, builder, localType, sourceRef);
 
   auto resultRefLE =
-      upgradeLoadResultToRefWithTargetOwnership(
-          globalState, functionState, builder, localType, resultType, sourceLE);
-  acquireReference(FL(), globalState, functionState, builder, resultType, resultRefLE);
+      globalState->region->upgradeLoadResultToRefWithTargetOwnership(
+          functionState, builder, localType, resultType, sourceRef);
+  functionState->defaultRegion->alias(FL(), functionState, builder, resultType, resultRefLE);
   return resultRefLE;
 }

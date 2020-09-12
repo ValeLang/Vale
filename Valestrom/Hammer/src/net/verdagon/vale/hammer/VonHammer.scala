@@ -89,6 +89,7 @@ object VonHammer {
       None,
       Vector(
         VonMember("name", VonStr(fullName.toReadableString())),
+        VonMember("referend", vonifyInterfaceRef(interface.getRef)),
         VonMember("export", VonBool(export)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
@@ -104,6 +105,7 @@ object VonHammer {
       None,
       Vector(
         VonMember("name", VonStr(fullName.toReadableString())),
+        VonMember("referend", vonifyStructRef(struct.getRef)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("export", VonBool(export)),
         VonMember("mutability", vonifyMutability(mutability)),

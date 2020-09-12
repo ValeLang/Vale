@@ -60,7 +60,7 @@ void initInternalExterns(GlobalState* globalState) {
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  auto stringInnerStructPtrLT = LLVMPointerType(globalState->stringInnerStructL, 0);
+  auto stringInnerStructPtrLT = LLVMPointerType(globalState->region->getStringInnerStruct(), 0);
 
   globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
   globalState->genFree = addExtern(globalState->mod, "__genFree", voidLT, {voidPtrLT});
@@ -78,7 +78,7 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->printBool = addExtern(globalState->mod, "__vprintBool", voidLT, {int1LT});
   globalState->initStr =
       addExtern(globalState->mod, "__vinitStr", voidLT,
-          {stringInnerStructPtrLT, int8PtrLT,});
+          {stringInnerStructPtrLT, int8PtrLT});
   globalState->addStr =
       addExtern(globalState->mod, "__vaddStr", voidLT,
           {stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT});
@@ -95,427 +95,8 @@ void initInternalExterns(GlobalState* globalState) {
       {voidPtrLT});
   globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
   globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
-
-  initWeakInternalExterns(globalState);
 }
 
-void setControlBlockStructBody(LLVMTypeRef structL, const ControlBlockLayout& layout) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
-  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  auto int64PtrLT = LLVMPointerType(int64LT, 0);
-
-  std::vector<LLVMTypeRef> membersL;
-  for (auto member : layout.getMembers()) {
-    switch (member) {
-      case ControlBlockMember::UNUSED_32B:
-        membersL.push_back(int32LT);
-        break;
-      case ControlBlockMember::GENERATION:
-        assert(membersL.empty()); // Generation should be at the top of the object
-        membersL.push_back(int32LT);
-        break;
-      case ControlBlockMember::LGTI:
-        membersL.push_back(int32LT);
-        break;
-      case ControlBlockMember::WRCI:
-        membersL.push_back(int32LT);
-        break;
-      case ControlBlockMember::STRONG_RC:
-        membersL.push_back(int32LT);
-        break;
-      case ControlBlockMember::CENSUS_OBJ_ID:
-        membersL.push_back(int64LT);
-        break;
-      case ControlBlockMember::CENSUS_TYPE_STR:
-        membersL.push_back(int8PtrLT);
-        break;
-    }
-  }
-
-  LLVMStructSetBody(structL, membersL.data(), membersL.size(), false);
-}
-
-void initInternalStructs(GlobalState* globalState) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
-  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  auto int64PtrLT = LLVMPointerType(int64LT, 0);
-
-  if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-      globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-    {
-      ControlBlockLayout immControlBlockLayout;
-      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto immControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
-      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
-      globalState->immControlBlockLayout = immControlBlockLayout;
-      globalState->immControlBlockStructL = immControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutNonWeakableControlBlockLayout;
-      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto mutNonWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
-      setControlBlockStructBody(mutNonWeakableControlBlockStructL, mutNonWeakableControlBlockLayout);
-      globalState->mutNonWeakableControlBlockLayout = mutNonWeakableControlBlockLayout;
-      globalState->mutNonWeakableControlBlockStructL = mutNonWeakableControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutWeakableControlBlockLayout;
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
-      // We could add this in to avoid an InstructionCombiningPass bug where when it inlines things
-      // it doesnt seem to realize that there's padding at the end of structs.
-      // To see it, make loadFromWeakable test in fast mode, see its .ll and its .opt.ll, it seems
-      // to get the wrong pointer for the first member.
-      // mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      auto mutWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
-      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
-      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-    {
-      ControlBlockLayout immControlBlockLayout;
-      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto immControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
-      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
-      globalState->immControlBlockLayout = immControlBlockLayout;
-      globalState->immControlBlockStructL = immControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutNonWeakableControlBlockLayout;
-      // Fast mode mutables have no strong RC
-      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutNonWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto mutNonWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
-      setControlBlockStructBody(mutNonWeakableControlBlockStructL, mutNonWeakableControlBlockLayout);
-      globalState->mutNonWeakableControlBlockLayout = mutNonWeakableControlBlockLayout;
-      globalState->mutNonWeakableControlBlockStructL = mutNonWeakableControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutWeakableControlBlockLayout;
-      // Fast mode mutables have no strong RC
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
-      auto mutWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
-      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
-      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-    {
-      ControlBlockLayout immControlBlockLayout;
-      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto immControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
-      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
-      globalState->immControlBlockLayout = immControlBlockLayout;
-      globalState->immControlBlockStructL = immControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutWeakableControlBlockLayout;
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::WRCI);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto mutWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock");
-      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
-      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-      globalState->mutNonWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutNonWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-    {
-      ControlBlockLayout immControlBlockLayout;
-      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto immControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
-      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
-      globalState->immControlBlockLayout = immControlBlockLayout;
-      globalState->immControlBlockStructL = immControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutWeakableControlBlockLayout;
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::LGTI);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto mutWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock");
-      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
-      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-      globalState->mutNonWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutNonWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-    }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
-    {
-      ControlBlockLayout immControlBlockLayout;
-      immControlBlockLayout.addMember(ControlBlockMember::STRONG_RC);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      immControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        immControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto immControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock");
-      setControlBlockStructBody(immControlBlockStructL, immControlBlockLayout);
-      globalState->immControlBlockLayout = immControlBlockLayout;
-      globalState->immControlBlockStructL = immControlBlockStructL;
-    }
-
-    {
-      ControlBlockLayout mutWeakableControlBlockLayout;
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::GENERATION);
-      // This is where we put the size in the current generational heap, we can use it for something
-      // else until we get rid of that.
-      mutWeakableControlBlockLayout.addMember(ControlBlockMember::UNUSED_32B);
-      if (globalState->opt->census) {
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-        mutWeakableControlBlockLayout.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-      }
-      auto mutWeakableControlBlockStructL =
-          LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock");
-      setControlBlockStructBody(mutWeakableControlBlockStructL, mutWeakableControlBlockLayout);
-      globalState->mutWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-      globalState->mutNonWeakableControlBlockLayout = mutWeakableControlBlockLayout;
-      globalState->mutNonWeakableControlBlockStructL = mutWeakableControlBlockStructL;
-    }
-  } else {
-    assert(false);
-  }
-//
-//  {
-//    auto controlBlockStructL =
-//        LLVMStructCreateNamed(
-//            LLVMGetGlobalContext(), "mutNonWeakableControlBlock");
-//    std::vector<LLVMTypeRef> memberTypesL;
-//
-//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-//      globalState->mutNonWeakableControlBlockRcMemberIndex = memberTypesL.size();
-//      memberTypesL.push_back(int32LT);
-//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-//      memberTypesL.push_back(int32LT); // Unused
-//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-//      // Unused, mutables dont have a strong RC, just a weak one
-//      memberTypesL.push_back(int32LT);
-//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-//      // Unused, mutables dont have a strong RC, just a weak one
-//      memberTypesL.push_back(int32LT);
-//    } else assert(false);
-//
-//    // 1th member is always an unused 32bit int (see genHeap.c)
-//    memberTypesL.push_back(int32LT); // Unused
-//
-//    if (globalState->opt->census) {
-//      globalState->mutNonWeakableControlBlockTypeStrIndex = memberTypesL.size();
-//      memberTypesL.push_back(int8PtrLT);
-//
-//      globalState->mutNonWeakableControlBlockObjIdIndex = memberTypesL.size();
-//      memberTypesL.push_back(int64LT);
-//    }
-//
-//    setControlBlockStructBody(
-//        globalState->mutNonWeakableControlBlockStructL,
-//        &globalState->mutNonWeakableControlBlockLayout);
-//    globalState->mutNonWeakableControlBlockStructL = controlBlockStructL;
-//  }
-
-  makeWeakRefStructs(globalState);
-
-//  {
-//    auto controlBlockStructL =
-//        LLVMStructCreateNamed(
-//            LLVMGetGlobalContext(), "mutWeakableControlBlock");
-//    std::vector<LLVMTypeRef> memberTypesL;
-//
-//    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-//      globalState->mutWeakableControlBlockLgtiMemberIndex = memberTypesL.size();
-//      memberTypesL.push_back(int32LT);
-//    } else {
-//      globalState->mutWeakableControlBlockWrciMemberIndex = memberTypesL.size();
-//      memberTypesL.push_back(int32LT);
-//    }
-//
-//    // 1th member is always an unused 32bit int (see genHeap.c)
-//    memberTypesL.push_back(int32LT); // Unused
-//
-//    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
-//        globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-//      assert(memberTypesL.size() == globalState->mutWeakableControlBlockRcMemberIndex); // should match non-weakability
-//      memberTypesL.push_back(int32LT);
-//    } else if (globalState->opt->regionOverride == RegionOverride::FAST) {
-//      // Unused, fast mode has no RC
-//      memberTypesL.push_back(int32LT);
-//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-//      // Unused, mutables dont have a strong RC, just a weak one
-//      memberTypesL.push_back(int32LT);
-//    } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-//      // Unused, mutables dont have a strong RC, just a weak one
-//      memberTypesL.push_back(int32LT);
-//    } else assert(false);
-//
-//    if (globalState->opt->census) {
-//      globalState->mutWeakableControlBlockTypeStrIndex = memberTypesL.size();
-//      memberTypesL.push_back(int8PtrLT);
-//
-//      globalState->mutWeakableControlBlockObjIdIndex = memberTypesL.size();
-//      memberTypesL.push_back(int64LT);
-//    }
-//
-//    LLVMStructSetBody(
-//        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-//    globalState->mutWeakableControlBlockStructL = controlBlockStructL;
-//  }
-
-//  {
-//    auto controlBlockStructL =
-//        LLVMStructCreateNamed(
-//            LLVMGetGlobalContext(), "immControlBlock");
-//    std::vector<LLVMTypeRef> memberTypesL;
-//
-//    globalState->immControlBlockRcMemberIndex = memberTypesL.size();
-//    memberTypesL.push_back(int32LT);
-//
-//    // 1th member is always an unused 32bit int (see genHeap.c)
-//    memberTypesL.push_back(int32LT);
-//
-//    if (globalState->opt->census) {
-//      globalState->immControlBlockTypeStrIndex = memberTypesL.size();
-//      memberTypesL.push_back(int8PtrLT);
-//
-//      globalState->immControlBlockObjIdIndex = memberTypesL.size();
-//      memberTypesL.push_back(int64LT);
-//    }
-//
-//    LLVMStructSetBody(
-//        controlBlockStructL, memberTypesL.data(), memberTypesL.size(), false);
-//    globalState->immControlBlockStructL = controlBlockStructL;
-//  }
-
-
-  {
-    auto stringInnerStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "__Str");
-    std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(LLVMInt64Type());
-    memberTypesL.push_back(LLVMArrayType(int8LT, 0));
-    LLVMStructSetBody(
-        stringInnerStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->stringInnerStructL = stringInnerStructL;
-  }
-
-  {
-    auto stringWrapperStructL =
-        LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "__Str_rc");
-    std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(globalState->immControlBlockStructL);
-    memberTypesL.push_back(globalState->stringInnerStructL);
-    LLVMStructSetBody(
-        stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
-    globalState->stringWrapperStructL = stringWrapperStructL;
-  }
-
-  // This is a weak ref to a void*. When we're calling an interface method on a weak,
-  // we have no idea who the receiver is. They'll receive this struct as the correctly
-  // typed flavor of it (from structWeakRefStructs).
-  globalState->weakVoidRefStructL =
-      LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), "__Weak_VoidP");
-  makeVoidPtrWeakRefStruct(globalState, globalState->weakVoidRefStructL);
-}
 
 void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //  std::cout << "OVERRIDING to resilient-v2 mode!" << std::endl;
@@ -607,6 +188,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
   LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
   LLVMBuilderRef entryBuilder = LLVMCreateBuilder();
+  globalState->valeMainBuilder = entryBuilder;
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlock(entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
@@ -639,16 +221,30 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
   LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
-  initInternalStructs(globalState);
-  initInternalExterns(globalState);
+//  Assist assistRegion(globalState);
+//  Mega megaRegion(globalState);
+  IRegion* defaultRegion = nullptr;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      defaultRegion = new Assist(globalState);
+      break;
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      defaultRegion = new Mega(globalState);
+      break;
+    default:
+      assert(false);
+  }
+  globalState->region = defaultRegion;
 
-  Assist assistRegion(globalState);
-  Mega megaRegion(globalState);
-  IRegion* defaultRegion = &megaRegion;
+  initInternalExterns(globalState);
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
-      defaultRegion = &assistRegion;
+      std::cout << "Region override: assist" << std::endl;
       break;
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;
@@ -795,34 +391,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
         globalState->getOrMakeStringConstant("Memory leaks!"),
     };
     LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-  }
-
-  if (globalState->opt->census) {
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
-      LLVMValueRef args[3] = {
-          LLVMConstInt(LLVMInt64Type(), 0, false),
-          LLVMBuildZExt(
-              entryBuilder,
-              LLVMBuildCall(
-                  entryBuilder, globalState->getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
-              LLVMInt64Type(),
-              ""),
-          globalState->getOrMakeStringConstant("WRC leaks!"),
-      };
-      LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-    } else {
-      LLVMValueRef args[3] = {
-          LLVMConstInt(LLVMInt64Type(), 0, false),
-          LLVMBuildZExt(
-              entryBuilder,
-              LLVMBuildCall(
-                  entryBuilder, globalState->getNumWrcs, nullptr, 0, "numWrcs"),
-              LLVMInt64Type(),
-              ""),
-          globalState->getOrMakeStringConstant("WRC leaks!"),
-      };
-      LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-    }
   }
 
   if (mainM->returnType->referend == globalState->metalCache.vooid) {

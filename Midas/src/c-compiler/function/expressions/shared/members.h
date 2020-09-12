@@ -16,7 +16,14 @@ LLVMValueRef getStructContentsPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE wrapperPtrLE);
 
-LLVMValueRef getStructContentsPtr(
+LLVMValueRef getStructContentsPtrNormal(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref refLE);
+
+LLVMValueRef getStructContentsPtrForce(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -34,12 +41,6 @@ Ref loadMember(
     Reference* memberType,
     int memberIndex,
     Reference* resultType,
-    const std::string& memberName);
-
-LLVMValueRef loadInnerStructMember(
-    LLVMBuilderRef builder,
-    LLVMValueRef innerStructPtrLE,
-    int memberIndex,
     const std::string& memberName);
 
 Ref swapMember(

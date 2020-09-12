@@ -9,31 +9,6 @@
 #include "function/expressions/shared/shared.h"
 #include "region/common/heap.h"
 
-void fillKnownSizeArray(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* elementMT,
-    LLVMValueRef arrayLE,
-    const std::vector<Ref>& elementsLE) {
-
-  for (int i = 0; i < elementsLE.size(); i++) {
-    auto memberName = std::string("element") + std::to_string(i);
-    LLVMValueRef indices[2] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
-        LLVMConstInt(LLVMInt64Type(), i, false),
-    };
-    auto elementLE = checkValidReference(FL(), globalState, functionState, builder, elementMT, elementsLE[i]);
-    // Every time we fill in a field, it actually makes a new entire
-    // struct value, and gives us a LLVMValueRef for the new value.
-    // So, `structValueBeingInitialized` contains the latest one.
-    LLVMBuildStore(
-        builder,
-        elementLE,
-        LLVMBuildGEP(builder, arrayLE, indices, 2, memberName.c_str()));
-  }
-}
-
 Ref translateNewArrayFromValues(
     GlobalState* globalState,
     FunctionState* functionState,

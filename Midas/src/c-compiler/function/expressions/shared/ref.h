@@ -23,6 +23,9 @@ private:
 };
 
 struct WrapperPtrLEMaker {
+  WrapperPtrLEMaker(std::function<LLVMTypeRef(Reference*)> getWrapperStruct_)
+    : getWrapperStruct(getWrapperStruct_) {}
+
   WrapperPtrLE make(Reference* referenceM_, LLVMValueRef controlBlockPtrLE_) {
     assert(LLVMTypeOf(controlBlockPtrLE_) == LLVMPointerType(getWrapperStruct(referenceM_), 0));
     return WrapperPtrLE(referenceM_, controlBlockPtrLE_);
@@ -47,8 +50,14 @@ private:
 };
 
 struct ControlBlockPtrLEMaker {
+  ControlBlockPtrLEMaker(std::function<LLVMTypeRef(Referend*)> getControlBlockStruct_)
+    : getControlBlockStruct(getControlBlockStruct_) {}
+
   ControlBlockPtrLE make(Referend* referendM_, LLVMValueRef controlBlockPtrLE_) {
-    assert(LLVMTypeOf(controlBlockPtrLE_) == LLVMPointerType(getControlBlockStruct(referendM_), 0));
+    auto actualTypeOfControlBlockPtrLE = LLVMTypeOf(controlBlockPtrLE_);
+    auto expectedControlBlockStructL = getControlBlockStruct(referendM_);
+    auto expectedControlBlockStructPtrL = LLVMPointerType(expectedControlBlockStructL, 0);
+    assert(actualTypeOfControlBlockPtrLE == expectedControlBlockStructPtrL);
     return ControlBlockPtrLE(referendM_, controlBlockPtrLE_);
   }
 
@@ -72,6 +81,9 @@ private:
 };
 
 struct InterfaceFatPtrLEMaker {
+  InterfaceFatPtrLEMaker(std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceFatPtrStruct_)
+    : getInterfaceFatPtrStruct(getInterfaceFatPtrStruct_) {}
+
   InterfaceFatPtrLE make(Reference* referenceM_, LLVMValueRef controlBlockPtrLE_) {
     auto interfaceReferenceM = dynamic_cast<InterfaceReferend*>(referenceM_->referend);
     assert(interfaceReferenceM);
@@ -81,7 +93,7 @@ struct InterfaceFatPtrLEMaker {
   }
 
 private:
-  std::function<LLVMTypeRef(Referend*)> getInterfaceFatPtrStruct;
+  std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceFatPtrStruct;
 };
 
 
@@ -100,6 +112,18 @@ private:
 };
 
 struct WeakFatPtrLEMaker {
+  WeakFatPtrLEMaker(
+      std::function<LLVMTypeRef()> getWeakVoidRefStruct_,
+      std::function<LLVMTypeRef(StructReferend*)> getStructWeakRefStruct_,
+      std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceWeakRefStruct_,
+      std::function<LLVMTypeRef(KnownSizeArrayT*)> getKnownSizeArrayWeakRefStruct_,
+      std::function<LLVMTypeRef(UnknownSizeArrayT*)> getUnknownSizeArrayWeakRefStruct_)
+  : getWeakVoidRefStruct(getWeakVoidRefStruct_),
+    getStructWeakRefStruct(getStructWeakRefStruct_),
+    getInterfaceWeakRefStruct(getInterfaceWeakRefStruct_),
+    getKnownSizeArrayWeakRefStruct(getKnownSizeArrayWeakRefStruct_),
+    getUnknownSizeArrayWeakRefStruct(getUnknownSizeArrayWeakRefStruct_) {}
+
   WeakFatPtrLE make(Reference* referenceM_, LLVMValueRef ptrLE) {
     if (auto structReferendM = dynamic_cast<StructReferend*>(referenceM_->referend)) {
       assert(LLVMTypeOf(ptrLE) == getStructWeakRefStruct(structReferendM));

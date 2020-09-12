@@ -96,20 +96,20 @@ void fillControlBlock(
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
-    Weakability weakability,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName) {
 
-  LLVMValueRef newControlBlockLE = nullptr;
-  if (mutability == Mutability::MUTABLE) {
-    if (weakability == Weakability::WEAKABLE) {
-      newControlBlockLE = LLVMGetUndef(globalState->mutWeakableControlBlockStructL);
-    } else {
-      newControlBlockLE = LLVMGetUndef(globalState->mutNonWeakableControlBlockStructL);
-    }
-  } else {
-    newControlBlockLE = LLVMGetUndef(globalState->immControlBlockStructL);
-  }
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->getControlBlockStruct(referendM));
+//  nullptr;
+//  if (mutability == Mutability::MUTABLE) {
+//    if (weakability == Weakability::WEAKABLE) {
+//      newControlBlockLE = LLVMGetUndef(globalState->mutWeakableControlBlockStructL);
+//    } else {
+//      newControlBlockLE = LLVMGetUndef(globalState->mutNonWeakableControlBlockStructL);
+//    }
+//  } else {
+//    newControlBlockLE = LLVMGetUndef(globalState->immControlBlockStructL);
+//  }
 
   if (mutability == Mutability::IMMUTABLE) {
     newControlBlockLE =
@@ -154,7 +154,22 @@ void fillControlBlock(
             "strControlBlockWithTypeStr");
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
   }
-  if (weakability == Weakability::WEAKABLE) {
+  bool fillWeakable = false;
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      fillWeakable = globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE;
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+      fillWeakable = globalState->program->getReferendMutability(referendM) == Mutability::MUTABLE;
+      break;
+    default:
+      assert(false);
+  }
+  if (fillWeakable) {
     newControlBlockLE = fillWeakableControlBlock(globalState, functionState, builder, referendM, newControlBlockLE);
   }
   LLVMBuildStore(
@@ -168,7 +183,7 @@ ControlBlockPtrLE getConcreteControlBlockPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE wrapperPtrLE) {
   // Control block is always the 0th element of every concrete struct.
-  return ControlBlockPtrLE(globalState, wrapperPtrLE.refM->referend, LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
+  return globalState->region->makeControlBlockPtr(wrapperPtrLE.refM->referend, LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
 }
 
 ControlBlockPtrLE getControlBlockPtr(
@@ -178,7 +193,7 @@ ControlBlockPtrLE getControlBlockPtr(
   // Interface fat pointer's first element points directly at the control block,
   // and we dont have to cast it. We would have to cast if we were accessing the
   // actual object though.
-  return ControlBlockPtrLE(globalState, interfaceFatPtrLE.refM->referend, LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
+  return globalState->region->makeControlBlockPtr(interfaceFatPtrLE.refM->referend, LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
 }
 
 ControlBlockPtrLE getControlBlockPtr(
@@ -191,7 +206,7 @@ ControlBlockPtrLE getControlBlockPtr(
   auto referendM = referenceM->referend;
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
     auto referenceLE =
-        InterfaceFatPtrLE(globalState,
+        functionState->defaultRegion->makeInterfaceFatPtr(
             referenceM,
             checkValidReference(FL(), globalState, functionState, builder, referenceM, ref));
     return getControlBlockPtr(globalState, builder, referenceLE);
@@ -233,19 +248,19 @@ ControlBlockPtrLE getControlBlockPtr(
     Reference* referenceM) {
   auto referendM = referenceM->referend;
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
-    auto referenceLE = InterfaceFatPtrLE(globalState, referenceM, ref);
+    auto referenceLE = functionState->defaultRegion->makeInterfaceFatPtr(referenceM, ref);
     return getControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    auto referenceLE = functionState->defaultRegion->makeWrapperPtr(referenceM, ref);
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    auto referenceLE = functionState->defaultRegion->makeWrapperPtr(referenceM, ref);
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    auto referenceLE = functionState->defaultRegion->makeWrapperPtr(referenceM, ref);
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
-    auto referenceLE = WrapperPtrLE(referenceM, ref);
+    auto referenceLE = functionState->defaultRegion->makeWrapperPtr(referenceM, ref);
     return getConcreteControlBlockPtr(globalState, builder, referenceLE);
   } else {
     assert(false);

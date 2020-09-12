@@ -40,7 +40,7 @@ DefaultImmutables::DefaultImmutables(GlobalState* globalState_, ReferendStructs*
         LLVMStructCreateNamed(
             LLVMGetGlobalContext(), "__Str_rc");
     std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(wrappedStructs.controlBlockStructL);
+    memberTypesL.push_back(wrappedStructs->controlBlock.getStruct());
     memberTypesL.push_back(stringInnerStructL);
     LLVMStructSetBody(
         stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
@@ -152,28 +152,28 @@ LLVMTypeRef DefaultImmutables::translateType(GlobalState* globalState, Reference
       return LLVMPointerType(stringWrapperStructL, 0);
     } else if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referenceM->referend)) {
       assert(referenceM->location != Location::INLINE);
-      auto knownSizeArrayCountedStructLT = wrappedStructs.getKnownSizeArrayWrapperStruct(knownSizeArrayMT);
+      auto knownSizeArrayCountedStructLT = wrappedStructs->getKnownSizeArrayWrapperStruct(knownSizeArrayMT);
       return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
     } else if (auto unknownSizeArrayMT =
         dynamic_cast<UnknownSizeArrayT *>(referenceM->referend)) {
       assert(referenceM->location != Location::INLINE);
       auto unknownSizeArrayCountedStructLT =
-          wrappedStructs.getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
+          wrappedStructs->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
       return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
     } else if (auto structReferend =
         dynamic_cast<StructReferend *>(referenceM->referend)) {
       if (referenceM->location == Location::INLINE) {
-        auto innerStructL = wrappedStructs.getInnerStruct(structReferend);
+        auto innerStructL = wrappedStructs->getInnerStruct(structReferend);
         return innerStructL;
       } else {
-        auto countedStructL = wrappedStructs.getWrapperStruct(structReferend);
+        auto countedStructL = wrappedStructs->getWrapperStruct(structReferend);
         return LLVMPointerType(countedStructL, 0);
       }
     } else if (auto interfaceReferend =
         dynamic_cast<InterfaceReferend *>(referenceM->referend)) {
       assert(referenceM->location != Location::INLINE);
       auto interfaceRefStructL =
-          wrappedStructs.getInterfaceRefStruct(interfaceReferend);
+          wrappedStructs->getInterfaceRefStruct(interfaceReferend);
       return interfaceRefStructL;
     } else if (dynamic_cast<Never*>(referenceM->referend)) {
       auto result = LLVMPointerType(makeNeverType(), 0);
@@ -203,7 +203,7 @@ LLVMTypeRef DefaultImmutables::getControlBlockStruct(Referend* referend) {
   } else {
     assert(false);
   }
-  return wrappedStructs.controlBlockStructL;
+  return wrappedStructs->controlBlock.getStruct();
 }
 
 ControlBlock* DefaultImmutables::getControlBlock(Referend* referend) {
@@ -221,5 +221,5 @@ ControlBlock* DefaultImmutables::getControlBlock(Referend* referend) {
   } else {
     assert(false);
   }
-  return &wrappedStructs.controlBlock;
+  return &wrappedStructs->controlBlock;
 }

@@ -2,6 +2,21 @@
 #include "structs.h"
 
 
+constexpr uint32_t WRC_ALIVE_BIT = 0x80000000;
+constexpr uint32_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
+
+constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI = 0;
+
+constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
+constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
+
+constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
+constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
+
+
+ControlBlock* ReferendStructs::getControlBlock(Referend* referend) {
+  return &controlBlock;
+}
 LLVMTypeRef ReferendStructs::getInnerStruct(StructReferend* structReferend) {
   auto structIter = innerStructs.find(structReferend->fullName->name);
   assert(structIter != innerStructs.end());
@@ -34,6 +49,106 @@ LLVMTypeRef ReferendStructs::getInterfaceTableStruct(InterfaceReferend* interfac
 }
 
 
+LLVMTypeRef makeLgtEntryStruct(GlobalState* globalState) {
+  auto lgtEntryStructL = LLVMStructCreateNamed(globalState->context, "__LgtEntry");
+
+  std::vector<LLVMTypeRef> memberTypesL;
+
+  assert(LGT_ENTRY_MEMBER_INDEX_FOR_GEN == memberTypesL.size());
+  memberTypesL.push_back(LLVMInt32Type());
+
+  assert(LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE == memberTypesL.size());
+  memberTypesL.push_back(LLVMInt32Type());
+
+  LLVMStructSetBody(lgtEntryStructL, memberTypesL.data(), memberTypesL.size(), false);
+
+  return lgtEntryStructL;
+}
+
+LLVMTypeRef makeResilientV1GenRefStruct(GlobalState* globalState) {
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
+  auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
+
+  std::vector<LLVMTypeRef> memberTypesL;
+
+  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
+  memberTypesL.push_back(LLVMInt32Type());
+
+  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI == memberTypesL.size());
+  memberTypesL.push_back(LLVMInt32Type());
+
+  LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
+
+  assert(
+      LLVMABISizeOfType(globalState->dataLayout, genRefStructL) ==
+          LLVMABISizeOfType(globalState->dataLayout, LLVMInt64Type()));
+
+  return genRefStructL;
+}
+
+LLVMTypeRef makeResilientV2GenRefStruct(GlobalState* globalState) {
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2);
+  auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
+
+  std::vector<LLVMTypeRef> memberTypesL;
+
+  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
+  memberTypesL.push_back(LLVMInt32Type());
+
+  LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
+
+  return genRefStructL;
+}
+
+LLVMTypeRef makeWrciStruct(GlobalState* globalState) {
+  auto wrciRefStructL = LLVMStructCreateNamed(globalState->context, "__WrciRef");
+
+  std::vector<LLVMTypeRef> memberTypesL;
+
+  assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI == memberTypesL.size());
+  memberTypesL.push_back(LLVMInt32Type());
+
+  LLVMStructSetBody(wrciRefStructL, memberTypesL.data(), memberTypesL.size(), false);
+
+  return wrciRefStructL;
+}
+
+WeakableReferendStructs::WeakableReferendStructs(
+  GlobalState* globalState_,
+  ControlBlock controlBlock)
+: globalState(globalState_),
+  referendStructs(globalState_, std::move(controlBlock)) {
+
+  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
+    globalState->lgtEntryStructL = makeLgtEntryStruct(globalState);
+
+    weakRefHeaderStructL = makeResilientV1GenRefStruct(globalState);
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+    weakRefHeaderStructL = makeResilientV2GenRefStruct(globalState);
+  } else if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+      globalState->opt->regionOverride == RegionOverride::FAST ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V0 ||
+      globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+    weakRefHeaderStructL = makeWrciStruct(globalState);
+  } else {
+    assert(false);
+  }
+
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  weakVoidRefStructL =
+      LLVMStructCreateNamed(
+          LLVMGetGlobalContext(), "__Weak_VoidP");
+  std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
+  structWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
+  structWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMVoidType(), 0));
+  LLVMStructSetBody(weakVoidRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
+}
+
+ControlBlock* WeakableReferendStructs::getControlBlock(Referend* referend) {
+  return referendStructs.getControlBlock(referend);
+}
 LLVMTypeRef WeakableReferendStructs::getInnerStruct(StructReferend* structReferend) {
   return referendStructs.getInnerStruct(structReferend);
 }
@@ -81,19 +196,19 @@ LLVMTypeRef WeakableReferendStructs::getInterfaceWeakRefStruct(InterfaceReferend
 
 
 void ReferendStructs::translateStruct(
-    StructReferend* structReferend,
+    StructDefinition* struuct,
     std::vector<LLVMTypeRef> membersLT) {
-  LLVMTypeRef valStructL = getInnerStruct(structReferend);
+  LLVMTypeRef valStructL = getInnerStruct(struuct->referend);
   LLVMStructSetBody(
       valStructL, membersLT.data(), membersLT.size(), false);
 
-  LLVMTypeRef wrapperStructL = getWrapperStruct(structReferend);
+  LLVMTypeRef wrapperStructL = getWrapperStruct(struuct->referend);
   std::vector<LLVMTypeRef> wrapperStructMemberTypesL;
 
   // First member is a ref counts struct. We don't include the int directly
   // because we want fat pointers to point to this struct, so they can reach
   // into it and increment without doing any casting.
-  wrapperStructMemberTypesL.push_back(controlBlockStructL);
+  wrapperStructMemberTypesL.push_back(controlBlock.getStruct());
 
   wrapperStructMemberTypesL.push_back(valStructL);
 
@@ -154,36 +269,36 @@ void ReferendStructs::translateEdge(
   LLVMSetInitializer(itablePtr,  itableLE);
 }
 
-void ReferendStructs::declareInterface(InterfaceReferend* interfaceReferend) {
+void ReferendStructs::declareInterface(InterfaceDefinition* interface) {
 
   auto interfaceRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), interfaceReferend->fullName->name.c_str());
-  assert(interfaceRefStructs.count(interfaceReferend->fullName->name) == 0);
-  interfaceRefStructs.emplace(interfaceReferend->fullName->name, interfaceRefStructL);
+          LLVMGetGlobalContext(), interface->name->name.c_str());
+  assert(interfaceRefStructs.count(interface->name->name) == 0);
+  interfaceRefStructs.emplace(interface->name->name, interfaceRefStructL);
 
   auto interfaceTableStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (interfaceReferend->fullName->name + "itable").c_str());
-  assert(interfaceTableStructs.count(interfaceReferend->fullName->name) == 0);
-  interfaceTableStructs.emplace(interfaceReferend->fullName->name, interfaceTableStructL);
+          LLVMGetGlobalContext(), (interface->name->name + "itable").c_str());
+  assert(interfaceTableStructs.count(interface->name->name) == 0);
+  interfaceTableStructs.emplace(interface->name->name, interfaceTableStructL);
 }
 
 void ReferendStructs::translateInterface(
-    InterfaceReferend* interfaceReferend,
+    InterfaceDefinition* interface,
     std::vector<LLVMTypeRef> interfaceMethodTypesL) {
   LLVMTypeRef itableStruct =
-      getInterfaceTableStruct(interfaceReferend);
+      getInterfaceTableStruct(interface->referend);
 
   LLVMStructSetBody(
       itableStruct, interfaceMethodTypesL.data(), interfaceMethodTypesL.size(), false);
 
-  LLVMTypeRef refStructL = getInterfaceRefStruct(interfaceReferend);
+  LLVMTypeRef refStructL = getInterfaceRefStruct(interface->referend);
   std::vector<LLVMTypeRef> refStructMemberTypesL;
 
   // this points to the control block.
   // It makes it easier to increment and decrement ref counts.
-  refStructMemberTypesL.push_back(LLVMPointerType(controlBlockStructL, 0));
+  refStructMemberTypesL.push_back(LLVMPointerType(controlBlock.getStruct(), 0));
 
 
   refStructMemberTypesL.push_back(LLVMPointerType(itableStruct, 0));
@@ -217,7 +332,7 @@ void ReferendStructs::translateUnknownSizeArray(
 
   std::vector<LLVMTypeRef> elementsL;
 
-  elementsL.push_back(controlBlockStructL);
+  elementsL.push_back(controlBlock.getStruct());
 
   elementsL.push_back(LLVMInt64Type());
 
@@ -235,7 +350,7 @@ void ReferendStructs::translateKnownSizeArray(
 
   std::vector<LLVMTypeRef> elementsL;
 
-  elementsL.push_back(controlBlockStructL);
+  elementsL.push_back(controlBlock.getStruct());
 
   elementsL.push_back(innerArrayLT);
 
@@ -245,19 +360,15 @@ void ReferendStructs::translateKnownSizeArray(
 
 
 void WeakableReferendStructs::translateStruct(
-    StructReferend* structReferend,
+    StructDefinition* struuct,
     std::vector<LLVMTypeRef> membersLT) {
-  referendStructs.translateStruct(structReferend, membersLT);
+  referendStructs.translateStruct(struuct, membersLT);
 
-  LLVMTypeRef valStructL = getInnerStruct(structReferend);
-  LLVMStructSetBody(
-      valStructL, membersLT.data(), membersLT.size(), false);
+  LLVMTypeRef wrapperStructL = getWrapperStruct(struuct->referend);
 
-  LLVMTypeRef wrapperStructL = getWrapperStruct(structReferend);
-
-  auto structWeakRefStructL = getStructWeakRefStruct(structReferend);
+  auto structWeakRefStructL = getStructWeakRefStruct(struuct->referend);
   std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
-  structWeakRefStructMemberTypesL.push_back(structWeakRefStructL);
+  structWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
   structWeakRefStructMemberTypesL.push_back(LLVMPointerType(wrapperStructL, 0));
   LLVMStructSetBody(structWeakRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
@@ -284,26 +395,26 @@ void WeakableReferendStructs::translateEdge(
   referendStructs.translateEdge(edge, functions);
 }
 
-void WeakableReferendStructs::declareInterface(InterfaceReferend* interfaceReferend) {
-  referendStructs.declareInterface(interfaceReferend);
+void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
+  referendStructs.declareInterface(interface);
 
   auto interfaceWeakRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (interfaceReferend->fullName->name + "w").c_str());
-  assert(interfaceWeakRefStructs.count(interfaceReferend->fullName->name) == 0);
-  interfaceWeakRefStructs.emplace(interfaceReferend->fullName->name, interfaceWeakRefStructL);
+          LLVMGetGlobalContext(), (interface->name->name + "w").c_str());
+  assert(interfaceWeakRefStructs.count(interface->name->name) == 0);
+  interfaceWeakRefStructs.emplace(interface->name->name, interfaceWeakRefStructL);
 }
 
 void WeakableReferendStructs::translateInterface(
-    InterfaceReferend* interfaceReferend,
+    InterfaceDefinition* interface,
     std::vector<LLVMTypeRef> interfaceMethodTypesL) {
-  referendStructs.translateInterface(interfaceReferend, interfaceMethodTypesL);
+  referendStructs.translateInterface(interface, interfaceMethodTypesL);
 
-  LLVMTypeRef refStructL = getInterfaceRefStruct(interfaceReferend);
+  LLVMTypeRef refStructL = getInterfaceRefStruct(interface->referend);
 
-  auto interfaceWeakRefStructL = getInterfaceWeakRefStruct(interfaceReferend);
+  auto interfaceWeakRefStructL = getInterfaceWeakRefStruct(interface->referend);
   std::vector<LLVMTypeRef> interfaceWeakRefStructMemberTypesL;
-  interfaceWeakRefStructMemberTypesL.push_back(interfaceWeakRefStructL);
+  interfaceWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
   interfaceWeakRefStructMemberTypesL.push_back(refStructL);
   LLVMStructSetBody(interfaceWeakRefStructL, interfaceWeakRefStructMemberTypesL.data(), interfaceWeakRefStructMemberTypesL.size(), false);
 }

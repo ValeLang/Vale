@@ -10,6 +10,7 @@
 #include <region/common/defaultlayout/structs.h>
 
 ControlBlock makeImmControlBlock(GlobalState* globalState);
+
 class DefaultImmutables {
 public:
   DefaultImmutables(
@@ -30,6 +31,14 @@ public:
   LLVMTypeRef getControlBlockStruct(Referend* referend);
 
   ControlBlock* getControlBlock(Referend* referend);
+
+  // TODO get rid of these when refactor is done
+  LLVMTypeRef getStringInnerStructL() {
+    return stringInnerStructL;
+  }
+  LLVMTypeRef getStringWrapperStructL() {
+    return stringWrapperStructL;
+  }
 
 private:
   GlobalState* globalState;

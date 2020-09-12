@@ -2,22 +2,24 @@
 #define REGION_COMMON_DEFAULTLAYOUT_STRUCTS_H_
 
 #include <globalstate.h>
+#include "region/common/controlblock.h"
 
 class IReferendStructsSource {
 public:
   virtual ~IReferendStructsSource() = default;
+  virtual ControlBlock* getControlBlock(Referend* referend) = 0;
   virtual LLVMTypeRef getInnerStruct(StructReferend* structReferend) = 0;
   virtual LLVMTypeRef getWrapperStruct(StructReferend* structReferend) = 0;
   virtual LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) = 0;
   virtual LLVMTypeRef getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) = 0;
   virtual LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) = 0;
   virtual LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) = 0;
-  virtual void translateStruct(StructReferend* structReferend, std::vector<LLVMTypeRef> membersLT) = 0;
+  virtual void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) = 0;
   virtual void declareStruct(StructDefinition* structM) = 0;
   virtual void declareEdge(Edge* edge) = 0;
   virtual void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) = 0;
-  virtual void declareInterface(InterfaceReferend* name) = 0;
-  virtual void translateInterface(InterfaceReferend* interfaceReferend, std::vector<LLVMTypeRef> interfaceMethodTypesL) = 0;
+  virtual void declareInterface(InterfaceDefinition* interface) = 0;
+  virtual void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) = 0;
   virtual void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) = 0;
   virtual void declareUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT) = 0;
   virtual void translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) = 0;
@@ -47,18 +49,19 @@ public:
       : globalState(globalState_),
       controlBlock(controlBlock_) {}
 
+  ControlBlock* getControlBlock(Referend* referend) override;
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
   LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) override;
   LLVMTypeRef getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) override;
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
-  void translateStruct(StructReferend* structReferend, std::vector<LLVMTypeRef> membersLT) override;
+  void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructDefinition* structM) override;
   void declareEdge(Edge* edge) override;
   void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) override;
-  void declareInterface(InterfaceReferend* name) override;
-  void translateInterface(InterfaceReferend* interfaceReferend, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
+  void declareInterface(InterfaceDefinition* interface) override;
+  void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
   void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;
   void declareUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT) override;
   void translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
@@ -69,7 +72,6 @@ public:
   GlobalState* globalState;
 
   ControlBlock controlBlock;
-  LLVMTypeRef controlBlockStructL;
 
   // These contain a bunch of function pointer fields.
   std::unordered_map<std::string, LLVMTypeRef> interfaceTableStructs;
@@ -97,13 +99,10 @@ public:
 // (Keep in mind, in resilient modes, all muts are weakable)
 class WeakableReferendStructs : public IReferendStructsSource, public IWeakRefStructsSource {
 public:
-  WeakableReferendStructs(
-      GlobalState* globalState_,
-      ControlBlock controlBlock)
-    : globalState(globalState_),
-      referendStructs(globalState_, std::move(controlBlock)) {}
+  WeakableReferendStructs(GlobalState* globalState_, ControlBlock controlBlock);
 
 
+  ControlBlock* getControlBlock(Referend* referend) override;
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
   LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) override;
@@ -111,12 +110,12 @@ public:
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
 
-  void translateStruct(StructReferend* structReferend, std::vector<LLVMTypeRef> membersLT) override;
+  void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructDefinition* structM) override;
   void declareEdge(Edge* edge) override;
   void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) override;
-  void declareInterface(InterfaceReferend* name) override;
-  void translateInterface(InterfaceReferend* interfaceReferend, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
+  void declareInterface(InterfaceDefinition* interface) override;
+  void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
   void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;
   void declareUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT) override;
   void translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;

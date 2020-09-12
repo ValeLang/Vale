@@ -43,8 +43,7 @@ LLVMValueRef WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
                   globalState, functionState, builder, sourceStructTypeM, sourceWeakStructFatPtrLE)));
 
   auto interfaceRefLT =
-      globalState->getInterfaceWeakRefStruct(
-          targetInterfaceReferendM->fullName);
+      globalState->getWeakRefStructsSource()->getInterfaceWeakRefStruct(targetInterfaceReferendM);
   auto wrciLE = getWrciFromWeakRef(globalState, builder, sourceWeakStructFatPtrLE);
   auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
 

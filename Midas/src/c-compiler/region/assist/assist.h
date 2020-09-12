@@ -91,6 +91,46 @@ public:
   Ref weakAlias(
       FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) override;
 
+  void discardOwningRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef builder,
+      Reference* sourceMT,
+      Ref sourceRef) override;
+
+
+  void noteWeakableDestroyed(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtrLE) override;
+
+  Ref loadMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      Reference* expectedMemberType,
+      Reference* targetMemberType,
+      const std::string& memberName) override;
+
+  void storeMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      const std::string& memberName,
+      LLVMValueRef newValueLE) override;
+
+  std::tuple<LLVMValueRef, LLVMValueRef> explodeInterfaceRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* virtualParamMT,
+      Ref virtualArgRef) override;
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);

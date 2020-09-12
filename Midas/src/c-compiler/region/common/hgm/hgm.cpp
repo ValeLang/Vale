@@ -42,8 +42,8 @@ LLVMValueRef HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
                   globalState, functionState, builder, sourceStructTypeM, sourceRefLE)));
 
   auto interfaceRefLT =
-      globalState->getInterfaceWeakRefStruct(
-          targetInterfaceReferendM->fullName);
+      globalState->getWeakRefStructsSource()->getInterfaceWeakRefStruct(
+          targetInterfaceReferendM);
   auto headerLE = getHeaderFromWeakRef(builder, sourceRefLE);
 
   auto interfaceWeakRefLE = LLVMGetUndef(interfaceRefLT);

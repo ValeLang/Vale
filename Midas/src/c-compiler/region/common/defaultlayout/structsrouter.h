@@ -12,13 +12,9 @@ using GetWeakRefStructsSource = std::function<IWeakRefStructsSource*(Referend*)>
 // referend's Mutability and Weakability.
 class ReferendStructsRouter : public IReferendStructsSource {
 public:
-  explicit ReferendStructsRouter(GetReferendStructsSource getReferendStructsSource_)
-    : getReferendStructsSource(getReferendStructsSource_) {}
+  explicit ReferendStructsRouter(GetReferendStructsSource getReferendStructsSource_);
 
-//  LLVMTypeRef getControlBlockStruct(Referend* referend) override;
-//
-//  ControlBlock* getControlBlock(Referend* referend) override;
-
+  ControlBlock* getControlBlock(Referend* referend) override;
 
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
@@ -27,12 +23,12 @@ public:
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
 
-  void translateStruct(StructReferend* structReferend, std::vector<LLVMTypeRef> membersLT) override;
+  void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructDefinition* structM) override;
   void declareEdge(Edge* edge) override;
   void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) override;
-  void declareInterface(InterfaceReferend* name) override;
-  void translateInterface(InterfaceReferend* interfaceReferend, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
+  void declareInterface(InterfaceDefinition* interfaceM) override;
+  void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
   void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;
   void declareUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT) override;
   void translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
@@ -47,7 +43,7 @@ private:
 class WeakRefStructsRouter : public IWeakRefStructsSource {
 public:
   explicit WeakRefStructsRouter(GetWeakRefStructsSource getWeakRefStructsSource_)
-  : getWeakRefStructsSource(getWeakRefStructsSource_) {}
+    : getWeakRefStructsSource(getWeakRefStructsSource_) {}
 
   LLVMTypeRef getStructWeakRefStruct(StructReferend* structReferend) override;
   LLVMTypeRef getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) override;

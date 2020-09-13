@@ -348,11 +348,11 @@ class ExpressionTemplar(
           callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), templateArgTemplexesS, argsExprs2)
         (callExpr2, returnsFromArgs)
       }
-      case FunctionCallAE(range, FunctionLoadAE(_, name), argsPackExpr1) => {
+      case FunctionCallAE(range, OutsideLoadAE(_, name), argsPackExpr1) => {
         val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
         val callExpr2 =
-          callTemplar.evaluateNamedPrefixCall(temputs, fate, range, name, List(), argsExprs2)
+          callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), List(), argsExprs2)
         (callExpr2, returnsFromArgs)
       }
       case FunctionCallAE(range, callableExpr1, argsExprs1) => {
@@ -465,7 +465,7 @@ class ExpressionTemplar(
           }
         (lookupExpr1, Set())
       }
-      case FunctionLoadAE(range, name) => {
+      case OutsideLoadAE(range, name) => {
         // Note, we don't get here if we're about to call something with this, that's handled
         // by a different case.
 
@@ -473,18 +473,18 @@ class ExpressionTemplar(
         // not in templata context.
 
         val templataFromEnv =
-          fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext)) match {
+          fate.getAllTemplatasWithName(GlobalFunctionFamilyNameA(name), Set(ExpressionLookupContext)) match {
             case List(BooleanTemplata(value)) => BoolLiteral2(value)
             case List(IntegerTemplata(value)) => IntLiteral2(value)
             case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplata(_, _) => case ExternFunctionTemplata(_) => }).size == templatas.size => {
-              newGlobalFunctionGroupExpression(fate, name)
+              newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name))
             }
             case things if things.size > 1 => {
               vfail("Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _));
             }
             case List() => {
 //              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
-              throw CompileErrorExceptionT(CouldntFindFunctionToLoadT(range, name))
+              throw CompileErrorExceptionT(CouldntFindIdentifierToLoadT(range, name))
               vfail("Couldn't find anything named \"" + name + "\" in env:\n" + fate);
             }
           }

@@ -74,6 +74,7 @@ public:
       Reference* structType,
       Ref structLE) override {
     assert(false);
+    exit(1);
   }
 
   // Suitable for passing in to an interface method
@@ -81,6 +82,7 @@ public:
       LLVMBuilderRef builder,
       LLVMValueRef refLE) override {
     assert(false);
+    exit(1);
   }
 
 
@@ -144,6 +146,7 @@ public:
       LLVMBuilderRef builder,
       Ref lengthLE) override {
     assert(false);
+    exit(1);
   }
 
   // Returns a LLVMValueRef for a pointer to the strings contents bytes
@@ -151,12 +154,14 @@ public:
       LLVMBuilderRef builder,
       Ref stringRefLE) override {
     assert(false);
+    exit(1);
   }
 
   Ref getStringLength(
       LLVMBuilderRef builder,
       Ref stringRefLE) override {
     assert(false);
+    exit(1);
   }
 
   // Returns a LLVMValueRef for a ref to the string object.
@@ -177,6 +182,7 @@ public:
       Ref sizeLE,
       const std::string& typeName) override {
     assert(false);
+    exit(1);
   }
 
   // should expose a dereference thing instead
@@ -200,18 +206,21 @@ public:
       Reference* arrayType,
       Ref arrayWrapperLE) override {
     assert(false);
+    exit(1);
   }
 
   LLVMTypeRef getKnownSizeArrayRefType(
       Reference* referenceM,
       KnownSizeArrayT* knownSizeArrayMT) override {
     assert(false);
+    exit(1);
   }
 
   LLVMTypeRef getUnknownSizeArrayRefType(
       Reference* referenceM,
       UnknownSizeArrayT* unknownSizeArrayMT) override {
     assert(false);
+    exit(1);
   }
 
   LLVMValueRef checkValidReference(
@@ -232,6 +241,7 @@ public:
       Mutability mutability,
       Ref indexIntLE) override {
     assert(false);
+    exit(1);
   }
 
 
@@ -248,6 +258,7 @@ public:
       Reference* refM,
       StructReferend* structReferendM) override {
     assert(false);
+    exit(1);
   }
 
   void translateStruct(
@@ -265,6 +276,7 @@ public:
 
   LLVMTypeRef getStringRefType() const override {
     assert(false);
+    exit(1);
   }
 
   Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) override;

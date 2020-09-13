@@ -46,7 +46,11 @@ class TemplarTests extends FunSuite with Matchers {
       scoutputCache match {
         case Some(scoutput) => scoutput
         case None => {
-          val scoutput = Scout.scoutProgram(List(getParsed()))
+          val scoutput =
+            Scout.scoutProgram(List(getParsed())) match {
+              case Err(e) => vfail(e.toString)
+              case Ok(p) => p
+            }
           scoutputCache = Some(scoutput)
           scoutput
         }
@@ -78,6 +82,21 @@ class TemplarTests extends FunSuite with Matchers {
           val temputs = new Templar(debugOut, true).evaluate(getAstrouts()).getOrDie()
           temputsCache = Some(temputs)
           temputs
+        }
+      }
+    }
+
+    def getTemplarError(): ICompileErrorT = {
+      temputsCache match {
+        case Some(temputs) => vfail()
+        case None => {
+
+          val debugOut = (string: String) => { println(string) }
+
+          new Templar(debugOut, true).evaluate(getAstrouts()) match {
+            case Ok(t) => vfail("Accidentally successfully compiled:\n" + t.toString)
+            case Err(e) => e
+          }
         }
       }
     }
@@ -767,5 +786,16 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val temputs = compile.getTemputs()
+  }
+
+  test("Reports when reading nonexistant local") {
+    val compile = new Compilation(
+      """fn main() {
+        |  moo
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CouldntFindIdentifierToLoadT(_, "moo") =>
+    }
   }
 }

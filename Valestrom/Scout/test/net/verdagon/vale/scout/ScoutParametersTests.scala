@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{Err, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutParametersTests extends FunSuite with Matchers {
@@ -11,7 +11,12 @@ class ScoutParametersTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => Scout.scoutProgram(List(program0))
+      case ParseSuccess(program0) => {
+        Scout.scoutProgram(List(program0)) match {
+          case Err(e) => vfail(e.toString)
+          case Ok(t) => t
+        }
+      }
     }
   }
 

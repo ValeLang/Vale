@@ -9,7 +9,7 @@ import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Vonifier}
-import net.verdagon.vale.scout.Scout
+import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
 import net.verdagon.vale.{Err, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail}
@@ -112,7 +112,11 @@ object Driver {
           case ParseSuccess((program0, _)) => program0
         }
       })
-    val scoutput = Scout.scoutProgram(parseds)
+    val scoutput =
+      Scout.scoutProgram(parseds) match {
+        case Err(e) => return Err(ScoutErrorHumanizer.humanize(filenamesAndSources, e))
+        case Ok(p) => p
+      }
     val astrouts =
       Astronomer.runAstronomer(scoutput) match {
         case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filenamesAndSources, error))

@@ -12,6 +12,8 @@ import net.verdagon.vale.{Err, Ok, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData
 
+import scala.collection.immutable.List
+
 object Compilation {
   def apply(code: String, verbose: Boolean = true): Compilation = new Compilation(List(("in.vale", code)), verbose)
 }
@@ -47,7 +49,11 @@ class Compilation(filenamesAndSources: List[(String, String)], verbose: Boolean 
     scoutputCache match {
       case Some(scoutput) => scoutput
       case None => {
-        val scoutput = Scout.scoutProgram(getParseds())
+        val scoutput =
+          Scout.scoutProgram(getParseds()) match {
+            case Err(e) => vfail(e.toString)
+            case Ok(p) => p
+          }
         scoutputCache = Some(scoutput)
         scoutput
       }

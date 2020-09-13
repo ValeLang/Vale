@@ -1,0 +1,13 @@
+// We can re-use locals' ID numbers. It's kind of like their "stack height" in
+// that way. The code below reuses local ID 1.
+// We had a bug where Unstackify wasnt unregistering the local in its local ID
+// to LLVMValueRef map.
+
+fn main() int {
+  playerRow! = 4;
+
+  if (false) {
+    newPlayerRow! = 0;
+  }
+  ret 42;
+}

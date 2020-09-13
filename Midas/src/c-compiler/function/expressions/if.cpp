@@ -1,13 +1,13 @@
 #include <iostream>
 
-#include "function/expressions/shared/branch.h"
+#include "utils/branch.h"
 
 #include "translatetype.h"
 
 #include "function/expression.h"
 #include "expressions.h"
 
-LLVMValueRef translateIf(
+Ref translateIf(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* parentBlockState,
@@ -25,12 +25,13 @@ LLVMValueRef translateIf(
 
   auto resultLE =
       buildIfElse(
+          globalState,
           functionState,
           builder,
           conditionExpr,
-          translateType(globalState, getEffectiveType(globalState, iff->commonSupertype)),
-          dynamic_cast<Never*>(iff->thenResultType->referend) != nullptr,
-          dynamic_cast<Never*>(iff->elseResultType->referend) != nullptr,
+          functionState->defaultRegion->translateType(iff->commonSupertype),
+          iff->thenResultType,
+          iff->elseResultType,
           [globalState, functionState, &thenBlockState, iff](LLVMBuilderRef thenBlockBuilder) {
             return translateExpression(
                 globalState, functionState, &thenBlockState, thenBlockBuilder, iff->thenExpr);
@@ -39,7 +40,7 @@ LLVMValueRef translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  checkValidReference(FL(), globalState, functionState, builder, getEffectiveType(globalState, iff->commonSupertype), resultLE);
+  globalState->region->checkValidReference(FL(), functionState, builder, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;

@@ -1,0 +1,1907 @@
+interface Opt<T> rules(T Ref) { }
+struct Some<T> rules(T Ref) { value T; }
+impl<T> Opt<T> for Some<T>;
+struct None<T> rules(T Ref) { }
+impl<T> Opt<T> for None<T>;
+
+fn empty?<T>(virtual opt &Opt<T>) bool abstract;
+fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
+fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
+
+fn get<T>(virtual opt Opt<T>) T abstract;
+fn get<T>(opt None<T> impl Opt<T>) T { __panic() }
+fn get<T>(opt Some<T> impl Opt<T>) T {
+  Some<T>(value) = opt;
+  = value;
+}
+
+fn get<T>(virtual opt &Opt<T>) &T abstract;
+fn get<T>(opt &None<T> impl Opt<T>) &T { __panic() }
+fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
+
+fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
+fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
+  default
+}
+fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
+  opt.value
+}
+
+fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> abstract;
+fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
+  None<R>()
+}
+fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
+  Some<R>(func(opt.value))
+}
+
+fn getSize<T>(virtual opt &Opt<T>) int abstract;
+fn getSize<T>(opt &None<T> impl Opt<T>) int { 0 }
+fn getSize<T>(opt &Some<T> impl Opt<T>) int { 1 }
+struct List<E> rules(E Ref) {
+  array Array<mut, Opt<E>>;
+  size int;
+}
+fn List<E>() rules(E Ref) {
+  List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ __panic()})), 0)
+}
+fn len<E>(list &List<E>) { list.size }
+fn add<E>(list &List<E>, newElement E) {
+  if (list.size == list.len()) {
+    newLen = if (len(list) == 0) { 1 } else { len(list) * 2 };
+    newArray =
+        Array<mut, Opt<E>>(newLen, &IFunction1<mut, int, Opt<E>>((index){
+          = if (index < len(list)) {
+              = (mut list.array[index] = None<E>());
+            } else {
+              result Opt<E> = None<E>();
+              = result;
+            }
+        }));
+    mut list.array = newArray;
+  }
+  mut list.array[list.size] = Some<E>(newElement);
+  mut list.size = list.size + 1;
+}
+// todo make that return a &E
+fn get<E>(list &List<E>, index int) &Opt<E> {
+  a = list.array;
+  = a[index];
+}
+fn set<E>(list &List<E>, index int, value E) void {
+  mut list.array[index] = Some(value);
+}
+fn toArray<M, E>(list &List<E>) Array<M, E> rules(M Mutability) {
+  Array<M, E>(list.len(), &IFunction1<mut, int, E>((i){ list.get(i).get()}))
+}
+fn toList<E>(arr &Array<_, E>) List<E> {
+  list = List<E>();
+  arr each (elem){
+    list.add(elem);
+  };
+  = list;
+}
+
+struct HashNode<K, V> {
+  key K;
+  value V;
+}
+
+struct HashMap<K, V, H, E> {
+  hasher H;
+  equator E;
+  table Array<mut, Opt<HashNode<K, V>>>;
+  size int;
+}
+
+fn HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {
+  HashMap<K, V, H, E>(hasher, equator, 0)
+}
+
+fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
+  HashMap<K, V>(
+      hasher,
+      equator,
+      Array<mut, Opt<HashNode<K, V>>>(
+        capacity,
+        &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
+          opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
+          = opt;
+        })),
+      0)
+}
+
+fn add<K, V, H, E>(map &HashMap<K, V, H, E>, key K, value V) void {
+  if (map.has(key)) {
+    panic("Map already has given key!");
+  }
+  if ((map.size + 1) * 2 >= map.table.len()) {
+    newSize =
+        if (map.table.len() == 0) { 2 }
+        else { map.table.len() * 2 };
+    newTable =
+        Array<mut, Opt<HashNode<K, V>>>(
+            newSize,
+            &IFunction1<mut, int, Opt<HashNode<K, V>>>((index){
+              opt Opt<HashNode<K, V>> = None<HashNode<K, V>>();
+              = opt;
+            }));
+    i = 0;
+    while (i < map.table.len()) {
+      if (map.table[i].empty?()) {
+        // do nothing
+      } else {
+        node? = (mut map.table[i] = None<HashNode<K, V>>());
+        node = get(node?);
+        addNodeToTable(&newTable, map.hasher, node);
+      }
+      mut i = i + 1;
+    }
+    mut map.table = newTable;
+  }
+
+  addNodeToTable(map.table, map.hasher, HashNode<K, V>(key, value));
+  mut map.size = map.size + 1;
+}
+
+fn addNodeToTable<K, V, H>(table &Array<mut, Opt<HashNode<K, V>>>, hasher H, node HashNode<K, V>) {
+  hash int = (hasher)(node.key);
+  startIndex = abs(hash mod table.len());
+  index = findEmptyIndexForKey(table, startIndex, node.key);
+
+  opt Opt<HashNode<K, V>> = Some(node);
+  mut table[index] = opt;
+}
+
+fn findEmptyIndexForKey<K, V>(table &Array<mut, Opt<HashNode<K, V>>>, startIndex int, key K) int {
+  i = 0;
+  while (i < table.len()) {
+    index = (startIndex + i) mod table.len();
+    something = table[index];
+    if (something.empty?()) {
+      ret index;
+    }
+    // continue to next node
+    mut i = i + 1;
+  }
+  = panic("findEmptyIndexForKey went past end of table!");
+}
+
+fn findIndexOfKey<K, V, E>(table &Array<mut, Opt<HashNode<K, V>>>, equator E, startIndex int, key K) Opt<int> {
+  i = 0;
+  while (i < table.len()) {
+    index = (startIndex + i) mod table.len();
+    something = table[index];
+    if (something.empty?()) {
+      ret None<int>();
+    }
+    node = something.get();
+    if ((equator)(node.key, key)) {
+      ret Some<int>(index);
+    }
+    // continue to next node
+    mut i = i + 1;
+  }
+  = panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
+}
+
+fn get<K, V, H, E>(self &HashMap<K, V, H, E>, key K) Opt<&V> {
+  if (self.table.len() == 0) {
+    ret None<&V>();
+  }
+  hash int = (self.hasher)(key);
+  startIndex = abs(hash mod self.table.len());
+  index? = findIndexOfKey(self.table, self.equator, startIndex, key);
+  if (index?.empty?()) {
+    opt Opt<&V> = None<&V>();
+    ret opt;
+  }
+  node = self.table[index?.get()].get();
+  opt Opt<&V> = Some<&V>(node.value);
+  ret opt;
+}
+
+fn has<K, V, H, E>(self &HashMap<K, V, H, E>, key K) bool {
+  not(self.get(key).empty?())
+}
+
+fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
+  list = List<K>();
+  index = 0;
+  while (index < self.table.len()) {
+    node? = self.table[index];
+    if (not(node?.empty?())) {
+      list.add(node?.get().key);
+    }
+    mut index = index + 1;
+  }
+  = list.toArray<imm>();
+}
+
+fn innerRemove<K, V, H, E>(
+  table &Array<mut, Opt<HashNode<K, V>>>,
+  hasher H,
+  equator E,
+  key K)
+int {
+  hash int = (hasher)(key);
+  startIndex = abs(hash mod table.len());
+  index? = findIndexOfKey(table, equator, startIndex, key);
+  index = index?.get();
+  mut table[index] = None<HashNode<K, V>>();
+  ret index;
+}
+
+fn remove<K, V, H, E>(
+  map &HashMap<K, V, H, E>,
+  key K)
+void {
+  originalIndex = innerRemove(map.table, map.hasher, map.equator, key);
+  mut map.size = map.size - 1;
+
+  i! = 1;
+  while (i < map.table.len()) {
+    neighborIndex = (originalIndex + i) mod len(map.table);
+    neighbor? = (mut map.table[neighborIndex] = None<HashNode<K, V>>());
+    if (not neighbor?.empty?()) {
+      (neighborKey, neighborValue) = neighbor?^.get();
+      addNodeToTable(map.table, map.hasher, HashNode<K, V>(neighborKey, neighborValue));
+    } else {
+      drop(neighbor?);
+      mut i = map.table.len(); // break
+    }
+    mut i = i + 1;
+  }
+}
+
+fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) {
+  Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
+}
+
+fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
+  i = 0;
+  while (i < arr.len()) {
+    if ((equator)(arr[i], elem)) {
+      ret true;
+    }
+    mut i = i + 1;
+  }
+  = false;
+}
+
+fn has<E>(arr &Array<_, E>, elem E) bool {
+  has(arr, elem, ==)
+}
+
+fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
+  i = 0;
+  while (i < seq.len()) {
+    if ((equator)(seq[i], elem)) {
+      ret true;
+    }
+    mut i = i + 1;
+  }
+  = false;
+}
+
+fn has<E>(seq &[<_> _ * E], elem E) bool {
+  has(seq, elem, ==)
+}
+
+fn Arr<M, F>(n int, generator &F) Array<M, T>
+rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+{
+  Array<M>(n, &IFunction1<mut, int, T>(generator))
+}
+
+fn each<M, T, F>(arr &Array<M, T>, func F) void {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    mut i = i + 1;
+  }
+}
+
+fn indices<>(arr &Array<_, _>) Array<imm, int> {
+  Arr<imm>(len(arr), {_})
+}
+
+fn eachI<F>(arr &Array<_, _>, func F) void {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(i, arr[i]);
+    mut i = i + 1;
+  }
+}
+
+fn min(a int, b int) int {
+  = if (a <= b) { a } else { b }
+}
+
+fn max(a int, b int) int {
+  = if (a >= b) { a } else { b }
+}
+
+fn panic(msg str) {
+  println(msg);
+  = __panic();
+}
+
+fn abs(a int) {
+  = if (a < 0) { a * -1 } else { a }
+}
+
+fn assert(cond bool) void {
+  assert(cond, "Assertion failed!");
+}
+fn assert(cond bool, msg str) void {
+  if (cond == false) {
+    println(msg);
+    __panic();
+  }
+}
+
+fn assertEq<T>(a T, b T) void {
+  assert(a == b, "Assertion failed, not equal!");
+}
+
+fn assertEq<T>(a T, b T, msg str) void {
+  assert(a == b, msg);
+}
+// fn get_int_arg(args: &Vec<String>, param_str: &str, default: i32) -> i32 {
+//     match args.iter().position(|x| x == param_str) {
+//         None => {
+//             return default;
+//         }
+//         Some(pos) => {
+//             let int_index = pos + 1;
+//             if int_index >= args.len() {
+//                 panic!(
+//                     "Must have a number after {}. Use --help for help.",
+//                     param_str
+//                 );
+//             }
+//             let width_str = &args[int_index];
+//             match atoi(width_str.as_bytes()) {
+//                 None => panic!(
+//                     "Must have a number after {}.  Use --help for help.",
+//                     param_str
+//                 ),
+//                 Some(w) => return w,
+//             }
+//         }
+//     };
+// }
+
+// fn main() {
+//     let args: Vec<String> = env::args().collect();
+
+//     match args.iter().position(|x| x == "--help") {
+//         None => {}
+//         Some(_) => {
+//             println!(
+//                 "
+// --width N       Sets level width.
+// --height N      Sets level height.
+// --num_levels N  Sets number of levels until game end.
+// --seed N        Uses given seed for level generation. If absent, random.
+// --display N     0 to not display, 1 to display.
+// --turn_delay N  Sleeps for N ms between each turn.
+// "
+//             );
+//             return;
+//         }
+//     }
+
+//     let level_width = get_int_arg(&args, "--width", 80);
+//     let level_height = get_int_arg(&args, "--height", 22);
+//     let num_levels = get_int_arg(&args, "--num_levels", 2);
+//     let seed = get_int_arg(
+//         &args,
+//         "--seed",
+//         SystemTime::now()
+//             .duration_since(SystemTime::UNIX_EPOCH)
+//             .expect("No system time!")
+//             .as_secs() as i32,
+//     );
+//     let display = get_int_arg(&args, "--display", 1) != 0;
+//     let turn_delay = get_int_arg(&args, "--turn_delay", 100);
+
+//     benchmark_rl::benchmark_rl(
+//         seed,
+//         level_width,
+//         level_height,
+//         num_levels,
+//         display,
+//         turn_delay,
+//     );
+// }
+
+
+
+fn main() {
+  seed = 1337;// DIFFERENCE
+  benchmark_rl(
+    seed,
+    30,
+    30,
+    10,
+    true,
+    100);
+  = 0;
+}
+
+// Added
+struct LocationHasher { }
+fn __call(this &LocationHasher, loc Location) {
+  hash = 0;
+  mut hash = 41 * hash + loc.x;
+  mut hash = 41 * hash + loc.y;
+  = hash;
+}
+
+// Added
+struct LocationEquator { }
+fn __call(this &LocationEquator, a Location, b Location) {
+  (a.x == b.x) and (a.y == b.y)
+}
+
+// Added
+fn str(loc Location) {
+    "(" + str(loc.x) + ", " + str(loc.y) + ")"
+}
+
+struct Location imm {
+    x int;
+    y int;
+}
+fn dist_squared(self Location, other Location) int {
+    // ret (self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y);
+    diffX = self.x - other.x;
+    diffY = self.y - other.y;
+    ret diffX * diffX + diffY * diffY;
+}
+fn next_to(
+    self Location,
+    other Location,
+    consider_corners_adjacent bool,
+    include_self bool
+) bool {
+    dist_squared = self.dist_squared(other);
+    min_squared_distance = if (include_self) { 0 } else { 1 };
+    max_squared_distance = if (consider_corners_adjacent) { 2 } else { 1 };
+    ret dist_squared >= min_squared_distance and dist_squared <= max_squared_distance;
+}
+
+// This is different than the normal manhattan distance.
+// Normal manhattan distance will give you the difference in x plus the difference
+// in y.
+// This allows us to go diagonal as well.
+//
+// Normal manhattan distance     Diagonal manhattan distance
+//
+//     ..................            ..................
+//     ...............g..            ...............g..
+//     ...............|..            ............../...
+//     ...............|..            ............./....
+//     ...............|..            ............/.....
+//     .@--------------..            .@----------......
+//     ..................            ..................
+//
+// The 100 means times 100, for better precision.
+//
+fn diagonal_manhattan_distance_100(&self, other Location) int {
+    x_dist = (self.x - other.x).abs();
+    y_dist = (self.y - other.y).abs();
+    diagonal_dist = min(x_dist, y_dist); // 100 sqrt 2
+    remaining_x_dist = x_dist - diagonal_dist;
+    remaining_y_dist = y_dist - diagonal_dist;
+    ret diagonal_dist * 144 + remaining_x_dist * 100 + remaining_y_dist * 100;
+}
+// use downcast_rs::Downcast;
+
+// use generational_arena;
+// use generational_arena::Arena;
+
+// use crate::game::*;
+// use crate::location::*;
+
+// pub trait ITileComponent: Downcast {
+//     // Called on a component every turn. It must be registered with the level
+//     // as an acting tile for it to actually be called though.
+//     // Returns a GameMutator lambda with which it can modify the game.
+//     fn on_turn(
+//         &self,
+//         _rand: &mut LCGRand,
+//         _game: &Game,
+//         _self_tile_loc: Location,
+//         _self_tile_component_index: generational_arena::Index,
+//     ) -> GameMutator {
+//         return do_nothing_game_mutator();
+//     }
+// }
+// // We don't use an enum for tile components for the same reason as IUnitComponent.
+// impl_downcast!(ITileComponent);
+
+
+struct Tile {
+    walkable bool;
+
+    // A string that the UI can recognize so it knows what to display. This should
+    // ONLY be read by the UI, and not by any special logic. Any special logic
+    // should be specified in components on the tile (which we don't have yet).
+    display_class str;
+
+    //components List<ITileComponent>;
+}
+
+// impl Tile {
+//     // Gets the component of the given class.
+//     pub fn get_first_component<T: ITileComponent>(&self) -> Option<&T> {
+//         for (_, c_boxed) in &self.components {
+//             if let Some(w) = c_boxed.downcast_ref::<T>() {
+//                 return Some(w);
+//             }
+//         }
+//         return None;
+//     }
+//     // // Gets the component of the given class.
+//     // pub fn get_first_component_mut<T: ITileComponent>(&mut self) -> Option<&mut T> {
+//     //     for (_, c_boxed) in &mut self.components {
+//     //         if let Some(w) = c_boxed.downcast_mut::<T>() {
+//     //             return Some(w);
+//     //         }
+//     //     }
+//     //     return None;
+//     // }
+// }// use std::iter::FromIterator;
+// use std::cmp;
+
+// use rustc_hash::FxHashMap;
+// use rustc_hash::FxHashSet;
+// use generational_arena::Arena;
+
+// use crate::game::*;
+// use crate::location::*;
+// use crate::level::*;
+// use crate::tile::*;
+
+fn make_level(
+    max_width int,
+    max_height int,
+    rand &!LCGRand)
+Level {
+    level = Level(
+        max_width,
+        max_height,
+        HashMap<Location, Tile, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator()));
+    //     unit_by_location: FxHashMap::default(),
+    //     acting_tile_locations: FxHashMap::default(),
+    // };
+
+    // This is a 2D array of booleans which represent our walkable and
+    // non-walkable locations.
+    // All `true` tiles will become floors.
+    // All `false` tiles will become walls or open space, depending on whether
+    // they're next to a floor.
+
+
+    // DIFFERENCE, use array constructors
+    walkabilities = List<List<bool>>();
+
+    x! = 0;
+    while (x < max_width) {
+      y! = 0;
+
+      thisCol = List<bool>();
+
+      while (y < max_height) {
+        half_max_width = max_width / 2;
+        half_max_height = max_height / 2;
+        inside_ellipse = (x - half_max_width)
+            * (x - half_max_width)
+            * (half_max_height * half_max_height)
+            + (y - half_max_height) * (y - half_max_height) * (half_max_width * half_max_width)
+            < (half_max_width * half_max_width) * (half_max_height * half_max_height);
+
+        // Randomly determine whether something inside the ellipse is walkable or not.
+        walkable = rand.next() mod 2 == 0;
+
+        thing = inside_ellipse and walkable;
+
+
+        thisCol.add(thing);
+
+        mut y = y + 1;
+      }
+
+      walkabilities.add(thisCol);
+
+      mut x = x + 1;
+    }
+    // We should now have a randomly-noisy-semi-filled ellipse, like an ellipse of static
+    // on an otherwise black TV screen.
+
+    // Do a couple generations of cellular automata to smooth out the noisiness to get some
+    // caverns and rooms forming.
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+
+    // // The caverns and rooms from the above process are probably disjoint and we can't get
+    // // from one to the other. Here, we dig tunnels between them until they're connected.
+    // connect_all_rooms(&mut rand, &mut walkabilities, false);
+
+    // Now, assemble the above walkabilities 2D bool array into a legit 2D tile array.
+    mut x = 0;
+    while (x < max_width) {
+        y! = 0;
+        while (y < max_height) {
+            loc = Location(x, y);
+            walkable = walkabilities.get(x).get().get(y).get();
+            on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
+            //if (walkable and not on_edge) {
+                display_class =
+                  if (rand.next() mod 2 == 0) {
+                    "dirt"
+                  } else {
+                    "grass"
+                  };
+                level.tiles.add(
+                    loc,
+                    Tile(
+                        true,
+                        display_class));//,
+                        // components: Arena::new()));
+            // } else {
+            //     next_to_walkable! = false;
+            //     for neighbor_x in cmp::max(0, x - 1)..cmp::min(max_width - 1, x + 1 + 1) {
+            //         for neighbor_y in cmp::max(0, y - 1)..cmp::min(max_height - 1, y + 1 + 1) {
+            //             let neighbor_walkable =
+            //                 walkabilities[neighbor_x as usize][neighbor_y as usize];
+            //             if neighbor_walkable {
+            //                 next_to_walkable = true;
+            //             }
+            //         }
+            //     }
+            //     if next_to_walkable {
+            //         level.tiles.insert(
+            //             loc,
+            //             Tile {
+            //                 walkable: false,
+            //                 display_class: "wall".to_string(),
+            //                 components: Arena::new(),
+            //             },
+            //         );
+            //     }
+            // }
+            mut y = y + 1;
+        }
+        mut x = x + 1;
+    }
+
+    ret level;
+}
+
+// Does cellular automata on the 2D walkabilities array.
+fn smooth_level(
+    max_width int,
+    max_height int,
+    walkabilities &!List<List<bool>>)
+List<List<bool>> {
+    // DIFFERENCE, make arraylist able to do lambda constructing or somethin
+    new_walkabilities = List<List<bool>>();
+    x! = 0;
+    while (x < max_width) {
+      y! = 0;
+      thisCol = List<bool>();
+      while (y < max_height) {
+        thisCol.add(false);
+        mut y = y + 1;
+      }
+      new_walkabilities.add(thisCol);
+      mut x = x + 1;
+    }
+
+    mut x = 0;
+    while (x < max_width) {
+
+      thisCol = List<bool>();
+
+      y! = 0;
+      while (y < max_height) {
+
+        num_walkable_neighbors = 0;
+
+        neighbor_x! = max(0, x - 1);
+        while (neighbor_x < min(max_width - 1, x + 1 + 1)) {
+
+          neighbor_y! = max(0, y - 1);
+          while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
+
+            if (walkabilities.get(neighbor_x).get().get(neighbor_y).get()) {
+                mut num_walkable_neighbors = num_walkable_neighbors + 1;
+            }
+
+            mut neighbor_y = neighbor_y + 1;
+          }
+          mut neighbor_x = neighbor_x + 1;
+        }
+
+        new_walkabilities.get(x).get().set(y, num_walkable_neighbors >= 5);
+
+        mut y = y + 1;
+      }
+
+      mut x = x + 1;
+    }
+
+
+
+    // swap method here?
+    ret new_walkabilities;
+}
+
+// fn connect_all_rooms(
+//     mut rand: &mut LCGRand,
+//     mut walkabilities: &mut Vec<Vec<bool>>,
+//     consider_corners_adjacent: bool,
+// ) {
+//     let mut rooms = identify_rooms(&mut walkabilities, consider_corners_adjacent);
+//     connect_rooms(&mut rand, &mut rooms);
+//     for i in 0..rooms.len() {
+//         let new_room = &rooms[i];
+//         for loc in new_room {
+//             walkabilities[loc.x as usize][loc.y as usize] = true;
+//         }
+//     }
+// }
+
+// pub fn identify_rooms(
+//     walkabilities: &mut Vec<Vec<bool>>,
+//     consider_corners_adjacent: bool,
+// ) -> Vec<FxHashSet<Location>> {
+//     let mut room_index_by_location = FxHashMap::default();
+//     let mut rooms = Vec::new();
+
+//     for x in 0..walkabilities.len() {
+//         for y in 0..walkabilities[x].len() {
+//             if walkabilities[x][y] {
+//                 let spark_location = Location::new(x as i32, y as i32);
+//                 if room_index_by_location.contains_key(&spark_location) {
+//                     continue;
+//                 }
+//                 let connected_locations = find_all_connected_locations(
+//                     &walkabilities,
+//                     consider_corners_adjacent,
+//                     spark_location,
+//                 );
+//                 let new_room_index = rooms.len();
+//                 rooms.push(connected_locations.clone());
+//                 for connected_location in connected_locations {
+//                     assert!(!room_index_by_location.contains_key(&connected_location));
+//                     room_index_by_location.insert(connected_location, new_room_index);
+//                 }
+//             }
+//         }
+//     }
+//     return rooms;
+// }
+
+// pub fn find_all_connected_locations(
+//     walkabilities: &Vec<Vec<bool>>,
+//     consider_corners_adjacent: bool,
+//     start_location: Location,
+// ) -> FxHashSet<Location> {
+//     let mut connected_with_unexplored_neighbors = FxHashSet::default();
+//     let mut connected_with_explored_neighbors = FxHashSet::<Location>::default();
+
+//     connected_with_unexplored_neighbors.insert(start_location);
+
+//     while connected_with_unexplored_neighbors.len() > 0 {
+//         let current = connected_with_unexplored_neighbors
+//             .iter()
+//             .nth(0)
+//             .expect("")
+//             .clone();
+//         assert!(!connected_with_explored_neighbors.contains(&current));
+
+//         connected_with_unexplored_neighbors.remove(&current);
+//         connected_with_explored_neighbors.insert(current);
+
+//         for neighbor in
+//             get_adjacent_walkable_locations(walkabilities, current, consider_corners_adjacent)
+//         {
+//             if connected_with_explored_neighbors.contains(&neighbor) {
+//                 continue;
+//             }
+//             if connected_with_unexplored_neighbors.contains(&neighbor) {
+//                 continue;
+//             }
+//             connected_with_unexplored_neighbors.insert(neighbor);
+//         }
+//     }
+
+//     return connected_with_explored_neighbors;
+// }
+
+// pub fn connect_rooms(mut rand: &mut LCGRand, rooms: &mut Vec<FxHashSet<Location>>) {
+//     // This function will be adding the corridors to `rooms`.
+
+//     let mut room_index_by_location = FxHashMap::<Location, usize>::default();
+
+//     for room_index in 0..rooms.len() {
+//         let room = &rooms[room_index];
+//         for room_floor_loc in room {
+//             room_index_by_location.insert(*room_floor_loc, room_index);
+//         }
+//     }
+
+//     let mut regions = FxHashSet::default();
+
+//     let mut region_by_room_index = FxHashMap::default();
+//     let mut room_indices_by_region_num = FxHashMap::default();
+
+//     for room_index in 0..rooms.len() {
+//         let region = room_index;
+//         region_by_room_index.insert(room_index, region);
+//         let mut room_indices_in_region = FxHashSet::default();
+//         room_indices_in_region.insert(room_index);
+//         room_indices_by_region_num.insert(region, room_indices_in_region);
+//         regions.insert(region);
+//     }
+
+//     loop {
+//         let distinct_regions =
+//             FxHashSet::<usize>::from_iter(region_by_room_index.values().cloned());
+//         if distinct_regions.len() < 2 {
+//             break;
+//         }
+//         let mut two_regions_iter = distinct_regions.iter();
+//         let region_a = *two_regions_iter.next().expect("wat");
+//         let region_b = *two_regions_iter.next().expect("wat");
+
+//         let region_a_room_index =
+//             *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_a])
+//                 .expect("wat");
+//         let region_a_room = &rooms[region_a_room_index];
+//         let region_a_location = *get_hash_set_random_nth(&mut rand, &region_a_room).expect("wat");
+
+//         let region_b_room_index =
+//             *get_hash_set_random_nth(&mut rand, &room_indices_by_region_num[&region_b])
+//                 .expect("wat");
+//         let region_b_room = &rooms[region_b_room_index];
+//         let region_b_location = *get_hash_set_random_nth(&mut rand, &region_b_room).expect("wat");
+
+//         // Now lets drive from region_a_location to region_b_location, and see what happens on the
+//         // way there.
+//         let mut path = Vec::new();
+//         let mut current_location = region_a_location;
+//         while current_location != region_b_location {
+//             if current_location.x != region_b_location.x {
+//                 current_location.x += (region_b_location.x - current_location.x).signum();
+//             } else if current_location.y != region_b_location.y {
+//                 current_location.y += (region_b_location.y - current_location.y).signum();
+//             } else {
+//                 panic!("wat")
+//             }
+//             if !room_index_by_location.contains_key(&current_location) {
+//                 // It means we're in open space, keep going.
+//                 path.push(current_location);
+//             } else {
+//                 let current_room_index = room_index_by_location[&current_location];
+//                 let current_region = region_by_room_index[&current_room_index];
+//                 if current_region == region_a {
+//                     // Keep going, but restart the path here.
+//                     path = Vec::new();
+//                 } else if current_region != region_a {
+//                     // current_regionNumber is probably region_bNumber, but isn't necessarily... we could
+//                     // have just come across a random other region.
+//                     // Either way, we hit something, so we stop now.
+//                     break;
+//                 }
+//             }
+//         }
+
+//         let combined_region = regions.len();
+//         regions.insert(combined_region);
+
+//         let new_room_index = rooms.len();
+//         rooms.push(FxHashSet::from_iter(path.iter().cloned()));
+//         for path_location in &path {
+//             room_index_by_location.insert(*path_location, new_room_index);
+//         }
+//         region_by_room_index.insert(new_room_index, combined_region);
+//         // We'll fill in regionNumberByRoomIndex and room_indices_by_region_num. umber shortly.
+
+//         // So, now we have a path that we know connects some regions. However, it might be
+//         // accidentally connecting more than two! It could have grazed past another region without
+//         // us realizing it.
+//         // So now, figure out all the regions that this path touches.
+
+//         let path_adjacent_locations = get_pattern_locations_adjacent_to_any(
+//             &FxHashSet::from_iter(path.iter().cloned()),
+//             true,
+//             false,
+//         );
+//         let mut path_adjacent_regions = FxHashSet::default();
+//         for path_adjacent_location in path_adjacent_locations {
+//             if room_index_by_location.contains_key(&path_adjacent_location) {
+//                 let room_index = room_index_by_location[&path_adjacent_location];
+//                 let region = region_by_room_index[&room_index];
+//                 path_adjacent_regions.insert(region);
+//             }
+//         }
+
+//         let mut room_indices_in_combined_region = FxHashSet::default();
+//         room_indices_in_combined_region.insert(new_room_index);
+//         for path_adjacent_region in path_adjacent_regions {
+//             if path_adjacent_region == combined_region {
+//                 // The new room is already part of this region
+//                 continue;
+//             }
+//             for path_adjacent_room_index in &room_indices_by_region_num[&path_adjacent_region] {
+//                 region_by_room_index.insert(*path_adjacent_room_index, combined_region);
+//                 room_indices_in_combined_region.insert(*path_adjacent_room_index);
+//             }
+//             room_indices_by_region_num.remove(&path_adjacent_region);
+//         }
+//         room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region.clone());
+
+//         room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region);
+//     }
+// }
+
+// fn get_hash_set_random_nth<'a, T>(rand: &mut LCGRand, set: &'a FxHashSet<T>) -> Option<&'a T> {
+//     return set.iter().nth((rand.next() as usize) % set.len());
+// }
+
+// fn get_adjacent_locations(
+//     width int,
+//     height int,
+//     center: Location,
+//     consider_corners_adjacent: bool,
+// ) -> Vec<Location> {
+//     let mut result = Vec::new();
+//     for adjacent in get_pattern_adjacent_locations(center, consider_corners_adjacent) {
+//         if adjacent.x >= 0 && adjacent.y >= 0 && adjacent.x < width && adjacent.y < height {
+//             result.push(adjacent)
+//         }
+//     }
+//     return result;
+// }
+
+// fn get_adjacent_walkable_locations(
+//     walkabilities: &Vec<Vec<bool>>,
+//     center: Location,
+//     consider_corners_adjacent: bool,
+// ) -> Vec<Location> {
+//     let mut result = Vec::new();
+//     let adjacents = get_adjacent_locations(
+//         walkabilities.len() as i32,
+//         walkabilities[0].len() as i32,
+//         center,
+//         consider_corners_adjacent,
+//     );
+//     for neighbor in adjacents {
+//         if walkabilities[neighbor.x as usize][neighbor.y as usize] {
+//             result.push(neighbor);
+//         }
+//     }
+//     return result;
+// }
+// use rustc_hash::FxHashMap;
+// use rustc_hash::FxHashSet;
+
+// use crate::location::*;
+// use crate::tile::*;
+// use crate::astar::*;
+// use crate::game::*;
+// use crate::unit::*;
+
+struct Level {
+    max_width int;
+    max_height int;
+    tiles HashMap<Location, Tile, LocationHasher, LocationEquator>;
+
+    // Tiles that want to act every turn.
+    // The value is the number of registrations for that, because it might have
+    // been registered for multiple reasons, and we want to keep it registered
+    // until that number of reasons goes down to zero.
+    // acting_tile_locations HashMap<Location, u32>;
+
+    // An index of what units are at what locations, so a unit can easily
+    // see whats around it.
+    // unit_by_location HashMap<Location, &!Unit>;
+}
+
+// impl Level {
+//     pub fn find_random_walkable_unoccuped_location(self: &Level, rand: &mut LCGRand) -> Location {
+//         let walkable_locations = self.get_walkable_locations();
+//         let loc_index = rand.next() % (walkable_locations.len() as u32);
+//         return walkable_locations[loc_index as usize];
+//     }
+//     pub fn get_adjacent_locations(
+//         &self,
+//         center: Location,
+//         consider_corners_adjacent: bool,
+//     ) -> Vec<Location> {
+//         let mut result = Vec::new();
+//         for adjacent in get_pattern_adjacent_locations(center, consider_corners_adjacent) {
+//             if adjacent.x >= 0
+//                 && adjacent.y >= 0
+//                 && adjacent.x < self.max_width
+//                 && adjacent.y < self.max_height
+//             {
+//                 result.push(adjacent)
+//             }
+//         }
+//         return result;
+//     }
+
+//     // If `consider_units` is true, and a unit is on that location, this function
+//     // will return false, because it's considering units in determining walkability,
+//     // and that unit is in the way.
+//     // If `consider_units` is false, it ignores any unit that's there.
+//     pub fn loc_is_walkable(&self, loc: Location, consider_units: bool) -> bool {
+//         if !self.tiles[&loc].walkable {
+//             return false;
+//         }
+//         if consider_units {
+//             if self.unit_by_location.contains_key(&loc) {
+//                 return false;
+//             }
+//         }
+//         return true;
+//     }
+
+//     pub fn get_adjacent_walkable_locations(
+//         &self,
+//         center: Location,
+//         consider_units: bool,
+//         consider_corners_adjacent: bool,
+//     ) -> Vec<Location> {
+//         let mut result = Vec::new();
+//         let adjacents = self.get_adjacent_locations(center, consider_corners_adjacent);
+//         for neighbor in adjacents {
+//             if self.loc_is_walkable(neighbor, consider_units) {
+//                 result.push(neighbor);
+//             }
+//         }
+//         return result;
+//     }
+
+//     pub fn find_path(
+//         &self,
+//         from_loc: Location,
+//         to_loc: Location,
+//         max_distance: i32,
+//         consider_corners_adjacent: bool,
+//     ) -> Option<(Vec<Location>, i32)> {
+//         return a_star(
+//             from_loc,
+//             to_loc,
+//             max_distance,
+//             &|a, b| a.diagonal_manhattan_distance_100(b),
+//             &|loc| self.get_adjacent_walkable_locations(loc, false, consider_corners_adjacent),
+//         );
+//     }
+
+//     pub fn can_see(&self, from_loc: Location, to_loc: Location, sight_range: i32) -> bool {
+//         let straight_distance = from_loc.diagonal_manhattan_distance_100(to_loc);
+//         let maximum_distance = std::cmp::min(straight_distance, sight_range);
+
+//         // Here, were making it so a straight line's distance is the maximum distance we're
+//         // willing to search for a path. This should give us a straight line.
+//         // Well, "straight" isn't exactly right. We're looking for any line where we go
+//         // as straight-as-possible towards the enemy.
+//         // These are all valid "straight-as-possible" lines:
+//         //
+//         //      ..........--g..  ............g..  .....-------g..
+//         //      ........./.....  .........../...  ..../..........
+//         //      ......---......  ........../....  .../...........
+//         //      ...../.........  ........./.....  ../............
+//         //      .@---..........  .@------.......  .@.............
+//         //
+//         // We find that "as straight as possible" line using A* and a diagonal manhattan
+//         // distance, and it lets us see around corners in interesting ways, like so:
+//         //
+//         //           .........           ###   ....
+//         //         .............         ####  ......
+//         //       ................        ##### .......
+//         //       ..............g.        ######........
+//         //      ............#            ..............
+//         //      ............#            .......#
+//         //      .........@..#            .......##
+//         //      #############            ...@...###
+//         //
+//         // See Location::diagonal_manhattan_distance_100 for more on this weird diagonal
+//         // line stuff.
+//         //
+//         match self.find_path(from_loc, to_loc, maximum_distance, true) {
+//             None => return false,
+//             Some((_, path_length)) => {
+//                 assert!(path_length <= maximum_distance); // curiosity assert
+//                 return true;
+//             }
+//         }
+//     }
+
+//     // This gets all the locations within sight with a breadth-first search.
+//     // It follows the same logic as the above `can_see` function.
+//     pub fn get_locations_within_sight(
+//         &self,
+//         start_loc: Location,
+//         include_self: bool,
+//         sight_range: i32,
+//     ) -> FxHashSet<Location> {
+//         // This is the result set, which we'll eventually return.
+//         let mut visible_locs: FxHashSet<Location> = FxHashSet::default();
+//         // This is the set of locations we have yet to explore. This is our "to do"
+//         // list.
+//         // The keys are the locations we want to consider next, and the value is
+//         // how far we walked to get to there so far.
+//         let mut walked_distance_by_loc_to_consider: FxHashMap<Location, i32> = FxHashMap::default();
+
+//         // Adds the start location to our "to do" list.
+//         walked_distance_by_loc_to_consider.insert(start_loc, 0);
+
+//         while walked_distance_by_loc_to_consider.len() > 0 {
+//             // Pick an arbitrary location from the to do list to look at.
+//             let (&this_loc, &walked_distance_from_start_to_this) =
+//                 walked_distance_by_loc_to_consider
+//                     .iter()
+//                     .next()
+//                     .expect("wat");
+//             walked_distance_by_loc_to_consider.remove(&this_loc);
+//             visible_locs.insert(this_loc);
+
+//             // It's not walkable, so it's a wall, so dont check its adjacents.
+//             if !self.loc_is_walkable(this_loc, false) {
+//                 continue;
+//             }
+
+//             for adjacent_loc in self.get_adjacent_locations(this_loc, true) {
+//                 // This is the ideal distance, if we were to go straight to the location.
+//                 let direct_distance_from_start_to_adjacent =
+//                     start_loc.diagonal_manhattan_distance_100(adjacent_loc);
+//                 if direct_distance_from_start_to_adjacent > sight_range {
+//                     // This is outside sight range even if there was a clear line of sight,
+//                     // skip it.
+//                     continue;
+//                 }
+
+//                 let distance_from_this_to_adjacent =
+//                     this_loc.diagonal_manhattan_distance_100(adjacent_loc);
+//                 let walked_distance_from_start_to_adjacent =
+//                     walked_distance_from_start_to_this + distance_from_this_to_adjacent;
+
+//                 // If these arent equal, then we went out of our way somehow, which means
+//                 // we didnt go very straight, so skip it.
+//                 if walked_distance_from_start_to_adjacent != direct_distance_from_start_to_adjacent
+//                 {
+//                     continue;
+//                 }
+
+//                 // If we've already visible_locs it, or we already plan to explore it,
+//                 // then don't add it.
+//                 if visible_locs.contains(&adjacent_loc)
+//                     || walked_distance_by_loc_to_consider.contains_key(&adjacent_loc)
+//                 {
+//                     continue;
+//                 }
+
+//                 // We dont check walkability here because we want to see the walls...
+//                 // we just don't want to see past them, so we dont consider their
+//                 // adjacents. That check is above.
+
+//                 walked_distance_by_loc_to_consider
+//                     .insert(adjacent_loc, walked_distance_from_start_to_adjacent);
+//             }
+//         }
+
+//         if !include_self {
+//             visible_locs.remove(&start_loc);
+//         }
+
+//         return visible_locs;
+//     }
+
+//     pub fn forget_unit(&mut self, unit_index: generational_arena::Index, loc: Location) {
+//         assert!(self.unit_by_location.contains_key(&loc));
+//         assert!(self.unit_by_location[&loc] == unit_index);
+//         self.unit_by_location.remove(&loc);
+//     }
+
+//     pub fn get_walkable_locations(&self) -> Vec<Location> {
+//         let mut result = Vec::new();
+//         for (&loc, tile) in &self.tiles {
+//             if tile.walkable {
+//                 result.push(loc);
+//             }
+//         }
+//         return result;
+//     }
+
+//     pub fn move_unit(&mut self, unit: &mut Unit, new_loc: Location) {
+//         assert!(!self.unit_by_location.contains_key(&new_loc));
+//         self.unit_by_location.remove(&unit.loc);
+//         unit.loc = new_loc;
+//         self.unit_by_location.insert(unit.loc, unit.get_index());
+//     }
+
+//     // Increment the registration count for the given tile.
+//     pub fn register_acting_tile(&mut self, loc: Location) {
+//         let previous_num_registrations =
+//             self.acting_tile_locations.get(&loc).map(|&x| x).or_else(|| Some(0)).expect("");
+//         let new_num_registrations = previous_num_registrations + 1;
+//         self.acting_tile_locations.insert(loc, new_num_registrations);
+//     }
+
+//     // Decrement the registration count for the given tile, and if it hits zero,
+//     // dont consider it an acting tile anymore.
+//     pub fn unregister_acting_tile(&mut self, loc: Location) {
+//         let previous_num_registrations =
+//             self.acting_tile_locations.get(&loc).expect("Expected registration!");
+//         let new_num_registrations = previous_num_registrations - 1;
+//         if new_num_registrations == 0 {
+//             self.acting_tile_locations.remove(&loc);
+//         } else {
+//             self.acting_tile_locations.insert(loc, new_num_registrations);
+//         }
+//     }
+// }
+// use rustc_hash::FxHashSet;
+
+// use generational_arena;
+// use generational_arena::Arena;
+
+// use crate::unit::*;
+// use crate::location::*;
+// use crate::level::*;
+// use crate::tile::*;
+
+// use std::num::Wrapping;
+
+// From https://stackoverflow.com/a/3062783
+struct LCGRand {
+    seed int; // DIFFERENCE add an unsigned!
+}
+fn next(self &!LCGRand) int {
+    a = 1103515245;
+    c = 12345;
+    m = 2147483647;
+    mut self.seed = (a * self.seed + c) mod m;
+    ret self.seed;
+}
+
+
+// // Used to modify the game. Functions that immutably borrow the world can return
+// // one of these which will then be called with a mutable reference to the game.
+// pub type GameMutator = Box<dyn Fn(&mut LCGRand, &mut Game)>;
+
+// // Makes a GameMutator that does nothing.
+// pub fn do_nothing_game_mutator() -> GameMutator {
+//     return Box::new(|_rand, _game| {});
+// }
+
+
+
+struct Game {
+    // units List<Unit>;
+    levels List<Level>;
+    // player_index Option<generational_arena::Index>;
+}
+
+// impl Game {
+    fn get_current_level(self &Game) &Level {
+        // return &self.levels[self.get_player().level_index];
+        self.levels.get(0).get()
+    }
+//     pub fn get_current_level_mut(&mut self) -> &mut Level {
+//         let level_index = self.get_player().level_index;
+//         return &mut self.levels[level_index];
+//     }
+//     pub fn get_player_index(&self) -> generational_arena::Index {
+//         return self.player_index.expect("No player yet!");
+//     }
+//     pub fn get_player(&self) -> &Unit {
+//         return &self.units[self.get_player_index()];
+//     }
+
+//     pub fn add_unit_to_level(
+//         &mut self,
+//         level_index: usize,
+//         loc: Location,
+//         hp: i32,
+//         max_hp: i32,
+//         allegiance: Allegiance,
+//         display_class: String,
+//     ) -> generational_arena::Index {
+//         let unit_index = self.units.insert(Unit::new(
+//             None,
+//             hp,
+//             max_hp,
+//             level_index,
+//             loc,
+//             allegiance,
+//             display_class,
+//             Arena::new(),
+//         ));
+//         self.levels[level_index]
+//             .unit_by_location
+//             .insert(loc, unit_index);
+//         let unit = &mut self.units[unit_index];
+//         unit.index = Some(unit_index);
+//         return unit_index;
+//     }
+
+//     pub fn damage_unit(
+//             &mut self,
+//             rand: &mut LCGRand,
+//             unit_index: generational_arena::Index,
+//             damage: i32) {
+//         let enemy_unit = &mut self.units[unit_index];
+//         let was_alive = enemy_unit.hp > 0;
+//         enemy_unit.hp = enemy_unit.hp - damage;
+//         let is_alive = enemy_unit.hp > 0;
+//         let died = was_alive && !is_alive;
+
+//         if died {
+//             self.kill_unit(rand, unit_index);
+//         }
+//     }
+
+//     pub fn kill_unit(
+//             &mut self,
+//             rand: &mut LCGRand,
+//             unit_index: generational_arena::Index) {
+//         let enemy_unit = &self.units[unit_index];
+//         let mut initial_components_indices =
+//             Vec::with_capacity(enemy_unit.components.len());
+//         for (component_index, _) in &enemy_unit.components {
+//             initial_components_indices.push(component_index);
+//         }
+//         for component_index in initial_components_indices {
+//             let maybe_game_mutator: Option<Box<dyn Fn(&mut LCGRand, &mut Game)>> = {
+//                 let enemy_unit = &self.units[unit_index];
+//                 match enemy_unit.components.get(component_index) {
+//                     None => None, // The component was removed by some other component.
+//                     Some(c) => {
+//                         Some(c.on_unit_death(rand, self, unit_index, component_index, unit_index))
+//                     }
+//                 }
+//             };
+//             if let Some(game_mutator) = maybe_game_mutator {
+//                 game_mutator(rand, self);
+//             }
+//         }
+//         self.remove_unit(unit_index);
+//     }
+
+//     pub fn remove_unit(&mut self, unit_index: generational_arena::Index) {
+//         let loc = self.units[unit_index].loc;
+//         self.get_current_level_mut().forget_unit(unit_index, loc);
+//         self.units.remove(unit_index);
+//     }
+
+//     pub fn get_tile_component_mut<T: ITileComponent>(
+//             &mut self,
+//             tile_loc: Location,
+//             tile_component_index: generational_arena::Index)
+//     -> &mut T {
+//         let tile = self.get_current_level_mut().tiles.get_mut(&tile_loc).expect("");
+//         let icomponent = tile.components.get_mut(tile_component_index).expect("wat");
+//         return &mut *icomponent.downcast_mut::<T>().expect("");
+//     }
+// }
+
+// // Get all the locations adjacent to `center`.
+// pub fn get_pattern_adjacent_locations(
+//     center: Location,
+//     consider_corners_adjacent: bool,
+// ) -> Vec<Location> {
+//     let mut result = Vec::new();
+//     result.push(Location::new(center.x - 1, center.y));
+//     result.push(Location::new(center.x, center.y + 1));
+//     result.push(Location::new(center.x, center.y - 1));
+//     result.push(Location::new(center.x + 1, center.y));
+//     if consider_corners_adjacent {
+//         result.push(Location::new(center.x - 1, center.y - 1));
+//         result.push(Location::new(center.x - 1, center.y + 1));
+//         result.push(Location::new(center.x + 1, center.y - 1));
+//         result.push(Location::new(center.x + 1, center.y + 1));
+//     }
+//     return result;
+// }
+
+// // Get all the locations adjacent to any of the ones in `source_locs`.
+// pub fn get_pattern_locations_adjacent_to_any(
+//     source_locs: &FxHashSet<Location>,
+//     include_source_locs: bool,
+//     consider_corners_adjacent: bool,
+// ) -> FxHashSet<Location> {
+//     let mut result = FxHashSet::default();
+//     for &original_location in source_locs {
+//         let mut adjacents =
+//             get_pattern_adjacent_locations(original_location, consider_corners_adjacent);
+//         if include_source_locs {
+//             adjacents.push(original_location.clone());
+//         }
+//         for adjacent_location in adjacents {
+//             if !include_source_locs && source_locs.contains(&adjacent_location) {
+//                 continue;
+//             }
+//             result.insert(adjacent_location);
+//         }
+//     }
+//     return result;
+// }
+// // Returns whether we should probably re-display it next turn.
+// // Will be false if its something static like terrain, or true
+// // if it's something that moves around like a unit.
+// pub fn set_screen_cell(
+//     screen: &mut Screen,
+//     game: &Game,
+//     player_visible_locs: &FxHashSet<Location>,
+//     loc: Location,
+// ) {
+//     let mut foreground_color = ScreenColor::White;
+//     let mut background_color = ScreenColor::Black;
+//     let mut character = " ";
+
+//     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
+//         match tile.display_class.as_str() {
+//             "dirt" => {
+//                 character = ".";
+//                 foreground_color = ScreenColor::Orange;
+//             }
+//             "grass" => {
+//                 character = ".";
+//                 foreground_color = ScreenColor::Green;
+//             }
+//             "wall" => {
+//                 character = "#";
+//                 foreground_color = ScreenColor::Gray;
+//             }
+//             _ => panic!("unrecognized tile display class"),
+//         }
+//     }
+
+//     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
+//         if let Some(fire) = tile.get_first_component::<FireTileComponent>() {
+//             character = "^";
+//             foreground_color =
+//                 match fire.num_turns_remaining % 3 {
+//                     0 => ScreenColor::Red,
+//                     1 => ScreenColor::Orange,
+//                     _ => ScreenColor::OrangeYellow,
+//                 };
+//         }
+//     }
+
+//     if let Some(&unit_index) = game.get_current_level().unit_by_location.get(&loc) {
+//         let unit = &game.units[unit_index];
+//         match unit.display_class.as_str() {
+//             "goblin" => {
+//                 character = "g";
+//                 foreground_color = ScreenColor::Green;
+//             }
+//             "chronomancer" => {
+//                 character = "@";
+//                 foreground_color = ScreenColor::Turquoise;
+//             }
+//             _ => panic!("unrecognized unit display class"),
+//         }
+//     }
+
+//     if player_visible_locs.contains(&loc) {
+//         background_color = ScreenColor::DarkGray;
+//     }
+
+//     screen.set_cell(
+//         loc.x as usize,
+//         loc.y as usize,
+//         background_color,
+//         foreground_color,
+//         character.to_string(),
+//     );
+// }
+
+// // Moves the player to the next level.
+// // Returns true to continue with the game, false to exit the game.
+// pub fn descend_to_next_level(mut rand: &mut LCGRand, game: &mut Game) -> bool {
+//     let player_index = game.get_player_index();
+//     let old_player_loc = game.get_player().loc;
+//     // Remove the player from the old level's unit-by-location index.
+//     game.get_current_level_mut()
+//         .unit_by_location
+//         .remove(&old_player_loc);
+
+//     let player_mut = &mut game.units[player_index];
+
+//     // Figure out the new level index.
+//     let player_new_level_index = player_mut.level_index + 1;
+//     // If we're descending past the last level, end the game.
+//     if player_new_level_index >= game.levels.len() {
+//         // End the game.
+//         return false;
+//     }
+
+//     // Move the player to the new level.
+//     player_mut.level_index = player_new_level_index;
+//     // Update the player's location so he's not, for example, embedded in the
+//     // middle of a wall, stuck helpless for all eternity.
+//     let new_player_loc =
+//         game.levels[player_new_level_index].find_random_walkable_unoccuped_location(&mut rand);
+//     game.units[player_index].loc = new_player_loc;
+
+//     // Add the player to the new level's unit-by-location index.
+//     game.get_current_level_mut()
+//         .unit_by_location
+//         .insert(new_player_loc, player_index);
+
+//     // Continue with the game.
+//     return true;
+// }
+
+fn setup(
+    rand &!LCGRand,
+    max_width int,
+    max_height int,
+    num_levels int)
+Game {
+    game =
+        Game(
+            // List<Unit>(),
+            List<Level>());
+            //, None);
+
+  level = make_level(30, 30, &rand); // DIFFERENCE need &!
+  game.levels.add(level);
+//     for _ in 0..num_levels {
+//         let level_index = game.levels.len();
+//         game.levels.push(make_level(max_width, max_height, &mut rand));
+
+//         // Add one goblin for every 10 walkable spaces in the level.
+//         let num_walkable_locations = game.levels[level_index].get_walkable_locations().len();
+//         for _ in 0..(num_walkable_locations / 10) {
+//             let new_unit_loc =
+//                 game.levels[level_index].find_random_walkable_unoccuped_location(&mut rand);
+
+//             let new_unit_index = game.add_unit_to_level(
+//                 level_index,
+//                 new_unit_loc,
+//                 10,
+//                 10,
+//                 Allegiance::Evil,
+//                 "goblin".to_string(),
+//             );
+//             let new_unit = &mut game.units[new_unit_index];
+//             new_unit.components.insert(Box::new(WanderUnitCapability::new()));
+//             new_unit.components.insert(Box::new(AttackUnitCapability::new()));
+//             new_unit.components.insert(Box::new(ChaseUnitCapability::new()));
+//             new_unit.components.insert(Box::new(GoblinClaws::new()));
+//             if rand.next() % 10 == 0 {
+//               new_unit.components.insert(Box::new(ExplodeyUnitComponent::new()));
+//             }
+//         }
+//     }
+
+//     let player_loc = game.levels[0].find_random_walkable_unoccuped_location(&mut rand);
+//     let player_index = game.add_unit_to_level(
+//         0,
+//         player_loc,
+//         1000000,
+//         1000000,
+//         Allegiance::Good,
+//         "chronomancer".to_string(),
+//     );
+//     game.player_index = Some(player_index);
+
+//     let player = &mut game.units[player_index];
+//     player.components.insert(Box::new(WanderUnitCapability::new()));
+//     player.components.insert(Box::new(AttackUnitCapability::new()));
+//     player.components.insert(Box::new(ChaseUnitCapability::new()));
+//     player.components.insert(Box::new(SeekUnitCapability::new()));
+//     player.components.insert(Box::new(IncendiumShortSword::new()));
+
+    ret game;
+}
+
+// // Advance the game by 1 turn for all units.
+// pub fn turn(mut rand: &mut LCGRand, mut game: &mut Game) {
+//     // First, let all the tiles act.
+//     let acting_tile_locs: Vec<Location> = {
+//         Vec::from_iter(game.get_current_level().acting_tile_locations.keys().map(|&x| x).clone())
+//     };
+//     for acting_tile_loc in acting_tile_locs {
+//         // Get a list of components to iterate over, so that tile components'
+//         // adding and removing dont modify the units array while we're iterating.
+//         let component_indices: Vec<generational_arena::Index> = game
+//             .get_current_level()
+//             .tiles[&acting_tile_loc]
+//             .components
+//             .iter()
+//             .map(|(x, _)| x)
+//             .collect();
+//         for component_index in component_indices {
+//             let game_mutator =
+//                 game.get_current_level().tiles.get(&acting_tile_loc).expect("").components[component_index]
+//                 .on_turn(
+//                     rand,
+//                     game,
+//                     acting_tile_loc,
+//                     component_index);
+//             game_mutator(rand, game);
+//         }
+//     }
+
+//     // Get a list of weak pointers to iterate over, so that units' death
+//     // and spawning dont modify the units array while we're iterating.
+//     let units: Vec<generational_arena::Index> = game
+//         .get_current_level()
+//         .unit_by_location
+//         .values()
+//         .map(|&x| x)
+//         .collect();
+//     // Now iterate over them, only considering ones that are still alive.
+//     for &unit_index in units.iter() {
+//         if game.units.contains(unit_index) {
+//             Unit::act(unit_index, &mut rand, &mut game);
+//         }
+//     }
+// }
+
+// pub fn display(seed: int, maybe_screen: &mut Option<Screen>, game: &Game) {
+//     let maybe_player_loc = game.units.get(game.get_player_index()).map(|p| p.loc);
+//     let player_visible_locs =
+//         match maybe_player_loc {
+//             None => FxHashSet::default(),
+//             Some(player_loc) => {
+//                 game.get_current_level().get_locations_within_sight(
+//                     player_loc, true, DEFAULT_SIGHT_RANGE_100)
+//             }
+//         };
+
+//     if let Some(mut screen) = maybe_screen.as_mut() {
+//         for x in 0..game.get_current_level().max_width {
+//             for y in 0..game.get_current_level().max_height {
+//                 let loc = Location::new(x, y);
+//                 set_screen_cell(&mut screen, &game, &player_visible_locs, loc);
+//             }
+//         }
+//         if let Some(player) = game.units.get(game.get_player_index()) {
+//             screen.set_status_line(format!("Seed {}   Level {}   HP: {} / {}\nTo benchmark: --seed 1337 --width 40 --height 30 --num_levels 5 --turn_delay 0 --display 0", seed, player.level_index, player.hp, player.max_hp));
+//         } else {
+//             screen.set_status_line("Dead!                                      ".to_string());
+//         }
+//         screen.paint_screen();
+//     }
+// }
+
+fn benchmark_rl(
+    seed int,
+    level_width int,
+    level_height int,
+    num_levels int,
+    should_display bool,
+    turn_delay int
+) {
+  rand = LCGRand(seed);
+
+    game = setup(&rand, level_width, level_height, num_levels);
+
+    // maybe_screen =
+    //     if (should_display) {
+          z =
+              Some(
+                newScreen(
+                game.get_current_level().max_width,
+                game.get_current_level().max_height));
+          // = z;
+        // } else {
+        //   z Opt<Screen> =
+        //     None<Screen>();
+        //   = z;
+        // };
+
+//     loop {
+//         turn(&mut rand, &mut game);
+
+//         let player_leve_index = game.get_player().level_index;
+//         let num_units = game.levels[player_leve_index].unit_by_location.keys().len();
+//         if num_units == 1 {
+//             let keep_running = descend_to_next_level(&mut rand, &mut game);
+//             if !keep_running {
+//                 return;
+//             }
+//         }
+
+//         display(seed, &mut maybe_screen, &game);
+
+//         if turn_delay > 0 {
+//             sleep(Duration::new(turn_delay as u64 / 1000, turn_delay as u32 % 1000 * 1000000));
+//         }
+//     }
+
+
+  level = game.levels.get(0).get();
+              drop(z); // START HERE if we move this down or get rid of it... infinite loop.
+
+  level.tiles.keys() each (location){
+    tile? Opt<&Tile> = level.tiles.get(location);
+    tile = tile?^.get();
+    println(str(location) + " " + tile.display_class);
+  };
+
+
+    println("Done");
+}
+// use crossterm::{cursor::MoveTo, ExecutableCommand};
+// use std::io::stdout;
+
+// #[allow(dead_code)]
+// #[derive(PartialEq)]
+// pub enum ScreenColor {
+//     Black,
+//     DarkGray,
+//     Turquoise,
+//     Red,
+//     LightGray,
+//     Orange,
+//     Yellow,
+//     OrangeYellow,
+//     Green,
+//     White,
+//     Gray,
+// }
+
+struct ScreenCell {
+    // fg_color ScreenColor;
+    // bg_color ScreenColor;
+    character str;
+    dirty bool;
+}
+
+struct Screen {
+    width int;
+    height int;
+    cells List<List<ScreenCell>>;
+    status_line str;
+}
+
+struct StrBox {
+    i str;
+    b bool;
+}
+
+// impl Screen {
+    fn newScreen(width int, height int) Screen {
+        println("\x1b[1;1H\x1b[2J");
+
+        cells = List<List<ScreenCell>>();
+
+        x! = 0;
+        while (x < width) {
+            // DIFFERENCE
+            q = List<ScreenCell>();
+
+            y! = 0;
+            while (y < height) {
+                q.add(
+                    ScreenCell(
+                        // ScreenColor::White,
+                        // ScreenColor::Black,
+                        "9",
+                        true // All cells start as dirty, so we can display them all now
+                    ));
+
+                mut y = y + 1;
+            }
+
+            cells.add(q);
+
+            mut x = x + 1;
+        }
+
+        ret Screen(
+            width,
+            height,
+            cells,
+            "");
+    }
+
+//     pub fn set_status_line(&mut self, new_line: String) {
+//         self.status_line = new_line;
+//     }
+
+//     pub fn set_cell(
+//         &mut self,
+//         x: usize,
+//         y: usize,
+//         bg_color: ScreenColor,
+//         fg_color: ScreenColor,
+//         character: String,
+//     ) {
+//         let cell = &mut self.cells[x][y];
+
+//         if bg_color != cell.bg_color {
+//             cell.bg_color = bg_color;
+//             cell.dirty = true;
+//         }
+
+//         if fg_color != cell.fg_color {
+//             cell.fg_color = fg_color;
+//             cell.dirty = true;
+//         }
+
+//         if character != cell.character {
+//             cell.character = character;
+//             cell.dirty = true;
+//         }
+//     }
+
+//     pub fn paint_screen(&self) {
+//         for x in 0..self.width {
+//             for y in 0..self.height {
+//                 if self.cells[x][y].dirty {
+//                     self.paint_cell(x, y);
+//                 }
+//             }
+//         }
+//         match stdout().execute(MoveTo(0, self.height as u16)) {
+//             Ok(_) => {}
+//             Err(_) => panic!("Couldn't move cursor!"),
+//         }
+//         println!("{}", self.status_line);
+//     }
+
+//     fn paint_cell(&self, x: usize, y: usize) {
+//         let cell = &self.cells[x][y];
+
+//         // For precise colors:
+//         // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal
+//         // For standard colors:
+//         // https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
+
+//         let (fg_red, fg_green, fg_blue) =
+//             match cell.bg_color {
+//                 ScreenColor::DarkGray => (40, 40, 40),
+//                 ScreenColor::Orange => (255, 96, 0),
+//                 ScreenColor::Red => (255, 0, 0),
+//                 ScreenColor::Black => (0, 0, 0),
+//                 _ => panic!("Unimplemented"),
+//             };
+
+//         let (bg_red, bg_green, bg_blue) =
+//             match cell.fg_color {
+//                 ScreenColor::Red => (255, 0, 0),
+//                 ScreenColor::Turquoise => (0, 128, 255),
+//                 ScreenColor::Orange => (255, 96, 0),
+//                 ScreenColor::Green => (0, 196, 0),
+//                 ScreenColor::Yellow => (255, 255, 0),
+//                 ScreenColor::OrangeYellow => (255, 186, 0),
+//                 ScreenColor::LightGray => (224, 224, 224),
+//                 ScreenColor::Gray => (150, 150, 150),
+//                 ScreenColor::White => (255, 255, 255),
+//                 _ => panic!("Unimplemented"),
+//             };
+
+//         let character = &cell.character;
+
+//         match stdout().execute(MoveTo(x as u16, y as u16)) {
+//             Ok(_) => {}
+//             Err(_) => panic!("Couldn't move cursor!"),
+//         }
+
+//         println!(
+//             "\x1b[38;2;{};{};{};48;2;{};{};{}m{}\x1b[0m",
+//             bg_red, bg_green, bg_blue,
+//             fg_red, fg_green, fg_blue,
+//             character
+//         );
+//     }
+// }

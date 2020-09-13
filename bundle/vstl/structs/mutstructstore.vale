@@ -1,0 +1,10 @@
+struct Carrier {
+  hp int;
+  interceptors int;
+}
+
+fn main() {
+  c = Carrier(400, 8);
+  mut c.interceptors = 42;
+  = c.interceptors;
+}

@@ -1,0 +1,10 @@
+
+fn main() int {
+  while (true) {
+    if (true) {
+      ret 42;
+    }
+    // Continue
+  }
+  __panic();
+}

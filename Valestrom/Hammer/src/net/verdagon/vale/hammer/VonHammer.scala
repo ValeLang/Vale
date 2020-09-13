@@ -23,6 +23,7 @@ object VonHammer {
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
         VonMember("knownSizeArrays", VonArray(None, knownSizeArrays.map(vonifyKind).toVector)),
         VonMember("unknownSizeArrays", VonArray(None, unknownSizeArrays.map(vonifyKind).toVector)),
+        VonMember("emptyTupleStructReferend", vonifyKind(ProgramH.emptyTupleStructRef)),
         VonMember(
           "immDestructorsByReferend",
           VonArray(
@@ -88,6 +89,7 @@ object VonHammer {
       None,
       Vector(
         VonMember("name", VonStr(fullName.toReadableString())),
+        VonMember("referend", vonifyInterfaceRef(interface.getRef)),
         VonMember("export", VonBool(export)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("mutability", vonifyMutability(mutability)),
@@ -103,6 +105,7 @@ object VonHammer {
       None,
       Vector(
         VonMember("name", VonStr(fullName.toReadableString())),
+        VonMember("referend", vonifyStructRef(struct.getRef)),
         VonMember("weakable", VonBool(weakable)),
         VonMember("export", VonBool(export)),
         VonMember("mutability", vonifyMutability(mutability)),
@@ -322,14 +325,16 @@ object VonHammer {
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
       }
-      case WeakAliasH(sourceExpr) => {
+      case wa @ WeakAliasH(sourceExpr) => {
         VonObject(
           "WeakAlias",
           None,
           Vector(
             VonMember("sourceExpr", vonifyNode(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
-            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind))))
+            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind)),
+            VonMember("resultType", vonifyCoord(wa.resultType)),
+            VonMember("resultReferend", vonifyKind(wa.resultType.kind))))
       }
       case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
         VonObject(

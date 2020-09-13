@@ -1,0 +1,5 @@
+
+struct Muta weakable { hp int; }
+fn main() {
+  = Muta(7).hp;
+}

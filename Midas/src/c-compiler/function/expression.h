@@ -8,22 +8,21 @@
 #include "metal/ast.h"
 #include "metal/instructions.h"
 #include "globalstate.h"
+#include "expressions/shared/ref.h"
 #include "function.h"
 
-LLVMValueRef translateExpression(
+Ref translateExpression(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     Expression* expr);
 
-std::vector<LLVMValueRef> translateExpressions(
+std::vector<Ref> translateExpressions(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* blockState,
     LLVMBuilderRef builder,
     std::vector<Expression*> exprs);
-
-LLVMValueRef makeNever();
 
 #endif

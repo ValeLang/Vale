@@ -1,0 +1,151 @@
+
+struct ScreenColor imm { i int; }
+fn Black() { ScreenColor(0) }
+fn DarkGray() { ScreenColor(1) }
+fn Turquoise() { ScreenColor(2) }
+fn Red() { ScreenColor(3) }
+fn LightGray() { ScreenColor(4) }
+fn Orange() { ScreenColor(5) }
+fn Yellow() { ScreenColor(6) }
+fn OrangeYellow() { ScreenColor(7) }
+fn Green() { ScreenColor(8) }
+fn White() { ScreenColor(9) }
+fn Gray() { ScreenColor(10) }
+
+fn ==(a ScreenColor, b ScreenColor) { a.i == b.i }
+
+struct ScreenCell {
+    fg_color ScreenColor;
+    bg_color ScreenColor;
+    character str;
+    dirty bool;
+}
+
+struct Screen {
+    width int;
+    height int;
+    cells List<List<ScreenCell>>;
+    status_line str;
+}
+
+struct StrBox {
+    i str;
+    b bool;
+}
+
+fn newScreen(width int, height int) Screen {
+    println("\u001b[1;1H\u001b[2J");
+
+    cells = List<List<ScreenCell>>();
+
+    x! = 0;
+    while (x < width) {
+        q = List<ScreenCell>();
+
+        y! = 0;
+        while (y < height) {
+            q.add(
+                ScreenCell(
+                    White(),
+                    Black(),
+                    " ",
+                    true // All cells start as dirty, so we can display them all now
+                ));
+
+            mut y = y + 1;
+        }
+
+        cells.add(q);
+
+        mut x = x + 1;
+    }
+
+    ret Screen(
+        width,
+        height,
+        cells,
+        "");
+}
+
+fn set_cell(
+    self &!Screen,
+    x int,
+    y int,
+    bg_color ScreenColor,
+    fg_color ScreenColor,
+    character str
+) {
+    cell = &self.cells.get(x).get().get(y).get();
+
+    if (bg_color != cell.bg_color) {
+        mut cell.bg_color = bg_color;
+        mut cell.dirty = true;
+    }
+
+    if (fg_color != cell.fg_color) {
+        mut cell.fg_color = fg_color;
+        mut cell.dirty = true;
+    }
+
+    if (character != cell.character) {
+        mut cell.character = character;
+        mut cell.dirty = true;
+    }
+}
+
+fn paint_screen(self &Screen) {
+    x! = 0;
+    while (x < self.width) {
+
+        y! = 0;
+        while (y < self.height) {
+            if (self.cells.get(x).get().get(y).get().dirty) {
+                self.paint_cell(x, y);
+            }
+
+            mut y = y + 1;
+        }
+
+        mut x = x + 1;
+    }
+    print("\u001b[" + self.height + ";" + 0 + "H");
+    println(self.status_line);
+}
+
+fn paint_cell(&self, x int, y int) {
+    cell = &self.cells.get(x).get().get(y).get();
+
+    // For precise colors:
+    // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal
+    // For standard colors:
+    // https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
+
+    (fg_red, fg_green, fg_blue) =
+        if (cell.bg_color == DarkGray()) { [40, 40, 40] }
+        else if (cell.bg_color == Orange()) { [255, 96, 0] }
+        else if (cell.bg_color == Red()) { [255, 0, 0] }
+        else if (cell.bg_color == Black()) { [0, 0, 0] }
+        else { panic("Unimplemented") };
+
+    (bg_red, bg_green, bg_blue) =
+        if (cell.fg_color == Red()) { [255, 0, 0] }
+        else if (cell.fg_color == Turquoise()) { [0, 128, 255] }
+        else if (cell.fg_color == Orange()) { [255, 96, 0] }
+        else if (cell.fg_color == Green()) { [0, 196, 0] }
+        else if (cell.fg_color == Yellow()) { [255, 255, 0] }
+        else if (cell.fg_color == OrangeYellow()) { [255, 186, 0] }
+        else if (cell.fg_color == LightGray()) { [224, 224, 224] }
+        else if (cell.fg_color == Gray()) { [150, 150, 150] }
+        else if (cell.fg_color == White()) { [255, 255, 255] }
+        else { panic("Unimplemented") };
+
+    character = &cell.character;
+
+    print("\u001b[" + y + ";" + x + "H");
+
+    print(
+        "\u001b[" +
+        "38;2;" + bg_red + ";" + bg_green + ";" + bg_blue + ";" +
+        "48;2;" + fg_red + ";" + fg_green + ";" + fg_red + "m" +
+        character + "\u001b[0m");
+}

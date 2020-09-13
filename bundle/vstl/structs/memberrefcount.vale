@@ -1,0 +1,19 @@
+struct Thing {
+  v Vec3i;
+}
+
+struct Vec3i imm {
+  x int;
+  y int;
+  z int;
+}
+
+fn bork(thing &Thing, v Vec3i) void {
+  mut thing.v = v;
+}
+
+fn main() {
+  thing = Thing(Vec3i(7, 8, 9));
+  bork(&thing, Vec3i(4, 5, 6));
+  = thing.v.y;
+}

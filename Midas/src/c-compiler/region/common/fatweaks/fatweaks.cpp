@@ -2,7 +2,6 @@
 #include <globalstate.h>
 #include <function/function.h>
 #include <function/expressions/shared/shared.h>
-#include <function/expressions/shared/weaks.h>
 #include <region/common/controlblock.h>
 #include "fatweaks.h"
 

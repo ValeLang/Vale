@@ -6,7 +6,6 @@
 #include "translatetype.h"
 #include "region/common/controlblock.h"
 #include "utils/branch.h"
-#include "weaks.h"
 
 // A "Never" is something that should never be read.
 // This is useful in a lot of situations, for example:

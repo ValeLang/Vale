@@ -129,8 +129,8 @@ class IfTests extends FunSuite with Matchers {
         |  = x;
         |}
         |""".stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "In then!\nDestroying marine!\n"
   }
@@ -156,8 +156,8 @@ class IfTests extends FunSuite with Matchers {
         |  = x;
         |}
         |""".stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "In else!\nIn rest!\nDestroying marine!\n"
@@ -188,8 +188,8 @@ class IfTests extends FunSuite with Matchers {
         |  }
         |}
         |""".stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "5\n5\n5\n5\n"

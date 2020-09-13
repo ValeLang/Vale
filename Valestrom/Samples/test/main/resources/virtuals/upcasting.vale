@@ -1,6 +1,0 @@
-interface MyInterface { }
-struct MyStruct { value int; }
-impl MyInterface for MyStruct;
-fn main() {
-  x MyInterface = MyStruct(9);
-}

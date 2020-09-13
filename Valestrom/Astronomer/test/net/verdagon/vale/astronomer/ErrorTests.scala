@@ -2,7 +2,7 @@ package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{FileP, ParseFailure, ParseSuccess, Parser, Range}
 import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{Err, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ErrorTests extends FunSuite with Matchers  {
@@ -30,7 +30,11 @@ class ErrorTests extends FunSuite with Matchers  {
       scoutputCache match {
         case Some(scoutput) => scoutput
         case None => {
-          val scoutput = Scout.scoutProgram(List(getParsed()))
+          val scoutput =
+            Scout.scoutProgram(List(getParsed())) match {
+              case Err(e) => vfail(e.toString)
+              case Ok(t) => t
+            }
           scoutputCache = Some(scoutput)
           scoutput
         }

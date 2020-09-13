@@ -19,7 +19,7 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Constructor with this") {
-    val compile = Compilation(Samples.get("structs/constructor.vale"))
+    val compile = Compilation(Samples.get("programs/structs/constructor.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
@@ -37,12 +37,12 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Make struct and get member") {
-    val compile = Compilation(Samples.get("structs/getMember.vale"))
+    val compile = Compilation(Samples.get("programs/structs/getMember.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
   test("Mutate struct") {
-    val compile = Compilation(Samples.get("structs/mutate.vale"))
+    val compile = Compilation(Samples.get("programs/structs/mutate.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
@@ -99,8 +99,8 @@ class StructTests extends FunSuite with Matchers {
         |  Marine(Weapon());
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "Destroying marine!\nDestroying weapon!\n"
   }
@@ -108,8 +108,8 @@ class StructTests extends FunSuite with Matchers {
   // Known failure 2020-08-20
   test("Mutate destroys member after moving it out of the object") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
       """
         |interface Opt<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }

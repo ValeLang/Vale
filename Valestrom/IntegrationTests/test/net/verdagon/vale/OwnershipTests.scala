@@ -48,8 +48,8 @@ class OwnershipTests extends FunSuite with Matchers {
         |  Muta();
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
@@ -72,8 +72,8 @@ class OwnershipTests extends FunSuite with Matchers {
         |  = (Muta(10)).hp;
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
@@ -95,8 +95,8 @@ class OwnershipTests extends FunSuite with Matchers {
         |  a = Muta();
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
@@ -108,8 +108,8 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Calls destructor on local var unless moved") {
     // Should call the destructor in moo, but not in main
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
       """
         |struct Muta { }
         |
@@ -150,8 +150,8 @@ class OwnershipTests extends FunSuite with Matchers {
 
   test("Saves return value then destroys local var") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
       """
         |struct Muta { hp int; }
         |

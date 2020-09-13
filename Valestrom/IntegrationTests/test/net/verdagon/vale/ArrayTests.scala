@@ -281,8 +281,8 @@ class ArrayTests extends FunSuite with Matchers {
         |  (lam)();
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "6\n"
   }
@@ -373,7 +373,7 @@ class ArrayTests extends FunSuite with Matchers {
 
   test("Nested imm arrays") {
     val compile = Compilation(
-      Samples.get("generics/arrayutils.vale") +
+      Samples.get("libraries/arrayutils.vale") +
       """fn main() {
         |  [[6, 60].toArray<imm>(), [4, 40].toArray<imm>(), [3, 30].toArray<imm>()].toArray<imm>()[2][1]
         |}
@@ -384,7 +384,7 @@ class ArrayTests extends FunSuite with Matchers {
   // Known failure 2020-08-05
   test("Array foreach") {
     val compile = Compilation(
-      Samples.get("generics/arrayutils.vale") +
+      Samples.get("libraries/arrayutils.vale") +
       """fn main() {
         |  sum = 0;
         |  [6, 60, 103].each(&IFunction1<mut, int, void>({ mut sum = sum + _; }));
@@ -396,7 +396,7 @@ class ArrayTests extends FunSuite with Matchers {
 
   test("Array has") {
     val compile = Compilation(
-      Samples.get("generics/arrayutils.vale") +
+      Samples.get("libraries/arrayutils.vale") +
         """fn main() {
           |  [6, 60, 103].has(103)
           |}

@@ -11,8 +11,8 @@ class PrintTests extends FunSuite with Matchers {
         |  println(6);
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "6\n"
   }
@@ -24,8 +24,8 @@ class PrintTests extends FunSuite with Matchers {
         |  println(true);
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     compile.evalForStdout(Vector()) shouldEqual "true\n"
   }

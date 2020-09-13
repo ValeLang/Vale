@@ -53,11 +53,11 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list with optionals") {
     val compile = Compilation(
-      Samples.get("utils.vale") +
-      Samples.get("castutils.vale") +
-      Samples.get("printutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-      Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("libraries/utils.vale") +
+      Samples.get("libraries/castutils.vale") +
+      Samples.get("libraries/printutils.vale") +
+      Samples.get("libraries/opt.vale") +
+      Samples.get("libraries/list.vale") +
       """
         |
         |fn main() {
@@ -82,11 +82,11 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list zero-constructor") {
     val compile = Compilation(
-      Samples.get("utils.vale") +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-        Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+      Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
         """
           |
           |fn main() {
@@ -103,8 +103,8 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list len") {
     val compile = Compilation(
-      Samples.get("genericvirtuals/opt.vale") +
-        Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
         """
           |
           |fn main() {
@@ -121,11 +121,11 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list set") {
     val compile = Compilation(
-      Samples.get("utils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("castutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-        Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+      Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
         """
           |
           |fn main() {
@@ -143,11 +143,11 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Array list with optionals with mutable element") {
     val compile = Compilation(
-      Samples.get("utils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("castutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-      Samples.get("genericvirtuals/optingarraylist.vale") +
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+      Samples.get("libraries/opt.vale") +
+      Samples.get("libraries/list.vale") +
         """
           |struct Marine { hp int; }
           |
@@ -196,7 +196,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
   test("Move mutable from in lambda") {
     val compile = Compilation(
-      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("libraries/opt.vale") +
       """
         |struct Marine { hp int; }
         |

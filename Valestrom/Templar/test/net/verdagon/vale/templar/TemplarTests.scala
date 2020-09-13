@@ -171,7 +171,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Test overloads") {
-    val compile = new Compilation(Samples.get("functions/overloads.vale"))
+    val compile = new Compilation(Samples.get("programs/functions/overloads.vale"))
     val temputs = compile.getTemputs()
 
     temputs.lookupFunction("main").header.returnType shouldEqual
@@ -435,7 +435,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = new Compilation(readCodeFromResource("virtuals/upcasting.vale"))
+    val compile = new Compilation(readCodeFromResource("programs/virtuals/upcasting.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -448,7 +448,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a virtual function") {
-    val compile = new Compilation(readCodeFromResource("virtuals/calling.vale"))
+    val compile = new Compilation(readCodeFromResource("programs/virtuals/calling.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -463,7 +463,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests calling a virtual function through a borrow ref") {
-    val compile = new Compilation(readCodeFromResource("virtuals/callingThroughBorrow.vale"))
+    val compile = new Compilation(readCodeFromResource("programs/virtuals/callingThroughBorrow.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -539,25 +539,25 @@ class TemplarTests extends FunSuite with Matchers {
 
   test("Tests a linked list") {
     val compile = new Compilation(
-      Samples.get("virtuals/ordinarylinkedlist.vale") +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+      Samples.get("programs/virtuals/ordinarylinkedlist.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
   }
 
   test("Tests a templated linked list") {
     val compile = new Compilation(
-      Samples.get("genericvirtuals/templatedlinkedlist.vale") +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+      Samples.get("programs/genericvirtuals/templatedlinkedlist.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
   }
 
   test("Tests calling an abstract function") {
     val compile = new Compilation(
-      Samples.get("genericvirtuals/callingAbstract.vale") +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+      Samples.get("programs/genericvirtuals/callingAbstract.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
 
     temputs.functions.collectFirst({
@@ -567,9 +567,9 @@ class TemplarTests extends FunSuite with Matchers {
 
   test("Tests a foreach for a linked list") {
     val compile = new Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("genericvirtuals/foreachlinkedlist.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("programs/genericvirtuals/foreachlinkedlist.vale"))
     val temputs = compile.getTemputs()
 
     val main = temputs.lookupFunction("main")
@@ -661,8 +661,8 @@ class TemplarTests extends FunSuite with Matchers {
         |  = x;
         |}
         |""".stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
     val destructorCalls =
@@ -672,9 +672,9 @@ class TemplarTests extends FunSuite with Matchers {
 
   test("Test complex interface") {
     val compile = new Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("genericvirtuals/templatedinterface.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("programs/genericvirtuals/templatedinterface.vale"))
     val temputs = compile.getTemputs()
   }
 
@@ -717,8 +717,8 @@ class TemplarTests extends FunSuite with Matchers {
         |  mut m.weapon = Some(6);
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
@@ -741,8 +741,8 @@ class TemplarTests extends FunSuite with Matchers {
         |  helperFunc("bork");
         |}
         |""".stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
   }
 
@@ -753,8 +753,8 @@ class TemplarTests extends FunSuite with Matchers {
     // We need to disambiguate by parameters, not just template args.
 
     val compile = new Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
       """fn helperFunc(x int) {
         |  { print(x); }();
         |}

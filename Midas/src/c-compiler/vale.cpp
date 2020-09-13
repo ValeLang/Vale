@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 #include "function/expressions/shared/shared.h"
 #include "struct/interface.h"
 
@@ -414,7 +414,7 @@ void createModule(GlobalState *globalState) {
     globalState->difile = LLVMDIBuilderCreateFile(globalState->dibuilder, "main.vale", 9, ".", 1);
     // If theres a compile error on this line, its some sort of LLVM version issue, try commenting or uncommenting the last four args.
     globalState->compileUnit = LLVMDIBuilderCreateCompileUnit(globalState->dibuilder, LLVMDWARFSourceLanguageC,
-        globalState->difile, "Vale compiler", 13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0/*, "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere")*/);
+        globalState->difile, "Vale compiler", 13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0, "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
   }
   compileValeCode(globalState, globalState->opt->srcpath);
   if (!globalState->opt->release)
@@ -437,6 +437,8 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
   LLVMInitializeX86AsmPrinter();
   LLVMInitializeX86AsmParser();
 
+  std::cout << "Triple: " << opt->triple << " cpu: " << opt->cpu << " features: " << opt->features.c_str() << std::endl;
+  
   // Find target for the specified triple
   if (opt->triple.empty())
     opt->triple = LLVMGetDefaultTargetTriple();
@@ -484,7 +486,7 @@ void generateOutput(
 
   if (asmpath) {
     char asmpathCStr[1024] = {0};
-    strncpy(asmpathCStr, asmpath, 1024);
+    strncpy_s(asmpathCStr, asmpath, 1024);
 
     // Generate assembly file if requested
     if (LLVMTargetMachineEmitToFile(machine, mod, asmpathCStr,
@@ -495,7 +497,7 @@ void generateOutput(
   }
 
   char objpathCStr[1024] = { 0 };
-  strncpy(objpathCStr, objpath, 1024);
+  strncpy_s(objpathCStr, objpath, 1024);
 
   // Generate .o or .obj file
   if (LLVMTargetMachineEmitToFile(machine, mod, objpathCStr, LLVMObjectFile, &err) != 0) {

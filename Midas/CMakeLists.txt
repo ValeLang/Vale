@@ -11,18 +11,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 
 include(FetchContent)
 
-FetchContent_Declare(
-	json
-	GIT_REPOSITORY https://github.com/nlohmann/json
-	GIT_TAG v3.7.3
-)
-
-FetchContent_GetProperties(json)
-if(NOT json_POPULATED)
-	FetchContent_Populate(json)
-	add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
 include_directories(
 		${LLVM_INCLUDE_DIRS}
 		"${CMAKE_SOURCE_DIR}/src/c-compiler/"
@@ -101,5 +89,5 @@ add_executable(valec
 		src/c-compiler/utils/fileio.cpp
 		src/c-compiler/utils/options.cpp)
 
-target_link_libraries(valec ${llvm_libs} nlohmann_json::nlohmann_json)
+target_link_libraries(valec ${llvm_libs})
 

@@ -48,7 +48,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test constraint ref") {
-    val compile = Compilation(Samples.get("constraintRef.vale"))
+    val compile = Compilation(Samples.get("programs/constraintRef.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
@@ -75,7 +75,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test overloads") {
-    val compile = Compilation(Samples.get("functions/overloads.vale"))
+    val compile = Compilation(Samples.get("programs/functions/overloads.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
@@ -136,7 +136,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests unstackifying a variable multiple times in a function") {
-    val compile = Compilation(Samples.get("multiUnstackify.vale"))
+    val compile = Compilation(Samples.get("programs/multiUnstackify.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
@@ -229,22 +229,22 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = Compilation(Samples.get("virtuals/upcasting.vale"))
+    val compile = Compilation(Samples.get("programs/virtuals/upcasting.vale"))
     compile.run(Vector())
   }
 
   test("Tests from file") {
-    val compile = Compilation(Samples.get("lambdas/doubleclosure.vale"))
+    val compile = Compilation(Samples.get("programs/lambdas/doubleclosure.vale"))
     compile.run(Vector())
   }
 
   test("Tests from subdir file") {
-    val compile = Compilation(Samples.get("virtuals/round.vale"))
+    val compile = Compilation(Samples.get("programs/virtuals/round.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests calling a virtual function") {
-    val compile = Compilation(Samples.get("virtuals/calling.vale"))
+    val compile = Compilation(Samples.get("programs/virtuals/calling.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
@@ -272,38 +272,38 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests a linked list") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-      Samples.get("virtuals/ordinarylinkedlist.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+      Samples.get("programs/virtuals/ordinarylinkedlist.vale"))
     compile.evalForReferend(Vector())
   }
 
   test("Tests a templated linked list") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("genericvirtuals/templatedlinkedlist.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("programs/genericvirtuals/templatedlinkedlist.vale"))
     compile.evalForReferend(Vector())
   }
 
   test("Tests calling an abstract function") {
-    val compile = Compilation(Samples.get("genericvirtuals/callingAbstract.vale"))
+    val compile = Compilation(Samples.get("programs/genericvirtuals/callingAbstract.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Template overrides are stamped") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("genericvirtuals/templatedoption.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("programs/genericvirtuals/templatedoption.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(1)
   }
 
   test("Tests a foreach for a linked list") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("genericvirtuals/foreachlinkedlist.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("programs/genericvirtuals/foreachlinkedlist.vale"))
     compile.evalForStdout(Vector()) shouldEqual "102030"
   }
 
@@ -314,13 +314,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // So, this checks that it and its three ancestors are all stamped and all get their own
   // function families.
   test("Stamp multiple ancestors") {
-    val compile = Compilation(Samples.get("genericvirtuals/stampMultipleAncestors.vale"))
+    val compile = Compilation(Samples.get("programs/genericvirtuals/stampMultipleAncestors.vale"))
     val temputs = compile.getTemputs()
     compile.evalForReferend(Vector())
   }
 
   test("Tests recursion") {
-    val compile = Compilation(Samples.get("functions/recursion.vale"))
+    val compile = Compilation(Samples.get("programs/functions/recursion.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(120)
   }
 
@@ -338,7 +338,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("getOr function") {
-    val compile = Compilation(Samples.get("genericvirtuals/getOr.vale"))
+    val compile = Compilation(Samples.get("programs/genericvirtuals/getOr.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
@@ -370,7 +370,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Function return with ret upcasts") {
-    val compile = Compilation(Samples.get("virtuals/retUpcast.vale"))
+    val compile = Compilation(Samples.get("programs/virtuals/retUpcast.vale"))
 
     val temputs = compile.getTemputs()
     val doIt = temputs.lookupFunction("doIt")
@@ -383,9 +383,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Map function") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("genericvirtuals/mapFunc.vale"))
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("programs/genericvirtuals/mapFunc.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
@@ -395,8 +395,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     // Make sure that functions that cant be called by main will not be included.
 
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
       """
         |fn bork(x str) { print(x); }
         |fn helperFunc(x int) { print(x); }

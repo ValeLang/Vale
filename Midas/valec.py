@@ -73,8 +73,8 @@ class ValeCompiler:
             pass
         elif path.exists(cwd + "/src/valestd"):
             self.valestd_path = cwd + "/src/valestd"
-        elif path.exists(cwd + "/valestd"):
-            self.valestd_path = cwd + "/valestd"
+        elif path.exists(cwd + "/runtime"):
+            self.valestd_path = cwd + "/runtime"
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
         self.valec_path: str = os.environ.get('VALEC_PATH', '')

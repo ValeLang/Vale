@@ -286,6 +286,7 @@ WeakFatPtrLE LgtWeaks::assembleKnownSizeArrayWeakRef(
     WrapperPtrLE objPtrLE) {
   // impl
   assert(false);
+  exit(1);
 }
 
 WeakFatPtrLE LgtWeaks::assembleUnknownSizeArrayWeakRef(

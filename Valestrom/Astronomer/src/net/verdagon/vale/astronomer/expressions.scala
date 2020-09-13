@@ -129,7 +129,7 @@ case class TemplateSpecifiedLookupAE(name: String, templateArgs: List[ITemplexS]
 case class RuneLookupAE(rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
 
 case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: OwnershipP) extends IExpressionAE
-case class FunctionLoadAE(range: RangeS, name: GlobalFunctionFamilyNameA) extends IExpressionAE
+case class OutsideLoadAE(range: RangeS, name: String) extends IExpressionAE
 
 case class UnletAE(name: String) extends IExpressionAE
 

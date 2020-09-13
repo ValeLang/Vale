@@ -132,7 +132,9 @@ case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1
 case class TemplateSpecifiedLookupSE(name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
 
 case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
-case class FunctionLoadSE(range: RangeS, name: GlobalFunctionFamilyNameS) extends IExpressionSE
+// Loads a non-local. In well formed code, this will be a function, but the user also likely
+// tried to access a variable they forgot to declare.
+case class OutsideLoadSE(range: RangeS, name: String) extends IExpressionSE
 case class RuneLookupSE(rune: IRuneS) extends IExpressionSE
 
 case class UnletSE(name: String) extends IExpressionSE

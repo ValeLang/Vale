@@ -10,14 +10,14 @@ import net.verdagon.vale.driver.Compilation
 class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
     val compile = Compilation(
-      Samples.get("utils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("castutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+      Samples.get("libraries/opt.vale") +
         """
           |fn main() {
           |  opt Opt<int> = Some(9);
-          |  = if (opt.empty?()) { 0 }
+          |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
         """.stripMargin)
@@ -27,14 +27,14 @@ class OptTests extends FunSuite with Matchers {
 
   test("Test empty and get for None") {
     val compile = Compilation(
-      Samples.get("utils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("castutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+      Samples.get("libraries/opt.vale") +
         """
           |fn main() {
           |  opt Opt<int> = None<int>();
-          |  = if (opt.empty?()) { 0 }
+          |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
         """.stripMargin)

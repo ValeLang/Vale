@@ -1,6 +1,5 @@
 #include "controlblock.h"
 #include "function/expressions/shared/shared.h"
-#include "function/expressions/shared/weaks.h"
 #include "utils/counters.h"
 
 // See CRCISFAORC for why we don't take in a mutability.

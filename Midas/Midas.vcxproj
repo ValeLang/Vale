@@ -18,6 +18,79 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\c-compiler\function\expression.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\block.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\call.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\constantstr.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\construct.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\constructunknownsizearray.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\destructure.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\discard.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\externs.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\if.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\interfacecall.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\localload.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\newarrayfromvalues.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\alias.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\branch.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\controlblock.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\elements.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\heap.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\members.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\shared.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\string.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\shared\weakies.cpp" />
+    <ClCompile Include="src\c-compiler\function\expressions\while.cpp" />
+    <ClCompile Include="src\c-compiler\function\function.cpp" />
+    <ClCompile Include="src\c-compiler\globalstate.cpp" />
+    <ClCompile Include="src\c-compiler\metal\ast.cpp" />
+    <ClCompile Include="src\c-compiler\metal\readjson.cpp" />
+    <ClCompile Include="src\c-compiler\metal\types.cpp" />
+    <ClCompile Include="src\c-compiler\struct\array.cpp" />
+    <ClCompile Include="src\c-compiler\struct\interface.cpp" />
+    <ClCompile Include="src\c-compiler\struct\struct.cpp" />
+    <ClCompile Include="src\c-compiler\translatetype.cpp" />
+    <ClCompile Include="src\c-compiler\utils\fileio.cpp" />
+    <ClCompile Include="src\c-compiler\utils\options.cpp" />
+    <ClCompile Include="src\c-compiler\vale.cpp" />
+    <ClCompile Include="src\c-compiler\valeopts.cpp" />
+    <ClCompile Include="src\valestd\assert.c" />
+    <ClCompile Include="src\valestd\census.c" />
+    <ClCompile Include="src\valestd\genHeap.c" />
+    <ClCompile Include="src\valestd\stdio.c" />
+    <ClCompile Include="src\valestd\str.c" />
+    <ClCompile Include="src\valestd\weaks.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\c-compiler\error.h" />
+    <ClInclude Include="src\c-compiler\function\expression.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\expressions.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\branch.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\controlblock.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\elements.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\heap.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\members.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\shared.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\string.h" />
+    <ClInclude Include="src\c-compiler\function\expressions\shared\weaks.h" />
+    <ClInclude Include="src\c-compiler\function\function.h" />
+    <ClInclude Include="src\c-compiler\globalstate.h" />
+    <ClInclude Include="src\c-compiler\json.hpp" />
+    <ClInclude Include="src\c-compiler\metal\ast.h" />
+    <ClInclude Include="src\c-compiler\metal\instructions.h" />
+    <ClInclude Include="src\c-compiler\metal\metalcache.h" />
+    <ClInclude Include="src\c-compiler\metal\readjson.h" />
+    <ClInclude Include="src\c-compiler\metal\types.h" />
+    <ClInclude Include="src\c-compiler\struct\array.h" />
+    <ClInclude Include="src\c-compiler\struct\interface.h" />
+    <ClInclude Include="src\c-compiler\struct\struct.h" />
+    <ClInclude Include="src\c-compiler\translatetype.h" />
+    <ClInclude Include="src\c-compiler\utils\fileio.h" />
+    <ClInclude Include="src\c-compiler\utils\options.h" />
+    <ClInclude Include="src\c-compiler\valeopts.h" />
+    <ClInclude Include="src\c-compiler\metal\json.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -55,8 +128,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
-  </ImportGroup>
+  <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -79,8 +151,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(LLVMVSProjDir)\include;$(LLVMProjectDir)\llvm\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(MSBuildProjectDirectory)/src/c-compiler;$(LLVMVSProjDir)\include;$(LLVMProjectDir)\llvm\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(LLVMBuiltDir)\lib;$(LibraryPath)</LibraryPath>
+    <SourcePath>$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -121,12 +194,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>DynamicLibraryLib.lib;ExampleIRTransforms.lib;gtest.lib;gtest_main.lib;Kaleidoscope-Ch4.lib;Kaleidoscope-Ch5.lib;Kaleidoscope-Ch6.lib;Kaleidoscope-Ch7.lib;Kaleidoscope-Ch8.lib;Kaleidoscope-Ch9.lib;LLVM-C.lib;LLVMAArch64AsmParser.lib;LLVMAArch64CodeGen.lib;LLVMAArch64Desc.lib;LLVMAArch64Disassembler.lib;LLVMAArch64Info.lib;LLVMAArch64Utils.lib;LLVMAggressiveInstCombine.lib;LLVMAMDGPUAsmParser.lib;LLVMAMDGPUCodeGen.lib;LLVMAMDGPUDesc.lib;LLVMAMDGPUDisassembler.lib;LLVMAMDGPUInfo.lib;LLVMAMDGPUUtils.lib;LLVMAnalysis.lib;LLVMARMAsmParser.lib;LLVMARMCodeGen.lib;LLVMARMDesc.lib;LLVMARMDisassembler.lib;LLVMARMInfo.lib;LLVMARMUtils.lib;LLVMAsmParser.lib;LLVMAsmPrinter.lib;LLVMAVRAsmParser.lib;LLVMAVRCodeGen.lib;LLVMAVRDesc.lib;LLVMAVRDisassembler.lib;LLVMAVRInfo.lib;LLVMBinaryFormat.lib;LLVMBitReader.lib;LLVMBitstreamReader.lib;LLVMBitWriter.lib;LLVMBPFAsmParser.lib;LLVMBPFCodeGen.lib;LLVMBPFDesc.lib;LLVMBPFDisassembler.lib;LLVMBPFInfo.lib;LLVMCFGuard.lib;LLVMCodeGen.lib;LLVMCore.lib;LLVMCoroutines.lib;LLVMCoverage.lib;LLVMDebugInfoCodeView.lib;LLVMDebugInfoDWARF.lib;LLVMDebugInfoGSYM.lib;LLVMDebugInfoMSF.lib;LLVMDebugInfoPDB.lib;LLVMDemangle.lib;LLVMDlltoolDriver.lib;LLVMDWARFLinker.lib;LLVMExecutionEngine.lib;LLVMExtensions.lib;LLVMFrontendOpenMP.lib;LLVMFuzzMutate.lib;LLVMGlobalISel.lib;LLVMHexagonAsmParser.lib;LLVMHexagonCodeGen.lib;LLVMHexagonDesc.lib;LLVMHexagonDisassembler.lib;LLVMHexagonInfo.lib;LLVMInstCombine.lib;LLVMInstrumentation.lib;LLVMInterpreter.lib;LLVMipo.lib;LLVMIRReader.lib;LLVMJITLink.lib;LLVMLanaiAsmParser.lib;LLVMLanaiCodeGen.lib;LLVMLanaiDesc.lib;LLVMLanaiDisassembler.lib;LLVMLanaiInfo.lib;LLVMLibDriver.lib;LLVMLineEditor.lib;LLVMLinker.lib;LLVMLTO.lib;LLVMMC.lib;LLVMMCA.lib;LLVMMCDisassembler.lib;LLVMMCJIT.lib;LLVMMCParser.lib;LLVMMipsAsmParser.lib;LLVMMipsCodeGen.lib;LLVMMipsDesc.lib;LLVMMipsDisassembler.lib;LLVMMipsInfo.lib;LLVMMIRParser.lib;LLVMMSP430AsmParser.lib;LLVMMSP430CodeGen.lib;LLVMMSP430Desc.lib;LLVMMSP430Disassembler.lib;LLVMMSP430Info.lib;LLVMNVPTXCodeGen.lib;LLVMNVPTXDesc.lib;LLVMNVPTXInfo.lib;LLVMObjCARCOpts.lib;LLVMObject.lib;LLVMObjectYAML.lib;LLVMOption.lib;LLVMOrcError.lib;LLVMOrcJIT.lib;LLVMPasses.lib;LLVMPowerPCAsmParser.lib;LLVMPowerPCCodeGen.lib;LLVMPowerPCDesc.lib;LLVMPowerPCDisassembler.lib;LLVMPowerPCInfo.lib;LLVMProfileData.lib;LLVMRemarks.lib;LLVMRISCVAsmParser.lib;LLVMRISCVCodeGen.lib;LLVMRISCVDesc.lib;LLVMRISCVDisassembler.lib;LLVMRISCVInfo.lib;LLVMRISCVUtils.lib;LLVMRuntimeDyld.lib;LLVMScalarOpts.lib;LLVMSelectionDAG.lib;LLVMSparcAsmParser.lib;LLVMSparcCodeGen.lib;LLVMSparcDesc.lib;LLVMSparcDisassembler.lib;LLVMSparcInfo.lib;LLVMSupport.lib;LLVMSymbolize.lib;LLVMSystemZAsmParser.lib;LLVMSystemZCodeGen.lib;LLVMSystemZDesc.lib;LLVMSystemZDisassembler.lib;LLVMSystemZInfo.lib;LLVMTableGen.lib;LLVMTableGenGlobalISel.lib;LLVMTarget.lib;LLVMTestingSupport.lib;LLVMTextAPI.lib;LLVMTransformUtils.lib;LLVMVectorize.lib;LLVMWebAssemblyAsmParser.lib;LLVMWebAssemblyCodeGen.lib;LLVMWebAssemblyDesc.lib;LLVMWebAssemblyDisassembler.lib;LLVMWebAssemblyInfo.lib;LLVMWindowsManifest.lib;LLVMX86AsmParser.lib;LLVMX86CodeGen.lib;LLVMX86Desc.lib;LLVMX86Disassembler.lib;LLVMX86Info.lib;LLVMXCoreCodeGen.lib;LLVMXCoreDesc.lib;LLVMXCoreDisassembler.lib;LLVMXCoreInfo.lib;LLVMXRay.lib;LTO.lib;Remarks.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(LLVMBuiltDir)\bin\*.dll" "$(TargetDir)" /F /R /Y /I</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -149,161 +227,5 @@
       <Command>xcopy "$(LLVMBuiltDir)\bin\*.dll" "$(TargetDir)" /F /R /Y /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="src\c-compiler\conec.c" />
-    <ClCompile Include="src\c-compiler\coneopts.c" />
-    <ClCompile Include="src\c-compiler\corelib\corelib.c" />
-    <ClCompile Include="src\c-compiler\corelib\corenumber.c" />
-    <ClCompile Include="src\c-compiler\genllvm\genlalloc.c" />
-    <ClCompile Include="src\c-compiler\genllvm\genlexpr.c" />
-    <ClCompile Include="src\c-compiler\genllvm\genllvm.c" />
-    <ClCompile Include="src\c-compiler\genllvm\genlstmt.c" />
-    <ClCompile Include="src\c-compiler\genllvm\genltype.c" />
-    <ClCompile Include="src\c-compiler\ir\clone.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\allocate.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\assign.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\block.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\borrow.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\cast.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\deref.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\fncall.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\if.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\literal.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\logic.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\loop.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\namedval.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\nameuse.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\sizeof.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\typelit.c" />
-    <ClCompile Include="src\c-compiler\ir\exp\vtuple.c" />
-    <ClCompile Include="src\c-compiler\ir\flow.c" />
-    <ClCompile Include="src\c-compiler\ir\iexp.c" />
-    <ClCompile Include="src\c-compiler\ir\inode.c" />
-    <ClCompile Include="src\c-compiler\ir\instype.c" />
-    <ClCompile Include="src\c-compiler\ir\itype.c" />
-    <ClCompile Include="src\c-compiler\ir\meta\generic.c" />
-    <ClCompile Include="src\c-compiler\ir\meta\genvardcl.c" />
-    <ClCompile Include="src\c-compiler\ir\name.c" />
-    <ClCompile Include="src\c-compiler\ir\namespace.c" />
-    <ClCompile Include="src\c-compiler\ir\nametbl.c" />
-    <ClCompile Include="src\c-compiler\ir\nodelist.c" />
-    <ClCompile Include="src\c-compiler\ir\nodes.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\break.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\continue.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\fielddcl.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\fndcl.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\intrinsic.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\module.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\return.c" />
-    <ClCompile Include="src\c-compiler\ir\stmt\vardcl.c" />
-    <ClCompile Include="src\c-compiler\ir\types\array.c" />
-    <ClCompile Include="src\c-compiler\ir\types\arrayref.c" />
-    <ClCompile Include="src\c-compiler\ir\types\enum.c" />
-    <ClCompile Include="src\c-compiler\ir\types\fnsig.c" />
-    <ClCompile Include="src\c-compiler\ir\types\lifetime.c" />
-    <ClCompile Include="src\c-compiler\ir\types\number.c" />
-    <ClCompile Include="src\c-compiler\ir\types\permission.c" />
-    <ClCompile Include="src\c-compiler\ir\types\pointer.c" />
-    <ClCompile Include="src\c-compiler\ir\types\reference.c" />
-    <ClCompile Include="src\c-compiler\ir\types\struct.c" />
-    <ClCompile Include="src\c-compiler\ir\types\ttuple.c" />
-    <ClCompile Include="src\c-compiler\ir\types\typedef.c" />
-    <ClCompile Include="src\c-compiler\ir\types\void.c" />
-    <ClCompile Include="src\c-compiler\vale.cpp" />
-    <ClCompile Include="src\c-compiler\parser\lexer.c" />
-    <ClCompile Include="src\c-compiler\parser\parseexpr.c" />
-    <ClCompile Include="src\c-compiler\parser\parseflow.c" />
-    <ClCompile Include="src\c-compiler\parser\parser.c" />
-    <ClCompile Include="src\c-compiler\parser\parsetype.c" />
-    <ClCompile Include="src\c-compiler\shared\error.c" />
-    <ClCompile Include="src\c-compiler\shared\fileio.c" />
-    <ClCompile Include="src\c-compiler\shared\memory.c" />
-    <ClCompile Include="src\c-compiler\shared\options.c" />
-    <ClCompile Include="src\c-compiler\shared\timer.c" />
-    <ClCompile Include="src\c-compiler\shared\utf8.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="src\c-compiler\ast.h" />
-    <ClInclude Include="src\c-compiler\conec.h" />
-    <ClInclude Include="src\c-compiler\coneopts.h" />
-    <ClInclude Include="src\c-compiler\corelib\corelib.h" />
-    <ClInclude Include="src\c-compiler\genllvm\genllvm.h" />
-    <ClInclude Include="src\c-compiler\instructions.h" />
-    <ClInclude Include="src\c-compiler\ir\clone.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\allocate.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\assign.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\block.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\borrow.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\cast.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\deref.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\fncall.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\if.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\literal.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\logic.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\loop.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\namedval.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\nameuse.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\sizeof.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\typelit.h" />
-    <ClInclude Include="src\c-compiler\ir\exp\vtuple.h" />
-    <ClInclude Include="src\c-compiler\ir\flow.h" />
-    <ClInclude Include="src\c-compiler\ir\iexp.h" />
-    <ClInclude Include="src\c-compiler\ir\inode.h" />
-    <ClInclude Include="src\c-compiler\ir\instype.h" />
-    <ClInclude Include="src\c-compiler\ir\ir.h" />
-    <ClInclude Include="src\c-compiler\ir\itype.h" />
-    <ClInclude Include="src\c-compiler\ir\meta\generic.h" />
-    <ClInclude Include="src\c-compiler\ir\meta\genvardcl.h" />
-    <ClInclude Include="src\c-compiler\ir\name.h" />
-    <ClInclude Include="src\c-compiler\ir\namespace.h" />
-    <ClInclude Include="src\c-compiler\ir\nametbl.h" />
-    <ClInclude Include="src\c-compiler\ir\nodelist.h" />
-    <ClInclude Include="src\c-compiler\ir\nodes.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\break.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\continue.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\fielddcl.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\fndcl.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\intrinsic.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\module.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\return.h" />
-    <ClInclude Include="src\c-compiler\ir\stmt\vardcl.h" />
-    <ClInclude Include="src\c-compiler\ir\types\array.h" />
-    <ClInclude Include="src\c-compiler\ir\types\arrayref.h" />
-    <ClInclude Include="src\c-compiler\ir\types\enum.h" />
-    <ClInclude Include="src\c-compiler\ir\types\fnsig.h" />
-    <ClInclude Include="src\c-compiler\ir\types\lifetime.h" />
-    <ClInclude Include="src\c-compiler\ir\types\number.h" />
-    <ClInclude Include="src\c-compiler\ir\types\permission.h" />
-    <ClInclude Include="src\c-compiler\ir\types\pointer.h" />
-    <ClInclude Include="src\c-compiler\ir\types\reference.h" />
-    <ClInclude Include="src\c-compiler\ir\types\struct.h" />
-    <ClInclude Include="src\c-compiler\ir\types\ttuple.h" />
-    <ClInclude Include="src\c-compiler\ir\types\typedef.h" />
-    <ClInclude Include="src\c-compiler\ir\types\void.h" />
-    <ClInclude Include="src\c-compiler\parser\lexer.h" />
-    <ClInclude Include="src\c-compiler\parser\parser.h" />
-    <ClInclude Include="src\c-compiler\readjson.h" />
-    <ClInclude Include="src\c-compiler\shared\error.h" />
-    <ClInclude Include="src\c-compiler\shared\fileio.h" />
-    <ClInclude Include="src\c-compiler\shared\memory.h" />
-    <ClInclude Include="src\c-compiler\shared\options.h" />
-    <ClInclude Include="src\c-compiler\shared\timer.h" />
-    <ClInclude Include="src\c-compiler\shared\utf8.h" />
-    <ClInclude Include="src\c-compiler\translate.h" />
-    <ClInclude Include="src\c-compiler\types.h" />
-    <ClInclude Include="src\c-compiler\vale.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets" Condition="Exists('packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets'))" />
-  </Target>
 </Project>

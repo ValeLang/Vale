@@ -271,7 +271,7 @@ object Driver {
     } catch {
       case ie @ InputException(msg) => {
         println(msg)
-        throw ie
+        System.exit(22)
       }
     }
   }

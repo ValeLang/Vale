@@ -1,0 +1,51 @@
+
+fn min(a int, b int) int {
+  = if (a <= b) { a } else { b }
+}
+
+fn max(a int, b int) int {
+  = if (a >= b) { a } else { b }
+}
+
+fn panic(msg str) {
+  println(msg);
+  = __panic();
+}
+
+fn abs(a int) {
+  = if (a < 0) { a * -1 } else { a }
+}
+
+fn assert(cond bool) void {
+  assert(cond, "Assertion failed!");
+}
+fn assert(cond bool, msg str) void {
+  if (cond == false) {
+    println(msg);
+    __panic();
+  }
+}
+
+fn assertEq<T>(a T, b T) void {
+  assert(a == b, "Assertion failed, not equal!");
+}
+
+fn assertEq<T>(a T, b T, msg str) void {
+  assert(a == b, msg);
+}
+
+fn !=<T>(a &T, b &T) bool{
+  not (a == b)
+}
+
+struct IntHasher { }
+fn __call(this &IntHasher, x int) { x }
+
+struct IntEquator { }
+fn __call(this &IntEquator, a int, b int) { a == b }
+
+fn signum(a int) int {
+  = if (a < 0) { -1 }
+    else if (a > 0) { 1 }
+    else { 0 }
+}

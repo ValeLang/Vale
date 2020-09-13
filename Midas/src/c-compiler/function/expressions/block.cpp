@@ -1,13 +1,13 @@
 #include <iostream>
 
-#include "function/expressions/shared/branch.h"
+#include "utils/branch.h"
 
 #include "translatetype.h"
 
 #include "function/expression.h"
 #include "expressions.h"
 
-LLVMValueRef translateBlock(
+Ref translateBlock(
     GlobalState* globalState,
     FunctionState* functionState,
     BlockState* parentBlockState,

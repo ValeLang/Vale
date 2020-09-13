@@ -1,0 +1,21 @@
+
+interface Car { }
+fn doCivicDance(virtual this &Car) int abstract;
+
+struct Civic {}
+impl Car for Civic;
+fn doCivicDance(civic &Civic impl Car) int {
+  = 4;
+}
+
+struct Toyota {}
+impl Car for Toyota;
+fn doCivicDance(toyota &Toyota impl Car) int {
+  = 7;
+}
+
+fn main() int {
+  x Car = Toyota();
+ b = &x;
+  = doCivicDance(b);
+}

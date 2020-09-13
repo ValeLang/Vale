@@ -103,511 +103,537 @@ class ValeTest(unittest.TestCase):
         self.assertEqual(proc.returncode, expected_return_code,
                          f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
 
-    def test_addret_assist(self) -> None:
+    def test_assist_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "addret.vale"], "assist", 7)
-    def test_addret_unsafefast(self) -> None:
+    def test_unsafefast_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "addret.vale"], "unsafe-fast", 7)
-    def test_addret_resilientv0(self) -> None:
+    def test_resilientv0_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "addret.vale"], "resilient-v0", 7)
-    def test_addret_resilientv1(self) -> None:
+    def test_resilientv1_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "addret.vale"], "resilient-v1", 7)
-    def test_addret_resilientv2(self) -> None:
+    def test_resilientv2_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "addret.vale"], "resilient-v2", 7)
-    def test_addret_naiverc(self) -> None:
+    def test_naiverc_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "addret.vale"], "naive-rc", 7)
 
-    def test_immstruct_assist(self) -> None:
+    def test_assist_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/immstruct.vale"], "assist", 5)
-    def test_immstruct_unsafefast(self) -> None:
+    def test_unsafefast_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/immstruct.vale"], "unsafe-fast", 5)
-    def test_immstruct_resilientv0(self) -> None:
+    def test_resilientv0_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/immstruct.vale"], "resilient-v0", 5)
-    def test_immstruct_resilientv1(self) -> None:
+    def test_resilientv1_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/immstruct.vale"], "resilient-v1", 5)
-    def test_immstruct_resilientv2(self) -> None:
+    def test_resilientv2_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/immstruct.vale"], "resilient-v2", 5)
-    def test_immstruct_naiverc(self) -> None:
+    def test_naiverc_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/immstruct.vale"], "naive-rc", 5)
 
-    def test_memberrefcount_assist(self) -> None:
+    def test_assist_memberrefcount(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/memberrefcount.vale"], "assist", 5)
-    def test_memberrefcount_unsafefast(self) -> None:
+    def test_unsafefast_memberrefcount(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/memberrefcount.vale"], "unsafe-fast", 5)
-    def test_memberrefcount_resilientv0(self) -> None:
+    def test_resilientv0_memberrefcount(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/memberrefcount.vale"], "resilient-v0", 5)
-    def test_memberrefcount_resilientv1(self) -> None:
+    def test_resilientv1_memberrefcount(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/memberrefcount.vale"], "resilient-v1", 5)
-    def test_memberrefcount_resilientv2(self) -> None:
+    def test_resilientv2_memberrefcount(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/memberrefcount.vale"], "resilient-v2", 5)
-    def test_memberrefcount_naiverc(self) -> None:
+    def test_naiverc_memberrefcount(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/memberrefcount.vale"], "naive-rc", 5)
 
-    def test_bigimmstruct_assist(self) -> None:
+    def test_assist_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/bigimmstruct.vale"], "assist", 42)
-    def test_bigimmstruct_unsafefast(self) -> None:
+    def test_unsafefast_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/bigimmstruct.vale"], "unsafe-fast", 42)
-    def test_bigimmstruct_resilientv0(self) -> None:
+    def test_resilientv0_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/bigimmstruct.vale"], "resilient-v0", 42)
-    def test_bigimmstruct_resilientv1(self) -> None:
+    def test_resilientv1_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/bigimmstruct.vale"], "resilient-v1", 42)
-    def test_bigimmstruct_resilientv2(self) -> None:
+    def test_resilientv2_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/bigimmstruct.vale"], "resilient-v2", 42)
-    def test_bigimmstruct_naiverc(self) -> None:
+    def test_naiverc_bigimmstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/bigimmstruct.vale"], "naive-rc", 42)
 
-    def test_mutstruct_assist(self) -> None:
+    def test_assist_mutstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstruct.vale"], "assist", 8)
-    def test_mutstruct_unsafefast(self) -> None:
+    def test_unsafefast_mutstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstruct.vale"], "unsafe-fast", 8)
-    def test_mutstruct_resilientv0(self) -> None:
+    def test_resilientv0_mutstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstruct.vale"], "resilient-v0", 8)
-    def test_mutstruct_resilientv1(self) -> None:
+    def test_resilientv1_mutstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstruct.vale"], "resilient-v1", 8)
-    def test_mutstruct_resilientv2(self) -> None:
+    def test_resilientv2_mutstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstruct.vale"], "resilient-v2", 8)
-    def test_mutstruct_naiverc(self) -> None:
+    def test_naiverc_mutstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstruct.vale"], "naive-rc", 8)
 
-    def test_lambda_assist(self) -> None:
+    def test_assist_lambda(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambda.vale"], "assist", 42)
-    def test_lambda_unsafefast(self) -> None:
+    def test_unsafefast_lambda(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambda.vale"], "unsafe-fast", 42)
-    def test_lambda_resilientv0(self) -> None:
+    def test_resilientv0_lambda(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambda.vale"], "resilient-v0", 42)
-    def test_lambda_resilientv1(self) -> None:
+    def test_resilientv1_lambda(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambda.vale"], "resilient-v1", 42)
-    def test_lambda_resilientv2(self) -> None:
+    def test_resilientv2_lambda(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambda.vale"], "resilient-v2", 42)
-    def test_lambda_naiverc(self) -> None:
+    def test_naiverc_lambda(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambda.vale"], "naive-rc", 42)
 
-    def test_if_assist(self) -> None:
+    def test_assist_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/if.vale"], "assist", 42)
-    def test_if_unsafefast(self) -> None:
+    def test_unsafefast_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/if.vale"], "unsafe-fast", 42)
-    def test_if_resilientv0(self) -> None:
+    def test_resilientv0_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/if.vale"], "resilient-v0", 42)
-    def test_if_resilientv1(self) -> None:
+    def test_resilientv1_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/if.vale"], "resilient-v1", 42)
-    def test_if_resilientv2(self) -> None:
+    def test_resilientv2_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/if.vale"], "resilient-v2", 42)
-    def test_if_naiverc(self) -> None:
+    def test_naiverc_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/if.vale"], "naive-rc", 42)
 
-    def test_mutlocal_assist(self) -> None:
+    def test_assist_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "mutlocal.vale"], "assist", 42)
-    def test_mutlocal_unsafefast(self) -> None:
+    def test_unsafefast_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "mutlocal.vale"], "unsafe-fast", 42)
-    def test_mutlocal_resilientv0(self) -> None:
+    def test_resilientv0_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "mutlocal.vale"], "resilient-v0", 42)
-    def test_mutlocal_resilientv1(self) -> None:
+    def test_resilientv1_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "mutlocal.vale"], "resilient-v1", 42)
-    def test_mutlocal_resilientv2(self) -> None:
+    def test_resilientv2_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "mutlocal.vale"], "resilient-v2", 42)
-    def test_mutlocal_naiverc(self) -> None:
+    def test_naiverc_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "mutlocal.vale"], "naive-rc", 42)
 
-    def test_while_assist(self) -> None:
+    def test_assist_while(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "while/while.vale"], "assist", 42)
-    def test_while_unsafefast(self) -> None:
+    def test_unsafefast_while(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "while/while.vale"], "unsafe-fast", 42)
-    def test_while_resilientv0(self) -> None:
+    def test_resilientv0_while(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "while/while.vale"], "resilient-v0", 42)
-    def test_while_resilientv1(self) -> None:
+    def test_resilientv1_while(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "while/while.vale"], "resilient-v1", 42)
-    def test_while_resilientv2(self) -> None:
+    def test_resilientv2_while(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "while/while.vale"], "resilient-v2", 42)
-    def test_while_naiverc(self) -> None:
+    def test_naiverc_while(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "while/while.vale"], "naive-rc", 42)
 
-    def test_constraintRef_assist(self) -> None:
+    def test_assist_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "constraintRef.vale"], "assist", 8)
-    def test_constraintRef_unsafefast(self) -> None:
+    def test_unsafefast_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "constraintRef.vale"], "unsafe-fast", 8)
-    def test_constraintRef_resilientv0(self) -> None:
+    def test_resilientv0_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "constraintRef.vale"], "resilient-v0", 8)
-    def test_constraintRef_resilientv1(self) -> None:
+    def test_resilientv1_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "constraintRef.vale"], "resilient-v1", 8)
-    def test_constraintRef_resilientv2(self) -> None:
+    def test_resilientv2_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "constraintRef.vale"], "resilient-v2", 8)
-    def test_constraintRef_naiverc(self) -> None:
+    def test_naiverc_constraintRef(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "constraintRef.vale"], "naive-rc", 8)
 
-    def test_knownsizeimmarray_assist(self) -> None:
+    def test_assist_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/knownsizeimmarray.vale"], "assist", 42)
-    def test_knownsizeimmarray_unsafefast(self) -> None:
+    def test_unsafefast_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/knownsizeimmarray.vale"], "unsafe-fast", 42)
-    def test_knownsizeimmarray_resilientv0(self) -> None:
+    def test_resilientv0_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/knownsizeimmarray.vale"], "resilient-v0", 42)
-    def test_knownsizeimmarray_resilientv1(self) -> None:
+    def test_resilientv1_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/knownsizeimmarray.vale"], "resilient-v1", 42)
-    def test_knownsizeimmarray_resilientv2(self) -> None:
+    def test_resilientv2_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/knownsizeimmarray.vale"], "resilient-v2", 42)
-    def test_knownsizeimmarray_naiverc(self) -> None:
+    def test_naiverc_knownsizeimmarray(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/knownsizeimmarray.vale"], "naive-rc", 42)
 
-    def test_imminterface_assist(self) -> None:
+    def test_assist_imminterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/imminterface.vale"], "assist", 42)
-    def test_imminterface_unsafefast(self) -> None:
+    def test_unsafefast_imminterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/imminterface.vale"], "unsafe-fast", 42)
-    def test_imminterface_resilientv0(self) -> None:
+    def test_resilientv0_imminterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/imminterface.vale"], "resilient-v0", 42)
-    def test_imminterface_resilientv1(self) -> None:
+    def test_resilientv1_imminterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/imminterface.vale"], "resilient-v1", 42)
-    def test_imminterface_resilientv2(self) -> None:
+    def test_resilientv2_imminterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/imminterface.vale"], "resilient-v2", 42)
-    def test_imminterface_naiverc(self) -> None:
+    def test_naiverc_imminterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/imminterface.vale"], "naive-rc", 42)
 
-    def test_mutinterface_assist(self) -> None:
+    def test_assist_mutinterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/mutinterface.vale"], "assist", 42)
-    def test_mutinterface_unsafefast(self) -> None:
+    def test_unsafefast_mutinterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/mutinterface.vale"], "unsafe-fast", 42)
-    def test_mutinterface_resilientv0(self) -> None:
+    def test_resilientv0_mutinterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/mutinterface.vale"], "resilient-v0", 42)
-    def test_mutinterface_resilientv1(self) -> None:
+    def test_resilientv1_mutinterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/mutinterface.vale"], "resilient-v1", 42)
-    def test_mutinterface_resilientv2(self) -> None:
+    def test_resilientv2_mutinterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/mutinterface.vale"], "resilient-v2", 42)
-    def test_mutinterface_naiverc(self) -> None:
+    def test_naiverc_mutinterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "virtuals/mutinterface.vale"], "naive-rc", 42)
 
-    def test_mutstructstore_assist(self) -> None:
+    def test_assist_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstructstore.vale"], "assist", 42)
-    def test_mutstructstore_unsafefast(self) -> None:
+    def test_unsafefast_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstructstore.vale"], "unsafe-fast", 42)
-    def test_mutstructstore_resilientv0(self) -> None:
+    def test_resilientv0_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstructstore.vale"], "resilient-v0", 42)
-    def test_mutstructstore_resilientv1(self) -> None:
+    def test_resilientv1_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstructstore.vale"], "resilient-v1", 42)
-    def test_mutstructstore_resilientv2(self) -> None:
+    def test_resilientv2_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstructstore.vale"], "resilient-v2", 42)
-    def test_mutstructstore_naiverc(self) -> None:
+    def test_naiverc_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "structs/mutstructstore.vale"], "naive-rc", 42)
 
-    def test_immusa_assist(self) -> None:
+    def test_assist_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusa.vale"], "assist", 3)
-    def test_immusa_unsafefast(self) -> None:
+    def test_unsafefast_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusa.vale"], "unsafe-fast", 3)
-    def test_immusa_resilientv0(self) -> None:
+    def test_resilientv0_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusa.vale"], "resilient-v0", 3)
-    def test_immusa_resilientv1(self) -> None:
+    def test_resilientv1_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusa.vale"], "resilient-v1", 3)
-    def test_immusa_resilientv2(self) -> None:
+    def test_resilientv2_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusa.vale"], "resilient-v2", 3)
-    def test_immusa_naiverc(self) -> None:
+    def test_naiverc_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusa.vale"], "naive-rc", 3)
 
-    def test_immusalen_assist(self) -> None:
+    def test_assist_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusalen.vale"], "assist", 5)
-    def test_immusalen_unsafefast(self) -> None:
+    def test_unsafefast_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusalen.vale"], "unsafe-fast", 5)
-    def test_immusalen_resilientv0(self) -> None:
+    def test_resilientv0_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusalen.vale"], "resilient-v0", 5)
-    def test_immusalen_resilientv1(self) -> None:
+    def test_resilientv1_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusalen.vale"], "resilient-v1", 5)
-    def test_immusalen_resilientv2(self) -> None:
+    def test_resilientv2_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusalen.vale"], "resilient-v2", 5)
-    def test_immusalen_naiverc(self) -> None:
+    def test_naiverc_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/immusalen.vale"], "naive-rc", 5)
 
-    def test_mutusa_assist(self) -> None:
+    def test_assist_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusa.vale"], "assist", 3)
-    def test_mutusa_unsafefast(self) -> None:
+    def test_unsafefast_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusa.vale"], "unsafe-fast", 3)
-    def test_mutusa_resilientv0(self) -> None:
+    def test_resilientv0_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusa.vale"], "resilient-v0", 3)
-    def test_mutusa_resilientv1(self) -> None:
+    def test_resilientv1_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusa.vale"], "resilient-v1", 3)
-    def test_mutusa_resilientv2(self) -> None:
+    def test_resilientv2_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusa.vale"], "resilient-v2", 3)
-    def test_mutusa_naiverc(self) -> None:
+    def test_naiverc_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusa.vale"], "naive-rc", 3)
 
-    def test_mutusalen_assist(self) -> None:
+    def test_assist_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusalen.vale"], "assist", 5)
-    def test_mutusalen_unsafefast(self) -> None:
+    def test_unsafefast_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusalen.vale"], "unsafe-fast", 5)
-    def test_mutusalen_resilientv0(self) -> None:
+    def test_resilientv0_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusalen.vale"], "resilient-v0", 5)
-    def test_mutusalen_resilientv1(self) -> None:
+    def test_resilientv1_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusalen.vale"], "resilient-v1", 5)
-    def test_mutusalen_resilientv2(self) -> None:
+    def test_resilientv2_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusalen.vale"], "resilient-v2", 5)
-    def test_mutusalen_naiverc(self) -> None:
+    def test_naiverc_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/mutusalen.vale"], "naive-rc", 5)
 
-    def test_stradd_assist(self) -> None:
+    def test_assist_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "assist", 42)
-    def test_stradd_unsafefast(self) -> None:
+    def test_unsafefast_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "unsafe-fast", 42)
-    def test_stradd_resilientv0(self) -> None:
+    def test_resilientv0_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "resilient-v0", 42)
-    def test_stradd_resilientv1(self) -> None:
+    def test_resilientv1_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "resilient-v1", 42)
-    def test_stradd_resilientv2(self) -> None:
+    def test_resilientv2_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "resilient-v2", 42)
-    def test_stradd_naiverc(self) -> None:
+    def test_naiverc_stradd(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/stradd.vale"], "naive-rc", 42)
 
-    def test_lambdamut_assist(self) -> None:
+    def test_assist_strneq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "assist", 42)
+    def test_unsafefast_strneq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "unsafe-fast", 42)
+    def test_resilientv0_strneq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "resilient-v0", 42)
+    def test_resilientv1_strneq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "resilient-v1", 42)
+    def test_resilientv2_strneq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "resilient-v2", 42)
+    def test_naiverc_strneq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strneq.vale"], "naive-rc", 42)
+
+    def test_assist_lambdamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "assist", 42)
-    def test_lambdamut_unsafefast(self) -> None:
+    def test_unsafefast_lambdamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "unsafe-fast", 42)
-    def test_lambdamut_resilientv0(self) -> None:
+    def test_resilientv0_lambdamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "resilient-v0", 42)
-    def test_lambdamut_resilientv1(self) -> None:
+    def test_resilientv1_lambdamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "resilient-v1", 42)
-    def test_lambdamut_resilientv2(self) -> None:
+    def test_resilientv2_lambdamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "resilient-v2", 42)
-    def test_lambdamut_naiverc(self) -> None:
+    def test_naiverc_lambdamut(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "lambdas/lambdamut.vale"], "naive-rc", 42)
 
-    def test_strprint_assist(self) -> None:
+    def test_assist_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strprint.vale"], "assist", 42)
-    def test_strprint_unsafefast(self) -> None:
+    def test_unsafefast_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strprint.vale"], "unsafe-fast", 42)
-    def test_strprint_resilientv0(self) -> None:
+    def test_resilientv0_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strprint.vale"], "resilient-v0", 42)
-    def test_strprint_resilientv1(self) -> None:
+    def test_resilientv1_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strprint.vale"], "resilient-v1", 42)
-    def test_strprint_resilientv2(self) -> None:
+    def test_resilientv2_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strprint.vale"], "resilient-v2", 42)
-    def test_strprint_naiverc(self) -> None:
+    def test_naiverc_strprint(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/strprint.vale"], "naive-rc", 42)
 
-    def test_inttostr_assist(self) -> None:
+    def test_assist_inttostr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/inttostr.vale"], "assist", 42)
-    def test_inttostr_unsafefast(self) -> None:
+    def test_unsafefast_inttostr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/inttostr.vale"], "unsafe-fast", 42)
-    def test_inttostr_resilientv0(self) -> None:
+    def test_resilientv0_inttostr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/inttostr.vale"], "resilient-v0", 42)
-    def test_inttostr_resilientv1(self) -> None:
+    def test_resilientv1_inttostr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/inttostr.vale"], "resilient-v1", 42)
-    def test_inttostr_resilientv2(self) -> None:
+    def test_resilientv2_inttostr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/inttostr.vale"], "resilient-v2", 42)
-    def test_inttostr_naiverc(self) -> None:
+    def test_naiverc_inttostr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "strings/inttostr.vale"], "naive-rc", 42)
 
-    def test_nestedif_assist(self) -> None:
+    def test_assist_nestedif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/nestedif.vale"], "assist", 42)
-    def test_nestedif_unsafefast(self) -> None:
+    def test_unsafefast_nestedif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/nestedif.vale"], "unsafe-fast", 42)
-    def test_nestedif_resilientv0(self) -> None:
+    def test_resilientv0_nestedif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/nestedif.vale"], "resilient-v0", 42)
-    def test_nestedif_resilientv1(self) -> None:
+    def test_resilientv1_nestedif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/nestedif.vale"], "resilient-v1", 42)
-    def test_nestedif_resilientv2(self) -> None:
+    def test_resilientv2_nestedif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/nestedif.vale"], "resilient-v2", 42)
-    def test_nestedif_naiverc(self) -> None:
+    def test_naiverc_nestedif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "if/nestedif.vale"], "naive-rc", 42)
 
-    def test_unstackifyret_assist(self) -> None:
+    def test_assist_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unstackifyret.vale"], "assist", 42)
-    def test_unstackifyret_unsafefast(self) -> None:
+    def test_unsafefast_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unstackifyret.vale"], "unsafe-fast", 42)
-    def test_unstackifyret_resilientv0(self) -> None:
+    def test_resilientv0_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unstackifyret.vale"], "resilient-v0", 42)
-    def test_unstackifyret_resilientv1(self) -> None:
+    def test_resilientv1_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unstackifyret.vale"], "resilient-v1", 42)
-    def test_unstackifyret_resilientv2(self) -> None:
+    def test_resilientv2_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unstackifyret.vale"], "resilient-v2", 42)
-    def test_unstackifyret_naiverc(self) -> None:
+    def test_naiverc_unstackifyret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unstackifyret.vale"], "naive-rc", 42)
 
-    def test_swapmutusadestroy_assist(self) -> None:
+    def test_assist_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/swapmutusadestroy.vale"], "assist", 42)
-    def test_swapmutusadestroy_unsafefast(self) -> None:
+    def test_unsafefast_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/swapmutusadestroy.vale"], "unsafe-fast", 42)
-    def test_swapmutusadestroy_resilientv0(self) -> None:
+    def test_resilientv0_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/swapmutusadestroy.vale"], "resilient-v0", 42)
-    def test_swapmutusadestroy_resilientv1(self) -> None:
+    def test_resilientv1_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/swapmutusadestroy.vale"], "resilient-v1", 42)
-    def test_swapmutusadestroy_resilientv2(self) -> None:
+    def test_resilientv2_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/swapmutusadestroy.vale"], "resilient-v2", 42)
-    def test_swapmutusadestroy_naiverc(self) -> None:
+    def test_naiverc_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "arrays/swapmutusadestroy.vale"], "naive-rc", 42)
 
-    def test_unreachablemoot_assist(self) -> None:
+    def test_assist_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "assist", 42)
-    def test_unreachablemoot_unsafefast(self) -> None:
+    def test_unsafefast_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "unsafe-fast", 42)
-    def test_unreachablemoot_resilientv0(self) -> None:
+    def test_resilientv0_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "resilient-v0", 42)
-    def test_unreachablemoot_resilientv1(self) -> None:
+    def test_resilientv1_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "resilient-v1", 42)
-    def test_unreachablemoot_resilientv2(self) -> None:
+    def test_resilientv2_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "resilient-v2", 42)
-    def test_unreachablemoot_naiverc(self) -> None:
+    def test_naiverc_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "unreachablemoot.vale"], "naive-rc", 42)
 
-    def test_panic_assist(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "assist", 42)
-    def test_panic_unsafefast(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "unsafe-fast", 42)
-    def test_panic_resilientv0(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v0", 42)
-    def test_panic_resilientv1(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v1", 42)
-    def test_panic_resilientv2(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v2", 42)
-    def test_panic_naiverc(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "naive-rc", 42)
+    def test_assist_panic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "assist", 255)
+    def test_unsafefast_panic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "unsafe-fast", 255)
+    def test_resilientv0_panic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v0", 255)
+    def test_resilientv1_panic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v1", 255)
+    def test_resilientv2_panic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "resilient-v2", 255)
+    def test_naiverc_panic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panic.vale"], "naive-rc", 255)
 
-    def test_nestedblocks_assist(self) -> None:
+    def test_assist_panicnot(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "assist", 42)
+    def test_unsafefast_panicnot(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "unsafe-fast", 42)
+    def test_resilientv0_panicnot(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "resilient-v0", 42)
+    def test_resilientv1_panicnot(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "resilient-v1", 42)
+    def test_resilientv2_panicnot(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "resilient-v2", 42)
+    def test_naiverc_panicnot(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "panicnot.vale"], "naive-rc", 42)
+
+    def test_assist_nestedblocks(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "assist", 42)
-    def test_nestedblocks_unsafefast(self) -> None:
+    def test_unsafefast_nestedblocks(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "unsafe-fast", 42)
-    def test_nestedblocks_resilientv0(self) -> None:
+    def test_resilientv0_nestedblocks(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "resilient-v0", 42)
-    def test_nestedblocks_resilientv1(self) -> None:
+    def test_resilientv1_nestedblocks(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "resilient-v1", 42)
-    def test_nestedblocks_resilientv2(self) -> None:
+    def test_resilientv2_nestedblocks(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "resilient-v2", 42)
-    def test_nestedblocks_naiverc(self) -> None:
+    def test_naiverc_nestedblocks(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "nestedblocks.vale"], "naive-rc", 42)
 
-    def test_dropThenLockStruct_assist(self) -> None:
+    def test_assist_weakDropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 42)
-    def test_dropThenLockStruct_unsafefast(self) -> None:
+    def test_unsafefast_weakDropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 42)
-    def test_dropThenLockStruct_resilientv0(self) -> None:
+    def test_resilientv0_weakDropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 42)
-    def test_dropThenLockStruct_resilientv1(self) -> None:
+    def test_resilientv1_weakDropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 42)
-    def test_dropThenLockStruct_resilientv2(self) -> None:
+    def test_resilientv2_weakDropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 42)
-    def test_dropThenLockStruct_naiverc(self) -> None:
+    def test_naiverc_weakDropThenLockStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 42)
 
-    def test_lockWhileLiveStruct_assist(self) -> None:
+    def test_assist_weakLockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_lockWhileLiveStruct_unsafefast(self) -> None:
+    def test_unsafefast_weakLockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_lockWhileLiveStruct_resilientv0(self) -> None:
+    def test_resilientv0_weakLockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_lockWhileLiveStruct_resilientv1(self) -> None:
+    def test_resilientv1_weakLockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_lockWhileLiveStruct_resilientv2(self) -> None:
+    def test_resilientv2_weakLockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_lockWhileLiveStruct_naiverc(self) -> None:
+    def test_naiverc_weakLockWhileLiveStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_weakFromLocalCRefStruct_assist(self) -> None:
+    def test_assist_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_weakFromLocalCRefStruct_unsafefast(self) -> None:
+    def test_unsafefast_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_weakFromLocalCRefStruct_resilientv0(self) -> None:
+    def test_resilientv0_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_weakFromLocalCRefStruct_resilientv1(self) -> None:
+    def test_resilientv1_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_weakFromLocalCRefStruct_resilientv2(self) -> None:
+    def test_resilientv2_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_weakFromLocalCRefStruct_naiverc(self) -> None:
+    def test_naiverc_weakFromLocalCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_weakFromCRefStruct_assist(self) -> None:
+    def test_assist_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_weakFromCRefStruct_unsafefast(self) -> None:
+    def test_unsafefast_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_weakFromCRefStruct_resilientv0(self) -> None:
+    def test_resilientv0_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_weakFromCRefStruct_resilientv1(self) -> None:
+    def test_resilientv1_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_weakFromCRefStruct_resilientv2(self) -> None:
+    def test_resilientv2_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_weakFromCRefStruct_naiverc(self) -> None:
+    def test_naiverc_weakFromCRefStruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefStruct.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_loadFromWeakable_assist(self) -> None:
+    def test_assist_loadFromWeakable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_loadFromWeakable_unsafefast(self) -> None:
+    def test_unsafefast_loadFromWeakable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_loadFromWeakable_resilientv0(self) -> None:
+    def test_resilientv0_loadFromWeakable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_loadFromWeakable_resilientv1(self) -> None:
+    def test_resilientv1_loadFromWeakable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_loadFromWeakable_resilientv2(self) -> None:
+    def test_resilientv2_loadFromWeakable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_loadFromWeakable_naiverc(self) -> None:
+    def test_naiverc_loadFromWeakable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/loadFromWeakable.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_dropThenLockInterface_assist(self) -> None:
+    def test_assist_weakDropThenLockInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 42)
-    def test_dropThenLockInterface_unsafefast(self) -> None:
+    def test_unsafefast_weakDropThenLockInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 42)
-    def test_dropThenLockInterface_resilientv0(self) -> None:
+    def test_resilientv0_weakDropThenLockInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 42)
-    def test_dropThenLockInterface_resilientv1(self) -> None:
+    def test_resilientv1_weakDropThenLockInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 42)
-    def test_dropThenLockInterface_resilientv2(self) -> None:
+    def test_resilientv2_weakDropThenLockInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 42)
-    def test_dropThenLockInterface_naiverc(self) -> None:
+    def test_naiverc_weakDropThenLockInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/dropThenLockInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 42)
 
-    def test_lockWhileLiveInterface_assist(self) -> None:
+    def test_assist_weakLockWhileLiveInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_lockWhileLiveInterface_unsafefast(self) -> None:
+    def test_unsafefast_weakLockWhileLiveInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_lockWhileLiveInterface_resilientv0(self) -> None:
+    def test_resilientv0_weakLockWhileLiveInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_lockWhileLiveInterface_resilientv1(self) -> None:
+    def test_resilientv1_weakLockWhileLiveInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_lockWhileLiveInterface_resilientv2(self) -> None:
+    def test_resilientv2_weakLockWhileLiveInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_lockWhileLiveInterface_naiverc(self) -> None:
+    def test_naiverc_weakLockWhileLiveInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/lockWhileLiveInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_weakFromLocalCRefInterface_assist(self) -> None:
+    def test_assist_weakFromLocalCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_weakFromLocalCRefInterface_unsafefast(self) -> None:
+    def test_unsafefast_weakFromLocalCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_weakFromLocalCRefInterface_resilientv0(self) -> None:
+    def test_resilientv0_weakFromLocalCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_weakFromLocalCRefInterface_resilientv1(self) -> None:
+    def test_resilientv1_weakFromLocalCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_weakFromLocalCRefInterface_resilientv2(self) -> None:
+    def test_resilientv2_weakFromLocalCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_weakFromLocalCRefInterface_naiverc(self) -> None:
+    def test_naiverc_weakFromLocalCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromLocalCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_weakFromCRefInterface_assist(self) -> None:
+    def test_assist_weakFromCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 7)
-    def test_weakFromCRefInterface_unsafefast(self) -> None:
+    def test_unsafefast_weakFromCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 7)
-    def test_weakFromCRefInterface_resilientv0(self) -> None:
+    def test_resilientv0_weakFromCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 7)
-    def test_weakFromCRefInterface_resilientv1(self) -> None:
+    def test_resilientv1_weakFromCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 7)
-    def test_weakFromCRefInterface_resilientv2(self) -> None:
+    def test_resilientv2_weakFromCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 7)
-    def test_weakFromCRefInterface_naiverc(self) -> None:
+    def test_naiverc_weakFromCRefInterface(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/weakFromCRefInterface.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 7)
 
-    def test_callWeakSelfMethodWhileLive_assist(self) -> None:
+    def test_assist_weakSelfMethodCallWhileLive(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 42)
-    def test_callWeakSelfMethodWhileLive_unsafefast(self) -> None:
+    def test_unsafefast_weakSelfMethodCallWhileLive(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 42)
-    def test_callWeakSelfMethodWhileLive_resilientv0(self) -> None:
+    def test_resilientv0_weakSelfMethodCallWhileLive(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 42)
-    def test_callWeakSelfMethodWhileLive_resilientv1(self) -> None:
+    def test_resilientv1_weakSelfMethodCallWhileLive(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 42)
-    def test_callWeakSelfMethodWhileLive_resilientv2(self) -> None:
+    def test_resilientv2_weakSelfMethodCallWhileLive(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 42)
-    def test_callWeakSelfMethodWhileLive_naiverc(self) -> None:
+    def test_naiverc_weakSelfMethodCallWhileLive(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodWhileLive.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 42)
 
-    def test_callWeakSelfMethodAfterDrop_assist(self) -> None:
+    def test_assist_weakSelfMethodCallAfterDrop(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "assist", 0)
-    def test_callWeakSelfMethodAfterDrop_unsafefast(self) -> None:
+    def test_unsafefast_weakSelfMethodCallAfterDrop(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "unsafe-fast", 0)
-    def test_callWeakSelfMethodAfterDrop_resilientv0(self) -> None:
+    def test_resilientv0_weakSelfMethodCallAfterDrop(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v0", 0)
-    def test_callWeakSelfMethodAfterDrop_resilientv1(self) -> None:
+    def test_resilientv1_weakSelfMethodCallAfterDrop(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v1", 0)
-    def test_callWeakSelfMethodAfterDrop_resilientv2(self) -> None:
+    def test_resilientv2_weakSelfMethodCallAfterDrop(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "resilient-v2", 0)
-    def test_callWeakSelfMethodAfterDrop_naiverc(self) -> None:
+    def test_naiverc_weakSelfMethodCallAfterDrop(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "weaks/callWeakSelfMethodAfterDrop.vale", PATH_TO_SAMPLES + "genericvirtuals/opt.vale"], "naive-rc", 0)
 
 

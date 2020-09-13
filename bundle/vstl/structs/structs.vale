@@ -1,0 +1,6 @@
+
+struct MyStruct { a int; }
+
+struct OtherStruct { b MyStruct; }
+
+fn main() { ms = OtherStruct(MyStruct(11)); = ms.b.a; }

@@ -4,113 +4,64 @@
 
 #include "shared.h"
 #include "weaks.h"
-#include "controlblock.h"
+#include "region/common/controlblock.h"
+
 
 LLVMValueRef getStructContentsPtr(
-    LLVMBuilderRef builder, LLVMValueRef concretePtrLE) {
+    LLVMBuilderRef builder,
+    WrapperPtrLE wrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      concretePtrLE,
+      wrapperPtrLE.refLE,
       1, // Inner struct is after the control block.
       "contentsPtr");
 }
 
-LLVMValueRef loadInnerStructMember(
-    LLVMBuilderRef builder,
-    LLVMValueRef innerStructPtrLE,
-    int memberIndex,
-    const std::string& memberName) {
-  assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
-
-  auto result =
-      LLVMBuildLoad(
-          builder,
-          LLVMBuildStructGEP(
-              builder, innerStructPtrLE, memberIndex, memberName.c_str()),
-          memberName.c_str());
-  return result;
-}
-
-void storeInnerStructMember(
-    LLVMBuilderRef builder,
-    LLVMValueRef innerStructPtrLE,
-    int memberIndex,
-    const std::string& memberName,
-    LLVMValueRef newValueLE) {
-  assert(LLVMGetTypeKind(LLVMTypeOf(innerStructPtrLE)) == LLVMPointerTypeKind);
-  LLVMBuildStore(
-      builder,
-      newValueLE,
-      LLVMBuildStructGEP(
-          builder, innerStructPtrLE, memberIndex, memberName.c_str()));
-}
-
-LLVMValueRef loadMember(
+Ref loadMember(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* structRefM,
-    LLVMValueRef structRefLE,
+    Ref structRef,
     Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
     Reference* resultType,
     const std::string& memberName) {
-
-  LLVMValueRef sourceRefLE = nullptr;
-  if (structRefM->location == Location::INLINE) {
-    sourceRefLE =
-        LLVMBuildExtractValue(
-            builder, structRefLE, memberIndex, memberName.c_str());
-  } else if (structRefM->location == Location::YONDER) {
-    if (structRefM->ownership == Ownership::OWN || structRefM->ownership == Ownership::BORROW || structRefM->ownership == Ownership::SHARE) {
-      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, structRefLE);
-      sourceRefLE =
-          loadInnerStructMember(
-              builder, innerStructPtrLE, memberIndex, memberName);
-    } else if (structRefM->ownership == Ownership::WEAK) {
-      auto thing = derefMaybeWeakRef(from, globalState, functionState, builder, structRefM,
-          structRefLE);
-      LLVMValueRef innerStructPtrLE = getStructContentsPtr(builder, thing);
-      sourceRefLE =
-          loadInnerStructMember(
-              builder, innerStructPtrLE, memberIndex, memberName);
-    } else assert(false);
-  } else {
-    assert(false);
-    return nullptr;
-  }
-
-  auto resultRefLE = load(globalState, functionState, builder, memberType, resultType, sourceRefLE);
-  acquireReference(from, globalState, functionState, builder, resultType, resultRefLE);
-  return resultRefLE;
+  auto memberRef =
+      functionState->defaultRegion->loadMember(
+          functionState, builder, structRefM, structRef, memberIndex, memberType, resultType, memberName);
+  functionState->defaultRegion->alias(from, functionState, builder, resultType, memberRef);
+  return memberRef;
 }
 
-LLVMValueRef swapMember(
+Ref swapMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     StructDefinition* structDefM,
-    Reference* structRefM,
-    LLVMValueRef structRefLE,
+    Reference* structRefMT,
+    Ref structRef,
     int memberIndex,
     const std::string& memberName,
-    LLVMValueRef newMemberLE) {
+    Ref newMemberRef) {
+  auto memberRefMT = structDefM->members[memberIndex]->type;
 
-  LLVMValueRef objPtrLE = derefMaybeWeakRef(FL(), globalState, functionState, builder, structRefM, structRefLE);
-  auto innerStructPtrLE = getStructContentsPtr(builder, objPtrLE);
+  structRef.assertOwnership(Ownership::BORROW);
 
   assert(structDefM->mutability == Mutability::MUTABLE);
 
-  LLVMValueRef oldMember =
-      loadInnerStructMember(
-          builder, innerStructPtrLE, memberIndex, memberName);
+  Ref oldMember =
+      functionState->defaultRegion->loadMember(
+          functionState, builder, structRefMT, structRef, memberIndex, memberRefMT, memberRefMT, memberName);
   // We don't adjust the oldMember's RC here because even though we're acquiring
   // a reference to it, the struct is losing its reference, so it cancels out.
 
-  storeInnerStructMember(
-      builder, innerStructPtrLE, memberIndex, memberName, newMemberLE);
+  auto newMemberLE =
+      globalState->region->checkValidReference(FL(), functionState, builder, memberRefMT, newMemberRef);
+  functionState->defaultRegion->storeMember(
+      functionState, builder, structRefMT, structRef, memberIndex, memberName, newMemberLE);
   // We don't adjust the newMember's RC here because even though the struct is
   // acquiring a reference to it, we're losing ours, so it cancels out.
 

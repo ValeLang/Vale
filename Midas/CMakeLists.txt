@@ -59,6 +59,9 @@ add_executable(valec
 		src/c-compiler/translatetype.cpp
         src/c-compiler/valeopts.cpp
 
+		src/c-compiler/utils/counters.cpp
+		src/c-compiler/utils/common.cpp
+
 		src/c-compiler/function/function.cpp
 		src/c-compiler/function/expression.cpp
 
@@ -81,13 +84,26 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/shared.cpp
 		src/c-compiler/function/expressions/shared/weaks.cpp
 		src/c-compiler/function/expressions/shared/alias.cpp
-		src/c-compiler/function/expressions/shared/branch.cpp
+		src/c-compiler/utils/branch.cpp
 		src/c-compiler/function/expressions/shared/string.cpp
-		src/c-compiler/function/expressions/shared/heap.cpp
-		src/c-compiler/function/expressions/shared/controlblock.cpp
+        src/c-compiler/region/common/heap.cpp
+		src/c-compiler/region/common/controlblock.cpp
+		src/c-compiler/function/expressions/shared/ref.cpp
 
-		src/c-compiler/utils/fileio.cpp
-		src/c-compiler/utils/options.cpp)
+		src/c-compiler/region/common/common.cpp
+		src/c-compiler/region/common/defaultlayout/structs.cpp
+        src/c-compiler/region/common/defaultlayout/structsrouter.cpp
+		src/c-compiler/region/common/defaultimmutables/defaultimmutables.cpp
+		src/c-compiler/region/common/lgtweaks/lgtweaks.cpp
+		src/c-compiler/region/common/wrcweaks/wrcweaks.cpp
+		src/c-compiler/region/common/hgm/hgm.cpp
+		src/c-compiler/region/common/fatweaks/fatweaks.cpp
+		src/c-compiler/region/assist/assist.cpp
+		src/c-compiler/region/mega/mega.cpp
+		src/c-compiler/region/regions.cpp
+
+        src/c-compiler/fileio.cpp
+        src/c-compiler/options.cpp)
 
 target_link_libraries(valec ${llvm_libs})
 

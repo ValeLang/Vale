@@ -5,11 +5,14 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.vimpl
+import net.verdagon.vale.{Err, Ok, Result, vimpl}
 
 import scala.util.parsing.input.OffsetPosition
 
-sealed trait IScoutError
+case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
+
+sealed trait ICompileErrorS
+case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
 
 sealed trait IEnvironment {
   def file: Int
@@ -76,20 +79,26 @@ object Scout {
 //  val unrunedParamOverrideRuneSuffix = "Override"
 //  val unnamedMemberNameSeparator = "_mem_"
 
-  def scoutProgram(files: List[FileP]): ProgramS = {
-    val programsS =
-      files.zipWithIndex.map({ case (FileP(topLevelThings), file) =>
-        val structsS = topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(file, _));
-        val interfacesS = topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(file, _));
-        val implsS = topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(file, _))
-        val functionsS = topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(file, _))
-        ProgramS(structsS, interfacesS, implsS, functionsS)
-      })
-    ProgramS(
-      programsS.flatMap(_.structs),
-      programsS.flatMap(_.interfaces),
-      programsS.flatMap(_.impls),
-      programsS.flatMap(_.implementedFunctions))
+  def scoutProgram(files: List[FileP]): Result[ProgramS, ICompileErrorS] = {
+    try {
+      val programsS =
+        files.zipWithIndex.map({ case (FileP(topLevelThings), file) =>
+          val structsS = topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(file, _));
+          val interfacesS = topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(file, _));
+          val implsS = topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(file, _))
+          val functionsS = topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(file, _))
+          ProgramS(structsS, interfacesS, implsS, functionsS)
+        })
+      val programS =
+        ProgramS(
+          programsS.flatMap(_.structs),
+          programsS.flatMap(_.interfaces),
+          programsS.flatMap(_.impls),
+          programsS.flatMap(_.implementedFunctions))
+      Ok(programS)
+    } catch {
+      case CompileErrorExceptionS(err) => Err(err)
+    }
   }
 
   private def scoutImpl(file: Int, impl0: ImplP): ImplS = {

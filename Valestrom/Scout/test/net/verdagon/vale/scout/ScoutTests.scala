@@ -3,14 +3,31 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{Err, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => Scout.scoutProgram(List(program0))
+      case ParseSuccess(program0) => {
+        Scout.scoutProgram(List(program0)) match {
+          case Err(e) => vfail(e.toString)
+          case Ok(t) => t
+        }
+      }
+    }
+  }
+
+  private def compileForError(code: String): ICompileErrorS = {
+    Parser.runParser(code) match {
+      case ParseFailure(err) => fail(err.toString)
+      case ParseSuccess(program0) => {
+        Scout.scoutProgram(List(program0)) match {
+          case Err(e) => e
+          case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
+        }
+      }
     }
   }
 
@@ -20,7 +37,7 @@ class ScoutTests extends FunSuite with Matchers {
     
     val CodeBody1(BodySE(_, block)) = main.body
     block match {
-      case BlockSE(_, List(FunctionCallSE(_, FunctionLoadSE(_, GlobalFunctionFamilyNameS("+")), _))) =>
+      case BlockSE(_, List(FunctionCallSE(_, OutsideLoadSE(_, "+"), _))) =>
     }
   }
 
@@ -123,7 +140,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, block)) = main.body
     block match {
-      case BlockSE(_, List(_, FunctionCallSE(_, FunctionLoadSE(_, GlobalFunctionFamilyNameS("shout")), List(LendSE(LocalLoadSE(_,name, BorrowP), BorrowP))))) => {
+      case BlockSE(_, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LendSE(LocalLoadSE(_,name, BorrowP), BorrowP))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -137,7 +154,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, block)) = main.body
     block match {
-      case BlockSE(_, List(_, FunctionCallSE(_, FunctionLoadSE(_, GlobalFunctionFamilyNameS("shout")), List(LocalLoadSE(_,_, OwnP))))) =>
+      case BlockSE(_, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LocalLoadSE(_,_, OwnP))))) =>
     }
   }
 
@@ -193,7 +210,7 @@ class ScoutTests extends FunSuite with Matchers {
             AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             BoolLiteralSE(true)),
           FunctionCallSE(_,
-            FunctionLoadSE(_, GlobalFunctionFamilyNameS("MyStruct")),
+            OutsideLoadSE(_, "MyStruct"),
             List(
               LocalLoadSE(_,ConstructingMemberNameS("x"),OwnP),
               LocalLoadSE(_,ConstructingMemberNameS("y"),OwnP))))) =>
@@ -223,7 +240,7 @@ class ScoutTests extends FunSuite with Matchers {
             AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
             LendSE(LocalLoadSE(_,ConstructingMemberNameS("x"),BorrowP), BorrowP)),
           FunctionCallSE(_,
-            FunctionLoadSE(_, GlobalFunctionFamilyNameS("MyStruct")),
+            OutsideLoadSE(_, "MyStruct"),
             List(
               LocalLoadSE(_,ConstructingMemberNameS("x"),OwnP),
               LocalLoadSE(_,ConstructingMemberNameS("y"),OwnP))))) =>
@@ -246,9 +263,20 @@ class ScoutTests extends FunSuite with Matchers {
             List(LocalVariable1(CodeVarNameS("this"),FinalP,Used,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed)),
             List(
               FunctionCallSE(_,
-                FunctionLoadSE(_, GlobalFunctionFamilyNameS("println")),
+                OutsideLoadSE(_, "println"),
                 List(DotSE(_, LocalLoadSE(_,CodeVarNameS("this"),BorrowP),"x",true))),
               VoidSE())))) =>
+    }
+  }
+
+  test("Reports when mutating nonexistant local") {
+    val err = compileForError(
+      """fn main() {
+        |  mut a = a + 1;
+        |}
+        |""".stripMargin)
+    err match {
+      case CouldntFindVarToMutateS(_, "a") =>
     }
   }
 }

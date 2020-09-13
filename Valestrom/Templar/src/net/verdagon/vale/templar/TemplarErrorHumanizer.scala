@@ -39,9 +39,9 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Function " + printableName(filenamesAndSources, functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
       }
-      case CouldntFindFunctionToLoadT(range, GlobalFunctionFamilyNameA(name)) => {
+      case CouldntFindIdentifierToLoadT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
-          ": Couldn't find any function named `" + name + "`!"
+          ": Couldn't find anything named `" + name + "`!"
       }
       case CouldntFindTypeT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +

@@ -8,13 +8,13 @@ class HashSetTest extends FunSuite with Matchers {
   test("Hash set from KSA") {
     val compile = new Compilation(
       List(
-        ("castutils.vale" -> Samples.get("castutils.vale")),
-        ("printutils.vale" -> Samples.get("printutils.vale")),
-        ("generics/arrayutils.vale" -> Samples.get("generics/arrayutils.vale")),
-        ("genericvirtuals/opt.vale" -> Samples.get("genericvirtuals/opt.vale")),
-        ("genericvirtuals/optingarraylist.vale" -> Samples.get("genericvirtuals/optingarraylist.vale")),
-        ("genericvirtuals/hashset.vale" -> Samples.get("genericvirtuals/hashset.vale")),
-        ("utils.vale" -> Samples.get("utils.vale")),
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("libraries/arrayutils.vale" -> Samples.get("libraries/arrayutils.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashset.vale" -> Samples.get("libraries/hashset.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" ->
           """
             |fn main() {
@@ -33,13 +33,13 @@ class HashSetTest extends FunSuite with Matchers {
   test("Hash set from Array") {
     val compile = new Compilation(
       List(
-        ("castutils.vale" -> Samples.get("castutils.vale")),
-        ("printutils.vale" -> Samples.get("printutils.vale")),
-        ("generics/arrayutils.vale" -> Samples.get("generics/arrayutils.vale")),
-        ("genericvirtuals/opt.vale" -> Samples.get("genericvirtuals/opt.vale")),
-        ("genericvirtuals/optingarraylist.vale" -> Samples.get("genericvirtuals/optingarraylist.vale")),
-        ("genericvirtuals/hashset.vale" -> Samples.get("genericvirtuals/hashset.vale")),
-        ("utils.vale" -> Samples.get("utils.vale")),
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("libraries/arrayutils.vale" -> Samples.get("libraries/arrayutils.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashset.vale" -> Samples.get("libraries/hashset.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" ->
           """
             |fn main() {
@@ -57,12 +57,12 @@ class HashSetTest extends FunSuite with Matchers {
 
   test("Hash set has") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-        Samples.get("genericvirtuals/optingarraylist.vale") +
-        Samples.get("genericvirtuals/hashset.vale") +
-        Samples.get("utils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+      Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        Samples.get("libraries/hashset.vale") +
+        Samples.get("libraries/utils.vale") +
         """
           |fn main() {
           |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
@@ -86,12 +86,12 @@ class HashSetTest extends FunSuite with Matchers {
 
   test("Hash set toArray") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-        Samples.get("genericvirtuals/optingarraylist.vale") +
-        Samples.get("genericvirtuals/hashset.vale") +
-        Samples.get("utils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+      Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        Samples.get("libraries/hashset.vale") +
+        Samples.get("libraries/utils.vale") +
         """
           |fn main() {
           |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
@@ -114,12 +114,12 @@ class HashSetTest extends FunSuite with Matchers {
 
   test("Hash set remove") {
     val compile = Compilation(
-      Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-      Samples.get("genericvirtuals/opt.vale") +
-        Samples.get("genericvirtuals/optingarraylist.vale") +
-        Samples.get("genericvirtuals/hashset.vale") +
-        Samples.get("utils.vale") +
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+      Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        Samples.get("libraries/hashset.vale") +
+        Samples.get("libraries/utils.vale") +
         """
           |fn main() {
           |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);

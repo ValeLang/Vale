@@ -1,8 +1,0 @@
-
-fn main() int {
-  x = 4;
-  {
-    mut x = x + 1;
-  }();
-  x
-}

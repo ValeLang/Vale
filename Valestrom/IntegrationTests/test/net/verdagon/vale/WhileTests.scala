@@ -43,8 +43,8 @@ class WhileTests extends FunSuite with Matchers {
         |  = key;
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale"))
 
     compile.evalForReferend(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
   }
@@ -60,9 +60,9 @@ class WhileTests extends FunSuite with Matchers {
         |  = key;
         |}
       """.stripMargin +
-        Samples.get("castutils.vale") +
-        Samples.get("printutils.vale") +
-        Samples.get("utils.vale"))
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/utils.vale"))
 
     compile.evalForReferend(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
   }

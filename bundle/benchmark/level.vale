@@ -1,0 +1,5 @@
+struct Level {
+    max_width int;
+    max_height int;
+    tiles HashMap<Location, Tile, LocationHasher, LocationEquator>;
+}

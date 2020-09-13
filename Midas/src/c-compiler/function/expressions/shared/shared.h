@@ -10,21 +10,17 @@
 #include "metal/instructions.h"
 #include "globalstate.h"
 #include "function/function.h"
-#include "utils/fileio.h"
+#include "fileio.h"
+#include "ref.h"
 
-struct AreaAndFileAndLine {
-  std::string area;
-  std::string file;
-  int line;
-};
 
-// File and Line
-#define FL() (AreaAndFileAndLine{ "", __FILE__, __LINE__ })
-// Area and File and Line
-#define AFL(area) (AreaAndFileAndLine{ (area), __FILE__, __LINE__ })
-
-LLVMValueRef makeNever();
 LLVMTypeRef makeNeverType();
+
+LLVMValueRef makeEmptyTuple(
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
+
+Ref makeEmptyTupleRef(
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
 
 LLVMValueRef makeMidasLocal(
     FunctionState* functionState,
@@ -39,43 +35,8 @@ void makeHammerLocal(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
-    LLVMValueRef valueToStore);
+    Ref valueToStore);
 
-void acquireReference(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceRef,
-    LLVMValueRef expr);
-
-void discard(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* sourceRef,
-    LLVMValueRef expr);
-
-
-LLVMValueRef getStructContentsPtr(LLVMBuilderRef builder, LLVMValueRef structPtrLE);
-
-LLVMValueRef adjustCounter(
-    LLVMBuilderRef builder,
-    LLVMValueRef counterPtrLE,
-    // Amount to add. Can be negative.
-    int adjustAmount);
-
-LLVMValueRef getTablePtrFromInterfaceRef(
-    LLVMBuilderRef builder,
-    LLVMValueRef interfaceRefLE);
-
-LLVMValueRef getControlBlockPtr(
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef referenceLE,
-    Referend* referendM);
 
 // Returns the new RC
 LLVMValueRef adjustStrongRc(
@@ -83,7 +44,7 @@ LLVMValueRef adjustStrongRc(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef exprLE,
+    Ref exprLE,
     Reference* refM,
     int amount);
 
@@ -91,10 +52,7 @@ LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     Reference* refM,
-    LLVMValueRef exprLE);
-
-LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
-LLVMValueRef isNonZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE);
+    ControlBlockPtrLE exprLE);
 
 
 void buildAssert(
@@ -107,6 +65,7 @@ void buildAssert(
 
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
+void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, Ref ref);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, int num);
 
 template<typename First, typename... Rest>
@@ -155,12 +114,12 @@ inline void buildFlare(
   }
 }
 
-LLVMValueRef buildInterfaceCall(
+Ref buildInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* virtualParamMT,
-    std::vector<LLVMValueRef> argExprsLE,
+    Prototype* prototype,
+    std::vector<Ref> argRefs,
     int virtualParamIndex,
     int indexInEdge);
 
@@ -186,56 +145,12 @@ void buildAssertCensusContains(
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);
 
-void checkValidReference(
-    AreaAndFileAndLine checkerAFL,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    LLVMValueRef refLE);
-
-
-LLVMValueRef buildCall(
+Ref buildCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
-    std::vector<LLVMValueRef> argsLE);
-
-LLVMValueRef upcast2(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceStructTypeM,
-    StructReferend* sourceStructReferendM,
-    LLVMValueRef sourceRefLE,
-    Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM);
-
-// TODO move these into region classes
-Ownership getEffectiveOwnership(GlobalState* globalState, UnconvertedOwnership ownership);
-Reference* getEffectiveType(GlobalState* globalState, UnconvertedReference* refM);
-Weakability getEffectiveWeakability(GlobalState* globalState, RawArrayT* array);
-Weakability getEffectiveWeakability(GlobalState* globalState, StructDefinition* structDef);
-Weakability getEffectiveWeakability(GlobalState* globalState, InterfaceDefinition* interfaceDef);
-std::vector<Reference*> getEffectiveTypes(GlobalState* globalState, std::vector<UnconvertedReference*> refsM);
-
-// Loads from either a local or a member, and does the appropriate casting.
-LLVMValueRef load(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceType,
-    Reference* targetType,
-    LLVMValueRef sourceRefLE);
-
-LLVMValueRef makeInterfaceRefStruct(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    StructReferend* sourceStructReferendM,
-    InterfaceReferend* targetInterfaceReferendM,
-    LLVMValueRef controlBlockPtrLE);
+    std::vector<Ref> argRefs);
 
 
 LLVMValueRef addExtern(
@@ -247,14 +162,5 @@ LLVMValueRef addExtern(
 inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
 }
-
-void discardOwningRef(
-    AreaAndFileAndLine from,
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* sourceTypeM,
-    LLVMValueRef exprLE);
 
 #endif

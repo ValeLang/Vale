@@ -1,0 +1,40 @@
+interface Opt<T> rules(T Ref) { }
+struct Some<T> rules(T Ref) { value T; }
+impl<T> Opt<T> for Some<T>;
+struct None<T> rules(T Ref) { }
+impl<T> Opt<T> for None<T>;
+
+fn empty?<T>(virtual opt &Opt<T>) bool abstract;
+fn empty?<T>(opt &None<T> impl Opt<T>) bool { true }
+fn empty?<T>(opt &Some<T> impl Opt<T>) bool { false }
+
+fn get<T>(virtual opt Opt<T>) T abstract;
+fn get<T>(opt None<T> impl Opt<T>) T { __panic() }
+fn get<T>(opt Some<T> impl Opt<T>) T {
+  Some<T>(value) = opt;
+  = value;
+}
+
+fn get<T>(virtual opt &Opt<T>) &T abstract;
+fn get<T>(opt &None<T> impl Opt<T>) &T { panic("Called get() on a None!") }
+fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
+
+fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
+fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
+  default
+}
+fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
+  opt.value
+}
+
+fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> abstract;
+fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
+  None<R>()
+}
+fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, &T, R>) Opt<R> {
+  Some<R>(func(opt.value))
+}
+
+fn getSize<T>(virtual opt &Opt<T>) int abstract;
+fn getSize<T>(opt &None<T> impl Opt<T>) int { 0 }
+fn getSize<T>(opt &Some<T> impl Opt<T>) int { 1 }

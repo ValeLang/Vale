@@ -1,0 +1,5 @@
+
+fn main() int {
+  print("Hello");
+  = 42;
+}

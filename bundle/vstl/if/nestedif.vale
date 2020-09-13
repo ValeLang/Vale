@@ -1,0 +1,9 @@
+// This is here because we had a bug where our LLVMBuildPhi area of code was
+// mistakenly trying to correctly pull a value from the then's final block but
+// incorrectly say it was from the then's starting block (same with else).
+
+fn main() int {
+  = if (false) { 73 }
+    else if (true) { 42 }
+    else { 62 }
+}

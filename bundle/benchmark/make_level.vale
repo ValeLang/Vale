@@ -1,0 +1,513 @@
+
+fn make_level(
+    max_width int,
+    max_height int,
+    rand &!LCGRand)
+Level {
+    level = Level(
+        max_width,
+        max_height,
+        HashMap<Location, Tile, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator()));
+
+    // This is a 2D array of booleans which represent our walkable and
+    // non-walkable locations.
+    // All `true` tiles will become floors.
+    // All `false` tiles will become walls or open space, depending on whether
+    // they're next to a floor.
+    walkabilities = List<List<bool>>();
+
+    x! = 0;
+    while (x < max_width) {
+      y! = 0;
+
+      thisCol = List<bool>();
+
+      while (y < max_height) {
+        half_max_width = max_width / 2;
+        half_max_height = max_height / 2;
+        inside_ellipse =
+            (x - half_max_width) * (x - half_max_width) * (half_max_height * half_max_height) +
+            (y - half_max_height) * (y - half_max_height) * (half_max_width * half_max_width) <
+            (half_max_width * half_max_width) * (half_max_height * half_max_height);
+
+        // Randomly determine whether something inside the ellipse is walkable or not.
+        walkable = rand.next() mod 2 == 0;
+
+        thing = inside_ellipse and walkable;
+
+        thisCol.add(thing);
+
+        mut y = y + 1;
+      }
+
+      walkabilities.add(thisCol);
+
+      mut x = x + 1;
+    }
+    // We should now have a randomly-noisy-semi-filled ellipse, like an ellipse of static
+    // on an otherwise black TV screen.
+
+    // Do a couple generations of cellular automata to smooth out the noisiness to get some
+    // caverns and rooms forming.
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+
+    // The caverns and rooms from the above process are probably disjoint and we can't get
+    // from one to the other. Here, we dig tunnels between them until they're connected.
+    connect_all_rooms(&rand, &walkabilities, false);
+
+    // Now, assemble the above walkabilities 2D bool array into a legit 2D tile array.
+    mut x = 0;
+    while (x < max_width) {
+        y! = 0;
+        while (y < max_height) {
+            loc = Location(x, y);
+            walkable = walkabilities.get(x).get().get(y).get();
+            on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
+            if (walkable and not on_edge) {
+                display_class =
+                  if (rand.next() mod 2 == 0) {
+                    "dirt"
+                  } else {
+                    "grass"
+                  };
+                level.tiles.add(
+                    loc,
+                    Tile(true, display_class));
+            } else {
+                next_to_walkable! = false;
+
+                neighbor_x! = max(0, x - 1);
+                while (neighbor_x < min(max_width - 1, x + 1 + 1)) {
+
+                    neighbor_y! = max(0, y - 1);
+                    while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
+
+                        neighbor_walkable =
+                            walkabilities.get(neighbor_x).get().get(neighbor_y).get();
+                        if (neighbor_walkable) {
+                            mut next_to_walkable = true;
+                        }
+
+                        mut neighbor_y = neighbor_y + 1;
+                    }
+
+                    mut neighbor_x = neighbor_x + 1;
+                }
+
+                if (next_to_walkable) {
+                    level.tiles.add(loc, Tile(false, "wall"));
+                }
+            }
+
+            mut y = y + 1;
+        }
+
+
+        mut x = x + 1;
+    }
+
+    ret level;
+}
+
+// Does cellular automata on the 2D walkabilities array.
+fn smooth_level(
+    max_width int,
+    max_height int,
+    walkabilities &!List<List<bool>>)
+List<List<bool>> {
+    new_walkabilities = List<List<bool>>();
+    x! = 0;
+    while (x < max_width) {
+      y! = 0;
+      thisCol = List<bool>();
+      while (y < max_height) {
+        thisCol.add(false);
+        mut y = y + 1;
+      }
+      new_walkabilities.add(thisCol);
+      mut x = x + 1;
+    }
+
+    mut x = 0;
+    while (x < max_width) {
+
+      thisCol = List<bool>();
+
+      y! = 0;
+      while (y < max_height) {
+
+        num_walkable_neighbors = 0;
+
+        neighbor_x! = max(0, x - 1);
+        while (neighbor_x < min(max_width - 1, x + 1 + 1)) {
+
+          neighbor_y! = max(0, y - 1);
+          while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
+
+            if (walkabilities.get(neighbor_x).get().get(neighbor_y).get()) {
+                mut num_walkable_neighbors = num_walkable_neighbors + 1;
+            }
+
+            mut neighbor_y = neighbor_y + 1;
+          }
+          mut neighbor_x = neighbor_x + 1;
+        }
+
+        new_walkabilities.get(x).get().set(y, num_walkable_neighbors >= 5);
+
+        mut y = y + 1;
+      }
+
+      mut x = x + 1;
+    }
+
+    ret new_walkabilities;
+}
+
+fn connect_all_rooms(
+    rand &!LCGRand,
+    walkabilities &!List<List<bool>>,
+    consider_corners_adjacent bool) void {
+    rooms = identify_rooms(&walkabilities, consider_corners_adjacent);
+    connect_rooms(&rand, &rooms);
+
+    i! = 0;
+    while (i < rooms.len()) {
+        new_room = rooms.get(i).get();
+
+        each (new_room) (loc){
+            walkabilities.get(loc.x).get().set(loc.y, true);
+        }
+
+        mut i = i + 1;
+    }
+    0;
+}
+
+fn identify_rooms(
+    walkabilities &!List<List<bool>>,
+    consider_corners_adjacent bool)
+List<HashSet<Location, LocationHasher, LocationEquator>> {
+    room_index_by_location =
+        HashMap<Location, int, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+    rooms =
+        List<HashSet<Location, LocationHasher, LocationEquator>>();
+
+    x! = 0;
+    while (x < walkabilities.len()) {
+        y! = 0;
+        while (y < walkabilities.get(x).get().len()) {
+            if (walkabilities.get(x).get().get(y).get()) {
+                spark_location = Location(x, y);
+                if (not room_index_by_location.has(spark_location)) {
+                    connected_locations =
+                        find_all_connected_locations(
+                            &walkabilities,
+                            consider_corners_adjacent,
+                            spark_location);
+                    new_room_index = rooms.len();
+                    connected_locations_clone = connected_locations.toArray();
+                    rooms.add(connected_locations); // DIFFERENCE clones
+
+                    i! = 0;
+                    while (i < connected_locations_clone.len()) {
+                        connected_location = connected_locations_clone[i];
+                        assert(not room_index_by_location.has(connected_location));
+                        room_index_by_location.add(connected_location, new_room_index);
+
+                        mut i = i + 1;
+                    }
+                }
+            }
+            mut y = y + 1;
+        }
+
+        mut x = x + 1;
+    }
+
+    ret rooms;
+}
+
+fn find_all_connected_locations(
+    walkabilities &List<List<bool>>,
+    consider_corners_adjacent bool,
+    start_location Location)
+HashSet<Location, LocationHasher, LocationEquator> {
+    connected_with_unexplored_neighbors =
+        HashSet<Location, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+    connected_with_explored_neighbors =
+        HashSet<Location, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+
+    connected_with_unexplored_neighbors.add(start_location);
+
+    while (connected_with_unexplored_neighbors.len() > 0) {
+        current =
+            connected_with_unexplored_neighbors.toArray()[0];
+        assert(not connected_with_explored_neighbors.has(current));
+
+        connected_with_unexplored_neighbors.remove(current);
+        connected_with_explored_neighbors.add(current);
+
+        adj_walkable_locs =
+            get_adjacent_walkable_locations(walkabilities, current, consider_corners_adjacent);
+
+        i! = 0;
+        while (i < adj_walkable_locs.len()) {
+            neighbor = adj_walkable_locs.get(i).get();
+
+            if (not connected_with_explored_neighbors.has(neighbor)) {
+                if (not connected_with_unexplored_neighbors.has(neighbor)) {
+                    connected_with_unexplored_neighbors.add(neighbor);
+                }
+            }
+
+            mut i = i + 1;
+        }
+    }
+
+    ret connected_with_explored_neighbors;
+}
+
+fn connect_rooms(
+    rand &!LCGRand,
+    rooms &!List<HashSet<Location, LocationHasher, LocationEquator>>) {
+    // This function will be adding the corridors to `rooms`.
+
+    room_index_by_location =
+        HashMap<Location, int, LocationHasher, LocationEquator>(
+            LocationHasher(), LocationEquator());
+
+    room_index! = 0;
+    while (room_index < rooms.len()) {
+        room = rooms.get(room_index).get();
+        i! = 0;
+        room_keys = room.toArray();
+        while (i < room_keys.len()) {
+            room_floor_loc = room_keys[i];
+
+            room_index_by_location.add(room_floor_loc, room_index);
+
+            mut i = i + 1;
+        }
+
+        mut room_index = room_index + 1;
+    }
+
+    regions = List<int>();
+
+    region_by_room_index =
+        HashMap<int, int, IntHasher, IntEquator>(
+            IntHasher(), IntEquator());
+    room_indices_by_region_num =
+        HashMap<int, HashSet<int, IntHasher, IntEquator>, IntHasher, IntEquator>(
+            IntHasher(), IntEquator());
+
+    mut room_index = 0;
+    while (room_index < rooms.len()) {
+        region = room_index;
+        region_by_room_index.add(room_index, region);
+        room_indices_in_region =
+            HashSet<int, IntHasher, IntEquator>(
+                IntHasher(), IntEquator());
+        room_indices_in_region.add(room_index);
+        room_indices_by_region_num.add(region, room_indices_in_region);
+        regions.add(region);
+
+        mut room_index = room_index + 1;
+    }
+
+    outer_running! = true;
+    while (outer_running) {
+        // DIFFERENCE
+        distinct_regions =
+            HashSet<int, IntHasher, IntEquator>(
+                &region_by_room_index.values(),
+                IntHasher(), IntEquator());
+
+
+        if (distinct_regions.len() >= 2) {
+            distinct_regions_arr = distinct_regions.toArray();
+            region_a = distinct_regions_arr[0];
+            region_b = distinct_regions_arr[1];
+
+            region_a_room_index =
+                get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_a)^.get()).get();
+            region_a_room = &rooms.get(region_a_room_index).get();
+            region_a_location = get_hash_set_random_nth(&rand, &region_a_room).get();
+
+            room_indices_by_region_num.get(region_b);
+            room_indices_by_region_num.get(region_b)^.get();
+            room_indices_by_region_num.get(region_b)^.get().len();
+
+            region_b_room_index =
+                get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_b)^.get()).get();
+            region_b_room = &rooms.get(region_b_room_index).get();
+            region_b_location = get_hash_set_random_nth(&rand, &region_b_room).get();
+
+            // Now lets drive from region_a_location to region_b_location, and see what happens on the
+            // way there.
+            path! = List<Location>();
+            current_location! = region_a_location;
+            running! = true;
+            while (running and current_location != region_b_location) {
+                if (current_location.x != region_b_location.x) {
+                    // DIFFERENCE! make sure its optimized out
+                    mut current_location =
+                        Location(
+                            current_location.x + (region_b_location.x - current_location.x).signum(),
+                            current_location.y);
+                } else if (current_location.y != region_b_location.y) {
+                    // DIFFERENCE! make sure its optimized out
+                    mut current_location =
+                        Location(
+                            current_location.x,
+                            current_location.y + (region_b_location.y - current_location.y).signum());
+                } else {
+                    panic("wat");
+                }
+                if (not room_index_by_location.has(current_location)) {
+                    // It means we're in open space, keep going.
+                    path.add(current_location);
+                } else {
+                    current_room_index = room_index_by_location.get(current_location).get();
+                    current_region = region_by_room_index.get(current_room_index).get();
+                    if (current_region == region_a) {
+                        // Keep going, but restart the path here.
+                        mut path = List<Location>();
+                    } else if (current_region != region_a) {
+                        // current_regionNumber is probably region_bNumber, but isn't necessarily... we could
+                        // have just come across a random other region.
+                        // Either way, we hit something, so we stop now.
+                        mut running = false;
+                    }
+                }
+            }
+
+            combined_region = regions.len();
+            regions.add(combined_region);
+
+            new_room_index = rooms.len();
+            rooms.add(
+                HashSet<Location, LocationHasher, LocationEquator>(
+                    &path.toArray<mut>(), LocationHasher(), LocationEquator()));
+            each (&path) (path_location){
+                room_index_by_location.add(path_location, new_room_index);
+            }
+            region_by_room_index.add(new_room_index, combined_region);
+            // We'll fill in regionNumberByRoomIndex and room_indices_by_region_num. umber shortly.
+
+            // So, now we have a path that we know connects some regions. However, it might be
+            // accidentally connecting more than two! It could have grazed past another region without
+            // us realizing it.
+            // So now, figure out all the regions that this path touches.
+
+
+            path_adjacent_locations =
+                get_pattern_locations_adjacent_to_any(
+                    &HashSet<Location, LocationHasher, LocationEquator>(
+                        &path.toArray<mut>(), LocationHasher(), LocationEquator()),
+                    true,
+                    false);
+            path_adjacent_regions =
+                HashSet<int, IntHasher, IntEquator>(
+                    IntHasher(), IntEquator());
+            each (&path_adjacent_locations) (path_adjacent_location){
+                if (&room_index_by_location has path_adjacent_location) {
+                    room_index = room_index_by_location.get(path_adjacent_location).get();
+                    region = region_by_room_index.get(room_index).get();
+                    // DIFFERENCE we check if its already there
+                    if (not path_adjacent_regions.has(region)) {
+                        path_adjacent_regions.add(region);
+                    }
+                }
+            }
+
+            room_indices_in_combined_region =
+                HashSet<int, IntHasher, IntEquator>(
+                    IntHasher(), IntEquator());
+            room_indices_in_combined_region.add(new_room_index);
+            each (&path_adjacent_regions) (path_adjacent_region){
+                // Otherwise the new room is already part of this region
+                if (path_adjacent_region != combined_region) {
+                    each (room_indices_by_region_num.get(path_adjacent_region)^.get()) (path_adjacent_room_index){
+                        region_by_room_index.update(path_adjacent_room_index, combined_region);
+                        room_indices_in_combined_region.add(path_adjacent_room_index);
+                    }
+                    room_indices_by_region_num.remove(path_adjacent_region);
+                }
+            }
+            room_indices_by_region_num.add(combined_region, room_indices_in_combined_region);
+        } else {
+            mut outer_running = false;
+        }
+    }
+
+    0;
+}
+
+fn get_hash_set_random_nth<T, H, E>(
+    rand &!LCGRand,
+    set &HashSet<T, H, E>)
+Opt<T> {
+    if (set.empty?()) {
+        result Opt<T> = None<T>();
+        ret result;
+    }
+    keys = set.toArray();
+    ret Some(keys[rand.next() mod keys.len()]);
+}
+
+fn get_adjacent_locations(
+    width int,
+    height int,
+    center Location,
+    consider_corners_adjacent bool)
+List<Location> {
+    result = List<Location>();
+
+    pals = get_pattern_adjacent_locations(center, consider_corners_adjacent);
+
+    i! = 0;
+    while (i < pals.len()) {
+        adjacent = pals.get(i).get();
+
+        if (adjacent.x >= 0 and adjacent.y >= 0 and adjacent.x < width and adjacent.y < height) {
+            result.add(adjacent);
+        }
+
+        mut i = i + 1;
+    }
+
+    ret result;
+}
+
+fn get_adjacent_walkable_locations(
+    walkabilities &List<List<bool>>,
+    center Location,
+    consider_corners_adjacent bool)
+List<Location> {
+    result = List<Location>();
+    adjacents =
+        get_adjacent_locations(
+            walkabilities.len(),
+            walkabilities.get(0).get().len(),
+            center,
+            consider_corners_adjacent);
+
+    i! = 0;
+    while (i < adjacents.len()) {
+        neighbor = adjacents.get(i).get();
+
+        if (walkabilities.get(neighbor.x).get().get(neighbor.y).get()) {
+            result.add(neighbor);
+        }
+
+        mut i = i + 1;
+    }
+    ret result;
+}

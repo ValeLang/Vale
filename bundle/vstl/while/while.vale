@@ -1,0 +1,7 @@
+fn main() {
+  a! int = 1;
+  while (a < 42) {
+    mut a = a + 1;
+  }
+  = a;
+}

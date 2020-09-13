@@ -12,7 +12,7 @@ typedef struct {
   uint8_t chars[];
 } __Str;
 
-void __vinitStr(__Str * restrict newStr, const char* chars) {
+void __vinitStr(__Str * newStr, const char* chars) {
   for (int i = 0; ; i++) {
     newStr->chars[i] = chars[i];
     // This is at the end because we want to copy the null terminating char too.
@@ -22,7 +22,7 @@ void __vinitStr(__Str * restrict newStr, const char* chars) {
   }
 }
 
-void __vaddStr(__Str * restrict a, __Str * restrict b, __Str * restrict dest) {
+void __vaddStr(__Str * a, __Str * b, __Str * dest) {
   int a_len = a->length;
   int b_len = b->length;
   dest->length = a_len + b_len;
@@ -37,7 +37,7 @@ void __vaddStr(__Str * restrict a, __Str * restrict b, __Str * restrict dest) {
   dest->chars[dest->length] = 0;
 }
 
-uint8_t __veqStr(__Str * restrict a, __Str * restrict b) {
+uint8_t __veqStr(__Str * a, __Str * b) {
   int a_len = a->length;
   int b_len = b->length;
   if (a_len != b_len) {
@@ -51,7 +51,7 @@ uint8_t __veqStr(__Str * restrict a, __Str * restrict b) {
   return TRUE;
 }
 
-void __vprintStr(__Str * restrict a) {
+void __vprintStr(__Str * a) {
   printf("%s", a->chars);
 }
 

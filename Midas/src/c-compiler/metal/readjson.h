@@ -1,7 +1,7 @@
 #ifndef READ_JSON_H_
 #define READ_JSON_H_
 
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 #include "metal/types.h"
 #include "metal/ast.h"

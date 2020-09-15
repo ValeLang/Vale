@@ -2,7 +2,6 @@
 #define REGION_COMMON_DEFAULTLAYOUT_STRUCTSROUTER_H_
 
 #include <globalstate.h>
-#include <function/expressions/shared/weaks.h>
 #include "structs.h"
 
 using GetReferendStructsSource = std::function<IReferendStructsSource*(Referend*)>;

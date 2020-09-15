@@ -2,7 +2,6 @@
 #include <globalstate.h>
 #include <function/function.h>
 #include <function/expressions/shared/shared.h>
-#include <function/expressions/shared/weaks.h>
 #include <region/common/controlblock.h>
 #include <utils/counters.h>
 #include <utils/branch.h>
@@ -286,6 +285,7 @@ WeakFatPtrLE LgtWeaks::assembleKnownSizeArrayWeakRef(
     WrapperPtrLE objPtrLE) {
   // impl
   assert(false);
+  exit(1);
 }
 
 WeakFatPtrLE LgtWeaks::assembleUnknownSizeArrayWeakRef(

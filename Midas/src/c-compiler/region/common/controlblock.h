@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <metal/types.h>
-#include <utils/common.h>
+#include <function/expressions/shared/ref.h>
 
 class GlobalState;
 class FunctionState;

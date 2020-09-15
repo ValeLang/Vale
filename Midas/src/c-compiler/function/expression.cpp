@@ -5,7 +5,6 @@
 #include "region/common/controlblock.h"
 #include "function/expressions/shared/members.h"
 #include "region/common/heap.h"
-#include "function/expressions/shared/weaks.h"
 
 #include "translatetype.h"
 

@@ -12,14 +12,12 @@
 
 #include "json.hpp"
 #include "function/expressions/shared/shared.h"
-#include "struct/interface.h"
 
 #include "metal/types.h"
 #include "metal/ast.h"
 #include "metal/instructions.h"
 
 #include "function/function.h"
-#include "struct/struct.h"
 #include "metal/readjson.h"
 #include "error.h"
 #include "translatetype.h"
@@ -28,8 +26,6 @@
 #include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
-#include <struct/array.h>
-#include <function/expressions/shared/weaks.h>
 #include <region/assist/assist.h>
 #include <region/mega/mega.h>
 

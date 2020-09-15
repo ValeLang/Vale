@@ -52,7 +52,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
         pos ^^ {
       case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
-        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List())*/List(), pattern, expr)
+        LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List())*/None, pattern, expr)
       }
     }
   }
@@ -98,11 +98,11 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     }
   }
 
-  private[parser] def swap: Parser[IExpressionPE] = {
-    ("exch" ~> optWhite ~> (expression <~ optWhite <~ "," <~ optWhite) ~ (expression <~ optWhite)) ^^ {
-      case leftExpr ~ rightExpr => SwapPE(leftExpr, rightExpr)
-    }
-  }
+//  private[parser] def swap: Parser[IExpressionPE] = {
+//    ("exch" ~> optWhite ~> (expression <~ optWhite <~ "," <~ optWhite) ~ (expression <~ optWhite)) ^^ {
+//      case leftExpr ~ rightExpr => SwapPE(leftExpr, rightExpr)
+//    }
+//  }
 
   private[parser] def bracedBlock: Parser[BlockPE] = {
     pos ~ ("{" ~> optWhite ~> blockExprs <~ optWhite <~ "}") ~ pos ^^ {
@@ -180,7 +180,6 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     //   fn main() { {_ + _}(4 + 5) }
     // because it mistakenly successfully parses {_ + _} then dies on the next part.
     (mutate <~ optWhite <~ ";") |
-    swap |
     (let <~ optWhite <~ ";") |
     mat |
     (destruct <~ optWhite <~ ";") |
@@ -293,7 +292,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
               (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, borrowCallable))
             }
             case ((None, prev), MemberAccessStep(stepRange, operatorRange, isMapCall, name)) => {
-              (None, DotPE(Range(begin, stepRange.end), prev, operatorRange, isMapCall, name))
+              (None, DotPE(Range(begin, stepRange.end), prev, operatorRange, isMapCall, name.name))
             }
             case ((None, prev), IndexStep(stepRange, args)) => {
               (None, IndexPE(Range(begin, stepRange.end), prev, args))

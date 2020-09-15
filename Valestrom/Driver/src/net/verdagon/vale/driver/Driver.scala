@@ -8,7 +8,7 @@ import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, ParserVonifier, Vonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
@@ -22,15 +22,10 @@ object Driver {
 
   case class Options(
     inputFiles: List[String],
-    outputFile: Option[String],
-    parsedsOutputFile: Option[String],
+    outputVirFilepath: Option[String],
+    parsedsOutputDir: Option[String],
     highlightOutputFile: Option[String],
     mode: Option[String], // build v run etc
-    verbose: Boolean,
-  )
-
-  case class BuildInputs(
-    sources: List[(String, String)],
     verbose: Boolean,
   )
 
@@ -38,12 +33,12 @@ object Driver {
     list match {
       case Nil => opts
       case "-o" :: value :: tail => {
-        vcheck(opts.outputFile.isEmpty, "Multiple output files specified!", InputException)
-        parseOpts(opts.copy(outputFile = Some(value)), tail)
+        vcheck(opts.outputVirFilepath.isEmpty, "Multiple output files specified!", InputException)
+        parseOpts(opts.copy(outputVirFilepath = Some(value)), tail)
       }
       case "-op" :: value :: tail => {
-        vcheck(opts.parsedsOutputFile.isEmpty, "Multiple parseds output files specified!", InputException)
-        parseOpts(opts.copy(parsedsOutputFile = Some(value)), tail)
+        vcheck(opts.parsedsOutputDir.isEmpty, "Multiple parseds output files specified!", InputException)
+        parseOpts(opts.copy(parsedsOutputDir = Some(value)), tail)
       }
       case "-oh" :: value :: tail => {
         vcheck(opts.highlightOutputFile.isEmpty, "Multiple highlight output files specified!", InputException)
@@ -91,45 +86,72 @@ object Driver {
     }
   }
 
-  def build(opts: Options): Result[ProgramH, String] = {
-    val filenamesAndSources = opts.inputFiles.zip(opts.inputFiles.map(readCode))
-    build(BuildInputs(filenamesAndSources, opts.verbose))
+  def build(opts: Options): Result[Option[ProgramH], String] = {
+    build(opts, opts.inputFiles.map(readCode))
   }
 
-  def build(inputs: BuildInputs): Result[ProgramH, String] = {
+  def build(opts: Options, sources: List[String]): Result[Option[ProgramH], String] = {
+    assert(opts.inputFiles.size == sources.size)
+    val filepathsAndSources = opts.inputFiles.zip(sources)
+
     val debugOut =
-      if (inputs.verbose) {
+      if (opts.verbose) {
         (string: String) => { println(string) }
       } else {
         (string: String) => {}
       }
 
-    val filenamesAndSources = inputs.sources
     val parseds =
-      filenamesAndSources.zipWithIndex.map({ case ((filename, source), file) =>
+      filepathsAndSources.zipWithIndex.map({ case ((filepath, source), file) =>
         Parser.runParserForProgramAndCommentRanges(source) match {
-          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filenamesAndSources, file, error))
+          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
           case ParseSuccess((program0, _)) => program0
         }
       })
-    val scoutput =
-      Scout.scoutProgram(parseds) match {
-        case Err(e) => return Err(ScoutErrorHumanizer.humanize(filenamesAndSources, e))
-        case Ok(p) => p
+    opts.parsedsOutputDir match {
+      case None =>
+      case Some(parsedsOutputDir) => {
+        filepathsAndSources.map(_._1).zip(parseds).foreach({ case (filepath, parsed) =>
+          val von = ParserVonifier.vonifyFile(parsed)
+          val json = new VonPrinter(JsonSyntax, 120).print(von)
+          val valeFilename = filepath.split("[/\\\\]").last
+          val vprFilename = valeFilename.replaceAll("\\.vale", ".vpr")
+          val vprFilepath = parsedsOutputDir + (if (parsedsOutputDir.endsWith("/")) "" else "/") + vprFilename
+          writeFile(vprFilepath, json)
+        })
       }
-    val astrouts =
-      Astronomer.runAstronomer(scoutput) match {
-        case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filenamesAndSources, error))
-        case Left(result) => result
+    }
+    opts.outputVirFilepath match {
+      case None => Ok(None)
+      case Some(outputVirFilepath) => {
+        val scoutput =
+          Scout.scoutProgram(parseds) match {
+            case Err(e) => return Err(ScoutErrorHumanizer.humanize(filepathsAndSources, e))
+            case Ok(p) => p
+          }
+        val astrouts =
+          Astronomer.runAstronomer(scoutput) match {
+            case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filepathsAndSources, error))
+            case Left(result) => result
+          }
+        val temputs =
+          new Templar(if (opts.verbose) println else (_), opts.verbose).evaluate(astrouts) match {
+            case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, filepathsAndSources, error))
+            case Ok(x) => x
+          }
+        val hinputs = Carpenter.translate(debugOut, temputs)
+        val programH = Hammer.translate(hinputs)
+
+        if (outputVirFilepath != "") {
+          val json = jsonifyProgram(programH)
+
+          writeFile(outputVirFilepath, json)
+          println("Wrote VIR to file " + outputVirFilepath)
+        }
+
+        Ok(Some(programH))
       }
-    val temputs =
-      new Templar(if (inputs.verbose) println else (_), inputs.verbose).evaluate(astrouts) match {
-        case Err(error) => return Err(TemplarErrorHumanizer.humanize(inputs.verbose, filenamesAndSources, error))
-        case Ok(x) => x
-      }
-    val hinputs = Carpenter.translate(debugOut, temputs)
-    val programH = Hammer.translate(hinputs)
-    Ok(programH)
+    }
   }
 
   def jsonifyProgram(programH: ProgramH): String = {
@@ -138,27 +160,16 @@ object Driver {
     json
   }
 
-  def buildAndOutput(opts: Options): String = {
-    val programH =
+  def buildAndOutput(opts: Options) = {
       build(opts) match {
-        case Ok(programH) => programH
+        case Ok(_) => {
+        }
         case Err(error) => {
           System.err.println(error)
           System.exit(22)
           vfail()
         }
       }
-    val json = jsonifyProgram(programH)
-
-    opts.outputFile match {
-      case None =>
-      case Some(outputFile) => {
-        println("Wrote to file " + opts.outputFile.get)
-        writeFile(opts.outputFile.get, json)
-      }
-    }
-
-    json
   }
 
   def outputParseds(outputFile: String, program0: FileP): Unit = {
@@ -202,7 +213,7 @@ object Driver {
       val opts = parseOpts(Options(List(), None, None, None, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputFiles.nonEmpty, "No input files!", InputException)
-      vcheck(opts.outputFile.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputFile.nonEmpty, "No output file!", InputException)
+      vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
 
       opts.mode.get match {
         case "highlight" => {
@@ -233,9 +244,16 @@ object Driver {
         }
         case "run" => {
           vcheck(args.size >= 2, "Need name!", InputException)
+
+          val optsWithForcedCompile =
+            opts.outputVirFilepath match {
+              case None => opts.copy(outputVirFilepath = Some(""))
+              case Some(_) => opts
+            }
+
           val program =
-            build(opts) match {
-              case Ok(programH) => programH
+            build(optsWithForcedCompile) match {
+              case Ok(Some(programH)) => programH
               case Err(error) => {
                 System.err.println(error)
                 System.exit(22)
@@ -268,8 +286,8 @@ object Driver {
           println()
           val programV = VonHammer.vonifyProgram(program)
           val json = new VonPrinter(JsonSyntax, 120).print(programV)
-          println("Writing to file " + opts.outputFile.get)
-          writeFile(opts.outputFile.get, json)
+          println("Writing to file " + opts.outputVirFilepath.get)
+          writeFile(opts.outputVirFilepath.get, json)
         }
       }
     } catch {
@@ -280,11 +298,11 @@ object Driver {
     }
   }
 
-  def writeFile(filename: String, s: String): Unit = {
-    if (filename == "stdout:") {
+  def writeFile(filepath: String, s: String): Unit = {
+    if (filepath == "stdout:") {
       println(s)
     } else {
-      val file = new File(filename)
+      val file = new File(filepath)
       val bw = new BufferedWriter(new FileWriter(file))
       bw.write(s)
       bw.close()

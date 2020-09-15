@@ -54,7 +54,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
           LookupPE(StringP(_,x),None),
           _,
           false,
-          LookupPE(StringP(_,"moo"),None)),
+          StringP(_,"moo")),
         _,
         BorrowP,
         false,
@@ -168,7 +168,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       DotPE(_,
       LookupPE(StringP(_,"weapon"),None),
       _, false,
-      LookupPE(StringP(_,"owner"),None)),
+      StringP(_,"owner")),
       _, BorrowP,
       false,
       LookupPE(StringP(_,"map"),None),
@@ -244,7 +244,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     }
     compile(CombinatorParsers.expression,
       "this.board[i]") shouldHave {
-      case IndexPE(_,DotPE(_,LookupPE(StringP(_,"this"),None),_,false,LookupPE(StringP(_,"board"),None)),List(LookupPE(StringP(_,"i"),None))) =>
+      case IndexPE(_,DotPE(_,LookupPE(StringP(_,"this"),None),_,false,StringP(_,"board")),List(LookupPE(StringP(_,"i"),None))) =>
     }
   }
 

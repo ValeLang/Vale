@@ -5,7 +5,6 @@
 #include "function/expressions/shared/shared.h"
 #include "region/common/controlblock.h"
 #include "function/expressions/shared/string.h"
-#include "function/expressions/shared/weaks.h"
 
 LLVMValueRef callMalloc(
     GlobalState* globalState,

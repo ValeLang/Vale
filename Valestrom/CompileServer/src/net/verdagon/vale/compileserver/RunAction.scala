@@ -4,7 +4,7 @@ import java.io.{OutputStream, PrintStream}
 
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
 import net.verdagon.vale.driver.Driver
-import net.verdagon.vale.driver.Driver.{BuildInputs, jsonifyProgram}
+import net.verdagon.vale.driver.Driver.Options
 import net.verdagon.vale.vivem.Vivem
 import net.verdagon.vale.{Err, Ok}
 
@@ -18,8 +18,8 @@ class RunAction extends HttpFunction {
     }
 
     val program =
-      Driver.build(BuildInputs(List(("in.vale", code)), true)) match {
-        case Ok(programH) => programH
+      Driver.build(Options(List("in.vale"), Some(""), None, None, None, false), List(code)) match {
+        case Ok(Some(programH)) => programH
         case Err(error) => {
           response.setStatusCode(400)
           response.getWriter.write(error)

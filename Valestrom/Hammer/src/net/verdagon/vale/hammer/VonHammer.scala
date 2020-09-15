@@ -705,47 +705,6 @@ object VonHammer {
     }
   }
 
-//  def translateTemplata(hinputs: Hinputs, hamuts: HamutsBox, templata: ITemplata): ITemplataH = {
-//    templata match {
-//      case CoordTemplata(reference) => {
-//        val (coordH) = TypeHammer.translateReference(hinputs, hamuts, reference)
-//        (CoordTemplataH(coordH))
-//      }
-//      case KindTemplata(kind) => {
-//        val (kindH) = TypeHammer.translateKind(hinputs, hamuts, kind)
-//        (KindTemplataH(kindH))
-//      }
-//      case ArrayTemplateTemplata() => ArrayTemplateTemplataH()
-//      case FunctionTemplata(outerEnv, unevaluatedContainers, function) => {
-//        val (outerEnvNameH) = translateName(hinputs, hamuts, outerEnv.fullName)
-//        (FunctionTemplataH(outerEnvNameH, unevaluatedContainers.map(translateContainer), function.name, Conversions.evaluateCodeLocation(function.codeLocation)))
-//      }
-//      case StructTemplata(outerEnv, struct) => {
-//        val (outerEnvNameH) = translateName(hinputs, hamuts, outerEnv.fullName)
-//        (StructTemplataH(outerEnvNameH, struct.name, Conversions.evaluateCodeLocation(struct.codeLocation)))
-//      }
-//      case InterfaceTemplata(outerEnv, interface) => {
-//        val (outerEnvNameH) = translateName(hinputs, hamuts, outerEnv.fullName)
-//        (InterfaceTemplataH(outerEnvNameH, interface.name, Conversions.evaluateCodeLocation(interface.codeLocation)))
-//      }
-//      case ImplTemplata(outerEnv, impl) => {
-//        val (outerEnvNameH) = translateName(hinputs, hamuts, outerEnv.fullName)
-//        (ImplTemplataH(outerEnvNameH, Conversions.evaluateCodeLocation(impl.codeLocation)))
-//      }
-//      case ExternFunctionTemplata(header) => {
-//        val (outerEnvNameH) = translateName(hinputs, hamuts, header.fullName)
-//        (ExternFunctionTemplataH(outerEnvNameH))
-//      }
-//      case OwnershipTemplata(ownership) => OwnershipTemplataH(Conversions.evaluateOwnership(ownership))
-//      case VariabilityTemplata(variability) => VariabilityTemplataH(Conversions.evaluateVariability(variability))
-//      case MutabilityTemplata(mutability) => MutabilityTemplataH(Conversions.evaluateMutability(mutability))
-//      case PermissionTemplata(permission) => PermissionTemplataH(Conversions.evaluatePermission(permission))
-//      case LocationTemplata(location) => LocationTemplataH(Conversions.evaluateLocation(location))
-//      case BooleanTemplata(value) => BooleanTemplataH(value)
-//      case IntegerTemplata(value) => IntegerTemplataH(value)
-//    }
-//  }
-
   def vonifyTemplarName(hinputs: Hinputs, hamuts: HamutsBox, fullName2: FullName2[IName2]): VonStr = {
     val str = FullNameH.namePartsToString(fullName2.steps.map(step => translateName(hinputs, hamuts, step)))
     VonStr(str)
@@ -816,16 +775,6 @@ object VonHammer {
       case IntegerTemplata(value) => VonObject("IntegerTemplata", None, Vector(VonMember("value", VonInt(value))))
     }
   }
-
-//  def vonifyContainer(x: ContainerH): IVonData = {
-//    val ContainerH(humanName, location) = x
-//    VonObject(
-//      "Container",
-//      None,
-//      Vector(
-//        VonMember(None, Some(humanName), VonStr(humanName)),
-//        VonMember("codeLocation", vonifyCodeLocation(location))))
-//  }
 
   def vonifyCodeLocation(codeLocation: m.CodeLocation): IVonData = {
     val m.CodeLocation(line, char) = codeLocation

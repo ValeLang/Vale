@@ -106,7 +106,7 @@ trait ParserUtils extends RegexParsers {
   }
 
   private[parser] def stringExpr: Parser[IExpressionPE] = {
-    string ^^ StrLiteralPE
+    string ^^ { case s => StrLiteralPE(s.range, s.str) }
   }
 
   // ww = with whitespace

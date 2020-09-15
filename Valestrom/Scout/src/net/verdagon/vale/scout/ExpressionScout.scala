@@ -67,7 +67,7 @@ object ExpressionScout {
                 case FunctionNameS(n, _) => StringP(rangeAtEnd, n)
                 case _ => vwat()
               }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), Range.zero, false, LookupPE(StringP(rangeAtEnd, n), None))),
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), Range.zero, false, StringP(rangeAtEnd, n))),
             BorrowP)
 
         val (stackFrameAfterConstructing, NormalResult(_, constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
@@ -131,7 +131,7 @@ object ExpressionScout {
       }
       case IntLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), IntLiteralSE(value)), noVariableUses, noVariableUses)
       case BoolLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), BoolLiteralSE(value)), noVariableUses, noVariableUses)
-      case StrLiteralPE(StringP(range, value)) => (stackFrame0, NormalResult(evalRange(range), StrLiteralSE(value)), noVariableUses, noVariableUses)
+      case StrLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), StrLiteralSE(value)), noVariableUses, noVariableUses)
       case FloatLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), FloatLiteralSE(value)), noVariableUses, noVariableUses)
 
       case MethodCallPE(range, container, operatorRange, targetOwnership, isMapCall, memberLookup, methodArgs) => {
@@ -246,7 +246,7 @@ object ExpressionScout {
         val ruleState = RuleStateBox(LetRuleState(letFullName, codeLocation, 0))
         val userRulesS =
           RuleScout.translateRulexes(
-            stackFrame0.parentEnv, ruleState, stackFrame1.parentEnv.allUserDeclaredRunes(), rulesP)
+            stackFrame0.parentEnv, ruleState, stackFrame1.parentEnv.allUserDeclaredRunes(), rulesP.toList.flatMap(_.rules))
         val (implicitRulesS, patternS) =
           PatternScout.translatePattern(
             stackFrame1,
@@ -285,12 +285,7 @@ object ExpressionScout {
           }
         (stackFrame2, NormalResult(evalRange(mutateRange), mutateExpr1), sourceSelfUses.thenMerge(destinationSelfUses), sourceChildUses.thenMerge(destinationChildUses))
       }
-      case DotPE(rangeP, containerExprPE, _, isMapCall, LookupPE(StringP(_, memberName), templateArgs)) => {
-        if (templateArgs.nonEmpty) {
-          // such as myStruct.someField<Foo>.
-          // Can't think of a good use for it yet.
-          vimpl("havent implemented looking up templated members yet")
-        }
+      case DotPE(rangeP, containerExprPE, _, isMapCall, StringP(_, memberName)) => {
         containerExprPE match {
           // Here, we're special casing lookups of this.x when we're in a constructor.
           // We know we're in a constructor if there's no `this` variable yet. After all,

@@ -150,7 +150,7 @@ object Spanner {
   def forExpression(e: IExpressionPE): Span = {
     e match {
       case IntLiteralPE(range, _) => makeSpan(Num, range, List())
-      case StrLiteralPE(StringP(range, _)) => makeSpan(Str, range, List())
+      case StrLiteralPE(range, _) => makeSpan(Str, range, List())
       case BoolLiteralPE(range, _) => makeSpan(Bool, range, List())
       case VoidPE(range) => makeSpan(W, range, List())
       case MagicParamLookupPE(range) => {
@@ -184,7 +184,7 @@ object Spanner {
         makeSpan(
           MemberAccess,
           range,
-          List(forExpression(left), makeSpan(MemberAccess, operatorRange), forExpression(member)))
+          List(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, List()))
       }
       case LendPE(range, expr, targetOwnership) => {
         makeSpan(

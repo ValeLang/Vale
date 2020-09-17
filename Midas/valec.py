@@ -159,7 +159,16 @@ class ValeCompiler:
             del args[ind]
             midas_options.append("--cpu")
             midas_options.append(val)
-        vale_files = args
+        vale_files = []
+        c_files = []
+        for arg in args:
+            if arg.endswith(".vale"):
+                vale_files.append(arg)
+            elif arg.endswith(".c"):
+                c_files.append(arg)
+            else:
+                print("Unrecognized input: " + arg)
+                sys.exit(22)
 
         build_dir = f"build"
 
@@ -191,7 +200,8 @@ class ValeCompiler:
         o_files = (
             glob.glob(f"{build_dir}/*.o") + 
             glob.glob(f"{build_dir}/*.obj") +
-            glob.glob(f"{self.valestd_path}/*.c"))
+            glob.glob(f"{self.valestd_path}/*.c") +
+            c_files)
         proc = self.clang(o_files, exe_file)
         # print(proc.stdout)
         # print(proc.stderr)

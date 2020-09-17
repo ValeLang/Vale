@@ -366,11 +366,33 @@ Ref translateExternCall(
         "");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, result);
   } else {
-    auto argsLE = std::vector<LLVMValueRef>{};
-    argsLE.reserve(call->argExprs.size());
+    auto externishArgsLE = std::vector<LLVMValueRef>{};
+    externishArgsLE.reserve(call->argExprs.size());
     for (int i = 0; i < call->argExprs.size(); i++) {
-      auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
-      argsLE.push_back(globalState->region->checkValidReference(FL(), functionState, builder, call->function->params[i], argLE));
+      auto argRef = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
+      auto valishArgLE = globalState->region->checkValidReference(FL(), functionState, builder, call->function->params[i], argRef);
+
+      LLVMValueRef externishArgLE = nullptr;
+      if (call->argTypes[i] == globalState->metalCache.intRef) {
+        externishArgLE = valishArgLE;
+      } else if (call->argTypes[i] == globalState->metalCache.boolRef) {
+        // Outside has i8, we have i1, but clang should be fine doing the conversion
+        externishArgLE = valishArgLE;
+      } else if (call->argTypes[i] == globalState->metalCache.floatRef) {
+        externishArgLE = valishArgLE;
+      } else if (call->argTypes[i] == globalState->metalCache.strRef) {
+        auto wrapperPtrLE = globalState->region->makeWrapperPtr(call->argTypes[i], valishArgLE);
+        externishArgLE = getCharsPtrFromWrapperPtr(builder, wrapperPtrLE);
+      } else if (call->argTypes[i] == globalState->metalCache.neverRef) {
+        assert(false); // How can we hand a never into something?
+      } else if (call->argTypes[i] == globalState->metalCache.emptyTupleStructRef) {
+        assert(false); // How can we hand a void into something?
+      } else {
+        std::cerr << "Invalid type for extern!" << std::endl;
+        assert(false);
+      }
+
+      externishArgsLE.push_back(externishArgLE);
     }
 
     auto externFuncIter = globalState->externFunctions.find(call->function->name->name);
@@ -380,7 +402,7 @@ Ref translateExternCall(
     buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", call->function->name->name);
 
-    auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
+    auto resultLE = LLVMBuildCall(builder, externFuncL, externishArgsLE.data(), externishArgsLE.size(), "");
     auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
     globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
 

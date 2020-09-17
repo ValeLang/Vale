@@ -18,6 +18,22 @@ LLVMValueRef getLenPtrFromStrWrapperPtr(
   return lenPtrLE;
 }
 
+LLVMValueRef getCharsPtrFromWrapperPtr(
+    LLVMBuilderRef builder,
+    WrapperPtrLE strWrapperPtrLE) {
+  auto innerStringPtrLE =
+      getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
+  auto charsArrayPtrLE =
+      LLVMBuildStructGEP(builder, innerStringPtrLE, 1, "charsPtr");
+
+  std::vector<LLVMValueRef> indices = { constI64LE(0), constI64LE(0) };
+  auto firstCharPtrLE =
+      LLVMBuildGEP(
+          builder, charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
+  assert(LLVMTypeOf(firstCharPtrLE) == LLVMPointerType(LLVMInt8Type(), 0));
+  return firstCharPtrLE;
+}
+
 LLVMValueRef getLenFromStrWrapperPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE strWrapperPtrLE) {
@@ -34,8 +50,11 @@ WrapperPtrLE buildConstantVStr(
 
   auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
 
+  // Set the length
+  LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
+  // Fill the chars
   std::vector<LLVMValueRef> argsLE = {
-      getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE),
+      getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE),
       globalState->getOrMakeStringConstant(contents)
   };
   LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");

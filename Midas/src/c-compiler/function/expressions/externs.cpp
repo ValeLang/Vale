@@ -67,8 +67,8 @@ Ref translateExternCall(
                 globalState->metalCache.strRef, rightStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
-        getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
-        getInnerStrPtrFromWrapperPtr(builder, rightStrWrapperPtrLE)
+        getCharsPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, rightStrWrapperPtrLE)
     };
     auto resultInt8LE =
         LLVMBuildCall(
@@ -152,9 +152,9 @@ Ref translateExternCall(
     auto destStrWrapperPtrLE = mallocStr(globalState, functionState, builder, combinedLenLE);
 
     std::vector<LLVMValueRef> argsLE = {
-        getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
-        getInnerStrPtrFromWrapperPtr(builder, rightStrWrapperPtrLE),
-        getInnerStrPtrFromWrapperPtr(builder, destStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, rightStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, destStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
 
@@ -272,7 +272,7 @@ Ref translateExternCall(
                 functionState, builder, call->argTypes[0], argStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
-        getInnerStrPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->printVStr, argsLE.data(), argsLE.size(), "");
 
@@ -315,8 +315,11 @@ Ref translateExternCall(
     auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
 
     auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
-    auto innerStrWrapperLE = getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
-    std::vector<LLVMValueRef> argsLE = { innerStrWrapperLE, itoaDestPtrLE };
+    // Set the length
+    LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
+    // Fill the chars
+    auto charsPtrLE = getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE);
+    std::vector<LLVMValueRef> argsLE = { charsPtrLE, itoaDestPtrLE };
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
     return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
@@ -363,8 +366,34 @@ Ref translateExternCall(
         "");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, result);
   } else {
-    std::cerr << name << std::endl;
-    assert(false);
+    auto argsLE = std::vector<LLVMValueRef>{};
+    argsLE.reserve(call->argExprs.size());
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
+      argsLE.push_back(globalState->region->checkValidReference(FL(), functionState, builder, call->function->params[i], argLE));
+    }
+
+    auto externFuncIter = globalState->externFunctions.find(call->function->name->name);
+    assert(externFuncIter != globalState->externFunctions.end());
+    auto externFuncL = externFuncIter->second;
+
+    buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", call->function->name->name);
+
+    auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
+    auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
+    globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
+
+    if (call->function->returnType->referend == globalState->metalCache.never) {
+      buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
+      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+      LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
+      return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
+    } else {
+      buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
+      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+      return resultRef;
+    }
   }
   assert(false);
 }

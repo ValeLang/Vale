@@ -430,8 +430,8 @@ public:
   IWeakRefStructsSource* getWeakRefStructsSource() override {
     return &weakRefStructs;
   }
-  LLVMTypeRef getStringInnerStruct() override {
-    return defaultImmutables.getStringInnerStructL();
+  LLVMTypeRef getStringInnerStructPtr() override {
+    return defaultImmutables.getStringInnerStructPtrL();
   }
   LLVMTypeRef getStringWrapperStruct() override {
     return defaultImmutables.getStringWrapperStructL();

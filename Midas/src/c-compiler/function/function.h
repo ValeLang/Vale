@@ -154,4 +154,10 @@ LLVMValueRef declareFunction(
     IRegion* region,
     Function* functionM);
 
+LLVMValueRef declareExternFunction(
+    GlobalState* globalState,
+    Prototype* prototypeM);
+
+LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);
+
 #endif

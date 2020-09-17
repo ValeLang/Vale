@@ -33,7 +33,7 @@ public:
   ControlBlock* getControlBlock(Referend* referend);
 
   // TODO get rid of these when refactor is done
-  LLVMTypeRef getStringInnerStructL() {
+  LLVMTypeRef getStringInnerStructPtrL() {
     return stringInnerStructL;
   }
   LLVMTypeRef getStringWrapperStructL() {
@@ -49,6 +49,8 @@ private:
   LLVMTypeRef stringInnerStructL = nullptr;
 
   DefaultPrimitives primitives;
+  LLVMTypeRef stringInnerStructPtrLT = nullptr;
+
 };
 
 #endif

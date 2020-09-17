@@ -34,6 +34,7 @@ public:
   virtual LLVMTypeRef getKnownSizeArrayWeakRefStruct(KnownSizeArrayT *ksaMT) = 0;
   virtual LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT *usaMT) = 0;
   virtual LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend *interfaceReferend) = 0;
+  virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
 };
 
 
@@ -127,6 +128,8 @@ public:
   LLVMTypeRef getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) override;
   LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) override;
   LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) override;
+
+  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
 
   GlobalState* globalState;
 

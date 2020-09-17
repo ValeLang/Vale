@@ -135,9 +135,10 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
   }
 }
 
-LgtWeaks::LgtWeaks(GlobalState* globalState_)
+LgtWeaks::LgtWeaks(GlobalState* globalState_, IWeakRefStructsSource* weakRefStructsSource_)
   : globalState(globalState_),
-    fatWeaks_(globalState_) {
+    fatWeaks_(globalState_, weakRefStructsSource_),
+    weakRefStructsSource(weakRefStructsSource_) {
   auto voidLT = LLVMVoidType();
   auto voidPtrLT = LLVMPointerType(voidLT, 0);
   auto int1LT = LLVMInt1Type();
@@ -147,10 +148,6 @@ LgtWeaks::LgtWeaks(GlobalState* globalState_)
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   lgtEntryStructL = makeLgtEntryStruct(globalState);
-
-
-
-
 
 
   expandLgt = addExtern(globalState->mod, "__expandLgt", voidLT, {});
@@ -457,7 +454,7 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
           weakRefM->ownership == Ownership::WEAK);
 
   auto weakFatPtrLE =
-      functionState->defaultRegion->makeWeakFatPtr(
+      weakRefStructsSource->makeWeakFatPtr(
           weakRefM, globalState->region->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
   return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
@@ -517,7 +514,7 @@ void LgtWeaks::buildCheckWeakRef(
   Reference* actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
   std::tie(actualRefM, refLE) = lgtGetRefInnardsForChecking(weakRef);
-  auto weakFatPtrLE = functionState->defaultRegion->makeWeakFatPtr(weakRefM, refLE);
+  auto weakFatPtrLE = weakRefStructsSource->makeWeakFatPtr(weakRefM, refLE);
   auto innerLE =
       fatWeaks_.getInnerRefFromWeakRefWithoutCheck(
           functionState, builder, weakRefM, weakFatPtrLE);

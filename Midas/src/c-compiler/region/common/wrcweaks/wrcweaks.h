@@ -8,7 +8,7 @@
 
 class WrcWeaks {
 public:
-  WrcWeaks(GlobalState* globalState);
+  WrcWeaks(GlobalState* globalState, IWeakRefStructsSource* weakRefStructsSource);
 
   WeakFatPtrLE weakStructPtrToWrciWeakInterfacePtr(
       GlobalState *globalState,
@@ -149,6 +149,7 @@ private:
 
   GlobalState* globalState;
   FatWeaks fatWeaks_;
+  IWeakRefStructsSource* weakRefStructsSource;
 
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;
   LLVMValueRef wrcCapacityPtr = nullptr, wrcFirstFreeWrciPtr = nullptr, wrcEntriesArrayPtr = nullptr;

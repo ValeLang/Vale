@@ -104,49 +104,8 @@ struct WeakFatPtrLE {
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-private:
   WeakFatPtrLE(Reference* refM_, LLVMValueRef refLE_)
       : refM(refM_), refLE(refLE_) { }
-
-  friend struct WeakFatPtrLEMaker;
-};
-
-struct WeakFatPtrLEMaker {
-  WeakFatPtrLEMaker(
-      std::function<LLVMTypeRef()> getWeakVoidRefStruct_,
-      std::function<LLVMTypeRef(StructReferend*)> getStructWeakRefStruct_,
-      std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceWeakRefStruct_,
-      std::function<LLVMTypeRef(KnownSizeArrayT*)> getKnownSizeArrayWeakRefStruct_,
-      std::function<LLVMTypeRef(UnknownSizeArrayT*)> getUnknownSizeArrayWeakRefStruct_)
-  : getWeakVoidRefStruct(getWeakVoidRefStruct_),
-    getStructWeakRefStruct(getStructWeakRefStruct_),
-    getInterfaceWeakRefStruct(getInterfaceWeakRefStruct_),
-    getKnownSizeArrayWeakRefStruct(getKnownSizeArrayWeakRefStruct_),
-    getUnknownSizeArrayWeakRefStruct(getUnknownSizeArrayWeakRefStruct_) {}
-
-  WeakFatPtrLE make(Reference* referenceM_, LLVMValueRef ptrLE) {
-    if (auto structReferendM = dynamic_cast<StructReferend*>(referenceM_->referend)) {
-      assert(LLVMTypeOf(ptrLE) == getStructWeakRefStruct(structReferendM));
-    } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(referenceM_->referend)) {
-      assert(
-          LLVMTypeOf(ptrLE) == getWeakVoidRefStruct() ||
-              LLVMTypeOf(ptrLE) == getInterfaceWeakRefStruct(interfaceReferendM));
-    } else if (auto ksaT = dynamic_cast<KnownSizeArrayT*>(referenceM_->referend)) {
-      assert(LLVMTypeOf(ptrLE) == getKnownSizeArrayWeakRefStruct(ksaT));
-    } else if (auto usaT = dynamic_cast<UnknownSizeArrayT*>(referenceM_->referend)) {
-      assert(LLVMTypeOf(ptrLE) == getUnknownSizeArrayWeakRefStruct(usaT));
-    } else {
-      assert(false);
-    }
-    return WeakFatPtrLE(referenceM_, ptrLE);
-  }
-
-private:
-  std::function<LLVMTypeRef()> getWeakVoidRefStruct;
-  std::function<LLVMTypeRef(StructReferend*)> getStructWeakRefStruct;
-  std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceWeakRefStruct;
-  std::function<LLVMTypeRef(KnownSizeArrayT*)> getKnownSizeArrayWeakRefStruct;
-  std::function<LLVMTypeRef(UnknownSizeArrayT*)> getUnknownSizeArrayWeakRefStruct;
 };
 
 

@@ -9,8 +9,9 @@
 
 class FatWeaks {
 public:
-  FatWeaks(GlobalState* globalState_)
-  : globalState(globalState_) {}
+  FatWeaks(GlobalState* globalState_, IWeakRefStructsSource* weakRefStructsSource_)
+  : globalState(globalState_),
+  weakRefStructsSource(weakRefStructsSource_){}
 
   LLVMValueRef getInnerRefFromWeakRef(
       FunctionState *functionState,
@@ -44,6 +45,7 @@ public:
 
 private:
   GlobalState* globalState;
+  IWeakRefStructsSource* weakRefStructsSource;
 };
 
 #endif

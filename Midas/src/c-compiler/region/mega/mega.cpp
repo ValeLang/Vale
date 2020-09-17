@@ -229,10 +229,6 @@ Mega::Mega(GlobalState* globalState_) :
         makeMutWeakableControlBlock(globalState),
         makeWeakRefHeaderStruct(globalState)),
     defaultImmutables(globalState, &immStructs),
-    fatWeaks(globalState_),
-    wrcWeaks(globalState_),
-    lgtWeaks(globalState_),
-    hgmWeaks(globalState_),
     referendStructs(
         [this](Referend* referend) -> IReferendStructsSource* {
           switch (globalState->opt->regionOverride) {
@@ -287,6 +283,10 @@ Mega::Mega(GlobalState* globalState_) :
               assert(false);
           }
         }),
+    fatWeaks(globalState_, &weakRefStructs),
+    wrcWeaks(globalState_, &weakRefStructs),
+    lgtWeaks(globalState_, &weakRefStructs),
+    hgmWeaks(globalState_, &weakRefStructs),
     controlBlockPtrMaker(
         [this](Referend* referend){ return referendStructs.getControlBlock(referend)->getStruct(); }),
     interfaceFatPtrMaker(
@@ -305,13 +305,7 @@ Mega::Mega(GlobalState* globalState_) :
           } else if (auto strMT = dynamic_cast<Str*>(referend)) {
             return defaultImmutables.getStringWrapperStructL();
           } else assert(false);
-        }),
-        weakFatPtrMaker(
-            [this]() { return mutWeakableStructs.weakVoidRefStructL; },
-            [this](StructReferend* structReferend) { return mutWeakableStructs.getStructWeakRefStruct(structReferend); },
-            [this](InterfaceReferend* interfaceReferend) { return mutWeakableStructs.getInterfaceWeakRefStruct(interfaceReferend); },
-            [this](KnownSizeArrayT* ksaMT) { return mutWeakableStructs.getKnownSizeArrayWeakRefStruct(ksaMT); },
-            [this](UnknownSizeArrayT* usaMT) { return mutWeakableStructs.getUnknownSizeArrayWeakRefStruct(usaMT); }) {
+        }) {
 }
 
 void fillInnerStruct(
@@ -665,11 +659,11 @@ Ref Mega::transmuteWeakRef(
     Ref sourceWeakRef) {
   // The WeakFatPtrLE constructors here will make sure that its a safe and valid transmutation.
   auto sourceWeakFatPtrLE =
-      makeWeakFatPtr(
+      weakRefStructs.makeWeakFatPtr(
           sourceWeakRefMT,
           checkValidReference(FL(), functionState, builder, sourceWeakRefMT, sourceWeakRef));
   auto sourceWeakFatPtrRawLE = sourceWeakFatPtrLE.refLE;
-  auto targetWeakFatPtrLE = makeWeakFatPtr(targetWeakRefMT, sourceWeakFatPtrRawLE);
+  auto targetWeakFatPtrLE = weakRefStructs.makeWeakFatPtr(targetWeakRefMT, sourceWeakFatPtrRawLE);
   auto targetWeakRef = wrap(this, targetWeakRefMT, targetWeakFatPtrLE);
   return targetWeakRef;
 }
@@ -723,7 +717,7 @@ WrapperPtrLE Mega::lockWeakRef(
           break;
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              functionState->defaultRegion->makeWeakFatPtr(                  refM,
+              weakRefStructs.makeWeakFatPtr(                  refM,
                   globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(refM,
               wrcWeaks.lockWrciFatPtr(from, functionState, builder, refM, weakFatPtrLE));
@@ -743,7 +737,7 @@ WrapperPtrLE Mega::lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              functionState->defaultRegion->makeWeakFatPtr(
+              weakRefStructs.makeWeakFatPtr(
                   refM,
                   globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(refM,
@@ -764,7 +758,7 @@ WrapperPtrLE Mega::lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              functionState->defaultRegion->makeWeakFatPtr(                  refM,
+              weakRefStructs.makeWeakFatPtr(                  refM,
                   globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(
               refM,
@@ -787,7 +781,7 @@ WrapperPtrLE Mega::lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              functionState->defaultRegion->makeWeakFatPtr(                  refM,
+              weakRefStructs.makeWeakFatPtr(                  refM,
                   globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
           return functionState->defaultRegion->makeWrapperPtr(
               refM,
@@ -848,7 +842,7 @@ Ref Mega::lockWeak(
           case RegionOverride::NAIVE_RC:
           case RegionOverride::FAST: {
             auto weakFatPtrLE =
-                makeWeakFatPtr(
+                weakRefStructs.makeWeakFatPtr(
                     sourceWeakRefMT,
                     checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
             auto constraintRefLE =
@@ -1461,7 +1455,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           break;
         }
         case Ownership::WEAK: {
-          auto weakFatPtrLE = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+          auto weakFatPtrLE = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
               functionState->defaultRegion->makeInterfaceFatPtr(
@@ -1492,7 +1486,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
-          auto virtualArgWeakRef = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+          auto virtualArgWeakRef = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
               functionState->defaultRegion->makeInterfaceFatPtr(
@@ -1523,7 +1517,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
-          auto virtualArgWeakRef = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+          auto virtualArgWeakRef = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
               functionState->defaultRegion->makeInterfaceFatPtr(
@@ -1554,7 +1548,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
-          auto virtualArgWeakRef = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+          auto virtualArgWeakRef = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
               functionState->defaultRegion->makeInterfaceFatPtr(
@@ -2218,7 +2212,7 @@ Ref Mega::upcast(
         }
         case Ownership::WEAK: {
           auto sourceWeakStructFatPtrLE =
-              functionState->defaultRegion->makeWeakFatPtr(
+              weakRefStructs.makeWeakFatPtr(
                   sourceStructMT,
                   globalState->region->checkValidReference(FL(),
                       functionState, builder, sourceStructMT, sourceRefLE));
@@ -2256,7 +2250,7 @@ Ref Mega::upcast(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto sourceWeakStructFatPtrLE =
-              functionState->defaultRegion->makeWeakFatPtr(
+              weakRefStructs.makeWeakFatPtr(
                   sourceStructMT,
                   globalState->region->checkValidReference(FL(),
                       functionState, builder, sourceStructMT, sourceRefLE));

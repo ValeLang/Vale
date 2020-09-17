@@ -104,9 +104,10 @@ LLVMValueRef WrcWeaks::getWrcPtr(
   return ptrToWrcLE;
 }
 
-WrcWeaks::WrcWeaks(GlobalState *globalState_)
+WrcWeaks::WrcWeaks(GlobalState *globalState_, IWeakRefStructsSource* weakRefStructsSource_)
   : globalState(globalState_),
-    fatWeaks_(globalState_) {
+    fatWeaks_(globalState_, weakRefStructsSource_),
+    weakRefStructsSource(weakRefStructsSource_) {
   auto voidLT = LLVMVoidType();
   auto voidPtrLT = LLVMPointerType(voidLT, 0);
   auto int1LT = LLVMInt1Type();
@@ -397,7 +398,7 @@ void WrcWeaks::aliasWeakRef(
     Reference* weakRefMT,
     Ref weakRef) {
   auto weakFatPtrLE =
-      functionState->defaultRegion->makeWeakFatPtr(
+      weakRefStructsSource->makeWeakFatPtr(
           weakRefMT,
           globalState->region->checkValidReference(FL(), functionState, builder, weakRefMT, weakRef));
   auto wrciLE = getWrciFromWeakRef(builder, weakFatPtrLE);
@@ -416,7 +417,7 @@ void WrcWeaks::discardWeakRef(
     Reference* weakRefMT,
     Ref weakRef) {
   auto weakFatPtrLE =
-      functionState->defaultRegion->makeWeakFatPtr(
+      weakRefStructsSource->makeWeakFatPtr(
           weakRefMT,
           globalState->region->checkValidReference(FL(), functionState, builder, weakRefMT, weakRef));
   auto wrciLE = getWrciFromWeakRef(builder, weakFatPtrLE);
@@ -481,7 +482,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
   }
 
   auto weakFatPtrLE =
-      functionState->defaultRegion->makeWeakFatPtr(          weakRefM,
+      weakRefStructsSource->makeWeakFatPtr(          weakRefM,
           globalState->region->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
   return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
@@ -550,7 +551,7 @@ void WrcWeaks::buildCheckWeakRef(
   Reference* actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
   std::tie(actualRefM, refLE) = wrcGetRefInnardsForChecking(weakRef);
-  auto weakFatPtrLE = functionState->defaultRegion->makeWeakFatPtr(weakRefM, refLE);
+  auto weakFatPtrLE = weakRefStructsSource->makeWeakFatPtr(weakRefM, refLE);
   auto innerLE =
       fatWeaks_.getInnerRefFromWeakRefWithoutCheck(
           functionState, builder, weakRefM, weakFatPtrLE);

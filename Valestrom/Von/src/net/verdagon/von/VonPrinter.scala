@@ -144,6 +144,7 @@ class VonPrinter(
     data match {
       case VonInt(value) => Some(value.toString)
       case VonBool(value) => Some(value.toString)
+      case VonFloat(value) => Some(value.toString)
       case VonStr(value) => {
         Some(
           syntax match {

@@ -116,6 +116,8 @@ Referend* readReferend(MetalCache* cache, const json& referend) {
     return cache->innt;
   } else if (referend["__type"] == "Bool") {
     return cache->boool;
+  } else if (referend["__type"] == "Float") {
+    return cache->flooat;
   } else if (referend["__type"] == "Str") {
     return cache->str;
   } else if (referend["__type"] == "Void") {
@@ -422,6 +424,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "ConstantStr") {
     return new ConstantStr(
         expression["value"]);
+  } else if (type == "ConstantF64") {
+    return new ConstantF64(expression["value"]);
   } else if (type == "LockWeak") {
     return new LockWeak(
         readExpression(cache, expression["sourceExpr"]),
@@ -561,7 +565,13 @@ Program* readProgram(MetalCache* cache, const json& program) {
             return std::make_pair(s->name->name, s);
           }),
       readStructReferend(cache, program["emptyTupleStructReferend"]),
-      {},//readArray<readExtern>(program["externs"]),
+      readArrayIntoMap<std::string, Prototype*>(
+          cache,
+          program["externs"],
+          [](MetalCache* cache, json j){
+            auto f = readPrototype(cache, j);
+            return std::make_pair(f->name->name, f);
+          }),
       readArrayIntoMap<std::string, Function*>(
           cache,
           program["functions"],

@@ -25,6 +25,9 @@ public:
     } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMInt1Type();
+    } else if (dynamic_cast<Float*>(referenceM->referend) != nullptr) {
+      assert(referenceM->ownership == Ownership::SHARE);
+      return LLVMDoubleType();
     } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
       return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
     } else {

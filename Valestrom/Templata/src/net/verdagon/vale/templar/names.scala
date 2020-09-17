@@ -134,6 +134,19 @@ case class ImmDropName2(kind: Kind) extends IFunctionName2 {
   }
 }
 
+
+case class ExternFunctionName2(
+  humanName: String,
+  parameters: List[Coord]
+) extends IFunctionName2 {
+  override def templateArgs: List[ITemplata] = List()
+
+  def order = 46;
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ templateArgs.flatMap(_.all(func)) ++ parameters.flatMap(_.all(func))
+  }
+}
+
 case class FunctionName2(
   humanName: String,
   templateArgs: List[ITemplata],

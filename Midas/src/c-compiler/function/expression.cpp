@@ -57,6 +57,17 @@ Ref translateExpressionInner(
     // See ULTMCIE for why we load and store here.
     auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt64Type(), constantI64->value);
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultLE);
+  } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
+    // See ULTMCIE for why we load and store here.
+    auto resultLE =
+        LLVMBuildFPCast(
+            builder,
+            makeConstIntExpr(
+                functionState, builder, LLVMInt64Type(), *(uint64_t*)&constantFloat->value),
+            LLVMDoubleType(),
+            "castedfloat");
+    assert(LLVMTypeOf(resultLE) == LLVMDoubleType());
+    return wrap(functionState->defaultRegion, globalState->metalCache.floatRef, resultLE);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // See ULTMCIE for why this is an add.

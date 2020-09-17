@@ -91,7 +91,7 @@ Ref Assist::lockWeak(
       [this, functionState, sourceWeakRef, constraintRefM, sourceWeakRefMT, buildThen](
           LLVMBuilderRef thenBuilder) -> Ref {
         auto sourceWeakRefLE =
-            weakFatPtrMaker.make(
+            mutWeakableStructs.makeWeakFatPtr(
                 sourceWeakRefMT,
                 checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRef));
         auto constraintRefLE =
@@ -378,7 +378,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Assist::explodeInterfaceRef(
       break;
     }
     case Ownership::WEAK: {
-      auto weakFatPtrLE = functionState->defaultRegion->makeWeakFatPtr(virtualParamMT, virtualArgLE);
+      auto weakFatPtrLE = mutWeakableStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
       // Disassemble the weak interface ref.
       auto interfaceRefLE =
           functionState->defaultRegion->makeInterfaceFatPtr(

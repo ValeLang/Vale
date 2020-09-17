@@ -9,9 +9,10 @@
 
 class HybridGenerationalMemory {
 public:
-  HybridGenerationalMemory(GlobalState* globalState_)
+  HybridGenerationalMemory(GlobalState* globalState_, IWeakRefStructsSource* weakRefStructsSource_)
   : globalState(globalState_),
-    fatWeaks_(globalState_) {}
+    fatWeaks_(globalState_, weakRefStructsSource_),
+    weakRefStructsSource(weakRefStructsSource_) {}
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -131,6 +132,7 @@ private:
 
   GlobalState* globalState;
   FatWeaks fatWeaks_;
+  IWeakRefStructsSource* weakRefStructsSource;
 };
 
 #endif

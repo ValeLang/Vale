@@ -257,7 +257,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
           weakRefM->ownership == Ownership::WEAK);
 
   auto weakFatPtrLE =
-      functionState->defaultRegion->makeWeakFatPtr(          weakRefM,
+      weakRefStructsSource->makeWeakFatPtr(          weakRefM,
           globalState->region->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
   return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
@@ -313,7 +313,7 @@ void HybridGenerationalMemory::buildCheckWeakRef(
   Reference* actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
   std::tie(actualRefM, refLE) = hgmGetRefInnardsForChecking(weakRef);
-  auto weakFatPtrLE = functionState->defaultRegion->makeWeakFatPtr(weakRefM, refLE);
+  auto weakFatPtrLE = weakRefStructsSource->makeWeakFatPtr(weakRefM, refLE);
   auto innerLE =
       fatWeaks_.getInnerRefFromWeakRefWithoutCheck(
           functionState, builder, weakRefM, weakFatPtrLE);

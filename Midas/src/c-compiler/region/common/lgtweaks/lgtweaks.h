@@ -9,7 +9,7 @@
 
 class LgtWeaks {
 public:
-  LgtWeaks(GlobalState* globalState);
+  LgtWeaks(GlobalState* globalState, IWeakRefStructsSource* weakRefStructsSource);
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -156,6 +156,7 @@ private:
 
   GlobalState* globalState;
   FatWeaks fatWeaks_;
+  IWeakRefStructsSource* weakRefStructsSource;
 
   LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
 

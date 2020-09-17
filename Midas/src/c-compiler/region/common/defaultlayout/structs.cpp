@@ -396,3 +396,20 @@ void WeakableReferendStructs::translateKnownSizeArray(
   arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(knownSizeArrayWrapperStruct, 0));
   LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
 }
+
+WeakFatPtrLE WeakableReferendStructs::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
+  if (auto structReferendM = dynamic_cast<StructReferend*>(referenceM_->referend)) {
+    assert(LLVMTypeOf(ptrLE) == getStructWeakRefStruct(structReferendM));
+  } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(referenceM_->referend)) {
+    assert(
+        LLVMTypeOf(ptrLE) == weakVoidRefStructL ||
+            LLVMTypeOf(ptrLE) == getInterfaceWeakRefStruct(interfaceReferendM));
+  } else if (auto ksaT = dynamic_cast<KnownSizeArrayT*>(referenceM_->referend)) {
+    assert(LLVMTypeOf(ptrLE) == getKnownSizeArrayWeakRefStruct(ksaT));
+  } else if (auto usaT = dynamic_cast<UnknownSizeArrayT*>(referenceM_->referend)) {
+    assert(LLVMTypeOf(ptrLE) == getUnknownSizeArrayWeakRefStruct(usaT));
+  } else {
+    assert(false);
+  }
+  return WeakFatPtrLE(referenceM_, ptrLE);
+}

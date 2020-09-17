@@ -229,20 +229,21 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   auto voidLT = LLVMVoidType();
   auto int8LT = LLVMInt8Type();
+  auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto stringInnerStructPtrLT = globalState->region->getStringInnerStructPtr();
   globalState->initStr =
       addExtern(globalState->mod, "__vinitStr", voidLT,
-          {stringInnerStructPtrLT, int8PtrLT});
+          {int8PtrLT, int8PtrLT});
   globalState->addStr =
       addExtern(globalState->mod, "__vaddStr", voidLT,
-          {stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT});
+          {int8PtrLT, int8PtrLT, int8PtrLT});
   globalState->eqStr =
       addExtern(globalState->mod, "__veqStr", int8LT,
-          {stringInnerStructPtrLT, stringInnerStructPtrLT});
+          {int8PtrLT, int8PtrLT});
   globalState->printVStr =
       addExtern(globalState->mod, "__vprintStr", voidLT,
-          {stringInnerStructPtrLT});
+          {int8PtrLT});
 
   assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
 
@@ -377,9 +378,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
   }
 
-  if (mainM->returnType->referend == globalState->metalCache.vooid) {
-    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
-  } else if (mainM->returnType->referend == globalState->metalCache.emptyTupleStruct) {
+  if (mainM->returnType->referend == globalState->metalCache.emptyTupleStruct) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
   } else if (mainM->returnType->referend == globalState->metalCache.innt) {
     LLVMBuildRet(entryBuilder, mainResult);

@@ -120,8 +120,6 @@ Referend* readReferend(MetalCache* cache, const json& referend) {
     return cache->flooat;
   } else if (referend["__type"] == "Str") {
     return cache->str;
-  } else if (referend["__type"] == "Void") {
-    return cache->vooid;
   } else if (referend["__type"] == "StructId") {
     return readStructReferend(cache, referend);
   } else if (referend["__type"] == "Never") {

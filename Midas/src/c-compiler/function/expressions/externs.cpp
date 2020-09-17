@@ -67,8 +67,8 @@ Ref translateExternCall(
                 globalState->metalCache.strRef, rightStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
-        getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
-        getInnerStrPtrFromWrapperPtr(builder, rightStrWrapperPtrLE)
+        getCharsPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, rightStrWrapperPtrLE)
     };
     auto resultInt8LE =
         LLVMBuildCall(
@@ -152,9 +152,9 @@ Ref translateExternCall(
     auto destStrWrapperPtrLE = mallocStr(globalState, functionState, builder, combinedLenLE);
 
     std::vector<LLVMValueRef> argsLE = {
-        getInnerStrPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
-        getInnerStrPtrFromWrapperPtr(builder, rightStrWrapperPtrLE),
-        getInnerStrPtrFromWrapperPtr(builder, destStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, rightStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, destStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
 
@@ -272,7 +272,7 @@ Ref translateExternCall(
                 functionState, builder, call->argTypes[0], argStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
-        getInnerStrPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->printVStr, argsLE.data(), argsLE.size(), "");
 
@@ -315,8 +315,11 @@ Ref translateExternCall(
     auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
 
     auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
-    auto innerStrWrapperLE = getInnerStrPtrFromWrapperPtr(builder, strWrapperPtrLE);
-    std::vector<LLVMValueRef> argsLE = { innerStrWrapperLE, itoaDestPtrLE };
+    // Set the length
+    LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
+    // Fill the chars
+    auto charsPtrLE = getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE);
+    std::vector<LLVMValueRef> argsLE = { charsPtrLE, itoaDestPtrLE };
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
     return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);

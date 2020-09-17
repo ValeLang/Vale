@@ -396,6 +396,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
             Map(),
             List(),
             ListMap(),
+            Set(),
             Map(),
             Set(),
             ListMap(),

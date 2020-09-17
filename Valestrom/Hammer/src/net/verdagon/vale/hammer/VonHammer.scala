@@ -933,6 +933,13 @@ object VonHammer {
           None,
           Vector())
       }
+      case ExternFunctionName2(humanName, parameters) => {
+        VonObject(
+          "EF",
+          None,
+          Vector(
+            VonMember("humanName", VonStr(humanName))))
+      }
       case FunctionName2(humanName, templateArgs, parameters) => {
         VonObject(
           "F",

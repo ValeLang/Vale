@@ -22,7 +22,9 @@ ControlBlock makeImmControlBlock(GlobalState* globalState) {
 DefaultImmutables::DefaultImmutables(GlobalState* globalState_, ReferendStructs* wrappedStructs_)
   : globalState(globalState_),
     wrappedStructs(wrappedStructs_) {
+  auto voidLT = LLVMVoidType();
   auto int8LT = LLVMInt8Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   {
     stringInnerStructL =
@@ -45,6 +47,8 @@ DefaultImmutables::DefaultImmutables(GlobalState* globalState_, ReferendStructs*
     LLVMStructSetBody(
         stringWrapperStructL, memberTypesL.data(), memberTypesL.size(), false);
   }
+
+  stringInnerStructPtrLT = LLVMPointerType(stringInnerStructL, 0);
 }
 
 void DefaultImmutables::discard(

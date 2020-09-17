@@ -42,9 +42,9 @@ case class ProgramH(
 
   // Convenience function for the tests to look up a function.
   // Function must be at the top level of the program.
-  def lookupFunction(humanName: String) = {
+  def lookupFunction(readableName: String) = {
     val matches = functions.filter(a => {
-      a.fullName.readableName == humanName
+      a.fullName.toReadableString() == readableName
     })
     vassert(matches.size == 1)
     matches.head

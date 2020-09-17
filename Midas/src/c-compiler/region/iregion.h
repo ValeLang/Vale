@@ -326,7 +326,7 @@ public:
   virtual ControlBlock* getControlBlock(Referend* referend) = 0;
   virtual IReferendStructsSource* getReferendStructsSource() = 0;
   virtual IWeakRefStructsSource* getWeakRefStructsSource() = 0;
-  virtual LLVMTypeRef getStringInnerStruct() = 0;
+  virtual LLVMTypeRef getStringInnerStructPtr() = 0;
   virtual LLVMTypeRef getStringWrapperStruct() = 0;
   virtual LLVMTypeRef getWeakRefHeaderStruct() = 0;
   virtual LLVMTypeRef getWeakVoidRefStruct() = 0;

@@ -116,6 +116,19 @@ WrcWeaks::WrcWeaks(GlobalState *globalState_)
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
 
+  expandWrcTable = addExtern(globalState->mod, "__expandWrcTable", voidLT, {});
+  checkWrci = addExtern(globalState->mod, "__checkWrc", voidLT, {int32LT});
+  getNumWrcs = addExtern(globalState->mod, "__getNumWrcs", int32LT, {});
+
+  wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__wrc_capacity");
+  LLVMSetLinkage(wrcCapacityPtr, LLVMExternalLinkage);
+
+  wrcFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__wrc_firstFree");
+  LLVMSetLinkage(wrcFirstFreeWrciPtr, LLVMExternalLinkage);
+
+  wrcEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt32Type(), 0), "__wrc_entries");
+  LLVMSetLinkage(wrcEntriesArrayPtr, LLVMExternalLinkage);
+
   if (globalState->opt->census) {
     LLVMValueRef args[3] = {
         LLVMConstInt(LLVMInt64Type(), 0, false),
@@ -129,19 +142,6 @@ WrcWeaks::WrcWeaks(GlobalState *globalState_)
     };
     LLVMBuildCall(globalState->valeMainBuilder, globalState->assertI64Eq, args, 3, "");
   }
-
-  expandWrcTable = addExtern(globalState->mod, "__expandWrcTable", voidLT, {});
-  checkWrci = addExtern(globalState->mod, "__checkWrc", voidLT, {int32LT});
-  getNumWrcs = addExtern(globalState->mod, "__getNumWrcs", int32LT, {});
-
-  wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__wrc_capacity");
-  LLVMSetLinkage(wrcCapacityPtr, LLVMExternalLinkage);
-
-  wrcFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__wrc_firstFree");
-  LLVMSetLinkage(wrcFirstFreeWrciPtr, LLVMExternalLinkage);
-
-  wrcEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt32Type(), 0), "__wrc_entries");
-  LLVMSetLinkage(wrcEntriesArrayPtr, LLVMExternalLinkage);
 }
 
 WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(

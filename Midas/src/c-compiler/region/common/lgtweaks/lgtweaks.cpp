@@ -150,20 +150,6 @@ LgtWeaks::LgtWeaks(GlobalState* globalState_)
 
 
 
-  if (globalState->opt->census) {
-    LLVMValueRef args[3] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
-        LLVMBuildZExt(
-            globalState->valeMainBuilder,
-            LLVMBuildCall(
-                globalState->valeMainBuilder, getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
-            LLVMInt64Type(),
-            ""),
-        globalState->getOrMakeStringConstant("WRC leaks!"),
-    };
-    LLVMBuildCall(globalState->valeMainBuilder, globalState->assertI64Eq, args, 3, "");
-  }
-
 
 
 
@@ -179,6 +165,21 @@ LgtWeaks::LgtWeaks(GlobalState* globalState_)
 
   lgtEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(lgtEntryStructL, 0), "__lgt_entries");
   LLVMSetLinkage(lgtEntriesArrayPtr, LLVMExternalLinkage);
+
+  if (globalState->opt->census) {
+    LLVMValueRef args[3] = {
+        LLVMConstInt(LLVMInt64Type(), 0, false),
+        LLVMBuildZExt(
+            globalState->valeMainBuilder,
+            LLVMBuildCall(
+                globalState->valeMainBuilder, getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
+            LLVMInt64Type(),
+            ""),
+        globalState->getOrMakeStringConstant("WRC leaks!"),
+    };
+    LLVMBuildCall(globalState->valeMainBuilder, globalState->assertI64Eq, args, 3, "");
+  }
+
 }
 
 WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(

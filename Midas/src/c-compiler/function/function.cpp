@@ -25,6 +25,46 @@ LLVMValueRef declareFunction(
   return functionL;
 }
 
+LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference) {
+  if (reference == globalState->metalCache.intRef) {
+    return LLVMInt64Type();
+  } else if (reference == globalState->metalCache.boolRef) {
+    return LLVMInt8Type();
+  } else if (reference == globalState->metalCache.floatRef) {
+    return LLVMDoubleType();
+  } else if (reference == globalState->metalCache.strRef) {
+    return LLVMPointerType(LLVMInt8Type(), 0);
+  } else if (reference == globalState->metalCache.neverRef) {
+    return LLVMVoidType();
+  } else if (reference == globalState->metalCache.emptyTupleStructRef) {
+    return LLVMVoidType();
+  } else {
+    std::cerr << "Invalid type for extern!" << std::endl;
+    assert(false);
+  }
+}
+
+LLVMValueRef declareExternFunction(
+    GlobalState* globalState,
+    Prototype* prototypeM) {
+  std::vector<LLVMTypeRef> paramTypesL;
+  for (auto paramTypeM : prototypeM->params) {
+    paramTypesL.push_back(translateExternType(globalState, paramTypeM));
+  }
+
+  auto returnTypeL = translateExternType(globalState, prototypeM->returnType);
+  auto nameL = prototypeM->name->name;
+
+  LLVMTypeRef functionTypeL =
+      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, nameL.c_str(), functionTypeL);
+
+  assert(globalState->externFunctions.count(prototypeM->name->name) == 0);
+  globalState->externFunctions.emplace(prototypeM->name->name, functionL);
+
+  return functionL;
+}
+
 void translateFunction(
     GlobalState* globalState,
     IRegion* region,

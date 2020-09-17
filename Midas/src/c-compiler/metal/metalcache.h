@@ -44,9 +44,9 @@ class MetalCache {
 public:
   MetalCache() {
     intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
+    floatRef = getReference(Ownership::SHARE, Location::INLINE, flooat);
     boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
     strRef = getReference(Ownership::SHARE, Location::YONDER, str);
-    voidRef = getReference(Ownership::SHARE, Location::INLINE, vooid);
     neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
   }
 
@@ -54,10 +54,10 @@ public:
   Reference* intRef = nullptr;
   Bool* boool = new Bool();
   Reference* boolRef = nullptr;
+  Float* flooat = new Float();
+  Reference* floatRef = nullptr;
   Str* str = new Str();
   Reference* strRef = nullptr;
-  Void* vooid = new Void();
-  Reference* voidRef = nullptr;
   Never* never = new Never();
   Reference* neverRef = nullptr;
   StructReferend* emptyTupleStruct = nullptr;

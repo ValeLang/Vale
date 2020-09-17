@@ -40,6 +40,7 @@ object NameHammer {
       case ConstructorName2(params) => "constructor"
       case ConstructorTemplateName2(codeLoc) => "constructorTemplate"
       case ExplicitTemplateArgRune2(index) => "rune" + index
+      case ExternFunctionName2(humanName, params) => humanName
       case FunctionName2(humanName, templateArgs, params) => humanName
       case FunctionTemplateName2(humanName, codeLoc) => humanName
       case GlobalNamespaceName2() => vwat() // Does this ever make it to hammer?

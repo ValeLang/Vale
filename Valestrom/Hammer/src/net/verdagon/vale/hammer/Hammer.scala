@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.templar.{CitizenName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
+import net.verdagon.vale.templar.{CitizenName2, ExternFunctionName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
 import net.verdagon.vale.{vassert, vfail}
 
 case class FunctionRefH(prototype: PrototypeH) {
@@ -124,18 +124,46 @@ case class Locals(
 
 object Hammer {
   def translate(hinputs: Hinputs): ProgramH = {
+    val Hinputs(
+      interfaces,
+      structs,
+      emptyPackStructRef,
+      functions,
+      externPrototypes2,
+      edgeBlueprintsByInterface,
+      edges) = hinputs
+
+
     val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Map(), List(), List(), List(), Map(), Map(), Map(), Map()))
-    val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, hinputs.emptyPackStructRef)
+    val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
+
+    // We generate the names here first, so that externs get the first chance at having
+    // ID 0 for each name, which means we dont need to add _1 _2 etc to the end of them,
+    // and they'll match up with the actual outside names.
+    val externPrototypesH =
+      externPrototypes2.map(prototype2 => {
+        val fullNameH = NameHammer.translateFullName(hinputs, hamuts, prototype2.fullName)
+        val humanName =
+          prototype2.fullName.last match {
+            case ExternFunctionName2(humanName, _) => humanName
+            case _ => vfail("Only human-named functions can be extern")
+          }
+        if (fullNameH.readableName != humanName) {
+          vfail("Name conflict, two externs with the same name!")
+        }
+        FunctionHammer.translatePrototype(hinputs, hamuts, prototype2)
+      })
+
     StructHammer.translateInterfaces(hinputs, hamuts);
     StructHammer.translateStructs(hinputs, hamuts)
-    val userFunctions = hinputs.functions.filter(_.header.isUserFunction).toList
-    val nonUserFunctions = hinputs.functions.filter(!_.header.isUserFunction).toList
+    val userFunctions = functions.filter(f => f.header.isUserFunction).toList
+    val nonUserFunctions = functions.filter(f => !f.header.isUserFunction).toList
     FunctionHammer.translateFunctions(hinputs, hamuts, userFunctions)
     FunctionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
     val immDestructors2 =
-      hinputs.functions.filter(function => {
+      functions.filter(function => {
         function.header.fullName match {
           case FullName2(List(), ImmConcreteDestructorName2(_)) => true
           case FullName2(List(), ImmInterfaceDestructorName2(_, _)) => true
@@ -160,7 +188,7 @@ object Hammer {
     ProgramH(
       hamuts.interfaceDefs.values.toList,
       hamuts.structDefs,
-      List() /* externs */,
+      externPrototypesH,
       hamuts.functionDefs.values.toList,
       hamuts.inner.knownSizeArrays,
       hamuts.inner.unknownSizeArrays,

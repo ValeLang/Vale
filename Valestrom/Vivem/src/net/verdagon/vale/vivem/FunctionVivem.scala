@@ -61,6 +61,7 @@ object FunctionVivem {
       case """F("__subtractIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.subtractIntInt
       case """F("__addStrStr",[],[R(*,>,s),R(*,>,s)])""" => VivemExterns.addStrStr
       case """F("__getch")""" => VivemExterns.getch
+      case """F("sqrt",[],[R(*,<,f)])""" => VivemExterns.sqrt
 //      case PrototypeH(FullNameH(List(NamePartH("__sqrt", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.sqrt
       case """F("__lessThanInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.lessThanInt

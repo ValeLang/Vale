@@ -39,6 +39,9 @@ case class Temputs(
     functions: List[Function2],
     envByFunctionSignature: ListMap[Signature2, FunctionEnvironment],
 
+    // Prototypes for extern functions
+    externPrototypes: Set[Prototype2],
+
     // One must fill this in when putting things into declaredStructs/Interfaces.
     mutabilitiesByCitizenRef: Map[CitizenRef2, Mutability],
 
@@ -89,6 +92,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature ++ maybeEnv.map(env => Map(signature -> env)).getOrElse(Map()),
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -116,6 +120,7 @@ case class Temputs(
       returnTypesBySignature + (signature -> returnType2),
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -141,6 +146,7 @@ case class Temputs(
       returnTypesBySignature,
       function :: functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -165,6 +171,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs + structRef,
       structDefsByRef,
@@ -189,6 +196,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef + (structRef -> mutability),
       declaredStructs,
       structDefsByRef,
@@ -213,6 +221,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -234,6 +243,7 @@ case class Temputs(
         returnTypesBySignature,
         functions,
         envByFunctionSignature,
+        externPrototypes,
         mutabilitiesByCitizenRef,
         declaredStructs,
         structDefsByRef,
@@ -260,6 +270,7 @@ case class Temputs(
         returnTypesBySignature,
         functions,
         envByFunctionSignature,
+        externPrototypes,
         mutabilitiesByCitizenRef + (interfaceRef -> mutability),
         declaredStructs,
         structDefsByRef,
@@ -286,6 +297,7 @@ case class Temputs(
         returnTypesBySignature,
         functions,
         envByFunctionSignature,
+        externPrototypes,
         mutabilitiesByCitizenRef,
         declaredStructs,
         structDefsByRef,
@@ -308,6 +320,7 @@ case class Temputs(
         returnTypesBySignature,
         functions,
         envByFunctionSignature,
+        externPrototypes,
         mutabilitiesByCitizenRef,
         declaredStructs,
         structDefsByRef,
@@ -335,6 +348,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef + (structDef.getRef -> structDef),
@@ -357,6 +371,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -376,6 +391,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -395,6 +411,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -414,6 +431,7 @@ case class Temputs(
       returnTypesBySignature,
       functions,
       envByFunctionSignature,
+      externPrototypes,
       mutabilitiesByCitizenRef,
       declaredStructs,
       structDefsByRef,
@@ -422,6 +440,32 @@ case class Temputs(
       interfaceDefsByRef,
       envByInterfaceRef,
       Impl2(structRef2, interfaceRef2) :: impls,
+      packTypes,
+      arraySequenceTypes,
+      unknownSizeArrayTypes)
+  }
+
+  def addExternPrototype(prototype2: Prototype2): Temputs = {
+    prototype2.fullName.last match {
+      case n @ ExternFunctionName2(_, _) => {
+        vassert(!externPrototypes.exists(_.toSignature.fullName.last == n))
+      }
+    }
+
+    Temputs(
+      declaredSignatures,
+      returnTypesBySignature,
+      functions,
+      envByFunctionSignature,
+      externPrototypes + prototype2,
+      mutabilitiesByCitizenRef,
+      declaredStructs,
+      structDefsByRef,
+      envByStructRef,
+      declaredInterfaces,
+      interfaceDefsByRef,
+      envByInterfaceRef,
+      impls,
       packTypes,
       arraySequenceTypes,
       unknownSizeArrayTypes)
@@ -679,6 +723,10 @@ case class TemputsBox(var temputs: Temputs) {
 
   def addImpl(structRef2: StructRef2, interfaceRef2: InterfaceRef2): Unit = {
     temputs = temputs.addImpl(structRef2, interfaceRef2)
+  }
+
+  def addExternPrototype(prototype2: Prototype2): Unit = {
+    temputs = temputs.addExternPrototype(prototype2)
   }
 
   def structDeclared(fullName: FullName2[ICitizenName2]): Option[StructRef2] = temputs.structDeclared(fullName)

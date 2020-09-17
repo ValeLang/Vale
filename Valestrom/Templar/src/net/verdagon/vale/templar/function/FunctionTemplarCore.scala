@@ -180,22 +180,33 @@ class FunctionTemplarCore(
       maybeOrigin: Option[FunctionA]):
   (FunctionHeader2) = {
     val header = FunctionHeader2(fullName, Extern2 :: attributes, params2, returnType2, maybeOrigin)
+
+    val (humanName, params) =
+      fullName.last match {
+        case FunctionName2(humanName, List(), parameters) => (humanName, parameters)
+        case _ => vfail("Only human-named function can be extern!")
+      }
+    val externFullName = FullName2(List(), ExternFunctionName2(humanName, params))
+    val externPrototype = Prototype2(externFullName, header.returnType)
+    temputs.addExternPrototype(externPrototype)
+
     val argLookups =
       header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })
     val function2 =
       Function2(
         header,
         List(),
-        Return2(ExternFunctionCall2(header.toPrototype, argLookups)))
+        Return2(ExternFunctionCall2(externPrototype, argLookups)))
 
     temputs.declareFunctionReturnType(header.toSignature, header.returnType)
     temputs.addFunction(function2)
     (header)
   }
 
-  def translateFunctionAttributes(a: List[IFunctionAttributeA]) = {
+  def translateFunctionAttributes(a: List[IFunctionAttributeA]): List[IFunctionAttribute2] = {
     a.map({
       case UserFunctionA => UserFunction2
+      case ExternA => Extern2
       case x => vimpl(x.toString)
     })
   }

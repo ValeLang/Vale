@@ -7,6 +7,10 @@ LLVMValueRef getInnerStrPtrFromWrapperPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE strWrapperPtrLE);
 
+LLVMValueRef getCharsPtrFromWrapperPtr(
+    LLVMBuilderRef builder,
+    WrapperPtrLE strWrapperPtrLE);
+
 LLVMValueRef getLenPtrFromStrWrapperPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE strWrapperPtrLE);

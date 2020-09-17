@@ -50,9 +50,6 @@ llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 add_executable(valec
 		src/c-compiler/vale.cpp
 		src/c-compiler/globalstate.cpp
-		src/c-compiler/struct/struct.cpp
-		src/c-compiler/struct/array.cpp
-		src/c-compiler/struct/interface.cpp
 		src/c-compiler/metal/ast.cpp
 		src/c-compiler/metal/readjson.cpp
 		src/c-compiler/metal/types.cpp
@@ -60,7 +57,6 @@ add_executable(valec
         src/c-compiler/valeopts.cpp
 
 		src/c-compiler/utils/counters.cpp
-		src/c-compiler/utils/common.cpp
 
 		src/c-compiler/function/function.cpp
 		src/c-compiler/function/expression.cpp
@@ -82,8 +78,6 @@ add_executable(valec
 		src/c-compiler/function/expressions/shared/elements.cpp
 		src/c-compiler/function/expressions/shared/members.cpp
 		src/c-compiler/function/expressions/shared/shared.cpp
-		src/c-compiler/function/expressions/shared/weaks.cpp
-		src/c-compiler/function/expressions/shared/alias.cpp
 		src/c-compiler/utils/branch.cpp
 		src/c-compiler/function/expressions/shared/string.cpp
         src/c-compiler/region/common/heap.cpp

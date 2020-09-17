@@ -29,7 +29,6 @@ object Forwarders {
       makeForwarder("or", List(("left", "bool"), ("right", "bool")), "bool", "__or"),
       makeForwarder("not", List(("output", "bool")), "bool", "__not"),
       makeForwarder("-", List(("left", "int")), "int", "__negateInt"),
-      makeForwarder("sqrt", List(("x", "float")), "float", "__sqrt"),
       makeForwarder("-", List(("left", "float")), "float", "__negateFloat"),
       makeForwarder("-", List(("left", "int"), ("right", "int")), "int", "__subtractIntInt"),
       makeForwarder("-", List(("left", "float"), ("right", "float")), "float", "__subtractFloatFloat"),

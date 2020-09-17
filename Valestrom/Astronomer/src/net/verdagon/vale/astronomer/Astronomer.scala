@@ -334,6 +334,7 @@ object Astronomer {
   def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]) = {
     attrsS.map({
       case ExportS => ExportA
+      case ExternS => ExternA
       case x => vimpl(x.toString)
     })
   }

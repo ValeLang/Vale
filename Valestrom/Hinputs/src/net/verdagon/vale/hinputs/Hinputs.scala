@@ -13,6 +13,7 @@ case class Hinputs(
   structs: List[StructDefinition2],
   emptyPackStructRef: StructRef2,
   functions: List[Function2],
+  externPrototypes: List[Prototype2],
   edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
   edges: List[Edge2]) {
 

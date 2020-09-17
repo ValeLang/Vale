@@ -457,4 +457,19 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
     VonHammer.vonifyProgram(hamuts)
   }
+
+  test("Test extern functions") {
+    val compile = Compilation(Samples.get("programs/externs.vale"))
+
+    val hamuts = compile.getHamuts()
+
+    // The extern we make should have the name we expect
+    assert(hamuts.externs.exists(_.fullName.readableName == "sqrt"))
+
+    // We also made an internal function that contains an extern call, it should have a different name.
+    val externSqrt = hamuts.lookupFunction("sqrt_1")
+    assert(externSqrt.isExtern)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+  }
 }

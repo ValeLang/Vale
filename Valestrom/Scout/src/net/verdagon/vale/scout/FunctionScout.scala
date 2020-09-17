@@ -191,6 +191,7 @@ object FunctionScout {
     attrsP.map({
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS
+      case ExternAttributeP(_) => ExternS
       case x => vimpl(x.toString)
     })
   }

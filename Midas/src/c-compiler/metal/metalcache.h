@@ -44,6 +44,7 @@ class MetalCache {
 public:
   MetalCache() {
     intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
+    floatRef = getReference(Ownership::SHARE, Location::INLINE, flooat);
     boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
     strRef = getReference(Ownership::SHARE, Location::YONDER, str);
     voidRef = getReference(Ownership::SHARE, Location::INLINE, vooid);
@@ -54,6 +55,8 @@ public:
   Reference* intRef = nullptr;
   Bool* boool = new Bool();
   Reference* boolRef = nullptr;
+  Float* flooat = new Float();
+  Reference* floatRef = nullptr;
   Str* str = new Str();
   Reference* strRef = nullptr;
   Void* vooid = new Void();

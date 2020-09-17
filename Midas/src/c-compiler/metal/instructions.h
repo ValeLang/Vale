@@ -59,7 +59,11 @@ public:
 
 class ConstantF64 : public Expression {
 public:
-  float value;
+  double value;
+
+  ConstantF64(
+      const double &value_) :
+      value(value_) {}
 };
 
 

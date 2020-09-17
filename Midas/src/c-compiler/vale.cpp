@@ -56,7 +56,10 @@ void initInternalExterns(GlobalState* globalState) {
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  auto stringInnerStructPtrLT = LLVMPointerType(globalState->region->getStringInnerStruct(), 0);
+  globalState->censusContains = addExtern(globalState->mod, "__vcensusContains", int64LT,
+      {voidPtrLT});
+  globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
+  globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 
   globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
   globalState->genFree = addExtern(globalState->mod, "__genFree", voidLT, {voidPtrLT});
@@ -72,25 +75,10 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->getch = addExtern(globalState->mod, "getchar", int64LT, {});
   globalState->printInt = addExtern(globalState->mod, "__vprintI64", voidLT, {int64LT});
   globalState->printBool = addExtern(globalState->mod, "__vprintBool", voidLT, {int1LT});
-  globalState->initStr =
-      addExtern(globalState->mod, "__vinitStr", voidLT,
-          {stringInnerStructPtrLT, int8PtrLT});
-  globalState->addStr =
-      addExtern(globalState->mod, "__vaddStr", voidLT,
-          {stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT});
-  globalState->eqStr =
-      addExtern(globalState->mod, "__veqStr", int8LT,
-          {stringInnerStructPtrLT, stringInnerStructPtrLT});
-  globalState->printVStr =
-      addExtern(globalState->mod, "__vprintStr", voidLT,
-          {stringInnerStructPtrLT});
+
   globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", voidLT,
       {int64LT, int8PtrLT, int64LT});
   globalState->strlen = addExtern(globalState->mod, "strlen", int64LT, {int8PtrLT});
-  globalState->censusContains = addExtern(globalState->mod, "__vcensusContains", int64LT,
-      {voidPtrLT});
-  globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
-  globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
 }
 
 
@@ -217,6 +205,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
   LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
 
+  initInternalExterns(globalState);
+
 //  Assist assistRegion(globalState);
 //  Mega megaRegion(globalState);
   IRegion* defaultRegion = nullptr;
@@ -236,32 +226,23 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
   globalState->region = defaultRegion;
 
-  initInternalExterns(globalState);
 
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      std::cout << "Region override: assist" << std::endl;
-      break;
-    case RegionOverride::NAIVE_RC:
-      std::cout << "Region override: naive-rc" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V0:
-      std::cout << "Region override: resilient-v0" << std::endl;
-      break;
-    case RegionOverride::FAST:
-      std::cout << "Region override: fast" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V1:
-      std::cout << "Region override: resilient-v1" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V2:
-      std::cout << "Region override: resilient-v2" << std::endl;
-      break;
-    default:
-      assert(false);
-      break;
-  }
-
+  auto voidLT = LLVMVoidType();
+  auto int8LT = LLVMInt8Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+  auto stringInnerStructPtrLT = globalState->region->getStringInnerStructPtr();
+  globalState->initStr =
+      addExtern(globalState->mod, "__vinitStr", voidLT,
+          {stringInnerStructPtrLT, int8PtrLT});
+  globalState->addStr =
+      addExtern(globalState->mod, "__vaddStr", voidLT,
+          {stringInnerStructPtrLT, stringInnerStructPtrLT, stringInnerStructPtrLT});
+  globalState->eqStr =
+      addExtern(globalState->mod, "__veqStr", int8LT,
+          {stringInnerStructPtrLT, stringInnerStructPtrLT});
+  globalState->printVStr =
+      addExtern(globalState->mod, "__vprintStr", voidLT,
+          {stringInnerStructPtrLT});
 
   assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
 
@@ -320,6 +301,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       defaultRegion->declareEdge(e);
     }
   }
+
+  for (auto p : program->externs) {
+    auto name = p.first;
+    auto prototype = p.second;
+    declareExternFunction(globalState, prototype);
+  }
+
 
   Prototype* mainM = nullptr;
   LLVMValueRef mainL = nullptr;
@@ -409,8 +397,11 @@ void createModule(GlobalState *globalState) {
     globalState->dibuilder = LLVMCreateDIBuilder(globalState->mod);
     globalState->difile = LLVMDIBuilderCreateFile(globalState->dibuilder, "main.vale", 9, ".", 1);
     // If theres a compile error on this line, its some sort of LLVM version issue, try commenting or uncommenting the last four args.
-    globalState->compileUnit = LLVMDIBuilderCreateCompileUnit(globalState->dibuilder, LLVMDWARFSourceLanguageC,
-        globalState->difile, "Vale compiler", 13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0, "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
+    globalState->compileUnit =
+        LLVMDIBuilderCreateCompileUnit(
+            globalState->dibuilder, LLVMDWARFSourceLanguageC, globalState->difile, "Vale compiler",
+            13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0);//,
+            //"isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
   }
   compileValeCode(globalState, globalState->opt->srcpath);
   if (!globalState->opt->release)
@@ -433,8 +424,6 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
   LLVMInitializeX86AsmPrinter();
   LLVMInitializeX86AsmParser();
 
-  std::cout << "Triple: " << opt->triple << " cpu: " << opt->cpu << " features: " << opt->features.c_str() << std::endl;
-  
   // Find target for the specified triple
   if (opt->triple.empty())
     opt->triple = LLVMGetDefaultTargetTriple();
@@ -467,8 +456,8 @@ LLVMTargetMachineRef createMachine(ValeOptions *opt) {
 
 // Generate requested object file
 void generateOutput(
-    const char *objpath,
-    const char *asmpath,
+    const std::string& objPath,
+    const std::string& asmPath,
     LLVMModuleRef mod,
     const char *triple,
     LLVMTargetMachineRef machine) {
@@ -480,24 +469,18 @@ void generateOutput(
   LLVMSetDataLayout(mod, layout);
   LLVMDisposeMessage(layout);
 
-  if (asmpath) {
-    char asmpathCStr[1024] = {0};
-    strncpy_s(asmpathCStr, asmpath, 1024);
-
+  if (!asmPath.empty()) {
     // Generate assembly file if requested
-    if (LLVMTargetMachineEmitToFile(machine, mod, asmpathCStr,
+    if (LLVMTargetMachineEmitToFile(machine, mod, const_cast<char*>(asmPath.c_str()),
         LLVMAssemblyFile, &err) != 0) {
-      std::cerr << "Could not emit asm file: " << asmpathCStr << std::endl;
+      std::cerr << "Could not emit asm file: " << asmPath << std::endl;
       LLVMDisposeMessage(err);
     }
   }
 
-  char objpathCStr[1024] = { 0 };
-  strncpy_s(objpathCStr, objpath, 1024);
-
   // Generate .o or .obj file
-  if (LLVMTargetMachineEmitToFile(machine, mod, objpathCStr, LLVMObjectFile, &err) != 0) {
-    std::cerr << "Could not emit obj file to path " << objpathCStr << " " << err << std::endl;
+  if (LLVMTargetMachineEmitToFile(machine, mod, const_cast<char*>(objPath.c_str()), LLVMObjectFile, &err) != 0) {
+    std::cerr << "Could not emit obj file to path " << objPath << " " << err << std::endl;
     LLVMDisposeMessage(err);
   }
 }
@@ -579,7 +562,7 @@ void generateModule(GlobalState *globalState) {
             globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wat" : asmext);
     generateOutput(
-        objpath.c_str(), globalState->opt->print_asm ? asmpath.c_str() : NULL,
+        objpath.c_str(), globalState->opt->print_asm ? asmpath : "",
         globalState->mod, globalState->opt->triple.c_str(), globalState->machine);
   }
 

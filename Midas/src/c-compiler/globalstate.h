@@ -39,10 +39,12 @@ public:
   LLVMValueRef mutRcAdjustCounter = nullptr;
   LLVMValueRef malloc = nullptr, free = nullptr, assert = nullptr, exit = nullptr,
       assertI64Eq = nullptr, flareI64 = nullptr, printCStr = nullptr,
-      getch = nullptr, printInt = nullptr, printBool = nullptr, initStr = nullptr, addStr = nullptr,
-      eqStr = nullptr, printVStr = nullptr, intToCStr = nullptr,
+      getch = nullptr, printInt = nullptr, printBool = nullptr, intToCStr = nullptr,
       strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr,
       panic = nullptr;
+
+
+  LLVMValueRef initStr = nullptr, addStr = nullptr, eqStr = nullptr, printVStr = nullptr;
 
   LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
@@ -57,6 +59,7 @@ public:
   std::unordered_map<Edge*, LLVMValueRef> interfaceTablePtrs;
 
   std::unordered_map<std::string, LLVMValueRef> functions;
+  std::unordered_map<std::string, LLVMValueRef> externFunctions;
 
   LLVMBuilderRef valeMainBuilder = nullptr;
 

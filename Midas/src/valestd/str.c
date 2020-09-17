@@ -5,16 +5,9 @@
 #define FALSE 0
 #define TRUE 1
 
-// Note that this is NOT __Str_rc, which is what Midas usually handles. This
-// lives inside __Str_rc.
-typedef struct {
-  int64_t length;
-  uint8_t chars[];
-} __Str;
-
-void __vinitStr(__Str * newStr, const char* chars) {
+void __vinitStr(char* newStr, const char* chars) {
   for (int i = 0; ; i++) {
-    newStr->chars[i] = chars[i];
+    newStr[i] = chars[i];
     // This is at the end because we want to copy the null terminating char too.
     if (chars[i] == 0) {
       break;
@@ -22,37 +15,34 @@ void __vinitStr(__Str * newStr, const char* chars) {
   }
 }
 
-void __vaddStr(__Str * a, __Str * b, __Str * dest) {
-  int a_len = a->length;
-  int b_len = b->length;
-  dest->length = a_len + b_len;
-  for (int i = 0; i < a_len; i++) {
-    dest->chars[i] = a->chars[i];
+void __vaddStr(char* a, char* b, char* dest) {
+  int i = 0;
+  for (; a[i]; i++) {
+    dest[i] = a[i];
   }
-  for (int i = 0; i < b_len; i++) {
-    dest->chars[i + a_len] = b->chars[i];
+  int a_len = i;
+  for (i = 0; b[i]; i++) {
+    dest[i + a_len] = b[i];
   }
+  int b_len = i;
   // Add a null terminating char for compatibility with C.
   // Midas should allocate an extra byte to accommodate this.
-  dest->chars[dest->length] = 0;
+  dest[a_len + b_len] = 0;
 }
 
-uint8_t __veqStr(__Str * a, __Str * b) {
-  int a_len = a->length;
-  int b_len = b->length;
-  if (a_len != b_len) {
-    return FALSE;
-  }
-  for (int i = 0; i < a_len; i++) {
-    if (a->chars[i] != b->chars[i]) {
+uint8_t __veqStr(char* a, char* b) {
+  for (int i = 0; ; i++) {
+    if (a[i] != b[i]) {
       return FALSE;
     }
+    if (a[i] == 0) {
+      return TRUE;
+    }
   }
-  return TRUE;
 }
 
-void __vprintStr(__Str * a) {
-  printf("%s", a->chars);
+void __vprintStr(char* a) {
+  printf("%s", a);
 }
 
 void __vintToCStr(int n, char* dest, int destSize) {

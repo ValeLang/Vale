@@ -30,12 +30,14 @@ LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference) 
     return LLVMInt64Type();
   } else if (reference == globalState->metalCache.boolRef) {
     return LLVMInt8Type();
-  } else if (reference == globalState->metalCache.voidRef) {
-    return LLVMVoidType();
   } else if (reference == globalState->metalCache.floatRef) {
     return LLVMDoubleType();
   } else if (reference == globalState->metalCache.strRef) {
     return LLVMPointerType(LLVMInt8Type(), 0);
+  } else if (reference == globalState->metalCache.neverRef) {
+    return LLVMVoidType();
+  } else if (reference == globalState->metalCache.emptyTupleStructRef) {
+    return LLVMVoidType();
   } else {
     std::cerr << "Invalid type for extern!" << std::endl;
     assert(false);

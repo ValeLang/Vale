@@ -67,6 +67,7 @@ LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* referendStructsSource,
     LLVMBuilderRef builder,
     Ref exprRef,
     Reference* refM,
@@ -88,7 +89,7 @@ LLVMValueRef adjustStrongRc(
   }
 
   auto controlBlockPtrLE =
-      getControlBlockPtr(globalState, functionState, builder, exprRef, refM);
+      referendStructsSource->getControlBlockPtr(functionState, builder, exprRef, refM);
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);

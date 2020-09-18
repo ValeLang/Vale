@@ -231,7 +231,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto int8LT = LLVMInt8Type();
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  auto stringInnerStructPtrLT = globalState->region->getStringInnerStructPtr();
   globalState->initStr =
       addExtern(globalState->mod, "__vinitStr", voidLT,
           {int8PtrLT, int8PtrLT});

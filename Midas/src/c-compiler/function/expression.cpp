@@ -260,15 +260,8 @@ Ref translateExpressionInner(
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
-      auto arrayWrapperLE =
-          functionState->defaultRegion->makeWrapperPtr(
-              arrayType,
-              globalState->region->checkValidReference(FL(),
-                  functionState, builder, arrayType, arrayRef));
-      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, arrayWrapperLE);
-      deallocate(
-          AFL("DestroyKSAIntoF"), globalState, functionState, builder,
-          controlBlockPtrLE, arrayType);
+      functionState->defaultRegion->deallocate(
+          AFL("DestroyKSAIntoF"), functionState, builder, arrayType, arrayRef);
     } else {
       assert(false);
     }
@@ -314,14 +307,9 @@ Ref translateExpressionInner(
     } else if (arrayType->ownership == Ownership::SHARE) {
       // We dont decrement anything here, we're only here because we already hit zero.
 
-      auto arrayWrapperLE =
-          functionState->defaultRegion->makeWrapperPtr(
-              arrayType,
-              globalState->region->checkValidReference(FL(), functionState, builder, arrayType, arrayRef));
-      auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, arrayWrapperLE);
       // Free it!
-      deallocate(AFL("DestroyUSAIntoF"), globalState, functionState, builder,
-          controlBlockPtrLE, arrayType);
+      functionState->defaultRegion->deallocate(
+          AFL("DestroyUSAIntoF"), functionState, builder, arrayType, arrayRef);
     } else {
       assert(false);
     }

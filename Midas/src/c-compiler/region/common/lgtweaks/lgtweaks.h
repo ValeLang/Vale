@@ -6,10 +6,11 @@
 #include <globalstate.h>
 #include <function/function.h>
 #include <region/common/fatweaks/fatweaks.h>
+#include <region/common/referendptrmaker.h>
 
 class LgtWeaks {
 public:
-  LgtWeaks(GlobalState* globalState, IWeakRefStructsSource* weakRefStructsSource);
+  LgtWeaks(GlobalState* globalState, IReferendStructsSource* referendStructsSource, IWeakRefStructsSource* weakRefStructsSource);
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -19,7 +20,6 @@ public:
       Ref sourceRef);
 
   WeakFatPtrLE weakStructPtrToLgtiWeakInterfacePtr(
-      GlobalState *globalState,
       FunctionState *functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
@@ -156,6 +156,7 @@ private:
 
   GlobalState* globalState;
   FatWeaks fatWeaks_;
+  IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 
   LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free

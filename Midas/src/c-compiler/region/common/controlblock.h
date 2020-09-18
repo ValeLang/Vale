@@ -119,30 +119,4 @@ LLVMValueRef getStrongRcFromControlBlockPtr(
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE);
 
-ControlBlockPtrLE getConcreteControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    WrapperPtrLE wrapperPtrLE);
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    InterfaceFatPtrLE interfaceFatPtrLE);
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    Ref ref,
-    Reference* referenceM);
-
-ControlBlockPtrLE getControlBlockPtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    // This will be a pointer if a mutable struct, or a fat ref if an interface.
-    LLVMValueRef ref,
-    Reference* referenceM);
-
 #endif //VALEC_CONTROLBLOCK_H

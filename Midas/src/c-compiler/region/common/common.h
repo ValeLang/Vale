@@ -18,6 +18,7 @@ LLVMValueRef weakStructPtrToGenWeakInterfacePtr(
 LLVMValueRef upcastThinPtr(
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* referendStructsSource,
     LLVMBuilderRef builder,
 
     Reference* sourceStructTypeM,
@@ -32,18 +33,7 @@ LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referen
 LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend);
 
 
-LLVMValueRef getStructContentsPtrNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE);
-LLVMValueRef getStructContentsPtrForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE);
+
 Ref loadInnerInnerStructMember(
     IRegion* region,
     LLVMBuilderRef builder, LLVMValueRef innerStructPtrLE, int memberIndex, Reference* expectedType, std::string memberName);
@@ -52,13 +42,6 @@ void storeInnerInnerStructMember(
 
 
 LLVMValueRef getItablePtrFromInterfacePtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* virtualParamMT,
-    InterfaceFatPtrLE virtualArgLE);
-
-LLVMValueRef getVoidPtrFromInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -81,24 +64,6 @@ LLVMValueRef insertStrongRc(
     Referend* referendM,
     LLVMValueRef newControlBlockLE);
 
-Ref loadElementFromKSAWithoutUpgradeNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef);
-
-Ref loadElementFromKSAWithoutUpgradeForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef);
-
 void buildCheckGen(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -106,6 +71,14 @@ void buildCheckGen(
     LLVMValueRef targetGenLE,
     LLVMValueRef actualGenLE);
 
+Ref loadElementFromKSAWithoutUpgradeInner(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref indexRef,
+    LLVMValueRef arrayElementsPtrLE);
 
 LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,

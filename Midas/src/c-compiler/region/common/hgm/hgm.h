@@ -6,13 +6,14 @@
 #include "globalstate.h"
 #include "function/function.h"
 #include <region/common/fatweaks/fatweaks.h>
+#include <region/common/referendptrmaker.h>
 
 class HybridGenerationalMemory {
 public:
-  HybridGenerationalMemory(GlobalState* globalState_, IWeakRefStructsSource* weakRefStructsSource_)
-  : globalState(globalState_),
-    fatWeaks_(globalState_, weakRefStructsSource_),
-    weakRefStructsSource(weakRefStructsSource_) {}
+  HybridGenerationalMemory(
+      GlobalState* globalState_,
+      IReferendStructsSource* referendStructsSource_,
+      IWeakRefStructsSource* weakRefStructsSource_);
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -132,6 +133,7 @@ private:
 
   GlobalState* globalState;
   FatWeaks fatWeaks_;
+  IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 };
 

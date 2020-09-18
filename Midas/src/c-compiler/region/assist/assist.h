@@ -152,6 +152,9 @@ public:
       Reference* weakRefM,
       Ref weakRef) override;
 
+  LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
+
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);

@@ -48,7 +48,7 @@ WrapperPtrLE buildConstantVStr(
 
   auto lengthLE = constI64LE(contents.length());
 
-  auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
+  auto strWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, lengthLE);
 
   // Set the length
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));

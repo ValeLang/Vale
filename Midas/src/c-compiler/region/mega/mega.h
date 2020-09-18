@@ -11,6 +11,7 @@
 #include "globalstate.h"
 #include "function/function.h"
 #include "../iregion.h"
+#include <region/common/referendptrmaker.h>
 
 class Mega : public IRegion {
 public:
@@ -272,19 +273,51 @@ public:
       Ref indexRef,
       Ref elementRef) override;
 
+
+  void deallocate(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref refLE) override;
+
+
+  Ref constructUnknownSizeArrayCountedStruct(
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef builder,
+      Reference* usaMT,
+      UnknownSizeArrayT* unknownSizeArrayT,
+      Reference* generatorType,
+      Prototype* generatorMethod,
+      Ref generatorRef,
+      LLVMTypeRef usaWrapperPtrLT,
+      LLVMTypeRef usaElementLT,
+      Ref sizeRef,
+      const std::string& typeName) override;
+
+
+  WrapperPtrLE mallocStr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      LLVMValueRef lengthLE) override;
+
+  LLVMValueRef mallocKnownSize(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Location location,
+      LLVMTypeRef referendLT) override;
+
+  LLVMValueRef mallocUnknownSizeArray(
+      LLVMBuilderRef builder,
+      LLVMTypeRef usaWrapperLT,
+      LLVMTypeRef usaElementLT,
+      LLVMValueRef lengthLE) override;
+
   // TODO Make these private once refactor is done
 //  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
 //    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
 //  }
-  InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
-    return interfaceFatPtrMaker.make(referenceM_, ptrLE);
-  }
-  ControlBlockPtrLE makeControlBlockPtr(Referend* referendM_, LLVMValueRef ptrLE) override {
-    return controlBlockPtrMaker.make(referendM_, ptrLE);
-  }
-  WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
-    return wrapperPtrMaker.make(referenceM_, ptrLE);
-  }
   // TODO get rid of these once refactor is done
   ControlBlock* getControlBlock(Referend* referend) override {
     return referendStructs.getControlBlock(referend);
@@ -295,11 +328,11 @@ public:
   IWeakRefStructsSource* getWeakRefStructsSource() override {
     return &weakRefStructs;
   }
-  LLVMTypeRef getStringInnerStructPtr() override {
-    return defaultImmutables.getStringInnerStructPtrL();
+  LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
+    return referendStructs.getStringBytesPtr(functionState, builder, ref);
   }
-  LLVMTypeRef getStringWrapperStruct() override {
-    return defaultImmutables.getStringWrapperStructL();
+  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
+    return referendStructs.getStringLen(functionState, builder, ref);
   }
   LLVMTypeRef getWeakRefHeaderStruct() override {
     return mutWeakableStructs.weakRefHeaderStructL;
@@ -347,9 +380,9 @@ protected:
 
   // TODO see if we can just use referendStructs/weakRefStructs instead of having these?
 //  WeakFatPtrLEMaker weakFatPtrMaker;
-  InterfaceFatPtrLEMaker interfaceFatPtrMaker;
-  ControlBlockPtrLEMaker controlBlockPtrMaker;
-  WrapperPtrLEMaker wrapperPtrMaker;
+//  InterfaceFatPtrLEMaker interfaceFatPtrMaker;
+//  ControlBlockPtrLEMaker controlBlockPtrMaker;
+//  WrapperPtrLEMaker wrapperPtrMaker;
 };
 
 #endif

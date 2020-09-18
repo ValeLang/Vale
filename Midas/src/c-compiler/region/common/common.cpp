@@ -11,6 +11,7 @@
 LLVMValueRef upcastThinPtr(
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* referendStructsSource,
     LLVMBuilderRef builder,
 
     Reference* sourceStructTypeM,
@@ -40,7 +41,9 @@ LLVMValueRef upcastThinPtr(
     default:
       assert(false);
   }
-  ControlBlockPtrLE controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, sourceRefLE);
+  ControlBlockPtrLE controlBlockPtrLE =
+      referendStructsSource->getConcreteControlBlockPtr(
+          functionState, builder, sourceStructTypeM, sourceRefLE);
   auto interfaceRefLE =
       makeInterfaceRefStruct(
           globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM,
@@ -83,29 +86,6 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend)
   }
 }
 
-
-LLVMValueRef getStructContentsPtrNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE) {
-  auto wrapperPtrLE =
-      functionState->defaultRegion->makeWrapperPtr(refM,
-          globalState->region->checkValidReference(FL(), functionState, builder, refM, refLE));
-  return getStructContentsPtr(builder, wrapperPtrLE);
-}
-
-LLVMValueRef getStructContentsPtrForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE) {
-  auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder, refM, refLE);
-  return getStructContentsPtr(builder, wrapperPtrLE);
-}
-
 Ref loadInnerInnerStructMember(
     IRegion* region,
     LLVMBuilderRef builder,
@@ -143,20 +123,6 @@ LLVMValueRef getItablePtrFromInterfacePtr(
   buildFlare(FL(), globalState, functionState, builder);
   assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
   return getTablePtrFromInterfaceRef(builder, virtualArgLE);
-}
-
-LLVMValueRef getVoidPtrFromInterfacePtr(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* virtualParamMT,
-    InterfaceFatPtrLE virtualArgLE) {
-  assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
-  return LLVMBuildPointerCast(
-      builder,
-      getControlBlockPtr(globalState, builder, virtualArgLE).refLE,
-      LLVMPointerType(LLVMVoidType(), 0),
-      "objAsVoidPtr");
 }
 
 
@@ -223,94 +189,6 @@ Ref loadElementFromKSAWithoutUpgradeInner(
       globalState, functionState, builder, ksaRefMT,
       ksaMT->rawArray->elementType,
       sizeRef, arrayElementsPtrLE, ksaMT->rawArray->mutability, indexRef);
-}
-
-Ref loadElementFromKSAWithoutUpgradeNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef) {
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::FAST: {
-      // good, continue
-      break;
-    }
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
-      switch (ksaRefMT->ownership) {
-        case Ownership::SHARE:
-        case Ownership::OWN:
-          // good, continue
-          break;
-        case Ownership::BORROW:
-          assert(false);
-          break;
-        case Ownership::WEAK:
-          assert(false); // VIR never loads from a weak ref
-        default:
-          assert(false);
-      }
-      break;
-    }
-    default:
-      assert(false);
-  }
-
-  LLVMValueRef arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder,
-      functionState->defaultRegion->makeWrapperPtr(
-          ksaRefMT,
-          globalState->region->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
-
-  return loadElementFromKSAWithoutUpgradeInner(globalState, functionState, builder, ksaRefMT, ksaMT, indexRef, arrayElementsPtrLE);
-}
-
-Ref loadElementFromKSAWithoutUpgradeForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref arrayRef,
-    Ref indexRef) {
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::FAST: {
-      assert(false);
-      break;
-    }
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
-      switch (ksaRefMT->ownership) {
-        case Ownership::SHARE:
-        case Ownership::OWN:
-          assert(false);
-          break;
-        case Ownership::BORROW:
-          // good, continue
-          break;
-        case Ownership::WEAK:
-          assert(false); // VIR never loads from a weak ref
-        default:
-          assert(false);
-      }
-      break;
-    }
-    default:
-      assert(false);
-  }
-  LLVMValueRef arrayElementsPtrLE =
-      getKnownSizeArrayContentsPtr(
-          builder, globalState->region->lockWeakRef(FL(), functionState, builder, ksaRefMT, arrayRef));
-
-  return loadElementFromKSAWithoutUpgradeInner(globalState, functionState, builder, ksaRefMT, ksaMT, indexRef, arrayElementsPtrLE);
 }
 
 // Checks that the generation is <= to the actual one.

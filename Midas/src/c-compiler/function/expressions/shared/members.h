@@ -12,24 +12,6 @@
 #include "function/function.h"
 #include "shared.h"
 
-LLVMValueRef getStructContentsPtr(
-    LLVMBuilderRef builder,
-    WrapperPtrLE wrapperPtrLE);
-
-LLVMValueRef getStructContentsPtrNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE);
-
-LLVMValueRef getStructContentsPtrForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    Ref refLE);
-
 Ref loadMember(
     AreaAndFileAndLine from,
     GlobalState* globalState,

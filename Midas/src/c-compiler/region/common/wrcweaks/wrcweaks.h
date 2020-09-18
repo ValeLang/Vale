@@ -5,10 +5,11 @@
 #include <globalstate.h>
 #include <function/function.h>
 #include <region/common/fatweaks/fatweaks.h>
+#include <region/common/referendptrmaker.h>
 
 class WrcWeaks {
 public:
-  WrcWeaks(GlobalState* globalState, IWeakRefStructsSource* weakRefStructsSource);
+  WrcWeaks(GlobalState* globalState, IReferendStructsSource* referendStructsSource, IWeakRefStructsSource* weakRefStructsSource);
 
   WeakFatPtrLE weakStructPtrToWrciWeakInterfacePtr(
       GlobalState *globalState,
@@ -149,6 +150,7 @@ private:
 
   GlobalState* globalState;
   FatWeaks fatWeaks_;
+  IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 
   LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;

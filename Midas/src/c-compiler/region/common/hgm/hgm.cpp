@@ -10,6 +10,15 @@
 
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 
+HybridGenerationalMemory::HybridGenerationalMemory(
+    GlobalState* globalState_,
+    IReferendStructsSource* referendStructsSource_,
+    IWeakRefStructsSource* weakRefStructsSource_)
+  : globalState(globalState_),
+    fatWeaks_(globalState_, weakRefStructsSource_),
+    referendStructsSource(referendStructsSource_),
+    weakRefStructsSource(weakRefStructsSource_) {}
+
 LLVMValueRef HybridGenerationalMemory::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
     WeakFatPtrLE weakRefLE) {
@@ -75,10 +84,10 @@ WeakFatPtrLE HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
 //  checkValidReference(
 //      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
   auto controlBlockPtr =
-      getConcreteControlBlockPtr(globalState,
-          builder,
-          functionState->defaultRegion->makeWrapperPtr(
-              sourceStructTypeM,
+      referendStructsSource->getConcreteControlBlockPtr(
+          functionState, builder, sourceStructTypeM,
+          referendStructsSource->makeWrapperPtr(
+              FL(), functionState, builder, sourceStructTypeM,
               fatWeaks_.getInnerRefFromWeakRef(
                   functionState, builder, sourceStructTypeM, sourceRefLE)));
 
@@ -133,7 +142,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
   assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
   // curious, if its a borrow, do we just return sourceRefLE?
 
-  auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, objPtrLE);
+  auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(functionState, builder, structTypeM, objPtrLE);
   auto currentGenLE = getGenerationFromControlBlockPtr(globalState, builder, structTypeM->referend, controlBlockPtrLE);
   auto headerLE = makeGenHeader(globalState, builder, currentGenLE);
   auto weakRefStructLT =
@@ -163,7 +172,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(
     WrapperPtrLE sourceRefLE) {
   LLVMValueRef genLE = nullptr;
   if (sourceType->ownership == Ownership::OWN) {
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, sourceRefLE);
+    auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(functionState, builder, sourceType, sourceRefLE);
     genLE = getGenerationFromControlBlockPtr(globalState, builder, sourceType->referend, controlBlockPtrLE);
   } else if (sourceType->ownership == Ownership::BORROW) {
     assert(false); // impl
@@ -281,7 +290,7 @@ WeakFatPtrLE HybridGenerationalMemory::weakInterfaceRefToWeakStructRef(
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakInterfaceFatPtrLE);
 
   auto interfaceFatPtrLE =
-      functionState->defaultRegion->makeInterfaceFatPtr(
+      referendStructsSource->makeInterfaceFatPtr(
           weakInterfaceRefMT, // It's still conceptually weak even though its not in a weak pointer.
           fatWeaks_.getInnerRefFromWeakRef(
               functionState,
@@ -318,7 +327,7 @@ void HybridGenerationalMemory::buildCheckWeakRef(
       fatWeaks_.getInnerRefFromWeakRefWithoutCheck(
           functionState, builder, weakRefM, weakFatPtrLE);
 
-  auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, innerLE, weakRefM);
+  auto controlBlockPtrLE = referendStructsSource->getControlBlockPtr(globalState, functionState, builder, innerLE, weakRefM);
   // We check that the generation is <= to what's in the actual object.
   auto actualGen = getGenerationFromControlBlockPtr(globalState, builder, weakRefM->referend, controlBlockPtrLE);
   auto targetGen = getTargetGenFromWeakRef(builder, weakFatPtrLE);
@@ -326,7 +335,7 @@ void HybridGenerationalMemory::buildCheckWeakRef(
 
   // This will also run for objects which have since died, which is fine.
   if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(weakRefM->referend)) {
-    auto interfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(weakRefM, innerLE);
+    auto interfaceFatPtrLE = referendStructsSource->makeInterfaceFatPtr(weakRefM, innerLE);
     auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
   }
@@ -341,28 +350,28 @@ Ref HybridGenerationalMemory::assembleWeakRef(
   // Now we need to package it up into a weak ref.
   if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
     auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = functionState->defaultRegion->makeWrapperPtr(sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = referendPtrMaker->makeWrapperPtr(sourceType, sourceRefLE);
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
     return wrap(functionState->defaultRegion, targetType, resultLE);
   } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
     auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceInterfaceFatPtrLE = functionState->defaultRegion->makeInterfaceFatPtr(sourceType, sourceRefLE);
+    auto sourceInterfaceFatPtrLE = referendStructsSource->makeInterfaceFatPtr(sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
     return wrap(functionState->defaultRegion, targetType, resultLE);
   } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
     auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = functionState->defaultRegion->makeWrapperPtr(sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = referendPtrMaker->makeWrapperPtr(sourceType, sourceRefLE);
     auto resultLE =
         assembleKnownSizeArrayWeakRef(
             functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
     return wrap(functionState->defaultRegion, targetType, resultLE);
   } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
     auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = functionState->defaultRegion->makeWrapperPtr(sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = referendPtrMaker->makeWrapperPtr(sourceType, sourceRefLE);
     auto resultLE =
         assembleUnknownSizeArrayWeakRef(
             functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);

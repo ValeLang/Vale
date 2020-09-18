@@ -15,26 +15,9 @@ struct WrapperPtrLE {
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-private:
   WrapperPtrLE(Reference* refM_, LLVMValueRef refLE_)
       : refM(refM_), refLE(refLE_) { }
-
-  friend struct WrapperPtrLEMaker;
 };
-
-struct WrapperPtrLEMaker {
-  WrapperPtrLEMaker(std::function<LLVMTypeRef(Reference*)> getWrapperStruct_)
-    : getWrapperStruct(getWrapperStruct_) {}
-
-  WrapperPtrLE make(Reference* referenceM_, LLVMValueRef controlBlockPtrLE_) {
-    assert(LLVMTypeOf(controlBlockPtrLE_) == LLVMPointerType(getWrapperStruct(referenceM_), 0));
-    return WrapperPtrLE(referenceM_, controlBlockPtrLE_);
-  }
-
-private:
-  std::function<LLVMTypeRef(Reference*)> getWrapperStruct;
-};
-
 
 
 struct ControlBlockPtrLE {
@@ -42,29 +25,9 @@ struct ControlBlockPtrLE {
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-private:
   ControlBlockPtrLE(Referend* refM_, LLVMValueRef refLE_)
     : referendM(refM_), refLE(refLE_) { }
-
-  friend struct ControlBlockPtrLEMaker;
 };
-
-struct ControlBlockPtrLEMaker {
-  ControlBlockPtrLEMaker(std::function<LLVMTypeRef(Referend*)> getControlBlockStruct_)
-    : getControlBlockStruct(getControlBlockStruct_) {}
-
-  ControlBlockPtrLE make(Referend* referendM_, LLVMValueRef controlBlockPtrLE_) {
-    auto actualTypeOfControlBlockPtrLE = LLVMTypeOf(controlBlockPtrLE_);
-    auto expectedControlBlockStructL = getControlBlockStruct(referendM_);
-    auto expectedControlBlockStructPtrL = LLVMPointerType(expectedControlBlockStructL, 0);
-    assert(actualTypeOfControlBlockPtrLE == expectedControlBlockStructPtrL);
-    return ControlBlockPtrLE(referendM_, controlBlockPtrLE_);
-  }
-
-private:
-  std::function<LLVMTypeRef(Referend*)> getControlBlockStruct;
-};
-
 
 
 
@@ -73,30 +36,9 @@ struct InterfaceFatPtrLE {
   // TODO rename to ptrLE
   LLVMValueRef const refLE;
 
-private:
   InterfaceFatPtrLE(Reference* refM_, LLVMValueRef refLE_)
       : refM(refM_), refLE(refLE_) { }
-
-  friend struct InterfaceFatPtrLEMaker;
 };
-
-struct InterfaceFatPtrLEMaker {
-  InterfaceFatPtrLEMaker(std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceFatPtrStruct_)
-    : getInterfaceFatPtrStruct(getInterfaceFatPtrStruct_) {}
-
-  InterfaceFatPtrLE make(Reference* referenceM_, LLVMValueRef controlBlockPtrLE_) {
-    auto interfaceReferenceM = dynamic_cast<InterfaceReferend*>(referenceM_->referend);
-    assert(interfaceReferenceM);
-    assert(
-        LLVMTypeOf(controlBlockPtrLE_) == getInterfaceFatPtrStruct(interfaceReferenceM));
-    return InterfaceFatPtrLE(referenceM_, controlBlockPtrLE_);
-  }
-
-private:
-  std::function<LLVMTypeRef(InterfaceReferend*)> getInterfaceFatPtrStruct;
-};
-
-
 
 
 struct WeakFatPtrLE {

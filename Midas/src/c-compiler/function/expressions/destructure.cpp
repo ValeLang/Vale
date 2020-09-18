@@ -49,15 +49,9 @@ Ref translateDestructure(
   } else if (destructureM->structType->ownership == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
 
-    auto structRefLE =
-        functionState->defaultRegion->makeWrapperPtr(
-            destructureM->structType,
-            globalState->region->checkValidReference(FL(),
-                functionState, builder, destructureM->structType, structRef));
-    auto controlBlockPtrLE = getConcreteControlBlockPtr(globalState, builder, structRefLE);
-    deallocate(
-        AFL("Destroy freeing"), globalState, functionState, builder,
-        controlBlockPtrLE, destructureM->structType);
+    functionState->defaultRegion->deallocate(
+        AFL("Destroy freeing"), functionState, builder,
+        destructureM->structType, structRef);
   } else {
     assert(false);
   }

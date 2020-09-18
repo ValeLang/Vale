@@ -73,44 +73,4 @@ LLVMValueRef getUnknownSizeArrayLengthPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE unknownSizeArrayWrapperPtrLE);
 
-WrapperPtrLE getUnknownSizeArrayWrapperPtrForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefMT,
-    Ref arrayRef);
-
-WrapperPtrLE getUnknownSizeArrayWrapperPtrNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefMT,
-    Ref arrayRef);
-
-Ref getUnknownSizeArrayLengthNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    WrapperPtrLE arrayRefLE);
-
-Ref getUnknownSizeArrayLengthNormal(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Ref arrayRef);
-
-Ref getUnknownSizeArrayLengthForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    WrapperPtrLE arrayRefLE);
-
-Ref getUnknownSizeArrayLengthForce(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Ref arrayRef);
-
 #endif

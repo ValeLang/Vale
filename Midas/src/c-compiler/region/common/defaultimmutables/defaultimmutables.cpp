@@ -4,6 +4,7 @@
 #include <region/common/controlblock.h>
 #include <region/common/heap.h>
 #include <function/expressions/shared/string.h>
+#include <region/common/common.h>
 #include "defaultimmutables.h"
 
 ControlBlock makeImmControlBlock(GlobalState* globalState) {
@@ -106,15 +107,7 @@ void DefaultImmutables::discard(
         [this, from, globalState, functionState, blockState, sourceRef, sourceMT](
             LLVMBuilderRef thenBuilder) {
           buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
-          auto sourceWrapperPtrLE =
-              referendStructs->makeWrapperPtr(
-                  FL(), functionState, thenBuilder, sourceMT,
-                  globalState->region->checkValidReference(
-                      FL(), functionState, thenBuilder, sourceMT, sourceRef));
-          auto controlBlockPtrLE =
-              referendStructs->getConcreteControlBlockPtr(
-                  functionState, thenBuilder, sourceMT, sourceWrapperPtrLE);
-          deallocate(from, globalState, functionState, thenBuilder, controlBlockPtrLE, sourceMT);
+          innerDeallocate(from, globalState, functionState, referendStructs, thenBuilder, sourceMT, sourceRef);
         });
   } else {
     std::cerr << "Unimplemented type in discard: "

@@ -27,6 +27,7 @@ public:
   virtual void translateKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT, LLVMTypeRef elementLT) = 0;
 
   virtual ControlBlockPtrLE getConcreteControlBlockPtr(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* reference,
@@ -46,12 +47,20 @@ public:
       Reference* referenceM_,
       LLVMValueRef ptrLE) = 0;
 
-  virtual ControlBlockPtrLE makeControlBlockPtr(
+  // Skips the check that the object exists. Useful for weak interface refs.
+  virtual InterfaceFatPtrLE makeInterfaceFatPtrWithoutChecking(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
-      LLVMValueRef controlBlockPtrLE) = 0;
+      Reference* referenceM_,
+      LLVMValueRef ptrLE) = 0;
+
+//  virtual ControlBlockPtrLE makeControlBlockPtr(
+//      AreaAndFileAndLine checkerAFL,
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Referend* referendM,
+//      LLVMValueRef controlBlockPtrLE) = 0;
 
   virtual LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
@@ -63,18 +72,37 @@ public:
 
 
   virtual ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      InterfaceFatPtrLE interfaceFatPtrLE) = 0;
+
+  virtual ControlBlockPtrLE getControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
       LLVMBuilderRef builder,
       Referend* referendM,
       InterfaceFatPtrLE interfaceFatPtrLE) = 0;
 
   virtual ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
       Ref ref,
       Reference* referenceM) = 0;
 
-  virtual  ControlBlockPtrLE getControlBlockPtr(
+  virtual ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      // This will be a pointer if a mutable struct, or a fat ref if an interface.
+      LLVMValueRef ref,
+      Reference* referenceM) = 0;
+
+  virtual ControlBlockPtrLE getControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -83,7 +111,14 @@ public:
 
   virtual LLVMValueRef getStructContentsPtr(
       LLVMBuilderRef builder,
+      Referend* referend,
       WrapperPtrLE wrapperPtrLE) = 0;
+
+  virtual LLVMValueRef getVoidPtrFromInterfacePtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* virtualParamMT,
+      InterfaceFatPtrLE virtualArgLE) = 0;
 };
 
 
@@ -141,12 +176,19 @@ public:
       Reference* referenceM_,
       LLVMValueRef ptrLE) override;
 
-  ControlBlockPtrLE makeControlBlockPtr(
+  InterfaceFatPtrLE makeInterfaceFatPtrWithoutChecking(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
-      LLVMValueRef controlBlockPtrLE) override;
+      Reference* referenceM_,
+      LLVMValueRef ptrLE) override;
+
+//  ControlBlockPtrLE makeControlBlockPtr(
+//      AreaAndFileAndLine checkerAFL,
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Referend* referendM,
+//      LLVMValueRef controlBlockPtrLE) override;
 
   LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
@@ -154,6 +196,7 @@ public:
       Ref ref) override;
 
   ControlBlockPtrLE getConcreteControlBlockPtr(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* reference,
@@ -161,11 +204,21 @@ public:
 
 
   ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      InterfaceFatPtrLE interfaceFatPtrLE) override;
+
+  ControlBlockPtrLE getControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
       LLVMBuilderRef builder,
       Referend* referendM,
       InterfaceFatPtrLE interfaceFatPtrLE) override;
 
   ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -173,6 +226,15 @@ public:
       Reference* referenceM) override;
 
   ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      // This will be a pointer if a mutable struct, or a fat ref if an interface.
+      LLVMValueRef ref,
+      Reference* referenceM) override;
+
+  ControlBlockPtrLE getControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -184,7 +246,47 @@ public:
 
   LLVMValueRef getStructContentsPtr(
       LLVMBuilderRef builder,
+      Referend* referend,
       WrapperPtrLE wrapperPtrLE) override;
+
+
+  LLVMValueRef getVoidPtrFromInterfacePtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* virtualParamMT,
+      InterfaceFatPtrLE virtualArgLE) override;
+
+private:
+  ControlBlockPtrLE makeControlBlockPtr(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      LLVMValueRef controlBlockPtrLE);
+
+  ControlBlockPtrLE makeControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      LLVMValueRef controlBlockPtrLE);
+
+  WrapperPtrLE makeWrapperPtrWithoutChecking(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* referenceM,
+      LLVMValueRef ptrLE);
+
+  ControlBlockPtrLE getConcreteControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* reference,
+      WrapperPtrLE wrapperPtrLE);
+
+
+public:
 
   GlobalState* globalState;
 
@@ -252,6 +354,7 @@ public:
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
 
   ControlBlockPtrLE getConcreteControlBlockPtr(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* reference,
@@ -273,12 +376,19 @@ public:
       Reference* referenceM_,
       LLVMValueRef ptrLE) override;
 
-  ControlBlockPtrLE makeControlBlockPtr(
+  InterfaceFatPtrLE makeInterfaceFatPtrWithoutChecking(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
-      LLVMValueRef controlBlockPtrLE) override;
+      Reference* referenceM_,
+      LLVMValueRef ptrLE) override;
+
+//  ControlBlockPtrLE makeControlBlockPtr(
+//      AreaAndFileAndLine checkerAFL,
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Referend* referendM,
+//      LLVMValueRef controlBlockPtrLE) override;
 
   LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
@@ -289,11 +399,21 @@ public:
 
 
   ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      InterfaceFatPtrLE interfaceFatPtrLE) override;
+
+  ControlBlockPtrLE getControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
       LLVMBuilderRef builder,
       Referend* referendM,
       InterfaceFatPtrLE interfaceFatPtrLE) override;
 
   ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -301,6 +421,15 @@ public:
       Reference* referenceM) override;
 
   ControlBlockPtrLE getControlBlockPtr(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      // This will be a pointer if a mutable struct, or a fat ref if an interface.
+      LLVMValueRef ref,
+      Reference* referenceM) override;
+
+  ControlBlockPtrLE getControlBlockPtrWithoutChecking(
+      AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -309,7 +438,14 @@ public:
 
   LLVMValueRef getStructContentsPtr(
       LLVMBuilderRef builder,
+      Referend* referend,
       WrapperPtrLE wrapperPtrLE) override;
+
+  LLVMValueRef getVoidPtrFromInterfacePtr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* virtualParamMT,
+      InterfaceFatPtrLE virtualArgLE) override;
 
   GlobalState* globalState;
 

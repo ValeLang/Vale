@@ -26,7 +26,9 @@ static Census census = { 0, 0, 0, NULL };
 // Returns -1 if not found.
 static int64_t censusFindIndexOf(void* obj) {
   assert(obj);
-  assert(census.entries);
+  if (!census.entries) {
+    return -1;
+  }
   int64_t startIndex = ((uint64_t)obj) % census.capacity;
   for (int64_t i = 0; i < census.capacity; i++) {
     int64_t indexInTable = (startIndex + i) % census.capacity;

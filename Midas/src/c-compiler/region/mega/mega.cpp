@@ -1245,80 +1245,97 @@ Ref Mega::loadMember(
     Reference* targetType,
     const std::string& memberName) {
 
-  LLVMValueRef innerStructPtrLE = nullptr;
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::FAST: {
-      if (structRefMT->location == Location::INLINE) {
-        auto structRefLE = checkValidReference(FL(), functionState, builder,
-            structRefMT, structRef);
-        return wrap(globalState->region, expectedMemberType,
-            LLVMBuildExtractValue(
-                builder, structRefLE, memberIndex, memberName.c_str()));
-      } else {
-        switch (structRefMT->ownership) {
-          case Ownership::OWN:
-          case Ownership::SHARE:
-          case Ownership::BORROW: {
-            auto wrapperPtrLE =
-                referendStructs.makeWrapperPtr(FL(), functionState, builder, structRefMT,
-                    globalState->region->checkValidReference(FL(), functionState, builder,
-                        structRefMT, structRef));
-            innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
-            break;
+  if (structRefMT->ownership == Ownership::SHARE) {
+    auto memberLE =
+        defaultImmutables.loadMember(
+            functionState, builder, structRefMT, structRef, memberIndex, expectedMemberType, targetType, memberName);
+    auto resultRef =
+        upgradeLoadResultToRefWithTargetOwnership(
+            functionState, builder, expectedMemberType, targetType, memberLE);
+    return resultRef;
+  } else {
+    LLVMValueRef innerStructPtrLE = nullptr;
+    switch (globalState->opt->regionOverride) {
+      case RegionOverride::NAIVE_RC:
+      case RegionOverride::FAST: {
+        if (structRefMT->location == Location::INLINE) {
+          auto structRefLE = checkValidReference(FL(), functionState, builder,
+              structRefMT, structRef);
+          return wrap(globalState->region, expectedMemberType,
+              LLVMBuildExtractValue(
+                  builder, structRefLE, memberIndex, memberName.c_str()));
+        } else {
+          switch (structRefMT->ownership) {
+            case Ownership::OWN:
+            case Ownership::SHARE:
+            case Ownership::BORROW: {
+              auto wrapperPtrLE =
+                  referendStructs.makeWrapperPtr(FL(), functionState, builder, structRefMT,
+                      globalState->region->checkValidReference(FL(), functionState, builder,
+                          structRefMT, structRef));
+              innerStructPtrLE = referendStructs.getStructContentsPtr(builder,
+                  structRefMT->referend, wrapperPtrLE);
+              break;
+            }
+            case Ownership::WEAK:
+              assert(false); // we arent supposed to force in naive/fast
+              break;
+            default:
+              assert(false);
           }
-          case Ownership::WEAK:
-            assert(false); // we arent supposed to force in naive/fast
-            break;
-          default:
-            assert(false);
         }
+        break;
       }
-      break;
-    }
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+      case RegionOverride::RESILIENT_V0:
+      case RegionOverride::RESILIENT_V1:
+      case RegionOverride::RESILIENT_V2: {
 
-      if (structRefMT->location == Location::INLINE) {
-        auto structRefLE = checkValidReference(FL(), functionState, builder,
-            structRefMT, structRef);
-        return wrap(globalState->region, expectedMemberType,
-            LLVMBuildExtractValue(
-                builder, structRefLE, memberIndex, memberName.c_str()));
-      } else {
-        switch (structRefMT->ownership) {
-          case Ownership::OWN:
-          case Ownership::SHARE: {
-            auto wrapperPtrLE =
-                referendStructs.makeWrapperPtr(FL(), functionState, builder, structRefMT,
-                    globalState->region->checkValidReference(FL(), functionState, builder, structRefMT,
-                        structRef));
-            innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
-            break;
+        if (structRefMT->location == Location::INLINE) {
+          auto structRefLE = checkValidReference(FL(), functionState, builder,
+              structRefMT, structRef);
+          return wrap(globalState->region, expectedMemberType,
+              LLVMBuildExtractValue(
+                  builder, structRefLE, memberIndex, memberName.c_str()));
+        } else {
+          switch (structRefMT->ownership) {
+            case Ownership::OWN:
+            case Ownership::SHARE: {
+              auto wrapperPtrLE =
+                  referendStructs.makeWrapperPtr(FL(), functionState, builder, structRefMT,
+                      globalState->region->checkValidReference(FL(), functionState, builder,
+                          structRefMT,
+                          structRef));
+              innerStructPtrLE = referendStructs.getStructContentsPtr(builder,
+                  structRefMT->referend, wrapperPtrLE);
+              break;
+            }
+            case Ownership::BORROW:
+            case Ownership::WEAK: {
+              auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder,
+                  structRefMT,
+                  structRef);
+              innerStructPtrLE = referendStructs.getStructContentsPtr(builder,
+                  structRefMT->referend, wrapperPtrLE);
+              break;
+            }
+            default:
+              assert(false);
           }
-          case Ownership::BORROW:
-          case Ownership::WEAK: {
-            auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT,
-                structRef);
-            innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
-            break;
-          }
-          default:
-            assert(false);
         }
+        break;
       }
-      break;
+      default:
+        assert(false);
     }
-    default:
-      assert(false);
+
+    auto memberLE =
+        loadInnerInnerStructMember(
+            globalState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
+    auto resultRef =
+        upgradeLoadResultToRefWithTargetOwnership(
+            functionState, builder, expectedMemberType, targetType, memberLE);
+    return resultRef;
   }
-
-  auto memberLE = loadInnerInnerStructMember(this, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
-  auto resultRef =
-      upgradeLoadResultToRefWithTargetOwnership(
-          functionState, builder, expectedMemberType, targetType, memberLE);
-  return resultRef;
 }
 
 void Mega::storeMember(

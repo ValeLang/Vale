@@ -92,4 +92,17 @@ LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceFatPtrLE);
 
+LLVMValueRef getObjPtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    InterfaceFatPtrLE interfaceRefLE);
+
+void innerDeallocate(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    IReferendStructsSource* referendStrutsSource,
+    LLVMBuilderRef builder,
+    Reference* refMT,
+    Ref refLE);
+
 #endif

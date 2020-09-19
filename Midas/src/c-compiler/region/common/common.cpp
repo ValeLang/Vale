@@ -87,7 +87,7 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend)
 }
 
 Ref loadInnerInnerStructMember(
-    IRegion* region,
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef innerStructPtrLE,
     int memberIndex,
@@ -101,7 +101,7 @@ Ref loadInnerInnerStructMember(
           LLVMBuildStructGEP(
               builder, innerStructPtrLE, memberIndex, memberName.c_str()),
           memberName.c_str());
-  return wrap(region, expectedType, result);
+  return wrap(globalState->region, expectedType, result);
 }
 
 void storeInnerInnerStructMember(
@@ -281,7 +281,7 @@ LLVMValueRef callFree(
   }
 }
 
-void innerDeallocate(
+void innerDeallocateYonder(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
@@ -289,9 +289,11 @@ void innerDeallocate(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref refLE) {
-  auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder, refLE, refMT);
+  auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder,
+      refLE, refMT);
 
-  functionState->defaultRegion->noteWeakableDestroyed(functionState, builder, refMT, controlBlockPtrLE);
+  functionState->defaultRegion->noteWeakableDestroyed(functionState, builder, refMT,
+      controlBlockPtrLE);
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
@@ -301,13 +303,32 @@ void innerDeallocate(
         "");
   }
 
-  if (refMT->location == Location::INLINE) {
-    // Do nothing, it was alloca'd.
-  } else if (refMT->location == Location::YONDER) {
-    callFree(globalState, builder, controlBlockPtrLE);
-  }
+  callFree(globalState, builder, controlBlockPtrLE);
 
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, -1);
+  }
+}
+
+void innerDeallocate(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    IReferendStructsSource* referendStrutsSource,
+    LLVMBuilderRef builder,
+    Reference* refMT,
+    Ref refLE) {
+  if (refMT->ownership == Ownership::SHARE) {
+    if (refMT->location == Location::INLINE) {
+      // Do nothing, it's inline!
+    } else {
+      return innerDeallocateYonder(from, globalState, functionState, referendStrutsSource, builder, refMT, refLE);
+    }
+  } else {
+    if (refMT->location == Location::INLINE) {
+      assert(false); // implement
+    } else {
+      return innerDeallocateYonder(from, globalState, functionState, referendStrutsSource, builder, refMT, refLE);
+    }
   }
 }

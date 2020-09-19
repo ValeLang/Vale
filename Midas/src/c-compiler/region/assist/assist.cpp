@@ -310,33 +310,47 @@ Ref Assist::loadMember(
     Reference* expectedMemberType,
     Reference* targetType,
     const std::string& memberName) {
-  LLVMValueRef innerStructPtrLE = nullptr;
-  switch (structRefMT->ownership) {
-    case Ownership::OWN:
-    case Ownership::SHARE:
-    case Ownership::BORROW: {
-      auto wrapperPtrLE =
-          referendStructs.makeWrapperPtr(
-              FL(), functionState, builder, structRefMT,
-              globalState->region->checkValidReference(FL(), functionState, builder, structRefMT, structRef));
-      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
-      break;
+  if (structRefMT->ownership == Ownership::SHARE) {
+    auto memberLE =
+        defaultImmutables.loadMember(
+            functionState, builder, structRefMT, structRef, memberIndex, expectedMemberType, targetType, memberName);
+    auto resultRef =
+        upgradeLoadResultToRefWithTargetOwnership(
+            functionState, builder, expectedMemberType, targetType, memberLE);
+    return resultRef;
+  } else {
+    LLVMValueRef innerStructPtrLE = nullptr;
+    switch (structRefMT->ownership) {
+      case Ownership::OWN:
+      case Ownership::SHARE:
+      case Ownership::BORROW: {
+        auto wrapperPtrLE =
+            referendStructs.makeWrapperPtr(
+                FL(), functionState, builder, structRefMT,
+                globalState->region->checkValidReference(FL(), functionState, builder, structRefMT,
+                    structRef));
+        innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend,
+            wrapperPtrLE);
+        break;
+      }
+      case Ownership::WEAK: {
+        auto wrapperPtrLE =
+            globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT, structRef);
+        innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend,
+            wrapperPtrLE);
+        break;
+      }
+      default:
+        assert(false);
     }
-    case Ownership::WEAK: {
-      auto wrapperPtrLE =
-          globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT, structRef);
-      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
-      break;
-    }
-    default:
-      assert(false);
+    auto memberLE =
+        loadInnerInnerStructMember(
+            globalState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
+    auto resultRef =
+        upgradeLoadResultToRefWithTargetOwnership(
+            functionState, builder, expectedMemberType, targetType, memberLE);
+    return resultRef;
   }
-  auto memberLE =
-      loadInnerInnerStructMember(this, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
-  auto resultRef =
-      upgradeLoadResultToRefWithTargetOwnership(
-          functionState, builder, expectedMemberType, targetType, memberLE);
-  return resultRef;
 }
 
 void Assist::storeMember(

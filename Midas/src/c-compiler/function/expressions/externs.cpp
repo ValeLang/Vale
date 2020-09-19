@@ -344,8 +344,10 @@ Ref translateExternCall(
     auto externishArgsLE = std::vector<LLVMValueRef>{};
     externishArgsLE.reserve(call->argExprs.size());
     for (int i = 0; i < call->argExprs.size(); i++) {
-      auto argRef = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
-      auto valishArgLE = globalState->region->checkValidReference(FL(), functionState, builder, call->function->params[i], argRef);
+      auto argExpr = call->argExprs[i];
+      auto argRefMT = call->function->params[i];
+      auto argRef = translateExpression(globalState, functionState, blockState, builder, argExpr);
+      auto valishArgLE = globalState->region->checkValidReference(FL(), functionState, builder, argRefMT, argRef);
 
       LLVMValueRef externishArgLE = nullptr;
       if (call->argTypes[i] == globalState->metalCache.intRef) {
@@ -361,6 +363,20 @@ Ref translateExternCall(
         assert(false); // How can we hand a never into something?
       } else if (call->argTypes[i] == globalState->metalCache.emptyTupleStructRef) {
         assert(false); // How can we hand a void into something?
+      } else if (auto structReferend = dynamic_cast<StructReferend*>(argRefMT->referend)) {
+        if (argRefMT->ownership == Ownership::SHARE) {
+          if (argRefMT->location == Location::INLINE) {
+            assert(LLVMTypeOf(valishArgLE) ==
+                globalState->region->getReferendStructsSource()->getInnerStruct(structReferend));
+            externishArgLE = valishArgLE;
+          } else {
+            std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+            assert(false);
+          }
+        } else {
+          std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+          assert(false);
+        }
       } else {
         std::cerr << "Invalid type for extern!" << std::endl;
         assert(false);

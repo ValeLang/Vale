@@ -10,6 +10,7 @@
 #include <region/common/heap.h>
 #include <function/expressions/shared/members.h>
 #include <function/expressions/shared/elements.h>
+#include <function/expressions/shared/string.h>
 #include "mega.h"
 
 // Transmutes a ptr of one ownership (such as own) to another ownership (such as borrow).
@@ -338,17 +339,18 @@ Ref constructCountedStruct(
   WrapperPtrLE newStructWrapperPtrLE =
       referendStructsSource->makeWrapperPtr(
           FL(), functionState, builder, structTypeM,
-          functionState->defaultRegion->mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL));
+          functionState->defaultRegion->mallocKnownSize(
+              functionState, builder, structTypeM->location, structL));
   globalState->region->fillControlBlock(
       from,
       functionState, builder,
       structTypeM->referend,
       structM->mutability,
-      referendStructsSource->getConcreteControlBlockPtr(functionState, builder, structTypeM, newStructWrapperPtrLE), structM->name->name);
+      referendStructsSource->getConcreteControlBlockPtr(from, functionState, builder, structTypeM, newStructWrapperPtrLE), structM->name->name);
   fillInnerStruct(
       globalState, functionState,
       builder, structM, membersLE,
-      referendStructsSource->getStructContentsPtr(builder, newStructWrapperPtrLE));
+      referendStructsSource->getStructContentsPtr(builder, structTypeM->referend, newStructWrapperPtrLE));
   buildFlare(FL(), globalState, functionState, builder, "Done filling new struct");
   return wrap(functionState->defaultRegion, structTypeM, newStructWrapperPtrLE.refLE);
 }
@@ -418,7 +420,7 @@ Ref Mega::allocate(
     case Mutability::MUTABLE: {
       auto countedStructL = referendStructs.getWrapperStruct(structReferend);
       return constructCountedStruct(
-          from, globalState, functionState, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE);
+          from, globalState, functionState, &referendStructs, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE);
     }
     case Mutability::IMMUTABLE: {
       if (desiredReference->location == Location::INLINE) {
@@ -432,7 +434,7 @@ Ref Mega::allocate(
         auto countedStructL =
             referendStructs.getWrapperStruct(structReferend);
         return constructCountedStruct(
-            from, globalState, functionState, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE);
+            from, globalState, functionState, &referendStructs, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE);
       }
     }
     default:
@@ -552,34 +554,6 @@ void Mega::alias(
   }
 }
 
-void Mega::naiveRcFree(
-    FunctionState* functionState,
-    BlockState* blockState,
-    LLVMBuilderRef builder,
-    Reference* sourceMT,
-    Ref sourceRef) {
-  if (dynamic_cast<InterfaceReferend *>(sourceMT->referend)) {
-    auto sourceInterfacePtrLE =
-        referendStructs.makeInterfaceFatPtr(
-            FL(), functionState, builder, sourceMT,
-            checkValidReference(FL(), functionState, builder, sourceMT, sourceRef));
-    auto controlBlockPtrLE = referendStructs.getControlBlockPtr(globalState, builder, sourceInterfacePtrLE);
-    deallocate(FL(), functionState, builder, controlBlockPtrLE, sourceMT);
-  } else if (dynamic_cast<StructReferend *>(sourceMT->referend) ||
-      dynamic_cast<KnownSizeArrayT *>(sourceMT->referend) ||
-      dynamic_cast<UnknownSizeArrayT *>(sourceMT->referend)) {
-    auto sourceWrapperPtrLE =
-        referendStructs.makeWrapperPtr(
-            FL(), functionState, builder, sourceMT,
-            checkValidReference(FL(), functionState, builder, sourceMT, sourceRef));
-    auto controlBlockPtrLE = referendStructs.getConcreteControlBlockPtr(functionState, builder, refhere, sourceWrapperPtrLE);
-    deallocate(FL(), globalState, functionState, builder,
-        controlBlockPtrLE, sourceMT);
-  } else {
-    assert(false);
-  }
-}
-
 void Mega::dealias(
     AreaAndFileAndLine from,
     FunctionState* functionState,
@@ -603,7 +577,7 @@ void Mega::dealias(
           buildIf(
               functionState, builder, isZeroLE(builder, rcLE),
               [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
-                naiveRcFree(functionState, blockState, thenBuilder, sourceMT, sourceRef);
+                deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
               });
         } else if (sourceMT->ownership == Ownership::WEAK) {
           discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
@@ -914,7 +888,7 @@ Ref Mega::constructKnownSizeArray(
       builder,
       refM->referend,
       ksaMT->rawArray->mutability,
-      referendStructs.getConcreteControlBlockPtr(functionState, builder, refhere, newStructLE),
+      referendStructs.getConcreteControlBlockPtr(FL(), functionState, builder, refM, newStructLE),
       ksaMT->name->name);
   fillKnownSizeArray(
       globalState,
@@ -1135,59 +1109,32 @@ void Mega::discardOwningRef(
     LLVMBuilderRef builder,
     Reference* sourceMT,
     Ref sourceRef) {
-  auto exprWrapperPtrLE =
-      referendStructs.makeWrapperPtr(
-          FL(), functionState, builder, sourceMT,
-          checkValidReference(FL(), functionState, builder, sourceMT, sourceRef));
-
   switch (globalState->opt->regionOverride) {
     case RegionOverride::NAIVE_RC: {
       auto rcLE =
           adjustStrongRc(
               AFL("Destroy decrementing the owning ref"),
-              globalState, functionState, builder, sourceRef, sourceMT, -1);
+              globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
       buildIf(
           functionState, builder, isZeroLE(builder, rcLE),
-          [this, functionState, blockState, sourceRef, exprWrapperPtrLE, sourceMT](
-              LLVMBuilderRef thenBuilder) {
-            if (dynamic_cast<InterfaceReferend*>(sourceMT->referend)) {
-              auto sourceInterfacePtrLE =
-                  referendStructs.makeInterfaceFatPtr(
-                      FL(), functionState, thenBuilder, sourceMT,
-                      checkValidReference(FL(), functionState, thenBuilder, sourceMT, sourceRef));
-              auto controlBlockPtrLE =
-                  referendStructs.getControlBlockPtr(globalState, thenBuilder, sourceInterfacePtrLE);
-              deallocate(FL(), globalState, functionState, thenBuilder,
-                  controlBlockPtrLE, sourceMT);
-            } else if (dynamic_cast<StructReferend*>(sourceMT->referend) ||
-                dynamic_cast<KnownSizeArrayT*>(sourceMT->referend) ||
-                dynamic_cast<UnknownSizeArrayT*>(sourceMT->referend)) {
-              deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
-            } else {
-              assert(false);
-            }
+          [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
+            deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
           });
       break;
     }
     case RegionOverride::FAST: {
       // Do nothing
 
-      auto controlBlockPtrLE =
-          referendStructs.getConcreteControlBlockPtr(
-              functionState, builder, sourceMT, exprWrapperPtrLE);
       // Free it!
-      deallocate(AFL("discardOwningRef"), globalState, functionState, builder,
-          controlBlockPtrLE, sourceMT);
+      deallocate(AFL("discardOwningRef"), functionState, builder, sourceMT, sourceRef);
       break;
     }
     case RegionOverride::RESILIENT_V0: {
       // Mutables in resilient mode dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
-      auto controlBlockPtrLE = referendStructs.getConcreteControlBlockPtr(functionState, builder, sourceMT, exprWrapperPtrLE);
       // Free it!
-      deallocate(AFL("discardOwningRef"), globalState, functionState, builder,
-          controlBlockPtrLE, sourceMT);
+      deallocate(AFL("discardOwningRef"), functionState, builder, sourceMT, sourceRef);
       break;
     }
     case RegionOverride::RESILIENT_V1:
@@ -1195,10 +1142,9 @@ void Mega::discardOwningRef(
       // Mutables in resilient v1+2 dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
-      auto controlBlockPtrLE = referendStructs.getConcreteControlBlockPtr(functionState, builder, refhere, exprWrapperPtrLE);
       // Free it!
-      deallocate(AFL("discardOwningRef"), globalState, functionState, builder,
-          controlBlockPtrLE, sourceMT);
+      deallocate(AFL("discardOwningRef"), functionState, builder,
+          sourceMT, sourceRef);
       break;
     }
     default: {
@@ -1318,7 +1264,7 @@ Ref Mega::loadMember(
                 referendStructs.makeWrapperPtr(FL(), functionState, builder, structRefMT,
                     globalState->region->checkValidReference(FL(), functionState, builder,
                         structRefMT, structRef));
-            innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+            innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
             break;
           }
           case Ownership::WEAK:
@@ -1348,14 +1294,14 @@ Ref Mega::loadMember(
                 referendStructs.makeWrapperPtr(FL(), functionState, builder, structRefMT,
                     globalState->region->checkValidReference(FL(), functionState, builder, structRefMT,
                         structRef));
-            innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+            innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
             break;
           }
           case Ownership::BORROW:
           case Ownership::WEAK: {
             auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT,
                 structRef);
-            innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+            innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
             break;
           }
           default:
@@ -1397,14 +1343,14 @@ void Mega::storeMember(
                   FL(), functionState, builder, structRefMT,
                   globalState->region->checkValidReference(
                       FL(), functionState, builder, structRefMT, structRef));
-          innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+          innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
           break;
         }
         case Ownership::WEAK: {
           auto wrapperPtrLE =
               globalState->region->lockWeakRef(
                   FL(), functionState, builder, structRefMT, structRef);
-          innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+          innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
           break;
         }
         default:
@@ -1423,7 +1369,7 @@ void Mega::storeMember(
                   FL(), functionState, builder, structRefMT,
                   globalState->region->checkValidReference(
                       FL(), functionState, builder, structRefMT, structRef));
-          innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+          innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
           break;
         }
         case Ownership::BORROW:
@@ -1431,7 +1377,7 @@ void Mega::storeMember(
           auto wrapperPtrLE =
               globalState->region->lockWeakRef(
                   FL(), functionState, builder, structRefMT, structRef);
-          innerStructPtrLE = getStructContentsPtr(builder, wrapperPtrLE);
+          innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
           break;
         }
         default:
@@ -1471,7 +1417,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           itablePtrLE =
               getItablePtrFromInterfacePtr(
                   globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
+          auto objVoidPtrLE = referendStructs.getVoidPtrFromInterfacePtr(functionState, builder,
               virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
@@ -1480,7 +1426,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           auto weakFatPtrLE = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              referendStructs.makeInterfaceFatPtr(
+              referendStructs.makeInterfaceFatPtrWithoutChecking(
                   FL(), functionState, builder, virtualParamMT,
                   fatWeaks.getInnerRefFromWeakRef(
                       functionState, builder, virtualParamMT, weakFatPtrLE));
@@ -1503,8 +1449,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
               referendStructs.makeInterfaceFatPtr(
                   FL(), functionState, builder, virtualParamMT, virtualArgLE);
           itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
-              virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = referendStructs.getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
@@ -1513,7 +1458,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           auto virtualArgWeakRef = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              referendStructs.makeInterfaceFatPtr(
+              referendStructs.makeInterfaceFatPtrWithoutChecking(
                   FL(), functionState, builder, virtualParamMT,
                   fatWeaks.getInnerRefFromWeakRef(
                       functionState, builder, virtualParamMT, virtualArgWeakRef));
@@ -1536,8 +1481,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
               referendStructs.makeInterfaceFatPtr(
                   FL(), functionState, builder, virtualParamMT, virtualArgLE);
           itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
-              virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = referendStructs.getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
@@ -1546,7 +1490,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           auto virtualArgWeakRef = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              referendStructs.makeInterfaceFatPtr(
+              referendStructs.makeInterfaceFatPtrWithoutChecking(
                   FL(), functionState, builder, virtualParamMT,
                   fatWeaks.getInnerRefFromWeakRef(
                       functionState, builder, virtualParamMT, virtualArgWeakRef));
@@ -1569,8 +1513,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
               referendStructs.makeInterfaceFatPtr(
                   FL(), functionState, builder, virtualParamMT, virtualArgLE);
           itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-          auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
-              virtualParamMT, virtualArgInterfaceFatPtrLE);
+          auto objVoidPtrLE = referendStructs.getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
           newVirtualArgLE = objVoidPtrLE;
           break;
         }
@@ -1579,7 +1522,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
           auto virtualArgWeakRef = weakRefStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
           // Disassemble the weak interface ref.
           auto interfaceRefLE =
-              referendStructs.makeInterfaceFatPtr(
+              referendStructs.makeInterfaceFatPtrWithoutChecking(
                   FL(), functionState, builder, virtualParamMT,
                   fatWeaks.getInnerRefFromWeakRef(
                       functionState, builder, virtualParamMT, virtualArgWeakRef));
@@ -1623,7 +1566,12 @@ Ref Mega::getUnknownSizeArrayLength(
       switch (usaRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN: {
-          return getUnknownSizeArrayLength(functionState, builder, usaRefMT, arrayRef);
+          auto wrapperPtrLE =
+              referendStructs.makeWrapperPtr(
+                  FL(), functionState, builder, usaRefMT,
+                  globalState->region->checkValidReference(
+                      FL(), functionState, builder, usaRefMT, arrayRef));
+          return ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
         }
         case Ownership::BORROW: {
           auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef);
@@ -1652,6 +1600,9 @@ LLVMValueRef Mega::checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     Ref ref) {
+
+
+
   Reference* actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
   std::tie(actualRefM, refLE) = megaGetRefInnardsForChecking(ref);
@@ -1668,7 +1619,7 @@ LLVMValueRef Mega::checkValidReference(
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
       auto controlBlockPtrLE =
-          getControlBlockPtr(globalState, functionState, builder, refLE, refM);
+          referendStructs.getControlBlockPtr(FL(), functionState, builder, refLE, refM);
       buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
@@ -1680,7 +1631,7 @@ LLVMValueRef Mega::checkValidReference(
         // Nothing to do, there's no control block or ref counts or anything.
       } else if (refM->location == Location::YONDER) {
         auto controlBlockPtrLE =
-            getControlBlockPtr(globalState, functionState, builder, refLE, refM);
+            referendStructs.getControlBlockPtr(FL(), functionState, builder, refLE, refM);
 
         // We dont check ref count >0 because imm destructors receive with rc=0.
         //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
@@ -1702,7 +1653,7 @@ LLVMValueRef Mega::checkValidReference(
               auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
               buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
             }
-            auto controlBlockPtrLE = getControlBlockPtr(globalState, functionState, builder, refLE, refM);
+            auto controlBlockPtrLE = referendStructs.getControlBlockPtr(FL(), functionState, builder, refLE, refM);
             buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
                 controlBlockPtrLE.refLE);
           } else if (refM->ownership == Ownership::WEAK) {
@@ -2347,61 +2298,13 @@ Ref Mega::upcast(
 }
 
 
-LLVMValueRef callFree(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    ControlBlockPtrLE controlBlockPtrLE) {
-  if (globalState->opt->genHeap) {
-    auto concreteAsVoidPtrLE =
-        LLVMBuildBitCast(
-            builder,
-            controlBlockPtrLE.refLE,
-            LLVMPointerType(LLVMVoidType(), 0),
-            "concreteVoidPtrForFree");
-    return LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
-  } else {
-    auto concreteAsCharPtrLE =
-        LLVMBuildBitCast(
-            builder,
-            controlBlockPtrLE.refLE,
-            LLVMPointerType(LLVMInt8Type(), 0),
-            "concreteCharPtrForFree");
-    return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
-  }
-}
-
 void Mega::deallocate(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref refLE) {
-  auto structWrapperPtrLE =
-      referendStructs.makeWrapperPtr(
-          FL(), functionState, builder, refMT,
-          globalState->region->checkValidReference(FL(),
-              functionState, builder, refMT, refLE));
-  auto controlBlockPtrLE = getConcreteControlBlockPtr(functionState, builder, refhere, structWrapperPtrLE);
-
-  functionState->defaultRegion->noteWeakableDestroyed(functionState, builder, refMT, controlBlockPtrLE);
-
-  if (globalState->opt->census) {
-    LLVMValueRef resultAsVoidPtrLE =
-        LLVMBuildBitCast(
-            builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
-    LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
-        "");
-  }
-
-  if (refMT->location == Location::INLINE) {
-    // Do nothing, it was alloca'd.
-  } else if (refMT->location == Location::YONDER) {
-    callFree(globalState, builder, controlBlockPtrLE);
-  }
-
-  if (globalState->opt->census) {
-    adjustCounter(builder, globalState->liveHeapObjCounter, -1);
-  }
+  innerDeallocate(from, globalState, functionState, &referendStructs, builder, refMT, refLE);
 }
 
 
@@ -2469,7 +2372,7 @@ Ref Mega::constructUnknownSizeArrayCountedStruct(
       builder,
       unknownSizeArrayT,
       unknownSizeArrayT->rawArray->mutability,
-      referendStructs.getConcreteControlBlockPtr(functionState, builder, usaMT, usaWrapperPtrLE),
+      referendStructs.getConcreteControlBlockPtr(FL(), functionState, builder, usaMT, usaWrapperPtrLE),
       typeName);
   LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(builder, usaWrapperPtrLE));
   fillUnknownSizeArray(
@@ -2588,6 +2491,11 @@ WrapperPtrLE Mega::mallocStr(
 
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+
+    LLVMValueRef resultAsVoidPtrLE =
+        LLVMBuildBitCast(
+            builder, destCharPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
   auto newStrWrapperPtrLE =
@@ -2598,20 +2506,15 @@ WrapperPtrLE Mega::mallocStr(
               destCharPtrLE,
               LLVMPointerType(referendStructs.getStringWrapperStruct(), 0),
               "newStrWrapperPtr"));
+
   globalState->region->fillControlBlock(
       FL(),
       functionState, builder,
       globalState->metalCache.str,
       Mutability::IMMUTABLE,
-      getConcreteControlBlockPtr(functionState, builder, refhere, newStrWrapperPtrLE), "Str");
+      referendStructs.getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache.strRef, newStrWrapperPtrLE), "Str");
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
-  if (globalState->opt->census) {
-    LLVMValueRef resultAsVoidPtrLE =
-        LLVMBuildBitCast(
-            builder, newStrWrapperPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
-  }
 
   // The caller still needs to initialize the actual chars inside!
 

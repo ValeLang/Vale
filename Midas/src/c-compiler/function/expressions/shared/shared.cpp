@@ -89,7 +89,7 @@ LLVMValueRef adjustStrongRc(
   }
 
   auto controlBlockPtrLE =
-      referendStructsSource->getControlBlockPtr(functionState, builder, exprRef, refM);
+      referendStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
@@ -245,18 +245,22 @@ void buildAssertCensusContains(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
-  LLVMValueRef resultAsVoidPtrLE =
-      LLVMBuildPointerCast(
-          builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "");
-  auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
-  auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
-  buildIf(functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
-      [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
-        buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
-        buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-      });
+  if (globalState->opt->census) {
+    LLVMValueRef resultAsVoidPtrLE =
+        LLVMBuildPointerCast(
+            builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+    auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE,
+        1, "");
+    auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder, isRegisteredIntLE, LLVMInt1Type(),
+        "");
+    buildIf(functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
+        [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
+          buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
+          buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+          LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        });
+  }
 }
 
 Ref buildCall(

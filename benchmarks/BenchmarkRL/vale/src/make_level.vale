@@ -491,7 +491,7 @@ fn get_hash_set_random_nth<T, H, E>(
     rand &!LCGRand,
     set &HashSet<T, H, E>)
 Opt<T> {
-    if (set.empty?()) {
+    if (set.isEmpty()) {
         result Opt<T> = None<T>();
         ret result;
     }

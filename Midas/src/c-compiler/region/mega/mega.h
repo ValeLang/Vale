@@ -353,13 +353,6 @@ private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);
 
-  void naiveRcFree(
-      FunctionState* functionState,
-      BlockState* blockState,
-      LLVMBuilderRef thenBuilder,
-      Reference* sourceMT,
-      Ref sourceRef);
-
 
 protected:
   GlobalState* globalState;

@@ -323,6 +323,38 @@ WrapperPtrLE ReferendStructs::makeWrapperPtr(
     Reference* referenceM,
     LLVMValueRef ptrLE) {
   assert(ptrLE != nullptr);
+  Referend* referend = referenceM->referend;
+
+  WrapperPtrLE wrapperPtrLE = makeWrapperPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
+
+  if (dynamic_cast<StructReferend*>(referend)) {
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
+  } else if (dynamic_cast<InterfaceReferend*>(referend)) {
+    // can we even get a wrapper struct for an interface?
+    assert(false);
+  } else if (dynamic_cast<KnownSizeArrayT*>(referend)) {
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
+  } else if (dynamic_cast<UnknownSizeArrayT*>(referend)) {
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
+  } else if (dynamic_cast<Str*>(referend)) {
+    auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
+    buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
+  } else assert(false);
+
+  return wrapperPtrLE;
+}
+
+
+WrapperPtrLE ReferendStructs::makeWrapperPtrWithoutChecking(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* referenceM,
+    LLVMValueRef ptrLE) {
+  assert(ptrLE != nullptr);
 
   Referend* referend = referenceM->referend;
   LLVMTypeRef wrapperStructLT = nullptr;
@@ -339,14 +371,12 @@ WrapperPtrLE ReferendStructs::makeWrapperPtr(
   } else assert(false);
   assert(LLVMTypeOf(ptrLE) == LLVMPointerType(wrapperStructLT, 0));
 
+  WrapperPtrLE wrapperPtrLE(referenceM, ptrLE);
 
-  auto controlBlockPtrLE = getControlBlockPtr(functionState, builder, ptrLE, referenceM);
-  buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-
-  return WrapperPtrLE(referenceM, ptrLE);
+  return wrapperPtrLE;
 }
 
-InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtr(
+InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -356,13 +386,25 @@ InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtr(
   assert(interfaceReferendM);
   assert(LLVMTypeOf(ptrLE) == getInterfaceRefStruct(interfaceReferendM));
 
-  auto controlBlockPtrLE = getControlBlockPtr(functionState, builder, ptrLE, referenceM_);
-  buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-
   auto interfaceFatPtrLE = InterfaceFatPtrLE(referenceM_, ptrLE);
 
   auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
   buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+
+  return interfaceFatPtrLE;
+}
+
+InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtr(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* referenceM_,
+    LLVMValueRef ptrLE) {
+  auto interfaceFatPtrLE =
+      makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM_, ptrLE);
+
+  auto controlBlockPtrLE = getObjPtrFromInterfaceRef(builder, interfaceFatPtrLE);
+  buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
 
   return interfaceFatPtrLE;
 }
@@ -373,12 +415,21 @@ ControlBlockPtrLE ReferendStructs::makeControlBlockPtr(
     LLVMBuilderRef builder,
     Referend* referendM,
     LLVMValueRef controlBlockPtrLE) {
+  auto result = makeControlBlockPtrWithoutChecking(checkerAFL, functionState, builder, referendM, controlBlockPtrLE);
+  buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
+  return result;
+}
+
+ControlBlockPtrLE ReferendStructs::makeControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    LLVMValueRef controlBlockPtrLE) {
   auto actualTypeOfControlBlockPtrLE = LLVMTypeOf(controlBlockPtrLE);
   auto expectedControlBlockStructL = getControlBlock(referendM)->getStruct();
   auto expectedControlBlockStructPtrL = LLVMPointerType(expectedControlBlockStructL, 0);
   assert(actualTypeOfControlBlockPtrLE == expectedControlBlockStructPtrL);
-
-  buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
 
   return ControlBlockPtrLE(referendM, controlBlockPtrLE);
 }
@@ -410,13 +461,27 @@ LLVMValueRef ReferendStructs::getStringLen(FunctionState* functionState, LLVMBui
 }
 
 ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* reference,
     WrapperPtrLE wrapperPtrLE) {
   // Control block is always the 0th element of every concrete struct.
   return makeControlBlockPtr(
-      FL(), functionState, builder,
+      from, functionState, builder,
+      wrapperPtrLE.refM->referend,
+      LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
+}
+
+ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* reference,
+    WrapperPtrLE wrapperPtrLE) {
+  // Control block is always the 0th element of every concrete struct.
+  return makeControlBlockPtrWithoutChecking(
+      from, functionState, builder,
       wrapperPtrLE.refM->referend,
       LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
 }
@@ -424,6 +489,8 @@ ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtr(
 
 
 ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Referend* referendM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
@@ -431,12 +498,28 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
   // and we dont have to cast it. We would have to cast if we were accessing the
   // actual object though.
   return makeControlBlockPtr(
-      FL(), functionState, builder,
+      from, functionState, builder,
+      interfaceFatPtrLE.refM->referend,
+      LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
+}
+
+ControlBlockPtrLE ReferendStructs::getControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    InterfaceFatPtrLE interfaceFatPtrLE) {
+  // Interface fat pointer's first element points directly at the control block,
+  // and we dont have to cast it. We would have to cast if we were accessing the
+  // actual object though.
+  return makeControlBlockPtrWithoutChecking(
+      from, functionState, builder,
       interfaceFatPtrLE.refM->referend,
       LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
 }
 
 ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -446,39 +529,40 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
     auto referenceLE =
         makeInterfaceFatPtr(
-            FL(), functionState, builder, referenceM,
-            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
-    return getControlBlockPtr(builder, referendM, referenceLE);
+            from, functionState, builder, referenceM,
+            globalState->region->checkValidReference(from, functionState, builder, referenceM, ref));
+    return getControlBlockPtr(from, functionState, builder, referendM, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
     auto referenceLE =
         makeWrapperPtr(
-            FL(), functionState, builder, referenceM,
-            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+            from, functionState, builder, referenceM,
+            globalState->region->checkValidReference(from, functionState, builder, referenceM, ref));
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
     auto referenceLE =
         makeWrapperPtr(
-            FL(), functionState, builder, referenceM,
-            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+            from, functionState, builder, referenceM,
+            globalState->region->checkValidReference(from, functionState, builder, referenceM, ref));
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
     auto referenceLE =
         makeWrapperPtr(
-            FL(), functionState, builder, referenceM,
-            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+            from, functionState, builder, referenceM,
+            globalState->region->checkValidReference(from, functionState, builder, referenceM, ref));
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
     auto referenceLE =
         makeWrapperPtr(
-            FL(), functionState, builder, referenceM,
-            globalState->region->checkValidReference(FL(), functionState, builder, referenceM, ref));
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+            from, functionState, builder, referenceM,
+            globalState->region->checkValidReference(from, functionState, builder, referenceM, ref));
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else {
     assert(false);
   }
 }
 
 ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
@@ -486,20 +570,48 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
     Reference* referenceM) {
   auto referendM = referenceM->referend;
   if (dynamic_cast<InterfaceReferend*>(referendM)) {
-    auto referenceLE = makeInterfaceFatPtr(FL(), functionState, builder, referenceM, ref);
-    return getControlBlockPtr(builder, referendM, referenceLE);
+    auto referenceLE = makeInterfaceFatPtr(from, functionState, builder, referenceM, ref);
+    return getControlBlockPtr(from, functionState, builder, referendM, referenceLE);
   } else if (dynamic_cast<StructReferend*>(referendM)) {
-    auto referenceLE = makeWrapperPtr(FL(), functionState, builder, referenceM, ref);
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+    auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
-    auto referenceLE = makeWrapperPtr(FL(), functionState, builder, referenceM, ref);
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+    auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
-    auto referenceLE = makeWrapperPtr(FL(), functionState, builder, referenceM, ref);
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+    auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
-    auto referenceLE = makeWrapperPtr(FL(), functionState, builder, referenceM, ref);
-    return getConcreteControlBlockPtr(functionState, builder, referenceM, referenceLE);
+    auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
+  } else {
+    assert(false);
+  }
+}
+
+ControlBlockPtrLE ReferendStructs::getControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    LLVMValueRef ref,
+    Reference* referenceM) {
+  auto referendM = referenceM->referend;
+  if (dynamic_cast<InterfaceReferend*>(referendM)) {
+    auto referenceLE = makeInterfaceFatPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    return getControlBlockPtrWithoutChecking(from, functionState, builder, referendM, referenceLE);
+  } else if (dynamic_cast<StructReferend*>(referendM)) {
+    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
+  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
+    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
+  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
+  } else if (dynamic_cast<Str*>(referendM)) {
+    auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
+    return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else {
     assert(false);
   }
@@ -508,6 +620,7 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
 
 LLVMValueRef ReferendStructs::getStructContentsPtr(
     LLVMBuilderRef builder,
+    Referend* referend,
     WrapperPtrLE wrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
@@ -515,6 +628,21 @@ LLVMValueRef ReferendStructs::getStructContentsPtr(
       1, // Inner struct is after the control block.
       "contentsPtr");
 }
+
+
+LLVMValueRef ReferendStructs::getVoidPtrFromInterfacePtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* virtualParamMT,
+    InterfaceFatPtrLE virtualArgLE) {
+  assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
+  return LLVMBuildPointerCast(
+      builder,
+      getControlBlockPtr(FL(), functionState, builder, virtualParamMT->referend, virtualArgLE).refLE,
+      LLVMPointerType(LLVMVoidType(), 0),
+      "objAsVoidPtr");
+}
+
 
 
 
@@ -656,11 +784,12 @@ WeakFatPtrLE WeakableReferendStructs::makeWeakFatPtr(Reference* referenceM_, LLV
 }
 
 ControlBlockPtrLE WeakableReferendStructs::getConcreteControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* reference,
     WrapperPtrLE wrapperPtrLE) {
-  return referendStructs.getConcreteControlBlockPtr(functionState, builder, reference, wrapperPtrLE);
+  return referendStructs.getConcreteControlBlockPtr(from, functionState, builder, reference, wrapperPtrLE);
 }
 
 LLVMTypeRef WeakableReferendStructs::getStringWrapperStruct() {
@@ -682,17 +811,26 @@ InterfaceFatPtrLE WeakableReferendStructs::makeInterfaceFatPtr(
     LLVMBuilderRef builder,
     Reference* referenceM_,
     LLVMValueRef ptrLE) {
-  return referendStructs.makeInterfaceFatPtr(FL(), functionState, builder, referenceM_, ptrLE);
+  return referendStructs.makeInterfaceFatPtr(checkerAFL, functionState, builder, referenceM_, ptrLE);
 }
 
-ControlBlockPtrLE WeakableReferendStructs::makeControlBlockPtr(
+InterfaceFatPtrLE WeakableReferendStructs::makeInterfaceFatPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
-    LLVMValueRef controlBlockPtrLE) {
-  return referendStructs.makeControlBlockPtr(checkerAFL, functionState, builder, referendM, controlBlockPtrLE);
+    Reference* referenceM_,
+    LLVMValueRef ptrLE) {
+  return referendStructs.makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM_, ptrLE);
 }
+
+//ControlBlockPtrLE WeakableReferendStructs::makeControlBlockPtr(
+//    AreaAndFileAndLine checkerAFL,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Referend* referendM,
+//    LLVMValueRef controlBlockPtrLE) {
+//  return referendStructs.makeControlBlockPtr(checkerAFL, functionState, builder, referendM, controlBlockPtrLE);
+//}
 
 LLVMValueRef WeakableReferendStructs::getStringBytesPtr(
     FunctionState* functionState,
@@ -708,32 +846,65 @@ LLVMValueRef WeakableReferendStructs::getStringLen(
 
 
 ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtr(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Referend* referendM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
-  return referendStructs.getControlBlockPtr(builder, referendM, interfaceFatPtrLE);
+  return referendStructs.getControlBlockPtr(from, functionState, builder, referendM, interfaceFatPtrLE);
+}
+
+ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    InterfaceFatPtrLE interfaceFatPtrLE) {
+  return referendStructs.getControlBlockPtrWithoutChecking(from, functionState, builder, referendM, interfaceFatPtrLE);
 }
 
 ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     Ref ref,
     Reference* referenceM) {
-  return referendStructs.getControlBlockPtr(functionState, builder, ref, referenceM);
+  return referendStructs.getControlBlockPtr(from, functionState, builder, ref, referenceM);
 }
 
 ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef ref,
     Reference* referenceM) {
-  return referendStructs.getControlBlockPtr(functionState, builder, ref, referenceM);
+  return referendStructs.getControlBlockPtr(from, functionState, builder, ref, referenceM);
+}
+
+ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    LLVMValueRef ref,
+    Reference* referenceM) {
+  return referendStructs.getControlBlockPtrWithoutChecking(from, functionState, builder, ref, referenceM);
 }
 
 LLVMValueRef WeakableReferendStructs::getStructContentsPtr(
     LLVMBuilderRef builder,
+    Referend* referend,
     WrapperPtrLE wrapperPtrLE) {
-  return referendStructs.getStructContentsPtr(builder, wrapperPtrLE);
+  return referendStructs.getStructContentsPtr(builder, referend, wrapperPtrLE);
+}
+
+LLVMValueRef WeakableReferendStructs::getVoidPtrFromInterfacePtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* virtualParamMT,
+    InterfaceFatPtrLE virtualArgLE) {
+  return referendStructs.getVoidPtrFromInterfacePtr(
+      functionState, builder, virtualParamMT, virtualArgLE);
 }

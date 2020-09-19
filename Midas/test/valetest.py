@@ -41,7 +41,7 @@ class ValeTest(unittest.TestCase):
               region_override: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
         return procrun(
-            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--region-override", region_override, "--output-dir",
+            [f"{self.GENPATH}/valec", "--verify", "--llvmir", "--census", "--flares", "--region-override", region_override, "--output-dir",
              o_files_dir, vir_file])
 
     def clang(self, o_files: List[str],

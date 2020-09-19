@@ -64,11 +64,12 @@ void ReferendStructsRouter::translateKnownSizeArray(KnownSizeArrayT* knownSizeAr
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getConcreteControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* reference,
     WrapperPtrLE wrapperPtrLE) {
-  return getReferendStructsSource(reference->referend)->getConcreteControlBlockPtr(functionState, builder, reference, wrapperPtrLE);
+  return getReferendStructsSource(reference->referend)->getConcreteControlBlockPtr(from, functionState, builder, reference, wrapperPtrLE);
 }
 
 
@@ -90,14 +91,23 @@ InterfaceFatPtrLE ReferendStructsRouter::makeInterfaceFatPtr(
   return getReferendStructsSource(referenceM->referend)->makeInterfaceFatPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
 }
 
-ControlBlockPtrLE ReferendStructsRouter::makeControlBlockPtr(
+InterfaceFatPtrLE ReferendStructsRouter::makeInterfaceFatPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Reference* referenceM,
     LLVMValueRef ptrLE) {
-  return getReferendStructsSource(referendM)->makeControlBlockPtr(checkerAFL, functionState, builder, referendM, ptrLE);
+  return getReferendStructsSource(referenceM->referend)->makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
 }
+
+//ControlBlockPtrLE ReferendStructsRouter::makeControlBlockPtr(
+//    AreaAndFileAndLine checkerAFL,
+//    FunctionState* functionState,
+//    LLVMBuilderRef builder,
+//    Referend* referendM,
+//    LLVMValueRef ptrLE) {
+//  return getReferendStructsSource(referendM)->makeControlBlockPtr(checkerAFL, functionState, builder, referendM, ptrLE);
+//}
 
 LLVMValueRef ReferendStructsRouter::getStringBytesPtr(
     FunctionState* functionState,
@@ -111,34 +121,67 @@ LLVMValueRef ReferendStructsRouter::getStringLen(FunctionState* functionState, L
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     Referend* referendM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
-  return getReferendStructsSource(referendM)->getControlBlockPtr(builder, referendM, interfaceFatPtrLE);
+  return getReferendStructsSource(referendM)->getControlBlockPtr(from, functionState, builder, referendM, interfaceFatPtrLE);
+}
+
+ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    InterfaceFatPtrLE interfaceFatPtrLE) {
+  return getReferendStructsSource(referendM)->getControlBlockPtrWithoutChecking(from, functionState, builder, referendM, interfaceFatPtrLE);
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     Ref ref,
     Reference* referenceM) {
-  return getReferendStructsSource(referenceM->referend)->getControlBlockPtr(functionState, builder, ref, referenceM);
+  return getReferendStructsSource(referenceM->referend)->getControlBlockPtr(from, functionState, builder, ref, referenceM);
 }
 
 LLVMValueRef ReferendStructsRouter::getStructContentsPtr(
     LLVMBuilderRef builder,
+    Referend* referend,
     WrapperPtrLE wrapperPtrLE) {
   return getReferendStructsSource(referend)->getStructContentsPtr(builder, referend, wrapperPtrLE);
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(
+    AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef ref,
     Reference* referenceM) {
-  return getReferendStructsSource(referenceM->referend)->getControlBlockPtr(functionState, builder, ref, referenceM);
+  return getReferendStructsSource(referenceM->referend)->getControlBlockPtr(from, functionState, builder, ref, referenceM);
+}
+
+ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtrWithoutChecking(
+    AreaAndFileAndLine from,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    // This will be a pointer if a mutable struct, or a fat ref if an interface.
+    LLVMValueRef ref,
+    Reference* referenceM) {
+  return getReferendStructsSource(referenceM->referend)->getControlBlockPtrWithoutChecking(
+      from, functionState, builder, ref, referenceM);
+}
+
+LLVMValueRef ReferendStructsRouter::getVoidPtrFromInterfacePtr(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* virtualParamMT,
+    InterfaceFatPtrLE virtualArgLE) {
+  return getReferendStructsSource(virtualParamMT->referend)->getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgLE);
 }
 
 

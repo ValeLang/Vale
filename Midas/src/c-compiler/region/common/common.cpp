@@ -43,7 +43,7 @@ LLVMValueRef upcastThinPtr(
   }
   ControlBlockPtrLE controlBlockPtrLE =
       referendStructsSource->getConcreteControlBlockPtr(
-          functionState, builder, sourceStructTypeM, sourceRefLE);
+          FL(), functionState, builder, sourceStructTypeM, sourceRefLE);
   auto interfaceRefLE =
       makeInterfaceRefStruct(
           globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM,
@@ -242,8 +242,72 @@ LLVMValueRef makeInterfaceRefStruct(
   return interfaceRefLE;
 }
 
+
+constexpr int INTERFACE_REF_MEMBER_INDEX_FOR_OBJ_PTR = 0;
+constexpr int INTERFACE_REF_MEMBER_INDEX_FOR_ITABLE_PTR = 1;
+
+LLVMValueRef getObjPtrFromInterfaceRef(
+    LLVMBuilderRef builder,
+    InterfaceFatPtrLE interfaceRefLE) {
+  return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, INTERFACE_REF_MEMBER_INDEX_FOR_OBJ_PTR, "objPtr");
+}
+
 LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
     InterfaceFatPtrLE interfaceRefLE) {
-  return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, 1, "itablePtr");
+  return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, INTERFACE_REF_MEMBER_INDEX_FOR_ITABLE_PTR, "itablePtr");
+}
+
+LLVMValueRef callFree(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    ControlBlockPtrLE controlBlockPtrLE) {
+  if (globalState->opt->genHeap) {
+    auto concreteAsVoidPtrLE =
+        LLVMBuildBitCast(
+            builder,
+            controlBlockPtrLE.refLE,
+            LLVMPointerType(LLVMVoidType(), 0),
+            "concreteVoidPtrForFree");
+    return LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
+  } else {
+    auto concreteAsCharPtrLE =
+        LLVMBuildBitCast(
+            builder,
+            controlBlockPtrLE.refLE,
+            LLVMPointerType(LLVMInt8Type(), 0),
+            "concreteCharPtrForFree");
+    return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+  }
+}
+
+void innerDeallocate(
+    AreaAndFileAndLine from,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    IReferendStructsSource* referendStrutsSource,
+    LLVMBuilderRef builder,
+    Reference* refMT,
+    Ref refLE) {
+  auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder, refLE, refMT);
+
+  functionState->defaultRegion->noteWeakableDestroyed(functionState, builder, refMT, controlBlockPtrLE);
+
+  if (globalState->opt->census) {
+    LLVMValueRef resultAsVoidPtrLE =
+        LLVMBuildBitCast(
+            builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
+    LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
+        "");
+  }
+
+  if (refMT->location == Location::INLINE) {
+    // Do nothing, it was alloca'd.
+  } else if (refMT->location == Location::YONDER) {
+    callFree(globalState, builder, controlBlockPtrLE);
+  }
+
+  if (globalState->opt->census) {
+    adjustCounter(builder, globalState->liveHeapObjCounter, -1);
+  }
 }

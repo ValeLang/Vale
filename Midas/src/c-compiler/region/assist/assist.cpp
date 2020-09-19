@@ -34,14 +34,14 @@ void Assist::alias(
       // We might be loading a member as an own if we're destructuring.
       // Don't adjust the RC, since we're only moving it.
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
       aliasWeakRef(from, functionState, builder, sourceRef, expr);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        adjustStrongRc(from, globalState, functionState, builder, expr, sourceRef, 1);
+        adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
       }
     } else
       assert(false);
@@ -66,7 +66,7 @@ void Assist::dealias(
     // We can't discard owns, they must be destructured.
     assert(false);
   } else if (sourceMT->ownership == Ownership::BORROW) {
-    adjustStrongRc(from, globalState, functionState, builder, sourceRef, sourceMT, -1);
+    adjustStrongRc(from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
   } else if (sourceMT->ownership == Ownership::WEAK) {
     discardWeakRef(from, functionState, builder, sourceMT, sourceRef);
   } else assert(false);
@@ -319,13 +319,13 @@ Ref Assist::loadMember(
           referendStructs.makeWrapperPtr(
               FL(), functionState, builder, structRefMT,
               globalState->region->checkValidReference(FL(), functionState, builder, structRefMT, structRef));
-      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, wrapperPtrLE);
+      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
       break;
     }
     case Ownership::WEAK: {
       auto wrapperPtrLE =
           globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT, structRef);
-      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, wrapperPtrLE);
+      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
       break;
     }
     default:
@@ -357,7 +357,7 @@ void Assist::storeMember(
               FL(), functionState, builder, structRefMT,
               globalState->region->checkValidReference(
                   FL(), functionState, builder, structRefMT, structRef));
-      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, wrapperPtrLE);
+      innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
       break;
     }
     case Ownership::WEAK: {
@@ -394,16 +394,16 @@ std::tuple<LLVMValueRef, LLVMValueRef> Assist::explodeInterfaceRef(
       itablePtrLE =
           getItablePtrFromInterfacePtr(
               globalState, functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
-      auto objVoidPtrLE = getVoidPtrFromInterfacePtr(globalState, functionState, builder,
-          virtualParamMT, virtualArgInterfaceFatPtrLE);
+      auto objVoidPtrLE = referendStructs.getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
       newVirtualArgLE = objVoidPtrLE;
       break;
     }
     case Ownership::WEAK: {
       auto weakFatPtrLE = mutWeakableStructs.makeWeakFatPtr(virtualParamMT, virtualArgLE);
       // Disassemble the weak interface ref.
+      // The object might not still be alive, so skip the check.
       auto interfaceRefLE =
-          referendStructs.makeInterfaceFatPtr(
+          referendStructs.makeInterfaceFatPtrWithoutChecking(
               FL(), functionState, builder, virtualParamMT,
               fatWeaks.getInnerRefFromWeakRef(
                   functionState, builder, virtualParamMT, weakFatPtrLE));

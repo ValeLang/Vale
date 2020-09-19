@@ -32,6 +32,17 @@ public:
 
   ControlBlock* getControlBlock(Referend* referend);
 
+
+  Ref loadMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      Reference* expectedMemberType,
+      Reference* targetType,
+      const std::string& memberName);
+
 private:
   GlobalState* globalState;
 

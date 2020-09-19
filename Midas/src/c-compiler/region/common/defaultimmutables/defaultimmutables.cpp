@@ -198,3 +198,35 @@ ControlBlock* DefaultImmutables::getControlBlock(Referend* referend) {
   }
   return &referendStructs->controlBlock;
 }
+
+
+Ref DefaultImmutables::loadMember(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* structRefMT,
+    Ref structRef,
+    int memberIndex,
+    Reference* expectedMemberType,
+    Reference* targetType,
+    const std::string& memberName) {
+  if (structRefMT->location == Location::INLINE) {
+    auto innerStructLE =
+        globalState->region->checkValidReference(
+            FL(), functionState, builder, structRefMT, structRef);
+    auto memberLE =
+        LLVMBuildExtractValue(builder, innerStructLE, memberIndex, memberName.c_str());
+    return wrap(functionState->defaultRegion, expectedMemberType, memberLE);
+  } else {
+    auto wrapperPtrLE =
+        referendStructs->makeWrapperPtr(
+            FL(), functionState, builder, structRefMT,
+            globalState->region->checkValidReference(FL(), functionState, builder, structRefMT,
+                structRef));
+    auto innerStructPtrLE = referendStructs->getStructContentsPtr(builder, structRefMT->referend,
+        wrapperPtrLE);
+    auto memberLE =
+        loadInnerInnerStructMember(
+            globalState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
+    return memberLE;
+  }
+}

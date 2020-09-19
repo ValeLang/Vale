@@ -35,7 +35,7 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend)
 
 
 Ref loadInnerInnerStructMember(
-    IRegion* region,
+    GlobalState* globalState,
     LLVMBuilderRef builder, LLVMValueRef innerStructPtrLE, int memberIndex, Reference* expectedType, std::string memberName);
 void storeInnerInnerStructMember(
     LLVMBuilderRef builder, LLVMValueRef innerStructPtrLE, int memberIndex, std::string memberName, LLVMValueRef newValueLE);

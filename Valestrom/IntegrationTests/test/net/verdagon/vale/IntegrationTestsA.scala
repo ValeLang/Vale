@@ -459,7 +459,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test extern functions") {
-    val compile = Compilation(Samples.get("programs/externs.vale"))
+    val compile = Compilation(Samples.get("programs/externs/extern.vale"))
 
     val hamuts = compile.getHamuts()
 

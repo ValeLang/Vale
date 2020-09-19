@@ -38,6 +38,13 @@ LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference) 
     return LLVMVoidType();
   } else if (reference == globalState->metalCache.emptyTupleStructRef) {
     return LLVMVoidType();
+  } else if (auto structReferend = dynamic_cast<StructReferend*>(reference->referend)) {
+    if (reference->location == Location::INLINE) {
+      return globalState->region->getReferendStructsSource()->getInnerStruct(structReferend);
+    } else {
+      std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+      assert(false);
+    }
   } else {
     std::cerr << "Invalid type for extern!" << std::endl;
     assert(false);

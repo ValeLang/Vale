@@ -10,10 +10,8 @@ int extern;
 
 fn vstr_substring(
   haystackContainer str,
-  haystackBegin int,
-  haystackEnd int,
-  beginInHaystack int,
-  endInHaystack int)
+  begin int,
+  end int)
 str extern;
 
 fn vstr_eq(
@@ -102,12 +100,11 @@ fn slice(s StrSlice, begin int, end int) StrSlice {
 
 
 fn str(s StrSlice) str {
-  vstr_substring(
-      s.string,
-      s.begin,
-      s.end,
-      0,
-      s.len())
+  vassert(s.begin >= 0);
+  vassert(s.end >= 0);
+  vassert(s.len() >= 0);
+  vassert(s.begin < s.end);
+  ret vstr_substring(s.string, s.begin, s.len());
 }
 
 fn ==(a str, b StrSlice) bool { a.slice() == b }

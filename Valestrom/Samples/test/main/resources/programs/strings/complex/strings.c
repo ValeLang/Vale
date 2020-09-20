@@ -33,27 +33,18 @@ int64_t vstr_indexOf(
 
 
 ValeStr* vstr_substring(
-    ValeStr* haystackContainerStr,
-    int64_t haystackBegin,
-    int64_t haystackEnd,
-    int64_t beginInHaystack,
-    int64_t endInHaystack) {
+    ValeStr* str,
+    int64_t begin,
+    int64_t length) {
   // printf("calling getstrchars\n");
-  char* haystackContainerChars = vale_getstrchars(haystackContainerStr);
+  char* strChars = vale_getstrchars(str);
 
   // printf("in substring, %d %d %d %d\n", haystackBegin, haystackEnd, beginInHaystack, endInHaystack);
 
-  assert(haystackBegin >= 0);
-  assert(haystackEnd >= 0);
-  assert(beginInHaystack >= 0);
-  assert(endInHaystack >= 0);
+  assert(begin >= 0);
+  assert(length >= 0);
 
-  int64_t haystackLen = haystackEnd - haystackBegin;
-  assert(beginInHaystack < haystackLen);
-  assert(endInHaystack <= haystackLen);
-  assert(beginInHaystack + haystackBegin < haystackEnd);
-
-  return vale_newstr(haystackContainerChars, haystackBegin + beginInHaystack, endInHaystack - beginInHaystack);
+  return vale_newstr(strChars, begin, length);
 }
 
 char vstr_eq(

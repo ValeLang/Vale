@@ -25,34 +25,41 @@ LLVMValueRef declareFunction(
   return functionL;
 }
 
-LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference) {
-  if (reference == globalState->metalCache.intRef) {
-    return LLVMInt64Type();
-  } else if (reference == globalState->metalCache.boolRef) {
-    return LLVMInt8Type();
-  } else if (reference == globalState->metalCache.floatRef) {
-    return LLVMDoubleType();
-  } else if (reference == globalState->metalCache.strRef) {
-    return LLVMPointerType(LLVMInt8Type(), 0);
-  } else if (reference == globalState->metalCache.neverRef) {
-    return LLVMVoidType();
-  } else if (reference == globalState->metalCache.emptyTupleStructRef) {
-    return LLVMVoidType();
-  } else {
-    std::cerr << "Invalid type for extern!" << std::endl;
-    assert(false);
-  }
-}
+//LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference) {
+//  if (reference == globalState->metalCache.intRef) {
+//    return LLVMInt64Type();
+//  } else if (reference == globalState->metalCache.boolRef) {
+//    return LLVMInt8Type();
+//  } else if (reference == globalState->metalCache.floatRef) {
+//    return LLVMDoubleType();
+//  } else if (reference == globalState->metalCache.strRef) {
+//    return LLVMPointerType(LLVMInt8Type(), 0);
+//  } else if (reference == globalState->metalCache.neverRef) {
+//    return LLVMVoidType();
+//  } else if (reference == globalState->metalCache.emptyTupleStructRef) {
+//    return LLVMVoidType();
+//  } else if (auto structReferend = dynamic_cast<StructReferend*>(reference->referend)) {
+//    if (reference->location == Location::INLINE) {
+//      return globalState->region->getReferendStructsSource()->getInnerStruct(structReferend);
+//    } else {
+//      std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+//      assert(false);
+//    }
+//  } else {
+//    std::cerr << "Invalid type for extern!" << std::endl;
+//    assert(false);
+//  }
+//}
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,
     Prototype* prototypeM) {
   std::vector<LLVMTypeRef> paramTypesL;
   for (auto paramTypeM : prototypeM->params) {
-    paramTypesL.push_back(translateExternType(globalState, paramTypeM));
+    paramTypesL.push_back(globalState->region->translateType(paramTypeM));
   }
 
-  auto returnTypeL = translateExternType(globalState, prototypeM->returnType);
+  auto returnTypeL = globalState->region->translateType(prototypeM->returnType);
   auto nameL = prototypeM->name->name;
 
   LLVMTypeRef functionTypeL =
@@ -86,7 +93,7 @@ void translateFunction(
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilder();
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
-  FunctionState functionState(functionM, region, functionL, returnTypeL, localsBuilder);
+  FunctionState functionState(functionM->prototype->name->name, region, functionL, returnTypeL, localsBuilder);
 
   // There are other builders made elsewhere for various blocks in the function,
   // but this is the one for the top level.

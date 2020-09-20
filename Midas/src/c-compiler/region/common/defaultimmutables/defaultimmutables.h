@@ -32,24 +32,23 @@ public:
 
   ControlBlock* getControlBlock(Referend* referend);
 
-  // TODO get rid of these when refactor is done
-  LLVMTypeRef getStringInnerStructPtrL() {
-    return stringInnerStructL;
-  }
-  LLVMTypeRef getStringWrapperStructL() {
-    return stringWrapperStructL;
-  }
+
+  Ref loadMember(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* structRefMT,
+      Ref structRef,
+      int memberIndex,
+      Reference* expectedMemberType,
+      Reference* targetType,
+      const std::string& memberName);
 
 private:
   GlobalState* globalState;
 
-  ReferendStructs* wrappedStructs;
-
-  LLVMTypeRef stringWrapperStructL = nullptr;
-  LLVMTypeRef stringInnerStructL = nullptr;
+  ReferendStructs* referendStructs;
 
   DefaultPrimitives primitives;
-  LLVMTypeRef stringInnerStructPtrLT = nullptr;
 
 };
 

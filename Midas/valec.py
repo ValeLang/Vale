@@ -15,7 +15,7 @@ from typing import Dict, Any, List, Callable
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
-    print("Running: " + str(args))
+    print("Running: " + " ".join(args))
     return subprocess.run(args, stdout=PIPE, stderr=PIPE, text=True, **kwargs)
 
 
@@ -47,7 +47,7 @@ class ValeCompiler:
         if self.windows:
             return procrun(["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + exe_file] + o_files)
         else:
-            return procrun(["clang", "-O3", "-o", exe_file] + o_files)
+            return procrun(["clang-7", "-O3", "-lm", "-o", exe_file] + o_files)
 
     def exec(self, exe_file: str) -> subprocess.CompletedProcess:
         return procrun([f"./{exe_file}"])
@@ -131,6 +131,9 @@ class ValeCompiler:
         #                     help='sum the integers (default: find the max)')
         # args = parser.parse_args()
 
+        build_dir = f"."
+        exe_file = ("main.exe" if self.windows else "a.out")
+
         valestrom_options = []
         midas_options = []
         if "--flares" in args:
@@ -142,6 +145,9 @@ class ValeCompiler:
         if "--census" in args:
             args.remove("--census")
             midas_options.append("--census")
+        if "--verify" in args:
+            args.remove("--verify")
+            midas_options.append("--verify")
         if "--llvmir" in args:
             args.remove("--llvmir")
             midas_options.append("--llvmir")
@@ -159,6 +165,21 @@ class ValeCompiler:
             del args[ind]
             midas_options.append("--cpu")
             midas_options.append(val)
+        if "--output-dir" in args:
+            ind = args.index("--output-dir")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            build_dir = val
+            midas_options.append("--output-dir")
+            midas_options.append(val)
+        if "-o" in args:
+            ind = args.index("-o")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            exe_file = val
+
         vale_files = []
         c_files = []
         for arg in args:
@@ -170,13 +191,12 @@ class ValeCompiler:
                 print("Unrecognized input: " + arg)
                 sys.exit(22)
 
-        build_dir = f"build"
+        if build_dir != ".":
+            if os.path.exists(build_dir):
+                shutil.rmtree(build_dir)
+            os.makedirs(build_dir)
 
-        if os.path.exists(build_dir):
-            shutil.rmtree(build_dir)
-        os.makedirs(build_dir)
-
-        vir_file = f"build.vir"
+        vir_file = build_dir + "/build.vir"
         proc = self.valestrom(vale_files, ["-o", vir_file])
         print(proc.stdout)
         print(proc.stderr)
@@ -196,20 +216,20 @@ class ValeCompiler:
              print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
              sys.exit(1)
 
-        exe_file = "main.exe" if self.windows else "a.out"
+
         o_files = (
             glob.glob(f"{build_dir}/*.o") + 
             glob.glob(f"{build_dir}/*.obj") +
             glob.glob(f"{self.valestd_path}/*.c") +
             c_files)
-        proc = self.clang(o_files, exe_file)
+        proc = self.clang(o_files, build_dir + "/" + exe_file)
         # print(proc.stdout)
         # print(proc.stderr)
         if proc.returncode != 0:
              print(f"Linker couldn't compile {o_files}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
              sys.exit(1)
 
-        print("Compiled to " + exe_file)
+        print("Compiled to " + build_dir + "/" + exe_file)
 
 if __name__ == '__main__':
     ValeCompiler().compile_and_execute(sys.argv[1:])

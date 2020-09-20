@@ -16,22 +16,22 @@ fn abs(a int) {
   = if (a < 0) { a * -1 } else { a }
 }
 
-fn assert(cond bool) void {
-  assert(cond, "Assertion failed!");
+fn vassert(cond bool) void {
+  vassert(cond, "Assertion failed!");
 }
-fn assert(cond bool, msg str) void {
+fn vassert(cond bool, msg str) void {
   if (cond == false) {
     println(msg);
     __panic();
   }
 }
 
-fn assertEq<T>(a T, b T) void {
-  assert(a == b, "Assertion failed, not equal!");
+fn vassertEq<T>(a T, b T) void {
+  vassert(a == b, "Assertion failed, not equal!");
 }
 
-fn assertEq<T>(a T, b T, msg str) void {
-  assert(a == b, msg);
+fn vassertEq<T>(a T, b T, msg str) void {
+  vassert(a == b, msg);
 }
 
 fn !=<T>(a &T, b &T) bool{

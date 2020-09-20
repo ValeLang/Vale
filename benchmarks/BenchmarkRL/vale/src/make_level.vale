@@ -244,7 +244,7 @@ List<HashSet<Location, LocationHasher, LocationEquator>> {
                     i! = 0;
                     while (i < connected_locations_clone.len()) {
                         connected_location = connected_locations_clone[i];
-                        assert(not room_index_by_location.has(connected_location));
+                        vassert(not room_index_by_location.has(connected_location));
                         room_index_by_location.add(connected_location, new_room_index);
 
                         mut i = i + 1;
@@ -278,7 +278,7 @@ HashSet<Location, LocationHasher, LocationEquator> {
         // DIFFERENCE they use iter we use toArray()
         current =
             connected_with_unexplored_neighbors.toArray()[0];
-        assert(not connected_with_explored_neighbors.has(current));
+        vassert(not connected_with_explored_neighbors.has(current));
 
         connected_with_unexplored_neighbors.remove(current);
         connected_with_explored_neighbors.add(current);
@@ -491,7 +491,7 @@ fn get_hash_set_random_nth<T, H, E>(
     rand &!LCGRand,
     set &HashSet<T, H, E>)
 Opt<T> {
-    if (set.empty?()) {
+    if (set.isEmpty()) {
         result Opt<T> = None<T>();
         ret result;
     }

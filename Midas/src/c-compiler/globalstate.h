@@ -41,7 +41,7 @@ public:
       assertI64Eq = nullptr, flareI64 = nullptr, printCStr = nullptr,
       getch = nullptr, printInt = nullptr, printBool = nullptr, intToCStr = nullptr,
       strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr,
-      panic = nullptr;
+      panic = nullptr, newVStr = nullptr, getStrCharsFunc = nullptr;
 
 
   LLVMValueRef initStr = nullptr, addStr = nullptr, eqStr = nullptr, printVStr = nullptr;

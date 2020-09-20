@@ -28,6 +28,7 @@
 #include <llvm-c/Transforms/IPO.h>
 #include <region/assist/assist.h>
 #include <region/mega/mega.h>
+#include <function/expressions/shared/string.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -46,6 +47,117 @@ std::string genMallocName(int bytes) {
 std::string genFreeName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
 }
+
+LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
+  auto voidLT = LLVMVoidType();
+  auto voidPtrLT = LLVMPointerType(voidLT, 0);
+  auto int1LT = LLVMInt1Type();
+  auto int8LT = LLVMInt8Type();
+  auto int32LT = LLVMInt32Type();
+  auto int64LT = LLVMInt64Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
+  std::vector<LLVMTypeRef> paramTypesL = { int8PtrLT, int64LT, int64LT };
+  auto returnTypeL = globalState->region->translateType(globalState->metalCache.strRef);
+
+  LLVMTypeRef functionTypeL =
+      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_newstr", functionTypeL);
+
+  LLVMBasicBlockRef block = LLVMAppendBasicBlock(functionL, "entry");
+  LLVMBuilderRef builder = LLVMCreateBuilder();
+  LLVMPositionBuilderAtEnd(builder, block);
+  // This is unusual because normally we have a separate localsBuilder which points to a separate
+  // block at the beginning. This is a simple function which should require no locals, so this
+  // should be fine.
+  LLVMBuilderRef localsBuilder = builder;
+
+  FunctionState functionState("vale_newstr", globalState->region, functionL, returnTypeL, localsBuilder);
+
+  auto sourceCharsPtrContainerLE = LLVMGetParam(functionL, 0);
+  auto beginIntLE = LLVMGetParam(functionL, 1);
+  auto lengthLE = LLVMGetParam(functionL, 2);
+  buildAssert(
+      globalState, &functionState, builder,
+      LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(0), "nonneg"),
+      "Can't have negative length string!");
+
+  std::vector<LLVMValueRef> indices = { beginIntLE };
+  auto sourceCharsPtrLE =
+      LLVMBuildGEP(builder, sourceCharsPtrContainerLE, indices.data(), indices.size(), "");
+
+  auto strWrapperPtrLE = globalState->region->mallocStr(&functionState, builder, lengthLE);
+
+  // Set the length
+  LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
+  // Fill the chars
+  std::vector<LLVMValueRef> argsLE = {
+      getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE),
+      sourceCharsPtrLE,
+      lengthLE
+  };
+  LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+  buildFlare(FL(), globalState, &functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE)));
+
+
+  auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strWrapperPtrLE);
+  auto resultStrPtrLE =
+      globalState->region->checkValidReference(
+          FL(), &functionState, builder, globalState->metalCache.strRef, strRef);
+
+  LLVMBuildRet(builder, resultStrPtrLE);
+
+  LLVMDisposeBuilder(builder);
+
+  return functionL;
+}
+
+LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
+  auto voidLT = LLVMVoidType();
+  auto voidPtrLT = LLVMPointerType(voidLT, 0);
+  auto int1LT = LLVMInt1Type();
+  auto int8LT = LLVMInt8Type();
+  auto int32LT = LLVMInt32Type();
+  auto int64LT = LLVMInt64Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
+  std::vector<LLVMTypeRef> paramTypesL = { globalState->region->translateType(globalState->metalCache.strRef) };
+  auto returnTypeL = int8PtrLT;
+
+  LLVMTypeRef functionTypeL =
+      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrchars", functionTypeL);
+  LLVMSetLinkage(functionL, LLVMExternalLinkage);
+
+  LLVMBasicBlockRef block = LLVMAppendBasicBlock(functionL, "entry");
+  LLVMBuilderRef builder = LLVMCreateBuilder();
+  LLVMPositionBuilderAtEnd(builder, block);
+  // This is unusual because normally we have a separate localsBuilder which points to a separate
+  // block at the beginning. This is a simple function which should require no locals, so this
+  // should be fine.
+  LLVMBuilderRef localsBuilder = builder;
+
+  FunctionState functionState("vale_getstrchars", globalState->region, functionL, returnTypeL, localsBuilder);
+
+  auto strRefLE = LLVMGetParam(functionL, 0);
+
+  buildFlare(FL(), globalState, &functionState, builder, "got strrefle", ptrToVoidPtrLE(builder, strRefLE));
+
+  auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strRefLE);
+
+  LLVMBuildRet(builder, globalState->region->getStringBytesPtr(&functionState, builder, strRef));
+
+  LLVMDisposeBuilder(builder);
+
+  return functionL;
+}
+
+void initInternalFuncs(GlobalState* globalState) {
+  globalState->newVStr = makeNewStrFunc(globalState);
+  globalState->getStrCharsFunc = makeGetStrCharsFunc(globalState);
+}
+
 
 void initInternalExterns(GlobalState* globalState) {
   auto voidLT = LLVMVoidType();
@@ -226,15 +338,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
   globalState->region = defaultRegion;
 
-
   auto voidLT = LLVMVoidType();
   auto int8LT = LLVMInt8Type();
   auto int64LT = LLVMInt64Type();
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  auto stringInnerStructPtrLT = globalState->region->getStringInnerStructPtr();
   globalState->initStr =
       addExtern(globalState->mod, "__vinitStr", voidLT,
-          {int8PtrLT, int8PtrLT});
+          {int8PtrLT, int8PtrLT, int64LT});
   globalState->addStr =
       addExtern(globalState->mod, "__vaddStr", voidLT,
           {int8PtrLT, int8PtrLT, int8PtrLT});
@@ -244,6 +354,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->printVStr =
       addExtern(globalState->mod, "__vprintStr", voidLT,
           {int8PtrLT});
+
+  initInternalFuncs(globalState);
 
   assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
 

@@ -6,16 +6,6 @@
 #include "region/common/controlblock.h"
 
 
-LLVMValueRef getStructContentsPtr(
-    LLVMBuilderRef builder,
-    WrapperPtrLE wrapperPtrLE) {
-  return LLVMBuildStructGEP(
-      builder,
-      wrapperPtrLE.refLE,
-      1, // Inner struct is after the control block.
-      "contentsPtr");
-}
-
 Ref loadMember(
     AreaAndFileAndLine from,
     GlobalState* globalState,

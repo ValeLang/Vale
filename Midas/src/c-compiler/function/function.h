@@ -117,7 +117,7 @@ public:
 
 class FunctionState {
 public:
-  Function* containingFuncM;
+  std::string containingFuncName;
   LLVMValueRef containingFuncL;
   // This is here so we can return an Undef of this when we realize we just
   // called into a Never-returning function.
@@ -128,12 +128,12 @@ public:
   IRegion* defaultRegion;
 
   FunctionState(
-      Function* containingFuncM_,
+      std::string containingFuncName_,
       IRegion* defaultRegion_,
       LLVMValueRef containingFuncL_,
       LLVMTypeRef returnTypeL_,
       LLVMBuilderRef localsBuilder_) :
-    containingFuncM(containingFuncM_),
+    containingFuncName(containingFuncName_),
     defaultRegion(defaultRegion_),
     containingFuncL(containingFuncL_),
     returnTypeL(returnTypeL_),
@@ -158,6 +158,6 @@ LLVMValueRef declareExternFunction(
     GlobalState* globalState,
     Prototype* prototypeM);
 
-LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);
+//LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);
 
 #endif

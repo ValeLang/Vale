@@ -1,0 +1,7 @@
+
+fn extStrLen(haystackStr str) int extern;
+
+fn main() {
+  len = extStrLen("sprogwoggle");
+  = len;
+}

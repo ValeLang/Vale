@@ -273,7 +273,7 @@ Ref buildCall(
   assert(funcIter != globalState->functions.end());
   auto funcL = funcIter->second;
 
-  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
   buildFlare(FL(), globalState, functionState, builder, "Calling function ", prototype->name->name);
 
   std::vector<LLVMValueRef> argsLE;
@@ -289,12 +289,12 @@ Ref buildCall(
 
   if (prototype->returnType->referend == globalState->metalCache.never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
   } else {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     return resultRef;
   }
 }

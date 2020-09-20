@@ -464,6 +464,9 @@ class InfererMatcher[Env, State](
         vassert(instance.tyype == ct.resultType)
         matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, cit)
       }
+      case (ct @ CallTT(range, _, _, _), KindTemplata(Str2())) => {
+        return (InferMatchConflict(inferences.inferences, range, "Can't match string against a CallTT, no such rule exists", List()))
+      }
       case (CallTT(range, expectedTemplate, expectedArgs, resultType), KindTemplata(UnknownSizeArrayT2(RawArrayT2(elementArg,mutability)))) => {
         vassert(instance.tyype == resultType)
         matchArrayAgainstCallTT(

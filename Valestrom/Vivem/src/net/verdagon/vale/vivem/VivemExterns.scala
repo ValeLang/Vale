@@ -260,6 +260,12 @@ object VivemExterns {
     memory.addAllocationForReturn(ShareH, InlineH, IntV(value.toInt))
   }
 
+  def strLength(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 1)
+    val StrV(value) = memory.dereference(args(0))
+    memory.addAllocationForReturn(ShareH, InlineH, IntV(value.length))
+  }
+
   def castFloatStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))

@@ -73,6 +73,17 @@ Ref translateExternCall(
     functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultBoolLE);
+  } else if (name == "__strLength") {
+    assert(call->argExprs.size() == 1);
+
+    auto leftStrRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]);
+    auto resultLenLE = globalState->region->getStringLen(functionState, builder, leftStrRef);
+
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
+
+    return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultLenLE);
   } else if (name == "__addFloatFloat") {
     // VivemExterns.addFloatFloat
     assert(false);
@@ -294,8 +305,14 @@ Ref translateExternCall(
     LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
     // Fill the chars
     auto charsPtrLE = getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE);
-    std::vector<LLVMValueRef> argsLE = { charsPtrLE, itoaDestPtrLE };
+    std::vector<LLVMValueRef> argsLE = {
+        charsPtrLE,
+        itoaDestPtrLE,
+        lengthLE
+    };
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+    buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, charsPtrLE));
 
     return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
   } else if (name == "__and") {
@@ -341,24 +358,27 @@ Ref translateExternCall(
         "");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, result);
   } else {
-    auto externishArgsLE = std::vector<LLVMValueRef>{};
-    externishArgsLE.reserve(call->argExprs.size());
+
+    auto args = std::vector<Ref>{};
+    args.reserve(call->argExprs.size());
     for (int i = 0; i < call->argExprs.size(); i++) {
       auto argExpr = call->argExprs[i];
       auto argRefMT = call->function->params[i];
       auto argRef = translateExpression(globalState, functionState, blockState, builder, argExpr);
-      auto valishArgLE = globalState->region->checkValidReference(FL(), functionState, builder, argRefMT, argRef);
+      args.push_back(argRef);
+    }
 
-      LLVMValueRef externishArgLE = nullptr;
+    auto argsLE = std::vector<LLVMValueRef>{};
+    argsLE.reserve(call->argExprs.size());
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argRefMT = call->function->params[i];
+      auto argLE = globalState->region->checkValidReference(FL(), functionState, builder, argRefMT, args[i]);
+
       if (call->argTypes[i] == globalState->metalCache.intRef) {
-        externishArgLE = valishArgLE;
       } else if (call->argTypes[i] == globalState->metalCache.boolRef) {
         // Outside has i8, we have i1, but clang should be fine doing the conversion
-        externishArgLE = valishArgLE;
       } else if (call->argTypes[i] == globalState->metalCache.floatRef) {
-        externishArgLE = valishArgLE;
       } else if (call->argTypes[i] == globalState->metalCache.strRef) {
-        externishArgLE = functionState->defaultRegion->getStringBytesPtr(functionState, builder, argRef);
       } else if (call->argTypes[i] == globalState->metalCache.neverRef) {
         assert(false); // How can we hand a never into something?
       } else if (call->argTypes[i] == globalState->metalCache.emptyTupleStructRef) {
@@ -366,9 +386,8 @@ Ref translateExternCall(
       } else if (auto structReferend = dynamic_cast<StructReferend*>(argRefMT->referend)) {
         if (argRefMT->ownership == Ownership::SHARE) {
           if (argRefMT->location == Location::INLINE) {
-            assert(LLVMTypeOf(valishArgLE) ==
+            assert(LLVMTypeOf(argLE) ==
                 globalState->region->getReferendStructsSource()->getInnerStruct(structReferend));
-            externishArgLE = valishArgLE;
           } else {
             std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
             assert(false);
@@ -382,28 +401,34 @@ Ref translateExternCall(
         assert(false);
       }
 
-      externishArgsLE.push_back(externishArgLE);
+      argsLE.push_back(argLE);
     }
 
     auto externFuncIter = globalState->externFunctions.find(call->function->name->name);
     assert(externFuncIter != globalState->externFunctions.end());
     auto externFuncL = externFuncIter->second;
 
-    buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", call->function->name->name);
 
-    auto resultLE = LLVMBuildCall(builder, externFuncL, externishArgsLE.data(), externishArgsLE.size(), "");
+    auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
     auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
     globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
 
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argRefMT = call->function->params[i];
+      // Extern isnt expected to drop the ref, so we do
+      globalState->region->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
+    }
+
     if (call->function->returnType->referend == globalState->metalCache.never) {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
-      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
       LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
       return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
     } else {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
-      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
       return resultRef;
     }
   }

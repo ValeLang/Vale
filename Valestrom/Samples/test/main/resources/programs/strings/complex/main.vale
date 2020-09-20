@@ -1,0 +1,182 @@
+
+fn vstr_indexOf(
+  haystackContainer str,
+  haystackBegin int,
+  haystackEnd int,
+  needleContainer str,
+  needleBegin int,
+  needleEnd int)
+int extern;
+
+fn vstr_substring(
+  haystackContainer str,
+  haystackBegin int,
+  haystackEnd int,
+  beginInHaystack int,
+  endInHaystack int)
+str extern;
+
+fn vstr_eq(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+bool extern;
+
+fn vstr_cmp(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+int extern;
+
+
+
+struct StrSlice imm {
+  string str;
+  begin int;
+  end int;
+  // Will soon have a private bytesBegin and bytesEnd
+}
+
+fn find(a str, b str) Opt<StrSlice> { find(a.slice(), b.slice()) }
+fn find(a str, b StrSlice) Opt<StrSlice> { find(a.slice(), b) }
+fn find(a StrSlice, b str) Opt<StrSlice> { find(a, b.slice()) }
+fn find(a StrSlice, b StrSlice) Opt<StrSlice> {
+  offsetAfterBegin =
+      vstr_indexOf(
+          a.string, a.begin, a.end,
+          b.string, b.begin, b.end);
+
+  = if (offsetAfterBegin < 0) {
+      r Opt<StrSlice> = None<StrSlice>();
+      = r;
+    } else {
+      r Opt<StrSlice> =
+          Some<StrSlice>(
+              StrSlice(
+                  a.string,
+                  a.begin + offsetAfterBegin,
+                  a.begin + offsetAfterBegin + b.len()));
+      = r;
+    }
+}
+
+fn slice(s str) StrSlice {
+  StrSlice(s, 0, s.len())
+}
+
+fn slice(s str, begin int) StrSlice {
+  vassert(begin < s.len());
+  StrSlice(s, begin, s.len())
+}
+
+fn len(s StrSlice) {
+  ret s.end - s.begin;
+}
+
+fn slice(s str, begin int, end int) StrSlice {
+  vassert(begin >= 0);
+  vassert(end >= 0);
+  vassert(begin < s.len());
+  vassert(end <= s.len());
+  vassert(end >= begin);
+  = StrSlice(s, begin, end);
+}
+
+fn slice(s StrSlice, begin int, end int) StrSlice {
+  vassert(begin >= 0);
+  vassert(end >= 0);
+  vassert(begin < s.len());
+  vassert(end <= s.len());
+  vassert(end >= begin);
+
+  newGlyphBeginOffset = s.begin + begin;
+  newGlyphEndOffset = s.begin + end;
+  = StrSlice(s.string, begin, end);
+}
+
+
+fn str(s StrSlice) str {
+  vstr_substring(
+      s.string,
+      s.begin,
+      s.end,
+      0,
+      s.len())
+}
+
+fn ==(a str, b StrSlice) bool { a.slice() == b }
+fn ==(a StrSlice, b str) bool { a == b.slice() }
+fn ==(a StrSlice, b StrSlice) bool {
+  vstr_eq(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+fn <=>(a str, b str) int { a.slice() <=> b.slice() }
+fn <=>(a str, b StrSlice) int { a.slice() <=> b }
+fn <=>(a StrSlice, b str) int { a <=> b.slice() }
+fn <=>(a StrSlice, b StrSlice) int {
+  vstr_cmp(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+
+fn startsWith(a str, b str) bool { startsWith(a.slice(), b.slice()) }
+fn startsWith(a str, b StrSlice) bool { startsWith(a.slice(), b) }
+fn startsWith(a StrSlice, b str) bool { startsWith(a, b.slice()) }
+fn startsWith(a StrSlice, b StrSlice) bool {
+  a.slice(0, b.len()) == b
+}
+
+
+fn endsWith(a str, b str) bool { endsWith(a.slice(), b.slice()) }
+fn endsWith(a str, b StrSlice) bool { endsWith(a.slice(), b) }
+fn endsWith(a StrSlice, b str) bool { endsWith(a, b.slice()) }
+fn endsWith(a StrSlice, b StrSlice) bool {
+  = a.slice(a.len() - b.len(), a.len()) == b;
+}
+
+
+fn splice(original str, at int, removeNumChars int, insert str) {
+  before = original.slice(0, at).str();
+  after = original.slice(at + removeNumChars, original.len()).str();
+  = before + insert + after;
+}
+
+
+fn main() {
+  // find
+  println("Test 1");
+  vassert(find("Hello world!", "bork").isEmpty(), "Failed 1a");
+  vassert(find("Hello world!", "world").get().begin == 6, "Failed 1b");
+
+  // ==
+  println("Test 2");
+  vassert(slice("Hello world!", 1, 5) == "ello", "Failed 2a");
+  vassert(slice("Hello world!", 1, 5).str() == "ello", "Failed 2b");
+
+  // startsWith
+  println("Test 3");
+  vassert("Hello world!".startsWith("Hel"), "Failed 3a");
+  vassert(not "Hello world!".startsWith("Bork"), "Failed 3b");
+
+  // endsWith
+  println("Test 4");
+  vassert("Hello world!".endsWith("ld!"), "Failed 4a");
+  vassert(not "Hello world!".endsWith("Bork"), "Failed 4b");
+
+  // compare
+  println("Test 5");
+  vassert(("abc" <=> "abd") == -1, "Failed 5a");
+  vassert(("abc" <=> "abb") == 1, "Failed 5b");
+  vassert(("abc" <=> "abc") == 0, "Failed 5c");
+  vassert(("abc" <=> "ab") == 1, "Failed 5d");
+  vassert(("abc" <=> "abce") == -1, "Failed 5e");
+
+  // splice
+  println("Test 6");
+  vassert("sprogwoggle".splice(4, 1, "bble") == "sprobblewoggle", "Failed 6a");
+}

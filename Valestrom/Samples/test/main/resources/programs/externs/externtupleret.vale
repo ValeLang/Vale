@@ -1,3 +1,4 @@
+
 fn extMakeTuple(i int) [int, int] extern;
 
 fn main() {

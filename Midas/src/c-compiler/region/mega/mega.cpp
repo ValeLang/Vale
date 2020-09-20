@@ -2498,13 +2498,14 @@ WrapperPtrLE Mega::mallocStr(
       LLVMBuildAdd(
           builder,
           lengthLE,
-          makeConstIntExpr(
-              functionState,
-              builder,LLVMInt64Type(),
-              1 + LLVMABISizeOfType(globalState->dataLayout, referendStructs.getStringWrapperStruct())),
+          LLVMBuildAdd(
+              builder,
+              constI64LE(1),
+              constI64LE(LLVMABISizeOfType(globalState->dataLayout, referendStructs.getStringWrapperStruct())),
+              "lenPlus1"),
           "strMallocSizeBytes");
 
-  auto destCharPtrLE = callMalloc(globalState, builder, sizeBytesLE);
+  auto destCharPtrLE = callMalloc(globalState, builder, LLVMBuildZExt(builder, sizeBytesLE, LLVMInt64Type(), "lenPlus1As64"));
 
   if (globalState->opt->census) {
     adjustCounter(builder, globalState->liveHeapObjCounter, 1);
@@ -2530,7 +2531,7 @@ WrapperPtrLE Mega::mallocStr(
       globalState->metalCache.str,
       Mutability::IMMUTABLE,
       referendStructs.getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache.strRef, newStrWrapperPtrLE), "Str");
-  LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
+  LLVMBuildStore(builder, LLVMBuildZExt(builder, lengthLE, LLVMInt64Type(), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
 
   // The caller still needs to initialize the actual chars inside!

@@ -129,7 +129,8 @@ Ref buildIfElse(
   LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
 
   if (thenResultMT == globalState->metalCache.neverRef && elseResultMT == globalState->metalCache.neverRef) {
-    assert(false); // implement
+    //    return wrap(globalState->region, globalState->metalCache.neverRef, globalState->neverPtr);
+    assert(false); // impl
   } else if (thenResultMT == globalState->metalCache.neverRef) {
     return elseResultRef;
   } else if (elseResultMT == globalState->metalCache.neverRef) {

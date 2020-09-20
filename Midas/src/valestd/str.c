@@ -1,18 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <assert.h>
 
 #define FALSE 0
 #define TRUE 1
 
-void __vinitStr(char* newStr, const char* chars) {
-  for (int i = 0; ; i++) {
+void __vinitStr(char* newStr, const char* chars, int len) {
+  for (int i = 0; i < len; i++) {
+    assert(chars[i]);
     newStr[i] = chars[i];
-    // This is at the end because we want to copy the null terminating char too.
-    if (chars[i] == 0) {
-      break;
-    }
   }
+  newStr[len] = 0;
 }
 
 void __vaddStr(char* a, char* b, char* dest) {

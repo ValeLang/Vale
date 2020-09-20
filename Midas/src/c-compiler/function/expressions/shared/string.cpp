@@ -55,9 +55,12 @@ WrapperPtrLE buildConstantVStr(
   // Fill the chars
   std::vector<LLVMValueRef> argsLE = {
       getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE),
-      globalState->getOrMakeStringConstant(contents)
+      globalState->getOrMakeStringConstant(contents),
+      lengthLE
   };
   LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+  buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE)));
 
   return strWrapperPtrLE;
 }

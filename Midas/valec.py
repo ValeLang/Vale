@@ -15,7 +15,7 @@ from typing import Dict, Any, List, Callable
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
-    print("Running: " + str(args))
+    print("Running: " + " ".join(args))
     return subprocess.run(args, stdout=PIPE, stderr=PIPE, text=True, **kwargs)
 
 
@@ -196,7 +196,7 @@ class ValeCompiler:
                 shutil.rmtree(build_dir)
             os.makedirs(build_dir)
 
-        vir_file = f"build.vir"
+        vir_file = build_dir + "/build.vir"
         proc = self.valestrom(vale_files, ["-o", vir_file])
         print(proc.stdout)
         print(proc.stderr)

@@ -312,8 +312,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
 
   val virtualTemplar = new VirtualTemplar(opts, overloadTemplar)
 
-  val packTemplar = new PackTemplar(opts, structTemplar, destructorTemplar)
-
   val sequenceTemplar = new SequenceTemplar(opts, arrayTemplar, structTemplar, destructorTemplar)
 
   val expressionTemplar =
@@ -323,7 +321,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
       inferTemplar,
       arrayTemplar,
       structTemplar,
-      packTemplar,
       sequenceTemplar,
       overloadTemplar,
       dropHelper,

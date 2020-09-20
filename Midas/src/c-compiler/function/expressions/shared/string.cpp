@@ -48,16 +48,19 @@ WrapperPtrLE buildConstantVStr(
 
   auto lengthLE = constI64LE(contents.length());
 
-  auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
+  auto strWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, lengthLE);
 
   // Set the length
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
   // Fill the chars
   std::vector<LLVMValueRef> argsLE = {
       getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE),
-      globalState->getOrMakeStringConstant(contents)
+      globalState->getOrMakeStringConstant(contents),
+      lengthLE
   };
   LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+  buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE)));
 
   return strWrapperPtrLE;
 }

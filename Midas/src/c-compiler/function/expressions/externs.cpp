@@ -47,28 +47,18 @@ Ref translateExternCall(
     assert(call->argExprs.size() == 2);
 
     auto leftStrTypeM = call->argTypes[0];
-    auto leftStrWrapperRef =
+    auto leftStrRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
-    auto leftStrWrapperPtrLE =
-        functionState->defaultRegion->makeWrapperPtr(
-            globalState->metalCache.strRef,
-            globalState->region->checkValidReference(FL(), functionState, builder,
-                globalState->metalCache.strRef, leftStrWrapperRef));
 
     auto rightStrTypeM = call->argTypes[1];
-    auto rightStrWrapperRef =
+    auto rightStrRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]);
-    auto rightStrWrapperPtrLE =
-        functionState->defaultRegion->makeWrapperPtr(
-            globalState->metalCache.strRef,
-            globalState->region->checkValidReference(FL(), functionState, builder,
-                globalState->metalCache.strRef, rightStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
-        getCharsPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
-        getCharsPtrFromWrapperPtr(builder, rightStrWrapperPtrLE)
+        functionState->defaultRegion->getStringBytesPtr(functionState, builder, leftStrRef),
+        functionState->defaultRegion->getStringBytesPtr(functionState, builder, rightStrRef)
     };
     auto resultInt8LE =
         LLVMBuildCall(
@@ -79,10 +69,21 @@ Ref translateExternCall(
             "eqStrResult");
     auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8Type(), 0, false), "");
 
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultBoolLE);
+  } else if (name == "__strLength") {
+    assert(call->argExprs.size() == 1);
+
+    auto leftStrRef =
+        translateExpression(
+            globalState, functionState, blockState, builder, call->argExprs[0]);
+    auto resultLenLE = globalState->region->getStringLen(functionState, builder, leftStrRef);
+
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
+
+    return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultLenLE);
   } else if (name == "__addFloatFloat") {
     // VivemExterns.addFloatFloat
     assert(false);
@@ -125,41 +126,31 @@ Ref translateExternCall(
     assert(call->argExprs.size() == 2);
 
     auto leftStrTypeM = call->argTypes[0];
-    auto leftStrWrapperRef =
+    auto leftStrRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
-    auto leftStrWrapperPtrLE =
-        functionState->defaultRegion->makeWrapperPtr(
-            globalState->metalCache.strRef,
-            globalState->region->checkValidReference(FL(), functionState, builder, call->argTypes[0],
-                leftStrWrapperRef));
-    auto leftStrLenLE = getLenFromStrWrapperPtr(builder, leftStrWrapperPtrLE);
+    auto leftStrLenLE = functionState->defaultRegion->getStringLen(functionState, builder, leftStrRef);
 
     auto rightStrTypeM = call->argTypes[1];
-    auto rightStrWrapperRef =
+    auto rightStrRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[1]);
-    auto rightStrWrapperPtrLE =
-        functionState->defaultRegion->makeWrapperPtr(
-            globalState->metalCache.strRef,
-            globalState->region->checkValidReference(FL(),
-                functionState, builder, call->argTypes[1], rightStrWrapperRef));
-    auto rightStrLenLE = getLenFromStrWrapperPtr(builder, rightStrWrapperPtrLE);
+    auto rightStrLenLE = functionState->defaultRegion->getStringLen(functionState, builder, rightStrRef);
 
     auto combinedLenLE =
         LLVMBuildAdd(builder, leftStrLenLE, rightStrLenLE, "lenSum");
 
-    auto destStrWrapperPtrLE = mallocStr(globalState, functionState, builder, combinedLenLE);
+    auto destStrWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, combinedLenLE);
 
     std::vector<LLVMValueRef> argsLE = {
-        getCharsPtrFromWrapperPtr(builder, leftStrWrapperPtrLE),
-        getCharsPtrFromWrapperPtr(builder, rightStrWrapperPtrLE),
+        functionState->defaultRegion->getStringBytesPtr(functionState, builder, leftStrRef),
+        functionState->defaultRegion->getStringBytesPtr(functionState, builder, rightStrRef),
         getCharsPtrFromWrapperPtr(builder, destStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
 
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrWrapperRef);
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrWrapperRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
+    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
 
     auto destStrRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, destStrWrapperPtrLE);
     globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, destStrRef);
@@ -265,14 +256,9 @@ Ref translateExternCall(
     auto argStrWrapperRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
-    auto argStrWrapperPtrLE =
-        functionState->defaultRegion->makeWrapperPtr(
-            globalState->metalCache.strRef,
-            globalState->region->checkValidReference(FL(),
-                functionState, builder, call->argTypes[0], argStrWrapperRef));
 
     std::vector<LLVMValueRef> argsLE = {
-        getCharsPtrFromWrapperPtr(builder, argStrWrapperPtrLE),
+        functionState->defaultRegion->getStringBytesPtr(functionState, builder, argStrWrapperRef)
     };
     LLVMBuildCall(builder, globalState->printVStr, argsLE.data(), argsLE.size(), "");
 
@@ -314,13 +300,19 @@ Ref translateExternCall(
     std::vector<LLVMValueRef> strlenArgsLE = { itoaDestPtrLE };
     auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
 
-    auto strWrapperPtrLE = mallocStr(globalState, functionState, builder, lengthLE);
+    auto strWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, lengthLE);
     // Set the length
     LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
     // Fill the chars
     auto charsPtrLE = getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE);
-    std::vector<LLVMValueRef> argsLE = { charsPtrLE, itoaDestPtrLE };
+    std::vector<LLVMValueRef> argsLE = {
+        charsPtrLE,
+        itoaDestPtrLE,
+        lengthLE
+    };
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+
+    buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, charsPtrLE));
 
     return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
   } else if (name == "__and") {
@@ -366,54 +358,77 @@ Ref translateExternCall(
         "");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, result);
   } else {
-    auto externishArgsLE = std::vector<LLVMValueRef>{};
-    externishArgsLE.reserve(call->argExprs.size());
-    for (int i = 0; i < call->argExprs.size(); i++) {
-      auto argRef = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
-      auto valishArgLE = globalState->region->checkValidReference(FL(), functionState, builder, call->function->params[i], argRef);
 
-      LLVMValueRef externishArgLE = nullptr;
+    auto args = std::vector<Ref>{};
+    args.reserve(call->argExprs.size());
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argExpr = call->argExprs[i];
+      auto argRefMT = call->function->params[i];
+      auto argRef = translateExpression(globalState, functionState, blockState, builder, argExpr);
+      args.push_back(argRef);
+    }
+
+    auto argsLE = std::vector<LLVMValueRef>{};
+    argsLE.reserve(call->argExprs.size());
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argRefMT = call->function->params[i];
+      auto argLE = globalState->region->checkValidReference(FL(), functionState, builder, argRefMT, args[i]);
+
       if (call->argTypes[i] == globalState->metalCache.intRef) {
-        externishArgLE = valishArgLE;
       } else if (call->argTypes[i] == globalState->metalCache.boolRef) {
         // Outside has i8, we have i1, but clang should be fine doing the conversion
-        externishArgLE = valishArgLE;
       } else if (call->argTypes[i] == globalState->metalCache.floatRef) {
-        externishArgLE = valishArgLE;
       } else if (call->argTypes[i] == globalState->metalCache.strRef) {
-        auto wrapperPtrLE = globalState->region->makeWrapperPtr(call->argTypes[i], valishArgLE);
-        externishArgLE = getCharsPtrFromWrapperPtr(builder, wrapperPtrLE);
       } else if (call->argTypes[i] == globalState->metalCache.neverRef) {
         assert(false); // How can we hand a never into something?
       } else if (call->argTypes[i] == globalState->metalCache.emptyTupleStructRef) {
         assert(false); // How can we hand a void into something?
+      } else if (auto structReferend = dynamic_cast<StructReferend*>(argRefMT->referend)) {
+        if (argRefMT->ownership == Ownership::SHARE) {
+          if (argRefMT->location == Location::INLINE) {
+            assert(LLVMTypeOf(argLE) ==
+                globalState->region->getReferendStructsSource()->getInnerStruct(structReferend));
+          } else {
+            std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+            assert(false);
+          }
+        } else {
+          std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+          assert(false);
+        }
       } else {
         std::cerr << "Invalid type for extern!" << std::endl;
         assert(false);
       }
 
-      externishArgsLE.push_back(externishArgLE);
+      argsLE.push_back(argLE);
     }
 
     auto externFuncIter = globalState->externFunctions.find(call->function->name->name);
     assert(externFuncIter != globalState->externFunctions.end());
     auto externFuncL = externFuncIter->second;
 
-    buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", call->function->name->name);
 
-    auto resultLE = LLVMBuildCall(builder, externFuncL, externishArgsLE.data(), externishArgsLE.size(), "");
+    auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
     auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
     globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
 
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argRefMT = call->function->params[i];
+      // Extern isnt expected to drop the ref, so we do
+      globalState->region->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
+    }
+
     if (call->function->returnType->referend == globalState->metalCache.never) {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
-      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
       LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
       return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
     } else {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
-      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
       return resultRef;
     }
   }

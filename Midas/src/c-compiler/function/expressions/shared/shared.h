@@ -43,6 +43,7 @@ LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* referendStructsSource,
     LLVMBuilderRef builder,
     Ref exprLE,
     Reference* refM,

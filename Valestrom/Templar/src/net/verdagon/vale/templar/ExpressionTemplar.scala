@@ -42,10 +42,9 @@ class ExpressionTemplar(
     inferTemplar: InferTemplar,
     arrayTemplar: ArrayTemplar,
     structTemplar: StructTemplar,
-    packTemplar: PackTemplar,
     sequenceTemplar: SequenceTemplar,
     overloadTemplar: OverloadTemplar,
-  dropHelper: DropHelper,
+    dropHelper: DropHelper,
     convertHelper: ConvertHelper,
     delegate: IExpressionTemplarDelegate) {
   val localHelper = new LocalHelper(opts, dropHelper)
@@ -1007,7 +1006,7 @@ class ExpressionTemplar(
 
   private def newGlobalFunctionGroupExpression(env: IEnvironmentBox, name: GlobalFunctionFamilyNameA): ReferenceExpression2 = {
     TemplarReinterpret2(
-      PackTemplar.emptyPackExpression,
+      Program2.emptyPackExpression,
       Coord(
         Share,
         OverloadSet(

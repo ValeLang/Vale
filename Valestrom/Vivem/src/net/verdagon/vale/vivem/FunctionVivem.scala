@@ -85,6 +85,7 @@ object FunctionVivem {
       case """F("__and",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.and
       case """F("__or",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.or
       case """F("__mod",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.mod
+      case """F("__strLength",[],[R(*,>,s)])""" => VivemExterns.strLength
       case _ => vimpl(ref.fullName.toString)
     }
   }

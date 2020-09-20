@@ -91,7 +91,7 @@ WeakFatPtrLE FatWeaks::assembleWeakFatPtr(
   auto weakRefLE = LLVMGetUndef(weakRefStruct);
   weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
   weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, innerRefLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR,"");
-  return functionState->defaultRegion->makeWeakFatPtr(weakRefMT, weakRefLE);
+  return weakRefStructsSource->makeWeakFatPtr(weakRefMT, weakRefLE);
 }
 
 // Used in interface calling, when we dont know what the underlying struct type is yet.
@@ -112,5 +112,5 @@ WeakFatPtrLE FatWeaks::assembleVoidStructWeakRef(
   weakRefLE =
       LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");
 
-  return globalState->region->makeWeakFatPtr(refM, weakRefLE);
+  return weakRefStructsSource->makeWeakFatPtr(refM, weakRefLE);
 }

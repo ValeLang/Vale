@@ -12,7 +12,7 @@ fn set_screen_cell(
 
     // println("looking up " + str(loc));
     tile? = game.get_current_level().tiles.get(loc);
-    if (not tile?.empty?()) {
+    if (not tile?.isEmpty()) {
         tile = tile?^.get();
         if (tile.display_class == "dirt") {
             mut character = ".";
@@ -230,7 +230,7 @@ fn display(
     //     };
 
     // if let Some(mut screen) = maybe_screen.as_mut() {
-    if (not empty?(maybe_screen)) {
+    if (not isEmpty(maybe_screen)) {
         screen = maybe_screen.get();
 
         x! = 0;

@@ -46,7 +46,8 @@ object Externs {
         makeExtern("__addStrStr", List(("a", "str"), ("b", "str")), "str"),
         makeExtern("__eqStrStr", List(("left", "str"), ("right", "str")), "bool"),
         makeExtern("__castIntStr", List(("left", "int")), "str"),
-        makeExtern("__castFloatStr", List(("left", "float")), "str"))
+        makeExtern("__castFloatStr", List(("left", "float")), "str"),
+        makeExtern("__strLength", List(("s", "str")), "int"))
 
   def makeExtern(functionName: String, params: List[(String, String)], retType: String): FunctionA = {
     makeSimpleFunction(

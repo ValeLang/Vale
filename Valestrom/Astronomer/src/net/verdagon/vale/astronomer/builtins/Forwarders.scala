@@ -25,6 +25,7 @@ object Forwarders {
       makeForwarder("int", List(("left", "float")), "int", "__castFloatInt"),
       makeForwarder("str", List(("left", "int")), "str", "__castIntStr"),
       makeForwarder("str", List(("left", "float")), "str", "__castFloatStr"),
+      makeForwarder("len", List(("s", "str")), "int", "__strLength"),
       makeForwarder("and", List(("left", "bool"), ("right", "bool")), "bool", "__and"),
       makeForwarder("or", List(("left", "bool"), ("right", "bool")), "bool", "__or"),
       makeForwarder("not", List(("output", "bool")), "bool", "__not"),

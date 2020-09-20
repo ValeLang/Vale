@@ -67,6 +67,7 @@ LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* referendStructsSource,
     LLVMBuilderRef builder,
     Ref exprRef,
     Reference* refM,
@@ -88,7 +89,7 @@ LLVMValueRef adjustStrongRc(
   }
 
   auto controlBlockPtrLE =
-      getControlBlockPtr(globalState, functionState, builder, exprRef, refM);
+      referendStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(builder, rcPtrLE, amount);
@@ -244,18 +245,22 @@ void buildAssertCensusContains(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
-  LLVMValueRef resultAsVoidPtrLE =
-      LLVMBuildPointerCast(
-          builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "");
-  auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
-  auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder,  isRegisteredIntLE, LLVMInt1Type(), "");
-  buildIf(functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
-      [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
-        buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
-        buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-      });
+  if (globalState->opt->census) {
+    LLVMValueRef resultAsVoidPtrLE =
+        LLVMBuildPointerCast(
+            builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+    auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE,
+        1, "");
+    auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder, isRegisteredIntLE, LLVMInt1Type(),
+        "");
+    buildIf(functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
+        [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
+          buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
+          buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+          LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        });
+  }
 }
 
 Ref buildCall(
@@ -268,7 +273,7 @@ Ref buildCall(
   assert(funcIter != globalState->functions.end());
   auto funcL = funcIter->second;
 
-  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncM->prototype->name->name);
+  buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
   buildFlare(FL(), globalState, functionState, builder, "Calling function ", prototype->name->name);
 
   std::vector<LLVMValueRef> argsLE;
@@ -284,12 +289,12 @@ Ref buildCall(
 
   if (prototype->returnType->referend == globalState->metalCache.never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
   } else {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncM->prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     return resultRef;
   }
 }

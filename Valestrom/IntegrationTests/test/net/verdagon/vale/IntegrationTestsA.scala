@@ -217,7 +217,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |struct Vec<N, T> rules(N int)
         |{
-        |  values [<mut> N * T];
+        |  values [<imm> N * T];
         |}
         |
         |fn main() {
@@ -435,9 +435,29 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.run(Vector())
   }
 
-  test("Test returning empty seq") {
-    // Make sure that functions that cant be called by main will not be included.
+//  test("Test overloading between borrow and own") {
+//    val compile = Compilation(
+//      """
+//        |interface IMoo {}
+//        |struct Moo {}
+//        |impl IMoo for Moo;
+//        |
+//        |fn func(virtual moo IMoo) int abstract;
+//        |fn func(virtual moo &IMoo) int abstract;
+//        |
+//        |fn func(moo Moo impl IMoo) int { 73 }
+//        |fn func(moo &Moo impl IMoo) int { 42 }
+//        |
+//        |fn main() {
+//        |  func(&Moo())
+//        |}
+//        |""".stripMargin)
+//    val temputs = compile.getTemputs()
+//
+//    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+//  }
 
+  test("Test returning empty seq") {
     val compile = Compilation(
       """fn main() [] {
         |  []
@@ -464,12 +484,38 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
 
     // The extern we make should have the name we expect
-    assert(hamuts.externs.exists(_.fullName.readableName == "sqrt"))
+    vassert(hamuts.externs.exists(_.fullName.readableName == "sqrt"))
 
     // We also made an internal function that contains an extern call, it should have a different name.
     val externSqrt = hamuts.lookupFunction("sqrt_1")
-    assert(externSqrt.isExtern)
+    vassert(externSqrt.isExtern)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+  }
+
+  test("Test narrowing between borrow and owning overloads") {
+    // See NMORFI for why this test is here. Before the SCCTT fix, it couldn't resolve between the two
+    // `get` overloads, because the borrow ownership (from the opt.get()) was creeping into the rules
+    // too far.
+
+    val compile = Compilation(
+      """
+        |interface Opt<T> rules(T Ref) { }
+        |struct None<T> rules(T Ref) { }
+        |impl<T> Opt<T> for None<T>;
+        |
+        |fn get<T>(virtual opt Opt<T>) int abstract;
+        |fn get<T>(opt None<T> impl Opt<T>) int { __panic() }
+        |
+        |fn get<T>(virtual opt &Opt<T>) int abstract;
+        |fn get<T>(opt &None<T> impl Opt<T>) int { 42 }
+        |
+        |fn main() {
+        |  opt Opt<int> = None<int>();
+        |  = opt.get();
+        |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 }

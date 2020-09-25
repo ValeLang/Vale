@@ -27,10 +27,9 @@ private[infer] trait IInfererEvaluatorDelegate[Env, State] {
   def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2): Set[InterfaceRef2]
 
   def lookupTemplata(env: Env, rune: IName2): ITemplata
+  def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata
 
   def getMemberCoords(state: State, structRef: StructRef2): List[Coord]
-
-  def citizenIsFromTemplate(state: State, citizen: CitizenRef2, template: ITemplata): Boolean
 
   def structIsClosure(state: State, structRef: StructRef2): Boolean
 
@@ -189,6 +188,7 @@ class InfererEvaluator[Env, State](
                 paramRange,
                 CoordTemplataType,
                 List(
+                  // This seems weird. We should probably remove this, see GAOFPS
                   TemplexTR(OwnershipTT(paramRange, Conversions.unevaluateOwnership(paramFilterInstance.tyype.ownership))),
                   TemplexTR(RuneTT(paramRange, kindRune, KindTemplataType)))))
           (List(rule), Map[IRune2, ITemplataType](kindRune -> KindTemplataType))
@@ -953,37 +953,26 @@ class InfererEvaluator[Env, State](
         }
       }
       case (InferEvaluateSuccess(leftTemplata, leftDeeplySatisfied)) => {
-        evaluateRule(env, state, typeByRune, localRunes, inferences, rightRule) match {
-          case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Failed evaluating right rule!", List(iec)))
-          case (InferEvaluateUnknown(rightEvalDeeplySatisfied)) => {
-            // We don't care about the eval being deeply satisfied because we'll be matching it shortly.
-            val _ = rightEvalDeeplySatisfied
+        // Below, we match the known left (leftTemplata) against the rightRule.
+        // Previously, we did something different:
+        // - Try evaluating rightRule first
+        // - If it came up known, do a simple comparison of the leftTemplata and the rightTemplata
+        // - If it came up unknown, *then* do a match from leftTemplata to rightRule
+        // However, this caused problems, see NMORFI. We were evaluating a lot of things we didn't have to.
+        // It turns out, evaluating is expensive, and we should avoid it when possible, instead doing MDESOI
+        // when at all possible.
 
-            // Right is unknown, but left is known. Use the thing from the left
-            // and match it against the right.
-            val maybeInferencesH =
-              makeMatcher().matchTemplataAgainstRulexTR(
-                env, state, typeByRune, localRunes, inferences, leftTemplata, rightRule)
-            maybeInferencesH match {
-              case imc @ InferMatchConflict(_, _, _, _) => {
-                // None from the match means something conflicted, bail!
-                return (InferEvaluateConflict(inferences.inferences, range, "Failed to match known left against unknown right!", List(imc)))
-              }
-              case InferMatchSuccess(rightMatchDeeplySatisfied) => {
-                (InferEvaluateSuccess(leftTemplata, leftDeeplySatisfied && rightMatchDeeplySatisfied))
-              }
-            }
+        // Use the thing from the left and match it against the right.
+        val maybeInferencesH =
+          makeMatcher().matchTemplataAgainstRulexTR(
+            env, state, typeByRune, localRunes, inferences, leftTemplata, rightRule)
+        maybeInferencesH match {
+          case imc @ InferMatchConflict(_, _, _, _) => {
+            // None from the match means something conflicted, bail!
+            return (InferEvaluateConflict(inferences.inferences, range, "Failed to match known left against the right side!", List(imc)))
           }
-          case (InferEvaluateSuccess(rightTemplata, rightDeeplySatisfied)) => {
-            // Both sides are known. Make sure they're equal.
-            val equal =
-              equator.templatasEqual(state, range, leftTemplata, rightTemplata, leftRule.resultType)
-            if (equal) {
-              // Could return either, arbitrarily choosing left
-              (InferEvaluateSuccess(leftTemplata, leftDeeplySatisfied && rightDeeplySatisfied))
-            } else {
-              (InferEvaluateConflict(inferences.inferences, range, s"Sides aren't equal!\nLeft:  ${leftTemplata}\nRight: ${rightTemplata}", Nil))
-            }
+          case InferMatchSuccess(rightMatchDeeplySatisfied) => {
+            (InferEvaluateSuccess(leftTemplata, leftDeeplySatisfied && rightMatchDeeplySatisfied))
           }
         }
       }
@@ -1265,10 +1254,6 @@ class InfererEvaluator[Env, State](
           delegate.lookupMemberTypes(state, kind, expectedNumMembers)
         }
 
-        override def citizenIsFromTemplate(state: State, citizen: CitizenRef2, template: ITemplata): Boolean = {
-          delegate.citizenIsFromTemplate(state, citizen, template)
-        }
-
         override def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2): Set[InterfaceRef2] = {
           delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
         }
@@ -1282,6 +1267,9 @@ class InfererEvaluator[Env, State](
         }
 
         override def lookupTemplata(env: Env, name: IName2): ITemplata = {
+          delegate.lookupTemplata(env, name)
+        }
+        override def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata = {
           delegate.lookupTemplata(env, name)
         }
       })

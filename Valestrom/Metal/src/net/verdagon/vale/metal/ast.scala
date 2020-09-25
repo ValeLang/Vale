@@ -138,7 +138,7 @@ case class InterfaceMethodH(
   // Describes which param is the one that will have the vtable.
   // Currently this is always assumed to be zero.
   virtualParamIndex: Int) {
-  assert(virtualParamIndex >= 0)
+  vassert(virtualParamIndex >= 0)
 }
 
 // Represents how a struct implements an interface.

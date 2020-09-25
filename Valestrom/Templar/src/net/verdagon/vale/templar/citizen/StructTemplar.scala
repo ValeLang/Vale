@@ -352,32 +352,6 @@ class StructTemplar(
     })
   }
 
-  def citizenIsFromTemplate(temputs: TemputsBox, citizen: CitizenRef2, template: ITemplata): (Boolean) = {
-    // this print is probably here because once we add namespaces to the syntax
-    // this will false-positive for two interfaces with the same name but in different
-    // namespaces.
-    opts.debugOut("someday this is going to bite us")
-
-    (citizen, template) match {
-      case (InterfaceRef2(fullName), InterfaceTemplata(_, interfaceA)) => {
-        fullName.last match {
-          case CitizenName2(humanName, templateArgs) => humanName == interfaceA.name.name
-          case _ => vimpl()
-        }
-      }
-      case (StructRef2(fullName), StructTemplata(_, structA)) => {
-        fullName.last match {
-          case CitizenName2(humanName, templateArgs) => humanName == structA.name.name
-          case TupleName2(_) => false
-          case LambdaCitizenName2(codeLocation2) => false
-          case AnonymousSubstructName2(_) => false
-          case other => vimpl(other.toString)
-        }
-      }
-      case _ => (false)
-    }
-  }
-
 //  def headerToIFunctionSubclass(
 //    env: IEnvironment,
 //    temputs: TemputsBox,

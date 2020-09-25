@@ -29,8 +29,6 @@ trait IInfererMatcherDelegate[Env, State] {
     ancestorInterfaceRef: InterfaceRef2):
   (Option[Int])
 
-  def citizenIsFromTemplate(state: State, citizen: CitizenRef2, template: ITemplata): Boolean
-
   def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2): Set[InterfaceRef2]
 
   def structIsClosure(state: State, structRef: StructRef2): Boolean
@@ -38,6 +36,7 @@ trait IInfererMatcherDelegate[Env, State] {
   def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
 
   def lookupTemplata(env: Env, name: IName2): ITemplata
+  def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata
 }
 
 class InfererMatcher[Env, State](
@@ -233,7 +232,7 @@ class InfererMatcher[Env, State](
       case (InferEvaluateSuccess(callTemplateTemplata, templateDeeplySatisfied)) => {
         // debt: TEST THIS!
 
-        if (delegate.citizenIsFromTemplate(state, actualCitizen, callTemplateTemplata)) {
+        if (templataTemplar.citizenIsFromTemplate(actualCitizen, callTemplateTemplata)) {
           val expectedArgs = call.args
           if (actualCitizen.fullName.steps.size > 1) {
             vimpl()
@@ -251,6 +250,7 @@ class InfererMatcher[Env, State](
               }
             })
           // If the function is the same, and the args are the same... it's the same.
+          // This is important for avoiding stack overflows, see NMORFI.
           InferMatchSuccess(templateDeeplySatisfied && argsDeeplySatisfied)
         } else {
           return InferMatchConflict(inferences.inferences, range, "Given citizen didn't come from expected template!\nCitizen: " + actualCitizen + "\nTemplate: " + callTemplateTemplata, List())
@@ -344,26 +344,42 @@ class InfererMatcher[Env, State](
           return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualVariability} doesn't match expected ${expectedVariability}", List()))
         }
       }
-      case (NameTT(range, name, expectedType), actualTemplata) => {
-        val expectedTemplata = templataTemplar.lookupTemplata(env, state, range, name, expectedType)
-        if (actualTemplata != expectedTemplata) {
-          // Right here, thought about checking for subtypes, but I don't think we should.
-          // For example, let's say we have this impl:
-          //   impl ITopInterface for IMiddleInterface;
-          // and a struct MyStruct that implements IMiddleInterface.
-          //
-          // If we search for all superinterfaces of IMiddleInterface, we'll be testing
-          // IMiddleInterface against IMiddleInterface, and itll correctly tell us that
-          // yes, it matches.
-          // If, however, we search for all superinterfaces of MyStruct, we'll be testing
-          // against that impl and ask if MyStruct matches that IMiddleInterface. We want
-          // it to say "no, it doesn't match." here.
-          //
-          // If we decide to check for subtypes here, it will do the incorrect thing in
-          // that latter case. So, we don't check for subtypes here, just strict equality.
-          return (InferMatchConflict(inferences.inferences, range, s"Supplied templata doesn't match '${name}':\n'${name}' in environment:${expectedTemplata}\nActual:${actualTemplata}", List()))
+      case (AbsoluteNameTT(range, expectedName, expectedType), actualTemplata) => {
+        val expectedUncoercedTemplata = delegate.lookupTemplata(env, NameTranslator.translateNameStep(expectedName))
+
+        if (templataTemplar.uncoercedTemplataEquals(env, state, actualTemplata, expectedUncoercedTemplata, expectedType)) {
+          return InferMatchSuccess(true)
+        } else {
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied templata doesn't match '${expectedName}':\n'${expectedName}' in environment:${expectedUncoercedTemplata}\nActual:${actualTemplata}", List()))
         }
-        (InferMatchSuccess(true))
+      }
+      case (NameTT(range, expectedName, expectedType), actualTemplata) => {
+        val expectedUncoercedTemplata = delegate.lookupTemplata(env, expectedName)
+
+        if (templataTemplar.uncoercedTemplataEquals(env, state, actualTemplata, expectedUncoercedTemplata, expectedType)) {
+          return InferMatchSuccess(true)
+        } else {
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied templata doesn't match '${expectedName}':\n'${expectedName}' in environment:${expectedUncoercedTemplata}\nActual:${actualTemplata}", List()))
+        }
+
+//        if (actualTemplata != expectedTemplata) {
+//          // Right here, thought about checking for subtypes, but I don't think we should.
+//          // For example, let's say we have this impl:
+//          //   impl ITopInterface for IMiddleInterface;
+//          // and a struct MyStruct that implements IMiddleInterface.
+//          //
+//          // If we search for all superinterfaces of IMiddleInterface, we'll be testing
+//          // IMiddleInterface against IMiddleInterface, and itll correctly tell us that
+//          // yes, it matches.
+//          // If, however, we search for all superinterfaces of MyStruct, we'll be testing
+//          // against that impl and ask if MyStruct matches that IMiddleInterface. We want
+//          // it to say "no, it doesn't match." here.
+//          //
+//          // If we decide to check for subtypes here, it will do the incorrect thing in
+//          // that latter case. So, we don't check for subtypes here, just strict equality.
+//          return (InferMatchConflict(inferences.inferences, range, s"Supplied templata doesn't match '${name}':\n'${name}' in environment:${expectedTemplata}\nActual:${actualTemplata}", List()))
+//        }
+//        (InferMatchSuccess(true))
       }
       case (RuneTT(range, rune, expectedType), actualTemplata) => {
         if (actualTemplata.tyype != expectedType) {
@@ -380,8 +396,19 @@ class InfererMatcher[Env, State](
           case ims @ InferMatchSuccess(_) => ims
         }
       }
-      case (ct @ CallTT(range, _, _, _), CoordTemplata(Coord(_, structRef @ StructRef2(_)))) => {
+      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(Coord(ownership, structRef @ StructRef2(_)))) => {
         vassert(instance.tyype == ct.resultType)
+
+        // This check is to help with NMORFI temporarily. It assumes that we'll never have any templates that return
+        // coords, only kinds.
+        // Eventually, we should change all of our coercing nonsense into toRef calls, see SCCTT.
+        ownership match {
+          case Share => // fine, continue
+          case Own => // fine, continue
+          case Borrow | Weak => {
+            return InferMatchConflict(inferences.inferences, range, "Expected Own or Share, but was given " + ownership, List())
+          }
+        }
 
 //        if (delegate.structIsClosure(state, structRef)) {
 //          // If it's a closure, see if we can conform it to the receiving interface.
@@ -418,8 +445,20 @@ class InfererMatcher[Env, State](
         // We'll then get the return type of the function, and then set the rune.
         // Then we'll know the full IFunction1, and can proceed to glory.
       }
-      case (ct @ CallTT(range, _, _, _), CoordTemplata(Coord(_, cit @ InterfaceRef2(_)))) => {
+      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(Coord(ownership, cit @ InterfaceRef2(_)))) => {
         vassert(instance.tyype == ct.resultType)
+
+        // This check is to help with NMORFI temporarily. It assumes that we'll never have any templates that return
+        // coords, only kinds.
+        // Eventually, we should change all of our coercing nonsense into toRef calls, see SCCTT.
+        ownership match {
+          case Share => // fine, continue
+          case Own => // fine, continue
+          case Borrow | Weak => {
+            return InferMatchConflict(inferences.inferences, range, "Expected Own or Share, but was given " + ownership, List())
+          }
+        }
+
         matchCitizenAgainstCallTT(env, state, typeByRune, localRunes, inferences, range, ct, cit)
       }
       case (ct @ CallTT(range, _, _, _), KindTemplata(structRef @ StructRef2(_))) => {
@@ -540,6 +579,28 @@ class InfererMatcher[Env, State](
         } else {
           (InferMatchConflict(inferences.inferences, range, s"Ownerships don't match: ${ownershipP} and ${ownershipT}", List()))
         }
+      }
+      case (StringTT(range, expectedValue), StringTemplata(actualValue)) => {
+        if (actualValue == expectedValue) {
+          (InferMatchSuccess(true))
+        } else {
+          (InferMatchConflict(inferences.inferences, range, s"Strings don't match: ${actualValue} and ${expectedValue}", List()))
+        }
+      }
+      case (CoordListTT(range, expectedCoordRules), CoordListTemplata(actualCoords)) => {
+        vassert(expectedCoordRules.size == actualCoords.size)
+
+        val deeplySatisfied =
+          expectedCoordRules.zip(actualCoords).zipWithIndex.foldLeft(true)({ case (deeplySatisfiedSoFar, ((expectedCoordRule, actualCoord), index)) =>
+            matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(actualCoord), expectedCoordRule) match {
+              case imc @ InferMatchConflict(_, _, _, _) => {
+                return InferMatchConflict(inferences.inferences, range, "Coord list element " + (index + 1) / (actualCoords.size) + " doesn't match!", List(imc))
+              }
+              case InferMatchSuccess(deeplySatisfied) => (deeplySatisfiedSoFar && deeplySatisfied)
+            }
+          })
+
+        InferMatchSuccess(deeplySatisfied)
       }
       case (OwnershippedTT(range, expectedOwnership, innerCoordTemplex), CoordTemplata(Coord(instanceOwnership, instanceKind))) => {
         val compatible =

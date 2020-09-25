@@ -66,7 +66,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Take arraysequence as a parameter") {
     val compile = Compilation(
       """
-        |fn doThings(arr [5 * int]) {
+        |fn doThings(arr [<imm> 5 * int]) {
         |  arr.3
         |}
         |fn main() {

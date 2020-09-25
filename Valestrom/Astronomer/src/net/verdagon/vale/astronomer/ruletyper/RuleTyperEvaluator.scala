@@ -512,7 +512,12 @@ class RuleTyperEvaluator[Env, State](
 
     (maybeLeftRuleT, maybeRightRuleT) match {
       case (Some(leftRuleT), Some(rightRuleT)) => {
-        (RuleTyperEvaluateSuccess(EqualsAR(range, leftRuleT, rightRuleT)))
+
+        if (leftRuleT.resultType != rightRuleT.resultType) {
+          return RuleTyperEvaluateConflict(conclusions.conclusions, range, "Left rule type (" + leftRuleT.resultType + ") doesn't match right rule type (" + rightRuleT.resultType + ")", None)
+        } else {
+          (RuleTyperEvaluateSuccess(EqualsAR(range, leftRuleT, rightRuleT)))
+        }
       }
       case (Some(leftRuleT), None) => {
         // We know the left, but don't know the right. Use the type from the left

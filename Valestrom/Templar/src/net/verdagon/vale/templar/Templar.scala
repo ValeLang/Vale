@@ -180,10 +180,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
           structTemplar.getMemberCoords(state, structRef)
         }
 
-        override def citizenIsFromTemplate(state: TemputsBox, citizen: CitizenRef2, template: ITemplata): (Boolean) = {
-          structTemplar.citizenIsFromTemplate(state, citizen, template)
-        }
-
 
         override def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType = {
           it.originInterface.tyype

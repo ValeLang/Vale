@@ -19,9 +19,6 @@ class InfererEquator[Env, State](
     expectedType: ITemplataType):
   (Boolean) = {
     (left, right) match {
-      case (IntegerTemplata(leftNum), IntegerTemplata(rightNum)) => {
-        (leftNum == rightNum)
-      }
       case (KindTemplata(leftKind), rightStructTemplata @ StructTemplata(_, _)) => {
         val rightKind =
           templataTemplarInner.evaluateStructTemplata(state, range, rightStructTemplata, List(), expectedType)
@@ -39,8 +36,17 @@ class InfererEquator[Env, State](
       case (MutabilityTemplata(leftMutability), MutabilityTemplata(rightMutability)) => {
         (leftMutability == rightMutability)
       }
+      case (StringTemplata(leftVal), StringTemplata(righVal)) => {
+        (leftVal == righVal)
+      }
+      case (IntegerTemplata(leftVal), IntegerTemplata(righVal)) => {
+        (leftVal == righVal)
+      }
       case (leftInterfaceTemplata @ InterfaceTemplata(_, _), rightInterfaceTemplata @ InterfaceTemplata(_, _)) => {
         (leftInterfaceTemplata == rightInterfaceTemplata)
+      }
+      case (CoordListTemplata(leftCoords), CoordListTemplata(rightCoords)) => {
+        leftCoords == rightCoords
       }
       case (PrototypeTemplata(leftP), PrototypeTemplata(rightP)) => leftP == rightP
       case _ => vfail("make case for:\n" + left + "\n" + right)

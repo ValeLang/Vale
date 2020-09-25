@@ -77,7 +77,8 @@ case class StructMemberA(
 
 case class ImplA(
     name: ImplNameA,
-    rules: List[IRulexAR],
+    rulesFromStructDirection: List[IRulexAR],
+    rulesFromInterfaceDirection: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
     structKindRune: IRuneA,

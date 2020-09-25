@@ -124,10 +124,18 @@ class ScoutTests extends FunSuite with Matchers {
       impl.interfaceKindRune match {
         case ir0 @ ImplicitRuneS(_, 1) => ir0
       }
-    impl.rules match {
+    impl.rulesFromStructDirection match {
       case List(
           EqualsSR(_, TypedSR(_, a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo")))),
           EqualsSR(_, TypedSR(_, b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo"))))) => {
+        vassert(a == structRune)
+        vassert(b == interfaceRune)
+      }
+    }
+    impl.rulesFromInterfaceDirection match {
+      case List(
+      EqualsSR(_, TypedSR(_, b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo")))),
+      EqualsSR(_, TypedSR(_, a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo"))))) => {
         vassert(a == structRune)
         vassert(b == interfaceRune)
       }
@@ -274,6 +282,17 @@ class ScoutTests extends FunSuite with Matchers {
       """fn main() {
         |  mut a = a + 1;
         |}
+        |""".stripMargin)
+    err match {
+      case CouldntFindVarToMutateS(_, "a") =>
+    }
+  }
+
+  // Intentional failure 2020.09.23
+  test("Reports when impling a non-kind") {
+    val err = compileForError(
+      """
+        |fn func(moo &Moo impl &IMoo) int { 73 }
         |""".stripMargin)
     err match {
       case CouldntFindVarToMutateS(_, "a") =>

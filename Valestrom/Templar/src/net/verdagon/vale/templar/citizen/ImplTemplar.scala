@@ -33,7 +33,11 @@ class AncestorHelper(
     implTemplata: ImplTemplata):
   (Option[InterfaceRef2]) = {
     val ImplTemplata(env, impl) = implTemplata
-    val ImplA(codeLocation, rules, typeByRune, localRunes, structKindRune, interfaceKindRune) = impl
+    val ImplA(codeLocation, rulesFromStructDirection, rulesFromInterfaceDirection, typeByRune, localRunes, structKindRune, interfaceKindRune) = impl
+
+    // We use the rules from the struct direction because they'll fail faster, and we won't accidentally evaluate a ton
+    // of things we would otherwise. See NMORFI for more.
+    val rules = rulesFromStructDirection
 
     val result =
       inferTemplar.inferFromExplicitTemplateArgs(

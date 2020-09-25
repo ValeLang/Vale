@@ -390,7 +390,7 @@ object Astronomer {
   }
 
   def translateImpl(astrouts: AstroutsBox, env: Environment, implS: ImplS): ImplA = {
-    val ImplS(range, nameS, rules, knowableRunesS, localRunesS, isTemplate, structKindRuneS, interfaceKindRuneS) = implS
+    val ImplS(range, nameS, rulesFromStructDirection, rulesFromInterfaceDirection, knowableRunesS, localRunesS, isTemplate, structKindRuneS, interfaceKindRuneS) = implS
     val nameA = translateImplName(nameS)
     val localRunesA = localRunesS.map(Astronomer.translateRune)
     val knowableRunesA = knowableRunesS.map(Astronomer.translateRune)
@@ -400,15 +400,23 @@ object Astronomer {
       case _ =>
     }
 
-    val (conclusions, rulesA) =
-      makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+    val (conclusionsForRulesFromStructDirection, rulesFromStructDirectionA) =
+      makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
+    val (conclusionsForRulesFromInterfaceDirection, rulesFromInterfaceDirectionA) =
+      makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (c, RuleTyperSolveSuccess(r)) => (c, r)
+      }
+    vassert(conclusionsForRulesFromStructDirection == conclusionsForRulesFromInterfaceDirection)
+    val conclusions = conclusionsForRulesFromStructDirection
 
     ImplA(
       nameA,
-      rulesA,
+      rulesFromStructDirectionA,
+      rulesFromInterfaceDirectionA,
       conclusions.typeByRune,
       localRunesA,
       translateRune(structKindRuneS),

@@ -41,8 +41,8 @@ ValeStr* vstr_substring(
 
   // printf("in substring, %d %d %d %d\n", haystackBegin, haystackEnd, beginInHaystack, endInHaystack);
 
-  assert(begin >= 0);
-  assert(length >= 0);
+  vassert(begin >= 0);
+  vassert(length >= 0);
 
   return vale_newstr(strChars, begin, length);
 }

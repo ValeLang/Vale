@@ -47,7 +47,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
       case IfPE(_,
         BlockPE(_,
           List(
-            LetPE(_,List(),
+            LetPE(_,None,
               PatternPP(_,None,None,None,
                 Some(
                   DestructureP(_,
@@ -65,7 +65,7 @@ class BiggerTests extends FunSuite with Matchers with Collector {
     compile(CombinatorParsers.statement,
       "newLen = if (num == 0) { 1 } else { 2 };") shouldHave {
       case LetPE(_,
-      List(),
+      None,
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "newLen")), FinalP)), None, None, None),
       IfPE(_,
       BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), BorrowP))),

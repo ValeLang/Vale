@@ -3,9 +3,9 @@ package net.verdagon.vale.templar.templata
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.ShareP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
-import net.verdagon.vale.templar.{IName2, NameTranslator}
+import net.verdagon.vale.templar.{AnonymousSubstructName2, CitizenName2, IName2, LambdaCitizenName2, NameTranslator, TupleName2}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vimpl}
+import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -566,4 +566,95 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       case _ => vimpl((templata, tyype).toString())
     }
   }
+
+  def uncoercedTemplataEquals(env: Env, state: State, a: ITemplata, b: ITemplata, bExpectedType: ITemplataType): Boolean = {
+    // When we consider a new templata, add it to one of these two following matches, then be VERY careful and make sure
+    // to consider it against every other type in the last match.
+    a match {
+      case KindTemplata(_) =>
+      case CoordTemplata(_) =>
+      case ArrayTemplateTemplata() =>
+      case _ => vimpl()
+    }
+    b match {
+      case KindTemplata(_) =>
+      case CoordTemplata(_) =>
+      case StructTemplata(_, _) =>
+      case InterfaceTemplata(_, _) =>
+      case ArrayTemplateTemplata() =>
+      case _ => vimpl()
+    }
+
+    (a, b) match {
+      case (KindTemplata(_) | CoordTemplata(_), KindTemplata(_) | CoordTemplata(_)) => {
+        a == coerce(state, RangeS.internal(-1345), b, bExpectedType)
+      }
+      case (KindTemplata(actualStructRef @ StructRef2(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
+        vassert(bExpectedType == KindTemplataType)
+        citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List())
+      }
+      case (CoordTemplata(Coord(Share | Own, actualStructRef @ StructRef2(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
+        vassert(bExpectedType == CoordTemplataType)
+        citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List())
+      }
+      case (KindTemplata(actualInterfaceRef @ InterfaceRef2(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+        vassert(bExpectedType == KindTemplataType)
+        citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
+      }
+      case (CoordTemplata(Coord(Share | Own, actualInterfaceRef @ InterfaceRef2(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+        vassert(bExpectedType == CoordTemplataType)
+        citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
+      }
+      case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
+      case (KindTemplata(UnknownSizeArrayT2(_)), ArrayTemplateTemplata()) => true
+      case (CoordTemplata(Coord(Share | Own, UnknownSizeArrayT2(_))), ArrayTemplateTemplata()) => true
+      case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
+      case (ArrayTemplateTemplata(), KindTemplata(UnknownSizeArrayT2(_))) => true
+      case (ArrayTemplateTemplata(), CoordTemplata(Coord(Share | Own, UnknownSizeArrayT2(_)))) => true
+      case _ => false
+    }
+  }
+
+  def citizenIsFromTemplate(actualCitizenRef: CitizenRef2, expectedCitizenTemplata: ITemplata): Boolean = {
+    val (citizenTemplateNameInitSteps, citizenTemplateName) =
+      expectedCitizenTemplata match {
+        case StructTemplata(env, originStruct) => (env.fullName.steps, originStruct.name.name)
+        case InterfaceTemplata(env, originInterface) => (env.fullName.steps, originInterface.name.name)
+        case KindTemplata(expectedKind) => return actualCitizenRef == expectedKind
+        case CoordTemplata(Coord(Own | Share, actualKind)) => return actualCitizenRef == actualKind
+        case _ => return false
+      }
+    if (actualCitizenRef.fullName.initSteps != citizenTemplateNameInitSteps) {
+      // Namespaces dont match, bail
+      return false
+    }
+    actualCitizenRef.fullName.last match {
+      case CitizenName2(humanName, templateArgs) => {
+        if (humanName != citizenTemplateName) {
+          // Names dont match, bail
+          return false
+        }
+      }
+      case TupleName2(_) => return false
+      case _ => vwat()
+    }
+    return true
+  }
+
+  def citizenMatchesTemplata(actualCitizenRef: CitizenRef2, expectedCitizenTemplata: ITemplata, expectedCitizenTemplateArgs: List[ITemplata]): (Boolean) = {
+    vassert(expectedCitizenTemplateArgs.isEmpty) // implement
+
+    if (!citizenIsFromTemplate(actualCitizenRef, expectedCitizenTemplata)) {
+      return false
+    }
+
+    if (actualCitizenRef.fullName.last.templateArgs.nonEmpty) {
+      // This function doesnt support template args yet (hence above assert)
+      // If the actualCitizenRef has template args, it sure doesnt match the template when its made with no args.
+      return false
+    }
+
+    return true
+  }
+
 }

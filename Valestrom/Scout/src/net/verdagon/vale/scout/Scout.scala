@@ -13,6 +13,7 @@ case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
 
 sealed trait ICompileErrorS
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
+case class CantImplCoord(range: RangeS) extends ICompileErrorS
 
 sealed trait IEnvironment {
   def file: Int
@@ -131,7 +132,7 @@ object Scout {
     val localRunes = allRunes
     val isTemplate = knowableValueRunes != allRunes
 
-    val (implicitRulesFromStruct, structRune) =
+    val (implicitRulesFromStructDirection, structRune) =
       PatternScout.translateMaybeTypeIntoRune(
         implEnv,
         rate,
@@ -139,7 +140,7 @@ object Scout {
         Some(struct),
         KindTypePR)
 
-    val (implicitRulesFromInterface, interfaceRune) =
+    val (implicitRulesFromInterfaceDirection, interfaceRune) =
       PatternScout.translateMaybeTypeIntoRune(
         implEnv,
         rate,
@@ -147,12 +148,15 @@ object Scout {
         Some(interface),
         KindTypePR)
 
-    val rulesS = userRulesS ++ implicitRulesFromStruct ++ implicitRulesFromInterface
+    // See NMORFI for why these are different.
+    val rulesFromStructDirectionS = implicitRulesFromStructDirection ++ implicitRulesFromInterfaceDirection ++ userRulesS
+    val rulesFromInterfaceDirectionS = implicitRulesFromInterfaceDirection ++ implicitRulesFromStructDirection ++ userRulesS
 
     ImplS(
       Scout.evalRange(file, range),
       nameS,
-      rulesS,
+      rulesFromStructDirectionS,
+      rulesFromInterfaceDirectionS,
       knowableValueRunes ++ (if (isTemplate) List() else List(structRune, interfaceRune)),
       localRunes ++ List(structRune, interfaceRune),
       isTemplate,

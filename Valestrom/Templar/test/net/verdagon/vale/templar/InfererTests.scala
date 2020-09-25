@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{FakeState => _, SimpleEnvironment => _, _}
 import net.verdagon.vale.astronomer.ruletyper.IRuleTyperEvaluatorDelegate
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{IEnvironment => _, _}
-import net.verdagon.vale.templar.{ArraySequenceE2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
+import net.verdagon.vale.templar.{ArraySequenceE2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, GlobalNamespaceName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
 import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, scout => s}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.{InfererEquator, InfererEvaluator}
@@ -22,6 +22,7 @@ case class FakeState()
 object InfererTestUtils {
   def getMutability(kind: Kind): Mutability = {
     kind match {
+      case Void2() => Immutable
       case Int2() => Immutable
       case StructRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
       case StructRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
@@ -36,7 +37,7 @@ object InfererTestUtils {
 case class SimpleEnvironment(simpleEntries: Map[IName2, IEnvEntry]) extends IEnvironment {
   override def entries: Map[IName2, List[IEnvEntry]] = simpleEntries.mapValues(a => List(a))
   override def getParentEnv(): Option[IEnvironment] = None
-  def fullName = FullName2(List(), CitizenName2("SimpleEnv", List()))
+  def fullName = FullName2(List(), GlobalNamespaceName2())
   def globalEnv: NamespaceEnvironment[IName2] = {
     vfail()
   }
@@ -84,10 +85,6 @@ class FakeInfererEvaluatorDelegate extends IInfererEvaluatorDelegate[SimpleEnvir
     vfail()
   }
 
-  override def citizenIsFromTemplate(state: FakeState, citizen: CitizenRef2, template: ITemplata): (Boolean) = {
-    vfail()
-  }
-
   override def structIsClosure(state: FakeState, structRef: StructRef2): Boolean = {
     vfail()
   }
@@ -98,6 +95,12 @@ class FakeInfererEvaluatorDelegate extends IInfererEvaluatorDelegate[SimpleEnvir
 
   override def lookupTemplata(env: SimpleEnvironment, rune: IName2): ITemplata = {
     val results = env.getAllTemplatasWithAbsoluteName2(rune, Set(TemplataLookupContext))
+    vassert(results.size == 1)
+    results.head
+  }
+
+  override def lookupTemplata(env: SimpleEnvironment, name: IImpreciseNameStepA): ITemplata = {
+    val results = env.getAllTemplatasWithName(name, Set(TemplataLookupContext))
     vassert(results.size == 1)
     results.head
   }
@@ -363,15 +366,6 @@ class InfererTests extends FunSuite with Matchers {
             case _ => vfail(descendantCitizenRef.toString)
           }
         }
-
-        override def citizenIsFromTemplate(state: FakeState, citizen: CitizenRef2, template: ITemplata): (Boolean) = {
-          (citizen, template) match {
-            case (InterfaceRef2(FullName2(List(), CitizenName2("MutTInterface",List(CoordTemplata(Coord(Share,Int2())))))), InterfaceTemplata(_, interfaceName(TopLevelCitizenDeclarationNameA("MutTInterface", _)))) => true
-            case (StructRef2(FullName2(List(), CitizenName2("MutTStruct",List(CoordTemplata(Coord(Share,Int2())))))), StructTemplata(_, structName(TopLevelCitizenDeclarationNameA("MutTStruct", _)))) => true
-            case (StructRef2(FullName2(List(), CitizenName2("MutTStruct",List(CoordTemplata(Coord(Share,Int2())))))), InterfaceTemplata(_, interfaceName(TopLevelCitizenDeclarationNameA("MutTInterface", _)))) => false
-            case _ => vfail()
-          }
-        }
       }
 
     makeEvaluator(Some(templataTemplarDelegate), Some(delegate))
@@ -514,7 +508,10 @@ class InfererTests extends FunSuite with Matchers {
           List(
             EqualsTR(RangeS.testZero,
               TemplexTR(RuneTT(RangeS.testZero,CodeRune2("__RetRune"), CoordTemplataType)),
-              CallTR(RangeS.testZero,"toRef",List(TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutStruct"), KindTemplataType))), TemplateTemplataType(List(KindTemplataType), CoordTemplataType)))),
+              CallTR(RangeS.testZero,
+                "toRef",
+                List(TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutStruct"), KindTemplataType))),
+                CoordTemplataType))),
           RangeS.testZero,
           Map(CodeRune2("__RetRune") -> CoordTemplataType),
           Set(CodeRune2("__RetRune")),
@@ -1303,8 +1300,8 @@ class InfererTests extends FunSuite with Matchers {
           FakeState(),
           List(
             EqualsTR(RangeS.testZero,
-              TemplexTR(RuneTT(RangeS.testZero,CodeRune2("T"), CoordTemplataType)),
-              TemplexTR(OwnershippedTT(RangeS.testZero,targetOwnership, NameTT(RangeS.testZero,CodeTypeNameA(sourceName), CoordTemplataType))))),
+              TemplexTR(OwnershippedTT(RangeS.testZero,targetOwnership, NameTT(RangeS.testZero,CodeTypeNameA(sourceName), CoordTemplataType))),
+              TemplexTR(RuneTT(RangeS.testZero,CodeRune2("T"), CoordTemplataType)))),
           RangeS.testZero,
           Map(CodeRune2("T") -> CoordTemplataType),
           Set(CodeRune2("T")),

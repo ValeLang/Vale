@@ -60,8 +60,6 @@ trait IInfererDelegate[Env, State] {
 
   def getMemberCoords(state: State, structRef: StructRef2): List[Coord]
 
-  def citizenIsFromTemplate(state: State, citizen: CitizenRef2, template: ITemplata): (Boolean)
-
   def structIsClosure(state: State, structRef: StructRef2): Boolean
 
   def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
@@ -167,8 +165,11 @@ object Inferer {
         delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
       }
 
-      override def lookupTemplata(env: Env, rune: IName2): ITemplata = {
-        delegate.lookupTemplata(env, rune)
+      override def lookupTemplata(env: Env, name: IName2): ITemplata = {
+        delegate.lookupTemplata(env, name)
+      }
+      override def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata = {
+        delegate.lookupTemplataImprecise(env, name)
       }
 
       override def lookupMemberTypes(state: State, kind: Kind, expectedNumMembers: Int):
@@ -186,10 +187,6 @@ object Inferer {
 
       override def getMemberCoords(state: State, structRef: StructRef2): List[Coord] = {
         delegate.getMemberCoords(state, structRef)
-      }
-
-      override def citizenIsFromTemplate(state: State, citizen: CitizenRef2, template: ITemplata): (Boolean) = {
-        delegate.citizenIsFromTemplate(state, citizen, template)
       }
 
       override def structIsClosure(state: State, structRef: StructRef2): Boolean = {

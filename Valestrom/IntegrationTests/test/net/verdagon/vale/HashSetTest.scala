@@ -19,10 +19,10 @@ class HashSetTest extends FunSuite with Matchers {
           """
             |fn main() {
             |  m = HashSet<int>([0, 4, 8, 12], IFunction1<mut, int, int>({_}), ==);
-            |  assert(m.has(0));
-            |  assert(m.has(4));
-            |  assert(m.has(8));
-            |  assert(m.has(12));
+            |  vassert(m.has(0));
+            |  vassert(m.has(4));
+            |  vassert(m.has(8));
+            |  vassert(m.has(12));
             |  = 111;
             |}
           """.stripMargin)))
@@ -44,10 +44,10 @@ class HashSetTest extends FunSuite with Matchers {
           """
             |fn main() {
             |  m = HashSet<int>([0, 4, 8, 12].toArray<imm>(), IFunction1<mut, int, int>({_}), ==);
-            |  assert(m.has(0));
-            |  assert(m.has(4));
-            |  assert(m.has(8));
-            |  assert(m.has(12));
+            |  vassert(m.has(0));
+            |  vassert(m.has(4));
+            |  vassert(m.has(8));
+            |  vassert(m.has(12));
             |  = 111;
             |}
           """.stripMargin)))
@@ -70,13 +70,13 @@ class HashSetTest extends FunSuite with Matchers {
           |  m.add(4);
           |  m.add(8);
           |  m.add(12);
-          |  assert(m.has(0));
-          |  assert(not(m.has(1)));
-          |  assert(not(m.has(2)));
-          |  assert(not(m.has(3)));
-          |  assert(m.has(4));
-          |  assert(m.has(8));
-          |  assert(m.has(12));
+          |  vassert(m.has(0));
+          |  vassert(not(m.has(1)));
+          |  vassert(not(m.has(2)));
+          |  vassert(not(m.has(3)));
+          |  vassert(m.has(4));
+          |  vassert(m.has(8));
+          |  vassert(m.has(12));
           |  = 111;
           |}
         """.stripMargin)
@@ -100,11 +100,11 @@ class HashSetTest extends FunSuite with Matchers {
           |  m.add(8);
           |  m.add(12);
           |  k = m.toArray();
-          |  assertEq(k.len(), 4);
-          |  assertEq(k[0], 0);
-          |  assertEq(k[1], 4);
-          |  assertEq(k[2], 8);
-          |  assertEq(k[3], 12);
+          |  vassertEq(k.len(), 4);
+          |  vassertEq(k[0], 0);
+          |  vassertEq(k[1], 4);
+          |  vassertEq(k[2], 8);
+          |  vassertEq(k[3], 12);
           |  = 1337;
           |}
         """.stripMargin)
@@ -127,14 +127,14 @@ class HashSetTest extends FunSuite with Matchers {
           |  m.add(4);
           |  m.add(8);
           |  m.add(12);
-          |  assert(m.has(8));
+          |  vassert(m.has(8));
           |  m.remove(8);
-          |  assert(not m.has(8));
+          |  vassert(not m.has(8));
           |  m.add(8);
-          |  assert(m.has(8));
-          |  assert(m.has(4));
+          |  vassert(m.has(8));
+          |  vassert(m.has(4));
           |  m.remove(4);
-          |  assert(not m.has(4));
+          |  vassert(not m.has(4));
           |  = 1337;
           |}
         """.stripMargin)

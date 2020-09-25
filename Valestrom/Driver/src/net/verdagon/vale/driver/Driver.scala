@@ -91,7 +91,7 @@ object Driver {
   }
 
   def build(opts: Options, sources: List[String]): Result[Option[ProgramH], String] = {
-    assert(opts.inputFiles.size == sources.size)
+    vassert(opts.inputFiles.size == sources.size)
     val filepathsAndSources = opts.inputFiles.zip(sources)
 
     val debugOut =

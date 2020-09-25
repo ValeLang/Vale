@@ -127,7 +127,9 @@ case class StructMemberS(
 case class ImplS(
     range: RangeS,
     name: ImplNameS,
-    rules: List[IRulexSR],
+    // These are separate because we need to change their order depending on what we start with, see NMORFI.
+    rulesFromStructDirection: List[IRulexSR],
+    rulesFromInterfaceDirection: List[IRulexSR],
     knowableRunes: Set[IRuneS],
     localRunes: Set[IRuneS],
     isTemplate: Boolean,

@@ -15,6 +15,9 @@ import net.verdagon.von.IVonData
 import scala.collection.immutable.List
 
 object Compilation {
+  def multiple(code: List[String], verbose: Boolean = true): Compilation = {
+    new Compilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }), verbose)
+  }
   def apply(code: String, verbose: Boolean = true): Compilation = new Compilation(List(("in.vale", code)), verbose)
 }
 

@@ -148,6 +148,9 @@ class ValeCompiler:
         if "--verify" in args:
             args.remove("--verify")
             midas_options.append("--verify")
+        if "--verbose" in args:
+            args.remove("--verbose")
+            valestrom_options.append("--verbose")
         if "--llvmir" in args:
             args.remove("--llvmir")
             midas_options.append("--llvmir")
@@ -197,7 +200,9 @@ class ValeCompiler:
             os.makedirs(build_dir)
 
         vir_file = build_dir + "/build.vir"
-        proc = self.valestrom(vale_files, ["-o", vir_file])
+        valestrom_options.append("-o")
+        valestrom_options.append(vir_file)
+        proc = self.valestrom(vale_files, valestrom_options)
         print(proc.stdout)
         print(proc.stderr)
         if proc.returncode == 0:

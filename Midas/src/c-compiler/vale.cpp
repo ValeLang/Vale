@@ -142,8 +142,6 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
 
   auto strRefLE = LLVMGetParam(functionL, 0);
 
-  buildFlare(FL(), globalState, &functionState, builder, "got strrefle", ptrToVoidPtrLE(builder, strRefLE));
-
   auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strRefLE);
 
   LLVMBuildRet(builder, globalState->region->getStringBytesPtr(&functionState, builder, strRef));
@@ -153,9 +151,48 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
   return functionL;
 }
 
+LLVMValueRef makeGetStrNumBytesFunc(GlobalState* globalState) {
+  auto voidLT = LLVMVoidType();
+  auto voidPtrLT = LLVMPointerType(voidLT, 0);
+  auto int1LT = LLVMInt1Type();
+  auto int8LT = LLVMInt8Type();
+  auto int32LT = LLVMInt32Type();
+  auto int64LT = LLVMInt64Type();
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
+  std::vector<LLVMTypeRef> paramTypesL = { globalState->region->translateType(globalState->metalCache.strRef) };
+  auto returnTypeL = int64LT;
+
+  LLVMTypeRef functionTypeL =
+      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrnumbytes", functionTypeL);
+  LLVMSetLinkage(functionL, LLVMExternalLinkage);
+
+  LLVMBasicBlockRef block = LLVMAppendBasicBlock(functionL, "entry");
+  LLVMBuilderRef builder = LLVMCreateBuilder();
+  LLVMPositionBuilderAtEnd(builder, block);
+  // This is unusual because normally we have a separate localsBuilder which points to a separate
+  // block at the beginning. This is a simple function which should require no locals, so this
+  // should be fine.
+  LLVMBuilderRef localsBuilder = builder;
+
+  FunctionState functionState("vale_getstrnumbytes", globalState->region, functionL, returnTypeL, localsBuilder);
+
+  auto strRefLE = LLVMGetParam(functionL, 0);
+
+  auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strRefLE);
+
+  LLVMBuildRet(builder, globalState->region->getStringLen(&functionState, builder, strRef));
+
+  LLVMDisposeBuilder(builder);
+
+  return functionL;
+}
+
 void initInternalFuncs(GlobalState* globalState) {
   globalState->newVStr = makeNewStrFunc(globalState);
   globalState->getStrCharsFunc = makeGetStrCharsFunc(globalState);
+  globalState->getStrNumBytesFunc = makeGetStrNumBytesFunc(globalState);
 }
 
 

@@ -1,5 +1,6 @@
 package net.verdagon.vale.templar.infer
 
+import com.jprofiler.api.probe.embedded.{Split, SplitProbe}
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.{IName2, IRune2}
@@ -69,6 +70,7 @@ trait IInfererDelegate[Env, State] {
 
 // This is the public API for the outside world to use the Infer code.
 object Inferer {
+
   def solve[Env, State](
     delegate: IInfererDelegate[Env, State],
     env: Env,

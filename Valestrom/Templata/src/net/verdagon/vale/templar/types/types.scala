@@ -407,7 +407,11 @@ case class InterfaceRef2(
 // This is what we use to search for overloads.
 case class ParamFilter(
     tyype: Coord,
-    virtuality: Option[Virtuality2])
+    virtuality: Option[Virtuality2]) {
+  def debugString: String = {
+    tyype.toString + virtuality.map(" impl " + _.toString).getOrElse("")
+  }
+}
 
 
 object ReferenceComparator extends Ordering[Coord] {

@@ -78,6 +78,8 @@ case class FunctionTemplata(
   def getTemplateName(): IName2 = {
     NameTranslator.translateFunctionNameToTemplateName(function.name)
   }
+
+  def debugString: String = outerEnv.fullName + ":" + function.name
 }
 
 case class StructTemplata(
@@ -116,6 +118,8 @@ case class StructTemplata(
   def getTemplateName(): IName2 = {
     CitizenTemplateName2(originStruct.name.name, NameTranslator.translateCodeLocation(originStruct.name.codeLocation))
   }
+
+  def debugString: String = env.fullName + ":" + originStruct.name
 }
 
 sealed trait IContainer
@@ -160,6 +164,8 @@ case class InterfaceTemplata(
   def getTemplateName(): IName2 = {
     CitizenTemplateName2(originInterface.name.name, NameTranslator.translateCodeLocation(originInterface.name.codeLocation))
   }
+
+  def debugString: String = env.fullName + ":" + originInterface.name
 }
 
 case class ImplTemplata(

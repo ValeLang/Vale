@@ -1,5 +1,6 @@
 package net.verdagon.vale.templar;
 
+import com.jprofiler.api.probe.embedded.Split
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, RangeS}
@@ -39,7 +40,7 @@ case class TemplarOptions(
   verboseErrors: Boolean
 )
 
-class Templar(debugOut: (String) => Unit, verbose: Boolean) {
+class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler) {
   val generatedFunctions =
     List(
       DestructorTemplar.addConcreteDestructor(Mutable),
@@ -62,8 +63,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
     }).toMap
 
   val opts = TemplarOptions(generatorsById, debugOut, verbose)
-
-
 
   val templataTemplar =
     new TemplataTemplar(
@@ -93,6 +92,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
   val inferTemplar: InferTemplar =
     new InferTemplar(
       opts,
+      profiler,
       new IInfererDelegate[IEnvironment, TemputsBox] {
         override def evaluateType(
           env: IEnvironment,
@@ -245,6 +245,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
   val structTemplar: StructTemplar =
     new StructTemplar(
       opts,
+      profiler,
       inferTemplar,
       ancestorHelper,
       new IStructTemplarDelegate {
@@ -275,7 +276,9 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
         }
       })
 
-  val functionTemplar: FunctionTemplar = new FunctionTemplar(opts, templataTemplar, inferTemplar, convertHelper, structTemplar, new IFunctionTemplarDelegate {
+  val functionTemplar: FunctionTemplar =
+    new FunctionTemplar(opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar,
+      new IFunctionTemplarDelegate {
     override def evaluateBlockStatements(temputs: TemputsBox, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
       expressionTemplar.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
@@ -302,7 +305,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
         functionTemplarCore, structTemplar, destructorTemplar, fullEnv, temputs, callRange, originFunction, paramCoords, maybeRetCoord)
     }
   })
-  val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, templataTemplar, inferTemplar, functionTemplar)
+  val overloadTemplar: OverloadTemplar = new OverloadTemplar(opts, profiler, templataTemplar, inferTemplar, functionTemplar)
   val destructorTemplar: DestructorTemplar = new DestructorTemplar(opts, structTemplar, overloadTemplar)
   val dropHelper = new DropHelper(opts, destructorTemplar)
 
@@ -333,122 +336,128 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean) {
 
   def evaluate(program: ProgramA): Result[Temputs, ICompileErrorT] = {
     try {
-      val ProgramA(structsA, interfacesA, impls1, functions1) = program;
+//      profiler.newProfile("Templar.evaluate", "", () => {
+        val ProgramA(structsA, interfacesA, impls1, functions1) = program;
 
-      val env0 =
-        NamespaceEnvironment(
-          None,
-          FullName2(List(), GlobalNamespaceName2()),
-          Map(
-            PrimitiveName2("int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
-            PrimitiveName2("Array") -> List(TemplataEnvEntry(ArrayTemplateTemplata())),
-            PrimitiveName2("bool") -> List(TemplataEnvEntry(KindTemplata(Bool2()))),
-            PrimitiveName2("float") -> List(TemplataEnvEntry(KindTemplata(Float2()))),
-            PrimitiveName2("__Never") -> List(TemplataEnvEntry(KindTemplata(Never2()))),
-            PrimitiveName2("str") -> List(TemplataEnvEntry(KindTemplata(Str2()))),
-            PrimitiveName2("void") -> List(TemplataEnvEntry(KindTemplata(Void2())))))
-      val env1b =
-        BuiltInFunctions.builtIns.foldLeft(env0)({
-          case (env1a, builtIn) => {
-            env1a.addUnevaluatedFunction(builtIn)
-          }
+        val env0 =
+          NamespaceEnvironment(
+            None,
+            FullName2(List(), GlobalNamespaceName2()),
+            Map(
+              PrimitiveName2("int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
+              PrimitiveName2("Array") -> List(TemplataEnvEntry(ArrayTemplateTemplata())),
+              PrimitiveName2("bool") -> List(TemplataEnvEntry(KindTemplata(Bool2()))),
+              PrimitiveName2("float") -> List(TemplataEnvEntry(KindTemplata(Float2()))),
+              PrimitiveName2("__Never") -> List(TemplataEnvEntry(KindTemplata(Never2()))),
+              PrimitiveName2("str") -> List(TemplataEnvEntry(KindTemplata(Str2()))),
+              PrimitiveName2("void") -> List(TemplataEnvEntry(KindTemplata(Void2())))))
+        val env1b =
+          BuiltInFunctions.builtIns.foldLeft(env0)({
+            case (env1a, builtIn) => {
+              env1a.addUnevaluatedFunction(builtIn)
+            }
+          })
+        val env3 =
+          generatedFunctions.foldLeft(env1b)({
+            case (env2, (generatedFunction, generator)) => {
+              env2.addUnevaluatedFunction(generatedFunction)
+            }
+          })
+
+        // This has to come before the structs and interfaces because part of evaluating a
+        // struct or interface is figuring out what it extends.
+        val env5 =
+        impls1.foldLeft(env3)({
+          case (env4, impl1) => env4.addEntry(NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
         })
-      val env3 =
-        generatedFunctions.foldLeft(env1b)({
-          case (env2, (generatedFunction, generator)) => {
-            env2.addUnevaluatedFunction(generatedFunction)
-          }
-        })
+        val env7 =
+          structsA.foldLeft(env5)({
+            case (env6, s) => env6.addEntries(makeStructEnvironmentEntries(s))
+          })
+        val env9 =
+          interfacesA.foldLeft(env7)({
+            case (env8, interfaceA) => env8.addEntries(makeInterfaceEnvironmentEntries(interfaceA))
+          })
 
-      // This has to come before the structs and interfaces because part of evaluating a
-      // struct or interface is figuring out what it extends.
-      val env5 =
-      impls1.foldLeft(env3)({
-        case (env4, impl1) => env4.addEntry(NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
-      })
-      val env7 =
-        structsA.foldLeft(env5)({
-          case (env6, s) => env6.addEntries(makeStructEnvironmentEntries(s))
-        })
-      val env9 =
-        interfacesA.foldLeft(env7)({
-          case (env8, interfaceA) => env8.addEntries(makeInterfaceEnvironmentEntries(interfaceA))
-        })
+        val env11 =
+          functions1.foldLeft(env9)({
+            case (env10, functionS) => {
+              env10.addUnevaluatedFunction(functionS)
+            }
+          })
 
-      val env11 =
-        functions1.foldLeft(env9)({
-          case (env10, functionS) => {
-            env10.addUnevaluatedFunction(functionS)
-          }
-        })
+        val temputs =
+          TemputsBox(
+            Temputs(
+              Set(),
+              Map(),
+              List(),
+              ListMap(),
+              Set(),
+              Map(),
+              Set(),
+              ListMap(),
+              Map(),
+              Set(),
+              ListMap(),
+              Map(),
+              List(),
+              Map(),
+              Map(),
+              Map()))
 
-      val temputs =
-        TemputsBox(
-          Temputs(
-            Set(),
-            Map(),
-            List(),
-            ListMap(),
-            Set(),
-            Map(),
-            Set(),
-            ListMap(),
-            Map(),
-            Set(),
-            ListMap(),
-            Map(),
-            List(),
-            Map(),
-            Map(),
-            Map()))
+        structTemplar.addBuiltInStructs(env11, temputs)
 
-      structTemplar.addBuiltInStructs(env11, temputs)
-
-      functions1.foreach({
-        case (functionS) => {
-          if (functionS.isTemplate) {
-            // Do nothing, it's a template
-          } else {
-            if (isRootFunction(functionS)) {
-              val _ =
-                functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
-                  temputs, RangeS.internal(-177), FunctionTemplata(env11, functionS))
+        functions1.foreach({
+          case (functionS) => {
+            if (functionS.isTemplate) {
+              // Do nothing, it's a template
+            } else {
+              if (isRootFunction(functionS)) {
+                val _ =
+                  functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
+                    temputs, RangeS.internal(-177), FunctionTemplata(env11, functionS))
+              }
             }
           }
-        }
-      })
+        })
 
-      structsA.foreach({
-        case (structS) => {
-          if (structS.isTemplate) {
-            // Do nothing, it's a template
-          } else {
-            if (isRootStruct(structS)) {
-              val _ =
-                structTemplar.getStructRef(
-                  temputs, structS.range, StructTemplata(env11, structS), List())
+        structsA.foreach({
+          case (structS) => {
+            if (structS.isTemplate) {
+              // Do nothing, it's a template
+            } else {
+              if (isRootStruct(structS)) {
+                val _ =
+                  structTemplar.getStructRef(
+                    temputs, structS.range, StructTemplata(env11, structS), List())
+              }
             }
           }
-        }
-      })
+        })
 
-      interfacesA.foreach({
-        case (interfaceS) => {
-          if (interfaceS.isTemplate) {
-            // Do nothing, it's a template
-          } else {
-            if (isRootInterface(interfaceS)) {
-              val _ =
-                structTemplar.getInterfaceRef(
-                  temputs, interfaceS.range, InterfaceTemplata(env11, interfaceS), List())
+        interfacesA.foreach({
+          case (interfaceS) => {
+            if (interfaceS.isTemplate) {
+              // Do nothing, it's a template
+            } else {
+              if (isRootInterface(interfaceS)) {
+                val _ =
+                  structTemplar.getInterfaceRef(
+                    temputs, interfaceS.range, InterfaceTemplata(env11, interfaceS), List())
+              }
             }
           }
-        }
-      })
+        })
 
-      stampNeededOverridesUntilSettled(env11, temputs)
+        profiler.newProfile("", "", () => {
+          Split.enter(classOf[ValeSplitProbe], "stamp needed overrides")
+          stampNeededOverridesUntilSettled(env11, temputs)
+          Split.exit()
+        })
 
-      Ok(temputs.temputs)
+        Ok(temputs.temputs)
+//      })
     } catch {
       case CompileErrorExceptionT(err) => Err(err)
     }

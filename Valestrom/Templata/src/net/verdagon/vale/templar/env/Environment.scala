@@ -1,5 +1,6 @@
 package net.verdagon.vale.templar.env
 
+import com.jprofiler.api.probe.embedded.{Payload, PayloadProbe, Split, SplitProbe}
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._

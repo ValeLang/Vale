@@ -12,7 +12,7 @@ import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, 
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Err, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail}
+import net.verdagon.vale.{Err, NullProfiler, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
@@ -135,7 +135,7 @@ object Driver {
             case Left(result) => result
           }
         val temputs =
-          new Templar(if (opts.verbose) println else (_), opts.verbose).evaluate(astrouts) match {
+          new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler()).evaluate(astrouts) match {
             case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, filepathsAndSources, error))
             case Ok(x) => x
           }

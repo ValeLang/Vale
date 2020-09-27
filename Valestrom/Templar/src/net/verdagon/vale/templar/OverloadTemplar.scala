@@ -11,7 +11,7 @@ import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{IProfiler, vassert, vfail}
 
 import scala.collection.immutable.List
 
@@ -55,6 +55,7 @@ object OverloadTemplar {
 
 class OverloadTemplar(
     opts: TemplarOptions,
+    profiler: IProfiler,
     templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
     functionTemplar: FunctionTemplar) {
@@ -412,17 +413,19 @@ class OverloadTemplar(
     // All the FunctionA we rejected, and the reason why
     Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
-    val (candidateBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
-      getCandidateBanners(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact);
-    if (candidateBanners.isEmpty) {
-      (None, Map(), rejectionReasonByBanner, rejectionReasonByFunction)
-    } else if (candidateBanners.size == 1) {
-      (Some(candidateBanners.head), Map(), rejectionReasonByBanner, rejectionReasonByFunction)
-    } else {
-      val (best, outscoreReasonByBanner) =
-        narrowDownCallableOverloads(temputs, candidateBanners, args.map(_.tyype))
-      (Some(best), outscoreReasonByBanner, rejectionReasonByBanner, rejectionReasonByFunction)
-    }
+    profiler.childFrame("scout potential function", () => {
+      val (candidateBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
+        getCandidateBanners(env, temputs, callRange, functionName, explicitlySpecifiedTemplateArgTemplexesS, args, extraEnvsToLookIn, exact);
+      if (candidateBanners.isEmpty) {
+        (None, Map(), rejectionReasonByBanner, rejectionReasonByFunction)
+      } else if (candidateBanners.size == 1) {
+        (Some(candidateBanners.head), Map(), rejectionReasonByBanner, rejectionReasonByFunction)
+      } else {
+        val (best, outscoreReasonByBanner) =
+          narrowDownCallableOverloads(temputs, candidateBanners, args.map(_.tyype))
+        (Some(best), outscoreReasonByBanner, rejectionReasonByBanner, rejectionReasonByFunction)
+      }
+    })
   }
 
   private def getBannerParamScores(

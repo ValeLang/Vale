@@ -8,16 +8,17 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
+  profiler: IProfiler,
   templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
-  val bodyTemplar = new BodyTemplar(opts, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+  val bodyTemplar = new BodyTemplar(opts, profiler, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(temputs: TemputsBox, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }

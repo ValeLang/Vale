@@ -8,17 +8,18 @@ import net.verdagon.vale.scout.patterns.{AbstractSP, OverrideSP, VirtualitySP}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcurious, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Set}
 
 class FunctionTemplarMiddleLayer(
     opts: TemplarOptions,
+  profiler: IProfiler,
   templataTemplar: TemplataTemplar,
   convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val core = new FunctionTemplarCore(opts, templataTemplar, convertHelper, delegate)
+  val core = new FunctionTemplarCore(opts, profiler, templataTemplar, convertHelper, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.

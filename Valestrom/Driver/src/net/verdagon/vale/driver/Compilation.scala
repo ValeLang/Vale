@@ -8,20 +8,33 @@ import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{CompleteProgram2, Templar, TemplarErrorHumanizer, Temputs}
-import net.verdagon.vale.{Err, Ok, vassert, vfail, vwat}
+import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData
 
 import scala.collection.immutable.List
 
 object Compilation {
-  def multiple(code: List[String], verbose: Boolean = true): Compilation = {
-    new Compilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }), verbose)
+  def multiple(
+      code: List[String],
+      verbose: Boolean = true,
+      profiler: IProfiler = new NullProfiler()):
+  Compilation = {
+    new Compilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }), verbose, profiler)
   }
-  def apply(code: String, verbose: Boolean = true): Compilation = new Compilation(List(("in.vale", code)), verbose)
+  def apply(
+    code: String,
+    verbose: Boolean = true,
+    profiler: IProfiler = new NullProfiler()):
+  Compilation = {
+    new Compilation(List(("in.vale", code)), verbose, profiler)
+  }
 }
 
-class Compilation(filenamesAndSources: List[(String, String)], verbose: Boolean = true) {
+class Compilation(
+    filenamesAndSources: List[(String, String)],
+    verbose: Boolean = true,
+    profiler: IProfiler = new NullProfiler()) {
   var parsedsCache: Option[List[FileP]] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None
@@ -83,7 +96,7 @@ class Compilation(filenamesAndSources: List[(String, String)], verbose: Boolean 
       case Some(temputs) => temputs
       case None => {
         val temputs =
-          new Templar(println, verbose).evaluate(getAstrouts()) match {
+          new Templar(println, verbose, profiler).evaluate(getAstrouts()) match {
             case Ok(t) => t
 
             case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, filenamesAndSources, e))

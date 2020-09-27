@@ -79,7 +79,7 @@ class TemplarTests extends FunSuite with Matchers {
 
           val debugOut = (string: String) => { println(string) }
 
-          val temputs = new Templar(debugOut, true).evaluate(getAstrouts()).getOrDie()
+          val temputs = new Templar(debugOut, true, new NullProfiler()).evaluate(getAstrouts()).getOrDie()
           temputsCache = Some(temputs)
           temputs
         }
@@ -93,7 +93,7 @@ class TemplarTests extends FunSuite with Matchers {
 
           val debugOut = (string: String) => { println(string) }
 
-          new Templar(debugOut, true).evaluate(getAstrouts()) match {
+          new Templar(debugOut, true, new NullProfiler()).evaluate(getAstrouts()) match {
             case Ok(t) => vfail("Accidentally successfully compiled:\n" + t.toString)
             case Err(e) => e
           }

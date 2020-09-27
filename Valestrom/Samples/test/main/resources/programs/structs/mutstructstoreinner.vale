@@ -1,0 +1,13 @@
+struct Outer {
+  inner Inner;
+}
+
+struct Inner {
+  x! int;
+}
+
+fn main() {
+  o = Outer(Inner(73));
+  mut o.inner.x = 42;
+  = o.inner.x;
+}

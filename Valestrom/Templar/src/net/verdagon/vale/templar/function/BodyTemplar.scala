@@ -32,6 +32,7 @@ trait IBodyTemplarDelegate {
 
 class BodyTemplar(
   opts: TemplarOptions,
+  profiler: IProfiler,
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IBodyTemplarDelegate) {
@@ -46,69 +47,71 @@ class BodyTemplar(
     val BFunctionA(function1, _) = bfunction1;
     val functionFullName = funcOuterEnv.fullName
 
-    function1.maybeRetCoordRune match {
-      case None => {
-        val banner = FunctionBanner2(Some(function1), functionFullName, params2)
-        val (body2, returns) =
-          evaluateFunctionBody(
-              funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
-            case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-              throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, function1.name, expectedType, actualType))
+    profiler.childFrame("evaluate body", () => {
+      function1.maybeRetCoordRune match {
+        case None => {
+          val banner = FunctionBanner2(Some(function1), functionFullName, params2)
+          val (body2, returns) =
+            evaluateFunctionBody(
+                funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
+              case Err(ResultTypeMismatchError(expectedType, actualType)) => {
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, function1.name, expectedType, actualType))
 
+              }
+              case Ok((body, returns)) => (body, returns)
             }
-            case Ok((body, returns)) => (body, returns)
+
+          vassert(returns.nonEmpty)
+          if (returns.size > 1) {
+            vfail("Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _))
+          }
+          val returnType2 = returns.head
+
+          temputs.declareFunctionReturnType(banner.toSignature, returnType2)
+          val attributesA = translateAttributes(function1.attributes)
+          val header = FunctionHeader2(functionFullName, attributesA, params2, returnType2, Some(function1));
+
+          (header, body2)
+        }
+        case Some(expectedRetCoordRune) => {
+          val CoordTemplata(expectedRetCoord) =
+            vassertSome(
+              funcOuterEnv.getNearestTemplataWithAbsoluteName2(
+                NameTranslator.translateRune(expectedRetCoordRune),
+                Set(TemplataLookupContext)))
+          val header = FunctionHeader2(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
+          temputs.declareFunctionReturnType(header.toSignature, expectedRetCoord)
+
+          funcOuterEnv.setReturnType(Some(expectedRetCoord))
+
+          val funcOuterEnvSnapshot = funcOuterEnv.snapshot
+          val (body2, returns) =
+            evaluateFunctionBody(
+                funcOuterEnv,
+                temputs,
+                bfunction1.origin.params,
+                params2,
+                bfunction1.body,
+                isDestructor,
+                Some(expectedRetCoord)) match {
+              case Err(ResultTypeMismatchError(expectedType, actualType)) => {
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, bfunction1.origin.name, expectedType, actualType))
+              }
+              case Ok((body, returns)) => (body, returns)
+            }
+
+          if (returns == Set(expectedRetCoord)) {
+            // Let it through, it returns the expected type.
+          } else if (returns == Set(Coord(Share, Never2()))) {
+            // Let it through, it returns a never but we expect something else, that's fine
+          } else {
+            vfail("In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns)
           }
 
-        vassert(returns.nonEmpty)
-        if (returns.size > 1) {
-          vfail("Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _))
+          (header, body2)
         }
-        val returnType2 = returns.head
-
-        temputs.declareFunctionReturnType(banner.toSignature, returnType2)
-        val attributesA = translateAttributes(function1.attributes)
-        val header = FunctionHeader2(functionFullName, attributesA, params2, returnType2, Some(function1));
-
-        (header, body2)
       }
-      case Some(expectedRetCoordRune) => {
-        val CoordTemplata(expectedRetCoord) =
-          vassertSome(
-            funcOuterEnv.getNearestTemplataWithAbsoluteName2(
-              NameTranslator.translateRune(expectedRetCoordRune),
-              Set(TemplataLookupContext)))
-        val header = FunctionHeader2(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
-        temputs.declareFunctionReturnType(header.toSignature, expectedRetCoord)
-
-        funcOuterEnv.setReturnType(Some(expectedRetCoord))
-
-        val funcOuterEnvSnapshot = funcOuterEnv.snapshot
-        val (body2, returns) =
-          evaluateFunctionBody(
-              funcOuterEnv,
-              temputs,
-              bfunction1.origin.params,
-              params2,
-              bfunction1.body,
-              isDestructor,
-              Some(expectedRetCoord)) match {
-            case Err(ResultTypeMismatchError(expectedType, actualType)) => {
-              throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, bfunction1.origin.name, expectedType, actualType))
-            }
-            case Ok((body, returns)) => (body, returns)
-          }
-
-        if (returns == Set(expectedRetCoord)) {
-          // Let it through, it returns the expected type.
-        } else if (returns == Set(Coord(Share, Never2()))) {
-          // Let it through, it returns a never but we expect something else, that's fine
-        } else {
-          vfail("In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns)
-        }
-
-        (header, body2)
-      }
-    }
+    })
   }
 
   def translateAttributes(attributesA: List[IFunctionAttributeA]) = {

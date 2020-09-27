@@ -10,28 +10,6 @@ import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
 
 class ArrayTests extends FunSuite with Matchers {
-  test("Simple arraysequence and compiletime index lookup") {
-    val compile = Compilation(
-      """
-        |fn main() {
-        |  a = [2, 3, 4, 5, 6];
-        |  = a.3;
-        |}
-      """.stripMargin)
-
-    val temputs = compile.getTemputs()
-    val main = temputs.lookupFunction("main")
-    main.only({
-      case LetNormal2(ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), _, _), expr) => {
-        expr.resultRegister.reference.referend match {
-          case KnownSizeArrayT2(5, RawArrayT2(Coord(Share, Int2()), Immutable)) =>
-        }
-      }
-    })
-
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
-  }
-
   test("Returning array from function and dotting it") {
     val compile = Compilation(
       """
@@ -301,7 +279,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  mut arr.0 = Goblin();
         |  = 4;
         |}
-      """.stripMargin)
+      """.stripMargin, false, new Profiler())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }

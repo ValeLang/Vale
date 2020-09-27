@@ -9,12 +9,13 @@ import net.verdagon.vale.templar.infer.{IInfererDelegate, _}
 import net.verdagon.vale.templar.infer.infer.{IInferSolveResult, InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassertSome, vfail, vimpl}
+import net.verdagon.vale.{IProfiler, vassertSome, vfail, vimpl}
 
 import scala.collection.immutable.List
 
 class InferTemplar(
     opts: TemplarOptions,
+    profiler: IProfiler,
     delegate: IInfererDelegate[IEnvironment, TemputsBox]) {
   private def solve(
     env: IEnvironment,
@@ -28,18 +29,20 @@ class InferTemplar(
     maybeParamInputs: Option[List[ParamFilter]],
     checkAllRunesPresent: Boolean,
   ): (IInferSolveResult) = {
-    Inferer.solve[IEnvironment, TemputsBox](
-      delegate,
-      env,
-      state,
-      translateRules(rules),
-      typeByRune.map({ case (key, value) => NameTranslator.translateRune(key) -> value}),
-      localRunes.map(NameTranslator.translateRune),
-      invocationRange,
-      directInputs.map({ case (key, value) => NameTranslator.translateRune(key) -> value}),
-      paramAtoms,
-      maybeParamInputs,
-      checkAllRunesPresent)
+    profiler.childFrame("infer", () => {
+      Inferer.solve[IEnvironment, TemputsBox](
+        delegate,
+        env,
+        state,
+        translateRules(rules),
+        typeByRune.map({ case (key, value) => NameTranslator.translateRune(key) -> value }),
+        localRunes.map(NameTranslator.translateRune),
+        invocationRange,
+        directInputs.map({ case (key, value) => NameTranslator.translateRune(key) -> value }),
+        paramAtoms,
+        maybeParamInputs,
+        checkAllRunesPresent)
+    })
   }
 
   // No incoming types needed (like manually specified template args, or argument coords from a call).

@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
+    <orderEntry type="library" name="jprofiler-probe-embedded" level="project" />
   </component>
 </module>

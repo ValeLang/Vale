@@ -20,7 +20,7 @@ object FunctionHammer {
 
   def translateFunction(hinputs: Hinputs, hamuts: HamutsBox, function2: Function2):
   (FunctionRefH) = {
-    println("Translating function " + function2.header.fullName)
+//    opts.debugOut("Translating function " + function2.header.fullName)
     hamuts.functionRefs.get(function2.header.toPrototype) match {
       case Some(functionRefH) => functionRefH
       case None => {

@@ -30,7 +30,7 @@ class CallTemplar(
     overloadTemplar: OverloadTemplar) {
 
   private def evaluateCall(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
       callableExpr: ReferenceExpression2,
@@ -109,7 +109,7 @@ class CallTemplar(
   }
 
   private def evaluateNamedCall(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironment,
     range: RangeS,
     functionName: GlobalFunctionFamilyNameA,
@@ -172,7 +172,7 @@ class CallTemplar(
 
   private def evaluateClosureCall(
       fate: FunctionEnvironmentBox,
-      temputs: TemputsBox,
+      temputs: Temputs,
       range: RangeS,
       citizenRef: CitizenRef2,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
@@ -181,8 +181,8 @@ class CallTemplar(
       (FunctionCall2) = {
     val env =
       citizenRef match {
-        case sr @ StructRef2(_) => temputs.envByStructRef(sr)
-        case ir @ InterfaceRef2(_) => temputs.envByInterfaceRef(ir)
+        case sr @ StructRef2(_) => temputs.getEnvForStructRef(sr) // temputs.envByStructRef(sr)
+        case ir @ InterfaceRef2(_) => temputs.getEnvForInterfaceRef(ir) // temputs.envByInterfaceRef(ir)
       }
 
     val argsTypes2 = givenArgsExprs2.map(_.resultRegister.reference)
@@ -227,7 +227,7 @@ class CallTemplar(
 
 
   def checkTypes(
-    temputs: TemputsBox,
+    temputs: Temputs,
     params: List[Coord],
     args: List[Coord],
     exact: Boolean):
@@ -268,7 +268,7 @@ class CallTemplar(
   }
 
   def evaluatePrefixCall(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
     range: RangeS,
       callableReferenceExpr2: ReferenceExpression2,
@@ -281,7 +281,7 @@ class CallTemplar(
   }
 
   def evaluateNamedPrefixCall(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     rangeS: RangeS,
     functionName: GlobalFunctionFamilyNameA,

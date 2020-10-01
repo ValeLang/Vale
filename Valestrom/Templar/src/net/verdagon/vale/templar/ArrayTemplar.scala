@@ -12,21 +12,21 @@ import net.verdagon.vale.templar.templata._
 trait IArrayTemplarDelegate {
   def getArrayDestructor(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     type2: Coord):
   (Prototype2)
 }
 
 class ArrayTemplar(opts: TemplarOptions, delegate: IArrayTemplarDelegate) {
 
-  def makeArraySequenceType(env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord):
+  def makeArraySequenceType(env: IEnvironment, temputs: Temputs, mutability: Mutability, size: Int, type2: Coord):
   (KnownSizeArrayT2) = {
 //    val tupleMutability =
 //      StructTemplarCore.getCompoundTypeMutability(temputs, List(type2))
     val tupleMutability = Templar.getMutability(temputs, type2.referend)
     val rawArrayT2 = RawArrayT2(type2, tupleMutability)
 
-    temputs.arraySequenceTypes.get(size, rawArrayT2) match {
+    temputs.getArraySequenceType(size, rawArrayT2) match {
       case Some(arraySequenceT2) => (arraySequenceT2)
       case None => {
         val arraySeqType = KnownSizeArrayT2(size, rawArrayT2)
@@ -44,11 +44,11 @@ class ArrayTemplar(opts: TemplarOptions, delegate: IArrayTemplarDelegate) {
     }
   }
 
-  def makeUnknownSizeArrayType(env: IEnvironment, temputs: TemputsBox, type2: Coord, arrayMutability: Mutability):
+  def makeUnknownSizeArrayType(env: IEnvironment, temputs: Temputs, type2: Coord, arrayMutability: Mutability):
   (UnknownSizeArrayT2) = {
     val rawArrayT2 = RawArrayT2(type2, arrayMutability)
 
-    temputs.unknownSizeArrayTypes.get(rawArrayT2) match {
+    temputs.getUnknownSizeArray(rawArrayT2) match {
       case Some(arraySequenceT2) => (arraySequenceT2)
       case None => {
         val runtimeArrayType = UnknownSizeArrayT2(rawArrayT2)

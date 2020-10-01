@@ -18,7 +18,7 @@ class PackTests extends FunSuite with Matchers {
 
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
-    main.all({ case TupleE2(List(_, _, _), _, _) => }).size shouldEqual 1
+    main.all({ case ArraySequenceE2(List(_, _, _), _, _) => }).size shouldEqual 1
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }

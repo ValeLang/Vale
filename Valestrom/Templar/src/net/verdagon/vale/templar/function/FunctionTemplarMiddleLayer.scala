@@ -29,7 +29,7 @@ class FunctionTemplarMiddleLayer(
   // - either no closured vars, or they were already added to the env.
   def predictOrdinaryFunctionBanner(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    temputs: TemputsBox,
+    temputs: Temputs,
     function1: FunctionA):
   (FunctionBanner2) = {
 
@@ -51,7 +51,7 @@ class FunctionTemplarMiddleLayer(
 
   private def evaluateMaybeVirtuality(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       maybeVirtuality1: Option[VirtualityAP]):
   (Option[Virtuality2]) = {
     maybeVirtuality1 match {
@@ -77,7 +77,7 @@ class FunctionTemplarMiddleLayer(
   // - either no closured vars, or they were already added to the env.
   def getOrEvaluateFunctionForBanner(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     function1: FunctionA):
   (FunctionBanner2) = {
@@ -121,7 +121,7 @@ class FunctionTemplarMiddleLayer(
   // - either no closured vars, or they were already added to the env.
   def getOrEvaluateFunctionForHeader(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     function1: FunctionA):
   (FunctionHeader2) = {
@@ -162,7 +162,7 @@ class FunctionTemplarMiddleLayer(
 
 //  def makeInterfaceFunction(
 //     env: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-//     temputs: TemputsBox):
+//     temputs: Temputs):
 //  (FunctionHeader2) = {
 //    val params2 =
 //      FunctionTemplarMiddleLayer.assembleFunctionParams(
@@ -184,7 +184,7 @@ class FunctionTemplarMiddleLayer(
   // - either no closured vars, or they were already added to the env.
   def getOrEvaluateFunctionForPrototype(
     runedEnv: BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     function1: FunctionA):
   (Prototype2) = {
@@ -201,7 +201,7 @@ class FunctionTemplarMiddleLayer(
     val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
     val namedEnv = makeNamedEnv(runedEnv, paramTypes2, maybeReturnType)
     val needleSignature = Signature2(namedEnv.fullName)
-    temputs.returnTypesBySignature.get(needleSignature) match {
+    temputs.getReturnTypeForSignature(needleSignature) match {
       case Some(returnType2) => {
         (Prototype2(namedEnv.fullName, returnType2))
       }
@@ -242,7 +242,7 @@ class FunctionTemplarMiddleLayer(
 
   def assembleFunctionParams(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     params1: List[ParameterA]):
   (List[Parameter2]) = {
     params1.foldLeft((List[Parameter2]()))({
@@ -267,7 +267,7 @@ class FunctionTemplarMiddleLayer(
 
 //  def makeImplDestructor(
 //    env: IEnvironment,
-//    temputs: TemputsBox,
+//    temputs: Temputs,
 //    structDef2: StructDefinition2,
 //    interfaceRef2: InterfaceRef2):
 //  Temputs = {

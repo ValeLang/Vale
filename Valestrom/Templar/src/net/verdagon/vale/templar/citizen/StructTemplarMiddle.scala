@@ -19,12 +19,12 @@ class StructTemplarMiddle(
     delegate: IStructTemplarDelegate) {
   val core = new StructTemplarCore(opts, profiler, newTemplataStore, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
     core.addBuiltInStructs(env, temputs)
   }
 
   def makeStructConstructor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     maybeConstructorOriginFunctionA: Option[FunctionA],
     structDef: StructDefinition2,
     constructorFullName: FullName2[IFunctionName2]):
@@ -34,7 +34,7 @@ class StructTemplarMiddle(
 
   def getStructRef(
     structOuterEnv: NamespaceEnvironment[IName2],
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     structS: StructA,
     templatasByRune: Map[IRune2, ITemplata]):
@@ -53,7 +53,7 @@ class StructTemplarMiddle(
 
   def getInterfaceRef(
     interfaceOuterEnv: NamespaceEnvironment[IName2],
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     interfaceA: InterfaceA,
     templatasByRune: Map[IRune2, ITemplata]):
@@ -81,7 +81,7 @@ class StructTemplarMiddle(
   // Makes a struct to back a closure
   def makeClosureUnderstruct(
     containingFunctionEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
     members: List[StructMember2]):
@@ -92,7 +92,7 @@ class StructTemplarMiddle(
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnderstruct(
     env: NamespaceEnvironment[IName2],
-    temputs: TemputsBox,
+    temputs: Temputs,
     memberTypes2: List[Coord],
     name: ICitizenName2):
   (StructRef2, Mutability) = {
@@ -102,7 +102,7 @@ class StructTemplarMiddle(
   // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
   def makeAnonymousSubstruct(
     interfaceEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     range: RangeS,
     interfaceRef: InterfaceRef2,
     substructName: FullName2[AnonymousSubstructName2]):
@@ -126,7 +126,7 @@ class StructTemplarMiddle(
   // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
   def prototypeToAnonymousStruct(
     outerEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {

@@ -39,7 +39,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def predictOrdinaryFunctionBanner(
     // The environment the function was defined in.
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
-    temputs: TemputsBox):
+    temputs: Temputs):
   (FunctionBanner2) = {
     val function = nearEnv.function
     checkClosureConcernsHandled(nearEnv)
@@ -56,7 +56,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def evaluateOrdinaryFunctionFromNonCallForBanner(
     // The environment the function was defined in.
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
-    temputs: TemputsBox,
+    temputs: Temputs,
       callRange: RangeS):
   (FunctionBanner2) = {
     val function = nearEnv.function
@@ -77,7 +77,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //  def evaluateTemplatedFunctionFromCallForHeader(
 //      // The environment the function was defined in.
 //      nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//      temputs: TemputsBox,
+//      temputs: Temputs,
 //      callRange: RangeS,
 //      argTypes2: List[Coord]):
 //  (FunctionHeader2) = {
@@ -119,7 +119,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def evaluateTemplatedFunctionFromCallForPrototype(
     // The environment the function was defined in.
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     explicitTemplateArgs: List[ITemplata],
     args: List[ParamFilter]):
@@ -163,7 +163,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def evaluateTemplatedFunctionFromCallForBanner(
       // The environment the function was defined in.
       nearEnv: BuildingFunctionEnvironmentWithClosureds,
-      temputs: TemputsBox,
+      temputs: Temputs,
       callRange: RangeS,
       alreadySpecifiedTemplateArgs: List[ITemplata],
       paramFilters: List[ParamFilter]):
@@ -207,7 +207,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
 //  def evaluateTemplatedFunctionFromNonCallForHeader(
 //      // The environment the function was defined in.
 //      nearEnv: BuildingFunctionEnvironmentWithClosureds,
-//      temputs: TemputsBox):
+//      temputs: Temputs):
 //  (FunctionHeader2) = {
 //    val function = nearEnv.function
 //    // Check preconditions
@@ -247,7 +247,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def evaluateOrdinaryFunctionFromNonCallForHeader(
       // The environment the function was defined in.
       nearEnv: BuildingFunctionEnvironmentWithClosureds,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS):
   (FunctionHeader2) = {
     val function = nearEnv.function
@@ -271,7 +271,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def evaluateOrdinaryFunctionFromNonCallForPrototype(
     // The environment the function was defined in.
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS):
   (Prototype2) = {
     val function = nearEnv.function
@@ -295,7 +295,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   def evaluateTemplatedLightBannerFromCall(
       // The environment the function was defined in.
       nearEnv: BuildingFunctionEnvironmentWithClosureds,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
       explicitTemplateArgs: List[ITemplata],
       args: List[ParamFilter]):

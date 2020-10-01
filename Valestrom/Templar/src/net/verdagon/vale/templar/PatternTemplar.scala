@@ -10,7 +10,7 @@ import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{IProfiler, vfail}
 
 import scala.collection.immutable.List
 
@@ -21,6 +21,7 @@ import scala.collection.immutable.List
 
 class PatternTemplar(
     opts: TemplarOptions,
+    profiler: IProfiler,
     inferTemplar: InferTemplar,
     convertHelper: ConvertHelper,
   dropHelper: DropHelper,
@@ -44,20 +45,21 @@ class PatternTemplar(
       patterns1: List[AtomAP],
       patternInputExprs2: List[ReferenceExpression2]):
   (List[ReferenceExpression2]) = {
-
-    patterns1.zip(patternInputExprs2) match {
-      case Nil => (Nil)
-      case (pattern1, patternInputExpr2) :: _ => {
-        val headLets =
-          innerNonCheckingTranslate(
-            temputs, fate, pattern1, patternInputExpr2);
-        val tailLets =
-          nonCheckingTranslateList(
-            temputs, fate, patterns1.tail, patternInputExprs2.tail)
-        (headLets ++ tailLets)
+    profiler.newProfile("nonCheckingTranslateList", fate.fullName.toString, () => {
+      patterns1.zip(patternInputExprs2) match {
+        case Nil => (Nil)
+        case (pattern1, patternInputExpr2) :: _ => {
+          val headLets =
+            innerNonCheckingTranslate(
+              temputs, fate, pattern1, patternInputExpr2);
+          val tailLets =
+            nonCheckingTranslateList(
+              temputs, fate, patterns1.tail, patternInputExprs2.tail)
+          (headLets ++ tailLets)
+        }
+        case _ => vfail("wat")
       }
-      case _ => vfail("wat")
-    }
+    })
   }
 
   // Note: This will unlet/drop the input expression. Be warned.
@@ -70,17 +72,19 @@ class PatternTemplar(
       pattern: AtomAP,
       inputExpr: ReferenceExpression2):
   (List[ReferenceExpression2]) = {
+    profiler.newProfile("nonCheckingInferAndTranslate", fate.fullName.toString, () => {
 
-    val templatasByRune =
-      inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-        case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
-        case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
-      }
+      val templatasByRune =
+        inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
+          case (isf@InferSolveFailure(_, _, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
+          case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
+        }
 
-    fate.addEntries(templatasByRune.map({ case (key, value) => (key, value) }).toMap)
+      fate.addEntries(templatasByRune.map({ case (key, value) => (key, value) }).toMap)
 
-    innerNonCheckingTranslate(
-      temputs, fate, pattern, inputExpr)
+      innerNonCheckingTranslate(
+        temputs, fate, pattern, inputExpr)
+    })
   }
 
   // Note: This will unlet/drop the input expression. Be warned.

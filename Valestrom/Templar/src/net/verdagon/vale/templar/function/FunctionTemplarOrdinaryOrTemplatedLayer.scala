@@ -358,7 +358,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     identifyingRunes: List[IRuneA],
     templatasByRune: Map[IRune2, ITemplata]
   ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs = {
-    val BuildingFunctionEnvironmentWithClosureds(parentEnv, fullName, function, variables, entries) = nearEnv
+    val BuildingFunctionEnvironmentWithClosureds(parentEnv, fullName, function, variables, templatas) = nearEnv
 
     val identifyingTemplatas = identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
     val newName =
@@ -372,8 +372,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       newName,
       function,
       variables,
-      EnvironmentUtils.addEntries(
-        entries,
+      templatas.addEntries(
         templatasByRune.map({ case (k, v) => (k, List(TemplataEnvEntry(v))) })
         .toMap[IName2, List[IEnvEntry]]))
   }

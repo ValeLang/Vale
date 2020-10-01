@@ -16,25 +16,29 @@ import scala.collection.immutable.List
 
 object Compilation {
   def multiple(
-      code: List[String],
-      verbose: Boolean = true,
-      profiler: IProfiler = new NullProfiler()):
+    code: List[String],
+    options: CompilationOptions = CompilationOptions()):
   Compilation = {
-    new Compilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }), verbose, profiler)
+    new Compilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }), options)
   }
   def apply(
     code: String,
-    verbose: Boolean = true,
-    profiler: IProfiler = new NullProfiler()):
+    options: CompilationOptions = CompilationOptions()):
   Compilation = {
-    new Compilation(List(("in.vale", code)), verbose, profiler)
+    new Compilation(List(("in.vale", code)), options)
   }
 }
 
+case class CompilationOptions(
+  debugOut: String => Unit = println,
+  verbose: Boolean = true,
+  profiler: IProfiler = new NullProfiler(),
+  useOptimization: Boolean = false,
+)
+
 class Compilation(
     filenamesAndSources: List[(String, String)],
-    verbose: Boolean = true,
-    profiler: IProfiler = new NullProfiler()) {
+    options: CompilationOptions = CompilationOptions()) {
   var parsedsCache: Option[List[FileP]] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None
@@ -96,7 +100,7 @@ class Compilation(
       case Some(temputs) => temputs
       case None => {
         val temputs =
-          new Templar(println, verbose, profiler).evaluate(getAstrouts()) match {
+          new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization).evaluate(getAstrouts()) match {
             case Ok(t) => t
 
             case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, filenamesAndSources, e))

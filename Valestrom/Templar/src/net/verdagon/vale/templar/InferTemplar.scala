@@ -31,6 +31,7 @@ class InferTemplar(
   ): (IInferSolveResult) = {
     profiler.childFrame("infer", () => {
       Inferer.solve[IEnvironment, TemputsBox](
+        profiler,
         delegate,
         env,
         state,
@@ -59,14 +60,16 @@ class InferTemplar(
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
   ): (Map[IRune2, ITemplata]) = {
-    solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), List(), None, true) match {
-      case (InferSolveSuccess(inferences)) => {
-        (inferences.templatasByRune)
+    profiler.childFrame("inferOrdinaryRules", () => {
+      solve(env0, temputs, rules, typeByRune, localRunes, RangeS.internal(-13337), Map(), List(), None, true) match {
+        case (InferSolveSuccess(inferences)) => {
+          (inferences.templatasByRune)
+        }
+        case (isf@InferSolveFailure(_, _, _, _, _, _, _)) => {
+          vfail("Conflict in determining ordinary rules' runes: " + isf)
+        }
       }
-      case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => {
-        vfail("Conflict in determining ordinary rules' runes: " + isf)
-      }
-    }
+    })
   }
 
   def inferFromExplicitTemplateArgs(
@@ -81,21 +84,23 @@ class InferTemplar(
     invocationRange: RangeS,
     explicits: List[ITemplata],
   ): (IInferSolveResult) = {
-    if (identifyingRunes.size != explicits.size) {
-      vfail("Wrong number of template args!")
-    }
+    profiler.childFrame("inferFromExplicitTemplateArgs", () => {
+      if (identifyingRunes.size != explicits.size) {
+        vfail("Wrong number of template args!")
+      }
 
-    solve(
-      env0,
-      temputs,
-      rules,
-      typeByRune,
-      localRunes,
-      invocationRange,
-      identifyingRunes.zip(explicits).toMap,
-      patterns1,
-      None,
-      true)
+      solve(
+        env0,
+        temputs,
+        rules,
+        typeByRune,
+        localRunes,
+        invocationRange,
+        identifyingRunes.zip(explicits).toMap,
+        patterns1,
+        None,
+        true)
+    })
   }
 
   def inferFromArgCoords(
@@ -111,19 +116,20 @@ class InferTemplar(
     alreadySpecifiedTemplateArgs: List[ITemplata],
     patternInputCoords: List[ParamFilter]
   ): (IInferSolveResult) = {
-
-    solve(
-      env0,
-      temputs,
-      rules,
-      typeByRune,
-      localRunes,
-      invocationRange,
-      // Note: this two things we're zipping are of different length, that's fine.
-      identifyingRunes.zip(alreadySpecifiedTemplateArgs).toMap,
-      patterns1,
-      Some(patternInputCoords),
-      true)
+    profiler.childFrame("inferFromArgCoords", () => {
+      solve(
+        env0,
+        temputs,
+        rules,
+        typeByRune,
+        localRunes,
+        invocationRange,
+        // Note: this two things we're zipping are of different length, that's fine.
+        identifyingRunes.zip(alreadySpecifiedTemplateArgs).toMap,
+        patterns1,
+        Some(patternInputCoords),
+        true)
+    })
   }
 
   def translateRules(rs: List[IRulexAR]): List[IRulexTR] = {

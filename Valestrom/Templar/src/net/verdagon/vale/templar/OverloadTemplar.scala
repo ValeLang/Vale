@@ -287,32 +287,34 @@ class OverloadTemplar(
 //                          val explicitTemplatas = templataTemplar.evaluateTemplexes(env, temputs, explicitlySpecifiedTemplateArgTemplexesS)
 
                           // We only want to solve the template arg runes
-                          inferTemplar.inferFromExplicitTemplateArgs(
-                              env, temputs, List(), rulesA, runeTypeConclusions.typeByRune, templateArgRuneNamesA.toSet, List(), None, callRange, List()) match {
-                            case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => {
-                              (List(), Map(), Map(function -> InferFailure(isf)))
-                            }
-                            case (InferSolveSuccess(inferences)) => {
-                              val explicitlySpecifiedTemplateArgTemplatas = templateArgRuneNames2.map(inferences.templatasByRune)
+                          profiler.childFrame("late astronoming", () => {
+                            inferTemplar.inferFromExplicitTemplateArgs(
+                                env, temputs, List(), rulesA, runeTypeConclusions.typeByRune, templateArgRuneNamesA.toSet, List(), None, callRange, List()) match {
+                              case (isf @ InferSolveFailure(_, _, _, _, _, _, _)) => {
+                                (List(), Map(), Map(function -> InferFailure(isf)))
+                              }
+                              case (InferSolveSuccess(inferences)) => {
+                                val explicitlySpecifiedTemplateArgTemplatas = templateArgRuneNames2.map(inferences.templatasByRune)
 
-                              functionTemplar.evaluateTemplatedFunctionFromCallForBanner(
-                                temputs, callRange, ft, explicitlySpecifiedTemplateArgTemplatas, paramFilters) match {
-                                case (EvaluateFunctionFailure(reason)) => {
-                                  (List(), Map(), Map(function -> reason))
-                                }
-                                case (EvaluateFunctionSuccess(banner)) => {
-                                  paramsMatch(temputs, paramFilters, banner.params, exact) match {
-                                    case (Some(rejectionReason)) => {
-                                      (List(), Map(banner -> rejectionReason), Map())
-                                    }
-                                    case (None) => {
-                                      (List(PotentialBannerFromFunctionS(banner, ft)), Map(), Map())
+                                functionTemplar.evaluateTemplatedFunctionFromCallForBanner(
+                                  temputs, callRange, ft, explicitlySpecifiedTemplateArgTemplatas, paramFilters) match {
+                                  case (EvaluateFunctionFailure(reason)) => {
+                                    (List(), Map(), Map(function -> reason))
+                                  }
+                                  case (EvaluateFunctionSuccess(banner)) => {
+                                    paramsMatch(temputs, paramFilters, banner.params, exact) match {
+                                      case (Some(rejectionReason)) => {
+                                        (List(), Map(banner -> rejectionReason), Map())
+                                      }
+                                      case (None) => {
+                                        (List(PotentialBannerFromFunctionS(banner, ft)), Map(), Map())
+                                      }
                                     }
                                   }
                                 }
                               }
                             }
-                          }
+                          })
                         }
                       }
                     }
@@ -384,7 +386,7 @@ class OverloadTemplar(
       extraEnvsToLookIn: List[IEnvironment]):
   Set[ITemplata] = {
     val environments = env :: getParamEnvironments(temputs, paramFilters) ++ extraEnvsToLookIn
-    environments.flatMap(_.getAllTemplatasWithName(impreciseName, Set(ExpressionLookupContext))).toSet
+    environments.flatMap(_.getAllTemplatasWithName(profiler, impreciseName, Set(ExpressionLookupContext))).toSet
   }
 
   // Checks to see if there's a function that *could*

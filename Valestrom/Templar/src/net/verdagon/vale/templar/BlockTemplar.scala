@@ -12,7 +12,7 @@ import scala.collection.immutable.{List, Map, Set}
 
 trait IBlockTemplarDelegate {
   def evaluateAndCoerceToReferenceExpression(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     expr1: IExpressionAE):
   (ReferenceExpression2, Set[Coord])
@@ -29,7 +29,7 @@ class BlockTemplar(
   // This can serve as an example for how we can use together all the tools provided by BlockTemplar.
   def evaluateBlock(
     parentFate: FunctionEnvironmentBox,
-    temputs: TemputsBox,
+    temputs: Temputs,
     block1: BlockAE):
   (Block2, Set[Coord]) = {
     val fate =
@@ -65,7 +65,7 @@ class BlockTemplar(
   }
 
   def evaluateBlockStatements(
-    temputs: TemputsBox,
+    temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
@@ -145,7 +145,7 @@ class BlockTemplar(
   }
 
   private def evaluateBlockStatementsInner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     expr1: List[IExpressionAE]):
   (List[ReferenceExpression2], Set[Coord]) = {
@@ -178,7 +178,7 @@ class BlockTemplar(
   }
 
   def mootAll(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     variables: List[ILocalVariable2]):
   (List[ReferenceExpression2]) = {

@@ -32,7 +32,7 @@ object Benchmark {
     // For now though, this will do.
     go(true)
     go(false)
-    val timesForOldAndNew = (0 until 30).map(_ => (go(false), go(true)))
+    val timesForOldAndNew = (0 until 10).map(_ => (go(false), go(true)))
     val timesForOld = timesForOldAndNew.map(_._1)
     val timesForNew = timesForOldAndNew.map(_._2)
     val averageTimeForOld = timesForOld.sum / timesForOld.size

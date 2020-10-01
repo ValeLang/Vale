@@ -19,7 +19,7 @@ class DestructorTemplar(
     overloadTemplar: OverloadTemplar) {
   def getCitizenDestructor(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       type2: Coord):
   (Prototype2) = {
     type2.referend match {
@@ -68,7 +68,7 @@ class DestructorTemplar(
 
   def getArrayDestructor(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     type2: Coord):
   (Prototype2) = {
     type2.referend match { case KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_) => }
@@ -98,7 +98,7 @@ class DestructorTemplar(
   //   it's pointing at and deallocate.
   // - Unborrow. This is a no op.
   // This is quite useful for handing into array consumers.
-  private def getDropFunction(env: IEnvironment, temputs: TemputsBox, type2: Coord): Prototype2 = {
+  private def getDropFunction(env: IEnvironment, temputs: Temputs, type2: Coord): Prototype2 = {
     overloadTemplar.scoutExpectedFunctionForPrototype(
       env,
       temputs,
@@ -121,7 +121,7 @@ class DestructorTemplar(
 
   def generateDropFunction(
     initialBodyEnv: FunctionEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     originFunction1: FunctionA,
     type2: Coord):
   (FunctionHeader2) = {
@@ -143,7 +143,7 @@ class DestructorTemplar(
 
   def drop(
       fate: FunctionEnvironmentBox,
-      temputs: TemputsBox,
+      temputs: Temputs,
       undestructedExpr2: ReferenceExpression2):
   (ReferenceExpression2) = {
     val resultExpr2 =
@@ -167,7 +167,7 @@ class DestructorTemplar(
         case Coord(Weak, _) => (Discard2(undestructedExpr2))
         case Coord(Share, _) => {
           val destroySharedCitizen =
-            (temputs: TemputsBox, Coord: Coord) => {
+            (temputs: Temputs, Coord: Coord) => {
               val destructorHeader = getCitizenDestructor(fate.snapshot, temputs, Coord)
               // We just needed to ensure it's in the temputs, so that the backend can use it
               // for when reference counts drop to zero.
@@ -176,7 +176,7 @@ class DestructorTemplar(
               Discard2(undestructedExpr2)
             };
           val destroySharedArray =
-            (temputs: TemputsBox, Coord: Coord) => {
+            (temputs: Temputs, Coord: Coord) => {
               val destructorHeader = getArrayDestructor(fate.snapshot, temputs, Coord)
               // We just needed to ensure it's in the temputs, so that the backend can use it
               // for when reference counts drop to zero.
@@ -227,7 +227,7 @@ class DestructorTemplar(
 
   def generateStructDestructor(
     namedEnv: FunctionEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       originFunction1: FunctionA,
       params2: List[Parameter2],
       structRef: StructRef2):
@@ -287,7 +287,7 @@ class DestructorTemplar(
 
   def generateArraySequenceDestructor(
     env: FunctionEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     maybeOriginFunction1: Option[FunctionA],
     sequenceRefType2: Coord,
     sequence: KnownSizeArrayT2):
@@ -347,7 +347,7 @@ class DestructorTemplar(
 
   def generateUnknownSizeArrayDestructor(
       env: FunctionEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       maybeOriginFunction1: Option[FunctionA],
       arrayRefType2: Coord,
       array: UnknownSizeArrayT2):
@@ -402,7 +402,7 @@ class DestructorTemplar(
   }
 
   def getImmConcreteDestructor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     env: IEnvironment,
     structRef2: StructRef2):
   Prototype2 = {
@@ -425,7 +425,7 @@ class DestructorTemplar(
   }
 
   def getImmInterfaceDestructor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     env: IEnvironment,
     interfaceRef2: InterfaceRef2):
   Prototype2 = {
@@ -450,7 +450,7 @@ class DestructorTemplar(
   }
 
   def getImmInterfaceDestructorOverride(
-    temputs: TemputsBox,
+    temputs: Temputs,
     env: IEnvironment,
     structRef2: StructRef2,
     implementedInterfaceRefT: InterfaceRef2):
@@ -530,7 +530,7 @@ object DestructorTemplar {
           structTemplar: StructTemplar,
           destructorTemplar: DestructorTemplar,
           env: FunctionEnvironment,
-          temputs: TemputsBox,
+          temputs: Temputs,
           callRange: RangeS,
           maybeOriginFunction1: Option[FunctionA],
           paramCoords: List[Parameter2],
@@ -614,7 +614,7 @@ object DestructorTemplar {
           structTemplar: StructTemplar,
           destructorTemplar: DestructorTemplar,
           namedEnv: FunctionEnvironment,
-          temputs: TemputsBox,
+          temputs: Temputs,
           callRange: RangeS,
           maybeOriginFunction1: Option[FunctionA],
           params: List[Parameter2],
@@ -694,7 +694,7 @@ object DestructorTemplar {
           structTemplar: StructTemplar,
           destructorTemplar: DestructorTemplar,
           namedEnv: FunctionEnvironment,
-          temputs: TemputsBox,
+          temputs: Temputs,
           callRange: RangeS,
           maybeOriginFunction1: Option[FunctionA],
           params: List[Parameter2],
@@ -783,7 +783,7 @@ object DestructorTemplar {
           structTemplar: StructTemplar,
           destructorTemplar: DestructorTemplar,
           namedEnv: FunctionEnvironment,
-          temputs: TemputsBox,
+          temputs: Temputs,
           callRange: RangeS,
           maybeOriginFunction1: Option[FunctionA],
           params: List[Parameter2],

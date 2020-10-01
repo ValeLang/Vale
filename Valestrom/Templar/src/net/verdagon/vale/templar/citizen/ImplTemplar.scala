@@ -13,7 +13,7 @@ import scala.collection.immutable.List
 
 trait IAncestorHelperDelegate {
   def getInterfaceRef(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -29,7 +29,7 @@ class AncestorHelper(
     delegate: IAncestorHelperDelegate) {
 
   private def getMaybeImplementedInterface(
-    temputs: TemputsBox,
+    temputs: Temputs,
     childCitizenRef: CitizenRef2,
     implTemplata: ImplTemplata):
   (Option[InterfaceRef2]) = {
@@ -76,13 +76,13 @@ class AncestorHelper(
   }
 
   def getParentInterfaces(
-    temputs: TemputsBox,
+    temputs: Temputs,
     childCitizenRef: CitizenRef2):
   (List[InterfaceRef2]) = {
     val citizenEnv =
       childCitizenRef match {
-        case sr @ StructRef2(_) => vassertSome(temputs.envByStructRef.get(sr))
-        case ir @ InterfaceRef2(_) => vassertSome(temputs.envByInterfaceRef.get(ir))
+        case sr @ StructRef2(_) => temputs.getEnvForStructRef(sr)
+        case ir @ InterfaceRef2(_) => temputs.getEnvForInterfaceRef(ir)
       }
     citizenEnv.getAllTemplatasWithName(profiler, ImplImpreciseNameA(), Set(TemplataLookupContext, ExpressionLookupContext))
       .flatMap({
@@ -93,7 +93,7 @@ class AncestorHelper(
   }
 
   def getAncestorInterfaces(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2):
   (Set[InterfaceRef2]) = {
     profiler.childFrame("getAncestorInterfaces", () => {
@@ -104,7 +104,7 @@ class AncestorHelper(
   }
 
   def isAncestor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2,
     ancestorInterfaceRef: InterfaceRef2):
   (Boolean) = {
@@ -116,7 +116,7 @@ class AncestorHelper(
   }
 
   def getAncestorInterfaceDistance(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2,
     ancestorInterfaceRef: InterfaceRef2):
   (Option[Int]) = {
@@ -129,7 +129,7 @@ class AncestorHelper(
 
   // Doesn't include self
   def getAncestorInterfacesWithDistance(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2):
   (Map[InterfaceRef2, Int]) = {
     val parentInterfaceRefs =
@@ -146,7 +146,7 @@ class AncestorHelper(
   }
 
   private def getAncestorInterfacesInner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     // This is so we can know what we've already searched.
     nearestDistanceByInterfaceRef: Map[InterfaceRef2, Int],
     // All the interfaces that are at most this distance away are inside foundSoFar.

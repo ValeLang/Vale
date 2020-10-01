@@ -20,7 +20,7 @@ case class TookWeakRefOfNonWeakableError() extends Throwable
 
 trait IExpressionTemplarDelegate {
   def evaluateTemplatedFunctionFromCallForPrototype(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
     explicitTemplateArgs: List[ITemplata],
@@ -28,7 +28,7 @@ trait IExpressionTemplarDelegate {
   IEvaluateFunctionResult[Prototype2]
 
   def evaluateClosureStruct(
-    temputs: TemputsBox,
+    temputs: Temputs,
     containingFunctionEnv: FunctionEnvironment,
     callRange: RangeS,
     name: LambdaNameA,
@@ -54,14 +54,14 @@ class ExpressionTemplar(
   val patternTemplar = new PatternTemplar(opts, profiler, inferTemplar, convertHelper, dropHelper, localHelper)
   val blockTemplar = new BlockTemplar(opts, newTemplataStore, dropHelper, localHelper, new IBlockTemplarDelegate {
     override def evaluateAndCoerceToReferenceExpression(
-        temputs: TemputsBox, fate: FunctionEnvironmentBox, expr1: IExpressionAE):
+        temputs: Temputs, fate: FunctionEnvironmentBox, expr1: IExpressionAE):
     (ReferenceExpression2, Set[Coord]) = {
       ExpressionTemplar.this.evaluateAndCoerceToReferenceExpression(temputs, fate, expr1)
     }
   })
 
   private def evaluateList(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       expr1: List[IExpressionAE]):
       (List[Expression2], Set[Coord]) = {
@@ -76,7 +76,7 @@ class ExpressionTemplar(
   }
 
   def evaluateAndCoerceToReferenceExpressions(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       exprs1: List[IExpressionAE]):
   (List[ReferenceExpression2], Set[Coord]) = {
@@ -93,7 +93,7 @@ class ExpressionTemplar(
   }
 
   private def evaluateLookup(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
     name: IVarName2,
@@ -115,7 +115,7 @@ class ExpressionTemplar(
   }
 
   private def evaluateAddressibleLookup(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
       nameA: IVarNameA):
@@ -173,7 +173,7 @@ class ExpressionTemplar(
   }
 
   private def evaluateAddressibleLookup(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
     name2: IVarName2):
@@ -228,7 +228,7 @@ class ExpressionTemplar(
   }
 
   private def makeClosureStructConstructExpression(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
       closureStructRef: StructRef2):
@@ -268,7 +268,7 @@ class ExpressionTemplar(
   }
 
   def evaluateAndCoerceToReferenceExpression(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       expr1: IExpressionAE):
   (ReferenceExpression2, Set[Coord]) = {
@@ -294,7 +294,7 @@ class ExpressionTemplar(
   }
 
   private def evaluateExpectedAddressExpression(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       expr1: IExpressionAE):
   (AddressExpression2, Set[Coord]) = {
@@ -312,7 +312,7 @@ class ExpressionTemplar(
   // - resulting expression
   // - all the types that are returned from inside the body via ret
   private def evaluate(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       expr1: IExpressionAE):
   (Expression2, Set[Coord]) = {
@@ -380,7 +380,7 @@ class ExpressionTemplar(
                 targetOwnership match {
                   case OwnP => vcurious() // Can we even coerce to an owning reference?
                   case BorrowP => localHelper.makeTemporaryLocal(temputs, fate, innerExpr2)
-                  case WeakP => weakAlias(temputs.temputs, localHelper.makeTemporaryLocal(temputs, fate, innerExpr2))
+                  case WeakP => weakAlias(temputs, localHelper.makeTemporaryLocal(temputs, fate, innerExpr2))
                   case ShareP => vfail()
                 }
               }
@@ -388,7 +388,7 @@ class ExpressionTemplar(
                 targetOwnership match {
                   case OwnP => vcurious() // Can we even coerce to an owning reference?
                   case BorrowP => innerExpr2
-                  case WeakP => weakAlias(temputs.temputs, innerExpr2)
+                  case WeakP => weakAlias(temputs, innerExpr2)
                   case ShareP => vfail()
                 }
               }
@@ -953,7 +953,7 @@ class ExpressionTemplar(
   // If it receives an owning address, that's fine, just borrowsoftload from it.
   // Rename this someday.
   private def dotBorrow(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       undecayedUnborrowedContainerExpr2: Expression2):
   (ReferenceExpression2) = {
@@ -978,7 +978,7 @@ class ExpressionTemplar(
   // - exported things (from let)
   // - hoistees; expressions to hoist (like initializing blocks)
   def evaluateClosure(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
       name: LambdaNameA,
@@ -1020,12 +1020,12 @@ class ExpressionTemplar(
   }
 
   def evaluateBlockStatements(
-    temputs: TemputsBox, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]):
+    temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]):
   (List[ReferenceExpression2], Set[Coord]) = {
     blockTemplar.evaluateBlockStatements(temputs, startingFate, fate, exprs)
   }
 
-  def nonCheckingTranslateList(temputs: TemputsBox, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]): List[ReferenceExpression2] = {
+  def nonCheckingTranslateList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]): List[ReferenceExpression2] = {
     patternTemplar.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
   }
 }

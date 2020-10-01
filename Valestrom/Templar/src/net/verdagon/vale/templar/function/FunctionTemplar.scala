@@ -21,25 +21,25 @@ import scala.collection.immutable.{List, Set}
 
 trait IFunctionTemplarDelegate {
   def evaluateBlockStatements(
-    temputs: TemputsBox,
+    temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
   (List[ReferenceExpression2], Set[Coord])
 
   def nonCheckingTranslateList(
-    temputs: TemputsBox, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]):
+    temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]):
   List[ReferenceExpression2]
 
   def evaluateParent(
-    env: IEnvironment, temputs: TemputsBox, sparkHeader: FunctionHeader2):
+    env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeader2):
   Unit
 
   def generateFunction(
     functionTemplarCore: FunctionTemplarCore,
     generator: IFunctionGenerator,
     env: FunctionEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     // We might be able to move these all into the function environment... maybe....
     originFunction: Option[FunctionA],
@@ -75,7 +75,7 @@ class FunctionTemplar(
 
   private def determineClosureVariableMember(
       env: FunctionEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       name: IVarNameA) = {
     val (variability2, memberType) =
       env.getVariable(NameTranslator.translateVarNameStep(name)).get match {
@@ -108,7 +108,7 @@ class FunctionTemplar(
   }
 
   def evaluateClosureStruct(
-      temputs: TemputsBox,
+      temputs: Temputs,
       containingFunctionEnv: FunctionEnvironment,
     callRange: RangeS,
       name: LambdaNameA,
@@ -140,7 +140,7 @@ class FunctionTemplar(
   }
 
   def evaluateOrdinaryFunctionFromNonCallForHeader(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata):
   FunctionHeader2 = {
@@ -168,7 +168,7 @@ class FunctionTemplar(
   // we were calling the function. This is necessary for a recursive function like
   // fn main():Int{main()}
   def evaluateOrdinaryFunctionFromNonCallForPrototype(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata):
   (Prototype2) = {
@@ -199,7 +199,7 @@ class FunctionTemplar(
   }
 
   def evaluateOrdinaryFunctionFromNonCallForBanner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata):
   (FunctionBanner2) = {
@@ -230,7 +230,7 @@ class FunctionTemplar(
 
   private def evaluateOrdinaryLightFunctionFromNonCallForBanner(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
   (FunctionBanner2) = {
@@ -239,7 +239,7 @@ class FunctionTemplar(
   }
 
   def evaluateTemplatedFunctionFromCallForBanner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
     alreadySpecifiedTemplateArgs: List[ITemplata],
@@ -274,7 +274,7 @@ class FunctionTemplar(
 
   private def evaluateTemplatedClosureFunctionFromCallForBanner(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       callRange: RangeS,
       closureStructRef: StructRef2,
     function: FunctionA,
@@ -287,7 +287,7 @@ class FunctionTemplar(
   }
 
   def evaluateTemplatedLightFunctionFromCallForBanner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
     alreadySpecifiedTemplateArgs: List[ITemplata],
@@ -304,7 +304,7 @@ class FunctionTemplar(
 
   private def evaluateOrdinaryClosureFunctionFromNonCallForHeader(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
       closureStructRef: StructRef2,
     function: FunctionA):
@@ -315,7 +315,7 @@ class FunctionTemplar(
 
   private def evaluateOrdinaryClosureFunctionFromNonCallForBanner(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     closureStructRef: StructRef2,
     function: FunctionA):
@@ -329,7 +329,7 @@ class FunctionTemplar(
   // fn main():Int{main()}
   private def evaluateOrdinaryLightFunctionFromNonCallForPrototype(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
   (Prototype2) = {
@@ -339,7 +339,7 @@ class FunctionTemplar(
 
   private def evaluateOrdinaryLightFunctionFromNonCallForHeader(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
   (FunctionHeader2) = {
@@ -348,7 +348,7 @@ class FunctionTemplar(
   }
 
   def evaluateOrdinaryLightFunctionFromNonCallForTemputs(
-      temputs: TemputsBox,
+      temputs: Temputs,
       callRange: RangeS,
       functionTemplata: FunctionTemplata):
   Unit = {
@@ -362,7 +362,7 @@ class FunctionTemplar(
   }
 
   def evaluateTemplatedFunctionFromCallForPrototype(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata,
     explicitTemplateArgs: List[ITemplata],
@@ -384,7 +384,7 @@ class FunctionTemplar(
 
   private def evaluateTemplatedLightFunctionFromCallForPrototype(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA,
       explicitTemplateArgs: List[ITemplata],
@@ -396,7 +396,7 @@ class FunctionTemplar(
 
   private def evaluateTemplatedClosureFunctionFromCallForPrototype(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     function: FunctionA,
     explicitTemplateArgs: List[ITemplata],

@@ -19,7 +19,7 @@ class StructTemplarCore(
     newTemplataStore: () => ITemplatasStore,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
+  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
     val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
     val structDef2 = StructDefinition2(emptyTupleFullName, List(), false, Immutable, List(), false)
@@ -36,7 +36,7 @@ class StructTemplarCore(
   def maakeStruct(
     // The environment that the struct was defined in.
     structRunesEnv: NamespaceEnvironment[IName2],
-    temputs: TemputsBox,
+    temputs: Temputs,
     struct1: StructA,
     coercedFinalTemplateArgs: List[ITemplata]):
   (StructDefinition2) = {
@@ -152,7 +152,7 @@ class StructTemplarCore(
   // which means we need some way to know what T is.
   def makeInterface(
     interfaceRunesEnv: NamespaceEnvironment[IName2],
-    temputs: TemputsBox,
+    temputs: Temputs,
     interfaceA: InterfaceA,
     coercedFinalTemplateArgs2: List[ITemplata]):
   (InterfaceDefinition2) = {
@@ -239,7 +239,7 @@ class StructTemplarCore(
     (interfaceDef2)
   }
 
-  private def makeStructMembers(env: IEnvironment, temputs: TemputsBox, members: List[StructMemberA]): (List[StructMember2]) = {
+  private def makeStructMembers(env: IEnvironment, temputs: Temputs, members: List[StructMemberA]): (List[StructMember2]) = {
     members match {
       case Nil => (Nil)
       case head1 :: tail1 => {
@@ -252,7 +252,7 @@ class StructTemplarCore(
 
   private def makeStructMember(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     member: StructMemberA):
   (StructMember2) = {
     val CoordTemplata(coord) = vassertSome(env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(member.typeRune), Set(TemplataLookupContext)))
@@ -262,7 +262,7 @@ class StructTemplarCore(
 //  // Makes a functor for the given prototype.
 //  def functionToLambda(
 //    outerEnv: IEnvironment,
-//    temputs: TemputsBox,
+//    temputs: Temputs,
 //    header: FunctionHeader2):
 //  StructRef2 = {
 //    val mutability = Immutable
@@ -300,7 +300,7 @@ class StructTemplarCore(
   // Makes a struct to back a closure
   def makeClosureUnderstruct(
     containingFunctionEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     name: LambdaNameA,
     functionA: FunctionA,
     members: List[StructMember2]):
@@ -354,11 +354,11 @@ class StructTemplarCore(
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnderstruct(
     outerEnv: NamespaceEnvironment[IName2],
-    temputs: TemputsBox,
+    temputs: Temputs,
     memberCoords: List[Coord],
     name: ICitizenName2):
   (StructRef2, Mutability) = {
-    temputs.packTypes.get(memberCoords) match {
+    temputs.getPackType(memberCoords) match {
       case Some(structRef2) => return (structRef2, temputs.lookupStruct(structRef2).mutability)
       case None =>
     }
@@ -398,7 +398,7 @@ class StructTemplarCore(
   // This doesnt make a constructor. We could add that if we wanted to.
   def makeAnonymousSubstruct(
       interfaceEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     range: RangeS,
       anonymousSubstructName: FullName2[AnonymousSubstructName2],
       interfaceRef: InterfaceRef2):
@@ -563,7 +563,7 @@ class StructTemplarCore(
   // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
   def prototypeToAnonymousStruct(
     outerEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {
@@ -630,7 +630,7 @@ class StructTemplarCore(
   }
 
   def makeStructConstructor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     maybeConstructorOriginFunctionA: Option[FunctionA],
     structDef: StructDefinition2,
     constructorFullName: FullName2[IFunctionName2]):

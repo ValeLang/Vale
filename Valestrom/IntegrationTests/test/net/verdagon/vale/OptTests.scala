@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
@@ -40,8 +40,7 @@ class OptTests extends FunSuite with Matchers {
           |    else { opt.get() }
           |}
         """.stripMargin),
-      false,
-      profiler)
+      CompilationOptions(profiler = profiler))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(0)
 

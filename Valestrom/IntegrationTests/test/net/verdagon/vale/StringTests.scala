@@ -12,7 +12,7 @@ class StringTests extends FunSuite with Matchers {
         |fn main() {
         |  "sprogwoggle"
         |}
-      """.stripMargin, false)
+      """.stripMargin)
 
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").only({ case StrLiteral2("sprogwoggle") => })
@@ -26,7 +26,7 @@ class StringTests extends FunSuite with Matchers {
         |fn main() {
         |  "sprog\nwoggle"
         |}
-        |""".stripMargin, false)
+        |""".stripMargin)
 
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").only({ case StrLiteral2("sprog\nwoggle") => })
@@ -40,7 +40,7 @@ class StringTests extends FunSuite with Matchers {
         |fn main() {
         |  "sprog\u001bwoggle"
         |}
-        |""".stripMargin, false)
+        |""".stripMargin)
 
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").only({

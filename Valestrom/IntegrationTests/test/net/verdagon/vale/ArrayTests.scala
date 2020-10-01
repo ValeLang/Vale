@@ -7,7 +7,7 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonBool, VonInt}
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class ArrayTests extends FunSuite with Matchers {
   test("Returning array from function and dotting it") {
@@ -279,7 +279,8 @@ class ArrayTests extends FunSuite with Matchers {
         |  mut arr.0 = Goblin();
         |  = 4;
         |}
-      """.stripMargin, false, new Profiler())
+      """.stripMargin,
+      CompilationOptions(profiler = new Profiler()))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }

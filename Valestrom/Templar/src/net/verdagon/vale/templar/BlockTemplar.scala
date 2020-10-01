@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.{vassert, vcurious}
 
-import scala.collection.immutable.{List, Set}
+import scala.collection.immutable.{List, Map, Set}
 
 trait IBlockTemplarDelegate {
   def evaluateAndCoerceToReferenceExpression(
@@ -20,7 +20,8 @@ trait IBlockTemplarDelegate {
 
 class BlockTemplar(
     opts: TemplarOptions,
-  dropHelper: DropHelper,
+    newTemplataStore: () => ITemplatasStore,
+    dropHelper: DropHelper,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {
   // This is NOT USED FOR EVERY BLOCK!
@@ -34,7 +35,15 @@ class BlockTemplar(
     val fate =
       FunctionEnvironmentBox(
         FunctionEnvironment(
-          parentFate.snapshot, parentFate.fullName, parentFate.function, Map(), parentFate.maybeReturnType, List(), parentFate.varCounter, List(), Set()))
+          parentFate.snapshot,
+          parentFate.fullName,
+          parentFate.function,
+          newTemplataStore(),
+          parentFate.maybeReturnType,
+          List(),
+          parentFate.varCounter,
+          List(),
+          Set()))
     val startingFate = fate.snapshot
 
     fate.addScoutedLocals(block1.locals)

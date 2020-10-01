@@ -19,20 +19,20 @@ class SequenceTemplar(
   (Expression2) = {
 
     val types2 = exprs2.map(_.resultRegister.expectReference().reference)
-//    if (types2.toSet.size == 1) {
-//      val memberType = types2.toSet.head
-//      // Theyre all the same type, so make it an array.
-//      val mutability = StructTemplar.getCompoundTypeMutability(List(memberType))
-//      val arraySequenceType = arrayTemplar.makeArraySequenceType(env.snapshot, temputs, mutability, types2.size, memberType)
-//      val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
-//      val finalExpr = ArraySequenceE2(exprs2, Coord(ownership, arraySequenceType), arraySequenceType)
-//      (finalExpr)
-//    } else {
+    if (types2.toSet.size == 1) {
+      val memberType = types2.toSet.head
+      // Theyre all the same type, so make it an array.
+      val mutability = StructTemplar.getCompoundTypeMutability(List(memberType))
+      val arraySequenceType = arrayTemplar.makeArraySequenceType(env.snapshot, temputs, mutability, types2.size, memberType)
+      val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
+      val finalExpr = ArraySequenceE2(exprs2, Coord(ownership, arraySequenceType), arraySequenceType)
+      (finalExpr)
+    } else {
       val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)
       val ownership = if (mutability == Mutable) Own else Share
       val finalExpr = TupleE2(exprs2, Coord(ownership, tupleType2), tupleType2)
       (finalExpr)
-//    }
+    }
   }
 
   def makeTupleType(

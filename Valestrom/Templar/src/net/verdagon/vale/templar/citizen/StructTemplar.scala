@@ -60,13 +60,17 @@ trait IStructTemplarDelegate {
     structRef2: StructRef2):
   Prototype2
 }
+
 class StructTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
+    newTemplataStore: () => ITemplatasStore,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  val templateArgsLayer = new StructTemplarTemplateArgsLayer(opts, inferTemplar, ancestorHelper, delegate)
+  val templateArgsLayer =
+    new StructTemplarTemplateArgsLayer(
+      opts, profiler, newTemplataStore, inferTemplar, ancestorHelper, delegate)
 
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     templateArgsLayer.addBuiltInStructs(env, temputs)
@@ -82,7 +86,7 @@ class StructTemplar(
   }
 
   def getConstructor(struct1: StructA): FunctionA = {
-    profiler.newProfile("StructTemplar-getConstructor", struct1.name.name, () => {
+    profiler.newProfile("StructTemplarGetConstructor", struct1.name.name, () => {
       opts.debugOut("todo: put all the members' rules up in the top of the struct")
       val params =
         struct1.members.zipWithIndex.map({
@@ -132,9 +136,8 @@ class StructTemplar(
         GeneratedBodyA("structConstructorGenerator"))
     })
   }
-
   def getInterfaceConstructor(interfaceA: InterfaceA): FunctionA = {
-    profiler.newProfile("InterfaceTemplar-getConstructor", interfaceA.name.name, () => {
+    profiler.newProfile("StructTemplarGetInterfaceConstructor", interfaceA.name.name, () => {
       opts.debugOut("todo: put all the members' rules up in the top of the struct")
       val identifyingRunes = interfaceA.identifyingRunes
       val functorRunes = interfaceA.internalMethods.indices.map(i => (CodeRuneA("Functor" + i)))
@@ -208,7 +211,7 @@ class StructTemplar(
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
   (StructRef2) = {
-    profiler.newProfile("StructTemplar-getStructRef", structTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
+    profiler.newProfile("StructTemplarGetStructRef", structTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getStructRef(
         temputs, callRange, structTemplata, uncoercedTemplateArgs)
     })
@@ -222,10 +225,10 @@ class StructTemplar(
     interfaceTemplata: InterfaceTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
   (InterfaceRef2) = {
-    profiler.newProfile("StructTemplar-getInterfaceRef", interfaceTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
+//    profiler.newProfile("StructTemplar-getInterfaceRef", interfaceTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getInterfaceRef(
         temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
-    })
+//    })
   }
 
   // Makes a struct to back a closure
@@ -236,17 +239,17 @@ class StructTemplar(
     functionS: FunctionA,
     members: List[StructMember2]):
   (StructRef2, Mutability, FunctionTemplata) = {
-    profiler.newProfile("StructTemplar-makeClosureUnderstruct", name.codeLocation.toString, () => {
+//    profiler.newProfile("StructTemplar-makeClosureUnderstruct", name.codeLocation.toString, () => {
       templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
-    })
+//    })
   }
 
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnderstruct(env: NamespaceEnvironment[IName2], temputs: TemputsBox, memberTypes2: List[Coord], name: ICitizenName2):
   (StructRef2, Mutability) = {
-    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + memberTypes2.map(_.toString).mkString(", ") + "]", () => {
+//    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + memberTypes2.map(_.toString).mkString(", ") + "]", () => {
       templateArgsLayer.makeSeqOrPackUnerstruct(env, temputs, memberTypes2, name)
-    })
+//    })
   }
 
   // Makes an anonymous substruct of the given interface, with the given lambdas as its members.
@@ -256,7 +259,7 @@ class StructTemplar(
     interfaceRef2: InterfaceRef2,
     members: List[Coord]):
   StructRef2 = {
-    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + interfaceRef2.toString + " " + members.map(_.toString).mkString(", ") + "]", () => {
+//    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + interfaceRef2.toString + " " + members.map(_.toString).mkString(", ") + "]", () => {
       val anonymousSubstructName =
         interfaceRef2.fullName.addStep(AnonymousSubstructName2(members))
 
@@ -270,7 +273,7 @@ class StructTemplar(
         templateArgsLayer.makeAnonymousSubstruct(
           interfaceEnv, temputs, range, interfaceRef2, anonymousSubstructName)
       s
-    })
+//    })
   }
 
   // Makes an anonymous substruct of the given interface, which just forwards its method to the given prototype.
@@ -279,7 +282,7 @@ class StructTemplar(
     temputs: TemputsBox,
     prototype: Prototype2):
   StructRef2 = {
-    profiler.newProfile("StructTemplar-prototypeToAnonymousStruct", prototype.toString, () => {
+//    profiler.newProfile("StructTemplar-prototypeToAnonymousStruct", prototype.toString, () => {
       val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2(-13, 0)))
 
       temputs.structDeclared(structFullName) match {
@@ -290,7 +293,7 @@ class StructTemplar(
       val outerEnv = temputs.envByFunctionSignature(prototype.toSignature)
       templateArgsLayer.prototypeToAnonymousStruct(
         outerEnv, temputs, prototype, structFullName)
-    })
+//    })
   }
 
   // This doesnt make a constructor, but its easy enough to make manually.
@@ -300,7 +303,7 @@ class StructTemplar(
       interfaceRef2: InterfaceRef2,
       prototype: Prototype2):
   (StructRef2, Prototype2) = {
-    profiler.newProfile("StructTemplar-prototypeToAnonymousSubstruct", prototype.toString + " " + interfaceRef2.toString, () => {
+//    profiler.newProfile("StructTemplar-prototypeToAnonymousSubstruct", prototype.toString + " " + interfaceRef2.toString, () => {
       val functionStructRef = prototypeToAnonymousStruct(temputs, prototype)
       val functionStructType = Coord(Share, functionStructRef)
 
@@ -347,7 +350,7 @@ class StructTemplar(
       vassert(temputs.exactDeclaredSignatureExists(constructor2.header.fullName))
 
       (anonymousSubstructRef, constructor2.header.toPrototype)
-    })
+//    })
   }
 
 //  // Makes a functor for the given prototype.
@@ -405,7 +408,7 @@ class StructTemplar(
       range: RangeS,
       prototype: Prototype2):
   (InterfaceRef2, StructRef2, Prototype2) = {
-    profiler.newProfile("StructTemplar-prototypeToAnonymousIFunctionSubstruct", prototype.toString, () => {
+//    profiler.newProfile("StructTemplar-prototypeToAnonymousIFunctionSubstruct", prototype.toString, () => {
       val returnType = prototype.returnType
       val List(paramType) = prototype.fullName.last.parameters
 
@@ -426,7 +429,7 @@ class StructTemplar(
           temputs, range, ifunction1InterfaceRef, prototype)
 
       (ifunction1InterfaceRef, elementDropFunctionAsIFunctionSubstructStructRef, constructorPrototype)
-    })
+//    })
   }
 }
 

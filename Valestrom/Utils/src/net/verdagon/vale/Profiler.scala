@@ -1,11 +1,9 @@
 package net.verdagon.vale
 
-import com.jprofiler.api.probe.embedded.{Split, SplitProbe}
-
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
 
-case class FinishedProfile(args: String, rootFrame: FinishedFrame)
+case class FinishedProfile(args: String, profileTotalNanoseconds: Long, rootFrame: FinishedFrame)
 case class FinishedFrame(nanoseconds: Long, children: Map[String, List[FinishedFrame]]) {
   def totalTime: Long = nanoseconds + children.map(_._2.map(_.totalTime).sum).sum
 }
@@ -41,24 +39,21 @@ class Timer {
   }
 }
 
-class ValeSplitProbe extends SplitProbe {
-  override def getName: String = "ValeSplitProbe"
-  override def getDescription: String = "infer some things"
-  override def isPayloads: Boolean = true
-  override def isReentrant: Boolean = true
-}
-
 class InProgressProfile(name: String, args: String, var currentFrame: InProgressFrame) {
+  val timer = new Timer()
+
   def start() = {
     resume()
   }
 
   def resume() = {
+    timer.start()
     currentFrame.resume()
   }
 
   def pause() = {
     currentFrame.pause()
+    timer.stop()
   }
 
   def stop() = {
@@ -95,79 +90,73 @@ class Profiler extends IProfiler {
   def newProfile[T](profileName: String, args: String, profilee: () => T): T = {
     val parentProfile = currentProfile
     parentProfile.foreach(_.pause())
-    try {
-      val newProfile = new InProgressProfile(profileName, args, new InProgressFrame(profileName))
-      currentProfile = Some(newProfile)
-      newProfile.start()
-      val result =
-        try {
-          profilee()
-        } finally {
-          newProfile.stop()
-        }
-      val finishedProfileRootFrame =
-        FinishedProfile(
-          args,
-          FinishedFrame(newProfile.currentFrame.timer.nanosecondsSoFar, newProfile.currentFrame.children.toMap))
 
-      // Don't add it to the parent frame's children, instead add it to the profiles list
-      var profilesWithThisName = profiles.getOrElse(profileName, List())
-      profilesWithThisName = finishedProfileRootFrame :: profilesWithThisName
-      profiles += (profileName -> profilesWithThisName)
+    val newProfile = new InProgressProfile(profileName, args, new InProgressFrame(profileName))
+    currentProfile = Some(newProfile)
+    newProfile.start()
+    val result = profilee()
+    newProfile.stop()
+    val finishedProfileRootFrame =
+      FinishedProfile(
+        args,
+        newProfile.timer.nanosecondsSoFar,
+        FinishedFrame(newProfile.currentFrame.timer.nanosecondsSoFar, newProfile.currentFrame.children.toMap))
 
-      result
-    } finally {
-      parentProfile.foreach(_.resume())
-      currentProfile = parentProfile
-    }
+    // Don't add it to the parent frame's children, instead add it to the profiles list
+    var profilesWithThisName = profiles.getOrElse(profileName, List())
+    profilesWithThisName = finishedProfileRootFrame :: profilesWithThisName
+    profiles += (profileName -> profilesWithThisName)
+
+    parentProfile.foreach(_.resume())
+    currentProfile = parentProfile
+
+    result
   }
 
   def childFrame[T](frameName: String, profilee: () => T): T = {
     val parentFrame = currentProfile.get.currentFrame
     parentFrame.pause()
-    try {
-      val newFrame = new InProgressFrame(frameName)
-      currentProfile.get.currentFrame = newFrame
-      newFrame.start()
-      val result =
-        try {
-          profilee()
-        } finally {
-          newFrame.stop()
-        }
-      val finishedFrame = FinishedFrame(newFrame.timer.nanosecondsSoFar, newFrame.children.toMap)
 
-      // Add it to the parent frame's children
-      var childFramesWithThisName = parentFrame.children.getOrElse(frameName, List())
-      childFramesWithThisName = finishedFrame :: childFramesWithThisName
-      parentFrame.children += (frameName -> childFramesWithThisName)
+    val newFrame = new InProgressFrame(frameName)
+    currentProfile.get.currentFrame = newFrame
+    newFrame.start()
+    val result = profilee()
+    newFrame.stop()
 
-      result
-    } finally {
-      parentFrame.resume()
-      currentProfile.get.currentFrame = parentFrame
-    }
+    val finishedFrame = FinishedFrame(newFrame.timer.nanosecondsSoFar, newFrame.children.toMap)
+
+    // Add it to the parent frame's children
+    var childFramesWithThisName = parentFrame.children.getOrElse(frameName, List())
+    childFramesWithThisName = finishedFrame :: childFramesWithThisName
+    parentFrame.children += (frameName -> childFramesWithThisName)
+
+    parentFrame.resume()
+    currentProfile.get.currentFrame = parentFrame
+
+    result
+  }
+
+  def totalNanoseconds = {
+    vassert(currentProfile.isEmpty)
+    profiles.flatMap(_._2.map(_.profileTotalNanoseconds)).sum
   }
 
   def assembleResults(): String = {
     vassert(currentProfile.isEmpty)
     val builder = new mutable.StringBuilder()
     profiles.foreach({ case (name, profiles) =>
-      builder.append(name + ": " + profiles.map(_.rootFrame.totalTime).sum / profiles.size + "\n")
-      profiles.foreach(profile => {
-        builder.append("  " + profile.args + ": ")
-        printFrames(builder, 2, List(profile.rootFrame))
-      })
+      builder.append(name + " overall: avg " + profiles.map(_.profileTotalNanoseconds).sum / profiles.size + " sum " + profiles.map(_.profileTotalNanoseconds).sum + ". ")
+      printFrames(builder, 0, "root", profiles.map(_.rootFrame))
     })
+    builder.append("Total over all profiles: " + totalNanoseconds)
     builder.mkString
   }
 
-  def printFrames(builder: mutable.StringBuilder, indent: Int, frames: List[FinishedFrame]): Unit = {
-    builder.append(frames.map(_.totalTime).sum / frames.size + "\n")
+  def printFrames(builder: mutable.StringBuilder, indent: Int, name: String, frames: List[FinishedFrame]): Unit = {
+    builder.append("  ".repeat(indent * 2) + name + ": avg " + frames.map(_.totalTime).sum / frames.size + " sum " + frames.map(_.totalTime).sum + "\n")
     val combinedChildren = frames.flatMap(_.children).groupBy(_._1).mapValues(_.flatMap(_._2))
     combinedChildren.foreach({ case (childName, combinedChildren) =>
-      builder.append("  ".repeat(indent * 2) + childName + ": ")
-      printFrames(builder, indent + 1, combinedChildren)
+      printFrames(builder, indent + 1, childName, combinedChildren)
     })
   }
 }

@@ -15,11 +15,13 @@ import scala.collection.immutable.List
 
 class StructTemplarCore(
     opts: TemplarOptions,
+    profiler: IProfiler,
+    newTemplataStore: () => ITemplatasStore,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: TemputsBox): Unit = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
-    val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, Map())
+    val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
     val structDef2 = StructDefinition2(emptyTupleFullName, List(), false, Immutable, List(), false)
     temputs.declareStruct(structDef2.getRef)
     temputs.declareStructMutability(structDef2.getRef, Immutable)
@@ -46,7 +48,7 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(structRunesEnv),
         fullName,
-        Map())
+        newTemplataStore())
     // when we have structs that contain functions, add this back in
 //        struct1.members
 //          .map(_.origin)
@@ -86,53 +88,54 @@ class StructTemplarCore(
       delegate.makeImmConcreteDestructor(temputs, structInnerEnv, structDef2.getRef)
     }
 
+    profiler.childFrame("struct ancestor interfaces", () => {
+      val implementedInterfaceRefs2 =
+        ancestorHelper.getParentInterfaces(temputs, structDef2.getRef);
 
-    val implementedInterfaceRefs2 =
-      ancestorHelper.getParentInterfaces(temputs, structDef2.getRef);
-
-    implementedInterfaceRefs2.foreach({
-      case (implementedInterfaceRefT) => {
-        structDef2.mutability match {
-          case Mutable => {
-            val sefResult =
-              delegate.scoutExpectedFunctionForPrototype(
-                structInnerEnv,
-                temputs,
-                struct1.range,
-                GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
-                List(),
-                List(ParamFilter(Coord(Own, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
-                List(),
-                true)
-            sefResult match {
-              case ScoutExpectedFunctionSuccess(_) =>
-              case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
-                vfail(sefResult.toString)
+      implementedInterfaceRefs2.foreach({
+        case (implementedInterfaceRefT) => {
+          structDef2.mutability match {
+            case Mutable => {
+              val sefResult =
+                delegate.scoutExpectedFunctionForPrototype(
+                  structInnerEnv,
+                  temputs,
+                  struct1.range,
+                  GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
+                  List(),
+                  List(ParamFilter(Coord(Own, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
+                  List(),
+                  true)
+              sefResult match {
+                case ScoutExpectedFunctionSuccess(_) =>
+                case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+                  vfail(sefResult.toString)
+                }
               }
             }
-          }
-          case Immutable => {
-            // If it's immutable, make sure there's a zero-arg destructor.
-            delegate.getImmInterfaceDestructorOverride(temputs, structInnerEnv, structDef2.getRef, implementedInterfaceRefT)
+            case Immutable => {
+              // If it's immutable, make sure there's a zero-arg destructor.
+              delegate.getImmInterfaceDestructorOverride(temputs, structInnerEnv, structDef2.getRef, implementedInterfaceRefT)
+            }
           }
         }
-      }
-    })
+      })
 
-    val ancestorInterfaces =
-      ancestorHelper.getAncestorInterfaces(temputs, temporaryStructRef)
+      val ancestorInterfaces =
+        ancestorHelper.getAncestorInterfaces(temputs, temporaryStructRef)
 
-    ancestorInterfaces.foreach({
-      case (ancestorInterface) => {
-        val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
-        if (structDef2.weakable != interfaceDefinition2.weakable) {
-          throw WeakableImplingMismatch(structDef2.weakable, interfaceDefinition2.weakable)
+      ancestorInterfaces.foreach({
+        case (ancestorInterface) => {
+          val interfaceDefinition2 = temputs.lookupInterface(ancestorInterface)
+          if (structDef2.weakable != interfaceDefinition2.weakable) {
+            throw WeakableImplingMismatch(structDef2.weakable, interfaceDefinition2.weakable)
+          }
+          temputs.addImpl(temporaryStructRef, ancestorInterface)
         }
-        temputs.addImpl(temporaryStructRef, ancestorInterface)
-      }
-    })
+      })
 
-    structDef2
+      structDef2
+    })
   }
 
   def translateCitizenAttributes(attrs: List[ICitizenAttributeA]): List[ICitizenAttribute2] = {
@@ -161,7 +164,7 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(interfaceRunesEnv),
         fullName,
-        Map())
+        newTemplataStore())
     val interfaceInnerEnv1 =
       interfaceInnerEnv0.addEntries(
         interfaceA.identifyingRunes.zip(coercedFinalTemplateArgs2)
@@ -215,21 +218,23 @@ class StructTemplarCore(
       delegate.getImmInterfaceDestructor(temputs, interfaceInnerEnv, interfaceDef2.getRef)
     }
 
-    val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
+    profiler.childFrame("interface ancestor interfaces", () => {
+      val _ = ancestorHelper.getParentInterfaces(temputs, temporaryInferfaceRef)
 
-    //
-    //      interface1.internalMethods.foldLeft(temputs)({
-    //        case (ntvFunction1) => {
-    //          if (ntvFunction1.isTemplate) {
-    //            // Do nothing, can't evaluate it now
-    //            temputs
-    //          } else {
-    //            FunctionTemplar.evaluateOrdinaryLightFunctionFromNonCallForTemputs(
-    //              temputs,
-    //              FunctionTemplata(interfaceInnerEnv, ntvFunction1))
-    //          }
-    //        }
-    //      })
+      //
+      //      interface1.internalMethods.foldLeft(temputs)({
+      //        case (ntvFunction1) => {
+      //          if (ntvFunction1.isTemplate) {
+      //            // Do nothing, can't evaluate it now
+      //            temputs
+      //          } else {
+      //            FunctionTemplar.evaluateOrdinaryLightFunctionFromNonCallForTemputs(
+      //              temputs,
+      //              FunctionTemplata(interfaceInnerEnv, ntvFunction1))
+      //          }
+      //        }
+      //      })
+    })
 
     (interfaceDef2)
   }
@@ -316,10 +321,12 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(containingFunctionEnv),
         fullName,
-        Map(
-          FunctionTemplateName2(CallTemplar.CALL_FUNCTION_NAME, CodeLocation2(-14, 0)) -> List(FunctionEnvEntry(functionA)),
-          nearName -> List(TemplataEnvEntry(KindTemplata(structRef))),
-          ClosureParamName2() -> List(TemplataEnvEntry(KindTemplata(structRef)))))
+        newTemplataStore()
+          .addEntries(
+            Map(
+              FunctionTemplateName2(CallTemplar.CALL_FUNCTION_NAME, CodeLocation2(-14, 0)) -> List(FunctionEnvEntry(functionA)),
+              nearName -> List(TemplataEnvEntry(KindTemplata(structRef))),
+              ClosureParamName2() -> List(TemplataEnvEntry(KindTemplata(structRef))))))
     // We return this from the function in case we want to eagerly compile it (which we do
     // if it's not a template).
     val functionTemplata =
@@ -366,7 +373,7 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(outerEnv),
         fullName,
-        Map())
+        newTemplataStore())
 
     val newStructDef = StructDefinition2(structInnerEnv.fullName, List(), false, packMutability, members, false);
     if (memberCoords.isEmpty && packMutability != Immutable)
@@ -463,7 +470,7 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(interfaceEnv),
         anonymousSubstructName,
-        structInnerEnvEntries.toMap)
+        newTemplataStore().addEntries(structInnerEnvEntries))
 
 
     temputs.addImpl(structRef, interfaceRef)
@@ -585,7 +592,8 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(outerEnv),
         structFullName,
-        Map(forwarderHeader.fullName.last -> List(TemplataEnvEntry(ExternFunctionTemplata(forwarderHeader)))))
+        newTemplataStore().addEntries(
+          Map(forwarderHeader.fullName.last -> List(TemplataEnvEntry(ExternFunctionTemplata(forwarderHeader))))))
     temputs.declareStructEnv(structRef, structInnerEnv)
 
     val structDef =

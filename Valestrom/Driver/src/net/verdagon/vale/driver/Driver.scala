@@ -135,7 +135,7 @@ object Driver {
             case Left(result) => result
           }
         val temputs =
-          new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler()).evaluate(astrouts) match {
+          new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler(), false).evaluate(astrouts) match {
             case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, filepathsAndSources, error))
             case Ok(x) => x
           }

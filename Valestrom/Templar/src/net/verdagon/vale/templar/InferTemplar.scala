@@ -16,10 +16,10 @@ import scala.collection.immutable.List
 class InferTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
-    delegate: IInfererDelegate[IEnvironment, TemputsBox]) {
+    delegate: IInfererDelegate[IEnvironment, Temputs]) {
   private def solve(
     env: IEnvironment,
-    state: TemputsBox,
+    state: Temputs,
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
@@ -30,7 +30,7 @@ class InferTemplar(
     checkAllRunesPresent: Boolean,
   ): (IInferSolveResult) = {
     profiler.childFrame("infer", () => {
-      Inferer.solve[IEnvironment, TemputsBox](
+      Inferer.solve[IEnvironment, Temputs](
         profiler,
         delegate,
         env,
@@ -55,7 +55,7 @@ class InferTemplar(
   //   (a: #1, b: #2) #3 { ...}
   def inferOrdinaryRules(
     env0: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
@@ -74,7 +74,7 @@ class InferTemplar(
 
   def inferFromExplicitTemplateArgs(
     env0: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     identifyingRunes: List[IRuneA],
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
@@ -105,7 +105,7 @@ class InferTemplar(
 
   def inferFromArgCoords(
     env0: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     identifyingRunes: List[IRuneA],
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],

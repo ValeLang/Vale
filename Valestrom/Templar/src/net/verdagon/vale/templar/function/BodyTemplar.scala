@@ -16,14 +16,14 @@ import scala.collection.immutable.{List, Nil, Set}
 
 trait IBodyTemplarDelegate {
   def evaluateBlockStatements(
-    temputs: TemputsBox,
+    temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
   (List[ReferenceExpression2], Set[Coord])
 
   def nonCheckingTranslateList(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     patterns1: List[AtomAP],
     patternInputExprs2: List[ReferenceExpression2]):
@@ -39,7 +39,7 @@ class BodyTemplar(
 
   def declareAndEvaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
-      temputs: TemputsBox,
+      temputs: Temputs,
       bfunction1: BFunctionA,
       params2: List[Parameter2],
       isDestructor: Boolean):
@@ -125,7 +125,7 @@ class BodyTemplar(
 
   private def evaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
-      temputs: TemputsBox,
+      temputs: Temputs,
       params1: List[ParameterA],
       params2: List[Parameter2],
       body1: BodyAE,
@@ -201,7 +201,7 @@ class BodyTemplar(
   // Produce the lets at the start of a function.
   private def evaluateLets(
       fate: FunctionEnvironmentBox,
-      temputs: TemputsBox,
+      temputs: Temputs,
       params1: List[ParameterA],
       params2: List[Parameter2]):
   (List[ReferenceExpression2]) = {

@@ -16,7 +16,7 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
   // See Virtuals doc for this function's purpose.
   // For the "Templated parent case"
   def evaluateParent(
-    env: IEnvironment, temputs: TemputsBox, sparkHeader: FunctionHeader2):
+    env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeader2):
   Unit = {
     vassert(sparkHeader.params.count(_.virtuality.nonEmpty) <= 1)
     val maybeSuperInterfaceAndIndex =
@@ -55,7 +55,7 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
           }
 
         // See MLIOET
-        val superInterfaceEnv = temputs.envByInterfaceRef(superInterfaceRef2)
+        val superInterfaceEnv = temputs.getEnvForInterfaceRef(superInterfaceRef2)
         val extraEnvsToLookIn = List(superInterfaceEnv)
 
         overloadTemplar.scoutExpectedFunctionForPrototype(

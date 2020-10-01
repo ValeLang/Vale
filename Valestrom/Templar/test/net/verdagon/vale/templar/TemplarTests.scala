@@ -224,7 +224,7 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.getTemputs()
 
-    temputs.functions.collect({ case x @ functionName("do") => x }).head.header.returnType shouldEqual Coord(Share, Int2())
+    temputs.getAllFunctions().collect({ case x @ functionName("do") => x }).head.header.returnType shouldEqual Coord(Share, Int2())
   }
 
   test("Calls destructor on local var") {
@@ -332,7 +332,7 @@ class TemplarTests extends FunSuite with Matchers {
         case sd @ StructDefinition2(simpleName("MyStruct"), _, false, Mutable, _, false) => sd
       }).get
 
-    vassert(temputs.impls.exists(impl => {
+    vassert(temputs.getAllImpls().exists(impl => {
       impl.struct == structDef.getRef && impl.interface == interfaceDef.getRef
     }))
   }
@@ -579,7 +579,7 @@ class TemplarTests extends FunSuite with Matchers {
         Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
 
-    temputs.functions.collectFirst({
+    temputs.getAllFunctions().collectFirst({
       case Function2(header @ functionName("doThing"), _, _) if header.getAbstractInterface != None => true
     }).get
   }

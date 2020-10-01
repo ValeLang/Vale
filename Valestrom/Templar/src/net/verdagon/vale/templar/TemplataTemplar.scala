@@ -14,20 +14,20 @@ import scala.collection.immutable.{List, Map, Set}
 trait ITemplataTemplarDelegate {
 
   def getAncestorInterfaceDistance(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2,
     ancestorInterfaceRef: InterfaceRef2):
   Option[Int]
 
   def getStructRef(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
   StructRef2
 
   def getInterfaceRef(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -36,10 +36,10 @@ trait ITemplataTemplarDelegate {
   InterfaceRef2
 
   def makeArraySequenceType(
-    env: IEnvironment, temputs: TemputsBox, mutability: Mutability, size: Int, type2: Coord):
+    env: IEnvironment, temputs: Temputs, mutability: Mutability, size: Int, type2: Coord):
   KnownSizeArrayT2
 
-  def getTupleKind(env: IEnvironment, state: TemputsBox, elements: List[Coord]): TupleT2
+  def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2
 }
 
 class TemplataTemplar(
@@ -47,7 +47,7 @@ class TemplataTemplar(
     delegate: ITemplataTemplarDelegate) {
 
   def getTypeDistance(
-    temputs: TemputsBox,
+    temputs: Temputs,
     sourcePointerType: Coord,
     targetPointerType: Coord):
   (Option[TypeDistance]) = {
@@ -56,19 +56,19 @@ class TemplataTemplar(
 
   def evaluateTemplex(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     templex: ITemplexA
   ): (ITemplata) = {
     makeInner().evaluateTemplex(env, temputs, templex)
   }
 
-  def evaluateTemplexes(env: IEnvironment, temputs: TemputsBox, templexes: List[ITemplexA]):
+  def evaluateTemplexes(env: IEnvironment, temputs: Temputs, templexes: List[ITemplexA]):
   (List[ITemplata]) = {
     makeInner().evaluateTemplexes(env, temputs, templexes)
   }
 
   def pointifyReferend(
-    temputs: TemputsBox,
+    temputs: Temputs,
     referend: Kind,
     ownershipIfMutable: Ownership):
   Coord = {
@@ -76,7 +76,7 @@ class TemplataTemplar(
   }
 
   def isTypeConvertible(
-    temputs: TemputsBox,
+    temputs: Temputs,
     sourcePointerType: Coord,
     targetPointerType: Coord):
   (Boolean) = {
@@ -84,7 +84,7 @@ class TemplataTemplar(
   }
 
   def isTypeTriviallyConvertible(
-    temputs: TemputsBox,
+    temputs: Temputs,
     sourcePointerType: Coord,
     targetPointerType: Coord):
   (Boolean) = {
@@ -94,7 +94,7 @@ class TemplataTemplar(
 //
 //  def lookupTemplata(
 //    env: IEnvironmentBox,
-//    temputs: TemputsBox,
+//    temputs: Temputs,
 //    name: String
 //  ): (Option[ITemplata]) = {
 //    env match {
@@ -114,7 +114,7 @@ class TemplataTemplar(
 //
 //  private def lookupTemplataFromGlobalEnv(
 //    env: IEnvironmentBox,
-//    temputs: TemputsBox,
+//    temputs: Temputs,
 //    name: String
 //  ): (Option[ITemplata]) = {
 //    val IEnvironment(
@@ -163,9 +163,9 @@ class TemplataTemplar(
 //    return (None)
 //  }
 
-  def makeInner(): TemplataTemplarInner[IEnvironment, TemputsBox] = {
-    new TemplataTemplarInner[IEnvironment, TemputsBox](
-      new ITemplataTemplarInnerDelegate[IEnvironment, TemputsBox] {
+  def makeInner(): TemplataTemplarInner[IEnvironment, Temputs] = {
+    new TemplataTemplarInner[IEnvironment, Temputs](
+      new ITemplataTemplarInnerDelegate[IEnvironment, Temputs] {
         override def lookupTemplataImprecise(env: IEnvironment, name: IImpreciseNameStepA): ITemplata = {
           // Changed this from AnythingLookupContext to TemplataLookupContext
           // because this is called from StructTemplar to figure out its members.
@@ -180,21 +180,21 @@ class TemplataTemplar(
           vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
         }
 
-        override def getMutability(temputs: TemputsBox, kind: Kind): Mutability = {
+        override def getMutability(temputs: Temputs, kind: Kind): Mutability = {
           Templar.getMutability(temputs, kind)
         }
 
-//        override def getPackKind(env: IEnvironment, temputs: TemputsBox, types2: List[Coord]):
+//        override def getPackKind(env: IEnvironment, temputs: Temputs, types2: List[Coord]):
 //        (PackT2, Mutability) = {
 //          PackTemplar.makePackType(env.globalEnv, temputs, types2)
 //        }
 
-        override def evaluateInterfaceTemplata(state: TemputsBox, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
+        override def evaluateInterfaceTemplata(state: Temputs, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
         (Kind) = {
           delegate.getInterfaceRef(state, callRange, templata, templateArgs)
         }
 
-        override def evaluateStructTemplata(state: TemputsBox, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]):
+        override def evaluateStructTemplata(state: Temputs, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]):
         (Kind) = {
           delegate.getStructRef(state, callRange, templata, templateArgs)
         }
@@ -213,18 +213,18 @@ class TemplataTemplar(
         //(state, ReferendTemplata(arrayType))
 
         override def getAncestorInterfaceDistance(
-          temputs: TemputsBox,
+          temputs: Temputs,
           descendantCitizenRef: CitizenRef2,
           ancestorInterfaceRef: InterfaceRef2):
         (Option[Int]) = {
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
-        override def getArraySequenceKind(env: IEnvironment, state: TemputsBox, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+        override def getArraySequenceKind(env: IEnvironment, state: Temputs, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
           delegate.makeArraySequenceType(env, state, mutability, size, element)
         }
 
-        override def getTupleKind(env: IEnvironment, state: TemputsBox, elements: List[Coord]): TupleT2 = {
+        override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2 = {
           delegate.getTupleKind(env, state, elements)
         }
 

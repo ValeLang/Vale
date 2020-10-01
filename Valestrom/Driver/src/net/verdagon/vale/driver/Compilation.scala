@@ -7,7 +7,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
-import net.verdagon.vale.templar.{CompleteProgram2, Templar, TemplarErrorHumanizer, Temputs}
+import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer, Temputs}
 import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData

@@ -14,7 +14,7 @@ class SequenceTemplar(
     destructorTemplar: DestructorTemplar) {
   def evaluate(
     env: FunctionEnvironmentBox,
-    temputs: TemputsBox,
+    temputs: Temputs,
     exprs2: List[ReferenceExpression2]):
   (Expression2) = {
 
@@ -37,7 +37,7 @@ class SequenceTemplar(
 
   def makeTupleType(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     types2: List[Coord]):
   (TupleT2, Mutability) = {
     val (structRef, mutability) =

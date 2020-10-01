@@ -40,7 +40,7 @@ class PatternTemplar(
   // - Exports, to toss into the environment
   // - Local variables
   def nonCheckingTranslateList(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
       patterns1: List[AtomAP],
       patternInputExprs2: List[ReferenceExpression2]):
@@ -64,7 +64,7 @@ class PatternTemplar(
 
   // Note: This will unlet/drop the input expression. Be warned.
   def nonCheckingInferAndTranslate(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       rules: List[IRulexAR],
       typeByRune: Map[IRuneA, ITemplataType],
@@ -89,7 +89,7 @@ class PatternTemplar(
 
   // Note: This will unlet/drop the input expression. Be warned.
   def nonCheckingTranslate(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       pattern: AtomAP,
       inputExpr: ReferenceExpression2):
@@ -106,7 +106,7 @@ class PatternTemplar(
   // - exports, to toss into the env
   // - function state
   private def innerNonCheckingTranslate(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fate: FunctionEnvironmentBox,
       pattern: AtomAP,
       unconvertedInputExpr: ReferenceExpression2):
@@ -317,7 +317,7 @@ class PatternTemplar(
   }
 
   private def nonCheckingTranslateArraySeq(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
     innerPatternMaybes: List[AtomAP],
@@ -379,7 +379,7 @@ class PatternTemplar(
   }
 
   private def nonCheckingTranslateStructInner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
     innerPatternMaybes: List[AtomAP],
@@ -387,7 +387,7 @@ class PatternTemplar(
     inputStructExpr: ReferenceExpression2):
   (List[ReferenceExpression2]) = {
     val Coord(structOwnership, structRef2 @ StructRef2(_)) = structType2
-    val structDef2 = temputs.structDefsByRef(structRef2)
+    val structDef2 = temputs.getStructDefForRef(structRef2)
     // We don't pattern match against closure structs.
     val memberTypes = structDef2.members.map(_.tyype.expectReferenceMember().reference)
 
@@ -442,7 +442,7 @@ class PatternTemplar(
   }
 //
 //  // Assumes the templated stuff has already been put into this environment
-//  def getParameterType2(env: IEnvironmentBox, temputs: TemputsBox, param1: AtomAP):
+//  def getParameterType2(env: IEnvironmentBox, temputs: Temputs, param1: AtomAP):
 //  (Temputs, Coord) = {
 //    val type1 = getPatternType1(param1)
 //    val type2 = ConvertHelper.evaluateType(env, temputs, type1)
@@ -450,7 +450,7 @@ class PatternTemplar(
 //  }
 //
 //  // Assumes the templated stuff has already been put into this environment
-//  def getPatternType2(env: IEnvironmentBox, temputs: TemputsBox, pattern1: AtomAP):
+//  def getPatternType2(env: IEnvironmentBox, temputs: Temputs, pattern1: AtomAP):
 //  (Temputs, Coord) = {
 //    val type1 = getPatternType1(pattern1)
 //    val type2 =
@@ -514,7 +514,7 @@ class PatternTemplar(
 //    })
 //  }
   private def makeLetsForOwn(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     innerPatternMaybes: List[AtomAP],
     memberLocalVariables: List[ReferenceLocalVariable2]

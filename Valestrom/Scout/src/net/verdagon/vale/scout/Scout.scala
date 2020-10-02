@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.{Err, Ok, Result, vimpl}
+import net.verdagon.vale.{Err, Ok, Result, vfail, vimpl, vwat}
 
 import scala.util.parsing.input.OffsetPosition
 
@@ -105,10 +105,11 @@ object Scout {
   private def scoutImpl(file: Int, impl0: ImplP): ImplS = {
     val ImplP(range, identifyingRuneNames, maybeTemplateRulesP, struct, interface) = impl0
 
+
     val templateRulesP = maybeTemplateRulesP.toList.flatMap(_.rules)
 
     val codeLocation = Scout.evalPos(file, range.begin)
-    val nameS = ImplNameS(codeLocation)
+    val implName = ImplNameS(getHumanName(struct), codeLocation)
 
     val identifyingRunes: List[IRuneS] =
       identifyingRuneNames
@@ -120,7 +121,7 @@ object Scout {
         .map(identifyingRuneName => CodeRuneS(identifyingRuneName))
     val userDeclaredRunes = identifyingRunes ++ runesFromRules
 
-    val implEnv = Environment(file, None, nameS, userDeclaredRunes.toSet)
+    val implEnv = Environment(file, None, implName, userDeclaredRunes.toSet)
 
     val rate = RuleStateBox(RuleState(implEnv.name, 0))
     val userRulesS =
@@ -154,7 +155,7 @@ object Scout {
 
     ImplS(
       Scout.evalRange(file, range),
-      nameS,
+      implName,
       rulesFromStructDirectionS,
       rulesFromInterfaceDirectionS,
       knowableValueRunes ++ (if (isTemplate) List() else List(structRune, interfaceRune)),
@@ -332,5 +333,25 @@ object Scout {
 
   def evalPos(file: Int, pos: Int): CodeLocationS = {
     CodeLocationS(file, pos)
+  }
+
+  def getHumanName(templex: ITemplexPT): String = {
+    templex match {
+      case NullablePT(_, inner) => getHumanName(inner)
+      case InlinePT(_, inner) => getHumanName(inner)
+      case PermissionedPT(_, permission, inner) => getHumanName(inner)
+      case OwnershippedPT(_, ownership, inner) => getHumanName(inner)
+      case AnonymousRunePT(_) => vwat()
+      case NameOrRunePT(StringP(_, name)) => name
+      case CallPT(_, template, args) => getHumanName(template)
+      case RepeaterSequencePT(_, mutability, size, element) => vwat()
+      case ManualSequencePT(_, members) => vwat()
+      case IntPT(_, value) => vwat()
+      case BoolPT(_, value) => vwat()
+      case OwnershipPT(_, ownership) => vwat()
+      case MutabilityPT(_, mutability) => vwat()
+      case LocationPT(_, location) => vwat()
+      case PermissionPT(_, permission) => vwat()
+    }
   }
 }

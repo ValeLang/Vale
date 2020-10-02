@@ -63,7 +63,7 @@ object FunctionTemplar {
 class FunctionTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
-    newTemplataStore: () => ITemplatasStore,
+    newTemplataStore: () => TemplatasStore,
     templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
     convertHelper: ConvertHelper,

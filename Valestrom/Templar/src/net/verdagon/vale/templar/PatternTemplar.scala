@@ -80,7 +80,7 @@ class PatternTemplar(
           case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
         }
 
-      fate.addEntries(templatasByRune.map({ case (key, value) => (key, value) }).toMap)
+      fate.addEntries(opts.useOptimization, templatasByRune.map({ case (key, value) => (key, value) }).toMap)
 
       innerNonCheckingTranslate(
         temputs, fate, pattern, inputExpr)

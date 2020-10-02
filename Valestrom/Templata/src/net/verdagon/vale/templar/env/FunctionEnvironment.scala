@@ -14,7 +14,7 @@ case class BuildingFunctionEnvironmentWithClosureds(
   fullName: FullName2[BuildingFunctionNameWithClosureds2],
   function: FunctionA,
   variables: List[IVariable2],
-  templatas: ITemplatasStore
+  templatas: TemplatasStore
 ) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: NamespaceEnvironment[IName2] = parentEnv.globalEnv
@@ -37,7 +37,7 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
   fullName: FullName2[BuildingFunctionNameWithClosuredsAndTemplateArgs2],
   function: FunctionA,
   variables: List[IVariable2],
-  templatas: ITemplatasStore
+  templatas: TemplatasStore
 ) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
   override def globalEnv: NamespaceEnvironment[IName2] = parentEnv.globalEnv
@@ -60,7 +60,7 @@ case class FunctionEnvironment(
   parentEnv: IEnvironment,
   fullName: FullName2[IFunctionName2], // Includes the name of the function
   function: FunctionA,
-  templatas: ITemplatasStore,
+  templatas: TemplatasStore,
   maybeReturnType: Option[Coord],
 
   // The scout information for locals for this block and all parent blocks in this function.
@@ -120,24 +120,24 @@ case class FunctionEnvironment(
       (0 until n).map(_ + varCounter).toList)
   }
 
-  def addEntry(name: IName2, entry: IEnvEntry): FunctionEnvironment = {
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): FunctionEnvironment = {
     FunctionEnvironment(
       parentEnv,
       fullName,
       function,
-      templatas.addEntry(name, entry),
+      templatas.addEntry(useOptimization, name, entry),
       maybeReturnType,
       scoutedLocals,
       varCounter,
       variables,
       moveds)
   }
-  def addEntries(newEntries: Map[IName2, List[IEnvEntry]]): FunctionEnvironment = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): FunctionEnvironment = {
     FunctionEnvironment(
       parentEnv,
       fullName,
       function,
-      templatas.addEntries(newEntries),
+      templatas.addEntries(useOptimization, newEntries),
       maybeReturnType,
       scoutedLocals,
       varCounter,
@@ -192,7 +192,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def parentEnv: IEnvironment = functionEnvironment.parentEnv
   def fullName: FullName2[IFunctionName2] = functionEnvironment.fullName
   def function: FunctionA = functionEnvironment.function
-  def templatas: ITemplatasStore = functionEnvironment.templatas
+  def templatas: TemplatasStore = functionEnvironment.templatas
   def maybeReturnType: Option[Coord] = functionEnvironment.maybeReturnType
   def scoutedLocals: List[LocalVariableA] = functionEnvironment.scoutedLocals
   def varCounter: Int = functionEnvironment.varCounter
@@ -235,11 +235,11 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     counters
   }
 
-  def addEntry(name: IName2, entry: IEnvEntry): Unit = {
-    functionEnvironment = functionEnvironment.addEntry(name, entry)
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): Unit = {
+    functionEnvironment = functionEnvironment.addEntry(useOptimization, name, entry)
   }
-  def addEntries(newEntries: Map[IName2, List[IEnvEntry]]): Unit= {
-    functionEnvironment = functionEnvironment.addEntries(newEntries)
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): Unit= {
+    functionEnvironment = functionEnvironment.addEntries(useOptimization, newEntries)
   }
 
   override def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata] = {

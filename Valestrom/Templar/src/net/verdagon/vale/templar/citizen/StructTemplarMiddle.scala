@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.{FunctionEnvironment, IEnvironment, ITemplatasStore, InterfaceEnvEntry, NamespaceEnvironment, TemplataEnvEntry}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, IEnvironment, TemplatasStore, InterfaceEnvEntry, NamespaceEnvironment, TemplataEnvEntry}
 import net.verdagon.vale.templar.function.{FunctionTemplar, FunctionTemplarCore, VirtualTemplar}
 import net.verdagon.vale.{IProfiler, vfail, vimpl}
 
@@ -14,7 +14,7 @@ import scala.collection.immutable.List
 class StructTemplarMiddle(
     opts: TemplarOptions,
     profiler: IProfiler,
-    newTemplataStore: () => ITemplatasStore,
+    newTemplataStore: () => TemplatasStore,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   val core = new StructTemplarCore(opts, profiler, newTemplataStore, ancestorHelper, delegate)
@@ -43,6 +43,7 @@ class StructTemplarMiddle(
 
     val localEnv =
       structOuterEnv.addEntries(
+        opts.useOptimization,
         templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
     val structDefinition2 =
       core.maakeStruct(
@@ -62,6 +63,7 @@ class StructTemplarMiddle(
 
     val localEnv =
       interfaceOuterEnv.addEntries(
+        opts.useOptimization,
         templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
     val interfaceDefinition2 =
       core.makeInterface(

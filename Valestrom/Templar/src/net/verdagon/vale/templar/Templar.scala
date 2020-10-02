@@ -67,10 +67,10 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
   val opts = TemplarOptions(generatorsById, debugOut, verbose, useOptimization)
 
-  val newTemplataStore: () => ITemplatasStore =
+  val newTemplataStore: () => TemplatasStore =
     () => {
 //      if (opts.useOptimization) {
-        FastTemplatasIndex(Map(), Map())
+        TemplatasStore(Map(), Map())
 //      } else {
 //        SimpleTemplatasIndex(Map())
 //      }
@@ -395,6 +395,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             FullName2(List(), GlobalNamespaceName2()),
             newTemplataStore()
                 .addEntries(
+                  opts.useOptimization,
                   Map(
                     PrimitiveName2("int") -> List(TemplataEnvEntry(KindTemplata(Int2()))),
                     PrimitiveName2("Array") -> List(TemplataEnvEntry(ArrayTemplateTemplata())),
@@ -406,13 +407,13 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         val env1b =
           BuiltInFunctions.builtIns.foldLeft(env0)({
             case (env1a, builtIn) => {
-              env1a.addUnevaluatedFunction(builtIn)
+              env1a.addUnevaluatedFunction(opts.useOptimization, builtIn)
             }
           })
         val env3 =
           generatedFunctions.foldLeft(env1b)({
             case (env2, (generatedFunction, generator)) => {
-              env2.addUnevaluatedFunction(generatedFunction)
+              env2.addUnevaluatedFunction(opts.useOptimization, generatedFunction)
             }
           })
 
@@ -420,7 +421,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         // struct or interface is figuring out what it extends.
         val env5 =
         impls1.foldLeft(env3)({
-          case (env4, impl1) => env4.addEntry(NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
+          case (env4, impl1) => env4.addEntry(opts.useOptimization, NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
         })
         val env7 =
           structsA.foldLeft(env5)({
@@ -434,7 +435,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         val env11 =
           functions1.foldLeft(env9)({
             case (env10, functionS) => {
-              env10.addUnevaluatedFunction(functionS)
+              env10.addUnevaluatedFunction(opts.useOptimization, functionS)
             }
           })
 
@@ -526,9 +527,10 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
     val TopLevelCitizenDeclarationNameA(humanName, codeLocationS) = interfaceA.name
     val name = CitizenTemplateName2(humanName, NameTranslator.translateCodeLocation(codeLocationS))
 
-    val env1 = env0.addEntry(name, interfaceEnvEntry)
+    val env1 = env0.addEntry(opts.useOptimization, name, interfaceEnvEntry)
     val env2 =
       env1.addUnevaluatedFunction(
+        opts.useOptimization,
         structTemplar.getInterfaceConstructor(interfaceA))
 
     // Once we have sub-interfaces and sub-structs, we could recursively call this function.
@@ -544,9 +546,10 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
   ): NamespaceEnvironment[GlobalNamespaceName2] = {
     val interfaceEnvEntry = StructEnvEntry(structA)
 
-    val env1 = env0.addEntry(NameTranslator.translateNameStep(structA.name), interfaceEnvEntry)
+    val env1 = env0.addEntry(opts.useOptimization, NameTranslator.translateNameStep(structA.name), interfaceEnvEntry)
     val env2 =
       env1.addUnevaluatedFunction(
+        opts.useOptimization,
         structTemplar.getConstructor(structA))
 
     // To add once we have methods inside structs:

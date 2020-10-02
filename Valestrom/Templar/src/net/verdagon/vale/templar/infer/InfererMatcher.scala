@@ -36,10 +36,11 @@ trait IInfererMatcherDelegate[Env, State] {
   def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
 
   def lookupTemplata(env: Env, name: IName2): ITemplata
-  def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata
+  def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata
 }
 
 class InfererMatcher[Env, State](
+    profiler: IProfiler,
     templataTemplar: TemplataTemplarInner[Env, State],
     equator: InfererEquator[Env, State],
     evaluate: (Env, State, Map[IRune2, ITemplataType], Set[IRune2], InferencesBox, IRulexTR) => (IInferEvaluateResult[ITemplata]),
@@ -354,7 +355,7 @@ class InfererMatcher[Env, State](
         }
       }
       case (NameTT(range, expectedName, expectedType), actualTemplata) => {
-        val expectedUncoercedTemplata = delegate.lookupTemplata(env, expectedName)
+        val expectedUncoercedTemplata = delegate.lookupTemplata(profiler, env, expectedName)
 
         if (templataTemplar.uncoercedTemplataEquals(env, state, actualTemplata, expectedUncoercedTemplata, expectedType)) {
           return InferMatchSuccess(true)

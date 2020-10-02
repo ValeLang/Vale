@@ -8,7 +8,7 @@ object simpleName {
 //  }
   def unapply(fullName: FullName2[IName2]): Option[String] = {
     fullName.last match {
-      case ImplDeclareName2(_) => None
+      case ImplDeclareName2(_, _) => None
       case LetName2(_) => None
       case UnnamedLocalName2(_) => None
       case ClosureParamName2() => None

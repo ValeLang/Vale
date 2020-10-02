@@ -13,7 +13,7 @@ import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Env
 
 trait IConvertHelperDelegate {
   def isAncestor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2,
     ancestorInterfaceRef: InterfaceRef2):
   Boolean
@@ -24,7 +24,7 @@ class ConvertHelper(
     delegate: IConvertHelperDelegate) {
   def convertExprs(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       sourceExprs: List[ReferenceExpression2],
       targetPointerTypes: List[Coord]):
   (List[ReferenceExpression2]) = {
@@ -42,7 +42,7 @@ class ConvertHelper(
 
   def convert(
       env: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       sourceExpr: ReferenceExpression2,
       targetPointerType: Coord):
   (ReferenceExpression2) = {
@@ -103,7 +103,7 @@ class ConvertHelper(
 
   def convert(
     env: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     sourceExpr: ReferenceExpression2,
     sourceStructRef: StructRef2,
     targetInterfaceRef: InterfaceRef2):

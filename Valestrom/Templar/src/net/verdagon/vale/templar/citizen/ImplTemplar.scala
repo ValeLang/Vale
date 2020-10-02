@@ -7,13 +7,13 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.{vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
 trait IAncestorHelperDelegate {
   def getInterfaceRef(
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     // We take the entire templata (which includes environment and parents) so we can incorporate
     // their rules as needed
@@ -24,11 +24,12 @@ trait IAncestorHelperDelegate {
 
 class AncestorHelper(
     opts: TemplarOptions,
+    profiler: IProfiler,
     inferTemplar: InferTemplar,
     delegate: IAncestorHelperDelegate) {
 
   private def getMaybeImplementedInterface(
-    temputs: TemputsBox,
+    temputs: Temputs,
     childCitizenRef: CitizenRef2,
     implTemplata: ImplTemplata):
   (Option[InterfaceRef2]) = {
@@ -40,17 +41,19 @@ class AncestorHelper(
     val rules = rulesFromStructDirection
 
     val result =
-      inferTemplar.inferFromExplicitTemplateArgs(
-        env,
-        temputs,
-        List(structKindRune),
-        rules,
-        typeByRune,
-        localRunes,
-        List(),
-        None,
-        RangeS.internal(-1875),
-        List(KindTemplata(childCitizenRef)))
+      profiler.childFrame("getMaybeImplementedInterface", () => {
+        inferTemplar.inferFromExplicitTemplateArgs(
+          env,
+          temputs,
+          List(structKindRune),
+          rules,
+          typeByRune,
+          localRunes,
+          List(),
+          None,
+          RangeS.internal(-1875),
+          List(KindTemplata(childCitizenRef)))
+      })
 
     result match {
       case isf @ InferSolveFailure(_, _, _, _, _, _, _) => {
@@ -73,15 +76,21 @@ class AncestorHelper(
   }
 
   def getParentInterfaces(
-    temputs: TemputsBox,
+    temputs: Temputs,
     childCitizenRef: CitizenRef2):
   (List[InterfaceRef2]) = {
+    val needleImplName =
+      NameTranslator.getImplNameForName(opts.useOptimization, childCitizenRef) match {
+        case None => return List()
+        case Some(x) => x
+      }
+
     val citizenEnv =
       childCitizenRef match {
-        case sr @ StructRef2(_) => vassertSome(temputs.envByStructRef.get(sr))
-        case ir @ InterfaceRef2(_) => vassertSome(temputs.envByInterfaceRef.get(ir))
+        case sr @ StructRef2(_) => temputs.getEnvForStructRef(sr)
+        case ir @ InterfaceRef2(_) => temputs.getEnvForInterfaceRef(ir)
       }
-    citizenEnv.getAllTemplatasWithName(ImplImpreciseNameA(), Set(TemplataLookupContext, ExpressionLookupContext))
+    citizenEnv.getAllTemplatasWithName(profiler, needleImplName, Set(TemplataLookupContext, ExpressionLookupContext))
       .flatMap({
         case it @ ImplTemplata(_, _) => getMaybeImplementedInterface(temputs, childCitizenRef, it).toList
         case ExternImplTemplata(structRef, interfaceRef) => if (structRef == childCitizenRef) List(interfaceRef) else List()
@@ -90,37 +99,43 @@ class AncestorHelper(
   }
 
   def getAncestorInterfaces(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2):
   (Set[InterfaceRef2]) = {
-    val ancestorInterfacesWithDistance =
-      getAncestorInterfacesWithDistance(temputs, descendantCitizenRef)
-    (ancestorInterfacesWithDistance.keySet)
+    profiler.childFrame("getAncestorInterfaces", () => {
+      val ancestorInterfacesWithDistance =
+        getAncestorInterfacesWithDistance(temputs, descendantCitizenRef)
+      (ancestorInterfacesWithDistance.keySet)
+    })
   }
 
   def isAncestor(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2,
     ancestorInterfaceRef: InterfaceRef2):
   (Boolean) = {
-    val ancestorInterfacesWithDistance =
-      getAncestorInterfacesWithDistance(temputs, descendantCitizenRef)
-    (ancestorInterfacesWithDistance.contains(ancestorInterfaceRef))
+    profiler.childFrame("isAncestor", () => {
+      val ancestorInterfacesWithDistance =
+        getAncestorInterfacesWithDistance(temputs, descendantCitizenRef)
+      (ancestorInterfacesWithDistance.contains(ancestorInterfaceRef))
+    })
   }
 
   def getAncestorInterfaceDistance(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2,
     ancestorInterfaceRef: InterfaceRef2):
   (Option[Int]) = {
-    val ancestorInterfacesWithDistance =
-      getAncestorInterfacesWithDistance(temputs, descendantCitizenRef)
-    (ancestorInterfacesWithDistance.get(ancestorInterfaceRef))
+    profiler.childFrame("getAncestorInterfaceDistance", () => {
+      val ancestorInterfacesWithDistance =
+        getAncestorInterfacesWithDistance(temputs, descendantCitizenRef)
+      (ancestorInterfacesWithDistance.get(ancestorInterfaceRef))
+    })
   }
 
   // Doesn't include self
   def getAncestorInterfacesWithDistance(
-    temputs: TemputsBox,
+    temputs: Temputs,
     descendantCitizenRef: CitizenRef2):
   (Map[InterfaceRef2, Int]) = {
     val parentInterfaceRefs =
@@ -137,7 +152,7 @@ class AncestorHelper(
   }
 
   private def getAncestorInterfacesInner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     // This is so we can know what we've already searched.
     nearestDistanceByInterfaceRef: Map[InterfaceRef2, Int],
     // All the interfaces that are at most this distance away are inside foundSoFar.

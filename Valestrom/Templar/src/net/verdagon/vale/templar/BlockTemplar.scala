@@ -8,11 +8,11 @@ import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.{vassert, vcurious}
 
-import scala.collection.immutable.{List, Set}
+import scala.collection.immutable.{List, Map, Set}
 
 trait IBlockTemplarDelegate {
   def evaluateAndCoerceToReferenceExpression(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     expr1: IExpressionAE):
   (ReferenceExpression2, Set[Coord])
@@ -20,7 +20,8 @@ trait IBlockTemplarDelegate {
 
 class BlockTemplar(
     opts: TemplarOptions,
-  dropHelper: DropHelper,
+    newTemplataStore: () => TemplatasStore,
+    dropHelper: DropHelper,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {
   // This is NOT USED FOR EVERY BLOCK!
@@ -28,13 +29,21 @@ class BlockTemplar(
   // This can serve as an example for how we can use together all the tools provided by BlockTemplar.
   def evaluateBlock(
     parentFate: FunctionEnvironmentBox,
-    temputs: TemputsBox,
+    temputs: Temputs,
     block1: BlockAE):
   (Block2, Set[Coord]) = {
     val fate =
       FunctionEnvironmentBox(
         FunctionEnvironment(
-          parentFate.snapshot, parentFate.fullName, parentFate.function, Map(), parentFate.maybeReturnType, List(), parentFate.varCounter, List(), Set()))
+          parentFate.snapshot,
+          parentFate.fullName,
+          parentFate.function,
+          newTemplataStore(),
+          parentFate.maybeReturnType,
+          List(),
+          parentFate.varCounter,
+          List(),
+          Set()))
     val startingFate = fate.snapshot
 
     fate.addScoutedLocals(block1.locals)
@@ -56,7 +65,7 @@ class BlockTemplar(
   }
 
   def evaluateBlockStatements(
-    temputs: TemputsBox,
+    temputs: Temputs,
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
@@ -136,7 +145,7 @@ class BlockTemplar(
   }
 
   private def evaluateBlockStatementsInner(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     expr1: List[IExpressionAE]):
   (List[ReferenceExpression2], Set[Coord]) = {
@@ -169,7 +178,7 @@ class BlockTemplar(
   }
 
   def mootAll(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     variables: List[ILocalVariable2]):
   (List[ReferenceExpression2]) = {

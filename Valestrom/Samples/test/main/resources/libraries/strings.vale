@@ -1,0 +1,169 @@
+
+fn vstr_indexOf(
+  haystackContainer str,
+  haystackBegin int,
+  haystackEnd int,
+  needleContainer str,
+  needleBegin int,
+  needleEnd int)
+int extern;
+
+fn vstr_substring(
+  haystackContainer str,
+  begin int,
+  end int)
+str extern;
+
+fn vstr_eq(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+bool extern;
+
+fn vstr_cmp(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+int extern;
+
+struct StrSlice imm {
+  string str;
+  begin int;
+  end int;
+  // Will soon have a private bytesBegin and bytesEnd
+}
+
+fn find(a str, b str) Opt<StrSlice> { find(a.slice(), b.slice()) }
+fn find(a str, b StrSlice) Opt<StrSlice> { find(a.slice(), b) }
+fn find(a StrSlice, b str) Opt<StrSlice> { find(a, b.slice()) }
+fn find(a StrSlice, b StrSlice) Opt<StrSlice> {
+  offsetAfterBegin =
+      vstr_indexOf(
+          a.string, a.begin, a.end,
+          b.string, b.begin, b.end);
+
+  = if (offsetAfterBegin < 0) {
+      r Opt<StrSlice> = None<StrSlice>();
+      = r;
+    } else {
+      r Opt<StrSlice> =
+          Some<StrSlice>(
+              StrSlice(
+                  a.string,
+                  a.begin + offsetAfterBegin,
+                  a.begin + offsetAfterBegin + b.len()));
+      = r;
+    }
+}
+
+fn splitAt(haystack StrSlice, needle StrSlice) Opt<[StrSlice, StrSlice]> {
+  offsetAfterBegin =
+      vstr_indexOf(
+          haystack.string, haystack.begin, haystack.end,
+          needle.string, needle.begin, needle.end);
+  = if (offsetAfterBegin < 0) {
+      r Opt<StrSlice> = None<StrSlice>();
+      = r;
+    } else {
+      r Opt<[StrSlice, StrSlice]> =
+          Some<[StrSlice, StrSlice]>(
+              [
+                  StrSlice(
+                      haystack.string,
+                      haystack.begin,
+                      haystack.begin + offsetAfterBegin),
+                  StrSlice(
+                      haystack.string,
+                      haystack.begin + offsetAfterBegin + needle.len(),
+                      haystack.end)
+              ]);
+      = r;
+    }
+}
+
+fn slice(s str) StrSlice {
+  StrSlice(s, 0, s.len())
+}
+
+fn slice(s str, begin int) StrSlice { s.slice().slice(begin) }
+fn slice(s StrSlice, begin int) StrSlice {
+  newBegin = s.begin + begin;
+  vassert(newBegin < s.string.len());
+  = StrSlice(s.string, newBegin, s.end);
+}
+
+fn len(s StrSlice) {
+  ret s.end - s.begin;
+}
+
+fn slice(s str, begin int, end int) StrSlice {
+  vassert(begin >= 0);
+  vassert(end >= 0);
+  vassert(begin < s.len());
+  vassert(end <= s.len());
+  vassert(end >= begin);
+  = StrSlice(s, begin, end);
+}
+
+fn slice(s StrSlice, begin int, end int) StrSlice {
+  vassert(begin >= 0);
+  vassert(end >= 0);
+  vassert(begin < s.len());
+  vassert(end <= s.len());
+  vassert(end >= begin);
+
+  newGlyphBeginOffset = s.begin + begin;
+  newGlyphEndOffset = s.begin + end;
+  = StrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
+}
+
+
+fn str(s StrSlice) str {
+  vassert(s.begin >= 0);
+  vassert(s.end >= 0);
+  vassert(s.len() >= 0);
+  vassert(s.begin < s.end);
+  ret vstr_substring(s.string, s.begin, s.len());
+}
+
+fn ==(a str, b StrSlice) bool { a.slice() == b }
+fn ==(a StrSlice, b str) bool { a == b.slice() }
+fn ==(a StrSlice, b StrSlice) bool {
+  vstr_eq(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+fn <=>(a str, b str) int { a.slice() <=> b.slice() }
+fn <=>(a str, b StrSlice) int { a.slice() <=> b }
+fn <=>(a StrSlice, b str) int { a <=> b.slice() }
+fn <=>(a StrSlice, b StrSlice) int {
+  vstr_cmp(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+
+fn startsWith(a str, b str) bool { startsWith(a.slice(), b.slice()) }
+fn startsWith(a str, b StrSlice) bool { startsWith(a.slice(), b) }
+fn startsWith(a StrSlice, b str) bool { startsWith(a, b.slice()) }
+fn startsWith(a StrSlice, b StrSlice) bool {
+  a.slice(0, b.len()) == b
+}
+
+
+fn endsWith(a str, b str) bool { endsWith(a.slice(), b.slice()) }
+fn endsWith(a str, b StrSlice) bool { endsWith(a.slice(), b) }
+fn endsWith(a StrSlice, b str) bool { endsWith(a, b.slice()) }
+fn endsWith(a StrSlice, b StrSlice) bool {
+  = a.slice(a.len() - b.len(), a.len()) == b;
+}
+
+
+fn splice(original str, at int, removeNumChars int, insert str) {
+  before = original.slice(0, at).str();
+  after = original.slice(at + removeNumChars, original.len()).str();
+  = before + insert + after;
+}

@@ -1,23 +1,24 @@
 package net.verdagon.vale.templar.env
 
+import com.jprofiler.api.probe.embedded.{Payload, PayloadProbe, Split, SplitProbe}
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map}
+
 
 trait IEnvironment {
   override def toString: String = {
     "#Environment"
   }
-  def entries: Map[IName2, List[IEnvEntry]]
   def getParentEnv(): Option[IEnvironment]
   def globalEnv: NamespaceEnvironment[IName2]
   def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata]
   def getNearestTemplataWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): Option[ITemplata]
-  def getAllTemplatasWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
+  def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
   def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata]
   def fullName: FullName2[IName2]
 }
@@ -30,7 +31,7 @@ trait IEnvironmentBox {
   def globalEnv: NamespaceEnvironment[IName2]
   def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata]
   def getNearestTemplataWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): Option[ITemplata]
-  def getAllTemplatasWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
+  def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
   def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata]
   def fullName: FullName2[IName2]
 }
@@ -42,7 +43,7 @@ case object ExpressionLookupContext extends ILookupContext
 case class NamespaceEnvironment[+T <: IName2](
   maybeParentEnv: Option[IEnvironment],
   fullName: FullName2[T],
-  entries: Map[IName2, List[IEnvEntry]]
+  templatas: TemplatasStore
 ) extends IEnvironment {
   maybeParentEnv match {
     case None =>
@@ -60,71 +61,77 @@ case class NamespaceEnvironment[+T <: IName2](
     name: IName2,
     lookupFilter: Set[ILookupContext]):
   List[ITemplata] = {
-    EnvironmentUtils.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
+    templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
 
   override def getNearestTemplataWithAbsoluteName2(
     name: IName2,
     lookupFilter: Set[ILookupContext]):
   Option[ITemplata] = {
-    EnvironmentUtils.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
+    templatas.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
   }
 
-  override def getAllTemplatasWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
-    EnvironmentUtils.getAllTemplatasWithName(this, name, lookupFilter)
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+    templatas.getAllTemplatasWithName(profiler, this, name, lookupFilter)
   }
 
   override def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
-    EnvironmentUtils.getNearestTemplataWithName(this, name, lookupFilter)
+    templatas.getNearestTemplataWithName(this, name, lookupFilter)
   }
 
   def addUnevaluatedFunction(
+    useOptimization: Boolean,
     function: FunctionA
   ): NamespaceEnvironment[T] = {
     NamespaceEnvironment(
       maybeParentEnv,
       fullName,
-      EnvironmentUtils.addUnevaluatedFunction(entries, function))
+      templatas.addUnevaluatedFunction(useOptimization, function))
   }
 
-  def addEntry(name: IName2, entry: IEnvEntry): NamespaceEnvironment[T] = {
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): NamespaceEnvironment[T] = {
     NamespaceEnvironment(
       maybeParentEnv,
       fullName,
-      EnvironmentUtils.addEntry(entries, name, entry))
+      templatas.addEntry(useOptimization, name, entry))
   }
 
-  def addEntries(newEntries: Map[IName2, List[IEnvEntry]]): NamespaceEnvironment[T] = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): NamespaceEnvironment[T] = {
     NamespaceEnvironment(
       maybeParentEnv,
       fullName,
-      EnvironmentUtils.addEntries(entries, newEntries))
+      templatas.addEntries(useOptimization: Boolean, newEntries))
   }
 
   override def getParentEnv(): Option[IEnvironment] = maybeParentEnv
 }
 
-object EnvironmentUtils {
+case class TemplatasStore(
+  entriesByNameT: Map[IName2, List[IEnvEntry]],
+  entriesByImpreciseNameA: Map[IImpreciseNameStepA, List[IEnvEntry]]
+) {
+  //  // The above map, indexed by human name. If it has no human name, it won't be in here.
+  //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
+
   def entryToTemplata(env: IEnvironment, entry: IEnvEntry): ITemplata = {
     entry match {
       case FunctionEnvEntry(func) => {
         FunctionTemplata(env, func)
       }
       case StructEnvEntry(struct) => {
-        StructTemplata(NamespaceEnvironment(Some(env), env.fullName, Map()), struct)
+        StructTemplata(NamespaceEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), struct)
       }
       case InterfaceEnvEntry(interface) => {
-        InterfaceTemplata(NamespaceEnvironment(Some(env), env.fullName, Map()), interface)
+        InterfaceTemplata(NamespaceEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), interface)
       }
       case ImplEnvEntry(impl) => ImplTemplata(env, impl)
       case TemplataEnvEntry(templata) => templata
     }
   }
 
-  def addEntries(
-      oldEntries: Map[IName2, List[IEnvEntry]],
-      newEntries: Map[IName2, List[IEnvEntry]]):
-  Map[IName2, List[IEnvEntry]] = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): TemplatasStore = {
+    val oldEntries = entriesByNameT
+
     val combinedEntries =
       oldEntries ++
         newEntries ++
@@ -151,24 +158,27 @@ object EnvironmentUtils {
       vassert(numTemplatas == 0 || numNonTemplatas == 0)
     })
 
-    combinedEntries
+    val newEntriesByImpreciseName =
+      newEntries
+        .toList
+        .map({ case (key, value) => (getImpreciseName(useOptimization, key), value) })
+        .filter(_._1.nonEmpty)
+        .map({ case (key, value) => (key.get, value) })
+        .toMap
+    vassert(newEntriesByImpreciseName.size <= newEntries.size)
+    val combinedEntriesByImpreciseName =
+      entriesByImpreciseNameA ++
+        newEntriesByImpreciseName ++
+        entriesByImpreciseNameA.keySet.intersect(newEntriesByImpreciseName.keySet)
+          .map(key => (key -> (entriesByImpreciseNameA(key) ++ newEntriesByImpreciseName(key))))
+          .toMap
+
+    TemplatasStore(combinedEntries, combinedEntriesByImpreciseName)
   }
 
-  def addEntry(
-      oldEntries: Map[IName2, List[IEnvEntry]],
-      name: IName2,
-      entry: IEnvEntry):
-  Map[IName2, List[IEnvEntry]] = {
-    addEntries(oldEntries, Map(name -> List(entry)))
-  }
-
-  def addUnevaluatedFunction(
-    oldEntries: Map[IName2, List[IEnvEntry]],
-    functionA: FunctionA
-  ): Map[IName2, List[IEnvEntry]] = {
+  def addUnevaluatedFunction(useOptimization: Boolean, functionA: FunctionA): TemplatasStore = {
     val functionName = NameTranslator.translateFunctionNameToTemplateName(functionA.name)
-
-    addEntry(oldEntries, functionName, FunctionEnvEntry(functionA))
+    addEntry(useOptimization, functionName, FunctionEnvEntry(functionA))
   }
 
 
@@ -209,7 +219,7 @@ object EnvironmentUtils {
     nameA match {
       case CodeTypeNameA(_) =>
       case GlobalFunctionFamilyNameA(_) =>
-      case ImplImpreciseNameA() =>
+      case ImplImpreciseNameA(_) =>
       case ImmConcreteDestructorImpreciseNameA() =>
       case ImmInterfaceDestructorImpreciseNameA() =>
       case ImmDropImpreciseNameA() =>
@@ -228,7 +238,7 @@ object EnvironmentUtils {
       case AnonymousSubstructParentInterfaceRune2() =>
       case AnonymousSubstructImplName2() =>
       case SolverKindRune2(_) =>
-      case ImplDeclareName2(_) =>
+      case ImplDeclareName2(_, _) =>
       case LetImplicitRune2(_, _) =>
       case MemberRune2(_) =>
       case CitizenName2(_, _) =>
@@ -246,24 +256,52 @@ object EnvironmentUtils {
       case (CodeTypeNameA(humanNameA), CitizenName2(humanNameT, _)) => humanNameA == humanNameT
       case (GlobalFunctionFamilyNameA(humanNameA), FunctionTemplateName2(humanNameT, _)) => humanNameA == humanNameT
       case (GlobalFunctionFamilyNameA(humanNameA), FunctionName2(humanNameT, _, _)) => humanNameA == humanNameT
-      case (ImplImpreciseNameA(), ImplDeclareName2(_)) => true
+      case (ImplImpreciseNameA(subCitizenHumanNameA), ImplDeclareName2(subCitizenHumanNameT, _)) => subCitizenHumanNameA == subCitizenHumanNameT
       case (ImmDropImpreciseNameA(), ImmDropTemplateName2()) => true
       case (ImmConcreteDestructorImpreciseNameA(), ImmConcreteDestructorTemplateName2()) => true
       case (ImmInterfaceDestructorImpreciseNameA(), ImmInterfaceDestructorTemplateName2()) => true
-//      case (ImplImpreciseNameA(), AnonymousSubstructImplName2()) => true // not really needed if we use ImplDeclareName?
+      //      case (ImplImpreciseNameA(), AnonymousSubstructImplName2()) => true // not really needed if we use ImplDeclareName?
       case _ => false
     }
   }
 
-//  def runesMatch(runeA: IRuneA, rune2: IRune2): Boolean = {
-//    (runeA, rune2) match {
-//      case (CodeRuneA(nameA), CodeRune2(name2)) => nameA == name2
-//      case (ImplicitRuneA(nameA), ImplicitRune2(name2)) => nameA == name2
-//      case (MemberRuneA(memberIndexA), MemberRune2(memberIndex2)) => memberIndexA == memberIndex2
-//      case (MagicImplicitRuneA(magicParamIndexA), MagicImplicitRune2(magicParamIndex2)) => magicParamIndexA == magicParamIndex2
-//      case (ReturnRuneA(), ReturnRune2()) => true
-//    }
-//  }
+  def getImpreciseName(useOptimization: Boolean, name2: IName2): Option[IImpreciseNameStepA] = {
+    name2 match {
+      case CitizenTemplateName2(humanName, _) => Some(CodeTypeNameA(humanName))
+      case CitizenTemplateName2(humanNameT, _) => Some(CodeTypeNameA(humanNameT))
+//      case FunctionTemplateName2(humanNameT, _) => Some(CodeTypeNameA(humanNameT))
+      case PrimitiveName2(humanNameT) => Some(CodeTypeNameA(humanNameT))
+      case CitizenName2(humanNameT, _) => Some(CodeTypeNameA(humanNameT))
+      case FunctionTemplateName2(humanNameT, _) => Some(GlobalFunctionFamilyNameA(humanNameT))
+      case FunctionName2(humanNameT, _, _) => Some(GlobalFunctionFamilyNameA(humanNameT))
+      case ImplDeclareName2(subCitizenHumanName, _) => Some(ImplImpreciseNameA(subCitizenHumanName))
+      case ImmDropTemplateName2() => Some(ImmDropImpreciseNameA())
+      case ImmConcreteDestructorTemplateName2() => Some(ImmConcreteDestructorImpreciseNameA())
+      case ImmInterfaceDestructorTemplateName2() => Some(ImmInterfaceDestructorImpreciseNameA())
+      case ImplicitRune2(_, _) => None
+      case LetImplicitRune2(_, _) => None
+      case CodeRune2(_) => None
+      case SolverKindRune2(_) => None
+      case ReturnRune2() => None
+      case MemberRune2(_) => None
+      case LambdaCitizenName2(_) => None
+      case ClosureParamName2() => None
+      case AnonymousSubstructParentInterfaceRune2() => None
+      case AnonymousSubstructImplName2() => None
+      case MagicImplicitRune2(_) => None
+      case other => vimpl(other.toString)
+    }
+  }
+
+  //  def runesMatch(runeA: IRuneA, rune2: IRune2): Boolean = {
+  //    (runeA, rune2) match {
+  //      case (CodeRuneA(nameA), CodeRune2(name2)) => nameA == name2
+  //      case (ImplicitRuneA(nameA), ImplicitRune2(name2)) => nameA == name2
+  //      case (MemberRuneA(memberIndexA), MemberRune2(memberIndex2)) => memberIndexA == memberIndex2
+  //      case (MagicImplicitRuneA(magicParamIndexA), MagicImplicitRune2(magicParamIndex2)) => magicParamIndexA == magicParamIndex2
+  //      case (ReturnRuneA(), ReturnRune2()) => true
+  //    }
+  //  }
 
   def codeLocationsMatch(codeLocationA: CodeLocationS, codeLocation2: CodeLocation2): Boolean = {
     val CodeLocationS(lineS, charS) = codeLocationA
@@ -273,60 +311,62 @@ object EnvironmentUtils {
 
 
   def getAllTemplatasWithAbsoluteName2(from: IEnvironment, name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
-    from.entries
+    entriesByNameT
       .get(name)
       .toList
       .flatten
-      .filter(EnvironmentUtils.entryMatchesFilter(_, lookupFilter))
-      .map(EnvironmentUtils.entryToTemplata(from, _)) ++
-    from.getParentEnv().toList.flatMap(_.getAllTemplatasWithAbsoluteName2(name, lookupFilter))
+      .filter(entryMatchesFilter(_, lookupFilter))
+      .map(entryToTemplata(from, _)) ++
+      from.getParentEnv().toList.flatMap(_.getAllTemplatasWithAbsoluteName2(name, lookupFilter))
   }
 
   def getNearestTemplataWithAbsoluteName2(
-      from: IEnvironment,
-      name: IName2,
-      lookupFilter: Set[ILookupContext]):
+    from: IEnvironment,
+    name: IName2,
+    lookupFilter: Set[ILookupContext]):
   Option[ITemplata] = {
-    from.entries
+    entriesByNameT
       .get(name)
       .toList
       .flatten
-      .filter(EnvironmentUtils.entryMatchesFilter(_, lookupFilter)) match {
-      case List(entry) => Some(EnvironmentUtils.entryToTemplata(from, entry))
+      .filter(entryMatchesFilter(_, lookupFilter)) match {
+      case List(entry) => Some(entryToTemplata(from, entry))
       case List() => from.getParentEnv().flatMap(_.getNearestTemplataWithAbsoluteName2(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
   }
 
   def getAllTemplatasWithName(
+    profiler: IProfiler,
     from: IEnvironment,
     name: IImpreciseNameStepA,
     lookupFilter: Set[ILookupContext]):
   List[ITemplata] = {
-    from.entries
-      .filter({ case (key, _) => EnvironmentUtils.impreciseNamesMatch(name, key) })
-      .values
-      .toList
-      .flatten
-      .filter(EnvironmentUtils.entryMatchesFilter(_, lookupFilter))
-      .map(x => EnvironmentUtils.entryToTemplata(from, x))
-      .toList ++
-      from.getParentEnv().toList.flatMap(_.getAllTemplatasWithName(name, lookupFilter))
+    profiler.childFrame("getAllTemplatasWithName", () => {
+      entriesByImpreciseNameA
+        .getOrElse(name, List())
+        .filter(entryMatchesFilter(_, lookupFilter))
+        .map(x => entryToTemplata(from, x))
+        .toList ++
+        from.getParentEnv().toList.flatMap(_.getAllTemplatasWithName(profiler, name, lookupFilter))
+    })
   }
 
   def getNearestTemplataWithName(
-      from: IEnvironment,
-      name: IImpreciseNameStepA,
-      lookupFilter: Set[ILookupContext]):
+    from: IEnvironment,
+    name: IImpreciseNameStepA,
+    lookupFilter: Set[ILookupContext]):
   Option[ITemplata] = {
-    from.entries
-      .filter({ case (key, _) => EnvironmentUtils.impreciseNamesMatch(name, key) })
-      .values
-      .flatten
-      .filter(EnvironmentUtils.entryMatchesFilter(_, lookupFilter)) match {
-      case List(entry) => Some(EnvironmentUtils.entryToTemplata(from, entry))
+    entriesByImpreciseNameA
+      .getOrElse(name, List())
+      .filter(entryMatchesFilter(_, lookupFilter)) match {
+      case List(entry) => Some(entryToTemplata(from, entry))
       case List() => from.getParentEnv().flatMap(_.getNearestTemplataWithName(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
+  }
+
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): TemplatasStore = {
+    addEntries(useOptimization, Map(name -> List(entry)))
   }
 }

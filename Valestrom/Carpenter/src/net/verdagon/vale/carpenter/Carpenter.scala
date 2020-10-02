@@ -2,7 +2,7 @@ package net.verdagon.vale.carpenter
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdge2}
-import net.verdagon.vale.templar.{CompleteProgram2, Edge2, EdgeTemplar, Program2, Temputs}
+import net.verdagon.vale.templar.{Edge2, EdgeTemplar, Program2, Temputs}
 import net.verdagon.vale.{vassert, vwat}
 
 object Carpenter {
@@ -10,28 +10,10 @@ object Carpenter {
     debugOut: (String => Unit),
     program: Temputs): Hinputs = {
 
-    val Temputs(
-      declaredSignatures,
-      returnTypesBySignature,
-      functions,
-      envByFunctionSignature,
-      externPrototypes,
-      mutabilitiesByCitizenRef,
-      declaredStructs,
-      structDefsByRef,
-      envByStructRef,
-      declaredInterfaces,
-      interfaceDefsByRef,
-      envByInterfaceRef,
-      impls,
-      packTypes,
-      arraySequenceTypes,
-      unknownSizeArrayTypes) = program
-
     val edgeBlueprints =
-      EdgeTemplar.makeInterfaceEdgeBlueprints(functions, program.getAllInterfaces())
+      EdgeTemplar.makeInterfaceEdgeBlueprints(program.getAllFunctions(), program.getAllInterfaces())
     val partialEdges =
-      EdgeTemplar.assemblePartialEdges(functions, program.getAllInterfaces(), impls)
+      EdgeTemplar.assemblePartialEdges(program.getAllFunctions(), program.getAllInterfaces(), program.getAllImpls())
     val edges =
       partialEdges.map({ case PartialEdge2(struct, interface, methods) =>
         Edge2(
@@ -56,7 +38,7 @@ object Carpenter {
 
     val reachables = Reachability.findReachables(program, edgeBlueprintsAsList, edges)
 
-    val categorizedFunctions = functions.groupBy(f => reachables.functions.contains(f.header.toSignature))
+    val categorizedFunctions = program.getAllFunctions().groupBy(f => reachables.functions.contains(f.header.toSignature))
     val reachableFunctions = categorizedFunctions.getOrElse(true, List())
     val unreachableFunctions = categorizedFunctions.getOrElse(false, List())
     unreachableFunctions.foreach(f => debugOut("Shaking out unreachable: " + f.header.fullName))
@@ -85,7 +67,7 @@ object Carpenter {
       reachableStructs,
       Program2.emptyTupleStructRef,
       reachableFunctions,
-      externPrototypes.toList,
+      program.getExternPrototypes.toList,
       edgeBlueprintsByInterface,
       edges)
   }

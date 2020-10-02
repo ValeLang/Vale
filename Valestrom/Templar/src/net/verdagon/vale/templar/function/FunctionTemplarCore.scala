@@ -8,21 +8,22 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
+  profiler: IProfiler,
   templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
-  val bodyTemplar = new BodyTemplar(opts, templataTemplar, convertHelper, new IBodyTemplarDelegate {
-    override def evaluateBlockStatements(temputs: TemputsBox, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
+  val bodyTemplar = new BodyTemplar(opts, profiler, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+    override def evaluateBlockStatements(temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
 
-    override def nonCheckingTranslateList(temputs: TemputsBox, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]): List[ReferenceExpression2] = {
+    override def nonCheckingTranslateList(temputs: Temputs, fate: FunctionEnvironmentBox, patterns1: List[AtomAP], patternInputExprs2: List[ReferenceExpression2]): List[ReferenceExpression2] = {
       delegate.nonCheckingTranslateList(temputs, fate, patterns1, patternInputExprs2)
     }
   })
@@ -33,7 +34,7 @@ class FunctionTemplarCore(
   // - either no closured vars, or they were already added to the env.
   def evaluateFunctionForHeader(
     startingFullEnv: FunctionEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
       params2: List[Parameter2]):
   (FunctionHeader2) = {
@@ -172,7 +173,7 @@ class FunctionTemplarCore(
   }
 
   def makeExternFunction(
-      temputs: TemputsBox,
+      temputs: Temputs,
       fullName: FullName2[IFunctionName2],
       attributes: List[IFunctionAttribute2],
       params2: List[Parameter2],
@@ -214,7 +215,7 @@ class FunctionTemplarCore(
 
   def makeInterfaceFunction(
     env: FunctionEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     origin: Option[FunctionA],
     params2: List[Parameter2],
     returnReferenceType2: Coord):
@@ -248,7 +249,7 @@ class FunctionTemplarCore(
 
   def makeImplDestructor(
     env: FunctionEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     maybeOriginFunction1: Option[FunctionA],
     structDef2: StructDefinition2,
     interfaceRef2: InterfaceRef2,

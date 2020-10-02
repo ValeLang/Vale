@@ -145,7 +145,7 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure there's a function that takes in the closured vars struct, and returns an int
     val lambdaCall =
       vassertSome(
-        temputs.functions.find(func => {
+        temputs.getAllFunctions().find(func => {
           func.header.fullName.last match {
             case FunctionName2("__call", _, _) => true
             case _ => false

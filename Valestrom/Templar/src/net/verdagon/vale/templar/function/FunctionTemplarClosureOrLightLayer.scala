@@ -8,7 +8,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.IEvaluateFunctionResult
-import net.verdagon.vale.{vassert, vfail, vimpl}
+import net.verdagon.vale.{IProfiler, vassert, vfail, vimpl}
 
 import scala.collection.immutable.{List, Map}
 
@@ -20,18 +20,20 @@ import scala.collection.immutable.{List, Map}
 // This file is the outer layer, which spawns a local environment for the function.
 class FunctionTemplarClosureOrLightLayer(
     opts: TemplarOptions,
+  profiler: IProfiler,
+  newTemplataStore: () => TemplatasStore,
   templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
   convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val ordinaryOrTemplatedLayer = new FunctionTemplarOrdinaryOrTemplatedLayer(opts, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
+  val ordinaryOrTemplatedLayer = new FunctionTemplarOrdinaryOrTemplatedLayer(opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
   def predictOrdinaryLightFunctionBanner(
     outerEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     function: FunctionA):
   (FunctionBanner2) = {
     checkNotClosure(function);
@@ -45,7 +47,7 @@ class FunctionTemplarClosureOrLightLayer(
 
   def evaluateOrdinaryLightFunctionFromNonCallForBanner(
       outerEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
   (FunctionBanner2) = {
@@ -59,7 +61,7 @@ class FunctionTemplarClosureOrLightLayer(
 
   def evaluateTemplatedClosureFunctionFromCallForBanner(
     outerEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
       closureStructRef: StructRef2,
     function: FunctionA,
@@ -70,7 +72,7 @@ class FunctionTemplarClosureOrLightLayer(
 
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
     val name = makeNameWithClosureds(outerEnv, function.name)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, newTemplataStore().addEntries(opts.useOptimization, entries))
 
     ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForBanner(
       newEnv, temputs, callRange, alreadySpecifiedTemplateArgs, argTypes2)
@@ -78,7 +80,7 @@ class FunctionTemplarClosureOrLightLayer(
 
   def evaluateTemplatedClosureFunctionFromCallForPrototype(
     outerEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     closureStructRef: StructRef2,
     function: FunctionA,
@@ -89,14 +91,14 @@ class FunctionTemplarClosureOrLightLayer(
 
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
     val name = makeNameWithClosureds(outerEnv, function.name)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, newTemplataStore().addEntries(opts.useOptimization, entries))
     ordinaryOrTemplatedLayer.evaluateTemplatedFunctionFromCallForPrototype(
       newEnv, temputs, callRange, alreadySpecifiedTemplateArgs, argTypes2)
   }
 
 //  def evaluateTemplatedLightFunctionFromNonCallForHeader(
 //      ourEnv: IEnvironment,
-//      temputs: TemputsBox,
+//      temputs: Temputs,
 //    function: FunctionA,
 //      explicitTemplateArgs: List[ITemplata]):
 //  (FunctionHeader2) = {
@@ -111,7 +113,7 @@ class FunctionTemplarClosureOrLightLayer(
 
   def evaluateTemplatedLightFunctionFromCallForPrototype2(
       ourEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA,
       explicitTemplateArgs: List[ITemplata],
@@ -127,7 +129,7 @@ class FunctionTemplarClosureOrLightLayer(
 
   def evaluateOrdinaryLightFunctionFromNonCallForHeader(
       outerEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
   (FunctionHeader2) = {
@@ -143,7 +145,7 @@ class FunctionTemplarClosureOrLightLayer(
   // fn main():Int{main()}
   def evaluateOrdinaryLightFunctionFromNonCallForPrototype(
     outerEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     function: FunctionA
   ): Prototype2 = {
@@ -151,14 +153,14 @@ class FunctionTemplarClosureOrLightLayer(
     vassert(!function.isTemplate)
 
     val name = makeNameWithClosureds(outerEnv, function.name)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), Map())
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForPrototype(
       newEnv, temputs, callRange)
   }
 
   def evaluateOrdinaryClosureFunctionFromNonCallForBanner(
     outerEnv: IEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     callRange: RangeS,
     closureStructRef: StructRef2,
     function: FunctionA):
@@ -167,14 +169,14 @@ class FunctionTemplarClosureOrLightLayer(
 
     val name = makeNameWithClosureds(outerEnv, function.name)
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, newTemplataStore().addEntries(opts.useOptimization, entries))
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForBanner(
       newEnv, temputs, callRange)
   }
 
   def evaluateOrdinaryClosureFunctionFromNonCallForHeader(
       outerEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
       closureStructRef: StructRef2,
     function: FunctionA):
@@ -186,7 +188,7 @@ class FunctionTemplarClosureOrLightLayer(
 
     val name = makeNameWithClosureds(outerEnv, function.name)
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
-    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, entries)
+    val newEnv = BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, variables, newTemplataStore().addEntries(opts.useOptimization, entries))
     ordinaryOrTemplatedLayer.evaluateOrdinaryFunctionFromNonCallForHeader(
       newEnv, temputs, callRange)
   }
@@ -196,7 +198,7 @@ class FunctionTemplarClosureOrLightLayer(
   // This assumes it met any type bound restrictions (or, will; not implemented yet)
   def evaluateTemplatedLightBannerFromCall(
       functionOuterEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
     callRange: RangeS,
       function: FunctionA,
       explicitTemplateArgs: List[ITemplata],
@@ -212,7 +214,7 @@ class FunctionTemplarClosureOrLightLayer(
 
   def evaluateTemplatedFunctionFromCallForBanner(
       outerEnv: IEnvironment,
-      temputs: TemputsBox,
+      temputs: Temputs,
       function: FunctionA,
     callRange: RangeS,
       alreadySpecifiedTemplateArgs: List[ITemplata],
@@ -227,7 +229,7 @@ class FunctionTemplarClosureOrLightLayer(
 
 //  def scanOrdinaryInterfaceMember(
 //    env1: IEnvironment,
-//    temputs: TemputsBox,
+//    temputs: Temputs,
 //    interfaceExplicitTemplateArgs: List[ITemplata],
 //    function: FunctionA):
 //  (FunctionHeader2) = {
@@ -244,7 +246,7 @@ class FunctionTemplarClosureOrLightLayer(
     function: FunctionA
   ): BuildingFunctionEnvironmentWithClosureds = {
     val name = makeNameWithClosureds(outerEnv, function.name)
-    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), Map())
+    BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
   }
 
   private def makeNameWithClosureds(outerEnv: IEnvironment, functionName: IFunctionDeclarationNameA) = {
@@ -263,7 +265,7 @@ class FunctionTemplarClosureOrLightLayer(
     }
   }
 
-  private def makeClosureVariablesAndEntries(temputs: TemputsBox, closureStructRef: StructRef2):
+  private def makeClosureVariablesAndEntries(temputs: Temputs, closureStructRef: StructRef2):
   (List[IVariable2], Map[IName2, List[IEnvEntry]]) = {
     val closureStructDef = temputs.lookupStruct(closureStructRef);
     val variables =

@@ -50,7 +50,7 @@ object NameHammer {
       case ImmDropTemplateName2() => "immDropTemplate"
       case ImmInterfaceDestructorName2(templateArgs, params) => "immInterfaceDestructor"
       case ImmInterfaceDestructorTemplateName2() => "immInterfaceDestructorTemplate"
-      case ImplDeclareName2(codeLoc) => "implDeclaration"
+      case ImplDeclareName2(subCitizenHumanName, codeLoc) => "impl" + subCitizenHumanName
       case ImplicitRune2(parentName, name) => "implicitRune" + name
       case KnownSizeArrayName2(size, arr) => "ksa" + size
       case LambdaCitizenName2(codeLoc) => "lam"

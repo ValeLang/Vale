@@ -35,7 +35,7 @@ object TemplataNamer {
     // We should probably not use these long term since they're super unrecognizable,
     // we can switch to nicer symbols once things settle.
     fullName.steps.map({
-      case ImplDeclareName2(codeLocation) => "ᚠ" + codeLocation
+      case ImplDeclareName2(subCitizenHumanName, codeLocation) => "ᚠ" + subCitizenHumanName + "@" + codeLocation
       case LetName2(codeLocation) => "ᚥ" + codeLocation
       case UnnamedLocalName2(codeLocation) => "ᚣ" + codeLocation
       case ClosureParamName2() => "ᛋ"

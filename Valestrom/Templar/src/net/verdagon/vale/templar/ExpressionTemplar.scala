@@ -39,7 +39,7 @@ trait IExpressionTemplarDelegate {
 class ExpressionTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
-  newTemplataStore: () => ITemplatasStore,
+  newTemplataStore: () => TemplatasStore,
     templataTemplar: TemplataTemplar,
     inferTemplar: InferTemplar,
     arrayTemplar: ArrayTemplar,

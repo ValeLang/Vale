@@ -15,7 +15,7 @@ import scala.collection.immutable.List
 class StructTemplarTemplateArgsLayer(
     opts: TemplarOptions,
     profiler: IProfiler,
-    newTemplataStore: () => ITemplatasStore,
+    newTemplataStore: () => TemplatasStore,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {

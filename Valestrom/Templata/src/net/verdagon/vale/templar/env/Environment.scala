@@ -9,20 +9,6 @@ import net.verdagon.vale.{IProfiler, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map}
 
-trait ITemplatasStore {
-  def getAllTemplatasWithAbsoluteName2(from: IEnvironment, name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata]
-  def getNearestTemplataWithAbsoluteName2(from: IEnvironment, name: IName2, lookupFilter: Set[ILookupContext]): Option[ITemplata]
-  def getAllTemplatasWithName(profiler: IProfiler, from: IEnvironment, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
-  def getNearestTemplataWithName(from: IEnvironment, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata]
-
-  def addUnevaluatedFunction(functionA: FunctionA): ITemplatasStore
-  def addEntries(newEntries: Map[IName2, List[IEnvEntry]]): ITemplatasStore
-
-  def addEntry(name: IName2, entry: IEnvEntry): ITemplatasStore = {
-    addEntries(Map(name -> List(entry)))
-  }
-}
-
 
 trait IEnvironment {
   override def toString: String = {
@@ -57,7 +43,7 @@ case object ExpressionLookupContext extends ILookupContext
 case class NamespaceEnvironment[+T <: IName2](
   maybeParentEnv: Option[IEnvironment],
   fullName: FullName2[T],
-  templatas: ITemplatasStore
+  templatas: TemplatasStore
 ) extends IEnvironment {
   maybeParentEnv match {
     case None =>
@@ -94,35 +80,36 @@ case class NamespaceEnvironment[+T <: IName2](
   }
 
   def addUnevaluatedFunction(
+    useOptimization: Boolean,
     function: FunctionA
   ): NamespaceEnvironment[T] = {
     NamespaceEnvironment(
       maybeParentEnv,
       fullName,
-      templatas.addUnevaluatedFunction(function))
+      templatas.addUnevaluatedFunction(useOptimization, function))
   }
 
-  def addEntry(name: IName2, entry: IEnvEntry): NamespaceEnvironment[T] = {
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): NamespaceEnvironment[T] = {
     NamespaceEnvironment(
       maybeParentEnv,
       fullName,
-      templatas.addEntry(name, entry))
+      templatas.addEntry(useOptimization, name, entry))
   }
 
-  def addEntries(newEntries: Map[IName2, List[IEnvEntry]]): NamespaceEnvironment[T] = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): NamespaceEnvironment[T] = {
     NamespaceEnvironment(
       maybeParentEnv,
       fullName,
-      templatas.addEntries(newEntries))
+      templatas.addEntries(useOptimization: Boolean, newEntries))
   }
 
   override def getParentEnv(): Option[IEnvironment] = maybeParentEnv
 }
 
-case class FastTemplatasIndex(
+case class TemplatasStore(
   entriesByNameT: Map[IName2, List[IEnvEntry]],
   entriesByImpreciseNameA: Map[IImpreciseNameStepA, List[IEnvEntry]]
-) extends ITemplatasStore {
+) {
   //  // The above map, indexed by human name. If it has no human name, it won't be in here.
   //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
 
@@ -132,17 +119,17 @@ case class FastTemplatasIndex(
         FunctionTemplata(env, func)
       }
       case StructEnvEntry(struct) => {
-        StructTemplata(NamespaceEnvironment(Some(env), env.fullName, FastTemplatasIndex(Map(), Map())), struct)
+        StructTemplata(NamespaceEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), struct)
       }
       case InterfaceEnvEntry(interface) => {
-        InterfaceTemplata(NamespaceEnvironment(Some(env), env.fullName, FastTemplatasIndex(Map(), Map())), interface)
+        InterfaceTemplata(NamespaceEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), interface)
       }
       case ImplEnvEntry(impl) => ImplTemplata(env, impl)
       case TemplataEnvEntry(templata) => templata
     }
   }
 
-  def addEntries(newEntries: Map[IName2, List[IEnvEntry]]): FastTemplatasIndex = {
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): TemplatasStore = {
     val oldEntries = entriesByNameT
 
     val combinedEntries =
@@ -174,7 +161,7 @@ case class FastTemplatasIndex(
     val newEntriesByImpreciseName =
       newEntries
         .toList
-        .map({ case (key, value) => (getImpreciseName(key), value) })
+        .map({ case (key, value) => (getImpreciseName(useOptimization, key), value) })
         .filter(_._1.nonEmpty)
         .map({ case (key, value) => (key.get, value) })
         .toMap
@@ -186,12 +173,12 @@ case class FastTemplatasIndex(
           .map(key => (key -> (entriesByImpreciseNameA(key) ++ newEntriesByImpreciseName(key))))
           .toMap
 
-    FastTemplatasIndex(combinedEntries, combinedEntriesByImpreciseName)
+    TemplatasStore(combinedEntries, combinedEntriesByImpreciseName)
   }
 
-  def addUnevaluatedFunction(functionA: FunctionA): ITemplatasStore = {
+  def addUnevaluatedFunction(useOptimization: Boolean, functionA: FunctionA): TemplatasStore = {
     val functionName = NameTranslator.translateFunctionNameToTemplateName(functionA.name)
-    addEntry(functionName, FunctionEnvEntry(functionA))
+    addEntry(useOptimization, functionName, FunctionEnvEntry(functionA))
   }
 
 
@@ -232,7 +219,7 @@ case class FastTemplatasIndex(
     nameA match {
       case CodeTypeNameA(_) =>
       case GlobalFunctionFamilyNameA(_) =>
-      case ImplImpreciseNameA() =>
+      case ImplImpreciseNameA(_) =>
       case ImmConcreteDestructorImpreciseNameA() =>
       case ImmInterfaceDestructorImpreciseNameA() =>
       case ImmDropImpreciseNameA() =>
@@ -251,7 +238,7 @@ case class FastTemplatasIndex(
       case AnonymousSubstructParentInterfaceRune2() =>
       case AnonymousSubstructImplName2() =>
       case SolverKindRune2(_) =>
-      case ImplDeclareName2(_) =>
+      case ImplDeclareName2(_, _) =>
       case LetImplicitRune2(_, _) =>
       case MemberRune2(_) =>
       case CitizenName2(_, _) =>
@@ -269,7 +256,7 @@ case class FastTemplatasIndex(
       case (CodeTypeNameA(humanNameA), CitizenName2(humanNameT, _)) => humanNameA == humanNameT
       case (GlobalFunctionFamilyNameA(humanNameA), FunctionTemplateName2(humanNameT, _)) => humanNameA == humanNameT
       case (GlobalFunctionFamilyNameA(humanNameA), FunctionName2(humanNameT, _, _)) => humanNameA == humanNameT
-      case (ImplImpreciseNameA(), ImplDeclareName2(_)) => true
+      case (ImplImpreciseNameA(subCitizenHumanNameA), ImplDeclareName2(subCitizenHumanNameT, _)) => subCitizenHumanNameA == subCitizenHumanNameT
       case (ImmDropImpreciseNameA(), ImmDropTemplateName2()) => true
       case (ImmConcreteDestructorImpreciseNameA(), ImmConcreteDestructorTemplateName2()) => true
       case (ImmInterfaceDestructorImpreciseNameA(), ImmInterfaceDestructorTemplateName2()) => true
@@ -278,7 +265,7 @@ case class FastTemplatasIndex(
     }
   }
 
-  def getImpreciseName(name2: IName2): Option[IImpreciseNameStepA] = {
+  def getImpreciseName(useOptimization: Boolean, name2: IName2): Option[IImpreciseNameStepA] = {
     name2 match {
       case CitizenTemplateName2(humanName, _) => Some(CodeTypeNameA(humanName))
       case CitizenTemplateName2(humanNameT, _) => Some(CodeTypeNameA(humanNameT))
@@ -287,7 +274,7 @@ case class FastTemplatasIndex(
       case CitizenName2(humanNameT, _) => Some(CodeTypeNameA(humanNameT))
       case FunctionTemplateName2(humanNameT, _) => Some(GlobalFunctionFamilyNameA(humanNameT))
       case FunctionName2(humanNameT, _, _) => Some(GlobalFunctionFamilyNameA(humanNameT))
-      case ImplDeclareName2(_) => Some(ImplImpreciseNameA())
+      case ImplDeclareName2(subCitizenHumanName, _) => Some(ImplImpreciseNameA(subCitizenHumanName))
       case ImmDropTemplateName2() => Some(ImmDropImpreciseNameA())
       case ImmConcreteDestructorTemplateName2() => Some(ImmConcreteDestructorImpreciseNameA())
       case ImmInterfaceDestructorTemplateName2() => Some(ImmInterfaceDestructorImpreciseNameA())
@@ -377,5 +364,9 @@ case class FastTemplatasIndex(
       case List() => from.getParentEnv().flatMap(_.getNearestTemplataWithName(name, lookupFilter))
       case multiple => vfail("Too many things named " + name + ":" + multiple);
     }
+  }
+
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): TemplatasStore = {
+    addEntries(useOptimization, Map(name -> List(entry)))
   }
 }

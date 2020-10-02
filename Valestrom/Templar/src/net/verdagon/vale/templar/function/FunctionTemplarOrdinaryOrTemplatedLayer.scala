@@ -373,6 +373,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       function,
       variables,
       templatas.addEntries(
+        opts.useOptimization,
         templatasByRune.map({ case (k, v) => (k, List(TemplataEnvEntry(v))) })
         .toMap[IName2, List[IEnvEntry]]))
   }

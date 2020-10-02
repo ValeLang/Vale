@@ -20,7 +20,7 @@ trait IBlockTemplarDelegate {
 
 class BlockTemplar(
     opts: TemplarOptions,
-    newTemplataStore: () => ITemplatasStore,
+    newTemplataStore: () => TemplatasStore,
     dropHelper: DropHelper,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {

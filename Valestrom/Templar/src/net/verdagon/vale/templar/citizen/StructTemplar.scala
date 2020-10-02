@@ -64,7 +64,7 @@ trait IStructTemplarDelegate {
 class StructTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
-    newTemplataStore: () => ITemplatasStore,
+    newTemplataStore: () => TemplatasStore,
     inferTemplar: InferTemplar,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
@@ -314,7 +314,7 @@ class StructTemplar(
       val anonymousSubstructType = Coord(Share, anonymousSubstructRef)
 
       val constructorName =
-        prototype.fullName
+        interfaceRef2.fullName
           .addStep(AnonymousSubstructName2(List(functionStructType)))
           .addStep(ConstructorName2(List()))
       temputs.prototypeDeclared(constructorName) match {

@@ -16,7 +16,7 @@ class DropHelper(
     destructorTemplar: DestructorTemplar) {
   def drop(
     fate: FunctionEnvironmentBox,
-    temputs: TemputsBox,
+    temputs: Temputs,
     undestructedExpr2: ReferenceExpression2):
   (ReferenceExpression2) = {
     val resultExpr2 =
@@ -40,7 +40,7 @@ class DropHelper(
         case Coord(Weak, _) => (Discard2(undestructedExpr2))
         case Coord(Share, _) => {
           val destroySharedCitizen =
-            (temputs: TemputsBox, Coord: Coord) => {
+            (temputs: Temputs, Coord: Coord) => {
               val destructorHeader = destructorTemplar.getCitizenDestructor(fate.snapshot, temputs, Coord)
               // We just needed to ensure it's in the temputs, so that the backend can use it
               // for when reference counts drop to zero.
@@ -49,7 +49,7 @@ class DropHelper(
               Discard2(undestructedExpr2)
             };
           val destroySharedArray =
-            (temputs: TemputsBox, Coord: Coord) => {
+            (temputs: Temputs, Coord: Coord) => {
               val destructorHeader = destructorTemplar.getArrayDestructor(fate.snapshot, temputs, Coord)
               // We just needed to ensure it's in the temputs, so that the backend can use it
               // for when reference counts drop to zero.
@@ -100,7 +100,7 @@ class DropHelper(
 
   def generateDropFunction(
     initialBodyEnv: FunctionEnvironment,
-    temputs: TemputsBox,
+    temputs: Temputs,
     originFunction1: FunctionA,
     type2: Coord):
   (FunctionHeader2) = {

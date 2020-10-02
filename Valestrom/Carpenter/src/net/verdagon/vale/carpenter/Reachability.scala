@@ -19,7 +19,7 @@ class Reachables(
 object Reachability {
   def findReachables(temputs: Temputs, edgeBlueprints: List[InterfaceEdgeBlueprint], edges: List[Edge2]): Reachables = {
     val exposedFunctions =
-      temputs.functions.filter(func => {
+      temputs.getAllFunctions().filter(func => {
         (func.header.fullName.last match {
           case FunctionName2("main", _, _) => true
           case _ => false

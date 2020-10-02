@@ -28,7 +28,7 @@ case class LambdaNameA(codeLocation: CodeLocationS) extends IFunctionDeclaration
 case class FunctionNameA(name: String, codeLocation: CodeLocationS) extends IFunctionDeclarationNameA
 case class TopLevelCitizenDeclarationNameA(name: String, codeLocation: CodeLocationS) extends INameA
 case class LambdaStructNameA(lambdaName: LambdaNameA) extends INameA
-case class ImplNameA(codeLocation: CodeLocationS) extends INameA
+case class ImplNameA(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameA
 case class LetNameA(codeLocation: CodeLocationS) extends INameA
 case class UnnamedLocalNameA(codeLocation: CodeLocationS) extends IVarNameA
 case class ClosureParamNameA() extends IVarNameA
@@ -61,7 +61,7 @@ case class CodeTypeNameA(name: String) extends IImpreciseNameStepA
 // If we want a specific function, we use TopLevelDeclarationNameS.
 case class GlobalFunctionFamilyNameA(name: String) extends IImpreciseNameStepA
 case class ImpreciseCodeVarNameA(name: String) extends IImpreciseNameStepA
-case class ImplImpreciseNameA() extends IImpreciseNameStepA
+case class ImplImpreciseNameA(subCitizenHumanName: String) extends IImpreciseNameStepA
 case class ImmConcreteDestructorImpreciseNameA() extends IImpreciseNameStepA
 case class ImmInterfaceDestructorImpreciseNameA() extends IImpreciseNameStepA
 case class ImmDropImpreciseNameA() extends IImpreciseNameStepA

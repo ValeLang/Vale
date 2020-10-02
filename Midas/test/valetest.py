@@ -165,6 +165,19 @@ class ValeTest(unittest.TestCase):
     def test_naiverc_if(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/if.vale"], "naive-rc", 42)
 
+    def test_assist_upcastif(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "assist", 42)
+    def test_unsafefast_upcastif(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "unsafe-fast", 42)
+    def test_resilientv0_upcastif(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "resilient-v0", 42)
+    def test_resilientv1_upcastif(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "resilient-v1", 42)
+    def test_resilientv2_upcastif(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "resilient-v2", 42)
+    def test_naiverc_upcastif(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "naive-rc", 42)
+
     def test_assist_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutlocal.vale"], "assist", 42)
     def test_unsafefast_mutlocal(self) -> None:
@@ -255,6 +268,19 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstore.vale"], "resilient-v2", 42)
     def test_naiverc_mutstructstore(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstore.vale"], "naive-rc", 42)
+
+    def test_assist_mutstructstoreinner(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstoreinner.vale"], "assist", 42)
+    def test_unsafefast_mutstructstoreinner(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstoreinner.vale"], "unsafe-fast", 42)
+    def test_resilientv0_mutstructstoreinner(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstoreinner.vale"], "resilient-v0", 42)
+    def test_resilientv1_mutstructstoreinner(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstoreinner.vale"], "resilient-v1", 42)
+    def test_resilientv2_mutstructstoreinner(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstoreinner.vale"], "resilient-v2", 42)
+    def test_naiverc_mutstructstoreinner(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/mutstructstoreinner.vale"], "naive-rc", 42)
 
     def test_assist_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/immusa.vale"], "assist", 3)

@@ -35,7 +35,7 @@ object TemplataNamer {
     // We should probably not use these long term since they're super unrecognizable,
     // we can switch to nicer symbols once things settle.
     fullName.steps.map({
-      case ImplDeclareName2(codeLocation) => "ᚠ" + codeLocation
+      case ImplDeclareName2(subCitizenHumanName, codeLocation) => "ᚠ" + subCitizenHumanName + "@" + codeLocation
       case LetName2(codeLocation) => "ᚥ" + codeLocation
       case UnnamedLocalName2(codeLocation) => "ᚣ" + codeLocation
       case ClosureParamName2() => "ᛋ"
@@ -65,6 +65,7 @@ object TemplataNamer {
       case Bool2() => "bool"// "𝒷"
       case Str2() => "str"// "𝓈"
       case Void2() => "void" // "∅"
+      case TupleT2(_, _) => "tup"
       case UnknownSizeArrayT2(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
       case KnownSizeArrayT2(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
       case PackT2(_, underlyingStruct) => {

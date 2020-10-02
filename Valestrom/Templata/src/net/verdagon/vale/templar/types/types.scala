@@ -407,7 +407,11 @@ case class InterfaceRef2(
 // This is what we use to search for overloads.
 case class ParamFilter(
     tyype: Coord,
-    virtuality: Option[Virtuality2])
+    virtuality: Option[Virtuality2]) {
+  def debugString: String = {
+    tyype.toString + virtuality.map(" impl " + _.toString).getOrElse("")
+  }
+}
 
 
 object ReferenceComparator extends Ordering[Coord] {
@@ -462,7 +466,12 @@ object FullNameComparator extends Ordering[FullName2[IName2]] {
           humanNameDiff
         } else {
           (aSteps.head, bSteps.head) match {
-            case (ImplDeclareName2(codeLocationA), ImplDeclareName2(codeLocationB)) => compare(codeLocationA, codeLocationB)
+            case (ImplDeclareName2(subCitizenHumanNameA, codeLocationA), ImplDeclareName2(subCitizenHumanName2, codeLocationB)) => {
+              val nameDiff = subCitizenHumanNameA.compareTo(subCitizenHumanName2)
+              if (nameDiff != 0)
+                return nameDiff
+              compare(codeLocationA, codeLocationB)
+            }
             case (LetName2(codeLocationA), LetName2(codeLocationB)) => compare(codeLocationA, codeLocationB)
             case (UnnamedLocalName2(codeLocationA), UnnamedLocalName2(codeLocationB)) => compare(codeLocationA, codeLocationB)
             case (ClosureParamName2(), ClosureParamName2()) => 0

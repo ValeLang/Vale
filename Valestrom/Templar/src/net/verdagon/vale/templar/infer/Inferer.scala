@@ -1,12 +1,13 @@
 package net.verdagon.vale.templar.infer
 
+import com.jprofiler.api.probe.embedded.{Split, SplitProbe}
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.{IName2, IRune2}
 import net.verdagon.vale.templar.infer.infer.IInferSolveResult
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.vimpl
+import net.verdagon.vale.{IProfiler, vimpl}
 
 import scala.collection.immutable.List
 
@@ -70,6 +71,7 @@ trait IInfererDelegate[Env, State] {
 // This is the public API for the outside world to use the Infer code.
 object Inferer {
   def solve[Env, State](
+    profiler: IProfiler,
     delegate: IInfererDelegate[Env, State],
     env: Env,
     state: State,
@@ -87,6 +89,7 @@ object Inferer {
     val equalsLayer = new InfererEquator[Env, State](templataTemplar)
     val templar =
       new InfererEvaluator[Env, State](
+        profiler,
         templataTemplar,
         equalsLayer,
         makeEvaluatorDelegate(delegate))
@@ -168,7 +171,7 @@ object Inferer {
       override def lookupTemplata(env: Env, name: IName2): ITemplata = {
         delegate.lookupTemplata(env, name)
       }
-      override def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata = {
+      override def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata = {
         delegate.lookupTemplataImprecise(env, name)
       }
 

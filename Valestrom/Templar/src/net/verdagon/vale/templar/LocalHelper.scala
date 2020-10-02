@@ -14,7 +14,7 @@ class LocalHelper(
   dropHelper: DropHelper) {
 
   def makeTemporaryLocal(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     coord: Coord):
   ReferenceLocalVariable2 = {
@@ -28,7 +28,7 @@ class LocalHelper(
   // This makes a borrow ref, but can easily turn that into a weak
   // separately.
   def makeTemporaryLocal(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     r: ReferenceExpression2):
   (Defer2) = {
@@ -52,7 +52,7 @@ class LocalHelper(
   }
 
   def unletAll(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     variables: List[ILocalVariable2]):
   (List[ReferenceExpression2]) = {
@@ -75,7 +75,7 @@ class LocalHelper(
   // Non-user local variables are reference local variables, so can't be
   // mutated from inside closures.
   def makeUserLocalVariable(
-    temputs: TemputsBox,
+    temputs: Temputs,
     fate: FunctionEnvironmentBox,
     varId: IVarName2,
     variability: Variability,
@@ -160,14 +160,14 @@ class LocalHelper(
     }
   }
 
-  def borrowSoftLoad(temputs: TemputsBox, expr2: AddressExpression2):
+  def borrowSoftLoad(temputs: Temputs, expr2: AddressExpression2):
   ReferenceExpression2 = {
     val ownership =
       getBorrowOwnership(temputs, expr2.resultRegister.reference.referend)
     SoftLoad2(expr2, ownership)
   }
 
-  def getBorrowOwnership(temputs: TemputsBox, referend: Kind):
+  def getBorrowOwnership(temputs: Temputs, referend: Kind):
   Ownership = {
     referend match {
       case Int2() => Share

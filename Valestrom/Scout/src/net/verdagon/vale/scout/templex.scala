@@ -40,7 +40,7 @@ case class LambdaNameS(
 case class FunctionNameS(name: String, codeLocation: CodeLocationS) extends IFunctionDeclarationNameS
 case class TopLevelCitizenDeclarationNameS(name: String, codeLocation: CodeLocationS) extends INameS
 case class LambdaStructNameS(lambdaName: LambdaNameS) extends INameS
-case class ImplNameS(codeLocation: CodeLocationS) extends INameS
+case class ImplNameS(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameS
 case class LetNameS(codeLocation: CodeLocationS) extends INameS
 case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class ClosureParamNameS() extends IVarNameS

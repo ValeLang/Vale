@@ -5,7 +5,7 @@ import net.verdagon.vale.astronomer.ruletyper.IRuleTyperEvaluatorDelegate
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{IEnvironment => _, _}
 import net.verdagon.vale.templar.{ArraySequenceE2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, GlobalNamespaceName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
-import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, scout => s}
+import net.verdagon.vale.{IProfiler, NullProfiler, vassert, vassertSome, vfail, vimpl, scout => s}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.{InfererEquator, InfererEvaluator}
 import net.verdagon.vale.templar.infer.infer.{IInferSolveResult, InferSolveFailure, InferSolveSuccess}
@@ -34,33 +34,23 @@ object InfererTestUtils {
   }
 }
 
-case class SimpleEnvironment(simpleEntries: Map[IName2, IEnvEntry]) extends IEnvironment {
-  override def entries: Map[IName2, List[IEnvEntry]] = simpleEntries.mapValues(a => List(a))
+case class SimpleEnvironment(templatas: TemplatasStore) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = None
   def fullName = FullName2(List(), GlobalNamespaceName2())
   def globalEnv: NamespaceEnvironment[IName2] = {
     vfail()
   }
   override def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
-    simpleEntries.get(name).toList.map(EnvironmentUtils.entryToTemplata(this, _))
+    templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
   override def getNearestTemplataWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
-    simpleEntries.get(name).map(EnvironmentUtils.entryToTemplata(this, _))
+    templatas.getNearestTemplataWithAbsoluteName2(this, name, lookupFilter)
   }
-  override def getAllTemplatasWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
-    simpleEntries
-      .filter({ case (key, _) => EnvironmentUtils.impreciseNamesMatch(name, key)})
-      .values
-      .map(EnvironmentUtils.entryToTemplata(this, _))
-      .toList
+  override def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
+    templatas.getAllTemplatasWithName(profiler, this, name, lookupFilter)
   }
   override def getNearestTemplataWithName(name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): Option[ITemplata] = {
-    val values =
-      simpleEntries
-        .filter({ case (key, _) => EnvironmentUtils.impreciseNamesMatch(name, key)})
-        .values
-    vassert(values.size <= 1)
-    values.headOption.map(EnvironmentUtils.entryToTemplata(this, _))
+    templatas.getNearestTemplataWithName(this, name, lookupFilter)
   }
 }
 
@@ -99,14 +89,14 @@ class FakeInfererEvaluatorDelegate extends IInfererEvaluatorDelegate[SimpleEnvir
     results.head
   }
 
-  override def lookupTemplata(env: SimpleEnvironment, name: IImpreciseNameStepA): ITemplata = {
-    val results = env.getAllTemplatasWithName(name, Set(TemplataLookupContext))
+  override def lookupTemplata(profiler: IProfiler, env: SimpleEnvironment, name: IImpreciseNameStepA): ITemplata = {
+    val results = env.getAllTemplatasWithName(profiler, name, Set(TemplataLookupContext))
     vassert(results.size == 1)
     results.head
   }
 
   override def resolveExactSignature(env: SimpleEnvironment, state: FakeState, range: RangeS, name: String, coords: List[Coord]): Prototype2 = {
-    val templatas = env.getAllTemplatasWithName(GlobalFunctionFamilyNameA(name), Set(TemplataLookupContext))
+    val templatas = env.getAllTemplatasWithName(new NullProfiler(), GlobalFunctionFamilyNameA(name), Set(TemplataLookupContext))
     val prototypes = templatas.collect({ case PrototypeTemplata(prot) => prot })
     val matchingPrototypes = prototypes.filter(_.paramTypes == coords)
     vassert(matchingPrototypes.size == 1)
@@ -158,15 +148,15 @@ class InfererTests extends FunSuite with Matchers {
     Prototype2(FullName2(List(), FunctionName2("increment", List(), List(Coord(Share, Int2())))), Coord(Share, Int2()))
 
   def makeCannedEnvironment(): SimpleEnvironment = {
-    var entries = Map[IName2, IEnvEntry]()
+    var entries: TemplatasStore = TemplatasStore(Map(), Map())
     val voidName = PrimitiveName2("void")
-    entries = entries ++ Map(voidName -> TemplataEnvEntry(KindTemplata(Void2())))
+    entries = entries.addEntry(true, voidName, TemplataEnvEntry(KindTemplata(Void2())))
     val intName = PrimitiveName2("int")
-    entries = entries ++ Map(intName -> TemplataEnvEntry(KindTemplata(Int2())))
+    entries = entries.addEntry(true, intName, TemplataEnvEntry(KindTemplata(Int2())))
     val boolName = PrimitiveName2("bool")
-    entries = entries ++ Map(boolName -> TemplataEnvEntry(KindTemplata(Bool2())))
-    entries = entries ++ Map(
-      CitizenName2("ImmInterface", List()) ->
+    entries = entries.addEntry(true, boolName, TemplataEnvEntry(KindTemplata(Bool2())))
+    entries = entries.addEntry(true,
+      CitizenName2("ImmInterface", List()),
         InterfaceEnvEntry(
           InterfaceA(
             RangeS.internal(-70),
@@ -182,8 +172,8 @@ class InfererTests extends FunSuite with Matchers {
             Map(CodeRuneA("M") -> MutabilityTemplataType),
             List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,ImmutableP)))),
             List())))
-    entries = entries ++ Map(
-      CitizenName2("ImmStruct", List()) ->
+    entries = entries.addEntry(true,
+      CitizenName2("ImmStruct", List()),
         StructEnvEntry(
           StructA(
             RangeS.internal(-71),
@@ -204,9 +194,9 @@ class InfererTests extends FunSuite with Matchers {
             List(
               StructMemberA(RangeS.testZero,"i", FinalP, CodeRuneA("I")),
               StructMemberA(RangeS.testZero,"i", FinalP, CodeRuneA("B"))))))
-    entries = entries ++ Map(PrimitiveName2("Array") -> TemplataEnvEntry(ArrayTemplateTemplata()))
-    entries = entries ++ Map(
-        CitizenTemplateName2("MutTStruct", CodeLocation2(-25, 0)) ->
+    entries = entries.addEntry(true, PrimitiveName2("Array"), TemplataEnvEntry(ArrayTemplateTemplata()))
+    entries = entries.addEntry(true,
+        CitizenTemplateName2("MutTStruct", CodeLocation2(-25, 0)),
           StructEnvEntry(
             StructA(
               RangeS.internal(-74),
@@ -222,7 +212,7 @@ class InfererTests extends FunSuite with Matchers {
               Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
               List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
               List())))
-    entries = entries ++ Map(CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)) ->
+    entries = entries.addEntry(true, CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)),
       InterfaceEnvEntry(
         InterfaceA(
           RangeS.internal(-75),
@@ -238,7 +228,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries ++ Map(CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)) ->
+    entries = entries.addEntry(true, CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)),
       StructEnvEntry(
         StructA(
           RangeS.internal(-73),
@@ -254,7 +244,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries ++ Map(CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)) ->
+    entries = entries.addEntry(true, CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)),
       InterfaceEnvEntry(
         InterfaceA(
           RangeS.internal(-72),
@@ -271,16 +261,16 @@ class InfererTests extends FunSuite with Matchers {
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
     val mutStructBorrowName = CitizenName2("MutStructBorrow", List())
-    entries = entries ++ Map(mutStructBorrowName ->
+    entries = entries.addEntry(true, mutStructBorrowName,
       TemplataEnvEntry(CoordTemplata(Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     val mutStructWeakName = CitizenName2("MutStructWeak", List())
-    entries = entries ++ Map(mutStructWeakName ->
+    entries = entries.addEntry(true, mutStructWeakName,
       TemplataEnvEntry(CoordTemplata(Coord(Weak, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     val mutArraySequenceOf4IntName = CitizenName2("MutArraySequenceOf4Int", List())
-    entries = entries ++ Map(mutArraySequenceOf4IntName ->
+    entries = entries.addEntry(true, mutArraySequenceOf4IntName,
       TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
     val intAndBoolTupName = CitizenName2("IntAndBoolTupName", List()) // Tuples are normally addressed by TupleNameT, but that's a detail this test doesn't need to care about.
-    entries = entries ++ Map(intAndBoolTupName ->
+    entries = entries.addEntry(true, intAndBoolTupName,
       TemplataEnvEntry(
         KindTemplata(
           TupleT2(
@@ -288,7 +278,7 @@ class InfererTests extends FunSuite with Matchers {
             // Normally this would be backed by a struct simply named "Tup"
             StructRef2(FullName2(List(), CitizenName2("ImmStruct", List())))))))
     val callPrototype = PrototypeTemplata(incrementPrototype)
-    entries = entries ++ Map(callPrototype.value.fullName.last -> TemplataEnvEntry(callPrototype))
+    entries = entries.addEntry(true, callPrototype.value.fullName.last, TemplataEnvEntry(callPrototype))
     SimpleEnvironment(entries)
   }
 
@@ -392,6 +382,7 @@ class InfererTests extends FunSuite with Matchers {
       }
     val evaluator =
       new InfererEvaluator[SimpleEnvironment, FakeState](
+        new NullProfiler(),
         templataTemplar,
         equalsLayer,
         inferEvaluatorDelegate)

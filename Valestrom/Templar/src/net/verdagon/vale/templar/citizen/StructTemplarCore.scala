@@ -16,7 +16,7 @@ import scala.collection.immutable.List
 class StructTemplarCore(
     opts: TemplarOptions,
     profiler: IProfiler,
-    newTemplataStore: () => ITemplatasStore,
+    newTemplataStore: () => TemplatasStore,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
@@ -167,11 +167,13 @@ class StructTemplarCore(
         newTemplataStore())
     val interfaceInnerEnv1 =
       interfaceInnerEnv0.addEntries(
+        opts.useOptimization,
         interfaceA.identifyingRunes.zip(coercedFinalTemplateArgs2)
           .map({ case (rune, templata) => (NameTranslator.translateRune(rune), List(TemplataEnvEntry(templata))) })
           .toMap)
     val interfaceInnerEnv2 =
       interfaceInnerEnv1.addEntries(
+        opts.useOptimization,
         interfaceA.internalMethods
           .map(internalMethod => {
             val functionName = NameTranslator.translateFunctionNameToTemplateName(internalMethod.name)
@@ -323,6 +325,7 @@ class StructTemplarCore(
         fullName,
         newTemplataStore()
           .addEntries(
+            opts.useOptimization,
             Map(
               FunctionTemplateName2(CallTemplar.CALL_FUNCTION_NAME, CodeLocation2(-14, 0)) -> List(FunctionEnvEntry(functionA)),
               nearName -> List(TemplataEnvEntry(KindTemplata(structRef))),
@@ -462,7 +465,7 @@ class StructTemplarCore(
         .mapValues(_.map(_._2))
         .toMap ++
       Map(
-        ImplDeclareName2(CodeLocation2(-15, 0)) -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))),
+        ImplDeclareName2(NameTranslator.getImplNameForName(opts.useOptimization, interfaceRef).get.subCitizenHumanName, CodeLocation2(-15, 0)) -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))),
         // This is used later by the interface constructor generator to know what interface to impl.
         AnonymousSubstructParentInterfaceRune2() -> List(TemplataEnvEntry(KindTemplata(interfaceRef))),
         AnonymousSubstructImplName2() -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))))
@@ -470,7 +473,7 @@ class StructTemplarCore(
       NamespaceEnvironment(
         Some(interfaceEnv),
         anonymousSubstructName,
-        newTemplataStore().addEntries(structInnerEnvEntries))
+        newTemplataStore().addEntries(opts.useOptimization, structInnerEnvEntries))
 
 
     temputs.addImpl(structRef, interfaceRef)
@@ -593,6 +596,7 @@ class StructTemplarCore(
         Some(outerEnv),
         structFullName,
         newTemplataStore().addEntries(
+          opts.useOptimization,
           Map(forwarderHeader.fullName.last -> List(TemplataEnvEntry(ExternFunctionTemplata(forwarderHeader))))))
     temputs.declareStructEnv(structRef, structInnerEnv)
 

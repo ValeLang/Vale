@@ -189,10 +189,6 @@ case class ImplTemplata(
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
   }
-
-  def getTemplateName(): IName2 = {
-    ImplDeclareName2(NameTranslator.translateCodeLocation(impl.name.codeLocation))
-  }
 }
 
 case class OwnershipTemplata(ownership: Ownership) extends ITemplata {

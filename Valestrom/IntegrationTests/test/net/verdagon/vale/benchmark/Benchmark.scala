@@ -4,7 +4,7 @@ import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 import net.verdagon.vale.{Profiler, Samples}
 
 object Benchmark {
-  def go(useOptimization: Boolean): Long = {
+  def go(useOptimization: Boolean): Profiler = {
     val profiler = new Profiler()
     val compile = Compilation.multiple(
       List(
@@ -20,7 +20,7 @@ object Benchmark {
         profiler = profiler,
         useOptimization = useOptimization))
     compile.getHamuts()
-    profiler.totalNanoseconds
+    profiler
   }
 
   def main(args: Array[String]): Unit = {
@@ -32,12 +32,13 @@ object Benchmark {
     // For now though, this will do.
     go(true)
     go(false)
-    val timesForOldAndNew = (0 until 10).map(_ => (go(false), go(true)))
+    val timesForOldAndNew = (0 until 10).map(_ => (go(false).totalNanoseconds, go(true).totalNanoseconds))
     val timesForOld = timesForOldAndNew.map(_._1)
     val timesForNew = timesForOldAndNew.map(_._2)
     val averageTimeForOld = timesForOld.sum / timesForOld.size
     val averageTimeForNew = timesForNew.sum / timesForNew.size
-
     println("Done benchmarking! Old: " + averageTimeForOld + ", New: " + averageTimeForNew)
+
+//    println(go(true).assembleResults())
   }
 }

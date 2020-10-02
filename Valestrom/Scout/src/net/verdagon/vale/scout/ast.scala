@@ -126,6 +126,7 @@ case class StructMemberS(
 
 case class ImplS(
     range: RangeS,
+    // The name of an impl is the human name of the subcitizen, see INSHN.
     name: ImplNameS,
     // These are separate because we need to change their order depending on what we start with, see NMORFI.
     rulesFromStructDirection: List[IRulexSR],

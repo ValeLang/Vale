@@ -34,7 +34,7 @@ object InfererTestUtils {
   }
 }
 
-case class SimpleEnvironment(templatas: ITemplatasStore) extends IEnvironment {
+case class SimpleEnvironment(templatas: TemplatasStore) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = None
   def fullName = FullName2(List(), GlobalNamespaceName2())
   def globalEnv: NamespaceEnvironment[IName2] = {
@@ -148,14 +148,14 @@ class InfererTests extends FunSuite with Matchers {
     Prototype2(FullName2(List(), FunctionName2("increment", List(), List(Coord(Share, Int2())))), Coord(Share, Int2()))
 
   def makeCannedEnvironment(): SimpleEnvironment = {
-    var entries: ITemplatasStore = FastTemplatasIndex(Map(), Map())
+    var entries: TemplatasStore = TemplatasStore(Map(), Map())
     val voidName = PrimitiveName2("void")
-    entries = entries.addEntry(voidName, TemplataEnvEntry(KindTemplata(Void2())))
+    entries = entries.addEntry(true, voidName, TemplataEnvEntry(KindTemplata(Void2())))
     val intName = PrimitiveName2("int")
-    entries = entries.addEntry(intName, TemplataEnvEntry(KindTemplata(Int2())))
+    entries = entries.addEntry(true, intName, TemplataEnvEntry(KindTemplata(Int2())))
     val boolName = PrimitiveName2("bool")
-    entries = entries.addEntry(boolName, TemplataEnvEntry(KindTemplata(Bool2())))
-    entries = entries.addEntry(
+    entries = entries.addEntry(true, boolName, TemplataEnvEntry(KindTemplata(Bool2())))
+    entries = entries.addEntry(true,
       CitizenName2("ImmInterface", List()),
         InterfaceEnvEntry(
           InterfaceA(
@@ -172,7 +172,7 @@ class InfererTests extends FunSuite with Matchers {
             Map(CodeRuneA("M") -> MutabilityTemplataType),
             List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,ImmutableP)))),
             List())))
-    entries = entries.addEntry(
+    entries = entries.addEntry(true,
       CitizenName2("ImmStruct", List()),
         StructEnvEntry(
           StructA(
@@ -194,8 +194,8 @@ class InfererTests extends FunSuite with Matchers {
             List(
               StructMemberA(RangeS.testZero,"i", FinalP, CodeRuneA("I")),
               StructMemberA(RangeS.testZero,"i", FinalP, CodeRuneA("B"))))))
-    entries = entries.addEntry(PrimitiveName2("Array"), TemplataEnvEntry(ArrayTemplateTemplata()))
-    entries = entries.addEntry(
+    entries = entries.addEntry(true, PrimitiveName2("Array"), TemplataEnvEntry(ArrayTemplateTemplata()))
+    entries = entries.addEntry(true,
         CitizenTemplateName2("MutTStruct", CodeLocation2(-25, 0)),
           StructEnvEntry(
             StructA(
@@ -212,7 +212,7 @@ class InfererTests extends FunSuite with Matchers {
               Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
               List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
               List())))
-    entries = entries.addEntry(CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)),
+    entries = entries.addEntry(true, CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)),
       InterfaceEnvEntry(
         InterfaceA(
           RangeS.internal(-75),
@@ -228,7 +228,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries.addEntry(CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)),
+    entries = entries.addEntry(true, CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)),
       StructEnvEntry(
         StructA(
           RangeS.internal(-73),
@@ -244,7 +244,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries.addEntry(CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)),
+    entries = entries.addEntry(true, CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)),
       InterfaceEnvEntry(
         InterfaceA(
           RangeS.internal(-72),
@@ -261,16 +261,16 @@ class InfererTests extends FunSuite with Matchers {
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
     val mutStructBorrowName = CitizenName2("MutStructBorrow", List())
-    entries = entries.addEntry(mutStructBorrowName,
+    entries = entries.addEntry(true, mutStructBorrowName,
       TemplataEnvEntry(CoordTemplata(Coord(Borrow, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     val mutStructWeakName = CitizenName2("MutStructWeak", List())
-    entries = entries.addEntry(mutStructWeakName,
+    entries = entries.addEntry(true, mutStructWeakName,
       TemplataEnvEntry(CoordTemplata(Coord(Weak, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     val mutArraySequenceOf4IntName = CitizenName2("MutArraySequenceOf4Int", List())
-    entries = entries.addEntry(mutArraySequenceOf4IntName,
+    entries = entries.addEntry(true, mutArraySequenceOf4IntName,
       TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Int2()), Mutable)))))
     val intAndBoolTupName = CitizenName2("IntAndBoolTupName", List()) // Tuples are normally addressed by TupleNameT, but that's a detail this test doesn't need to care about.
-    entries = entries.addEntry(intAndBoolTupName,
+    entries = entries.addEntry(true, intAndBoolTupName,
       TemplataEnvEntry(
         KindTemplata(
           TupleT2(
@@ -278,7 +278,7 @@ class InfererTests extends FunSuite with Matchers {
             // Normally this would be backed by a struct simply named "Tup"
             StructRef2(FullName2(List(), CitizenName2("ImmStruct", List())))))))
     val callPrototype = PrototypeTemplata(incrementPrototype)
-    entries = entries.addEntry(callPrototype.value.fullName.last, TemplataEnvEntry(callPrototype))
+    entries = entries.addEntry(true, callPrototype.value.fullName.last, TemplataEnvEntry(callPrototype))
     SimpleEnvironment(entries)
   }
 

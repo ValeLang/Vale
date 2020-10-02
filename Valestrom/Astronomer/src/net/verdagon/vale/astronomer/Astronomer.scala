@@ -190,7 +190,7 @@ object Astronomer {
       case FunctionNameS(_, _) =>
       case TopLevelCitizenDeclarationNameS(_, _) =>
       case LambdaStructNameS(_) => return KindTemplataType
-      case ImplNameS(_) => vwat()
+      case ImplNameS(_, _) => vwat()
       case LetNameS(_) => vwat()
       case UnnamedLocalNameS(_) => vwat()
       case ClosureParamNameS() => vwat()
@@ -573,7 +573,7 @@ object Astronomer {
       case FunctionNameS(name, codeLocation) => FunctionNameA(name, codeLocation)
       case tlcd @ TopLevelCitizenDeclarationNameS(_, _) => translateTopLevelCitizenDeclarationName(tlcd)
       case LambdaStructNameS(lambdaName) => LambdaStructNameA(translateLambdaNameStep(lambdaName))
-      case i @ ImplNameS(_) => translateImplName(i)
+      case i @ ImplNameS(_, _) => translateImplName(i)
       case LetNameS(codeLocation) => LetNameA(codeLocation)
       case UnnamedLocalNameS(codeLocation) => UnnamedLocalNameA(codeLocation)
       case ClosureParamNameS() => ClosureParamNameA()
@@ -583,8 +583,8 @@ object Astronomer {
   }
 
   def translateImplName(s: ImplNameS): ImplNameA = {
-    val ImplNameS(codeLocationS) = s;
-    ImplNameA(codeLocationS)
+    val ImplNameS(subCitizenHumanName, codeLocationS) = s;
+    ImplNameA(subCitizenHumanName, codeLocationS)
   }
 
   def translateTopLevelCitizenDeclarationName(tlcd: TopLevelCitizenDeclarationNameS): TopLevelCitizenDeclarationNameA = {

@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
@@ -26,20 +26,25 @@ class OptTests extends FunSuite with Matchers {
   }
 
   test("Test empty and get for None") {
-    val compile = Compilation(
-      Samples.get("libraries/utils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/castutils.vale") +
-      Samples.get("libraries/opt.vale") +
+    val profiler = new Profiler()
+    val compile = Compilation.multiple(
+      List(
+      Samples.get("libraries/utils.vale"),
+        Samples.get("libraries/printutils.vale"),
+        Samples.get("libraries/castutils.vale"),
+      Samples.get("libraries/opt.vale"),
         """
           |fn main() {
           |  opt Opt<int> = None<int>();
           |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
-        """.stripMargin)
+        """.stripMargin),
+      CompilationOptions(profiler = profiler))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(0)
+
+    println(profiler.assembleResults())
   }
 
 }

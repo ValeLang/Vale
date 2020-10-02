@@ -763,7 +763,8 @@ object VonHammer {
           None,
           Vector(
             VonMember("envName", vonifyTemplarName(hinputs, hamuts, env.fullName)),
-            VonMember("location", translateName(hinputs, hamuts, it.getTemplateName()))))
+            VonMember("subCitizenHumanName", VonStr(impl.name.subCitizenHumanName)),
+            VonMember("location", vonifyCodeLocation2(NameTranslator.translateCodeLocation(impl.name.codeLocation)))))
       }
       case ExternFunctionTemplata(header) => VonObject("ExternFunctionTemplata", None, Vector(VonMember("name", vonifyTemplarName(hinputs, hamuts, header.fullName))))
       case OwnershipTemplata(ownership) => VonObject("OwnershipTemplata", None, Vector(VonMember("ownership", vonifyOwnership(Conversions.evaluateOwnership(ownership)))))
@@ -816,11 +817,12 @@ object VonHammer {
           Vector(
             VonMember("kind", vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
       }
-      case ImplDeclareName2(codeLocation) => {
+      case ImplDeclareName2(subCitizenHumanName, codeLocation) => {
         VonObject(
           "ImplDeclareName",
           None,
           Vector(
+            VonMember("subCitizenHumanName", VonStr(subCitizenHumanName)),
             VonMember("codeLocation", vonifyCodeLocation2(codeLocation))))
       }
       case LetName2(codeLocation) => {

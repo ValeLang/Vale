@@ -27,7 +27,7 @@ private[infer] trait IInfererEvaluatorDelegate[Env, State] {
   def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2): Set[InterfaceRef2]
 
   def lookupTemplata(env: Env, rune: IName2): ITemplata
-  def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata
+  def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata
 
   def getMemberCoords(state: State, structRef: StructRef2): List[Coord]
 
@@ -44,6 +44,7 @@ private[infer] trait IInfererEvaluatorDelegate[Env, State] {
 // inferences as possible.
 
 class InfererEvaluator[Env, State](
+  profiler: IProfiler,
   templataTemplar: TemplataTemplarInner[Env, State],
   equator: InfererEquator[Env, State],
   delegate: IInfererEvaluatorDelegate[Env, State]) {
@@ -1238,6 +1239,7 @@ class InfererEvaluator[Env, State](
 
   def makeMatcher(): InfererMatcher[Env, State] = {
     new InfererMatcher(
+      profiler,
       templataTemplar,
       equator,
       evaluateRule,
@@ -1269,8 +1271,8 @@ class InfererEvaluator[Env, State](
         override def lookupTemplata(env: Env, name: IName2): ITemplata = {
           delegate.lookupTemplata(env, name)
         }
-        override def lookupTemplata(env: Env, name: IImpreciseNameStepA): ITemplata = {
-          delegate.lookupTemplata(env, name)
+        override def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata = {
+          delegate.lookupTemplata(profiler, env, name)
         }
       })
   }

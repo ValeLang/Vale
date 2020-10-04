@@ -81,10 +81,11 @@ Ref Assist::lockWeak(
     Reference* constraintRefM,
     Reference* sourceWeakRefMT,
     Ref sourceWeakRef,
+    bool sourceKnownLive,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   auto isAliveLE =
-      getIsAliveFromWeakRef(functionState, builder, sourceWeakRefMT, sourceWeakRef);
+      getIsAliveFromWeakRef(functionState, builder, sourceWeakRefMT, sourceWeakRef, sourceKnownLive);
   auto resultOptTypeLE = translateType(resultOptTypeM);
   return buildIfElse(
       globalState, functionState, builder, isAliveLE, resultOptTypeLE, resultOptTypeM, resultOptTypeM,
@@ -306,6 +307,7 @@ Ref Assist::loadMember(
     LLVMBuilderRef builder,
     Reference* structRefMT,
     Ref structRef,
+    bool structKnownLive,
     int memberIndex,
     Reference* expectedMemberType,
     Reference* targetType,
@@ -335,7 +337,7 @@ Ref Assist::loadMember(
       }
       case Ownership::WEAK: {
         auto wrapperPtrLE =
-            globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT, structRef);
+            globalState->region->lockWeakRef(FL(), functionState, builder, structRefMT, structRef, structKnownLive);
         innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend,
             wrapperPtrLE);
         break;
@@ -358,6 +360,7 @@ void Assist::storeMember(
     LLVMBuilderRef builder,
     Reference* structRefMT,
     Ref structRef,
+    bool structKnownLive,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newValueLE) {
@@ -455,7 +458,8 @@ Ref Assist::getIsAliveFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    Ref weakRef) {
+    Ref weakRef,
+    bool knownLive) {
   return wrcWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
 }
 

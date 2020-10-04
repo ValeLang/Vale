@@ -40,7 +40,8 @@ Ref translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  globalState->region->checkValidReference(FL(), functionState, builder, iff->commonSupertype, resultLE);
+  globalState->region->checkValidReference(
+      FL(), functionState, builder, iff->commonSupertype, resultLE);
 
 
   bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;

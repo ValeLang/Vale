@@ -1,7 +1,6 @@
 package net.verdagon.vale.driver
 
 import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
-import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, VonHammer}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
@@ -42,7 +41,6 @@ class Compilation(
   var parsedsCache: Option[List[FileP]] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None
-  var temputsCache: Option[Temputs] = None
   var hinputsCache: Option[Hinputs] = None
   var hamutsCache: Option[ProgramH] = None
 
@@ -95,29 +93,17 @@ class Compilation(
     }
   }
 
-  def getTemputs(): Temputs = {
-    temputsCache match {
+  def getTemputs(): Hinputs = {
+    hinputsCache match {
       case Some(temputs) => temputs
       case None => {
-        val temputs =
+        val hamuts =
           new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization).evaluate(getAstrouts()) match {
             case Ok(t) => t
-
             case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, filenamesAndSources, e))
           }
-        temputsCache = Some(temputs)
-        temputs
-      }
-    }
-  }
-
-  def getHinputs(): Hinputs = {
-    hinputsCache match {
-      case Some(hinputs) => hinputs
-      case None => {
-        val hinputs = Carpenter.translate((_) => {}, getTemputs())
-        hinputsCache = Some(hinputs)
-        hinputs
+        hinputsCache = Some(hamuts)
+        hamuts
       }
     }
   }
@@ -126,7 +112,7 @@ class Compilation(
     hamutsCache match {
       case Some(hamuts) => hamuts
       case None => {
-        val hamuts = Hammer.translate(getHinputs())
+        val hamuts = Hammer.translate(getTemputs())
         VonHammer.vonifyProgram(hamuts)
         hamutsCache = Some(hamuts)
         hamuts

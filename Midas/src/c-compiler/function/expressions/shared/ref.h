@@ -63,6 +63,7 @@ private:
   // This is private to keep us from just grabbing this to hand in to checkValidReference.
   // We should instead always pipe through the code the actual expected type.
   Reference* const refM;
+
   LLVMValueRef const refLE;
 
   friend std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref);

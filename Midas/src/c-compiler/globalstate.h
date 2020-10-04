@@ -32,11 +32,19 @@ public:
 
   MetalCache metalCache;
 
+  LLVMTypeRef ram64Struct = nullptr;
+
   Program* program = nullptr;
   LLVMValueRef objIdCounter = nullptr;
   LLVMValueRef liveHeapObjCounter = nullptr;
   LLVMValueRef derefCounter = nullptr;
   LLVMValueRef mutRcAdjustCounter = nullptr;
+  // an i64 pointer to null.
+  LLVMValueRef ram64 = nullptr;
+  LLVMValueRef writeOnlyGlobal = nullptr;
+  // Initialized to &writeOnlyGlobal / 8 in main.
+  // We can use this to easily write an i64 into NULL or the write only global at runtime.
+  LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;
   LLVMValueRef malloc = nullptr, free = nullptr, assert = nullptr, exit = nullptr,
       assertI64Eq = nullptr, flareI64 = nullptr, printCStr = nullptr,
       getch = nullptr, printInt = nullptr, printBool = nullptr, intToCStr = nullptr,

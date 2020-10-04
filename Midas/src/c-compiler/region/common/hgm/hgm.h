@@ -13,7 +13,9 @@ public:
   HybridGenerationalMemory(
       GlobalState* globalState_,
       IReferendStructsSource* referendStructsSource_,
-      IWeakRefStructsSource* weakRefStructsSource_);
+      IWeakRefStructsSource* weakRefStructsSource_,
+      bool skipChecksForKnownLive_,
+      bool limitMode_);
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -70,7 +72,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      WeakFatPtrLE weakRefLE);
+      WeakFatPtrLE weakRefLE,
+      bool weakRefKnownLive);
 
   void innerNoteWeakableDestroyed(
       FunctionState* functionState,
@@ -97,13 +100,15 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      WeakFatPtrLE weakFatPtrLE);
+      WeakFatPtrLE weakFatPtrLE,
+      bool knownLive);
 
   Ref getIsAliveFromWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      Ref weakRef);
+      Ref weakRef,
+      bool knownLive);
 
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
@@ -135,6 +140,13 @@ private:
   FatWeaks fatWeaks_;
   IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
+
+  bool skipChecksForKnownLive;
+
+  // If true, then pretend all references are known live, dont fill in any generations, basically
+  // pretend to be unsafe mode as much as possible.
+  // This is to see the theoretical maximum speed of HGM, and where its slowdowns are.
+  bool limitMode;
 };
 
 #endif

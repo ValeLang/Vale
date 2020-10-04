@@ -133,6 +133,7 @@ class ValeCompiler:
 
         build_dir = f"."
         exe_file = ("main.exe" if self.windows else "a.out")
+        parseds_output_dir = None
 
         valestrom_options = []
         midas_options = []
@@ -182,6 +183,12 @@ class ValeCompiler:
             val = args[ind]
             del args[ind]
             exe_file = val
+        if "-op" in args:
+            ind = args.index("-op")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            parseds_output_dir = val
 
         vale_files = []
         c_files = []
@@ -202,6 +209,11 @@ class ValeCompiler:
         vir_file = build_dir + "/build.vir"
         valestrom_options.append("-o")
         valestrom_options.append(vir_file)
+
+        if parseds_output_dir != None:
+            valestrom_options.append("-op")
+            valestrom_options.append(parseds_output_dir)
+
         proc = self.valestrom(vale_files, valestrom_options)
         print(proc.stdout)
         print(proc.stderr)

@@ -137,7 +137,7 @@ class DestructorTemplar(
     val function2 = Function2(header, List(), Block2(List(dropExpr2, Return2(VoidLiteral2()))))
     temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Void2()))
     temputs.addFunction(function2)
-    vassert(temputs.exactDeclaredSignatureExists(bodyEnv.fullName))
+    vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
     header
   }
 

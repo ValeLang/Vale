@@ -146,7 +146,7 @@ class LocalHelper(
               a match {
                 case LocalLookup2(_, lv, _) => lv
                 case AddressMemberLookup2(_, _, name, _) => {
-                  throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name))
+                  throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
                 }
               }
             fate.markVariableMoved(localVar.id)

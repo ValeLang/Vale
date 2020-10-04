@@ -220,6 +220,7 @@ object LoadHammer {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val local = locals.get(varId).get
+    vassert(!locals.unstackifiedVars.contains(local.id))
 
     val (localTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, localReference2);
@@ -263,6 +264,7 @@ object LoadHammer {
         vfail("wot")
       }
     }
+    vassert(!locals.unstackifiedVars.contains(local.id))
 
     val (expectedTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, expectedType2);
@@ -286,6 +288,7 @@ object LoadHammer {
     vassert(type2 == localVar.reference)
 
     val local = locals.get(localVar.id).get
+    vassert(!locals.unstackifiedVars.contains(local.id))
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, localVar.variability, localVar.reference, local.typeH)
 

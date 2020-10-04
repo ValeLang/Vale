@@ -451,7 +451,7 @@ class StructTemplarCore(
               superReturnType,
               None)
 
-          temputs.declareFunctionSignature(forwarderHeader.toSignature, None)
+          temputs.declareFunctionSignature(range, forwarderHeader.toSignature, None)
           forwarderHeader
         }
       })
@@ -567,6 +567,7 @@ class StructTemplarCore(
   def prototypeToAnonymousStruct(
     outerEnv: IEnvironment,
     temputs: Temputs,
+    range: RangeS,
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {
@@ -589,7 +590,7 @@ class StructTemplarCore(
         forwarderParams,
         prototype.returnType,
         None)
-    temputs.declareFunctionSignature(forwarderHeader.toSignature, None)
+    temputs.declareFunctionSignature(range, forwarderHeader.toSignature, None)
 
     val structInnerEnv =
       NamespaceEnvironment(
@@ -669,7 +670,9 @@ class StructTemplarCore(
     temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
     temputs.addFunction(constructor2);
 
-    vassert(temputs.exactDeclaredSignatureExists(constructor2.header.fullName))
+    vassert(
+      temputs.getDeclaredSignatureOrigin(
+        constructor2.header.fullName).nonEmpty)
 
     (constructor2.header)
   }

@@ -60,20 +60,80 @@ object ParserVonifier {
     }
   }
 
+  def vonifyCitizenAttribute(thing: ICitizenAttributeP): VonObject = {
+    thing match {
+      case WeakableP(range) => VonObject("WeakableAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case SealedP(range) => VonObject("SealedAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ExportP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+    }
+  }
+
   def vonifyStruct(thing: StructP): VonObject = {
     val StructP(range, name, attributes, mutability, identifyingRunes, templateRules, members) = thing
     VonObject(
-      "StructTODO",
+      "Struct",
       None,
-      Vector())
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("name", vonifyName(name)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyCitizenAttribute).toVector)),
+        VonMember("mutability", vonifyMutability(mutability)),
+        VonMember("identifyingRunes", vonifyOptional(identifyingRunes, vonifyIdentifyingRunes)),
+        VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("members", vonifyStructMembers(members))))
+  }
+
+  def vonifyStructMembers(thing: StructMembersP) = {
+    val StructMembersP(range, contents) = thing
+    VonObject(
+      "StructMembers",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("members", VonArray(None, contents.map(vonifyStructContents).toVector))))
+  }
+
+  def vonifyStructContents(thing: IStructContent) = {
+    thing match {
+      case sm @ StructMethodP(_) => vonifyStructMethod(sm)
+      case sm @ StructMemberP(_, _, _, _) => vonifyStructMember(sm)
+    }
+  }
+
+  def vonifyStructMember(thing: StructMemberP) = {
+    val StructMemberP(range, name, variability, tyype) = thing
+    VonObject(
+      "StructMember",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("name", vonifyName(name)),
+        VonMember("variability", vonifyVariability(variability)),
+        VonMember("type", vonifyTemplex(tyype))))
+  }
+
+  def vonifyStructMethod(thing: StructMethodP) = {
+    val StructMethodP(function) = thing
+    VonObject(
+      "StructMethod",
+      None,
+      Vector(
+        VonMember("function", vonifyFunction(function))))
   }
 
   def vonifyInterface(thing: InterfaceP): VonObject = {
     val InterfaceP(range, name, attributes, mutability, maybeIdentifyingRunes, templateRules, members) = thing
     VonObject(
-      "InterfaceTODO",
+      "Interface",
       None,
-      Vector())
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("name", vonifyName(name)),
+        VonMember("attributes", VonArray(None, attributes.map(vonifyCitizenAttribute).toVector)),
+        VonMember("mutability", vonifyMutability(mutability)),
+        VonMember("maybeIdentifyingRunes", vonifyOptional(maybeIdentifyingRunes, vonifyIdentifyingRunes)),
+        VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
+        VonMember("members", VonArray(None, members.map(vonifyFunction).toVector))))
   }
 
   def vonifyImpl(impl: ImplP): VonObject = {
@@ -223,11 +283,121 @@ object ParserVonifier {
   def vonifyTemplateRules(thing: TemplateRulesP): VonObject = {
     val TemplateRulesP(range, rules) = thing
     VonObject(
-      "TemplateRulesTODO",
+      "TemplateRules",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("rules", VonInt(0))))
+        VonMember("rules", VonArray(None, rules.map(vonifyRule).toVector))))
+  }
+
+  def vonifyRule(thing: IRulexPR): VonObject = {
+    thing match {
+      case EqualsPR(range, left, right) => {
+        VonObject(
+          "EqualsPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("left", vonifyRule(left)),
+            VonMember("right", vonifyRule(right))
+          )
+        )
+      }
+      case OrPR(range, possibilities) => {
+        VonObject(
+          "OrPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("possibilities", VonArray(None, possibilities.map(vonifyRule).toVector))
+          )
+        )
+      }
+      case DotPR(range, container, memberName) => {
+        VonObject(
+          "DotPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("container", vonifyRule(container)),
+            VonMember("memberName", vonifyName(memberName))))
+      }
+      case ComponentsPR(range, container, components) => {
+        VonObject(
+          "ComponentsPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("container", vonifyRule(container)),
+            VonMember("components", VonArray(None, components.map(vonifyRule).toVector))
+          )
+        )
+      }
+      case TypedPR(range, rune, tyype) => {
+        VonObject(
+          "TypedPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("rune", vonifyOptional(rune, vonifyName)),
+            VonMember("type", vonifyRuneType(tyype))))
+      }
+      case TemplexPR(templex) => {
+        VonObject(
+          "TemplexPR",
+          None,
+          Vector(
+            VonMember("templex", vonifyTemplex(templex))))
+      }
+      case CallPR(range, name, args) => {
+        VonObject(
+          "CallPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("name", vonifyName(name)),
+            VonMember("args", VonArray(None, args.map(vonifyRule).toVector))
+          )
+        )
+      }
+      case ResolveSignaturePR(range, nameStrRule, argsPackRule) => {
+        VonObject(
+          "ResolveSignaturePR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("nameStrRule", vonifyRule(nameStrRule)),
+            VonMember("argsPackRule", vonifyRule(argsPackRule)),
+          )
+        )
+      }
+      case PackPR(range, elements) => {
+        VonObject(
+          "PackPR",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("elements", VonArray(None, elements.map(vonifyRule).toVector))
+          )
+        )
+      }
+    }
+  }
+
+  def vonifyRuneType(thing: ITypePR): VonObject = {
+    thing match {
+      case IntTypePR => VonObject("IntTypePR", None, Vector())
+      case BoolTypePR => VonObject("BoolTypePR", None, Vector())
+      case OwnershipTypePR => VonObject("OwnershipTypePR", None, Vector())
+      case MutabilityTypePR => VonObject("MutabilityTypePR", None, Vector())
+      case PermissionTypePR => VonObject("PermissionTypePR", None, Vector())
+      case LocationTypePR => VonObject("LocationTypePR", None, Vector())
+      case CoordTypePR => VonObject("CoordTypePR", None, Vector())
+      case PrototypeTypePR => VonObject("PrototypeTypePR", None, Vector())
+      case KindTypePR => VonObject("KindTypePR", None, Vector())
+      case RegionTypePR => VonObject("RegionTypePR", None, Vector())
+      case CitizenTemplateTypePR => VonObject("CitizenTemplateTypePR", None, Vector())
+    }
   }
 
   def vonifyIdentifyingRunes(thing: IdentifyingRunesP): VonObject = {
@@ -386,6 +556,75 @@ object ParserVonifier {
             VonMember("size", vonifyTemplex(size)),
             VonMember("element", vonifyTemplex(element))))
       }
+      case BorrowPT(range, inner) => {
+        VonObject(
+          "BorrowPT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("inner", vonifyTemplex(inner))))
+      }
+      case FunctionPT(range, mutability, parameters, returnType) => {
+        VonObject(
+          "FunctionPT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
+            VonMember("parameters", vonifyTemplex(parameters)),
+            VonMember("returnType", vonifyTemplex(returnType))))
+      }
+      case PackPT(range, members) => {
+        VonObject(
+          "PackPT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("members", VonArray(None, members.map(vonifyTemplex).toVector))))
+      }
+      case PrototypePT(range, name, parameters, returnType) => {
+        VonObject(
+          "PrototypePT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("name", vonifyName(name)),
+            VonMember("parameters", VonArray(None, parameters.map(vonifyTemplex).toVector)),
+            VonMember("returnType", vonifyTemplex(returnType))))
+      }
+      case SharePT(range, inner) => {
+        VonObject(
+          "SharePT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("inner", vonifyTemplex(inner))))
+      }
+      case StringPT(range, str) => {
+        VonObject(
+          "StringPT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("str", VonStr(str))))
+      }
+      case TypedRunePT(range, rune, tyype) => {
+        VonObject(
+          "TypedRunePT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("rune", vonifyName(rune)),
+            VonMember("type", vonifyRuneType(tyype))))
+      }
+      case VariabilityPT(range, variability) => {
+        VonObject(
+          "VariabilityPT",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("variability", vonifyVariability(variability))))
+      }
     }
   }
 
@@ -397,7 +636,7 @@ object ParserVonifier {
     }
   }
 
-  def vonifyMutability(thing: MutabilityP): VonObject = {
+  def vonifyMutability(thing: MutabilityP): IVonData = {
     thing match {
       case MutableP => VonObject("Mutable", None, Vector())
       case ImmutableP => VonObject("Immutable", None, Vector())
@@ -528,7 +767,7 @@ object ParserVonifier {
       }
       case MethodCallPE(range, callableExpr, operatorRange, callableTargetOwnership, isMapCall, methodLookup, argExprs) => {
         VonObject(
-          "MethodCallTODO",
+          "MethodCall",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -558,105 +797,86 @@ object ParserVonifier {
       }
       case StrLiteralPE(range, value) => {
         VonObject(
-          "StrLiteralTODO",
+          "StrLiteral",
           None,
           Vector(
-            VonMember("range", vonifyRange(range))))
+            VonMember("range", vonifyRange(range)),
+            VonMember("value", VonStr(value))))
       }
       case AndPE(left, right) => {
         VonObject(
-          "AndTODO",
+          "And",
           None,
-          Vector())
-//            VonMember("range", vonifyRange(range))))
+          Vector(
+            VonMember("left", vonifyExpression(left)),
+            VonMember("right", vonifyExpression(right))))
       }
       case b @ BlockPE(_, _) => {
         vonifyBlock(b)
       }
       case DestructPE(range, inner) => {
         VonObject(
-          "DestructTODO",
+          "Destruct",
           None,
           Vector(
-            VonMember("range", vonifyRange(range))))
+            VonMember("range", vonifyRange(range)),
+            VonMember("inner", vonifyExpression(inner))))
       }
       case LambdaPE(captures, function) => {
         VonObject(
-          "LambdaTODO",
+          "Lambda",
           None,
           Vector(
-
-          ))
+            VonMember("captures", vonifyOptional(captures, vonifyUnit)),
+            VonMember("function", vonifyFunction(function))))
       }
       case MagicParamLookupPE(range) => {
         VonObject(
-          "MagicParamLookupTODO",
+          "MagicParamLookup",
           None,
           Vector(
             VonMember("range", vonifyRange(range))))
       }
       case MatchPE(range, condition, lambdas) => {
         VonObject(
-          "MatchTODO",
+          "Match",
           None,
           Vector(
-            VonMember("range", vonifyRange(range))))
+            VonMember("range", vonifyRange(range)),
+            VonMember("condition", vonifyExpression(condition)),
+            VonMember("lambdas", VonArray(None, lambdas.map(vonifyExpression).toVector))))
       }
       case OrPE(left, right) => {
         VonObject(
-          "OrTODO",
+          "Or",
           None,
-          Vector())
-//            VonMember("range", vonifyRange(range))))
-      }
-      case RepeaterBlockIteratorPE(expression) => {
-        VonObject(
-          "RepeaterBlockIteratorTODO",
-          None,
-          Vector())
-//            VonMember("range", vonifyRange(range))))
-      }
-      case RepeaterBlockPE(expression) => {
-        VonObject(
-          "RepeaterBlockTODO",
-          None,
-          Vector())
-//            VonMember("range", vonifyRange(range))))
-      }
-      case RepeaterPackIteratorPE(expression) => {
-        VonObject(
-          "RepeaterPackIteratorTODO",
-          None,
-          Vector())
-//            VonMember("range", vonifyRange(range))))
-      }
-      case RepeaterPackPE(expression) => {
-        VonObject(
-          "RepeaterPackTODO",
-          None,
-          Vector())
-//            VonMember("range", vonifyRange(range))))
+          Vector(
+            VonMember("left", vonifyExpression(left)),
+            VonMember("right", vonifyExpression(right))))
       }
       case SequencePE(range, elements) => {
         VonObject(
-          "SequenceTODO",
+          "Sequence",
           None,
           Vector(
-            VonMember("range", vonifyRange(range))))
+            VonMember("range", vonifyRange(range)),
+            VonMember("elements", VonArray(None, elements.map(vonifyExpression).toVector))))
       }
       case VoidPE(range) => {
         VonObject(
-          "VoidTODO",
+          "Void",
           None,
           Vector(
             VonMember("range", vonifyRange(range))))
       }
       case WhilePE(range, condition, body) => {
         VonObject(
-          "WhileTODO",
+          "While",
           None,
           Vector(
-            VonMember("range", vonifyRange(range))))
+            VonMember("range", vonifyRange(range)),
+            VonMember("condition", vonifyBlock(condition)),
+            VonMember("body", vonifyBlock(body))))
       }
     }
   }

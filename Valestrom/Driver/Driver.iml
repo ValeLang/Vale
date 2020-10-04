@@ -9,7 +9,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
     <orderEntry type="module" module-name="Astronomer" />
-    <orderEntry type="module" module-name="Carpenter" />
     <orderEntry type="module" module-name="Hammer" />
     <orderEntry type="module" module-name="Highlighter" />
     <orderEntry type="module" module-name="Hinputs" />

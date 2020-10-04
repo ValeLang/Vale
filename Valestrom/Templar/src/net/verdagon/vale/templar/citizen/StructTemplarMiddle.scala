@@ -129,10 +129,11 @@ class StructTemplarMiddle(
   def prototypeToAnonymousStruct(
     outerEnv: IEnvironment,
     temputs: Temputs,
+    range: RangeS,
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {
     core.prototypeToAnonymousStruct(
-      outerEnv, temputs, prototype, structFullName)
+      outerEnv, temputs, range, prototype, structFullName)
   }
 }

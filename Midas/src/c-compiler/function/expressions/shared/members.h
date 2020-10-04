@@ -19,6 +19,7 @@ Ref loadMember(
     LLVMBuilderRef builder,
     Reference* structRefM,
     Ref structRef,
+    bool structKnownLive,
     Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
@@ -32,6 +33,7 @@ Ref swapMember(
     StructDefinition* structDefM,
     Reference* structRefMT,
     Ref structRefLE,
+    bool structKnownLive,
     int memberIndex,
     const std::string& memberName,
     Ref newMemberLE);

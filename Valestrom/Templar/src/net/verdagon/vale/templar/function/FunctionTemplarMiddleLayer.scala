@@ -94,24 +94,30 @@ class FunctionTemplarMiddleLayer(
     val banner = FunctionBanner2(Some(function1), namedEnv.fullName, params2)
 
     // Now we want to add its Function2 into the temputs.
-    if (temputs.exactDeclaredSignatureExists(banner.toSignature)) {
-      // Someone else is already working on it (or has finished), so
-      // just return.
-      (banner)
-    } else {
-      val signature = banner.toSignature
-      temputs.declareFunctionSignature(signature, Some(namedEnv))
-      val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
-      val header =
-        core.evaluateFunctionForHeader(namedEnv, temputs, callRange, params2)
-      if (header.toBanner != banner) {
-        val bannerFromHeader = header.toBanner
-        vfail("wut\n" + bannerFromHeader + "\n" + banner)
+    temputs.getDeclaredSignatureOrigin(banner.toSignature) match {
+      case Some(existingFunctionOrigin) => {
+        if (function1.range != existingFunctionOrigin) {
+          throw CompileErrorExceptionT(FunctionAlreadyExists(existingFunctionOrigin, function1.range, banner.toSignature))
+        }
+        // Someone else is already working on it (or has finished), so
+        // just return.
+        banner
       }
+      case None => {
+        val signature = banner.toSignature
+        temputs.declareFunctionSignature(function1.range, signature, Some(namedEnv))
+        val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
+        val header =
+          core.evaluateFunctionForHeader(namedEnv, temputs, callRange, params2)
+        if (header.toBanner != banner) {
+          val bannerFromHeader = header.toBanner
+          vfail("wut\n" + bannerFromHeader + "\n" + banner)
+        }
 
-      delegate.evaluateParent(namedEnv, temputs, header)
+        delegate.evaluateParent(namedEnv, temputs, header)
 
-      (header.toBanner)
+        (header.toBanner)
+      }
     }
   }
 
@@ -149,7 +155,7 @@ class FunctionTemplarMiddleLayer(
         val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
         val namedEnv = makeNamedEnv(runedEnv, params2.map(_.tyype), maybeReturnType)
 
-        temputs.declareFunctionSignature(needleSignature, Some(namedEnv))
+        temputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
 
         val header =
           core.evaluateFunctionForHeader(
@@ -201,15 +207,10 @@ class FunctionTemplarMiddleLayer(
     val maybeReturnType = getMaybeReturnType(runedEnv, function1.maybeRetCoordRune)
     val namedEnv = makeNamedEnv(runedEnv, paramTypes2, maybeReturnType)
     val needleSignature = Signature2(namedEnv.fullName)
-    temputs.getReturnTypeForSignature(needleSignature) match {
-      case Some(returnType2) => {
-        (Prototype2(namedEnv.fullName, returnType2))
-      }
+
+    temputs.getDeclaredSignatureOrigin(needleSignature) match {
       case None => {
-        if (temputs.exactDeclaredSignatureExists(needleSignature)) {
-          vfail("Need return type for " + needleSignature + ", cycle found")
-        }
-        temputs.declareFunctionSignature(needleSignature, Some(namedEnv))
+        temputs.declareFunctionSignature(function1.range, needleSignature, Some(namedEnv))
         val params2 = assembleFunctionParams(namedEnv, temputs, function1.params)
         val header =
           core.evaluateFunctionForHeader(
@@ -219,6 +220,19 @@ class FunctionTemplarMiddleLayer(
 
         vassert(header.toSignature == needleSignature)
         (header.toPrototype)
+      }
+      case Some(existingOriginS) => {
+        if (existingOriginS != function1.range) {
+          throw CompileErrorExceptionT(FunctionAlreadyExists(existingOriginS, function1.range, needleSignature))
+        }
+        temputs.getReturnTypeForSignature(needleSignature) match {
+          case Some(returnType2) => {
+            (Prototype2(namedEnv.fullName, returnType2))
+          }
+          case None => {
+            vfail("Need return type for " + needleSignature + ", cycle found")
+          }
+        }
       }
     }
   }

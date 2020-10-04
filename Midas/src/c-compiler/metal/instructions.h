@@ -71,35 +71,43 @@ class Argument : public Expression {
 public:
   Reference* resultType;
   int argumentIndex;
+  bool knownLive;
   Argument(
       Reference* resultType_,
-      int argumentIndex_) :
-      resultType(resultType_),
-    argumentIndex(argumentIndex_) {}
+      int argumentIndex_,
+      bool knownLive_) :
+    resultType(resultType_),
+    argumentIndex(argumentIndex_),
+    knownLive(knownLive_) {}
 };
 
 
 class Stackify : public Expression {
 public:
   Expression* sourceExpr;
+  bool sourceKnownLive;
   Local* local;
   std::string maybeName;
 
   Stackify(
       Expression* sourceExpr_,
-    Local* local_,
-    std::string maybeName_) :
-      sourceExpr(sourceExpr_),
+      bool sourceKnownLive_,
+      Local* local_,
+      std::string maybeName_) :
+    sourceExpr(sourceExpr_),
+    sourceKnownLive(sourceKnownLive_),
     local(local_),
-        maybeName(maybeName_){}
+    maybeName(maybeName_){}
 };
 
 
 class Unstackify : public Expression {
 public:
   Local* local;
+  bool knownLive;
 
-  Unstackify(Local* local_) : local(local_){}
+  Unstackify(Local* local_, bool knownLive_) :
+    local(local_), knownLive(knownLive_) {}
 };
 
 
@@ -107,16 +115,19 @@ class Destroy : public Expression {
 public:
   Expression* structExpr;
   Reference* structType;
+  bool structKnownLive;
   std::vector<Reference*> localTypes;
   std::vector<Local*> localIndices;
 
   Destroy(
       Expression* structExpr_,
       Reference* structType_,
+      bool structKnownLive_,
       std::vector<Reference*> localTypes_,
       std::vector<Local*> localIndices_) :
       structExpr(structExpr_),
       structType(structType_),
+      structKnownLive(structKnownLive_),
       localTypes(localTypes_),
       localIndices(localIndices_) {}
 };
@@ -127,6 +138,7 @@ public:
   Expression* sourceExpr;
   Reference* sourceStructType;
   StructReferend* sourceStructReferend;
+  bool sourceKnownLive;
   Reference* targetInterfaceType;
   InterfaceReferend* targetInterfaceReferend;
 
@@ -134,11 +146,13 @@ public:
       Expression* sourceExpr_,
       Reference* sourceStructType_,
       StructReferend* sourceStructReferend_,
+      bool sourceKnownLive_,
       Reference* targetInterfaceType_,
       InterfaceReferend* targetInterfaceReferend_) :
       sourceExpr(sourceExpr_),
       sourceStructType(sourceStructType_),
       sourceStructReferend(sourceStructReferend_),
+      sourceKnownLive(sourceKnownLive_),
       targetInterfaceType(targetInterfaceType_),
       targetInterfaceReferend(targetInterfaceReferend_) {}
 };
@@ -146,6 +160,7 @@ public:
 class InterfaceToInterfaceUpcast : public Expression {
 public:
   Expression* sourceExpr;
+  bool sourceKnownLive;
   InterfaceReferend* targetInterfaceRef;
 };
 
@@ -153,14 +168,17 @@ class LocalStore : public Expression {
 public:
   Local* local;
   Expression* sourceExpr;
+  bool sourceKnownLive;
   std::string localName;
 
   LocalStore(
       Local* local_,
       Expression* sourceExpr_,
+      bool sourceKnownLive_,
       std::string localName_) :
       local(local_),
       sourceExpr(sourceExpr_),
+      sourceKnownLive(sourceKnownLive_),
       localName(localName_) {}
 };
 
@@ -186,16 +204,19 @@ public:
   Expression* sourceExpr;
   Reference* sourceType;
   Referend* sourceReferend;
+  bool sourceKnownLive;
   Reference* resultType;
 
   WeakAlias(
       Expression* sourceExpr_,
       Reference* sourceType_,
       Referend* sourceReferend_,
+      bool sourceKnownLive_,
       Reference* resultType_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
     sourceReferend(sourceReferend_),
+    sourceKnownLive(sourceKnownLive_),
     resultType(resultType_) {}
 };
 
@@ -204,6 +225,7 @@ class MemberStore : public Expression {
 public:
   Expression* structExpr;
   Reference* structType;
+  bool structKnownLive;
   int memberIndex;
   Expression* sourceExpr;
   Reference* resultType;
@@ -212,12 +234,14 @@ public:
   MemberStore(
       Expression* structExpr_,
       Reference* structType_,
+      bool structKnownLive_,
       int memberIndex_,
       Expression* sourceExpr_,
       Reference* resultType_,
       std::string memberName_) :
     structExpr(structExpr_),
     structType(structType_),
+    structKnownLive(structKnownLive_),
     memberIndex(memberIndex_),
     sourceExpr(sourceExpr_),
     resultType(resultType_),
@@ -230,6 +254,7 @@ public:
   Expression* structExpr;
   StructReferend* structId;
   Reference* structType;
+  bool structKnownLive;
   int memberIndex;
   Ownership targetOwnership;
   Reference* expectedMemberType;
@@ -240,6 +265,7 @@ public:
       Expression* structExpr_,
       StructReferend* structId_,
       Reference* structType_,
+      bool structKnownLive_,
       int memberIndex_,
       Ownership targetOwnership_,
       Reference* expectedMemberType_,
@@ -248,6 +274,7 @@ public:
     structExpr(structExpr_),
     structId(structId_),
     structType(structType_),
+    structKnownLive(structKnownLive_),
     memberIndex(memberIndex_),
     targetOwnership(targetOwnership_),
     expectedMemberType(expectedMemberType_),
@@ -259,14 +286,17 @@ public:
 class NewArrayFromValues : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
+  std::vector<bool> sourcesKnownLive;
   Reference* arrayRefType;
   KnownSizeArrayT* arrayReferend;
 
   NewArrayFromValues(
       std::vector<Expression*> sourceExprs_,
+      std::vector<bool> sourcesKnownLive_,
       Reference* arrayRefType_,
       KnownSizeArrayT* arrayReferend_) :
       sourceExprs(sourceExprs_),
+      sourcesKnownLive(sourcesKnownLive_),
       arrayRefType(arrayRefType_),
       arrayReferend(arrayReferend_) {}
 };
@@ -285,32 +315,38 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   UnknownSizeArrayT* arrayReferend;
+  bool arrayKnownLive;
   Expression* indexExpr;
   Reference* indexType;
   Referend* indexReferend;
   Expression* sourceExpr;
   Reference* sourceType;
   Referend* sourceReferend;
+  bool sourceKnownLive;
 
   UnknownSizeArrayStore(
       Expression* arrayExpr_,
       Reference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
+      bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* indexType_,
       Referend* indexReferend_,
       Expression* sourceExpr_,
       Reference* sourceType_,
-      Referend* sourceReferend_) :
+      Referend* sourceReferend_,
+      bool sourceKnownLive_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
+    arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     indexType(indexType_),
     indexReferend(indexReferend_),
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
-    sourceReferend(sourceReferend_) {}
+    sourceReferend(sourceReferend_),
+    sourceKnownLive(sourceKnownLive_) {}
 };
 
 
@@ -319,6 +355,7 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   UnknownSizeArrayT* arrayReferend;
+  bool arrayKnownLive;
   Expression* indexExpr;
   Reference* indexType;
   Referend* indexReferend;
@@ -329,6 +366,7 @@ public:
       Expression* arrayExpr_,
       Reference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
+      bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* indexType_,
       Referend* indexReferend_,
@@ -337,6 +375,7 @@ public:
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
+    arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     indexType(indexType_),
     indexReferend(indexReferend_),
@@ -350,6 +389,7 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   KnownSizeArrayT* arrayReferend;
+  bool arrayKnownLive;
   Expression* indexExpr;
   Reference* resultType;
   Ownership targetOwnership;
@@ -358,12 +398,14 @@ public:
       Expression* arrayExpr_,
       Reference* arrayType_,
       KnownSizeArrayT* arrayReferend_,
+      bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* resultType_,
       Ownership targetOwnership_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
+    arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     resultType(resultType_),
     targetOwnership(targetOwnership_) {}
@@ -372,14 +414,14 @@ public:
 
 class Call : public Expression {
 public:
-    Prototype *function;
-    std::vector<Expression *> argExprs;
+  Prototype *function;
+  std::vector<Expression *> argExprs;
 
-    Call(
-        Prototype *function_,
-        std::vector<Expression *> argExprs_)
-        : function(function_),
-          argExprs(argExprs_) {}
+  Call(
+      Prototype *function_,
+      std::vector<Expression *> argExprs_)
+      : function(function_),
+        argExprs(argExprs_) {}
 };
 
 class ExternCall : public Expression {
@@ -474,12 +516,15 @@ class Return : public Expression {
 public:
   Expression *sourceExpr;
   Reference* sourceType;
+  bool sourceKnownLive;
 
   Return(
     Expression *sourceExpr_,
-    Reference* sourceType_)
+    Reference* sourceType_,
+      bool sourceKnownLive_)
     : sourceExpr(sourceExpr_),
-      sourceType(sourceType_) {}
+      sourceType(sourceType_),
+      sourceKnownLive(sourceKnownLive_) {}
 };
 
 
@@ -492,6 +537,7 @@ public:
   Reference* generatorType;
   InterfaceReferend* generatorReferend;
   Prototype* generatorMethod;
+  bool generatorKnownLive;
   Reference* arrayRefType;
 
   ConstructUnknownSizeArray(
@@ -502,6 +548,7 @@ public:
       Reference* generatorType_,
       InterfaceReferend* generatorReferend_,
       Prototype* generatorMethod_,
+      bool generatorKnownLive_,
       Reference* arrayRefType_) :
     sizeExpr(sizeExpr_),
     sizeType(sizeType_),
@@ -510,6 +557,7 @@ public:
     generatorType(generatorType_),
     generatorReferend(generatorReferend_),
     generatorMethod(generatorMethod_),
+    generatorKnownLive(generatorKnownLive_),
     arrayRefType(arrayRefType_) {}
 };
 
@@ -518,23 +566,29 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   KnownSizeArrayT* arrayReferend;
+  bool arrayKnownLive;
   Expression* consumerExpr;
   Reference* consumerType;
   Prototype* consumerMethod;
+  bool consumerKnownLive;
 
   DestroyKnownSizeArrayIntoFunction(
       Expression* arrayExpr_,
       Reference* arrayType_,
       KnownSizeArrayT* arrayReferend_,
+      bool arrayKnownLive_,
       Expression* consumerExpr_,
       Reference* consumerType_,
-      Prototype* consumerMethod_) :
+      Prototype* consumerMethod_,
+      bool consumerKnownLive_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
+    arrayKnownLive(arrayKnownLive_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
-    consumerMethod(consumerMethod_) {}
+    consumerMethod(consumerMethod_),
+    consumerKnownLive(consumerKnownLive_) {}
 };
 
 class DestroyKnownSizeArrayIntoLocals : public Expression {
@@ -548,37 +602,46 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   UnknownSizeArrayT* arrayReferend;
+  bool arrayKnownLive;
   Expression* consumerExpr;
   Reference* consumerType;
   InterfaceReferend* consumerReferend;
   Prototype* consumerMethod;
+  bool consumerKnownLive;
 
   DestroyUnknownSizeArray(
       Expression* arrayExpr_,
       Reference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
+      bool arrayKnownLive_,
       Expression* consumerExpr_,
       Reference* consumerType_,
       InterfaceReferend* consumerReferend_,
-      Prototype* consumerMethod_) :
+      Prototype* consumerMethod_,
+      bool consumerKnownLive_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
+    arrayKnownLive(arrayKnownLive_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
     consumerReferend(consumerReferend_),
-    consumerMethod(consumerMethod_) {}
+    consumerMethod(consumerMethod_),
+    consumerKnownLive(consumerKnownLive_) {}
 };
 
 class NewStruct : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
+  std::vector<bool> sourcesKnownLive;
   Reference* resultType;
 
   NewStruct(
       std::vector<Expression*> sourceExprs_,
+      std::vector<bool> sourcesKnownLive_,
       Reference* resultType_) :
       sourceExprs(sourceExprs_),
+      sourcesKnownLive(sourcesKnownLive_),
       resultType(resultType_) {}
 };
 
@@ -586,12 +649,15 @@ class ArrayLength : public Expression {
 public:
   Expression* sourceExpr;
   Reference* sourceType;
+  bool sourceKnownLive;
 
   ArrayLength(
       Expression* sourceExpr_,
-      Reference* sourceType_) :
+      Reference* sourceType_,
+      bool sourceKnownLive_) :
       sourceExpr(sourceExpr_),
-      sourceType(sourceType_) {}
+      sourceType(sourceType_),
+      sourceKnownLive(sourceKnownLive_) {}
 };
 
 
@@ -607,9 +673,10 @@ class Discard : public Expression {
 public:
   Expression* sourceExpr;
   Reference* sourceResultType;
+  bool sourceKnownLive;
 
-  Discard(Expression* sourceExpr_, Reference* sourceResultType_) :
-      sourceExpr(sourceExpr_), sourceResultType(sourceResultType_) {}
+  Discard(Expression* sourceExpr_, Reference* sourceResultType_, bool sourceKnownLive_) :
+      sourceExpr(sourceExpr_), sourceResultType(sourceResultType_), sourceKnownLive(sourceKnownLive_) {}
 };
 
 
@@ -617,6 +684,7 @@ class LockWeak : public Expression {
 public:
   Expression* sourceExpr;
   Reference* sourceType;
+  bool sourceKnownLive;
 
   Prototype* someConstructor;
   Reference* someType;
@@ -632,6 +700,7 @@ public:
   LockWeak(
       Expression* sourceExpr_,
       Reference* sourceType_,
+      bool sourceKnownLive_,
       Prototype* someConstructor_,
       Reference* someType_,
       StructReferend* someReferend_,
@@ -642,6 +711,7 @@ public:
       InterfaceReferend* resultOptReferend_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
+    sourceKnownLive(sourceKnownLive_),
     someConstructor(someConstructor_),
     someType(someType_),
     someReferend(someReferend_),

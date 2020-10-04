@@ -243,7 +243,7 @@ class FunctionTemplarCore(
       temputs
         .declareFunctionReturnType(header.toSignature, returnReferenceType2)
       temputs.addFunction(function2)
-    vassert(temputs.exactDeclaredSignatureExists(env.fullName))
+    vassert(temputs.getDeclaredSignatureOrigin(env.fullName).nonEmpty)
     header
   }
 
@@ -278,7 +278,9 @@ class FunctionTemplarCore(
 
     // If this fails, then the signature the FunctionTemplarMiddleLayer made for us doesn't
     // match what we just made
-    vassert(temputs.exactDeclaredSignatureExists(destructor2.header.toSignature))
+    vassert(
+      temputs.getDeclaredSignatureOrigin(
+        destructor2.header.toSignature).nonEmpty)
 
     // we cant make the destructor here because they might have a user defined one somewhere
 
@@ -286,7 +288,9 @@ class FunctionTemplarCore(
         .declareFunctionReturnType(destructor2.header.toSignature, destructor2.header.returnType)
       temputs.addFunction(destructor2);
 
-    vassert(temputs.exactDeclaredSignatureExists(destructor2.header.toSignature))
+    vassert(
+      temputs.getDeclaredSignatureOrigin(
+        destructor2.header.toSignature).nonEmpty)
 
     (destructor2.header)
   }

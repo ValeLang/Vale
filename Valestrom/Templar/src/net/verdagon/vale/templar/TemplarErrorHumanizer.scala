@@ -19,6 +19,10 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
       }
+      case CantMutateUnstackifiedLocal(range, name) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Can't mutate local that was already moved (" + name + ")"
+      }
       case CannotSubscriptT(range, tyype) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot subscript type: " + tyype + "!"
@@ -95,6 +99,11 @@ object TemplarErrorHumanizer {
                 ""
               })
           })
+      }
+      case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
+        humanizePos(filenamesAndSources, newFunctionRange.file, newFunctionRange.begin.offset) +
+          ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
+          humanizePos(filenamesAndSources, newFunctionRange.file, newFunctionRange.begin.offset)
       }
     }
   }

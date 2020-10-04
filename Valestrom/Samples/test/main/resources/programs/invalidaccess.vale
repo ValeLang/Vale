@@ -1,0 +1,9 @@
+
+struct Marine { hp int; }
+
+fn main() {
+  m = Marine(7);
+  b = &m;
+  drop(m);
+  = b.hp;
+}

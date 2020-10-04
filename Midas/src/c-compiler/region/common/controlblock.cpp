@@ -18,6 +18,8 @@ LLVMValueRef getStrongRcPtrFromControlBlockPtr(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -77,6 +79,8 @@ LLVMValueRef getStrongRcFromControlBlockPtr(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:

@@ -6,7 +6,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 trait RuleParser extends RegexParsers with ParserUtils {
 
-  private[parser] def ruleTemplexPR: Parser[ITemplexPRT]
+  private[parser] def ruleTemplexPR: Parser[ITemplexPT]
 
   // Add any new rules to the "Nothing matches empty string" test!
 
@@ -135,9 +135,9 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   // Atomic means no neighboring, see parser doc.
   private[parser] def implementsPR: Parser[IRulexPR] = {
-    pstr("implements") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ "," <~ optWhite) ~
-        (rulePR <~ optWhite <~ ")") ^^ {
-      case impl ~ struct ~ interface => CallPR(impl, List(struct, interface))
+    pos ~ pstr("implements") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ "," <~ optWhite) ~
+        (rulePR <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ impl ~ struct ~ interface ~ end => CallPR(Range(begin, end), impl, List(struct, interface))
     }
   }
 
@@ -145,15 +145,17 @@ trait RuleParser extends RegexParsers with ParserUtils {
 
   // Atomic means no neighboring, see parser doc.
   private[parser] def existsPR: Parser[IRulexPR] = {
-    pstr("exists") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ^^ {
-      case exists ~ thing => CallPR(exists, List(thing))
+    pos ~ pstr("exists") ~ (optWhite ~> "(" ~> optWhite ~> rulePR <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ exists ~ thing ~ end => CallPR(Range(begin, end), exists, List(thing))
     }
   }
 
   // Add any new rules to the "Nothing matches empty string" test!
 
   private[parser] def packPR: Parser[PackPR] = {
-    ("(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ^^ PackPR
+    pos ~ ("(" ~> optWhite ~> repsep(rulePR, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")") ~ pos ^^ {
+      case begin ~ thing ~ end => PackPR(Range(begin, end), thing)
+    }
   }
 
   // Add any new rules to the "Nothing matches empty string" test!

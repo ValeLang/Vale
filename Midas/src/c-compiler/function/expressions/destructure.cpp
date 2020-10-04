@@ -34,7 +34,7 @@ Ref translateDestructure(
     auto memberType = structM->members[i]->type;
     auto memberLE =
         functionState->defaultRegion->loadMember(
-            functionState, builder, destructureM->structType, structRef, i, memberType, memberType, memberName);
+            functionState, builder, destructureM->structType, structRef, true, i, memberType, memberType, memberName);
     makeHammerLocal(
         globalState,
         functionState,

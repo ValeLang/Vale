@@ -1,12 +1,14 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseFailure, ParseSuccess, Parser}
-import net.verdagon.vale.scout.{ProgramS, Scout}
+import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
+import net.verdagon.vale.astronomer.{Astronomer, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
+import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.templar.OverloadTemplar.ScoutExpectedFunctionFailure
 import org.scalatest.{FunSuite, Matchers, _}
 
 import scala.collection.immutable.List
@@ -25,7 +27,7 @@ class TemplarTests extends FunSuite with Matchers {
     var parsedCache: Option[FileP] = None
     var scoutputCache: Option[ProgramS] = None
     var astroutsCache: Option[ProgramA] = None
-    var temputsCache: Option[Temputs] = None
+    var temputsCache: Option[Hinputs] = None
 
     def getParsed(): FileP = {
       parsedCache match {
@@ -72,7 +74,7 @@ class TemplarTests extends FunSuite with Matchers {
       }
     }
 
-    def getTemputs(): Temputs = {
+    def getTemputs(): Hinputs = {
       temputsCache match {
         case Some(temputs) => temputs
         case None => {
@@ -224,7 +226,7 @@ class TemplarTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.getTemputs()
 
-    temputs.getAllFunctions().collect({ case x @ functionName("do") => x }).head.header.returnType shouldEqual Coord(Share, Int2())
+    temputs.functions.collect({ case x @ functionName("do") => x }).head.header.returnType shouldEqual Coord(Share, Int2())
   }
 
   test("Calls destructor on local var") {
@@ -285,7 +287,7 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
 
     // Check the struct was made
-    temputs.getAllStructs().collectFirst({
+    temputs.structs.collectFirst({
       case StructDefinition2(
       simpleName("MyStruct"),
       _,
@@ -323,16 +325,16 @@ class TemplarTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
 
     val interfaceDef =
-      temputs.getAllInterfaces().collectFirst({
+      temputs.interfaces.collectFirst({
         case id @ InterfaceDefinition2(simpleName("MyInterface"), _, false, Mutable, List()) => id
       }).get
 
     val structDef =
-      temputs.getAllStructs.collectFirst({
+      temputs.structs.collectFirst({
         case sd @ StructDefinition2(simpleName("MyStruct"), _, false, Mutable, _, false) => sd
       }).get
 
-    vassert(temputs.getAllImpls().exists(impl => {
+    vassert(temputs.edges.exists(impl => {
       impl.struct == structDef.getRef && impl.interface == interfaceDef.getRef
     }))
   }
@@ -529,7 +531,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     // Make sure there's a destroy in its destructor though.
     val destructor =
-        temputs.getAllFunctions().find(_.header.fullName.last.isInstanceOf[ImmConcreteDestructorName2]).get
+        temputs.functions.find(_.header.fullName.last.isInstanceOf[ImmConcreteDestructorName2]).get
     destructor.only({
       case Destroy2(_, StructRef2(FullName2(_, CitizenName2("Vec3i", _))), _) =>
     })
@@ -579,7 +581,7 @@ class TemplarTests extends FunSuite with Matchers {
         Samples.get("libraries/printutils.vale"))
     val temputs = compile.getTemputs()
 
-    temputs.getAllFunctions().collectFirst({
+    temputs.functions.collectFirst({
       case Function2(header @ functionName("doThing"), _, _) if header.getAbstractInterface != None => true
     }).get
   }
@@ -797,5 +799,119 @@ class TemplarTests extends FunSuite with Matchers {
     compile.getTemplarError() match {
       case CouldntFindIdentifierToLoadT(_, "moo") =>
     }
+  }
+
+  test("Reports when mutating after moving") {
+    val compile = new Compilation(
+      """
+        |struct Weapon {
+        |  ammo! int;
+        |}
+        |struct Marine {
+        |  weapon! Weapon;
+        |}
+        |
+        |fn main() {
+        |  m = Marine(Weapon(7));
+        |  newWeapon = Weapon(10);
+        |  mut m.weapon = newWeapon;
+        |  mut newWeapon.ammo = 11;
+        |  = 42;
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CantMutateUnstackifiedLocal(_, CodeVarName2("newWeapon")) =>
+    }
+  }
+
+  test("Cant subscript non-subscriptable type") {
+    val compile = new Compilation(
+      """
+        |struct Weapon {
+        |  ammo! int;
+        |}
+        |
+        |fn main() {
+        |  weapon = Weapon(10);
+        |  = weapon[42];
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CannotSubscriptT(_, StructRef2(FullName2(_, CitizenName2("Weapon", List())))) =>
+    }
+  }
+
+  test("Reports when two functions with same signature") {
+    val compile = new Compilation(
+      """
+        |fn moo() int export { 1337 }
+        |fn moo() int export { 1448 }
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case FunctionAlreadyExists(_, _, Signature2(FullName2(List(), FunctionName2("moo", List(), List())))) =>
+    }
+  }
+
+  test("Humanize errors") {
+    val fireflyKind = StructRef2(FullName2(List(), CitizenName2("Firefly", List())))
+    val fireflyCoord = Coord(Own, fireflyKind)
+    val serenityKind = StructRef2(FullName2(List(), CitizenName2("Serenity", List())))
+    val serenityCoord = Coord(Own, serenityKind)
+
+    val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
+
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntFindTypeT(RangeS.testZero, "Spaceship")).length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntFindFunctionToCallT(
+        RangeS.testZero,
+        ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), List(), Map(), Map(), Map())))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CannotSubscriptT(
+        RangeS.testZero,
+        fireflyKind))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntFindIdentifierToLoadT(
+        RangeS.testZero,
+        "spaceship"))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntFindMemberT(
+        RangeS.testZero,
+        "hp"))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      BodyResultDoesntMatch(
+        RangeS.testZero,
+        FunctionNameA("myFunc", CodeLocationS.zero), fireflyCoord, serenityCoord))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntConvertForReturnT(
+        RangeS.testZero,
+        fireflyCoord, serenityCoord))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntConvertForMutateT(
+        RangeS.testZero,
+        fireflyCoord, serenityCoord))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantMoveOutOfMemberT(
+        RangeS.testZero,
+        CodeVarName2("hp")))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantMutateUnstackifiedLocal(
+        RangeS.testZero,
+        CodeVarName2("firefly")))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      FunctionAlreadyExists(
+        RangeS.testZero,
+        RangeS(CodeLocationS(0, 10), CodeLocationS(0, 15)),
+        Signature2(FullName2(List(), FunctionName2("myFunc", List(), List())))))
+      .length > 0
   }
 }

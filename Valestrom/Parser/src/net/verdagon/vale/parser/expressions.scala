@@ -32,13 +32,7 @@ case class LetPE(
   expr: IExpressionPE
 ) extends IExpressionPE
 
-case class RepeaterBlockPE(expression: IExpressionPE) extends IExpressionPE
-
-case class RepeaterBlockIteratorPE(expression: IExpressionPE) extends IExpressionPE
 case class SequencePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
-
-case class RepeaterPackPE(expression: IExpressionPE) extends IExpressionPE
-case class RepeaterPackIteratorPE(expression: IExpressionPE) extends IExpressionPE
 
 case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
 case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE

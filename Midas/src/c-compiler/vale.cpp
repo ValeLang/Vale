@@ -247,9 +247,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //  globalState->opt->genHeap = true;
 
 
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
     if (!globalState->opt->genHeap) {
-      std::cerr << "Error: using resilient v2 without generational heap, overriding generational heap to true!" << std::endl;
+      std::cerr << "Error: using resilient v2/v3 without generational heap, overriding generational heap to true!" << std::endl;
       globalState->opt->genHeap = true;
     }
   }
@@ -273,6 +274,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       break;
     case RegionOverride::RESILIENT_V2:
       std::cout << "Region override: resilient-v2" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_V3:
+      std::cout << "Region override: resilient-v3" << std::endl;
+      break;
+    case RegionOverride::RESILIENT_LIMIT:
+      std::cout << "Region override: resilient-limit" << std::endl;
       break;
     default:
       assert(false);
@@ -329,6 +336,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 
 
+  globalState->ram64Struct =
+      LLVMStructCreateNamed(LLVMGetGlobalContext(), "__Ram64Struct");
+  LLVMTypeRef memberI64 = LLVMInt64Type();
+  LLVMStructSetBody(globalState->ram64Struct, &memberI64, 1, false);
+
 
   globalState->program = program;
 
@@ -337,6 +349,18 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->liveHeapObjCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__liveHeapObjCounter");
   LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+
+  globalState->writeOnlyGlobal =
+      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__writeOnlyGlobal");
+  LLVMSetInitializer(globalState->writeOnlyGlobal, LLVMConstInt(LLVMInt64Type(), 0, false));
+
+  globalState->ram64 =
+      LLVMAddGlobal(globalState->mod, LLVMPointerType(globalState->ram64Struct, 0), "__ram64");
+  LLVMSetInitializer(globalState->ram64, LLVMConstNull(LLVMPointerType(globalState->ram64Struct, 0)));
+
+  globalState->ram64IndexToWriteOnlyGlobal =
+      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__ram64IndexToWriteOnlyGlobal");
+  LLVMSetInitializer(globalState->ram64IndexToWriteOnlyGlobal, constI64LE(0));
 
   globalState->objIdCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__objIdCounter");
@@ -368,6 +392,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       defaultRegion = new Mega(globalState);
       break;
     default:
@@ -490,6 +516,18 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     translateFunction(globalState, defaultRegion, function);
   }
 
+  LLVMBuildStore(
+      entryBuilder,
+      LLVMBuildUDiv(
+          entryBuilder,
+          LLVMBuildPointerCast(
+              entryBuilder,
+              globalState->writeOnlyGlobal,
+              LLVMInt64Type(),
+              "ptrAsIntToWriteOnlyGlobal"),
+          constI64LE(8),
+          "ram64IndexToWriteOnlyGlobal"),
+      globalState->ram64IndexToWriteOnlyGlobal);
 
   if (globalState->opt->census) {
     // Add all the edges to the census, so we can check that fat pointers are right.

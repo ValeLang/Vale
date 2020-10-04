@@ -280,6 +280,7 @@ class StructTemplar(
   // This does NOT make a constructor, because its so easy to just Construct2 it.
   def prototypeToAnonymousStruct(
     temputs: Temputs,
+    range: RangeS,
     prototype: Prototype2):
   StructRef2 = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousStruct", prototype.toString, () => {
@@ -292,7 +293,7 @@ class StructTemplar(
 
       val outerEnv = temputs.getEnvForFunctionSignature(prototype.toSignature)
       templateArgsLayer.prototypeToAnonymousStruct(
-        outerEnv, temputs, prototype, structFullName)
+        outerEnv, temputs, range, prototype, structFullName)
 //    })
   }
 
@@ -304,7 +305,7 @@ class StructTemplar(
       prototype: Prototype2):
   (StructRef2, Prototype2) = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousSubstruct", prototype.toString + " " + interfaceRef2.toString, () => {
-      val functionStructRef = prototypeToAnonymousStruct(temputs, prototype)
+      val functionStructRef = prototypeToAnonymousStruct(temputs, range, prototype)
       val functionStructType = Coord(Share, functionStructRef)
 
       val lambdas = List(functionStructType)
@@ -343,11 +344,11 @@ class StructTemplar(
                       functionStructRef,
                       Coord(Share, functionStructRef),
                       List())))))))
-      temputs.declareFunctionSignature(constructor2.header.toSignature, None)
+      temputs.declareFunctionSignature(range, constructor2.header.toSignature, None)
       temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
       temputs.addFunction(constructor2);
 
-      vassert(temputs.exactDeclaredSignatureExists(constructor2.header.fullName))
+      vassert(temputs.getDeclaredSignatureOrigin(constructor2.header.fullName) == Some(range))
 
       (anonymousSubstructRef, constructor2.header.toPrototype)
 //    })

@@ -4,7 +4,6 @@ import java.io.{BufferedWriter, File, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
 
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, ProgramA}
-import net.verdagon.vale.carpenter.Carpenter
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
@@ -134,12 +133,11 @@ object Driver {
             case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filepathsAndSources, error))
             case Left(result) => result
           }
-        val temputs =
+        val hinputs =
           new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler(), false).evaluate(astrouts) match {
             case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, filepathsAndSources, error))
             case Ok(x) => x
           }
-        val hinputs = Carpenter.translate(debugOut, temputs)
         val programH = Hammer.translate(hinputs)
 
         if (outputVirFilepath != "") {

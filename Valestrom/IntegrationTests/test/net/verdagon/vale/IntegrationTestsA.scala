@@ -4,7 +4,7 @@ import java.io.FileNotFoundException
 
 import net.verdagon.vale.templar._
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.vivem.{Heap, IntV, StructInstanceV}
+import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, StructInstanceV}
 import net.verdagon.von.{VonBool, VonFloat, VonInt}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
@@ -405,7 +405,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  helperFunc(4);
         |}
         |""".stripMargin)
-    val hinputs = compile.getHinputs()
+    val hinputs = compile.getTemputs()
 
     vassertSome(hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Int2())))))))
 
@@ -517,5 +517,15 @@ class IntegrationTestsA extends FunSuite with Matchers {
         """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Test catch deref after drop") {
+    val compile = Compilation(Samples.get("invalidaccess.vale"))
+    try {
+      compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+      vfail()
+    } catch {
+      case ConstraintViolatedException(_) => // good!
+    }
   }
 }

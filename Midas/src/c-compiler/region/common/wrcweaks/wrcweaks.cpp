@@ -33,6 +33,8 @@ void WrcWeaks::buildCheckWrc(
       break;
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       // These dont have WRCs
       assert(false);
       break;
@@ -165,6 +167,8 @@ WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
       break;
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       assert(false);
       break;
     default:
@@ -473,6 +477,8 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       assert(
           weakRefM->ownership == Ownership::BORROW ||
               weakRefM->ownership == Ownership::WEAK);

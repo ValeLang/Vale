@@ -26,13 +26,13 @@ public:
       Reference* desiredReference,
       const std::vector<Ref>& membersLE) = 0;
 
-
   virtual WrapperPtrLE lockWeakRef(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      Ref weakRefLE) = 0;
+      Ref weakRefLE,
+      bool weakRefKnownLive) = 0;
 
   virtual void alias(
       AreaAndFileAndLine from,
@@ -54,6 +54,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structRefMT,
       Ref structRef,
+      bool structRefKnownLive,
       int memberIndex,
       const std::string& memberName,
       LLVMValueRef newValueLE) = 0;
@@ -63,6 +64,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structRefMT,
       Ref structRef,
+      bool structRefKnownLive,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetMemberType,
@@ -97,6 +99,7 @@ public:
       Reference* constraintRefM,
       Reference* sourceWeakRefMT,
       Ref sourceWeakRefLE,
+      bool weakRefKnownLive,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
 
@@ -111,7 +114,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* usaRefMT,
-      Ref arrayRef) = 0;
+      Ref arrayRef,
+      bool arrayRefKnownLive) = 0;
 
   virtual LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
@@ -196,7 +200,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      Ref weakRef) = 0;
+      Ref weakRef,
+      bool knownLive) = 0;
 
   virtual Ref loadElementFromKSAWithUpgrade(
       FunctionState* functionState,
@@ -204,21 +209,26 @@ public:
       Reference* ksaRefMT,
       KnownSizeArrayT* ksaMT,
       Ref arrayRef,
+      bool arrayRefKnownLive,
       Ref indexRef,
       Reference* targetType) = 0;
+
   virtual Ref loadElementFromKSAWithoutUpgrade(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* ksaRefMT,
       KnownSizeArrayT* ksaMT,
       Ref arrayRef,
+      bool arrayRefKnownLive,
       Ref indexRef) = 0;
+
   virtual Ref loadElementFromUSAWithUpgrade(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* usaRefMT,
       UnknownSizeArrayT* usaMT,
       Ref arrayRef,
+      bool arrayRefKnownLive,
       Ref indexRef,
       Reference* targetType) = 0;
 
@@ -228,6 +238,7 @@ public:
       Reference* usaRefMT,
       UnknownSizeArrayT* usaMT,
       Ref arrayRef,
+      bool arrayRefKnownLive,
       Ref indexRef) = 0;
 
   virtual Ref storeElementInUSA(
@@ -236,6 +247,7 @@ public:
       Reference* usaRefMT,
       UnknownSizeArrayT* usaMT,
       Ref arrayRef,
+      bool arrayRefKnownLive,
       Ref indexRef,
       Ref elementRef) = 0;
 

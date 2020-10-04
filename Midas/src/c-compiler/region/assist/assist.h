@@ -44,6 +44,7 @@ public:
       Reference* constraintRefM,
       Reference* sourceWeakRefMT,
       Ref sourceWeakRefLE,
+      bool weakRefKnownLive,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
@@ -111,6 +112,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structRefMT,
       Ref structRef,
+      bool structKnownLive,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetMemberType,
@@ -121,6 +123,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structRefMT,
       Ref structRef,
+      bool structKnownLive,
       int memberIndex,
       const std::string& memberName,
       LLVMValueRef newValueLE) override;
@@ -150,7 +153,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      Ref weakRef) override;
+      Ref weakRef,
+      bool knownLive) override;
 
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
 

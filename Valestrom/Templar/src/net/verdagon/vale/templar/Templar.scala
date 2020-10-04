@@ -3,8 +3,9 @@ package net.verdagon.vale.templar;
 import com.jprofiler.api.probe.embedded.Split
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
+import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, RangeS}
-import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride}
+import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdge2}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
 import net.verdagon.vale.templar.env._
@@ -370,6 +371,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
       inferTemplar,
       arrayTemplar,
       structTemplar,
+      ancestorHelper,
       sequenceTemplar,
       overloadTemplar,
       dropHelper,
@@ -384,7 +386,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  def evaluate(program: ProgramA): Result[Temputs, ICompileErrorT] = {
+  def evaluate(program: ProgramA): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
         val ProgramA(structsA, interfacesA, impls1, functions1) = program;
@@ -491,7 +493,73 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 //          Split.exit()
         })
 
-        Ok(temputs)
+//        // Should get a conflict if there are more than one.
+//        val (maybeNoArgMain, _, _, _) =
+//          overloadTemplar.scoutMaybeFunctionForPrototype(
+//            env11, temputs, RangeS.internal(-1398), GlobalFunctionFamilyNameA("main"), List(), List(), List(), true)
+
+
+        val edgeBlueprints = EdgeTemplar.makeInterfaceEdgeBlueprints(temputs)
+        val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)
+        val edges =
+          partialEdges.map({ case PartialEdge2(struct, interface, methods) =>
+            Edge2(
+              struct,
+              interface,
+              methods.map({
+                case FoundFunction(prototype) => prototype
+                case NeededOverride(_, _) => vwat()
+              })
+            )
+          })
+
+        // NEVER ZIP TWO SETS TOGETHER
+        val edgeBlueprintsAsList = edgeBlueprints.toList
+        val edgeBlueprintsByInterface = edgeBlueprintsAsList.map(_.interface).zip(edgeBlueprintsAsList).toMap;
+
+        edgeBlueprintsByInterface.foreach({ case (interfaceRef, edgeBlueprint) =>
+          vassert(edgeBlueprint.interface == interfaceRef)
+        })
+
+
+
+        val reachables = Reachability.findReachables(temputs, edgeBlueprintsAsList, edges)
+
+        val categorizedFunctions = temputs.getAllFunctions().groupBy(f => reachables.functions.contains(f.header.toSignature))
+        val reachableFunctions = categorizedFunctions.getOrElse(true, List())
+        val unreachableFunctions = categorizedFunctions.getOrElse(false, List())
+        unreachableFunctions.foreach(f => debugOut("Shaking out unreachable: " + f.header.fullName))
+        reachableFunctions.foreach(f => debugOut("Including: " + f.header.fullName))
+
+        val categorizedStructs = temputs.getAllStructs().groupBy(f => reachables.structs.contains(f.getRef))
+        val reachableStructs = categorizedStructs.getOrElse(true, List())
+        val unreachableStructs = categorizedStructs.getOrElse(false, List())
+        unreachableStructs.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
+        reachableStructs.foreach(f => debugOut("Including: " + f.fullName))
+
+        val categorizedInterfaces = temputs.getAllInterfaces().groupBy(f => reachables.interfaces.contains(f.getRef))
+        val reachableInterfaces = categorizedInterfaces.getOrElse(true, List())
+        val unreachableInterfaces = categorizedInterfaces.getOrElse(false, List())
+        unreachableInterfaces.foreach(f => debugOut("Shaking out unreachable: " + f.fullName))
+        reachableInterfaces.foreach(f => debugOut("Including: " + f.fullName))
+
+        val categorizedEdges = edges.groupBy(f => reachables.edges.contains(f))
+        val reachableEdges = categorizedEdges.getOrElse(true, List())
+        val unreachableEdges = categorizedEdges.getOrElse(false, List())
+        unreachableEdges.foreach(f => debugOut("Shaking out unreachable: " + f))
+        reachableEdges.foreach(f => debugOut("Including: " + f))
+
+        val hinputs =
+          Hinputs(
+            reachableInterfaces.toList,
+            reachableStructs.toList,
+            Program2.emptyTupleStructRef,
+            reachableFunctions.toList,
+            temputs.getExternPrototypes,
+            edgeBlueprintsByInterface,
+            edges)
+
+        Ok(hinputs)
       })
     } catch {
       case CompileErrorExceptionT(err) => Err(err)
@@ -567,9 +635,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
   def stampNeededOverridesUntilSettled(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
     val neededOverrides =
       profiler.childFrame("assemble partial edges", () => {
-        val partialEdges =
-          EdgeTemplar.assemblePartialEdges(
-            temputs.getAllFunctions(), temputs.getAllInterfaces(), temputs.getAllImpls())
+        val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)
         partialEdges.flatMap(e => e.methods.flatMap({
           case n @ NeededOverride(_, _) => List(n)
           case FoundFunction(_) => List()

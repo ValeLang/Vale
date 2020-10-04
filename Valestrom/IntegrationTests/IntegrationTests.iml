@@ -10,7 +10,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="Astronomer" />
-    <orderEntry type="module" module-name="Carpenter" />
     <orderEntry type="module" module-name="Driver" />
     <orderEntry type="module" module-name="Hammer" />
     <orderEntry type="module" module-name="Highlighter" />

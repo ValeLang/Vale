@@ -192,6 +192,8 @@ ControlBlock makeMutNonWeakableControlBlock(GlobalState* globalState) {
     case RegionOverride::RESILIENT_V1:
       return makeResilientV1WeakableControlBlock(globalState);
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
       return makeResilientV2WeakableControlBlock(globalState);
     default:
       assert(false);
@@ -210,6 +212,8 @@ ControlBlock makeMutWeakableControlBlock(GlobalState* globalState) {
     case RegionOverride::RESILIENT_V1:
       return makeResilientV1WeakableControlBlock(globalState);
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
       return makeResilientV2WeakableControlBlock(globalState);
     default:
       assert(false);
@@ -219,7 +223,9 @@ ControlBlock makeMutWeakableControlBlock(GlobalState* globalState) {
 LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     return LgtWeaks::makeWeakRefHeaderStruct(globalState);
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT) {
     return HybridGenerationalMemory::makeWeakRefHeaderStruct(globalState);
   } else if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::FAST ||
@@ -259,6 +265,8 @@ Mega::Mega(GlobalState* globalState_) :
             case RegionOverride::RESILIENT_V0:
             case RegionOverride::RESILIENT_V1:
             case RegionOverride::RESILIENT_V2:
+            case RegionOverride::RESILIENT_V3:
+            case RegionOverride::RESILIENT_LIMIT:
               if (globalState->program->getReferendMutability(referend) == Mutability::IMMUTABLE) {
                 return &immStructs;
               } else {
@@ -286,6 +294,8 @@ Mega::Mega(GlobalState* globalState_) :
             case RegionOverride::RESILIENT_V0:
             case RegionOverride::RESILIENT_V1:
             case RegionOverride::RESILIENT_V2:
+            case RegionOverride::RESILIENT_V3:
+            case RegionOverride::RESILIENT_LIMIT:
               if (globalState->program->getReferendMutability(referend) == Mutability::IMMUTABLE) {
                 assert(false);
               } else {
@@ -298,7 +308,11 @@ Mega::Mega(GlobalState* globalState_) :
     fatWeaks(globalState_, &weakRefStructs),
     wrcWeaks(globalState_, &referendStructs, &weakRefStructs),
     lgtWeaks(globalState_, &referendStructs, &weakRefStructs),
-    hgmWeaks(globalState_, &referendStructs, &weakRefStructs) {
+    hgmWeaks(
+        globalState_, &referendStructs, &weakRefStructs,
+        globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+        globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT,
+        globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT) {
 }
 
 void fillInnerStruct(
@@ -406,6 +420,8 @@ Ref Mega::allocate(
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       if (structM->mutability == Mutability::MUTABLE) {
         effectiveWeakability = Weakability::WEAKABLE;
       } else {
@@ -519,7 +535,9 @@ void Mega::alias(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       if (dynamic_cast<Int *>(sourceRnd) ||
           dynamic_cast<Bool *>(sourceRnd) ||
           dynamic_cast<Float *>(sourceRnd)) {
@@ -597,7 +615,9 @@ void Mega::dealias(
       }
       case RegionOverride::RESILIENT_V0:
       case RegionOverride::RESILIENT_V1:
-      case RegionOverride::RESILIENT_V2: {
+      case RegionOverride::RESILIENT_V2:
+      case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT: {
         if (sourceMT->ownership == Ownership::OWN) {
           // We can't discard owns, they must be destructured.
           assert(false); // impl
@@ -657,6 +677,8 @@ Ref Mega::weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Refere
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
       return transmuteWeakRef(functionState, builder, sourceRefMT, targetRefMT, sourceRef);
     default:
       assert(false);
@@ -669,7 +691,8 @@ WrapperPtrLE Mega::lockWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    Ref weakRefLE) {
+    Ref weakRefLE,
+    bool weakRefKnownLive) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::FAST:
     case RegionOverride::ASSIST:
@@ -726,8 +749,10 @@ WrapperPtrLE Mega::lockWeakRef(
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              weakRefStructs.makeWeakFatPtr(                  refM,
-                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+              weakRefStructs.makeWeakFatPtr(
+                  refM,
+                  globalState->region->checkValidReference(
+                      FL(), functionState, builder, refM, weakRefLE));
           return referendStructs.makeWrapperPtr(
               FL(), functionState, builder, refM,
               lgtWeaks.lockLgtiFatPtr(from, functionState, builder, refM, weakFatPtrLE));
@@ -737,23 +762,29 @@ WrapperPtrLE Mega::lockWeakRef(
           break;
       }
     }
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (refM->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE: {
           auto objPtrLE = weakRefLE;
           auto weakFatPtrLE =
-              globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE);
+              globalState->region->checkValidReference(
+                  FL(), functionState, builder, refM, weakRefLE);
           return referendStructs.makeWrapperPtr(FL(), functionState, builder, refM, weakFatPtrLE);
         }
         case Ownership::BORROW:
         case Ownership::WEAK: {
           auto weakFatPtrLE =
-              weakRefStructs.makeWeakFatPtr(                  refM,
-                  globalState->region->checkValidReference(FL(), functionState, builder, refM, weakRefLE));
+              weakRefStructs.makeWeakFatPtr(
+                  refM,
+                  globalState->region->checkValidReference(
+                      FL(), functionState, builder, refM, weakRefLE));
           return referendStructs.makeWrapperPtr(
               FL(), functionState, builder, refM,
-              hgmWeaks.lockGenFatPtr(from, functionState, builder, refM, weakFatPtrLE));
+              hgmWeaks.lockGenFatPtr(
+                  from, functionState, builder, refM, weakFatPtrLE, weakRefKnownLive));
         }
         default:
           assert(false);
@@ -776,6 +807,7 @@ Ref Mega::lockWeak(
     Reference* constraintRefM,
     Reference* sourceWeakRefMT,
     Ref sourceWeakRefLE,
+    bool weakRefKnownLive,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
 
@@ -787,7 +819,9 @@ Ref Mega::lockWeak(
     }
     case RegionOverride::RESILIENT_V1:
     case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       assert(sourceWeakRefMT->ownership == Ownership::BORROW ||
           sourceWeakRefMT->ownership == Ownership::WEAK);
       break;
@@ -797,7 +831,9 @@ Ref Mega::lockWeak(
       break;
   }
 
-  auto isAliveLE = getIsAliveFromWeakRef(functionState, builder, sourceWeakRefMT, sourceWeakRefLE);
+  auto isAliveLE =
+      getIsAliveFromWeakRef(
+          functionState, builder, sourceWeakRefMT, sourceWeakRefLE, weakRefKnownLive);
 
   auto resultOptTypeLE = translateType(resultOptTypeM);
 
@@ -825,7 +861,8 @@ Ref Mega::lockWeak(
           }
           case RegionOverride::RESILIENT_V1:
           case RegionOverride::RESILIENT_V0:
-          case RegionOverride::RESILIENT_V2: {
+          case RegionOverride::RESILIENT_V2:
+          case RegionOverride::RESILIENT_V3: {
             // The incoming "constraint" ref is actually already a week ref, so just return it
             // (after wrapping it in a different Ref that actually thinks/knows it's a weak
             // reference).
@@ -920,7 +957,9 @@ LLVMTypeRef Mega::translateType(Reference* referenceM) {
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (referenceM->ownership) {
         case Ownership::SHARE:
           return defaultImmutables.translateType(globalState, referenceM);
@@ -950,7 +989,9 @@ Ref Mega::upcastWeak(
     InterfaceReferend* targetInterfaceReferendM,
     Reference* targetInterfaceTypeM) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       auto resultWeakInterfaceFatPtr =
           hgmWeaks.weakStructPtrToGenWeakInterfacePtr(
               globalState, functionState, builder, sourceRefLE, sourceStructReferendM,
@@ -1081,7 +1122,9 @@ LLVMTypeRef Mega::translateInterfaceMethodToFunctionType(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (paramsMT[method->virtualParamIndex]->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE:
@@ -1138,7 +1181,9 @@ void Mega::discardOwningRef(
       break;
     }
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       // Mutables in resilient v1+2 dont have strong RC, and also, they dont adjust
       // weak RC for owning refs
 
@@ -1221,7 +1266,9 @@ void Mega::noteWeakableDestroyed(
       // In resilient mode, every mutable is weakable.
       lgtWeaks.innerNoteWeakableDestroyed(functionState, builder, refM, controlBlockPtrLE);
     }
-  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2) {
+  } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT) {
     if (refM->ownership == Ownership::SHARE) {
       auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
@@ -1240,6 +1287,7 @@ Ref Mega::loadMember(
     LLVMBuilderRef builder,
     Reference* structRefMT,
     Ref structRef,
+    bool structKnownLive,
     int memberIndex,
     Reference* expectedMemberType,
     Reference* targetType,
@@ -1288,7 +1336,9 @@ Ref Mega::loadMember(
       }
       case RegionOverride::RESILIENT_V0:
       case RegionOverride::RESILIENT_V1:
-      case RegionOverride::RESILIENT_V2: {
+      case RegionOverride::RESILIENT_V2:
+      case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT: {
 
         if (structRefMT->location == Location::INLINE) {
           auto structRefLE = checkValidReference(FL(), functionState, builder,
@@ -1311,9 +1361,9 @@ Ref Mega::loadMember(
             }
             case Ownership::BORROW:
             case Ownership::WEAK: {
-              auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder,
-                  structRefMT,
-                  structRef);
+              auto wrapperPtrLE =
+                  globalState->region->lockWeakRef(
+                      FL(), functionState, builder, structRefMT, structRef, structKnownLive);
               innerStructPtrLE = referendStructs.getStructContentsPtr(builder,
                   structRefMT->referend, wrapperPtrLE);
               break;
@@ -1343,6 +1393,7 @@ void Mega::storeMember(
     LLVMBuilderRef builder,
     Reference* structRefMT,
     Ref structRef,
+    bool structKnownLive,
     int memberIndex,
     const std::string& memberName,
     LLVMValueRef newValueLE) {
@@ -1366,7 +1417,7 @@ void Mega::storeMember(
         case Ownership::WEAK: {
           auto wrapperPtrLE =
               globalState->region->lockWeakRef(
-                  FL(), functionState, builder, structRefMT, structRef);
+                  FL(), functionState, builder, structRefMT, structRef, structKnownLive);
           innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
           break;
         }
@@ -1377,7 +1428,9 @@ void Mega::storeMember(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (structRefMT->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE: {
@@ -1393,7 +1446,7 @@ void Mega::storeMember(
         case Ownership::WEAK: {
           auto wrapperPtrLE =
               globalState->region->lockWeakRef(
-                  FL(), functionState, builder, structRefMT, structRef);
+                  FL(), functionState, builder, structRefMT, structRef, structKnownLive);
           innerStructPtrLE = referendStructs.getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
           break;
         }
@@ -1522,7 +1575,9 @@ std::tuple<LLVMValueRef, LLVMValueRef> Mega::explodeInterfaceRef(
       }
       break;
     }
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (virtualParamMT->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE: {
@@ -1565,7 +1620,8 @@ Ref Mega::getUnknownSizeArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* usaRefMT,
-    Ref arrayRef) {
+    Ref arrayRef,
+    bool arrayKnownLive) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC:
@@ -1579,7 +1635,9 @@ Ref Mega::getUnknownSizeArrayLength(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (usaRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN: {
@@ -1591,7 +1649,9 @@ Ref Mega::getUnknownSizeArrayLength(
           return ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
         }
         case Ownership::BORROW: {
-          auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef);
+          auto wrapperPtrLE =
+              globalState->region->lockWeakRef(
+                  FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
           return ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
         }
         case Ownership::WEAK:
@@ -1617,16 +1677,13 @@ LLVMValueRef Mega::checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     Ref ref) {
-
-
-
-  Reference* actualRefM = nullptr;
+  Reference *actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
   std::tie(actualRefM, refLE) = megaGetRefInnardsForChecking(ref);
   assert(actualRefM == refM);
-
   assert(refLE != nullptr);
   assert(LLVMTypeOf(refLE) == functionState->defaultRegion->translateType(refM));
+
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
@@ -1637,10 +1694,12 @@ LLVMValueRef Mega::checkValidReference(
       }
       auto controlBlockPtrLE =
           referendStructs.getControlBlockPtr(FL(), functionState, builder, refLE, refM);
-      buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
+      buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
+          controlBlockPtrLE.refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-        auto interfaceFatPtrLE = referendStructs.makeInterfaceFatPtr(FL(), functionState, builder, refM, refLE);
+        auto interfaceFatPtrLE = referendStructs.makeInterfaceFatPtr(FL(), functionState, builder,
+            refM, refLE);
         auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
       }
@@ -1666,11 +1725,14 @@ LLVMValueRef Mega::checkValidReference(
         case RegionOverride::FAST: {
           if (refM->ownership == Ownership::BORROW) {
             if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-              auto interfaceFatPtrLE = referendStructs.makeInterfaceFatPtr(FL(), functionState, builder, refM, refLE);
+              auto interfaceFatPtrLE = referendStructs.makeInterfaceFatPtr(FL(), functionState,
+                  builder, refM, refLE);
               auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
-              buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
+              buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
+                  itablePtrLE);
             }
-            auto controlBlockPtrLE = referendStructs.getControlBlockPtr(FL(), functionState, builder, refLE, refM);
+            auto controlBlockPtrLE = referendStructs.getControlBlockPtr(FL(), functionState,
+                builder, refLE, refM);
             buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
                 controlBlockPtrLE.refLE);
           } else if (refM->ownership == Ownership::WEAK) {
@@ -1687,7 +1749,8 @@ LLVMValueRef Mega::checkValidReference(
           lgtWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
           break;
         }
-        case RegionOverride::RESILIENT_V2: {
+        case RegionOverride::RESILIENT_V2:
+        case RegionOverride::RESILIENT_V3: {
           hgmWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
           break;
         }
@@ -1838,7 +1901,9 @@ Ref Mega::upgradeLoadResultToRefWithTargetOwnership(
       }
       break;
     }
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       if (sourceOwnership == Ownership::SHARE) {
         if (sourceLocation == Location::INLINE) {
           return sourceRef;
@@ -1891,6 +1956,8 @@ void Mega::aliasWeakRef(
     case RegionOverride::RESILIENT_V1:
       return lgtWeaks.aliasWeakRef(from, functionState, builder, weakRefMT, weakRef);
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
       return hgmWeaks.aliasWeakRef(from, functionState, builder, weakRefMT, weakRef);
     default:
       assert(false);
@@ -1911,6 +1978,8 @@ void Mega::discardWeakRef(
     case RegionOverride::RESILIENT_V1:
       return lgtWeaks.discardWeakRef(from, functionState, builder, weakRefMT, weakRef);
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
       return hgmWeaks.discardWeakRef(from, functionState, builder, weakRefMT, weakRef);
     default:
       assert(false);
@@ -1921,7 +1990,8 @@ Ref Mega::getIsAliveFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    Ref weakRef) {
+    Ref weakRef,
+    bool knownLive) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::NAIVE_RC:
     case RegionOverride::FAST:
@@ -1930,7 +2000,9 @@ Ref Mega::getIsAliveFromWeakRef(
     case RegionOverride::RESILIENT_V1:
       return lgtWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
     case RegionOverride::RESILIENT_V2:
-      return hgmWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
+    case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
+      return hgmWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef, knownLive);
     default:
       assert(false);
   }
@@ -1977,6 +2049,8 @@ void Mega::fillControlBlock(
         newControlBlockLE = lgtWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
         break;
       case RegionOverride::RESILIENT_V2:
+      case RegionOverride::RESILIENT_V3:
+      case RegionOverride::RESILIENT_LIMIT:
         newControlBlockLE = hgmWeaks.fillWeakableControlBlock(functionState, builder, referendM, newControlBlockLE);
         break;
       default:
@@ -1995,10 +2069,12 @@ Ref Mega::loadElementFromKSAWithUpgrade(
     Reference* ksaRefMT,
     KnownSizeArrayT* ksaMT,
     Ref arrayRef,
+    bool arrayKnownLive,
     Ref indexRef,
     Reference* targetType) {
-  Ref memberRef = loadElementFromKSAWithoutUpgrade(functionState, builder, ksaRefMT,
-      ksaMT, arrayRef, indexRef);
+  Ref memberRef =
+      loadElementFromKSAWithoutUpgrade(
+          functionState, builder, ksaRefMT, ksaMT, arrayRef, arrayKnownLive, indexRef);
   return upgradeLoadResultToRefWithTargetOwnership(
       functionState, builder, ksaMT->rawArray->elementType, targetType, memberRef);
 }
@@ -2009,6 +2085,7 @@ Ref Mega::loadElementFromKSAWithoutUpgrade(
     Reference* ksaRefMT,
     KnownSizeArrayT* ksaMT,
     Ref arrayRef,
+    bool arrayKnownLive,
     Ref indexRef) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
@@ -2024,7 +2101,9 @@ Ref Mega::loadElementFromKSAWithoutUpgrade(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (ksaRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN: {
@@ -2041,7 +2120,7 @@ Ref Mega::loadElementFromKSAWithoutUpgrade(
 
           LLVMValueRef arrayElementsPtrLE =
               getKnownSizeArrayContentsPtr(
-                  builder, globalState->region->lockWeakRef(FL(), functionState, builder, ksaRefMT, arrayRef));
+                  builder, globalState->region->lockWeakRef(FL(), functionState, builder, ksaRefMT, arrayRef, arrayKnownLive));
 
           return loadElementFromKSAWithoutUpgradeInner(globalState, functionState, builder, ksaRefMT, ksaMT, indexRef, arrayElementsPtrLE);
           break;
@@ -2064,10 +2143,11 @@ Ref Mega::loadElementFromUSAWithUpgrade(
     Reference* usaRefMT,
     UnknownSizeArrayT* usaMT,
     Ref arrayRef,
+    bool arrayKnownLive,
     Ref indexRef,
     Reference* targetType) {
   Ref memberRef = loadElementFromUSAWithoutUpgrade(functionState, builder, usaRefMT,
-      usaMT, arrayRef, indexRef);
+      usaMT, arrayRef, arrayKnownLive, indexRef);
   return upgradeLoadResultToRefWithTargetOwnership(
       functionState, builder, usaMT->rawArray->elementType, targetType, memberRef);
 }
@@ -2078,6 +2158,7 @@ Ref Mega::loadElementFromUSAWithoutUpgrade(
     Reference* usaRefMT,
     UnknownSizeArrayT* usaMT,
     Ref arrayRef,
+    bool arrayKnownLive,
     Ref indexRef) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
@@ -2101,7 +2182,9 @@ Ref Mega::loadElementFromUSAWithoutUpgrade(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (usaRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN: {
@@ -2122,10 +2205,14 @@ Ref Mega::loadElementFromUSAWithoutUpgrade(
           break;
         }
         case Ownership::BORROW: {
-          auto wrapperPtrLE = globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef);
+          auto wrapperPtrLE =
+              globalState->region->lockWeakRef(
+                  FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
           auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
-          auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
-              globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef));
+          auto arrayElementsPtrLE =
+              getUnknownSizeArrayContentsPtr(
+                  builder,
+                  globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive));
           return loadElementWithoutUpgrade(
               globalState, functionState, builder, usaRefMT,
               usaMT->rawArray->elementType,
@@ -2150,6 +2237,7 @@ Ref Mega::storeElementInUSA(
     Reference* usaRefMT,
     UnknownSizeArrayT* usaMT,
     Ref arrayRef,
+    bool arrayKnownLive,
     Ref indexRef,
     Ref elementRef) {
   switch (globalState->opt->regionOverride) {
@@ -2174,7 +2262,9 @@ Ref Mega::storeElementInUSA(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (usaRefMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN: {
@@ -2197,10 +2287,14 @@ Ref Mega::storeElementInUSA(
           break;
         }
         case Ownership::BORROW: {
-          auto wrapperPtrLE = lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef);
+          auto wrapperPtrLE =
+              lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
           auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
-          auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
-              globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef));
+          auto arrayElementsPtrLE =
+              getUnknownSizeArrayContentsPtr(
+                  builder,
+                  globalState->region->lockWeakRef(
+                      FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive));
 
           return storeElement(
               globalState, functionState, builder, usaRefMT,
@@ -2272,7 +2366,9 @@ Ref Mega::upcast(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       switch (sourceStructMT->ownership) {
         case Ownership::SHARE:
         case Ownership::OWN: {

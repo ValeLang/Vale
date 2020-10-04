@@ -731,7 +731,7 @@ struct TypedPR {
 impl IRulexPR for TypedPR;
 
 struct TemplexPR {
-  templex ITemplexPRT;
+  templex ITemplexPT;
 }
 impl IRulexPR for TemplexPR;
 
@@ -780,111 +780,111 @@ impl ITypePR for CitizenTemplateTypePR;
 
 
 // See PVSBUFI
-interface ITemplexPRT {}
-struct IntPRT {
+interface ITemplexPT {}
+struct IntPT {
   range Range;
   value int;
 }
-impl ITemplexPRT for IntPRT;
-struct MutabilityPRT {
+impl ITemplexPT for IntPT;
+struct MutabilityPT {
   range Range;
   mutability MutabilityP;
 }
-impl ITemplexPRT for MutabilityPRT;
-struct PermissionPRT {
+impl ITemplexPT for MutabilityPT;
+struct PermissionPT {
   range Range;
   permission PermissionP;
 }
-impl ITemplexPRT for PermissionPRT;
-struct LocationPRT {
+impl ITemplexPT for PermissionPT;
+struct LocationPT {
   range Range;
   location LocationP;
 }
-impl ITemplexPRT for LocationPRT;
-struct OwnershipPRT {
+impl ITemplexPT for LocationPT;
+struct OwnershipPT {
   range Range;
   ownership OwnershipP;
 }
-impl ITemplexPRT for OwnershipPRT;
-struct VariabilityPRT {
+impl ITemplexPT for OwnershipPT;
+struct VariabilityPT {
   range Range;
   variability VariabilityP;
 }
-impl ITemplexPRT for VariabilityPRT;
-struct BoolPRT {
+impl ITemplexPT for VariabilityPT;
+struct BoolPT {
   range Range;
   value bool;
 }
-impl ITemplexPRT for BoolPRT;
-struct NameOrRunePRT {
+impl ITemplexPT for BoolPT;
+struct NameOrRunePT {
   name NameP;
 }
-impl ITemplexPRT for NameOrRunePRT;
-struct TypedRunePRT {
+impl ITemplexPT for NameOrRunePT;
+struct TypedRunePT {
   range Range;
   rune NameP;
   type ITypePR;
 }
-impl ITemplexPRT for TypedRunePRT;
-struct AnonymousRunePRT {
+impl ITemplexPT for TypedRunePT;
+struct AnonymousRunePT {
   range Range;
 }
-impl ITemplexPRT for AnonymousRunePRT;
-struct BorrowPRT {
+impl ITemplexPT for AnonymousRunePT;
+struct BorrowPT {
   range Range;
-  inner ITemplexPRT;
+  inner ITemplexPT;
 }
-impl ITemplexPRT for BorrowPRT;
-struct NamePRT {
+impl ITemplexPT for BorrowPT;
+struct NamePT {
   range Range;
   str NameP;
 }
-impl ITemplexPRT for NamePRT;
-struct SharePRT {
+impl ITemplexPT for NamePT;
+struct SharePT {
   range Range;
-  inner ITemplexPRT;
+  inner ITemplexPT;
 }
-impl ITemplexPRT for SharePRT;
-struct CallPRT {
+impl ITemplexPT for SharePT;
+struct CallPT {
   range Range;
-  template ITemplexPRT;
-  args List<ITemplexPRT>;
+  template ITemplexPT;
+  args List<ITemplexPT>;
 }
-impl ITemplexPRT for CallPRT;
+impl ITemplexPT for CallPT;
 // This is for example fn(Int)Bool; fn<imm>(Int, Int)Str; fn:mut()(Str; Bool)
 // It's shorthand for IFunction:(mut; (Int); Bool); IFunction:(mut; (Int; Int); Str); IFunction:(mut; (); (Str; Bool))
-struct FunctionPRT {
+struct FunctionPT {
   range Range;
   // This is Optional because they can leave it out; and mut will be assumed.
-  mutability Opt<ITemplexPRT>;
-  parameters PackPRT;
-  returnType ITemplexPRT;
+  mutability Opt<ITemplexPT>;
+  parameters PackPT;
+  returnType ITemplexPT;
 }
-impl ITemplexPRT for FunctionPRT;
-struct PrototypePRT {
+impl ITemplexPT for FunctionPT;
+struct PrototypePT {
   range Range;
   name NameP;
-  parameters List<ITemplexPRT>;
-  returnType ITemplexPRT;
+  parameters List<ITemplexPT>;
+  returnType ITemplexPT;
 }
-impl ITemplexPRT for PrototypePRT;
-struct PackPRT {
+impl ITemplexPT for PrototypePT;
+struct PackPT {
   range Range;
-  members List<ITemplexPRT>;
+  members List<ITemplexPT>;
 }
-impl ITemplexPRT for PackPRT;
-struct RepeaterSequencePRT {
+impl ITemplexPT for PackPT;
+struct RepeaterSequencePT {
   range Range;
-  mutability ITemplexPRT;
-  size ITemplexPRT;
-  element ITemplexPRT;
+  mutability ITemplexPT;
+  size ITemplexPT;
+  element ITemplexPT;
 }
-impl RepeaterSequencePRT for ITemplexPRT;
-struct ManualSequencePRT {
+impl RepeaterSequencePT for ITemplexPT;
+struct ManualSequencePT {
   range Range;
-  elements List<ITemplexPRT>;
+  elements List<ITemplexPT>;
 }
-impl ITemplexPRT for ManualSequencePRT;
+impl ITemplexPT for ManualSequencePT;
 
 
 

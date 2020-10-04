@@ -284,10 +284,10 @@ object VonHammer {
         VonMember("prototype", vonifyPrototype(prototype)),
         VonMember("export", VonBool(export)),
         // TODO: rename block to body
-        VonMember("block", vonifyNode(body))))
+        VonMember("block", vonifyExpression(body))))
   }
 
-  def vonifyNode(node: ExpressionH[ReferendH]): IVonData = {
+  def vonifyExpression(node: ExpressionH[ReferendH]): IVonData = {
     node match {
       case ConstantBoolH(value) => {
         VonObject(
@@ -322,17 +322,19 @@ object VonHammer {
           "ArrayLength",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
-            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKnownLive", VonBool(false))))
       }
       case wa @ WeakAliasH(sourceExpr) => {
         VonObject(
           "WeakAlias",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
             VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind)),
+            VonMember("sourceKnownLive", VonBool(false)),
             VonMember("resultType", vonifyCoord(wa.resultType)),
             VonMember("resultReferend", vonifyKind(wa.resultType.kind))))
       }
@@ -341,8 +343,9 @@ object VonHammer {
           "LockWeak",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKnownLive", VonBool(false)),
             VonMember("someConstructor", vonifyPrototype(someConstructor)),
             VonMember("someType", vonifyCoord(someConstructor.returnType)),
             VonMember("someReferend", vonifyKind(someConstructor.returnType.kind)),
@@ -357,16 +360,18 @@ object VonHammer {
           "Return",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
-            VonMember("sourceType", vonifyCoord(sourceExpr.resultType))))
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKnownLive", VonBool(false))))
       }
       case DiscardH(sourceExpr) => {
         VonObject(
           "Discard",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
-            VonMember("sourceResultType", vonifyCoord(sourceExpr.resultType))))
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceResultType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKnownLive", VonBool(false))))
       }
       case ArgumentH(resultReference, argumentIndex) => {
         VonObject(
@@ -374,14 +379,16 @@ object VonHammer {
           None,
           Vector(
             VonMember("resultType", vonifyCoord(resultReference)),
-            VonMember("argumentIndex", VonInt(argumentIndex))))
+            VonMember("argumentIndex", VonInt(argumentIndex)),
+            VonMember("knownLive", VonBool(false))))
       }
       case NewArrayFromValuesH(resultType, sourceExprs) => {
         VonObject(
           "NewArrayFromValues",
           None,
           Vector(
-            VonMember("sourceExprs", VonArray(None, sourceExprs.map(vonifyNode).toVector)),
+            VonMember("sourceExprs", VonArray(None, sourceExprs.map(vonifyExpression).toVector)),
+            VonMember("sourcesKnownLive", VonArray(None, sourceExprs.map(_ => VonBool(false)).toVector)),
             VonMember("resultType", vonifyCoord(resultType)),
             VonMember("resultReferend", vonifyKind(resultType.kind))))
       }
@@ -392,7 +399,8 @@ object VonHammer {
           Vector(
             VonMember(
               "sourceExprs",
-              VonArray(None, sourceExprs.map(vonifyNode).toVector)),
+              VonArray(None, sourceExprs.map(vonifyExpression).toVector)),
+            VonMember("sourcesKnownLive", VonArray(None, sourceExprs.map(_ => VonBool(false)).toVector)),
             VonMember(
               "memberNames",
               VonArray(None, targetMemberNames.map(n => VonStr(n.toReadableString)).toVector)),
@@ -403,7 +411,8 @@ object VonHammer {
           "Stackify",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceKnownLive", VonBool(false)),
             VonMember("local", vonifyLocal(local)),
             VonMember("optName", vonifyOptional[FullNameH](name, n => VonStr(n.toReadableString())))))
       }
@@ -412,37 +421,42 @@ object VonHammer {
           "Unstackify",
           None,
           Vector(
-            VonMember("local", vonifyLocal(local))))
+            VonMember("local", vonifyLocal(local)),
+            VonMember("knownLive", VonBool(false))))
       }
       case CheckRefCountH(refExpr, category, numExpr) => {
         VonObject(
           "CheckRefCount",
           None,
           Vector(
-            VonMember("refExpr", vonifyNode(refExpr)),
+            VonMember("refExpr", vonifyExpression(refExpr)),
+            VonMember("knownLive", VonBool(false)),
             VonMember(
               "category",
               vonifyRefCountCategory(category)),
-            VonMember("numExpr", vonifyNode(numExpr))))
+            VonMember("numExpr", vonifyExpression(numExpr))))
       }
       case DestroyKnownSizeArrayIntoFunctionH(arrayExpr, consumerExpr, consumerMethod) => {
         VonObject(
           "DestroyKnownSizeArrayIntoFunction",
           None,
           Vector(
-            VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("consumerExpr", vonifyNode(consumerExpr)),
+            VonMember("arrayKnownLive", VonBool(false)),
+            VonMember("consumerExpr", vonifyExpression(consumerExpr)),
             VonMember("consumerType", vonifyCoord(consumerExpr.resultType)),
-            VonMember("consumerMethod", vonifyPrototype(consumerMethod))))
+            VonMember("consumerMethod", vonifyPrototype(consumerMethod)),
+            VonMember("consumerKnownLive", VonBool(false))))
       }
       case DestroyKnownSizeArrayIntoLocalsH(structExpr, localTypes, localIndices) => {
         VonObject(
           "DestroyKnownSizeArrayIntoLocals",
           None,
           Vector(
-            VonMember("structExpr", vonifyNode(structExpr)),
+            VonMember("structExpr", vonifyExpression(structExpr)),
+            VonMember("structKnownLive", VonBool(false)),
             VonMember(
               "localTypes",
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
@@ -455,8 +469,9 @@ object VonHammer {
           "Destroy",
           None,
           Vector(
-            VonMember("structExpr", vonifyNode(structExpr)),
+            VonMember("structExpr", vonifyExpression(structExpr)),
             VonMember("structType", vonifyCoord(structExpr.resultType)),
+            VonMember("structKnownLive", VonBool(false)),
             VonMember(
               "localTypes",
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
@@ -469,22 +484,25 @@ object VonHammer {
           "DestroyUnknownSizeArray",
           None,
           Vector(
-            VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("consumerExpr", vonifyNode(consumerExpr)),
+            VonMember("arrayKnownLive", VonBool(false)),
+            VonMember("consumerExpr", vonifyExpression(consumerExpr)),
             VonMember("consumerType", vonifyCoord(consumerExpr.resultType)),
             VonMember("consumerReferend", vonifyKind(consumerExpr.resultType.kind)),
-            VonMember("consumerMethod", vonifyPrototype(consumerMethod))))
+            VonMember("consumerMethod", vonifyPrototype(consumerMethod)),
+            VonMember("consumerKnownLive", VonBool(false))))
       }
       case si @ StructToInterfaceUpcastH(sourceExpr, targetInterfaceRef) => {
         VonObject(
           "StructToInterfaceUpcast",
           None,
           Vector(
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceStructType", vonifyCoord(sourceExpr.resultType)),
             VonMember("sourceStructReferend", vonifyStructRef(sourceExpr.resultType.kind)),
+            VonMember("sourceStructKnownLive", VonBool(false)),
             VonMember("targetInterfaceType", vonifyCoord(si.resultType)),
             VonMember("targetInterfaceReferend", vonifyInterfaceRef(targetInterfaceRef))))
       }
@@ -497,7 +515,8 @@ object VonHammer {
           None,
           Vector(
             VonMember("local", vonifyLocal(local)),
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceKnownLive", VonBool(false)),
             VonMember("localName", VonStr(localName.toReadableString()))))
       }
       case LocalLoadH(local, targetOwnership, localName) => {
@@ -506,6 +525,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("local", vonifyLocal(local)),
+            VonMember("knownLive", VonBool(false)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
             VonMember("localName", VonStr(localName.toReadableString()))))
       }
@@ -515,10 +535,11 @@ object VonHammer {
           None,
           Vector(
             VonMember("resultType", vonifyCoord(resultType)),
-            VonMember("structExpr", vonifyNode(structExpr)),
+            VonMember("structExpr", vonifyExpression(structExpr)),
             VonMember("structType", vonifyCoord(structExpr.resultType)),
+            VonMember("structKnownLive", VonBool(false)),
             VonMember("memberIndex", VonInt(memberIndex)),
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("memberName", VonStr(memberName.toReadableString()))))
       }
       case ml @ MemberLoadH(structExpr, memberIndex, targetOwnership, expectedMemberType, memberName) => {
@@ -526,9 +547,10 @@ object VonHammer {
           "MemberLoad",
           None,
           Vector(
-            VonMember("structExpr", vonifyNode(structExpr)),
+            VonMember("structExpr", vonifyExpression(structExpr)),
             VonMember("structId", vonifyStructRef(structExpr.resultType.kind)),
             VonMember("structType", vonifyCoord(structExpr.resultType)),
+            VonMember("structKnownLive", VonBool(false)),
             VonMember("memberIndex", VonInt(memberIndex)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
             VonMember("expectedMemberType", vonifyCoord(expectedMemberType)),
@@ -540,34 +562,39 @@ object VonHammer {
           "KnownSizeArrayStore",
           None,
           Vector(
-            VonMember("arrayExpr", vonifyNode(arrayExpr)),
-            VonMember("indexExpr", vonifyNode(indexExpr)),
-            VonMember("sourceExpr", vonifyNode(sourceExpr))))
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
+            VonMember("arrayKnownLive", VonBool(false)),
+            VonMember("indexExpr", vonifyExpression(indexExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceKnownLive", VonBool(false))))
       }
       case UnknownSizeArrayStoreH(arrayExpr, indexExpr, sourceExpr) => {
         VonObject(
           "UnknownSizeArrayStore",
           None,
           Vector(
-            VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("indexExpr", vonifyNode(indexExpr)),
+            VonMember("arrayKnownLive", VonBool(false)),
+            VonMember("indexExpr", vonifyExpression(indexExpr)),
             VonMember("indexType", vonifyCoord(indexExpr.resultType)),
             VonMember("indexReferend", vonifyKind(indexExpr.resultType.kind)),
-            VonMember("sourceExpr", vonifyNode(sourceExpr)),
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
-            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind))))
+            VonMember("sourceReferend", vonifyKind(sourceExpr.resultType.kind)),
+            VonMember("sourceKnownLive", VonBool(false))))
       }
       case usal @ UnknownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
         VonObject(
           "UnknownSizeArrayLoad",
           None,
           Vector(
-            VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("indexExpr", vonifyNode(indexExpr)),
+            VonMember("arrayKnownLive", VonBool(false)),
+            VonMember("indexExpr", vonifyExpression(indexExpr)),
             VonMember("indexType", vonifyCoord(indexExpr.resultType)),
             VonMember("indexReferend", vonifyKind(indexExpr.resultType.kind)),
             VonMember("resultType", vonifyCoord(usal.resultType)),
@@ -578,13 +605,14 @@ object VonHammer {
           "ConstructUnknownSizeArray",
           None,
           Vector(
-            VonMember("sizeExpr", vonifyNode(sizeExpr)),
+            VonMember("sizeExpr", vonifyExpression(sizeExpr)),
             VonMember("sizeType", vonifyCoord(sizeExpr.resultType)),
             VonMember("sizeReferend", vonifyKind(sizeExpr.resultType.kind)),
-            VonMember("generatorExpr", vonifyNode(generatorExpr)),
+            VonMember("generatorExpr", vonifyExpression(generatorExpr)),
             VonMember("generatorType", vonifyCoord(generatorExpr.resultType)),
             VonMember("generatorReferend", vonifyKind(generatorExpr.resultType.kind)),
             VonMember("generatorMethod", vonifyPrototype(generatorMethod)),
+            VonMember("generatorKnownLive", VonBool(false)),
             VonMember("resultType", vonifyCoord(resultType))))
       }
       case ksal @ KnownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership) => {
@@ -592,10 +620,11 @@ object VonHammer {
           "KnownSizeArrayLoad",
           None,
           Vector(
-            VonMember("arrayExpr", vonifyNode(arrayExpr)),
+            VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("indexExpr", vonifyNode(indexExpr)),
+            VonMember("arrayKnownLive", VonBool(false)),
+            VonMember("indexExpr", vonifyExpression(indexExpr)),
             VonMember("resultType", vonifyCoord(ksal.resultType)),
             VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
       }
@@ -605,7 +634,7 @@ object VonHammer {
           None,
           Vector(
             VonMember("function", vonifyPrototype(functionExpr)),
-            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyNode))),
+            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyExpression))),
             VonMember("argTypes", VonArray(None, argsExprs.toVector.map(_.resultType).map(vonifyCoord)))))
       }
       case CallH(functionExpr, argsExprs) => {
@@ -614,14 +643,14 @@ object VonHammer {
           None,
           Vector(
             VonMember("function", vonifyPrototype(functionExpr)),
-            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyNode)))))
+            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyExpression)))))
       }
       case InterfaceCallH(argsExprs, virtualParamIndex, interfaceRefH, indexInEdge, functionType) => {
         VonObject(
           "InterfaceCall",
           None,
           Vector(
-            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyNode))),
+            VonMember("argExprs", VonArray(None, argsExprs.toVector.map(vonifyExpression))),
             VonMember("virtualParamIndex", VonInt(virtualParamIndex)),
             VonMember("interfaceRef", vonifyInterfaceRef(interfaceRefH)),
             VonMember("indexInEdge", VonInt(indexInEdge)),
@@ -632,10 +661,10 @@ object VonHammer {
           "If",
           None,
           Vector(
-            VonMember("conditionBlock", vonifyNode(conditionBlock)),
-            VonMember("thenBlock", vonifyNode(thenBlock)),
+            VonMember("conditionBlock", vonifyExpression(conditionBlock)),
+            VonMember("thenBlock", vonifyExpression(thenBlock)),
             VonMember("thenResultType", vonifyCoord(thenBlock.resultType)),
-            VonMember("elseBlock", vonifyNode(elseBlock)),
+            VonMember("elseBlock", vonifyExpression(elseBlock)),
             VonMember("elseResultType", vonifyCoord(elseBlock.resultType)),
             VonMember("commonSupertype", vonifyCoord(commonSupertype))))
       }
@@ -644,21 +673,21 @@ object VonHammer {
           "While",
           None,
           Vector(
-            VonMember("bodyBlock", vonifyNode(bodyBlock))))
+            VonMember("bodyBlock", vonifyExpression(bodyBlock))))
       }
       case ConsecutorH(nodes) => {
         VonObject(
           "Consecutor",
           None,
           Vector(
-            VonMember("exprs", VonArray(None, nodes.map(node => vonifyNode(node)).toVector))))
+            VonMember("exprs", VonArray(None, nodes.map(node => vonifyExpression(node)).toVector))))
       }
       case BlockH(inner) => {
         VonObject(
           "Block",
           None,
           Vector(
-            VonMember("innerExpr", vonifyNode(inner)),
+            VonMember("innerExpr", vonifyExpression(inner)),
             VonMember("innerType", vonifyCoord(inner.resultType))))
       }
     }

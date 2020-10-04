@@ -48,7 +48,7 @@ class PatternTests extends FunSuite with Matchers {
         |fn main() { (x, y) = [7, Marine(8)]; = y.hp; }
       """.stripMargin)
     val temputs = compile.getTemputs()
-    temputs.getAllFunctions().head.header.returnType == Coord(Share, Int2())
+    temputs.functions.head.header.returnType == Coord(Share, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
@@ -64,7 +64,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
-    temputs.getAllFunctions().head.header.returnType == Coord(Share, Int2())
+    temputs.functions.head.header.returnType == Coord(Share, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 }

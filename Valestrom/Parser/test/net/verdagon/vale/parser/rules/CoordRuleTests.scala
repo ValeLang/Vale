@@ -49,18 +49,18 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
 
   test("Coord with destructure only") {
     compile(rulePR, "Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,None,CoordTypePR),List(TemplexPR(AnonymousRunePRT(_)), TemplexPR(AnonymousRunePRT(_)))) =>
+      case ComponentsPR(_,TypedPR(_,None,CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
 
   test("Coord with rune and destructure") {
     compile(rulePR, "T Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePRT(_)), TemplexPR(AnonymousRunePRT(_)))) =>
+      case ComponentsPR(_,TypedPR(_,Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
     compile(rulePR, "T Ref(own, _)") shouldHave {
         case ComponentsPR(_,
           TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
-          List(TemplexPR(OwnershipPRT(_,OwnP)), TemplexPR(AnonymousRunePRT(_)))) =>
+          List(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
 
@@ -75,7 +75,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     //     Ref#T[_, _, Ref[_, _, Int]]:Ref[_, _, Void]))
     //   (a: #T)
     compile(rulePR, "int") shouldHave {
-      case TemplexPR(NameOrRunePRT(StringP(_, "int"))) =>
+      case TemplexPR(NameOrRunePT(StringP(_, "int"))) =>
     }
 //        CoordPR(None,None,None,None,None,Some(List(NameTemplexPR("int"))))
 
@@ -85,7 +85,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "T Ref(_, int)") shouldHave {
       case ComponentsPR(_,
           TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
-          List(TemplexPR(AnonymousRunePRT(_)), TemplexPR(NameOrRunePRT(StringP(_, "int"))))) =>
+          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(StringP(_, "int"))))) =>
     }
 //      runedTCoordWithEnvKind("T", "int")
 
@@ -96,9 +96,9 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
       case ComponentsPR(_,
           TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
           List(
-            TemplexPR(AnonymousRunePRT(_)),
+            TemplexPR(AnonymousRunePT(_)),
             ComponentsPR(_,
-              TypedPR(_,None,KindTypePR),List(TemplexPR(MutabilityPRT(_,MutableP)))))) =>
+              TypedPR(_,None,KindTypePR),List(TemplexPR(MutabilityPT(_,MutableP)))))) =>
     }
   }
 
@@ -106,15 +106,15 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "T Ref = int") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
-          TemplexPR(NameOrRunePRT(StringP(_, "int")))) =>
+          TemplexPR(NameOrRunePT(StringP(_, "int")))) =>
     }
   }
 
   test("Coord with destructure and value") {
     compile(rulePR, "T Ref(_, _) = int") shouldHave {
       case EqualsPR(_,
-          ComponentsPR(_,TypedPR(_,Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePRT(_)), TemplexPR(AnonymousRunePRT(_)))),
-          TemplexPR(NameOrRunePRT(StringP(_, "int")))) =>
+          ComponentsPR(_,TypedPR(_,Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
+          TemplexPR(NameOrRunePT(StringP(_, "int")))) =>
     }
 //        runedTCoordWithValue("T", NameTemplexPR("int"))
   }
@@ -124,16 +124,16 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
       case EqualsPR(_,
           TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
           TemplexPR(
-            ManualSequencePRT(_,
-              List(NameOrRunePRT(StringP(_, "int")), NameOrRunePRT(StringP(_, "bool")))))) =>
+            ManualSequencePT(_,
+              List(NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "bool")))))) =>
     }
   }
 
   test("Braces without Ref is sequence") {
     compile(rulePR, "[int, bool]") shouldHave {
       case TemplexPR(
-          ManualSequencePRT(_,
-            List(NameOrRunePRT(StringP(_, "int")), NameOrRunePRT(StringP(_, "bool"))))) =>
+          ManualSequencePT(_,
+            List(NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "bool"))))) =>
         }
   }
 }

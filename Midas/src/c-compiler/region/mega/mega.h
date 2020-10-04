@@ -78,7 +78,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      Ref weakRefLE) override;
+      Ref weakRefLE,
+      bool weakRefKnownLive) override;
 
   Ref lockWeak(
       FunctionState* functionState,
@@ -90,6 +91,7 @@ public:
       Reference* constraintRefM,
       Reference* sourceWeakRefMT,
       Ref sourceWeakRefLE,
+      bool weakRefKnownLive,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
@@ -114,7 +116,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* usaRefMT,
-      Ref arrayRef) override;
+      Ref arrayRef,
+      bool arrayKnownLive) override;
 
   LLVMValueRef checkValidReference(
       AreaAndFileAndLine checkerAFL,
@@ -175,6 +178,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structRefMT,
       Ref structRef,
+      bool structKnownLive,
       int memberIndex,
       const std::string& memberName,
       LLVMValueRef newValueLE) override;
@@ -184,6 +188,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structRefMT,
       Ref structRef,
+      bool structKnownLive,
       int memberIndex,
       Reference* expectedMemberType,
       Reference* targetType,
@@ -230,7 +235,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      Ref weakRef) override;
+      Ref weakRef,
+      bool knownLive) override;
 
   Ref loadElementFromKSAWithUpgrade(
       FunctionState* functionState,
@@ -238,6 +244,7 @@ public:
       Reference* ksaRefMT,
       KnownSizeArrayT* ksaMT,
       Ref arrayRef,
+      bool arrayKnownLive,
       Ref indexRef,
       Reference* targetType) override;
   Ref loadElementFromKSAWithoutUpgrade(
@@ -246,6 +253,7 @@ public:
       Reference* ksaRefMT,
       KnownSizeArrayT* ksaMT,
       Ref arrayRef,
+      bool arrayKnownLive,
       Ref indexRef) override;
   Ref loadElementFromUSAWithUpgrade(
       FunctionState* functionState,
@@ -253,6 +261,7 @@ public:
       Reference* usaRefMT,
       UnknownSizeArrayT* usaMT,
       Ref arrayRef,
+      bool arrayKnownLive,
       Ref indexRef,
       Reference* targetType) override;
   Ref loadElementFromUSAWithoutUpgrade(
@@ -261,6 +270,7 @@ public:
       Reference* usaRefMT,
       UnknownSizeArrayT* usaMT,
       Ref arrayRef,
+      bool arrayKnownLive,
       Ref indexRef) override;
 
 
@@ -270,6 +280,7 @@ public:
       Reference* usaRefMT,
       UnknownSizeArrayT* usaMT,
       Ref arrayRef,
+      bool arrayKnownLive,
       Ref indexRef,
       Ref elementRef) override;
 

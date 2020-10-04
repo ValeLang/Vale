@@ -7,7 +7,7 @@ import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
-import net.verdagon.vale.templar.citizen.StructTemplar
+import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper, FunctionTemplar}
@@ -44,6 +44,7 @@ class ExpressionTemplar(
     inferTemplar: InferTemplar,
     arrayTemplar: ArrayTemplar,
     structTemplar: StructTemplar,
+    ancestorHelper: AncestorHelper,
     sequenceTemplar: SequenceTemplar,
     overloadTemplar: OverloadTemplar,
     dropHelper: DropHelper,
@@ -179,10 +180,14 @@ class ExpressionTemplar(
     name2: IVarName2):
   Option[AddressExpression2] = {
     fate.getVariable(name2) match {
-      case Some(alv @ AddressibleLocalVariable2(_, _, reference)) => {
+      case Some(alv @ AddressibleLocalVariable2(varId, _, reference)) => {
+        vassert(!fate.moveds.contains(varId))
         Some(LocalLookup2(range, alv, reference))
       }
-      case Some(rlv @ ReferenceLocalVariable2(id, _, reference)) => {
+      case Some(rlv @ ReferenceLocalVariable2(varId, _, reference)) => {
+        if (fate.moveds.contains(varId)) {
+          throw CompileErrorExceptionT(CantMutateUnstackifiedLocal(range, varId.last))
+        }
         Some(LocalLookup2(range, rlv, reference))
       }
       case Some(AddressibleClosureVariable2(id, closuredVarsStructRef, variability, tyype)) => {
@@ -571,7 +576,7 @@ class ExpressionTemplar(
                 }
               }
               case sr@StructRef2(_) => {
-                throw CompileErrorExceptionT(CannotSubscriptT(range, containerExpr2.resultRegister.reference))
+                throw CompileErrorExceptionT(CannotSubscriptT(range, containerExpr2.resultRegister.reference.referend))
               }
               // later on, a map type could go here
             }
@@ -766,13 +771,35 @@ class ExpressionTemplar(
           val elseContinues = uncoercedElseExpr2.resultRegister.reference.referend != Never2()
           val FunctionEnvironment(_, _, _, _, _, _, counterAfterElse, variablesAfterElse, movedsAfterElse) = fateAfterElse
 
+
+
           val commonType =
             (uncoercedThenExpr2.referend, uncoercedElseExpr2.referend) match {
               case (Never2(), Never2()) => uncoercedThenExpr2.resultRegister.reference
               case (Never2(), _) => uncoercedElseExpr2.resultRegister.reference
               case (_, Never2()) => uncoercedThenExpr2.resultRegister.reference
               case (a, b) if a == b => uncoercedThenExpr2.resultRegister.reference
-              case (a, b) => vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
+              case (a : CitizenRef2, b : CitizenRef2) => {
+                val aAncestors = ancestorHelper.getAncestorInterfacesWithDistance(temputs, a).keys.toSet
+                val bAncestors = ancestorHelper.getAncestorInterfacesWithDistance(temputs, b).keys.toSet
+                val commonAncestors = aAncestors.intersect(bAncestors)
+
+                if (uncoercedElseExpr2.resultRegister.reference.ownership != uncoercedElseExpr2.resultRegister.reference.ownership) {
+                  vfail("Two branches of if have different ownerships!\\n${a}\\n${b}")
+                }
+                val ownership = uncoercedElseExpr2.resultRegister.reference.ownership
+
+                if (commonAncestors.isEmpty) {
+                  vimpl(s"No common ancestors of two branches of if:\n${a}\n${b}")
+                } else if (commonAncestors.size > 1) {
+                  vimpl(s"More than one common ancestor of two branches of if:\n${a}\n${b}")
+                } else {
+                  Coord(ownership, commonAncestors.head)
+                }
+              }
+              case (a, b) => {
+                vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
+              }
             }
           val thenExpr2 = convertHelper.convert(fate.snapshot, temputs, uncoercedThenExpr2, commonType)
           val elseExpr2 = convertHelper.convert(fate.snapshot, temputs, uncoercedElseExpr2, commonType)

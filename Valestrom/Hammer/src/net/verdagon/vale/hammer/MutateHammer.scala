@@ -224,6 +224,7 @@ object MutateHammer {
                                            varId: FullName2[IVarName2]
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val local = locals.get(varId).get
+    vassert(!locals.unstackifiedVars.contains(local.id))
     val newStoreNode =
         LocalStoreH(
           local,

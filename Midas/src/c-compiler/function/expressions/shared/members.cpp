@@ -13,6 +13,7 @@ Ref loadMember(
     LLVMBuilderRef builder,
     Reference* structRefM,
     Ref structRef,
+    bool structKnownLive,
     Mutability containingStructMutability,
     Reference* memberType,
     int memberIndex,
@@ -20,7 +21,7 @@ Ref loadMember(
     const std::string& memberName) {
   auto memberRef =
       functionState->defaultRegion->loadMember(
-          functionState, builder, structRefM, structRef, memberIndex, memberType, resultType, memberName);
+          functionState, builder, structRefM, structRef, structKnownLive, memberIndex, memberType, resultType, memberName);
   functionState->defaultRegion->alias(from, functionState, builder, resultType, memberRef);
   return memberRef;
 }
@@ -32,6 +33,7 @@ Ref swapMember(
     StructDefinition* structDefM,
     Reference* structRefMT,
     Ref structRef,
+    bool structKnownLive,
     int memberIndex,
     const std::string& memberName,
     Ref newMemberRef) {
@@ -43,14 +45,14 @@ Ref swapMember(
 
   Ref oldMember =
       functionState->defaultRegion->loadMember(
-          functionState, builder, structRefMT, structRef, memberIndex, memberRefMT, memberRefMT, memberName);
+          functionState, builder, structRefMT, structRef, structKnownLive, memberIndex, memberRefMT, memberRefMT, memberName);
   // We don't adjust the oldMember's RC here because even though we're acquiring
   // a reference to it, the struct is losing its reference, so it cancels out.
 
   auto newMemberLE =
       globalState->region->checkValidReference(FL(), functionState, builder, memberRefMT, newMemberRef);
   functionState->defaultRegion->storeMember(
-      functionState, builder, structRefMT, structRef, memberIndex, memberName, newMemberLE);
+      functionState, builder, structRefMT, structRef, structKnownLive, memberIndex, memberName, newMemberLE);
   // We don't adjust the newMember's RC here because even though the struct is
   // acquiring a reference to it, we're losing ours, so it cancels out.
 

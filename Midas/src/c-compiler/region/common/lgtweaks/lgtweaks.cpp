@@ -18,7 +18,9 @@ LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
     WeakFatPtrLE weakRefLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V2);
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
   assert(LLVMTypeOf(headerLE) == globalState->region->getWeakRefHeaderStruct());
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
@@ -44,6 +46,8 @@ void LgtWeaks::buildCheckLgti(
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       // These dont have LGT
       assert(false);
       break;
@@ -197,6 +201,8 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
     case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
       assert(false);
       break;
     default:
@@ -520,7 +526,7 @@ void LgtWeaks::buildCheckWeakRef(
     LLVMBuilderRef builder,
     Reference* weakRefM,
     Ref weakRef) {
-  Reference* actualRefM = nullptr;
+  Reference *actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
   std::tie(actualRefM, refLE) = lgtGetRefInnardsForChecking(weakRef);
   auto weakFatPtrLE = weakRefStructsSource->makeWeakFatPtr(weakRefM, refLE);
@@ -537,7 +543,7 @@ void LgtWeaks::buildCheckWeakRef(
   buildCheckGen(globalState, functionState, builder, targetGen, actualGen);
 
   // This will also run for objects which have since died, which is fine.
-  if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(weakRefM->referend)) {
+  if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(weakRefM->referend)) {
     auto interfaceFatPtrLE =
         referendStructsSource->makeInterfaceFatPtrWithoutChecking(
             checkerAFL, functionState, builder, weakRefM, innerLE);

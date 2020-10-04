@@ -33,7 +33,9 @@ LLVMValueRef upcastThinPtr(
     }
     case RegionOverride::RESILIENT_V0:
     case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2: {
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT: {
       assert(sourceStructTypeM->ownership == Ownership::SHARE ||
           sourceStructTypeM->ownership == Ownership::OWN);
       break;

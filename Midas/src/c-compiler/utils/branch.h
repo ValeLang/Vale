@@ -11,6 +11,15 @@
 #include "globalstate.h"
 #include "function/function.h"
 
+LLVMValueRef buildSimpleIfElse(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    LLVMTypeRef resultTypeL,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildThen,
+    std::function<LLVMValueRef(LLVMBuilderRef)> buildElse);
+
 Ref buildIfElse(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -23,6 +32,7 @@ Ref buildIfElse(
     std::function<Ref(LLVMBuilderRef)> buildElse);
 
 void buildIf(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,

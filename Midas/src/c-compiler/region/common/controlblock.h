@@ -23,7 +23,8 @@ enum class ControlBlockMember {
 class ControlBlock {
 public:
   // structL should *not* have a body yet, this will fill it.
-  ControlBlock(LLVMTypeRef structL_) :
+  ControlBlock(GlobalState* globalState_, LLVMTypeRef structL_) :
+      globalState(globalState_),
       structL(structL_),
       built(false) {}
 
@@ -42,50 +43,7 @@ public:
     members.push_back(member);
   }
 
-  void build() {
-    assert(!built);
-
-    auto voidLT = LLVMVoidType();
-    auto voidPtrLT = LLVMPointerType(voidLT, 0);
-    auto int1LT = LLVMInt1Type();
-    auto int8LT = LLVMInt8Type();
-    auto int32LT = LLVMInt32Type();
-    auto int64LT = LLVMInt64Type();
-    auto int8PtrLT = LLVMPointerType(int8LT, 0);
-    auto int64PtrLT = LLVMPointerType(int64LT, 0);
-
-    std::vector<LLVMTypeRef> membersL;
-    for (auto member : members) {
-      switch (member) {
-        case ControlBlockMember::UNUSED_32B:
-          membersL.push_back(int32LT);
-          break;
-        case ControlBlockMember::GENERATION:
-          assert(membersL.empty()); // Generation should be at the top of the object
-          membersL.push_back(int32LT);
-          break;
-        case ControlBlockMember::LGTI:
-          membersL.push_back(int32LT);
-          break;
-        case ControlBlockMember::WRCI:
-          membersL.push_back(int32LT);
-          break;
-        case ControlBlockMember::STRONG_RC:
-          membersL.push_back(int32LT);
-          break;
-        case ControlBlockMember::CENSUS_OBJ_ID:
-          membersL.push_back(int64LT);
-          break;
-        case ControlBlockMember::CENSUS_TYPE_STR:
-          membersL.push_back(int8PtrLT);
-          break;
-      }
-    }
-
-    LLVMStructSetBody(structL, membersL.data(), membersL.size(), false);
-
-    built = true;
-  }
+  void build();
 
   LLVMTypeRef getStruct() {
     assert(built);
@@ -93,6 +51,7 @@ public:
   }
 
 private:
+  GlobalState* globalState;
   std::vector<ControlBlockMember> members;
   LLVMTypeRef structL;
   bool built;

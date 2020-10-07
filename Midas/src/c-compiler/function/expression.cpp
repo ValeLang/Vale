@@ -55,7 +55,7 @@ Ref translateExpressionInner(
     Expression* expr) {
   if (auto constantI64 = dynamic_cast<ConstantI64*>(expr)) {
     // See ULTMCIE for why we load and store here.
-    auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt64Type(), constantI64->value);
+    auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt64TypeInContext(globalState->context), constantI64->value);
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
@@ -63,15 +63,15 @@ Ref translateExpressionInner(
         LLVMBuildFPCast(
             builder,
             makeConstIntExpr(
-                functionState, builder, LLVMInt64Type(), *(uint64_t*)&constantFloat->value),
-            LLVMDoubleType(),
+                functionState, builder, LLVMInt64TypeInContext(globalState->context), *(uint64_t*)&constantFloat->value),
+            LLVMDoubleTypeInContext(globalState->context),
             "castedfloat");
-    assert(LLVMTypeOf(resultLE) == LLVMDoubleType());
+    assert(LLVMTypeOf(resultLE) == LLVMDoubleTypeInContext(globalState->context));
     return wrap(functionState->defaultRegion, globalState->metalCache.floatRef, resultLE);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     // See ULTMCIE for why this is an add.
-    auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt1Type(), constantBool->value);
+    auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt1TypeInContext(globalState->context), constantBool->value);
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultLE);
   } else if (auto discardM = dynamic_cast<Discard*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -236,7 +236,7 @@ Ref translateExpressionInner(
         wrap(
             functionState->defaultRegion,
             globalState->metalCache.intRef,
-            LLVMConstInt(LLVMInt64Type(), arrayReferend->size, false));
+            LLVMConstInt(LLVMInt64TypeInContext(globalState->context), arrayReferend->size, false));
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
 
@@ -348,7 +348,7 @@ Ref translateExpressionInner(
         wrap(
             functionState->defaultRegion,
             globalState->metalCache.intRef,
-            constI64LE(dynamic_cast<KnownSizeArrayT*>(knownSizeArrayLoad->arrayType->referend)->size));
+            constI64LE(globalState, dynamic_cast<KnownSizeArrayT*>(knownSizeArrayLoad->arrayType->referend)->size));
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
     functionState->defaultRegion->dealias(AFL("KSALoad"), functionState, blockState, builder, arrayType, arrayRef);

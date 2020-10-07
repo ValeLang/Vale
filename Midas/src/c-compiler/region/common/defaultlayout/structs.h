@@ -18,7 +18,10 @@ public:
   virtual void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) = 0;
   virtual void declareStruct(StructDefinition* structM) = 0;
   virtual void declareEdge(Edge* edge) = 0;
-  virtual void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) = 0;
+  virtual void translateEdge(
+      Edge* edge,
+      std::vector<LLVMTypeRef> interfaceFunctionsLT,
+      std::vector<LLVMValueRef> functions) = 0;
   virtual void declareInterface(InterfaceDefinition* interface) = 0;
   virtual void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) = 0;
   virtual void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) = 0;
@@ -154,7 +157,10 @@ public:
   void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructDefinition* structM) override;
   void declareEdge(Edge* edge) override;
-  void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) override;
+  void translateEdge(
+      Edge* edge,
+      std::vector<LLVMTypeRef> interfaceFunctionsLT,
+      std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interface) override;
   void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
   void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;
@@ -338,7 +344,10 @@ public:
   void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructDefinition* structM) override;
   void declareEdge(Edge* edge) override;
-  void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) override;
+  void translateEdge(
+      Edge* edge,
+      std::vector<LLVMTypeRef> interfaceFunctionsLT,
+      std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interface) override;
   void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
   void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;

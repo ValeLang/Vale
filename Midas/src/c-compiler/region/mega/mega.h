@@ -150,15 +150,6 @@ public:
 
   Ref weakAlias(FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) override;
 
-// Transmutes a weak ref of one ownership (such as borrow) to another ownership (such as weak).
-  Ref transmuteWeakRef(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* sourceWeakRefMT,
-      Reference* targetWeakRefMT,
-      Ref sourceWeakRef);
-
-
   void discardOwningRef(
       AreaAndFileAndLine from,
       FunctionState* functionState,
@@ -313,17 +304,17 @@ public:
       LLVMBuilderRef builder,
       LLVMValueRef lengthLE) override;
 
-  LLVMValueRef mallocKnownSize(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Location location,
-      LLVMTypeRef referendLT) override;
+//  LLVMValueRef mallocKnownSize(
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Location location,
+//      LLVMTypeRef referendLT) override;
 
-  LLVMValueRef mallocUnknownSizeArray(
-      LLVMBuilderRef builder,
-      LLVMTypeRef usaWrapperLT,
-      LLVMTypeRef usaElementLT,
-      LLVMValueRef lengthLE) override;
+//  LLVMValueRef mallocUnknownSizeArray(
+//      LLVMBuilderRef builder,
+//      LLVMTypeRef usaWrapperLT,
+//      LLVMTypeRef usaElementLT,
+//      LLVMValueRef lengthLE) override;
 
   // TODO Make these private once refactor is done
 //  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
@@ -358,7 +349,7 @@ public:
       Referend* referendM,
       Mutability mutability,
       ControlBlockPtrLE controlBlockPtrLE,
-      const std::string& typeName) override;
+      const std::string& typeName);
 
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(

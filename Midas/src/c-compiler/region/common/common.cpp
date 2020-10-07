@@ -137,7 +137,7 @@ LLVMValueRef fillControlBlockCensusFields(
     LLVMValueRef newControlBlockLE,
     const std::string& typeName) {
   if (globalState->opt->census) {
-    auto objIdLE = adjustCounter(builder, globalState->objIdCounter, 1);
+    auto objIdLE = adjustCounter(globalState, builder, globalState->objIdCounter, 1);
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,
@@ -166,7 +166,7 @@ LLVMValueRef insertStrongRc(
       builder,
       newControlBlockLE,
       // Start at 1, 0 would mean it's dead.
-      LLVMConstInt(LLVMInt32Type(), 1, false),
+      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 1, false),
       globalState->region->getControlBlock(referendM)->getMemberIndex(
           ControlBlockMember::STRONG_RC),
       "controlBlockWithRc");
@@ -186,7 +186,7 @@ Ref loadElementFromKSAWithoutUpgradeInner(
       wrap(
           functionState->defaultRegion,
           globalState->metalCache.intRef,
-          LLVMConstInt(LLVMInt64Type(), ksaMT->size, false));
+          LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ksaMT->size, false));
   return loadElementWithoutUpgrade(
       globalState, functionState, builder, ksaRefMT,
       ksaMT->rawArray->elementType,
@@ -239,7 +239,7 @@ LLVMValueRef makeInterfaceRefStruct(
           itablePtrLE,
           1,
           "interfaceRef");
-  buildFlare(FL(), globalState, functionState, builder, "itable: ", ptrToVoidPtrLE(builder, itablePtrLE), " for ", sourceStructReferendM->fullName->name, " for ", targetInterfaceReferendM->fullName->name);
+  buildFlare(FL(), globalState, functionState, builder, "itable: ", ptrToVoidPtrLE(globalState, builder, itablePtrLE), " for ", sourceStructReferendM->fullName->name, " for ", targetInterfaceReferendM->fullName->name);
 
   return interfaceRefLE;
 }
@@ -269,7 +269,7 @@ LLVMValueRef callFree(
         LLVMBuildBitCast(
             builder,
             controlBlockPtrLE.refLE,
-            LLVMPointerType(LLVMVoidType(), 0),
+            LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteVoidPtrForFree");
     return LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
   } else {
@@ -277,7 +277,7 @@ LLVMValueRef callFree(
         LLVMBuildBitCast(
             builder,
             controlBlockPtrLE.refLE,
-            LLVMPointerType(LLVMInt8Type(), 0),
+            LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteCharPtrForFree");
     return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
   }
@@ -300,7 +300,7 @@ void innerDeallocateYonder(
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
-            builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMVoidType(), 0), "");
+            builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
     LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
         "");
   }
@@ -308,7 +308,7 @@ void innerDeallocateYonder(
   callFree(globalState, builder, controlBlockPtrLE);
 
   if (globalState->opt->census) {
-    adjustCounter(builder, globalState->liveHeapObjCounter, -1);
+    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, -1);
   }
 }
 

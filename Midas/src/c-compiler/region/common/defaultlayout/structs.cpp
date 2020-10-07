@@ -15,16 +15,16 @@ ReferendStructs::ReferendStructs(GlobalState* globalState_, ControlBlock control
   : globalState(globalState_),
     controlBlock(controlBlock_) {
 
-  auto voidLT = LLVMVoidType();
-  auto int8LT = LLVMInt8Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   {
     stringInnerStructL =
         LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "__Str");
+            globalState->context, "__Str");
     std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(LLVMInt64Type());
+    memberTypesL.push_back(LLVMInt64TypeInContext(globalState->context));
     memberTypesL.push_back(LLVMArrayType(int8LT, 0));
     LLVMStructSetBody(
         stringInnerStructL, memberTypesL.data(), memberTypesL.size(), false);
@@ -33,7 +33,7 @@ ReferendStructs::ReferendStructs(GlobalState* globalState_, ControlBlock control
   {
     stringWrapperStructL =
         LLVMStructCreateNamed(
-            LLVMGetGlobalContext(), "__Str_rc");
+            globalState->context, "__Str_rc");
     std::vector<LLVMTypeRef> memberTypesL;
     memberTypesL.push_back(controlBlock.getStruct());
     memberTypesL.push_back(stringInnerStructL);
@@ -97,10 +97,10 @@ WeakableReferendStructs::WeakableReferendStructs(
   // typed flavor of it (from structWeakRefStructs).
   weakVoidRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), "__Weak_VoidP");
+          globalState->context, "__Weak_VoidP");
   std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
   structWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
-  structWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMVoidType(), 0));
+  structWeakRefStructMemberTypesL.push_back(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
   LLVMStructSetBody(weakVoidRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
 
@@ -178,13 +178,13 @@ void ReferendStructs::declareStruct(StructDefinition* structM) {
 
   auto innerStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), structM->name->name.c_str());
+          globalState->context, structM->name->name.c_str());
   assert(innerStructs.count(structM->name->name) == 0);
   innerStructs.emplace(structM->name->name, innerStructL);
 
   auto wrapperStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (structM->name->name + "rc").c_str());
+          globalState->context, (structM->name->name + "rc").c_str());
   assert(wrapperStructs.count(structM->name->name) == 0);
   wrapperStructs.emplace(structM->name->name, wrapperStructL);
 }
@@ -207,17 +207,21 @@ void ReferendStructs::declareEdge(
 
 void ReferendStructs::translateEdge(
     Edge* edge,
+    std::vector<LLVMTypeRef> interfaceFunctionsLT,
     std::vector<LLVMValueRef> functions) {
-
   auto interfaceTableStructL =
       getInterfaceTableStruct(edge->interfaceName);
-  auto builder = LLVMCreateBuilder();
+  auto builder = LLVMCreateBuilderInContext(globalState->context);
   auto itableLE = LLVMGetUndef(interfaceTableStructL);
   for (int i = 0; i < functions.size(); i++) {
     itableLE = LLVMBuildInsertValue(
         builder,
         itableLE,
-        functions[i],
+        LLVMConstBitCast(
+//            LLVMConstBitCast(
+                functions[i],
+//                LLVMPointerType(LLVMVoidTypeInContext(globalState->context), 0)),
+            LLVMPointerType(interfaceFunctionsLT[i], 0)),
         i,
         std::to_string(i).c_str());
   }
@@ -231,13 +235,13 @@ void ReferendStructs::declareInterface(InterfaceDefinition* interface) {
 
   auto interfaceRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), interface->name->name.c_str());
+          globalState->context, interface->name->name.c_str());
   assert(interfaceRefStructs.count(interface->name->name) == 0);
   interfaceRefStructs.emplace(interface->name->name, interfaceRefStructL);
 
   auto interfaceTableStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (interface->name->name + "itable").c_str());
+          globalState->context, (interface->name->name + "itable").c_str());
   assert(interfaceTableStructs.count(interface->name->name) == 0);
   interfaceTableStructs.emplace(interface->name->name, interfaceTableStructL);
 }
@@ -271,13 +275,13 @@ void ReferendStructs::translateInterface(
 void ReferendStructs::declareKnownSizeArray(
     KnownSizeArrayT* knownSizeArrayMT) {
 
-  auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), knownSizeArrayMT->name->name.c_str());
+  auto countedStruct = LLVMStructCreateNamed(globalState->context, knownSizeArrayMT->name->name.c_str());
   knownSizeArrayWrapperStructs.emplace(knownSizeArrayMT->name->name, countedStruct).first;
 }
 
 void ReferendStructs::declareUnknownSizeArray(
     UnknownSizeArrayT* unknownSizeArrayMT) {
-  auto countedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "rc").c_str());
+  auto countedStruct = LLVMStructCreateNamed(globalState->context, (unknownSizeArrayMT->name->name + "rc").c_str());
   unknownSizeArrayWrapperStructs.emplace(unknownSizeArrayMT->name->name, countedStruct).first;
 }
 
@@ -292,7 +296,7 @@ void ReferendStructs::translateUnknownSizeArray(
 
   elementsL.push_back(controlBlock.getStruct());
 
-  elementsL.push_back(LLVMInt64Type());
+  elementsL.push_back(LLVMInt64TypeInContext(globalState->context));
 
   elementsL.push_back(innerArrayLT);
 
@@ -446,7 +450,7 @@ LLVMValueRef ReferendStructs::getStringBytesPtr(
           globalState->region->checkValidReference(
               FL(), functionState, builder,
               globalState->metalCache.strRef, ref));
-  return getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE);
+  return getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE);
 }
 
 LLVMValueRef ReferendStructs::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
@@ -639,7 +643,7 @@ LLVMValueRef ReferendStructs::getVoidPtrFromInterfacePtr(
   return LLVMBuildPointerCast(
       builder,
       getControlBlockPtr(FL(), functionState, builder, virtualParamMT->referend, virtualArgLE).refLE,
-      LLVMPointerType(LLVMVoidType(), 0),
+      LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
       "objAsVoidPtr");
 }
 
@@ -668,7 +672,7 @@ void WeakableReferendStructs::declareStruct(StructDefinition* structM) {
 
   auto structWeakRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (structM->name->name + "w").c_str());
+          globalState->context, (structM->name->name + "w").c_str());
   assert(structWeakRefStructs.count(structM->name->name) == 0);
   structWeakRefStructs.emplace(structM->name->name, structWeakRefStructL);
 }
@@ -681,8 +685,9 @@ void WeakableReferendStructs::declareEdge(
 
 void WeakableReferendStructs::translateEdge(
     Edge* edge,
+    std::vector<LLVMTypeRef> interfaceFunctionsLT,
     std::vector<LLVMValueRef> functions) {
-  referendStructs.translateEdge(edge, functions);
+  referendStructs.translateEdge(edge, interfaceFunctionsLT, functions);
 }
 
 void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
@@ -690,7 +695,7 @@ void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
 
   auto interfaceWeakRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (interface->name->name + "w").c_str());
+          globalState->context, (interface->name->name + "w").c_str());
   assert(interfaceWeakRefStructs.count(interface->name->name) == 0);
   interfaceWeakRefStructs.emplace(interface->name->name, interfaceWeakRefStructL);
 }
@@ -718,7 +723,7 @@ void WeakableReferendStructs::declareKnownSizeArray(
 
   auto weakRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (knownSizeArrayMT->name->name + "w").c_str());
+          globalState->context, (knownSizeArrayMT->name->name + "w").c_str());
   assert(knownSizeArrayWeakRefStructs.count(knownSizeArrayMT->name->name) == 0);
   knownSizeArrayWeakRefStructs.emplace(knownSizeArrayMT->name->name, weakRefStructL);
 }
@@ -729,7 +734,7 @@ void WeakableReferendStructs::declareUnknownSizeArray(
 
   auto weakRefStructL =
       LLVMStructCreateNamed(
-          LLVMGetGlobalContext(), (unknownSizeArrayMT->name->name + "w").c_str());
+          globalState->context, (unknownSizeArrayMT->name->name + "w").c_str());
   assert(unknownSizeArrayWeakRefStructs.count(unknownSizeArrayMT->name->name) == 0);
   unknownSizeArrayWeakRefStructs.emplace(unknownSizeArrayMT->name->name, weakRefStructL);
 }

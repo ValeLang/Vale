@@ -8,7 +8,7 @@
 #include "defaultimmutables.h"
 
 ControlBlock makeImmControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "immControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "immControlBlock"));
   controlBlock.addMember(ControlBlockMember::STRONG_RC);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
@@ -49,7 +49,7 @@ void DefaultImmutables::discard(
           adjustStrongRc(
               from, globalState, functionState, referendStructs, builder, sourceRef, sourceMT, -1);
       buildIf(
-          functionState,
+          globalState, functionState,
           builder,
           isZeroLE(builder, rcLE),
           [globalState, functionState, sourceRef, interfaceRnd, sourceMT](
@@ -81,7 +81,7 @@ void DefaultImmutables::discard(
           adjustStrongRc(
               from, globalState, functionState, referendStructs, builder, sourceRef, sourceMT, -1);
       buildIf(
-          functionState,
+          globalState, functionState,
           builder,
           isZeroLE(builder, rcLE),
           [from, globalState, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
@@ -101,7 +101,7 @@ void DefaultImmutables::discard(
         adjustStrongRc(
             from, globalState, functionState, referendStructs, builder, sourceRef, sourceMT, -1);
     buildIf(
-        functionState,
+        globalState, functionState,
         builder,
         isZeroLE(builder, rcLE),
         [this, from, globalState, functionState, blockState, sourceRef, sourceMT](
@@ -119,7 +119,7 @@ void DefaultImmutables::discard(
 
 LLVMTypeRef DefaultImmutables::translateType(GlobalState* globalState, Reference* referenceM) {
   if (primitives.isPrimitive(referenceM)) {
-    return primitives.translatePrimitive(referenceM);
+    return primitives.translatePrimitive(globalState, referenceM);
   } else {
     if (dynamic_cast<Str *>(referenceM->referend) != nullptr) {
       assert(referenceM->location != Location::INLINE);
@@ -151,7 +151,7 @@ LLVMTypeRef DefaultImmutables::translateType(GlobalState* globalState, Reference
           referendStructs->getInterfaceRefStruct(interfaceReferend);
       return interfaceRefStructL;
     } else if (dynamic_cast<Never*>(referenceM->referend)) {
-      auto result = LLVMPointerType(makeNeverType(), 0);
+      auto result = LLVMPointerType(makeNeverType(globalState), 0);
       assert(LLVMTypeOf(globalState->neverPtr) == result);
       return result;
     } else {

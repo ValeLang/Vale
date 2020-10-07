@@ -110,7 +110,7 @@ WeakFatPtrLE FatWeaks::assembleVoidStructWeakRef(
       LLVMBuildPointerCast(
           builder,
           controlBlockPtrLE.refLE,
-          LLVMPointerType(LLVMVoidType(), 0),
+          LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "objAsVoidPtr");
 
   auto weakRefLE = LLVMGetUndef(globalState->region->getWeakVoidRefStruct());

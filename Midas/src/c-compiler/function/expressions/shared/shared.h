@@ -14,7 +14,7 @@
 #include "ref.h"
 
 
-LLVMTypeRef makeNeverType();
+LLVMTypeRef makeNeverType(GlobalState* globalState);
 
 LLVMValueRef makeEmptyTuple(
     GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
@@ -130,12 +130,12 @@ LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef build
 LLVMValueRef makeConstExpr(
     FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);
 
-inline LLVMValueRef constI64LE(int n) {
-  return LLVMConstInt(LLVMInt64Type(), n, false);
+inline LLVMValueRef constI64LE(GlobalState* globalState, int n) {
+  return LLVMConstInt(LLVMInt64TypeInContext(globalState->context), n, false);
 }
 
-inline LLVMValueRef constI32LE(int n) {
-  return LLVMConstInt(LLVMInt32Type(), n, false);
+inline LLVMValueRef constI32LE(GlobalState* globalState, int n) {
+  return LLVMConstInt(LLVMInt32TypeInContext(globalState->context), n, false);
 }
 
 
@@ -160,8 +160,8 @@ LLVMValueRef addExtern(
     LLVMTypeRef retType,
     std::vector<LLVMTypeRef> paramTypes);
 
-inline LLVMValueRef ptrToVoidPtrLE(LLVMBuilderRef builder, LLVMValueRef ptrLE) {
-  return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "asVoidP");
+inline LLVMValueRef ptrToVoidPtrLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
+  return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "asVoidP");
 }
 
 #endif

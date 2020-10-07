@@ -292,31 +292,23 @@ public:
       Reference* sourceType,
       Reference* targetType,
       Ref sourceRef) = 0;
-  virtual void fillControlBlock(
-      AreaAndFileAndLine from,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Referend* referendM,
-      Mutability mutability,
-      ControlBlockPtrLE controlBlockPtrLE,
-      const std::string& typeName) = 0;
 
   virtual WrapperPtrLE mallocStr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       LLVMValueRef lengthLE) = 0;
 
-  virtual LLVMValueRef mallocKnownSize(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Location location,
-      LLVMTypeRef referendLT) = 0;
+//  virtual LLVMValueRef mallocKnownSize(
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Location location,
+//      LLVMTypeRef referendLT) = 0;
 
-  virtual LLVMValueRef mallocUnknownSizeArray(
-      LLVMBuilderRef builder,
-      LLVMTypeRef usaWrapperLT,
-      LLVMTypeRef usaElementLT,
-      LLVMValueRef lengthLE) = 0;
+//  virtual LLVMValueRef mallocUnknownSizeArray(
+//      LLVMBuilderRef builder,
+//      LLVMTypeRef usaWrapperLT,
+//      LLVMTypeRef usaElementLT,
+//      LLVMValueRef lengthLE) = 0;
 };
 
 #endif

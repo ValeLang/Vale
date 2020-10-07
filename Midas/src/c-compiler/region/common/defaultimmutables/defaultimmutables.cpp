@@ -217,16 +217,16 @@ Ref DefaultImmutables::loadMember(
         LLVMBuildExtractValue(builder, innerStructLE, memberIndex, memberName.c_str());
     return wrap(functionState->defaultRegion, expectedMemberType, memberLE);
   } else {
-    auto wrapperPtrLE =
-        referendStructs->makeWrapperPtr(
-            FL(), functionState, builder, structRefMT,
-            globalState->region->checkValidReference(FL(), functionState, builder, structRefMT,
-                structRef));
-    auto innerStructPtrLE = referendStructs->getStructContentsPtr(builder, structRefMT->referend,
-        wrapperPtrLE);
-    auto memberLE =
-        loadInnerInnerStructMember(
-            globalState, builder, innerStructPtrLE, memberIndex, expectedMemberType, memberName);
-    return memberLE;
+    return regularLoadStrongMember(globalState, functionState, builder, referendStructs, structRefMT, structRef, memberIndex, expectedMemberType, targetType, memberName);
   }
+}
+
+void DefaultImmutables::checkValidReference(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IReferendStructsSource* referendStructs,
+    Reference* refM,
+    LLVMValueRef refLE) {
+  regularCheckValidReference(checkerAFL, globalState, functionState, builder, referendStructs, refM, refLE);
 }

@@ -43,6 +43,14 @@ public:
       Reference* targetType,
       const std::string& memberName);
 
+  void checkValidReference(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      IReferendStructsSource* referendStructs,
+      Reference* refM,
+      LLVMValueRef refLE);
+
 private:
   GlobalState* globalState;
 

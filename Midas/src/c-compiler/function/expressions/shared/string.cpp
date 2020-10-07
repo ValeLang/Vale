@@ -19,6 +19,7 @@ LLVMValueRef getLenPtrFromStrWrapperPtr(
 }
 
 LLVMValueRef getCharsPtrFromWrapperPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE strWrapperPtrLE) {
   auto innerStringPtrLE =
@@ -26,11 +27,11 @@ LLVMValueRef getCharsPtrFromWrapperPtr(
   auto charsArrayPtrLE =
       LLVMBuildStructGEP(builder, innerStringPtrLE, 1, "charsPtr");
 
-  std::vector<LLVMValueRef> indices = { constI64LE(0), constI64LE(0) };
+  std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), constI64LE(globalState, 0) };
   auto firstCharPtrLE =
       LLVMBuildGEP(
           builder, charsArrayPtrLE, indices.data(), indices.size(), "elementPtr");
-  assert(LLVMTypeOf(firstCharPtrLE) == LLVMPointerType(LLVMInt8Type(), 0));
+  assert(LLVMTypeOf(firstCharPtrLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
   return firstCharPtrLE;
 }
 
@@ -46,7 +47,7 @@ WrapperPtrLE buildConstantVStr(
     LLVMBuilderRef builder,
     const std::string& contents) {
 
-  auto lengthLE = constI64LE(contents.length());
+  auto lengthLE = constI64LE(globalState, contents.length());
 
   auto strWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, lengthLE);
 
@@ -54,13 +55,13 @@ WrapperPtrLE buildConstantVStr(
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
   // Fill the chars
   std::vector<LLVMValueRef> argsLE = {
-      getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE),
+      getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE),
       globalState->getOrMakeStringConstant(contents),
       lengthLE
   };
   LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
-  buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE)));
+  buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(globalState, builder, getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE)));
 
   return strWrapperPtrLE;
 }

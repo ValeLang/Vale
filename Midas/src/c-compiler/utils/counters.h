@@ -7,6 +7,7 @@
 #include <function/function.h>
 
 LLVMValueRef adjustCounter(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef counterPtrLE,
     int adjustAmount);

@@ -60,7 +60,7 @@ void WrcWeaks::maybeReleaseWrc(
     LLVMValueRef ptrToWrcLE,
     LLVMValueRef wrcLE) {
   buildIf(
-      functionState,
+      globalState, functionState,
       builder,
       isZeroLE(builder, wrcLE),
       [this, functionState, wrciLE, ptrToWrcLE](LLVMBuilderRef thenBuilder) {
@@ -111,36 +111,36 @@ WrcWeaks::WrcWeaks(GlobalState *globalState_, IReferendStructsSource* referendSt
     fatWeaks_(globalState_, weakRefStructsSource_),
     referendStructsSource(referendStructsSource_),
     weakRefStructsSource(weakRefStructsSource_) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
 
-  expandWrcTable = addExtern(globalState->mod, "__expandWrcTable", voidLT, {});
-  checkWrci = addExtern(globalState->mod, "__checkWrc", voidLT, {int32LT});
+  expandWrcTable = addExtern(globalState->mod, "__expandWrcTable", LLVMVoidTypeInContext(globalState->context), {});
+  checkWrci = addExtern(globalState->mod, "__checkWrc", LLVMVoidTypeInContext(globalState->context), {int32LT});
   getNumWrcs = addExtern(globalState->mod, "__getNumWrcs", int32LT, {});
 
-  wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__wrc_capacity");
+  wrcCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32TypeInContext(globalState->context), "__wrc_capacity");
   LLVMSetLinkage(wrcCapacityPtr, LLVMExternalLinkage);
 
-  wrcFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__wrc_firstFree");
+  wrcFirstFreeWrciPtr = LLVMAddGlobal(globalState->mod, LLVMInt32TypeInContext(globalState->context), "__wrc_firstFree");
   LLVMSetLinkage(wrcFirstFreeWrciPtr, LLVMExternalLinkage);
 
-  wrcEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt32Type(), 0), "__wrc_entries");
+  wrcEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt32TypeInContext(globalState->context), 0), "__wrc_entries");
   LLVMSetLinkage(wrcEntriesArrayPtr, LLVMExternalLinkage);
 
   if (globalState->opt->census) {
     LLVMValueRef args[3] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
+        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
             globalState->valeMainBuilder,
             LLVMBuildCall(
                 globalState->valeMainBuilder, getNumWrcs, nullptr, 0, "numWrcs"),
-            LLVMInt64Type(),
+            LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
@@ -304,7 +304,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
     WeakFatPtrLE weakFatPtrLE) {
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, weakFatPtrLE);
   buildIf(
-      functionState, builder, isZeroLE(builder, isAliveLE),
+      globalState, functionState, builder, isZeroLE(builder, isAliveLE),
       [this, from, functionState, weakFatPtrLE](LLVMBuilderRef thenBuilder) {
         buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
         buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
@@ -314,7 +314,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
         buildPrint(globalState, thenBuilder, wrciLE);
         buildPrint(globalState, thenBuilder, " ");
         buildPrint(globalState, thenBuilder, "Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
   return fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, weakFatPtrLE);
@@ -343,7 +343,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
           LLVMBuildLoad(builder, wrcCapacityPtr, "wrcCapacity"),
           "atCapacity");
   buildIf(
-      functionState,
+      globalState, functionState,
       builder,
       atCapacityLE,
       [this](LLVMBuilderRef thenBuilder) {
@@ -364,7 +364,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
   // *wrcPtr = WRC_INITIAL_VALUE;
   LLVMBuildStore(
       builder,
-      LLVMConstInt(LLVMInt32Type(), WRC_INITIAL_VALUE, false),
+      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), WRC_INITIAL_VALUE, false),
       wrcPtrLE);
 
   return resultWrciLE;
@@ -387,7 +387,7 @@ void WrcWeaks::innerNoteWeakableDestroyed(
       LLVMBuildAnd(
           builder,
           prevWrcLE,
-          LLVMConstInt(LLVMInt32Type(), ~WRC_ALIVE_BIT, true),
+          LLVMConstInt(LLVMInt32TypeInContext(globalState->context), ~WRC_ALIVE_BIT, true),
           "");
 
   // Equivalent:
@@ -417,7 +417,7 @@ void WrcWeaks::aliasWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  adjustCounter(builder, ptrToWrcLE, 1);
+  adjustCounter(globalState, builder, ptrToWrcLE, 1);
 }
 
 void WrcWeaks::discardWeakRef(
@@ -436,7 +436,7 @@ void WrcWeaks::discardWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto wrcLE = adjustCounter(builder, ptrToWrcLE, -1);
+  auto wrcLE = adjustCounter(globalState, builder, ptrToWrcLE, -1);
 
   buildFlare(FL(), globalState, functionState, builder, "decrementing ", wrciLE, " to ", wrcLE);
 
@@ -462,9 +462,9 @@ LLVMValueRef WrcWeaks::getIsAliveFromWeakFatPtr(
       LLVMBuildAnd(
           builder,
           wrcLE,
-          LLVMConstInt(LLVMInt32Type(), WRC_ALIVE_BIT, false),
+          LLVMConstInt(LLVMInt32TypeInContext(globalState->context), WRC_ALIVE_BIT, false),
           "wrcLiveBitOrZero"),
-      constI32LE(0),
+      constI32LE(globalState, 0),
       "wrcLive");
 }
 
@@ -627,7 +627,7 @@ LLVMTypeRef WrcWeaks::makeWeakRefHeaderStruct(GlobalState* globalState) {
   std::vector<LLVMTypeRef> memberTypesL;
 
   assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   LLVMStructSetBody(wrciRefStructL, memberTypesL.data(), memberTypesL.size(), false);
 

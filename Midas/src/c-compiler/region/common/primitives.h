@@ -18,18 +18,18 @@ public:
         dynamic_cast<Float *>(referenceM->referend) != nullptr;
   }
 
-  LLVMTypeRef translatePrimitive(Reference* referenceM) {
+  LLVMTypeRef translatePrimitive(GlobalState* globalState, Reference* referenceM) {
     if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
-      return LLVMInt64Type();
+      return LLVMInt64TypeInContext(globalState->context);
     } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
-      return LLVMInt1Type();
+      return LLVMInt1TypeInContext(globalState->context);
     } else if (dynamic_cast<Float*>(referenceM->referend) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
-      return LLVMDoubleType();
+      return LLVMDoubleTypeInContext(globalState->context);
     } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
-      return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
+      return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
     } else {
       assert(false);
     }

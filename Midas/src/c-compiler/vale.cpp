@@ -49,12 +49,12 @@ std::string genFreeName(int bytes) {
 }
 
 LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   std::vector<LLVMTypeRef> paramTypesL = { int8PtrLT, int64LT, int64LT };
@@ -64,8 +64,8 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
   LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_newstr", functionTypeL);
 
-  LLVMBasicBlockRef block = LLVMAppendBasicBlock(functionL, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilder();
+  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
+  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(builder, block);
   // This is unusual because normally we have a separate localsBuilder which points to a separate
   // block at the beginning. This is a simple function which should require no locals, so this
@@ -79,7 +79,7 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
   auto lengthLE = LLVMGetParam(functionL, 2);
   buildAssert(
       globalState, &functionState, builder,
-      LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(0), "nonneg"),
+      LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(globalState, 0), "nonneg"),
       "Can't have negative length string!");
 
   std::vector<LLVMValueRef> indices = { beginIntLE };
@@ -92,13 +92,13 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
   // Fill the chars
   std::vector<LLVMValueRef> argsLE = {
-      getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE),
+      getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE),
       sourceCharsPtrLE,
       lengthLE
   };
   LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
-  buildFlare(FL(), globalState, &functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE)));
+  buildFlare(FL(), globalState, &functionState, builder, "making chars ptr", ptrToVoidPtrLE(globalState, builder, getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE)));
 
 
   auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strWrapperPtrLE);
@@ -114,12 +114,12 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
 }
 
 LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   std::vector<LLVMTypeRef> paramTypesL = { globalState->region->translateType(globalState->metalCache.strRef) };
@@ -130,8 +130,8 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
   LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrchars", functionTypeL);
   LLVMSetLinkage(functionL, LLVMExternalLinkage);
 
-  LLVMBasicBlockRef block = LLVMAppendBasicBlock(functionL, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilder();
+  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
+  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(builder, block);
   // This is unusual because normally we have a separate localsBuilder which points to a separate
   // block at the beginning. This is a simple function which should require no locals, so this
@@ -152,12 +152,12 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
 }
 
 LLVMValueRef makeGetStrNumBytesFunc(GlobalState* globalState) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   std::vector<LLVMTypeRef> paramTypesL = { globalState->region->translateType(globalState->metalCache.strRef) };
@@ -168,8 +168,8 @@ LLVMValueRef makeGetStrNumBytesFunc(GlobalState* globalState) {
   LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrnumbytes", functionTypeL);
   LLVMSetLinkage(functionL, LLVMExternalLinkage);
 
-  LLVMBasicBlockRef block = LLVMAppendBasicBlock(functionL, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilder();
+  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
+  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(builder, block);
   // This is unusual because normally we have a separate localsBuilder which points to a separate
   // block at the beginning. This is a simple function which should require no locals, so this
@@ -197,35 +197,35 @@ void initInternalFuncs(GlobalState* globalState) {
 
 
 void initInternalExterns(GlobalState* globalState) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   globalState->censusContains = addExtern(globalState->mod, "__vcensusContains", int64LT,
       {voidPtrLT});
-  globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", voidLT, {voidPtrLT});
-  globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", voidLT, {voidPtrLT});
+  globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
+  globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
 
   globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
-  globalState->genFree = addExtern(globalState->mod, "__genFree", voidLT, {voidPtrLT});
+  globalState->genFree = addExtern(globalState->mod, "__genFree", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
   globalState->malloc = addExtern(globalState->mod, "malloc", int8PtrLT, {int64LT});
-  globalState->free = addExtern(globalState->mod, "free", voidLT, {int8PtrLT});
+  globalState->free = addExtern(globalState->mod, "free", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
 
-  globalState->exit = addExtern(globalState->mod, "exit", voidLT, {int8LT});
-  globalState->assert = addExtern(globalState->mod, "__vassert", voidLT, {int1LT, int8PtrLT});
-  globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", voidLT,
+  globalState->exit = addExtern(globalState->mod, "exit", LLVMVoidTypeInContext(globalState->context), {int8LT});
+  globalState->assert = addExtern(globalState->mod, "__vassert", LLVMVoidTypeInContext(globalState->context), {int1LT, int8PtrLT});
+  globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", LLVMVoidTypeInContext(globalState->context),
       {int64LT, int64LT, int8PtrLT});
-  globalState->flareI64 = addExtern(globalState->mod, "__vflare_i64", voidLT, {int64LT, int64LT});
-  globalState->printCStr = addExtern(globalState->mod, "__vprintCStr", voidLT, {int8PtrLT});
+  globalState->flareI64 = addExtern(globalState->mod, "__vflare_i64", LLVMVoidTypeInContext(globalState->context), {int64LT, int64LT});
+  globalState->printCStr = addExtern(globalState->mod, "__vprintCStr", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
   globalState->getch = addExtern(globalState->mod, "getchar", int64LT, {});
-  globalState->printInt = addExtern(globalState->mod, "__vprintI64", voidLT, {int64LT});
-  globalState->printBool = addExtern(globalState->mod, "__vprintBool", voidLT, {int1LT});
+  globalState->printInt = addExtern(globalState->mod, "__vprintI64", LLVMVoidTypeInContext(globalState->context), {int64LT});
+  globalState->printBool = addExtern(globalState->mod, "__vprintBool", LLVMVoidTypeInContext(globalState->context), {int1LT});
 
-  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", voidLT,
+  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", LLVMVoidTypeInContext(globalState->context),
       {int64LT, int8PtrLT, int64LT});
   globalState->strlen = addExtern(globalState->mod, "strlen", int64LT, {int8PtrLT});
 }
@@ -316,29 +316,29 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   // a builder for making string constants, but LLVM wants one, and it wants one
   // that's attached to a function.
   auto paramTypesL = std::vector<LLVMTypeRef>{
-      LLVMInt64Type(),
-      LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0)
+      LLVMInt64TypeInContext(globalState->context),
+      LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), 0)
   };
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(
-          LLVMInt64Type(), paramTypesL.data(), paramTypesL.size(), 0);
+          LLVMInt64TypeInContext(globalState->context), paramTypesL.data(), paramTypesL.size(), 0);
   LLVMValueRef entryFunctionL =
       LLVMAddFunction(globalState->mod, "main", functionTypeL);
   LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
   LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
-  LLVMBuilderRef entryBuilder = LLVMCreateBuilder();
+  LLVMBuilderRef entryBuilder = LLVMCreateBuilderInContext(globalState->context);
   globalState->valeMainBuilder = entryBuilder;
   LLVMBasicBlockRef blockL =
-      LLVMAppendBasicBlock(entryFunctionL, "thebestblock");
+      LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
 
 
 
 
   globalState->ram64Struct =
-      LLVMStructCreateNamed(LLVMGetGlobalContext(), "__Ram64Struct");
-  LLVMTypeRef memberI64 = LLVMInt64Type();
+      LLVMStructCreateNamed(globalState->context, "__Ram64Struct");
+  LLVMTypeRef memberI64 = LLVMInt64TypeInContext(globalState->context);
   LLVMStructSetBody(globalState->ram64Struct, &memberI64, 1, false);
 
 
@@ -347,36 +347,40 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->stringConstantBuilder = entryBuilder;
 
   globalState->liveHeapObjCounter =
-      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__liveHeapObjCounter");
-  LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__liveHeapObjCounter");
+  LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   globalState->writeOnlyGlobal =
-      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__writeOnlyGlobal");
-  LLVMSetInitializer(globalState->writeOnlyGlobal, LLVMConstInt(LLVMInt64Type(), 0, false));
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__writeOnlyGlobal");
+  LLVMSetInitializer(globalState->writeOnlyGlobal, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+
+  globalState->crashGlobal =
+      LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), "__crashGlobal");
+  LLVMSetInitializer(globalState->crashGlobal, LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0)));
 
   globalState->ram64 =
       LLVMAddGlobal(globalState->mod, LLVMPointerType(globalState->ram64Struct, 0), "__ram64");
   LLVMSetInitializer(globalState->ram64, LLVMConstNull(LLVMPointerType(globalState->ram64Struct, 0)));
 
   globalState->ram64IndexToWriteOnlyGlobal =
-      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__ram64IndexToWriteOnlyGlobal");
-  LLVMSetInitializer(globalState->ram64IndexToWriteOnlyGlobal, constI64LE(0));
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__ram64IndexToWriteOnlyGlobal");
+  LLVMSetInitializer(globalState->ram64IndexToWriteOnlyGlobal, constI64LE(globalState, 0));
 
   globalState->objIdCounter =
-      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__objIdCounter");
-  LLVMSetInitializer(globalState->objIdCounter, LLVMConstInt(LLVMInt64Type(), 501, false));
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__objIdCounter");
+  LLVMSetInitializer(globalState->objIdCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 501, false));
 
   globalState->derefCounter =
-      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "derefCounter");
-  LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "derefCounter");
+  LLVMSetInitializer(globalState->derefCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
-  globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(), "__never");
+  globalState->neverPtr = LLVMAddGlobal(globalState->mod, makeNeverType(globalState), "__never");
   LLVMValueRef empty[1] = {};
-  LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntType(NEVER_INT_BITS), empty, 0));
+  LLVMSetInitializer(globalState->neverPtr, LLVMConstArray(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), empty, 0));
 
   globalState->mutRcAdjustCounter =
-      LLVMAddGlobal(globalState->mod, LLVMInt64Type(), "__mutRcAdjustCounter");
-  LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64Type(), 0, false));
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__mutRcAdjustCounter");
+  LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   initInternalExterns(globalState);
 
@@ -401,21 +405,21 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
   globalState->region = defaultRegion;
 
-  auto voidLT = LLVMVoidType();
-  auto int8LT = LLVMInt8Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   globalState->initStr =
-      addExtern(globalState->mod, "__vinitStr", voidLT,
+      addExtern(globalState->mod, "__vinitStr", LLVMVoidTypeInContext(globalState->context),
           {int8PtrLT, int8PtrLT, int64LT});
   globalState->addStr =
-      addExtern(globalState->mod, "__vaddStr", voidLT,
+      addExtern(globalState->mod, "__vaddStr", LLVMVoidTypeInContext(globalState->context),
           {int8PtrLT, int8PtrLT, int8PtrLT});
   globalState->eqStr =
       addExtern(globalState->mod, "__veqStr", int8LT,
           {int8PtrLT, int8PtrLT});
   globalState->printVStr =
-      addExtern(globalState->mod, "__vprintStr", voidLT,
+      addExtern(globalState->mod, "__vprintStr", LLVMVoidTypeInContext(globalState->context),
           {int8PtrLT});
 
   initInternalFuncs(globalState);
@@ -523,9 +527,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
           LLVMBuildPointerCast(
               entryBuilder,
               globalState->writeOnlyGlobal,
-              LLVMInt64Type(),
+              LLVMInt64TypeInContext(globalState->context),
               "ptrAsIntToWriteOnlyGlobal"),
-          constI64LE(8),
+          constI64LE(globalState, 8),
           "ram64IndexToWriteOnlyGlobal"),
       globalState->ram64IndexToWriteOnlyGlobal);
 
@@ -537,7 +541,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       auto itablePtrLE = edgeAndItablePtr.second;
       LLVMValueRef itablePtrAsVoidPtrLE =
           LLVMBuildBitCast(
-              entryBuilder, itablePtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+              entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
       LLVMBuildCall(entryBuilder, globalState->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
     }
   }
@@ -553,12 +557,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       auto itablePtrLE = edgeAndItablePtr.second;
       LLVMValueRef itablePtrAsVoidPtrLE =
           LLVMBuildBitCast(
-              entryBuilder, itablePtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+              entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
       LLVMBuildCall(entryBuilder, globalState->censusRemove, &itablePtrAsVoidPtrLE, 1, "");
     }
 
     LLVMValueRef args[3] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
+        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
         globalState->getOrMakeStringConstant("Memory leaks!"),
     };
@@ -566,11 +570,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
   if (mainM->returnType->referend == globalState->metalCache.emptyTupleStruct) {
-    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
+    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
   } else if (mainM->returnType->referend == globalState->metalCache.innt) {
     LLVMBuildRet(entryBuilder, mainResult);
   } else if (mainM->returnType->referend == globalState->metalCache.never) {
-    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64Type(), 0, true));
+    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
   } else {
     assert(false);
   }
@@ -716,6 +720,7 @@ void generateModule(GlobalState *globalState) {
 
   // Optimize the generated LLVM IR
   LLVMPassManagerRef passmgr = LLVMCreatePassManager();
+
 //  LLVMAddPromoteMemoryToRegisterPass(passmgr);     // Demote allocas to registers.
 ////  LLVMAddInstructionCombiningPass(passmgr);        // Do simple "peephole" and bit-twiddling optimizations
 //  LLVMAddReassociatePass(passmgr);                 // Reassociate expressions.
@@ -725,6 +730,7 @@ void generateModule(GlobalState *globalState) {
 //  if (globalState->opt->release) {
 //    LLVMAddFunctionInliningPass(passmgr);        // Function inlining
 //  }
+
   LLVMRunPassManager(passmgr, globalState->mod);
   LLVMDisposePassManager(passmgr);
 
@@ -760,6 +766,9 @@ void generateModule(GlobalState *globalState) {
 void setup(GlobalState *globalState, ValeOptions *opt) {
   globalState->opt = opt;
 
+  // LLVM inlining bugs prevent use of LLVMContextCreate();
+  globalState->context = LLVMContextCreate();
+
   LLVMTargetMachineRef machine = createMachine(opt);
   if (!machine)
     exit((int)(ExitCode::BadOpts));
@@ -769,8 +778,6 @@ void setup(GlobalState *globalState, ValeOptions *opt) {
   globalState->dataLayout = LLVMCreateTargetDataLayout(machine);
   globalState->ptrSize = LLVMPointerSize(globalState->dataLayout) << 3u;
 
-  // LLVM inlining bugs prevent use of LLVMContextCreate();
-  globalState->context = LLVMGetGlobalContext();
 }
 
 void closeGlobalState(GlobalState *globalState) {

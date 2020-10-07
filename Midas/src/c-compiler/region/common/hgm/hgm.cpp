@@ -132,7 +132,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleInterfaceWeakRef(
     auto controlBlockPtrLE =
         referendStructsSource->getControlBlockPtr(FL(), functionState, builder, interfaceReferendM, sourceInterfaceFatPtrLE);
     if (limitMode) {
-      genLE = constI64LE(0);
+      genLE = constI64LE(globalState, 0);
     } else {
       genLE = getGenerationFromControlBlockPtr(globalState, builder, sourceType->referend,
           controlBlockPtrLE);
@@ -161,7 +161,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
   // curious, if its a borrow, do we just return sourceRefLE?
 
   auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
-  auto currentGenLE = limitMode ? constI64LE(0) : getGenerationFromControlBlockPtr(globalState, builder, structTypeM->referend, controlBlockPtrLE);
+  auto currentGenLE = limitMode ? constI64LE(globalState, 0) : getGenerationFromControlBlockPtr(globalState, builder, structTypeM->referend, controlBlockPtrLE);
   auto headerLE = makeGenHeader(globalState, builder, currentGenLE);
   auto weakRefStructLT =
       globalState->region->getWeakRefStructsSource()->getStructWeakRefStruct(structReferendM);
@@ -192,7 +192,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(
   if (sourceType->ownership == Ownership::OWN) {
     auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     if (limitMode) {
-      genLE = constI64LE(0);
+      genLE = constI64LE(globalState, 0);
     } else {
       genLE = getGenerationFromControlBlockPtr(globalState, builder, sourceType->referend,
           controlBlockPtrLE);
@@ -225,47 +225,67 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
   } else {
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
     if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
-//      auto constraintRefM = globalState->metalCache.getReference(Ownership::BORROW, refM->location, refM->referend);
-//      auto controlBlockPtrLE =
-//          referendStructsSource->getControlBlockPtr(
-//              FL(), functionState, builder, innerLE, constraintRefM);
-//      auto controlBlockPtrAsIntLE =
-//          LLVMBuildPointerCast(
-//              builder,
-//              controlBlockPtrLE.refLE,
-//              LLVMInt64Type(),
-//              "controlBlockPtrAsIntLE");
-      auto isAlive64LE =
-          LLVMBuildZExt(builder, isAliveLE, LLVMInt64Type(), "__ptrAsIntToNullOrWriteOnlyGlobal");
-      // We can write anything we want into devNull here, but we're arbitrarily choosing innerLE
-      // because it will fool the optimizer a little better.
-      auto ram64IndexToNullOrWriteOnlyGlobal =
-          LLVMBuildMul(
-              builder,
-              isAlive64LE,
-              LLVMBuildLoad(builder, globalState->ram64IndexToWriteOnlyGlobal, "ram64IndexToWriteOnlyGlobal"),
-              "ram64IndexToNullOrWriteOnlyGlobal");
+////      auto constraintRefM = globalState->metalCache.getReference(Ownership::BORROW, refM->location, refM->referend);
+////      auto controlBlockPtrLE =
+////          referendStructsSource->getControlBlockPtr(
+////              FL(), functionState, builder, innerLE, constraintRefM);
+////      auto controlBlockPtrAsIntLE =
+////          LLVMBuildPointerCast(
+////              builder,
+////              controlBlockPtrLE.refLE,
+////              LLVMInt64TypeInContext(globalState->context),
+////              "controlBlockPtrAsIntLE");
+////      auto isAlive64LE =
+////          LLVMBuildZExt(builder, isAliveLE, LLVMInt64TypeInContext(globalState->context), "__ptrAsIntToNullOrWriteOnlyGlobal");
+//
+//
+//      auto ptrToWriteToLE =
+//          buildSimpleIfElse(
+//              globalState, functionState, builder, isAliveLE,
+//              LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0),
+//              [this](LLVMBuilderRef thenBuilder) -> LLVMValueRef {
+//                return globalState->writeOnlyGlobal;
+//              },
+//              [this](LLVMBuilderRef elseBuilder) -> LLVMValueRef {
+//                return LLVMBuildLoad(elseBuilder, globalState->crashGlobal, "crashGlobal");
+//              });
+//
+//
+//
+////      // We can write anything we want into devNull here, but we're arbitrarily choosing innerLE
+////      // because it will fool the optimizer a little better.
+////      auto ram64IndexToNullOrWriteOnlyGlobal =
+////          LLVMBuildMul(
+////              builder,
+////              isAlive64LE,
+////              LLVMBuildLoad(builder, globalState->ram64IndexToWriteOnlyGlobal, "ram64IndexToWriteOnlyGlobal"),
+////              "ram64IndexToNullOrWriteOnlyGlobal");
+////
+////      auto ptrToNullOrWriteOnlyGlobal =
+////        LLVMBuildGEP(
+////            builder,
+////            LLVMBuildLoad(builder, globalState->ram64, "ram64"),
+////            &ram64IndexToNullOrWriteOnlyGlobal,
+////            1,
+////            "ptrToNullOrWriteOnlyGlobal");
+//
+//      LLVMBuildStore(builder, constI64LE(globalState, 0), ptrToWriteToLE);
 
-      auto ptrToNullOrWriteOnlyGlobal =
-        LLVMBuildGEP(
-            builder,
-            LLVMBuildLoad(builder, globalState->ram64, "ram64"),
-            &ram64IndexToNullOrWriteOnlyGlobal,
-            1,
-            "ptrToNullOrWriteOnlyGlobal");
-
-      LLVMBuildStore(
-          builder,
-          LLVMBuildInsertValue(builder, LLVMGetUndef(globalState->ram64Struct), constI64LE(0), 0, "zeroRam64Struct"),
-          ptrToNullOrWriteOnlyGlobal);
+      buildIf(
+          globalState, functionState, builder, isZeroLE(builder, isAliveLE),
+          [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
+//            auto ptrToWriteToLE = LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
+            auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal, "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
+            LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
+          });
     } else {
       buildIf(
-          functionState, builder, isZeroLE(builder, isAliveLE),
+          globalState, functionState, builder, isZeroLE(builder, isAliveLE),
           [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
             buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
             buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
             buildPrint(globalState, thenBuilder, "Exiting!\n");
-            auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+            auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
             LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
           });
     }
@@ -307,7 +327,7 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     WeakFatPtrLE weakFatPtrLE,
     bool knownLive) {
   if (limitMode || (knownLive && skipChecksForKnownLive)) {
-    return LLVMConstInt(LLVMInt1Type(), 1, false);
+    return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else {
     // Get target generation from the ref
     auto targetGenLE = getTargetGenFromWeakRef(builder, weakFatPtrLE);
@@ -338,7 +358,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
     Ref weakRef,
     bool knownLive) {
   if (limitMode || (knownLive && skipChecksForKnownLive)) {
-    auto isAliveLE = LLVMConstInt(LLVMInt1Type(), 1, false);
+    auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
   } else {
     assert(
@@ -482,7 +502,7 @@ LLVMTypeRef HybridGenerationalMemory::makeWeakRefHeaderStruct(GlobalState* globa
   std::vector<LLVMTypeRef> memberTypesL;
 
   assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
 

@@ -33,13 +33,13 @@ Ref getUnknownSizeArrayLength(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE arrayRefLE) {
-  auto lengthPtrLE = getUnknownSizeArrayLengthPtr(builder, arrayRefLE);
+  auto lengthPtrLE = getUnknownSizeArrayLengthPtr(globalState, builder, arrayRefLE);
   auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "usaLen");
   return wrap(functionState->defaultRegion, globalState->metalCache.intRef, intLE);
 }
 
 ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutNonWeakableControlBlock"));
   controlBlock.addMember(ControlBlockMember::STRONG_RC);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
@@ -53,7 +53,7 @@ ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalStat
 }
 
 ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutWeakableControlBlock"));
   controlBlock.addMember(ControlBlockMember::STRONG_RC);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
@@ -73,7 +73,7 @@ ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState) 
 }
 // TODO see if we can combine this with assist+naiverc weakable.
 ControlBlock makeFastWeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutWeakableControlBlock"));
   // Fast mode mutables have no strong RC
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
   // This is where we put the size in the current generational heap, we can use it for something
@@ -89,7 +89,7 @@ ControlBlock makeFastWeakableControlBlock(GlobalState* globalState) {
 }
 
 ControlBlock makeFastNonWeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutNonWeakableControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutNonWeakableControlBlock"));
   // Fast mode mutables have no strong RC
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
   // This is where we put the size in the current generational heap, we can use it for something
@@ -105,7 +105,7 @@ ControlBlock makeFastNonWeakableControlBlock(GlobalState* globalState) {
 
 
 ControlBlock makeResilientV0WeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutWeakableControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutWeakableControlBlock"));
   controlBlock.addMember(ControlBlockMember::WRCI);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
@@ -118,7 +118,7 @@ ControlBlock makeResilientV0WeakableControlBlock(GlobalState* globalState) {
   return controlBlock;
 }
 ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
   controlBlock.addMember(ControlBlockMember::LGTI);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
@@ -131,7 +131,7 @@ ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState) {
   return controlBlock;
 }
 ControlBlock makeResilientV2WeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(LLVMStructCreateNamed(LLVMGetGlobalContext(), "mutControlBlock"));
+  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
   controlBlock.addMember(ControlBlockMember::GENERATION);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
@@ -593,7 +593,7 @@ void Mega::dealias(
         } else if (sourceMT->ownership == Ownership::BORROW) {
           auto rcLE = adjustStrongRc(from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
           buildIf(
-              functionState, builder, isZeroLE(builder, rcLE),
+              globalState, functionState, builder, isZeroLE(builder, rcLE),
               [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
                 deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
               });
@@ -890,8 +890,8 @@ void fillKnownSizeArray(
   for (int i = 0; i < elementsLE.size(); i++) {
     auto memberName = std::string("element") + std::to_string(i);
     LLVMValueRef indices[2] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
-        LLVMConstInt(LLVMInt64Type(), i, false),
+        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
+        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), i, false),
     };
     auto elementLE = globalState->region->checkValidReference(FL(), functionState, builder, elementMT, elementsLE[i]);
     // Every time we fill in a field, it actually makes a new entire
@@ -1071,12 +1071,20 @@ void Mega::declareEdge(
 
 void Mega::translateEdge(
     Edge* edge) {
-  std::vector<LLVMValueRef> functions;
+  auto interfaceM = globalState->program->getInterface(edge->interfaceName->fullName);
+
+  std::vector<LLVMTypeRef> interfaceFunctionsLT;
+  std::vector<LLVMValueRef> edgeFunctionsL;
   for (int i = 0; i < edge->structPrototypesByInterfaceMethod.size(); i++) {
+    auto interfaceFunctionLT =
+        translateInterfaceMethodToFunctionType(interfaceM->methods[i]);
+    interfaceFunctionsLT.push_back(interfaceFunctionLT);
+
     auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
-    functions.push_back(globalState->getFunction(funcName));
+    auto edgeFunctionL = globalState->getFunction(funcName);
+    edgeFunctionsL.push_back(edgeFunctionL);
   }
-  referendStructs.translateEdge(edge, functions);
+  referendStructs.translateEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 }
 
 void Mega::declareInterface(
@@ -1112,7 +1120,7 @@ LLVMTypeRef Mega::translateInterfaceMethodToFunctionType(
         case Ownership::BORROW:
         case Ownership::OWN:
         case Ownership::SHARE:
-          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
           break;
         case Ownership::WEAK:
           paramsLT[method->virtualParamIndex] = globalState->region->getWeakVoidRefStruct();
@@ -1128,7 +1136,7 @@ LLVMTypeRef Mega::translateInterfaceMethodToFunctionType(
       switch (paramsMT[method->virtualParamIndex]->ownership) {
         case Ownership::OWN:
         case Ownership::SHARE:
-          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+          paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
           break;
         case Ownership::BORROW:
         case Ownership::WEAK:
@@ -1159,7 +1167,7 @@ void Mega::discardOwningRef(
               AFL("Destroy decrementing the owning ref"),
               globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
       buildIf(
-          functionState, builder, isZeroLE(builder, rcLE),
+          globalState, functionState, builder, isZeroLE(builder, rcLE),
           [this, functionState, blockState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
             deallocate(FL(), functionState, thenBuilder, sourceMT, sourceRef);
           });
@@ -1711,7 +1719,7 @@ LLVMValueRef Mega::checkValidReference(
 
         // We dont check ref count >0 because imm destructors receive with rc=0.
         //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
-        //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(0), "");
+        //      auto rcPositiveLE = LLVMBuildICmp(builder, LLVMIntSGT, rcLE, constI64LE(globalState, 0), "");
         //      buildAssert(checkerAFL, globalState, functionState, blockState, builder, rcPositiveLE, "Invalid RC!");
 
         buildAssertCensusContains(checkerAFL, globalState, functionState, builder,
@@ -2443,7 +2451,7 @@ void fillUnknownSizeArray(
         auto indexLE =
             globalState->region->checkValidReference(FL(),
                 functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
-        std::vector<LLVMValueRef> indices = { constI64LE(0), indexLE };
+        std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), indexLE };
 
         auto elementPtrLE =
             LLVMBuildGEP(
@@ -2487,7 +2495,7 @@ Ref Mega::constructUnknownSizeArrayCountedStruct(
       unknownSizeArrayT->rawArray->mutability,
       referendStructs.getConcreteControlBlockPtr(FL(), functionState, builder, usaMT, usaWrapperPtrLE),
       typeName);
-  LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(builder, usaWrapperPtrLE));
+  LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(globalState, builder, usaWrapperPtrLE));
   fillUnknownSizeArray(
       globalState,
       functionState,
@@ -2520,7 +2528,7 @@ LLVMValueRef Mega::mallocKnownSize(
     Location location,
     LLVMTypeRef referendLT) {
   if (globalState->opt->census) {
-    adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, 1);
   }
 
   LLVMValueRef resultPtrLE = nullptr;
@@ -2528,7 +2536,7 @@ LLVMValueRef Mega::mallocKnownSize(
     resultPtrLE = makeMidasLocal(functionState, builder, referendLT, "newstruct", LLVMGetUndef(referendLT));
   } else if (location == Location::YONDER) {
     size_t sizeBytes = LLVMABISizeOfType(globalState->dataLayout, referendLT);
-    LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64Type(), sizeBytes, false);
+    LLVMValueRef sizeLE = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), sizeBytes, false);
 
     auto newStructLE = callMalloc(globalState, builder, sizeLE);
 
@@ -2543,7 +2551,7 @@ LLVMValueRef Mega::mallocKnownSize(
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
-            builder, resultPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+            builder, resultPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
     LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
   return resultPtrLE;
@@ -2557,10 +2565,10 @@ LLVMValueRef Mega::mallocUnknownSizeArray(
   auto sizeBytesLE =
       LLVMBuildAdd(
           builder,
-          constI64LE(LLVMABISizeOfType(globalState->dataLayout, usaWrapperLT)),
+          constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, usaWrapperLT)),
           LLVMBuildMul(
               builder,
-              constI64LE(LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(usaElementLT, 1))),
+              constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(usaElementLT, 1))),
               lengthLE,
               ""),
           "usaMallocSizeBytes");
@@ -2568,13 +2576,13 @@ LLVMValueRef Mega::mallocUnknownSizeArray(
   auto newWrapperPtrLE = callMalloc(globalState, builder, sizeBytesLE);
 
   if (globalState->opt->census) {
-    adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, 1);
   }
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
-            builder, newWrapperPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+            builder, newWrapperPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
     LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
@@ -2596,19 +2604,19 @@ WrapperPtrLE Mega::mallocStr(
           lengthLE,
           LLVMBuildAdd(
               builder,
-              constI64LE(1),
-              constI64LE(LLVMABISizeOfType(globalState->dataLayout, referendStructs.getStringWrapperStruct())),
+              constI64LE(globalState, 1),
+              constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, referendStructs.getStringWrapperStruct())),
               "lenPlus1"),
           "strMallocSizeBytes");
 
-  auto destCharPtrLE = callMalloc(globalState, builder, LLVMBuildZExt(builder, sizeBytesLE, LLVMInt64Type(), "lenPlus1As64"));
+  auto destCharPtrLE = callMalloc(globalState, builder, LLVMBuildZExt(builder, sizeBytesLE, LLVMInt64TypeInContext(globalState->context), "lenPlus1As64"));
 
   if (globalState->opt->census) {
-    adjustCounter(builder, globalState->liveHeapObjCounter, 1);
+    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, 1);
 
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
-            builder, destCharPtrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+            builder, destCharPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
     LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
@@ -2627,7 +2635,7 @@ WrapperPtrLE Mega::mallocStr(
       globalState->metalCache.str,
       Mutability::IMMUTABLE,
       referendStructs.getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache.strRef, newStrWrapperPtrLE), "Str");
-  LLVMBuildStore(builder, LLVMBuildZExt(builder, lengthLE, LLVMInt64Type(), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
+  LLVMBuildStore(builder, LLVMBuildZExt(builder, lengthLE, LLVMInt64TypeInContext(globalState->context), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
 
   // The caller still needs to initialize the actual chars inside!

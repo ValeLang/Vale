@@ -27,17 +27,17 @@ LLVMValueRef declareFunction(
 
 //LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference) {
 //  if (reference == globalState->metalCache.intRef) {
-//    return LLVMInt64Type();
+//    return LLVMInt64TypeInContext(globalState->context);
 //  } else if (reference == globalState->metalCache.boolRef) {
-//    return LLVMInt8Type();
+//    return LLVMInt8TypeInContext(globalState->context);
 //  } else if (reference == globalState->metalCache.floatRef) {
-//    return LLVMDoubleType();
+//    return LLVMDoubleTypeInContext(globalState->context);
 //  } else if (reference == globalState->metalCache.strRef) {
-//    return LLVMPointerType(LLVMInt8Type(), 0);
+//    return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
 //  } else if (reference == globalState->metalCache.neverRef) {
-//    return LLVMVoidType();
+//    return LLVMVoidTypeInContext(globalState->context);
 //  } else if (reference == globalState->metalCache.emptyTupleStructRef) {
-//    return LLVMVoidType();
+//    return LLVMVoidTypeInContext(globalState->context);
 //  } else if (auto structReferend = dynamic_cast<StructReferend*>(reference->referend)) {
 //    if (reference->location == Location::INLINE) {
 //      return globalState->region->getReferendStructsSource()->getInnerStruct(structReferend);
@@ -84,13 +84,13 @@ void translateFunction(
 
 
   auto localsBlockName = std::string("localsBlock");
-  auto localsBuilder = LLVMCreateBuilder();
-  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlock(functionL, localsBlockName.c_str());
+  auto localsBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMBasicBlockRef localsBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, localsBlockName.c_str());
   LLVMPositionBuilderAtEnd(localsBuilder, localsBlockL);
 
   auto firstBlockName = std::string("codeStartBlock");
-  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlock(functionL, firstBlockName.c_str());
-  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilder();
+  LLVMBasicBlockRef firstBlockL = LLVMAppendBasicBlockInContext(globalState->context, functionL, firstBlockName.c_str());
+  LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
   FunctionState functionState(functionM->prototype->name->name, region, functionL, returnTypeL, localsBuilder);

@@ -11,11 +11,11 @@
 // This is useful in a lot of situations, for example:
 // - The return type of Panic()
 // - The result of the Discard node
-LLVMTypeRef makeNeverType() {
+LLVMTypeRef makeNeverType(GlobalState* globalState) {
   // We arbitrarily use a zero-len array of i57 here because it's zero sized and
   // very unlikely to be used anywhere else.
   // We could use an empty struct instead, but this'll do.
-  return LLVMArrayType(LLVMIntType(NEVER_INT_BITS), 0);
+  return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
 }
 
 LLVMValueRef makeEmptyTuple(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder) {
@@ -94,7 +94,7 @@ LLVMValueRef adjustStrongRc(
       referendStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
   auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
-  auto newRc = adjustCounter(builder, rcPtrLE, amount);
+  auto newRc = adjustCounter(globalState, builder, rcPtrLE, amount);
 //  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
   return newRc;
 }
@@ -131,7 +131,9 @@ void buildPrint(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     const std::string& first) {
-  auto s = globalState->getOrMakeStringConstant(first);
+  std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
+  auto s = LLVMBuildGEP(builder, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
+  assert(LLVMTypeOf(s) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
   LLVMBuildCall(builder, globalState->printCStr, &s, 1, "");
 }
 
@@ -139,22 +141,22 @@ void buildPrint(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef exprLE) {
-  if (LLVMTypeOf(exprLE) == LLVMInt64Type()) {
+  if (LLVMTypeOf(exprLE) == LLVMInt64TypeInContext(globalState->context)) {
     LLVMBuildCall(builder, globalState->printInt, &exprLE, 1, "");
-  } else if (LLVMTypeOf(exprLE) == LLVMInt32Type()) {
-    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64Type(), "asI64");
+  } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
+    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
     LLVMBuildCall(builder, globalState->printInt, &i64LE, 1, "");
-  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8Type(), 0)) {
-    LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
-  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMVoidType(), 0)) {
-    auto asIntLE = LLVMBuildPointerCast(builder, exprLE, LLVMInt64Type(), "asI64");
-    LLVMBuildCall(builder, globalState->printInt, &asIntLE, 1, "");
+//  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
+//    LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
+//  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
+//    auto asIntLE = LLVMBuildPointerCast(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
+//    LLVMBuildCall(builder, globalState->printInt, &asIntLE, 1, "");
   } else {
     assert(false);
 //    buildPrint(
 //        globalState,
 //        builder,
-//        LLVMBuildPointerCast(builder, exprLE, LLVMInt64Type(), ""));
+//        LLVMBuildPointerCast(builder, exprLE, LLVMInt64TypeInContext(globalState->context), ""));
   }
 }
 
@@ -169,7 +171,7 @@ void buildPrint(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     int num) {
-  buildPrint(globalState, builder, LLVMConstInt(LLVMInt64Type(), num, false));
+  buildPrint(globalState, builder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), num, false));
 }
 
 // We'll assert if conditionLE is false.
@@ -180,10 +182,10 @@ void buildAssert(
     LLVMValueRef conditionLE,
     const std::string& failMessage) {
   buildIf(
-      functionState, builder, isZeroLE(builder, conditionLE),
+      globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
 }
@@ -252,16 +254,16 @@ void buildAssertCensusContains(
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildPointerCast(
-            builder, ptrLE, LLVMPointerType(LLVMVoidType(), 0), "");
+            builder, ptrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
     auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE,
         1, "");
-    auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder, isRegisteredIntLE, LLVMInt1Type(),
+    auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder, isRegisteredIntLE, LLVMInt1TypeInContext(globalState->context),
         "");
-    buildIf(functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
+    buildIf(globalState, functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
         [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
           buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
           buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
-          auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
           LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
         });
   }

@@ -67,7 +67,7 @@ Ref translateExternCall(
             argsLE.data(),
             argsLE.size(),
             "eqStrResult");
-    auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8Type(), 0, false), "");
+    auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 0, false), "");
 
     functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
     functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
@@ -88,7 +88,7 @@ Ref translateExternCall(
     // VivemExterns.addFloatFloat
     assert(false);
   } else if (name == "__panic") {
-    auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8Type(), 255);
+    auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8TypeInContext(globalState->context), 255);
     LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
@@ -145,7 +145,7 @@ Ref translateExternCall(
     std::vector<LLVMValueRef> argsLE = {
         functionState->defaultRegion->getStringBytesPtr(functionState, builder, leftStrRef),
         functionState->defaultRegion->getStringBytesPtr(functionState, builder, rightStrRef),
-        getCharsPtrFromWrapperPtr(builder, destStrWrapperPtrLE),
+        getCharsPtrFromWrapperPtr(globalState, builder, destStrWrapperPtrLE),
     };
     LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
 
@@ -288,13 +288,13 @@ Ref translateExternCall(
         makeMidasLocal(
             functionState,
             builder,
-            LLVMArrayType(LLVMInt8Type(), bufferSize),
+            LLVMArrayType(LLVMInt8TypeInContext(globalState->context), bufferSize),
             "charsPtrLocal",
-            LLVMGetUndef(LLVMArrayType(LLVMInt8Type(), bufferSize)));
+            LLVMGetUndef(LLVMArrayType(LLVMInt8TypeInContext(globalState->context), bufferSize)));
     auto itoaDestPtrLE =
         LLVMBuildPointerCast(
-            builder, charsPtrLocalLE, LLVMPointerType(LLVMInt8Type(), 0), "itoaDestPtr");
-    std::vector<LLVMValueRef> atoiArgsLE = { intLE, itoaDestPtrLE, constI64LE(bufferSize) };
+            builder, charsPtrLocalLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "itoaDestPtr");
+    std::vector<LLVMValueRef> atoiArgsLE = { intLE, itoaDestPtrLE, constI64LE(globalState, bufferSize) };
     LLVMBuildCall(builder, globalState->intToCStr, atoiArgsLE.data(), atoiArgsLE.size(), "");
 
     std::vector<LLVMValueRef> strlenArgsLE = { itoaDestPtrLE };
@@ -304,7 +304,7 @@ Ref translateExternCall(
     // Set the length
     LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
     // Fill the chars
-    auto charsPtrLE = getCharsPtrFromWrapperPtr(builder, strWrapperPtrLE);
+    auto charsPtrLE = getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE);
     std::vector<LLVMValueRef> argsLE = {
         charsPtrLE,
         itoaDestPtrLE,
@@ -312,7 +312,7 @@ Ref translateExternCall(
     };
     LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
-    buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(builder, charsPtrLE));
+    buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(globalState, builder, charsPtrLE));
 
     return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
   } else if (name == "__and") {

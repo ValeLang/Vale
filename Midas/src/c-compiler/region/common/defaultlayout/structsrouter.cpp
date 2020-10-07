@@ -41,8 +41,11 @@ void ReferendStructsRouter::declareStruct(StructDefinition* structM) {
 void ReferendStructsRouter::declareEdge(Edge* edge) {
   return getReferendStructsSource(edge->structName)->declareEdge(edge);
 }
-void ReferendStructsRouter::translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) {
-  return getReferendStructsSource(edge->structName)->translateEdge(edge, functions);
+void ReferendStructsRouter::translateEdge(
+    Edge* edge,
+    std::vector<LLVMTypeRef> interfaceFunctionsLT,
+    std::vector<LLVMValueRef> functions) {
+  return getReferendStructsSource(edge->structName)->translateEdge(edge, interfaceFunctionsLT, functions);
 }
 void ReferendStructsRouter::declareInterface(InterfaceDefinition* interfaceM) {
   return getReferendStructsSource(interfaceM->referend)->declareInterface(interfaceM);

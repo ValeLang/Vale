@@ -13,7 +13,7 @@
 #include "function/function.h"
 #include "../iregion.h"
 
-class Assist : public Mega {
+class Assist : public IRegion {
 public:
   Assist(GlobalState* globalState);
   ~Assist() override = default;
@@ -158,10 +158,215 @@ public:
 
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
 
+  Ref allocate(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* desiredReference,
+      const std::vector<Ref>& membersLE) override;
+
+  Ref upcast(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+
+      Reference* sourceStructMT,
+      StructReferend* sourceStructReferendM,
+      Ref sourceRefLE,
+
+      Reference* targetInterfaceTypeM,
+      InterfaceReferend* targetInterfaceReferendM);
+
+  WrapperPtrLE lockWeakRef(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref weakRefLE,
+      bool weakRefKnownLive) override;
+
+  // Returns a LLVMValueRef for a ref to the string object.
+  // The caller should then use getStringBytesPtr to then fill the string's contents.
+  Ref constructKnownSizeArray(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* referenceM,
+      KnownSizeArrayT* referendM,
+      const std::vector<Ref>& membersLE) override;
+
+  // should expose a dereference thing instead
+//  LLVMValueRef getKnownSizeArrayElementsPtr(
+//      LLVMBuilderRef builder,
+//      LLVMValueRef knownSizeArrayWrapperPtrLE) override;
+//  LLVMValueRef getUnknownSizeArrayElementsPtr(
+//      LLVMBuilderRef builder,
+//      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
+
+  Ref getUnknownSizeArrayLength(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      Ref arrayRef,
+      bool arrayKnownLive) override;
+
+  LLVMValueRef checkValidReference(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref refLE) override;
+
+
+  // TODO maybe combine with alias/acquireReference?
+  // After we load from a local, member, or element, we can feed the result through this
+  // function to turn it into a desired ownership.
+  // Example:
+  // - Can load from an owning ref member to get a constraint ref.
+  // - Can load from a constraint ref member to get a weak ref.
+  Ref upgradeLoadResultToRefWithTargetOwnership(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* sourceType,
+      Reference* targetType,
+      Ref sourceRef) override;
+
+  Ref loadElementFromKSAWithUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      bool arrayKnownLive,
+      Ref indexRef,
+      Reference* targetType) override;
+  Ref loadElementFromKSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      bool arrayKnownLive,
+      Ref indexRef) override;
+  Ref loadElementFromUSAWithUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      bool arrayKnownLive,
+      Ref indexRef,
+      Reference* targetType) override;
+  Ref loadElementFromUSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      bool arrayKnownLive,
+      Ref indexRef) override;
+
+
+  Ref storeElementInUSA(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* usaRefMT,
+      UnknownSizeArrayT* usaMT,
+      Ref arrayRef,
+      bool arrayKnownLive,
+      Ref indexRef,
+      Ref elementRef) override;
+
+
+  void deallocate(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref refLE) override;
+
+
+  Ref constructUnknownSizeArrayCountedStruct(
+      FunctionState* functionState,
+      BlockState* blockState,
+      LLVMBuilderRef builder,
+      Reference* usaMT,
+      UnknownSizeArrayT* unknownSizeArrayT,
+      Reference* generatorType,
+      Prototype* generatorMethod,
+      Ref generatorRef,
+      LLVMTypeRef usaWrapperPtrLT,
+      LLVMTypeRef usaElementLT,
+      Ref sizeRef,
+      const std::string& typeName) override;
+
+
+  WrapperPtrLE mallocStr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      LLVMValueRef lengthLE) override;
+
+//  LLVMValueRef mallocKnownSize(
+//      FunctionState* functionState,
+//      LLVMBuilderRef builder,
+//      Location location,
+//      LLVMTypeRef referendLT) override;
+
+//  LLVMValueRef mallocUnknownSizeArray(
+//      LLVMBuilderRef builder,
+//      LLVMTypeRef usaWrapperLT,
+//      LLVMTypeRef usaElementLT,
+//      LLVMValueRef lengthLE) override;
+
+  // TODO Make these private once refactor is done
+//  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
+//    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
+//  }
+  // TODO get rid of these once refactor is done
+  ControlBlock* getControlBlock(Referend* referend) override {
+    return referendStructs.getControlBlock(referend);
+  }
+  IReferendStructsSource* getReferendStructsSource() override {
+    return &referendStructs;
+  }
+  IWeakRefStructsSource* getWeakRefStructsSource() override {
+    return &weakRefStructs;
+  }
+  LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
+    return referendStructs.getStringLen(functionState, builder, ref);
+  }
+  LLVMTypeRef getWeakRefHeaderStruct() override {
+    return mutWeakableStructs.weakRefHeaderStructL;
+  }
+  LLVMTypeRef getWeakVoidRefStruct() override {
+    return mutWeakableStructs.weakVoidRefStructL;
+  }
+  void fillControlBlock(
+      AreaAndFileAndLine from,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      Mutability mutability,
+      ControlBlockPtrLE controlBlockPtrLE,
+      const std::string& typeName);
+
 
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceMethod* method);
+
+
+  GlobalState* globalState;
+
+  ReferendStructs immStructs;
+  ReferendStructs mutNonWeakableStructs;
+  WeakableReferendStructs mutWeakableStructs;
+
+  DefaultImmutables defaultImmutables;
+
+  ReferendStructsRouter referendStructs;
+  WeakRefStructsRouter weakRefStructs;
+
+  FatWeaks fatWeaks;
+  WrcWeaks wrcWeaks;
 };
 
 #endif

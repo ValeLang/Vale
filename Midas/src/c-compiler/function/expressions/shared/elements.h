@@ -50,6 +50,7 @@ Ref storeElement(
 
 
 LLVMValueRef loadInnerArrayMember(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
     LLVMValueRef indexLE);
@@ -70,6 +71,7 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
     WrapperPtrLE arrayWrapperPtrLE);
 
 LLVMValueRef getUnknownSizeArrayLengthPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE unknownSizeArrayWrapperPtrLE);
 

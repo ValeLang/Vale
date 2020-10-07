@@ -8,6 +8,7 @@ LLVMValueRef getInnerStrPtrFromWrapperPtr(
     WrapperPtrLE strWrapperPtrLE);
 
 LLVMValueRef getCharsPtrFromWrapperPtr(
+    GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE strWrapperPtrLE);
 

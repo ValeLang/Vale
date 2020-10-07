@@ -28,7 +28,10 @@ public:
   void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructDefinition* structM) override;
   void declareEdge(Edge* edge) override;
-  void translateEdge(Edge* edge, std::vector<LLVMValueRef> functions) override;
+  void translateEdge(
+      Edge* edge,
+      std::vector<LLVMTypeRef> interfaceFunctionsLT,
+      std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interfaceM) override;
   void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
   void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;

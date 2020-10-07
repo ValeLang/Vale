@@ -42,6 +42,7 @@ public:
   // an i64 pointer to null.
   LLVMValueRef ram64 = nullptr;
   LLVMValueRef writeOnlyGlobal = nullptr;
+  LLVMValueRef crashGlobal = nullptr;
   // Initialized to &writeOnlyGlobal / 8 in main.
   // We can use this to easily write an i64 into NULL or the write only global at runtime.
   LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;

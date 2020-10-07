@@ -64,10 +64,10 @@ LLVMTypeRef makeLgtEntryStruct(GlobalState* globalState) {
   std::vector<LLVMTypeRef> memberTypesL;
 
   assert(LGT_ENTRY_MEMBER_INDEX_FOR_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   assert(LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   LLVMStructSetBody(lgtEntryStructL, memberTypesL.data(), memberTypesL.size(), false);
 
@@ -144,25 +144,25 @@ LgtWeaks::LgtWeaks(GlobalState* globalState_, IReferendStructsSource* referendSt
     fatWeaks_(globalState_, weakRefStructsSource_),
     referendStructsSource(referendStructsSource_),
     weakRefStructsSource(weakRefStructsSource_) {
-  auto voidLT = LLVMVoidType();
-  auto voidPtrLT = LLVMPointerType(voidLT, 0);
-  auto int1LT = LLVMInt1Type();
-  auto int8LT = LLVMInt8Type();
-  auto int32LT = LLVMInt32Type();
-  auto int64LT = LLVMInt64Type();
+//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   lgtEntryStructL = makeLgtEntryStruct(globalState);
 
 
-  expandLgt = addExtern(globalState->mod, "__expandLgt", voidLT, {});
-  checkLgti = addExtern(globalState->mod, "__checkLgti", voidLT, {int32LT});
+  expandLgt = addExtern(globalState->mod, "__expandLgt", LLVMVoidTypeInContext(globalState->context), {});
+  checkLgti = addExtern(globalState->mod, "__checkLgti", LLVMVoidTypeInContext(globalState->context), {int32LT});
   getNumLiveLgtEntries = addExtern(globalState->mod, "__getNumLiveLgtEntries", int32LT, {});
 
-  lgtCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__lgt_capacity");
+  lgtCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32TypeInContext(globalState->context), "__lgt_capacity");
   LLVMSetLinkage(lgtCapacityPtr, LLVMExternalLinkage);
 
-  lgtFirstFreeLgtiPtr = LLVMAddGlobal(globalState->mod, LLVMInt32Type(), "__lgt_firstFree");
+  lgtFirstFreeLgtiPtr = LLVMAddGlobal(globalState->mod, LLVMInt32TypeInContext(globalState->context), "__lgt_firstFree");
   LLVMSetLinkage(lgtFirstFreeLgtiPtr, LLVMExternalLinkage);
 
   lgtEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(lgtEntryStructL, 0), "__lgt_entries");
@@ -170,12 +170,12 @@ LgtWeaks::LgtWeaks(GlobalState* globalState_, IReferendStructsSource* referendSt
 
   if (globalState->opt->census) {
     LLVMValueRef args[3] = {
-        LLVMConstInt(LLVMInt64Type(), 0, false),
+        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
             globalState->valeMainBuilder,
             LLVMBuildCall(
                 globalState->valeMainBuilder, getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
-            LLVMInt64Type(),
+            LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
@@ -324,7 +324,7 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
   auto fatPtrLE = weakRefLE;
   auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE);
   buildIf(
-      functionState, builder, isZeroLE(builder, isAliveLE),
+      globalState, functionState, builder, isZeroLE(builder, isAliveLE),
       [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
         buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
         buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
@@ -344,7 +344,7 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
           buildPrint(globalState, thenBuilder, " ");
         }
         buildPrint(globalState, thenBuilder, "Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8Type(), 255, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
   return fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, fatPtrLE);
@@ -369,7 +369,7 @@ LLVMValueRef LgtWeaks::getNewLgti(
           LLVMBuildLoad(builder, lgtCapacityPtr, "lgtCapacity"),
           "atCapacity");
   buildIf(
-      functionState,
+      globalState, functionState,
       builder,
       atCapacityLE,
       [this](LLVMBuilderRef thenBuilder) {
@@ -398,7 +398,7 @@ void LgtWeaks::innerNoteWeakableDestroyed(
   auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, concreteRefM,
       controlBlockPtrLE);
   auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
-  adjustCounter(builder, ptrToActualGenLE, 1);
+  adjustCounter(globalState, builder, ptrToActualGenLE, 1);
   auto ptrToLgtEntryNextFreeLE = getLGTEntryNextFreePtr(builder, lgtiLE);
 
   // __lgt_entries[lgti] = __lgt_firstFree;
@@ -598,16 +598,16 @@ LLVMTypeRef LgtWeaks::makeWeakRefHeaderStruct(GlobalState* globalState) {
   std::vector<LLVMTypeRef> memberTypesL;
 
   assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   assert(WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32Type());
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
 
   assert(
       LLVMABISizeOfType(globalState->dataLayout, genRefStructL) ==
-          LLVMABISizeOfType(globalState->dataLayout, LLVMInt64Type()));
+          LLVMABISizeOfType(globalState->dataLayout, LLVMInt64TypeInContext(globalState->context)));
 
   return genRefStructL;
 }

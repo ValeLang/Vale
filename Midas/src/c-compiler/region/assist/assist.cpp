@@ -188,12 +188,20 @@ void Assist::declareEdge(
 
 void Assist::translateEdge(
     Edge* edge) {
-  std::vector<LLVMValueRef> functions;
+  auto interfaceM = globalState->program->getInterface(edge->interfaceName->fullName);
+
+  std::vector<LLVMTypeRef> interfaceFunctionsLT;
+  std::vector<LLVMValueRef> edgeFunctionsL;
   for (int i = 0; i < edge->structPrototypesByInterfaceMethod.size(); i++) {
+    auto interfaceFunctionLT =
+        translateInterfaceMethodToFunctionType(interfaceM->methods[i]);
+    interfaceFunctionsLT.push_back(interfaceFunctionLT);
+
     auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
-    functions.push_back(globalState->getFunction(funcName));
+    auto edgeFunctionL = globalState->getFunction(funcName);
+    edgeFunctionsL.push_back(edgeFunctionL);
   }
-  referendStructs.translateEdge(edge, functions);
+  referendStructs.translateEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 }
 
 void Assist::declareInterface(
@@ -226,7 +234,7 @@ LLVMTypeRef Assist::translateInterfaceMethodToFunctionType(
     case Ownership::BORROW:
     case Ownership::OWN:
     case Ownership::SHARE:
-      paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMVoidType(), 0);
+      paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
       break;
     case Ownership::WEAK:
       paramsLT[method->virtualParamIndex] = mutWeakableStructs.weakVoidRefStructL;

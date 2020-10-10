@@ -54,6 +54,9 @@ trait AddressExpression2 extends Expression2 {
   // Whether to move-load or borrow-load or weak-load from this expression, if coerced
   // into a reference.
   def coerceToOwnership: Ownership
+
+  // Whether or not we can change where this address points to
+  def variability: Variability
 }
 
 case class LetAndLend2(
@@ -331,7 +334,7 @@ case class TupleE2(
 // This is used after panics or other never-returning things, to signal that a certain
 // variable should be considered gone. See AUMAP.
 // This can also be used if theres anything after a panic in a block, like
-//   fn main() {
+//   fn main() int {
 //     __panic();
 //     println("hi");
 //   }
@@ -400,9 +403,10 @@ case class FloatLiteral2(value: Float) extends ReferenceExpression2 {
 }
 
 case class LocalLookup2(
-    range: RangeS,
-    localVariable: ILocalVariable2,
-    reference: Coord
+  range: RangeS,
+  localVariable: ILocalVariable2,
+  reference: Coord,
+  variability: Variability
 ) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(reference)
 
@@ -443,7 +447,8 @@ case class ArraySequenceLookup2(
   range: RangeS,
     arrayExpr: ReferenceExpression2,
     arrayType: KnownSizeArrayT2,
-    indexExpr: ReferenceExpression2) extends AddressExpression2 {
+    indexExpr: ReferenceExpression2,
+    variability: Variability) extends AddressExpression2 {
   vassert(arrayExpr.resultRegister.reference.referend == arrayType)
 
   override def resultRegister = AddressRegister2(arrayType.array.memberType)
@@ -459,7 +464,8 @@ case class UnknownSizeArrayLookup2(
   range: RangeS,
     arrayExpr: ReferenceExpression2,
     arrayType: UnknownSizeArrayT2,
-    indexExpr: ReferenceExpression2) extends AddressExpression2 {
+    indexExpr: ReferenceExpression2,
+  variability: Variability) extends AddressExpression2 {
   vassert(arrayExpr.resultRegister.reference.referend == arrayType)
 
   override def resultRegister = AddressRegister2(arrayType.array.memberType)
@@ -482,7 +488,8 @@ case class ReferenceMemberLookup2(
   range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
-    reference: Coord) extends AddressExpression2 {
+    reference: Coord,
+  variability: Variability) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(reference)
 
   override def coerceToOwnership: Ownership = Borrow
@@ -495,7 +502,8 @@ case class AddressMemberLookup2(
   range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
-    resultType2: Coord) extends AddressExpression2 {
+    resultType2: Coord,
+  variability: Variability) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(resultType2)
 
   override def coerceToOwnership: Ownership = Borrow

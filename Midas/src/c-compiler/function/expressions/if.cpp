@@ -40,7 +40,7 @@ Ref translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  globalState->region->checkValidReference(
+  functionState->defaultRegion->checkValidReference(
       FL(), functionState, builder, iff->commonSupertype, resultLE);
 
 

@@ -21,7 +21,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   }
 
   test("Simple rune rule") {
-    val program1 = compile("""fn main<T>(moo T) { }""")
+    val program1 = compile("""fn main<T>(moo T) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
     val runeInRules =
@@ -34,7 +34,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   }
 
   test("Borrowed rune") {
-    val program1 = compile("""fn main<T>(moo &T) { }""")
+    val program1 = compile("""fn main<T>(moo &T) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val List(param) = main.params
 
@@ -74,7 +74,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   }
 
   test("Anonymous typed param") {
-    val program1 = compile("""fn main(_ int) { }""")
+    val program1 = compile("""fn main(_ int) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val List(param) = main.params
     val paramRune =
@@ -101,7 +101,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
   }
 
   test("Anonymous untyped param") {
-    val program1 = compile("""fn main(_) { }""")
+    val program1 = compile("""fn main(_) infer-ret { }""")
     val main = program1.lookupFunction("main")
     val List(param) = main.params
     val paramRune =
@@ -126,7 +126,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
 
   test("Rune destructure") {
     // This is an ambiguous case but we decided it should destructure a struct or sequence, see CSTODTS in docs.
-    val program1 = compile("""fn main<T>(moo T(a int)) { }""")
+    val program1 = compile("""fn main<T>(moo T(a int)) infer-ret { }""")
     val main = program1.lookupFunction("main")
 
     val List(param) = main.params

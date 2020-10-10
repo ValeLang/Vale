@@ -17,7 +17,7 @@ class HashSetTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" ->
           """
-            |fn main() {
+            |fn main() int {
             |  m = HashSet<int>([0, 4, 8, 12], IFunction1<mut, int, int>({_}), ==);
             |  vassert(m.has(0));
             |  vassert(m.has(4));
@@ -42,7 +42,7 @@ class HashSetTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" ->
           """
-            |fn main() {
+            |fn main() int {
             |  m = HashSet<int>([0, 4, 8, 12].toArray<imm>(), IFunction1<mut, int, int>({_}), ==);
             |  vassert(m.has(0));
             |  vassert(m.has(4));
@@ -64,7 +64,7 @@ class HashSetTest extends FunSuite with Matchers {
         Samples.get("libraries/hashset.vale") +
         Samples.get("libraries/utils.vale") +
         """
-          |fn main() {
+          |fn main() int {
           |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0);
           |  m.add(4);
@@ -93,7 +93,7 @@ class HashSetTest extends FunSuite with Matchers {
         Samples.get("libraries/hashset.vale") +
         Samples.get("libraries/utils.vale") +
         """
-          |fn main() {
+          |fn main() int {
           |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0);
           |  m.add(4);
@@ -121,7 +121,7 @@ class HashSetTest extends FunSuite with Matchers {
         Samples.get("libraries/hashset.vale") +
         Samples.get("libraries/utils.vale") +
         """
-          |fn main() {
+          |fn main() int {
           |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0);
           |  m.add(4);

@@ -16,6 +16,18 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     compile(CombinatorParsers.expression,"4.2") shouldHave { case FloatLiteralPE(_, 4.2f) => }
   }
 
+  test("Simple string") {
+    compile(CombinatorParsers.expression, """"moo"""") shouldHave { case StrLiteralPE(_, "moo") => }
+  }
+
+  test("String with quote inside") {
+    compile(CombinatorParsers.expression, """"m\"oo"""") shouldHave { case StrLiteralPE(_, "m\"oo") => }
+  }
+
+  test("String with apostrophe inside") {
+    compile(CombinatorParsers.expression, """"m'oo"""") shouldHave { case StrLiteralPE(_, "m'oo") => }
+  }
+
   test("4") {
     compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(StringP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),BorrowP) => }
   }
@@ -157,7 +169,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("Identity lambda") {
     compile(CombinatorParsers.expression, "{_}") shouldHave {
-      case LambdaPE(_,FunctionP(_,FunctionHeaderP(_, None,List(),None,None,None,None),Some(BlockPE(_,List(MagicParamLookupPE(_)))))) =>
+      case LambdaPE(_,FunctionP(_,FunctionHeaderP(_, None,List(),None,None,None,FunctionReturnP(_, _, _)),Some(BlockPE(_,List(MagicParamLookupPE(_)))))) =>
     }
   }
 

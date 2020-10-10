@@ -127,6 +127,15 @@ object Spanner {
     }
   }
 
+  def forFunctionReturn(p: FunctionReturnP): Span = {
+    val FunctionReturnP(range, maybeInferRet, maybeRetType) = p
+    makeSpan(
+      Ret,
+      range,
+      maybeInferRet.toList.map({ case UnitP(range) => makeSpan(Ret, range, List()) }) ++
+      maybeRetType.toList.map(forTemplex))
+  }
+
   def forFunction(function: FunctionP): Span = {
     val FunctionP(range, FunctionHeaderP(_, maybeName, attributes, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret), body) = function
 
@@ -138,7 +147,7 @@ object Spanner {
       maybeUserSpecifiedIdentifyingRunes.toList.map(forIdentifyingRunes) ++
       templateRules.toList.map(forTemplateRules) ++
       params.toList.map(forParams) ++
-      ret.toList.map(forTemplex) ++
+      List(forFunctionReturn(ret)) ++
       body.toList.map(forBlock))
   }
 

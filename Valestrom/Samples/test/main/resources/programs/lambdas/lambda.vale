@@ -3,6 +3,6 @@ fn do(callable) {
   callable()
 }
 
-fn main() {
+fn main() int {
   do({ 42 })
 }

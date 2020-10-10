@@ -9,7 +9,7 @@ class StringTests extends FunSuite with Matchers {
   test("Simple string") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() str {
         |  "sprogwoggle"
         |}
       """.stripMargin)
@@ -23,7 +23,7 @@ class StringTests extends FunSuite with Matchers {
   test("String with escapes") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() str {
         |  "sprog\nwoggle"
         |}
         |""".stripMargin)
@@ -37,7 +37,7 @@ class StringTests extends FunSuite with Matchers {
   test("String with hex escape") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() str {
         |  "sprog\u001bwoggle"
         |}
         |""".stripMargin)

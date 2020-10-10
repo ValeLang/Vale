@@ -22,7 +22,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
                   Some(NameOrRunePT(StringP(_, "Marine"))),
                   None,
                   Some(OverrideP(_,NameOrRunePT(StringP(_, "IUnit")))))))),
-          None),
+          FunctionReturnP(_, None,None)),
         Some(BlockPE(_, List(IntLiteralPE(_, 5))))) =>
     }
   }
@@ -38,7 +38,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
     compile(CombinatorParsers.topLevelFunction, "fn sum () rules() {3}") shouldHave {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(), None, Some(_), Some(_), None),
+          Some(StringP(_, "sum")), List(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
         Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
     }
   }
@@ -57,7 +57,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
               IdentifyingRuneP(_, StringP(_, "F"), List())))),
           None,
           Some(ParamsP(_, List(Patterns.capturedWithTypeRune("a", "A")))),
-          None),
+          FunctionReturnP(_, None, None)),
         Some(BlockPE(_, List(VoidPE(_))))) =>
     }
   }

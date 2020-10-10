@@ -779,6 +779,9 @@ class ValeTest(unittest.TestCase):
     def test_naiverc_strlen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/strings/strlen.vale"], "naive-rc", 11)
 
+    def test_assist_smallstr(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/strings/smallstr.vale"], "assist", 42)
+
     def test_assist_invalidaccess(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/invalidaccess.vale"], "assist", 255)
     def test_unsafefast_invalidaccess(self) -> None:

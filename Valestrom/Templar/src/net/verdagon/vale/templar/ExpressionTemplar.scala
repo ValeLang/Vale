@@ -123,10 +123,10 @@ class ExpressionTemplar(
   Option[AddressExpression2] = {
     fate.getVariable(NameTranslator.translateVarNameStep(nameA)) match {
       case Some(alv @ AddressibleLocalVariable2(_, _, reference)) => {
-        Some(LocalLookup2(range, alv, reference))
+        Some(LocalLookup2(range, alv, reference, alv.variability))
       }
       case Some(rlv @ ReferenceLocalVariable2(id, _, reference)) => {
-        Some(LocalLookup2(range, rlv, reference))
+        Some(LocalLookup2(range, rlv, reference, rlv.variability))
       }
       case Some(AddressibleClosureVariable2(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
@@ -139,16 +139,17 @@ class ExpressionTemplar(
             LocalLookup2(
               range,
               ReferenceLocalVariable2(name2, Final, closuredVarsStructRefRef),
-              closuredVarsStructRefRef))
+              closuredVarsStructRefRef,
+              Final))
 //        val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
         val varName = nameA match { case CodeVarNameA(n) => n case _ => vwat() }
 //        val index =
 //          closuredVarsStructDef.members.indexWhere(_.name == varName)
 //        vassert(index >= 0)
-        val lookup = AddressMemberLookup2(range, borrowExpr, id, tyype)
+        val lookup = AddressMemberLookup2(range, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
-      case Some(ReferenceClosureVariable2(varName, closuredVarsStructRef, _, tyype)) => {
+      case Some(ReferenceClosureVariable2(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
         val ownership = if (mutability == Mutable) Borrow else Share
         val closuredVarsStructRefCoord = Coord(ownership, closuredVarsStructRef)
@@ -159,14 +160,16 @@ class ExpressionTemplar(
             LocalLookup2(
               range,
               ReferenceLocalVariable2(fate.fullName.addStep(ClosureParamName2()), Final, closuredVarsStructRefCoord),
-              closuredVarsStructRefCoord))
+              closuredVarsStructRefCoord,
+              Final))
 //        val index = closuredVarsStructDef.members.indexWhere(_.name == varName)
         val lookup =
           ReferenceMemberLookup2(
             range,
             borrowExpr,
             varName,
-            tyype)
+            tyype,
+            variability)
         Some(lookup)
       }
       case None => None
@@ -180,15 +183,15 @@ class ExpressionTemplar(
     name2: IVarName2):
   Option[AddressExpression2] = {
     fate.getVariable(name2) match {
-      case Some(alv @ AddressibleLocalVariable2(varId, _, reference)) => {
+      case Some(alv @ AddressibleLocalVariable2(varId, variability, reference)) => {
         vassert(!fate.moveds.contains(varId))
-        Some(LocalLookup2(range, alv, reference))
+        Some(LocalLookup2(range, alv, reference, variability))
       }
-      case Some(rlv @ ReferenceLocalVariable2(varId, _, reference)) => {
+      case Some(rlv @ ReferenceLocalVariable2(varId, variability, reference)) => {
         if (fate.moveds.contains(varId)) {
           throw CompileErrorExceptionT(CantMutateUnstackifiedLocal(range, varId.last))
         }
-        Some(LocalLookup2(range, rlv, reference))
+        Some(LocalLookup2(range, rlv, reference, variability))
       }
       case Some(AddressibleClosureVariable2(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
@@ -201,13 +204,14 @@ class ExpressionTemplar(
             LocalLookup2(
               range,
               ReferenceLocalVariable2(closureParamVarName2, Final, closuredVarsStructRefRef),
-              closuredVarsStructRefRef))
+              closuredVarsStructRefRef,
+              variability))
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
         vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
-        val lookup = AddressMemberLookup2(range, borrowExpr, id, tyype)
+        val lookup = AddressMemberLookup2(range, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
-      case Some(ReferenceClosureVariable2(varName, closuredVarsStructRef, _, tyype)) => {
+      case Some(ReferenceClosureVariable2(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
         val ownership = if (mutability == Mutable) Borrow else Share
         val closuredVarsStructRefCoord = Coord(ownership, closuredVarsStructRef)
@@ -218,14 +222,16 @@ class ExpressionTemplar(
             LocalLookup2(
               range,
               ReferenceLocalVariable2(fate.fullName.addStep(ClosureParamName2()), Final, closuredVarsStructRefCoord),
-              closuredVarsStructRefCoord))
+              closuredVarsStructRefCoord,
+              Final))
 //        val index = closuredVarsStructDef.members.indexWhere(_.name == varName)
         val lookup =
           ReferenceMemberLookup2(
             range,
             borrowExpr,
             varName,
-            tyype)
+            tyype,
+            variability)
         Some(lookup)
       }
       case None => None
@@ -521,6 +527,19 @@ class ExpressionTemplar(
             evaluateAndCoerceToReferenceExpression(temputs, fate, sourceExpr1)
           val (destinationExpr2, returnsFromDestination) =
             evaluateExpectedAddressExpression(temputs, fate, destinationExpr1)
+          if (destinationExpr2.variability != Varying) {
+            destinationExpr2 match {
+              case ReferenceMemberLookup2(range, structExpr, memberName, _, _) => {
+                structExpr.referend match {
+                  case s @ StructRef2(_) => {
+                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s, memberName))
+                  }
+                  case _ => vimpl()
+                }
+              }
+              case _ => vimpl()
+            }
+          }
           val isConvertible =
             templataTemplar.isTypeConvertible(temputs, unconvertedSourceExpr2.resultRegister.reference, destinationExpr2.resultRegister.reference)
           if (!isConvertible) {
@@ -555,14 +574,15 @@ class ExpressionTemplar(
           val exprTemplata =
             containerExpr2.resultRegister.reference.referend match {
               case at@UnknownSizeArrayT2(_) => {
-                UnknownSizeArrayLookup2(range, containerExpr2, at, indexExpr2)
+                UnknownSizeArrayLookup2(range, containerExpr2, at, indexExpr2, Varying)
               }
               case at@KnownSizeArrayT2(_, _) => {
                 ArraySequenceLookup2(
                   range,
                   containerExpr2,
                   at,
-                  indexExpr2)
+                  indexExpr2,
+                  Final)
               }
               case at@TupleT2(members, understruct) => {
                 indexExpr2 match {
@@ -570,7 +590,7 @@ class ExpressionTemplar(
                     var understructDef = temputs.lookupStruct(understruct);
                     val memberType = understructDef.members(index).tyype
                     val memberName = understructDef.fullName.addStep(understructDef.members(index).name)
-                    ReferenceMemberLookup2(range, containerExpr2, memberName, memberType.reference)
+                    ReferenceMemberLookup2(range, containerExpr2, memberName, memberType.reference, Final)
                   }
                   case _ => vimpl("impl random access of structs' members")
                 }
@@ -583,7 +603,7 @@ class ExpressionTemplar(
           (exprTemplata, returnsFromContainerExpr ++ returnsFromIndexExpr)
         }
         case DotAE(range, containerExpr1, memberNameStr, borrowContainer) => {
-          var memberName = CodeVarName2(memberNameStr)
+          val memberName = CodeVarName2(memberNameStr)
           val (unborrowedContainerExpr2, returnsFromContainerExpr) =
             evaluate(temputs, fate, containerExpr1);
           val containerExpr2 =
@@ -600,7 +620,7 @@ class ExpressionTemplar(
                   }
                 val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                 val memberType = structMember.tyype.expectReferenceMember().reference;
-                ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType)
+                ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, structMember.variability)
               }
               case TupleT2(_, structRef) => {
                 temputs.lookupStruct(structRef) match {
@@ -608,7 +628,7 @@ class ExpressionTemplar(
                     val (structMember, memberIndex) = vassertSome(structDef.getMemberAndIndex(memberName))
                     val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                     val memberType = structMember.tyype.expectReferenceMember().reference;
-                    ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType)
+                    ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, structMember.variability)
                   }
                 }
               }
@@ -618,7 +638,8 @@ class ExpressionTemplar(
                     range,
                     containerExpr2,
                     as,
-                    IntLiteral2(memberNameStr.toInt))
+                    IntLiteral2(memberNameStr.toInt),
+                    Final)
                 } else {
                   vfail("Sequence has no member named " + memberNameStr)
                 }
@@ -629,7 +650,8 @@ class ExpressionTemplar(
                     range,
                     containerExpr2,
                     at,
-                    IntLiteral2(memberNameStr.toInt))
+                    IntLiteral2(memberNameStr.toInt),
+                    Varying)
                 } else {
                   vfail("Array has no member named " + memberNameStr)
                 }

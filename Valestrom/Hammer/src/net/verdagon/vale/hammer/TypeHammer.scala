@@ -4,6 +4,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar._
+import net.verdagon.vale.templar.templata.FunctionHeader2
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vfail
 
@@ -47,11 +48,11 @@ object TypeHammer {
 //  (BaseTypeH) = {
 //    tyype match {
 //      case Addressible2(innerType) => {
-//        val (pointerH) = translatePointer(hinputs, hamuts, innerType)
+//        val (pointerH) = translatePointer(hinputs, hamuts, currentFunctionHeader, innerType)
 //        (AddressibleH(pointerH))
 //      }
 //      case Coord(ownership, innerType) => {
-//        val (pointerH) = translate(hinputs, hamuts, innerType)
+//        val (pointerH) = translate(hinputs, hamuts, currentFunctionHeader, innerType)
 //        (PointerH(ownership, pointerH))
 //      }
 //    }
@@ -75,8 +76,8 @@ object TypeHammer {
 
 //      // A Closure2 is really just a struct ref under the hood. The dinstinction is only meaningful
 //      // to the Templar.
-//      case OrdinaryClosure2(_, handleStructRef, prototype) => translate(hinputs, hamuts, handleStructRef)
-//      case TemplatedClosure2(_, handleStructRef, terry) => translate(hinputs, hamuts, handleStructRef)
+//      case OrdinaryClosure2(_, handleStructRef, prototype) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
+//      case TemplatedClosure2(_, handleStructRef, terry) => translate(hinputs, hamuts, currentFunctionHeader, handleStructRef)
       case OverloadSet(_, _, understructRef2) => {
         StructHammer.translateStructRef(hinputs, hamuts, understructRef2)
       }
@@ -145,7 +146,11 @@ object TypeHammer {
     }
   }
 
-  def translateKnownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: KnownSizeArrayT2): KnownSizeArrayTH = {
+  def translateKnownSizeArray(
+      hinputs: Hinputs,
+      hamuts: HamutsBox,
+      type2: KnownSizeArrayT2):
+  KnownSizeArrayTH = {
     val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
     val mutability = Conversions.evaluateMutability(type2.array.mutability)

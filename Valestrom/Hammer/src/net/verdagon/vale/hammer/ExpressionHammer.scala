@@ -5,6 +5,7 @@ import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, metal =>
 import net.verdagon.vale.metal.{ShareH, BorrowH => _, Immutable => _, Mutable => _, OwnH => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.AddressibleLocalVariable2
+import net.verdagon.vale.templar.templata.FunctionHeader2
 import net.verdagon.vale.templar.types._
 
 object ExpressionHammer {
@@ -18,6 +19,7 @@ object ExpressionHammer {
   def translate(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+      currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       expr2: Expression2
   ): (ExpressionH[ReferendH], List[Expression2]) = {
@@ -40,17 +42,17 @@ object ExpressionHammer {
       }
       case let2 @ LetNormal2(_, _) => {
         val letH =
-          LetHammer.translateLet(hinputs, hamuts, locals, let2)
+          LetHammer.translateLet(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (letH, List())
       }
       case let2 @ LetAndLend2(_, _) => {
         val borrowAccess =
-          LetHammer.translateLetAndLend(hinputs, hamuts, locals, let2)
+          LetHammer.translateLetAndLend(hinputs, hamuts, currentFunctionHeader, locals, let2)
         (borrowAccess, List())
       }
       case des2 @ Destroy2(_, _, _) => {
         val destroyH =
-            LetHammer.translateDestroy(hinputs, hamuts, locals, des2)
+            LetHammer.translateDestroy(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Templar destructures put things in local variables (even though hammer itself
         // uses registers internally to make that happen).
         // Since all the members landed in locals, we still need something to return, so we
@@ -59,7 +61,7 @@ object ExpressionHammer {
       }
       case des2 @ DestroyArraySequenceIntoLocals2(_, _, _) => {
         val destructureH =
-            LetHammer.translateDestructureArraySequence(hinputs, hamuts, locals, des2)
+            LetHammer.translateDestructureArraySequence(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Templar destructures put things in local variables (even though hammer itself
         // uses registers internally to make that happen).
         // Since all the members landed in locals, we still need something to return, so we
@@ -69,36 +71,36 @@ object ExpressionHammer {
       case unlet2 @ Unlet2(_) => {
         val valueAccess =
           LetHammer.translateUnlet(
-            hinputs, hamuts, locals, unlet2)
+            hinputs, hamuts, currentFunctionHeader, locals, unlet2)
         (valueAccess, List())
       }
       case mutate2 @ Mutate2(_, _) => {
         val newEmptyPackStructNodeLine =
-          MutateHammer.translateMutate(hinputs, hamuts, locals, mutate2)
+          MutateHammer.translateMutate(hinputs, hamuts, currentFunctionHeader, locals, mutate2)
         (newEmptyPackStructNodeLine, List())
       }
       case b @ Block2(_) => {
         val blockH =
-          BlockHammer.translateBlock(hinputs, hamuts, locals, b)
+          BlockHammer.translateBlock(hinputs, hamuts, currentFunctionHeader, locals, b)
         (blockH, List())
       }
       case call2 @ FunctionCall2(callableExpr, args) => {
         val access =
           CallHammer.translateFunctionPointerCall(
-            hinputs, hamuts, locals, callableExpr, args, call2.resultRegister.reference)
+            hinputs, hamuts, currentFunctionHeader, locals, callableExpr, args, call2.resultRegister.reference)
         (access, List())
       }
 
       case InterfaceFunctionCall2(superFunctionHeader, resultType2, argsExprs2) => {
         val access =
           CallHammer.translateInterfaceFunctionCall(
-            hinputs, hamuts, locals, superFunctionHeader, resultType2, argsExprs2)
+            hinputs, hamuts, currentFunctionHeader, locals, superFunctionHeader, resultType2, argsExprs2)
         (access, List())
       }
 
       case Consecutor2(exprs) => {
         val (resultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, locals, exprs);
+          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         resultLines.init.foreach(nonLastResultLine => {
           vassert(nonLastResultLine.resultType == ProgramH.emptyTupleStructType)
         })
@@ -108,7 +110,7 @@ object ExpressionHammer {
 
       case PackE2(exprs, resultType, resultPackType) => {
         val (resultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, locals, exprs)
+          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs)
         val (underlyingStructRefH) =
           StructHammer.translateStructRef(hinputs, hamuts, resultPackType.underlyingStruct)
         val (resultReference) =
@@ -124,7 +126,7 @@ object ExpressionHammer {
             resultReference.expectStructReference())
 
         val newStructNodeAndDeferredsExprH =
-            translateDeferreds(hinputs, hamuts, locals, newStructNode, deferreds)
+            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
 
         // Export locals from inside the pack
         (newStructNodeAndDeferredsExprH, List())
@@ -132,26 +134,26 @@ object ExpressionHammer {
 
       case ArrayLength2(arrayExpr2) => {
         val (resultLine, deferreds) =
-          translate(hinputs, hamuts, locals, arrayExpr2);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
 
         val lengthResultNode = ArrayLengthH(resultLine);
 
         val arrayLengthAndDeferredsExprH =
-          translateDeferreds(hinputs, hamuts, locals, lengthResultNode, deferreds)
+          translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, lengthResultNode, deferreds)
 
         (arrayLengthAndDeferredsExprH, List())
       }
 
       case LockWeak2(innerExpr2, resultOptBorrowType2, someConstructor, noneConstructor) => {
         val (resultLine, deferreds) =
-          translate(hinputs, hamuts, locals, innerExpr2);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr2);
         val (resultOptBorrowTypeH) =
           TypeHammer.translateReference(hinputs, hamuts, resultOptBorrowType2)
 
         val someConstructorH =
-          FunctionHammer.translateFunctionRef(hinputs, hamuts, someConstructor);
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, someConstructor);
         val noneConstructorH =
-          FunctionHammer.translateFunctionRef(hinputs, hamuts, noneConstructor);
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, noneConstructor);
 
         val resultNode =
           LockWeakH(
@@ -164,7 +166,7 @@ object ExpressionHammer {
 
       case TupleE2(exprs, resultType, resultPackType) => {
         val (resultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, locals, exprs);
+          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         val (underlyingStructRefH) =
           StructHammer.translateStructRef(hinputs, hamuts, resultPackType.underlyingStruct);
         val (resultReference) =
@@ -181,14 +183,14 @@ object ExpressionHammer {
         // Export locals from inside the pack
 
         val newStructAndDeferredsExprH =
-            translateDeferreds(hinputs, hamuts, locals, newStructNode, deferreds)
+            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
 
         (newStructAndDeferredsExprH, List())
       }
 
       case ArraySequenceE2(exprs, arrayReference2, arrayType2) => {
         val (resultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, locals, exprs);
+          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         val (underlyingArrayH) =
           TypeHammer.translateKnownSizeArray(hinputs, hamuts, arrayType2);
 
@@ -202,23 +204,24 @@ object ExpressionHammer {
             resultLines)
 
         val newStructAndDeferredsExprH =
-        translateDeferreds(hinputs, hamuts, locals, newStructNode, deferreds)
+        translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
 
         (newStructAndDeferredsExprH, List())
       }
 
       case Construct2(structRef2, resultType2, memberExprs) => {
         val (memberResultLines, deferreds) =
-          translateExpressions(hinputs, hamuts, locals, memberExprs);
+          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, memberExprs);
 
         val (resultTypeH) =
           TypeHammer.translateReference(hinputs, hamuts, resultType2)
 
-//        hinputs.lookupStruct(resultStructType2)
-//        vassert(structDef2.getRef == resultTypeH.innerType)
 
         val structDefH = hamuts.structDefsByRef2(structRef2)
         vassert(memberResultLines.size == structDefH.members.size)
+        memberResultLines.zip(structDefH.members).foreach({ case (memberResultLine, memberH ) =>
+          vassert(memberResultLine.resultType == memberH.tyype)
+        })
         val newStructNode =
           NewStructH(
             memberResultLines,
@@ -226,39 +229,39 @@ object ExpressionHammer {
             resultTypeH.expectStructReference())
 
         val newStructAndDeferredsExprH =
-            translateDeferreds(hinputs, hamuts, locals, newStructNode, deferreds)
+            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, newStructNode, deferreds)
 
         (newStructAndDeferredsExprH, List())
       }
 
       case load2 @ SoftLoad2(_, _) => {
         val (loadedAccessH, deferreds) =
-          LoadHammer.translateLoad(hinputs, hamuts, locals, load2)
+          LoadHammer.translateLoad(hinputs, hamuts, currentFunctionHeader, locals, load2)
         (loadedAccessH, deferreds)
       }
 
-      case lookup2 @ LocalLookup2(_,AddressibleLocalVariable2(_, _, _), _) => {
+      case lookup2 @ LocalLookup2(_,AddressibleLocalVariable2(_, _, _), _, _) => {
         val loadBoxAccess =
-          LoadHammer.translateLocalAddress(hinputs, hamuts, locals, lookup2)
+          LoadHammer.translateLocalAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, List())
       }
 
-      case lookup2 @ AddressMemberLookup2(_,_, _, _) => {
+      case lookup2 @ AddressMemberLookup2(_,_, _, _, _) => {
         val (loadBoxAccess, deferreds) =
-          LoadHammer.translateMemberAddress(hinputs, hamuts, locals, lookup2)
+          LoadHammer.translateMemberAddress(hinputs, hamuts, currentFunctionHeader, locals, lookup2)
         (loadBoxAccess, deferreds)
       }
 
       case if2 @ If2(_, _, _) => {
         val maybeAccess =
-          CallHammer.translateIf(hinputs, hamuts, locals, if2)
+          CallHammer.translateIf(hinputs, hamuts, currentFunctionHeader, locals, if2)
         (maybeAccess, List())
       }
 
       case ca2 @ ConstructArray2(_, _, _, _) => {
         val access =
           CallHammer.translateConstructArray(
-            hinputs, hamuts, locals, ca2)
+            hinputs, hamuts, currentFunctionHeader, locals, ca2)
         (access, List())
       }
 
@@ -274,7 +277,7 @@ object ExpressionHammer {
         }
 
         val (innerExprResultLine, deferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
 
         // Not always the case:
         //   vcurious(innerExprResultTypeH.kind == NeverH() || resultTypeH.kind == NeverH())
@@ -298,12 +301,12 @@ object ExpressionHammer {
 
       case CheckRefCount2(refExpr2, category, numExpr2) => {
         val (refExprResultLine, refExprDeferreds) =
-          translate(hinputs, hamuts, locals, refExpr2)
+          translate(hinputs, hamuts, currentFunctionHeader, locals, refExpr2)
         val (refExprResultTypeH) =
           TypeHammer.translateReference(hinputs, hamuts, refExpr2.resultRegister.reference);
 
         val (numExprResultLine, numExprDeferreds) =
-          translate(hinputs, hamuts, locals, numExpr2)
+          translate(hinputs, hamuts, currentFunctionHeader, locals, numExpr2)
         val (numExprResultTypeH) =
           TypeHammer.translateReference(hinputs, hamuts, refExpr2.resultRegister.reference);
 
@@ -315,7 +318,7 @@ object ExpressionHammer {
 
         val checkRefCountAndDeferredsH =
             translateDeferreds(
-              hinputs, hamuts, locals, checkRefCountH, numExprDeferreds ++ refExprDeferreds)
+              hinputs, hamuts, currentFunctionHeader, locals, checkRefCountH, numExprDeferreds ++ refExprDeferreds)
 
         (checkRefCountAndDeferredsH, List())
       }
@@ -333,7 +336,7 @@ object ExpressionHammer {
         val targetInterfaceRefH = targetPointerTypeH.kind.asInstanceOf[InterfaceRefH]
 
         val (innerExprResultLine, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         // Upcasting an interface is technically a no-op with our language, but the sculptor
         // will still want to do it to do some checking in debug mode.
         val upcastNode =
@@ -357,7 +360,7 @@ object ExpressionHammer {
         val targetInterfaceRefH = targetPointerTypeH.kind.asInstanceOf[InterfaceRefH]
 
         val (innerExprResultLine, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         // Upcasting an interface is technically a no-op with our language, but the sculptor
         // will still want to do it to do some checking in debug mode.
         val upcastNode =
@@ -369,40 +372,43 @@ object ExpressionHammer {
 
       case ExternFunctionCall2(prototype2, argsExprs2) => {
         val access =
-          CallHammer.translateExternFunctionCall(hinputs, hamuts, locals, prototype2, argsExprs2)
+          CallHammer.translateExternFunctionCall(hinputs, hamuts, currentFunctionHeader, locals, prototype2, argsExprs2)
         (access, List())
       }
 
       case while2 @ While2(_) => {
         val whileH =
-            CallHammer.translateWhile(hinputs, hamuts, locals, while2)
+            CallHammer.translateWhile(hinputs, hamuts, currentFunctionHeader, locals, while2)
         (whileH, List())
       }
 
       case Defer2(innerExpr, deferredExpr) => {
         val (innerExprResultLine, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         (innerExprResultLine, deferredExpr :: innerDeferreds)
       }
 
       case Discard2(innerExpr) => {
         val (undiscardedInnerExprH, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         vassert(innerDeferreds.isEmpty) // BMHD, probably need to translate them here.
         val innerExprH = DiscardH(undiscardedInnerExprH)
         val innerWithDeferredsExprH =
-          translateDeferreds(hinputs, hamuts, locals, innerExprH, innerDeferreds)
+          translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, innerExprH, innerDeferreds)
         (innerWithDeferredsExprH, List())
       }
       case Return2(innerExpr) => {
         val (innerExprResultLine, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
 
         // Return is a special case where we execute the *inner* expression (not the whole return expression) and
         // then the deferreds and then the return. See MEDBR.
         val innerWithDeferreds =
-            translateDeferreds(hinputs, hamuts, locals, innerExprResultLine, innerDeferreds)
+            translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, innerExprResultLine, innerDeferreds)
 
+        vassert(
+          innerExpr.resultRegister.referend == Never2() ||
+          innerExpr.resultRegister.reference == currentFunctionHeader.returnType)
         (ReturnH(innerWithDeferreds), List())
       }
       case ArgLookup2(paramIndex, type2) => {
@@ -414,22 +420,22 @@ object ExpressionHammer {
       case das2 @ DestroyArraySequenceIntoFunction2(_, _, _, _) => {
         val dasH =
             CallHammer.translateDestroyArraySequence(
-              hinputs, hamuts, locals, das2)
+              hinputs, hamuts, currentFunctionHeader, locals, das2)
         (dasH, List())
       }
 
       case das2 @ DestroyUnknownSizeArray2(_, _, _, _) => {
         val dusaH =
             CallHammer.translateDestroyUnknownSizeArray(
-              hinputs, hamuts, locals, das2)
+              hinputs, hamuts, currentFunctionHeader, locals, das2)
         (dusaH, List())
       }
 
       case UnreachableMootE2(innerExpr) => {
         val (innerExprResultLine, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         val innerWithDeferredsH =
-          translateDeferreds(hinputs, hamuts, locals, innerExprResultLine, innerDeferreds)
+          translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, innerExprResultLine, innerDeferreds)
 
         // Throw away the inner expression because we dont want it to be generated, because
         // theyll never get run anyway.
@@ -440,7 +446,7 @@ object ExpressionHammer {
 
       case WeakAlias2(innerExpr) => {
         val (innerExprResultLine, innerDeferreds) =
-          translate(hinputs, hamuts, locals, innerExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         (WeakAliasH(innerExprResultLine), innerDeferreds)
       }
 
@@ -453,6 +459,7 @@ object ExpressionHammer {
   def translateDeferreds(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     originalExpr: ExpressionH[ReferendH],
     deferreds: List[Expression2]):
@@ -462,7 +469,7 @@ object ExpressionHammer {
     }
 
     val (deferredExprs, deferredDeferreds) =
-      translateExpressions(hinputs, hamuts, locals, deferreds)
+      translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, deferreds)
     if (deferredExprs.map(_.resultType).toSet != Set(ProgramH.emptyTupleStructType)) {
       // curiosity, why would a deferred ever have a result
       vfail("ehwot?")
@@ -495,6 +502,7 @@ object ExpressionHammer {
 
   def translateExpressions(
       hinputs: Hinputs, hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       exprs2: List[Expression2]):
   (List[ExpressionH[ReferendH]], List[Expression2]) = {
@@ -502,9 +510,9 @@ object ExpressionHammer {
       case Nil => (List(), List())
       case firstExpr :: restExprs => {
         val (firstResultLine, firstDeferreds) =
-          translate(hinputs, hamuts, locals, firstExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, firstExpr);
         val (restResultLines, restDeferreds) =
-          translateExpressions(hinputs, hamuts, locals, restExprs);
+          translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, restExprs);
 
         val resultLines = firstResultLine :: restResultLines
         (resultLines, restDeferreds ++ firstDeferreds)
@@ -513,7 +521,9 @@ object ExpressionHammer {
   }
 
   def translateExpressionsAndDeferreds(
-    hinputs: Hinputs, hamuts: HamutsBox,
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     exprs2: List[Expression2]):
   List[ExpressionH[ReferendH]] = {
@@ -521,12 +531,12 @@ object ExpressionHammer {
       case Nil => List()
       case firstExpr :: restExprs => {
         val (firstResultLine, firstDeferreds) =
-          translate(hinputs, hamuts, locals, firstExpr);
+          translate(hinputs, hamuts, currentFunctionHeader, locals, firstExpr);
         val firstExprWithDeferredsH =
-          translateDeferreds(hinputs, hamuts, locals, firstResultLine, firstDeferreds)
+          translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, firstResultLine, firstDeferreds)
 
         val restResultLines =
-          translateExpressionsAndDeferreds(hinputs, hamuts, locals, restExprs);
+          translateExpressionsAndDeferreds(hinputs, hamuts, currentFunctionHeader, locals, restExprs);
 
         val resultLines = firstExprWithDeferredsH :: restResultLines
         (resultLines)

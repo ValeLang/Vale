@@ -102,9 +102,10 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list len") {
-    val compile = Compilation(
-      Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
+    val compile = Compilation.multiple(
+      List(
+        Samples.get("libraries/opt.vale"),
+        Samples.get("libraries/list.vale"),
         """
           |
           |fn main() int {
@@ -114,7 +115,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&l, 7);
           |  = l.len();
           |}
-        """.stripMargin)
+        """.stripMargin))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }

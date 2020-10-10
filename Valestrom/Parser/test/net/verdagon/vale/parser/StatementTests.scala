@@ -131,7 +131,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                     List(
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cellI")),FinalP)),None,None,None),
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
-                None),
+                FunctionReturnP(_, None, None)),
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
         BorrowP) =>
     }
@@ -152,7 +152,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                     List(
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cellI")),FinalP)),None,None,None),
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
-                None),
+                FunctionReturnP(_, None, None)),
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
         BorrowP) =>
     }
@@ -212,7 +212,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("Mutating as statement") {
-    val program = compile(CombinatorParsers.topLevelFunction, "fn main() { mut x = 6; }")
+    val program = compile(CombinatorParsers.topLevelFunction, "fn main() int { mut x = 6; }")
     program shouldHave {
       case MutatePE(_,LookupPE(StringP(_, "x"), None),IntLiteralPE(_, 6)) =>
     }

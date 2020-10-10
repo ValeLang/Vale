@@ -1,7 +1,7 @@
 
 // Added
 struct LocationHasher { }
-fn __call(this &LocationHasher, loc Location) {
+fn __call(this &LocationHasher, loc Location) int {
   hash = 0;
   mut hash = 41 * hash + loc.x;
   mut hash = 41 * hash + loc.y;
@@ -10,12 +10,12 @@ fn __call(this &LocationHasher, loc Location) {
 
 // Added
 struct LocationEquator { }
-fn __call(this &LocationEquator, a Location, b Location) {
+fn __call(this &LocationEquator, a Location, b Location) bool {
   (a.x == b.x) and (a.y == b.y)
 }
 
 // Added
-fn str(loc Location) {
+fn str(loc Location) str {
     "(" + str(loc.x) + ", " + str(loc.y) + ")"
 }
 

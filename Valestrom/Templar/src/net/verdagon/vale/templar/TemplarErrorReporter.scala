@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IFunctionDeclara
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.ScoutExpectedFunctionFailure
 import net.verdagon.vale.templar.templata.Signature2
-import net.verdagon.vale.templar.types.{Coord, Kind}
+import net.verdagon.vale.templar.types.{Coord, Kind, StructRef2}
 
 case class CompileErrorExceptionT(err: ICompileErrorT) extends RuntimeException
 
@@ -20,6 +20,7 @@ case class CouldntConvertForMutateT(range: RangeS, expectedType: Coord, actualTy
 case class CantMoveOutOfMemberT(range: RangeS, name: IVarName2) extends ICompileErrorT
 case class CantMutateUnstackifiedLocal(range: RangeS, localId: IVarName2) extends ICompileErrorT
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: Signature2) extends ICompileErrorT
+case class CantMutateFinalMember(range: RangeS, structRef2: StructRef2, memberName: FullName2[IVarName2]) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test
 
 object ErrorReporter {

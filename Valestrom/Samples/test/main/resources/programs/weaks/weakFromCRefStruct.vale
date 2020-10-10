@@ -1,6 +1,6 @@
 
 struct Muta weakable { hp int; }
-fn main() {
+fn main() int {
   ownMuta = Muta(7);
   print(str(ownMuta.hp));
   weakMuta = &&(&ownMuta);

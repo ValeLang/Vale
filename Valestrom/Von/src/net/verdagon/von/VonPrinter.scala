@@ -38,7 +38,7 @@ class VonPrinter(
       case VonStr(value) => {
         syntax match {
           case VonSyntax(_, _, _, _) => "\"" + StringEscapeUtils.escapeJava(value) + "\""
-          case JsonSyntax => "\"" + StringEscapeUtils.escapeJavaScript(value) + "\""
+          case JsonSyntax => "\"" + StringEscapeUtils.escapeJava(value) + "\""
         }
       }
       case VonReference(id) => vimpl()
@@ -78,7 +78,7 @@ class VonPrinter(
       case VonSyntax(_, _, true, _) => mappedType + "("
       case VonSyntax(_, _, false, _) => mappedType + (if (hasMembers) "(" else "")
       case JsonSyntax => {
-        "{\"__type\": " + "\"" + StringEscapeUtils.escapeJavaScript(mappedType) + "\"" + (if (hasMembers) memberSeparator else "")
+        "{\"__type\": " + "\"" + StringEscapeUtils.escapeJava(mappedType) + "\"" + (if (hasMembers) memberSeparator else "")
       }
     }
   }
@@ -149,7 +149,7 @@ class VonPrinter(
         Some(
           syntax match {
             case VonSyntax(_, _, _, _) => "\"" + StringEscapeUtils.escapeJava(value) + "\""
-            case JsonSyntax => "\"" + StringEscapeUtils.escapeJavaScript(value) + "\""
+            case JsonSyntax => "\"" + StringEscapeUtils.escapeJava(value) + "\""
           })
       }
       case VonReference(id) => vimpl()

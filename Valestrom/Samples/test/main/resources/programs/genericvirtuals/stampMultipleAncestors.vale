@@ -10,7 +10,7 @@ impl<T> J<T> for K<T>;
 struct L<T> imm rules(T Ref) { }
 impl<T> K<T> for L<T>;
 
-fn main() {
+fn main() int {
   x = L<int>();
   = 4;
 }

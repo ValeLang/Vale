@@ -172,7 +172,7 @@ object ParserVonifier {
   }
 
   def vonifyFunctionHeader(thing: FunctionHeaderP): VonObject = {
-    val FunctionHeaderP(range, name, attributes, maybeUserSpecifiedIdentifyingRunes, templateRules, params, ret) = thing
+    val FunctionHeaderP(range, name, attributes, maybeUserSpecifiedIdentifyingRunes, templateRules, params, FunctionReturnP(retRange, inferRet, retType)) = thing
     VonObject(
       "FunctionHeader",
       None,
@@ -183,7 +183,15 @@ object ParserVonifier {
         VonMember("maybeUserSpecifiedIdentifyingRunes", vonifyOptional(maybeUserSpecifiedIdentifyingRunes, vonifyIdentifyingRunes)),
         VonMember("templateRules", vonifyOptional(templateRules, vonifyTemplateRules)),
         VonMember("params", vonifyOptional(params, vonifyParams)),
-        VonMember("ret", vonifyOptional(ret, vonifyTemplex))))
+        VonMember(
+          "ret",
+          VonObject(
+            "FunctionReturn",
+            None,
+            Vector(
+              VonMember("range", vonifyRange(retRange)),
+              VonMember("inferRet", vonifyOptional(inferRet, vonifyUnit)),
+              VonMember("retType", vonifyOptional(retType, vonifyTemplex)))))))
   }
 
   def vonifyParams(thing: ParamsP): VonObject = {

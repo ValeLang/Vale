@@ -11,8 +11,8 @@ class VirtualTests extends FunSuite with Matchers {
 //    val compile = Compilation(
 //      """
 //        |interface I {}
-//        |fn doThing(i: virtual I) {4}
-//        |fn main() {3}
+//        |fn doThing(i: virtual I) int  {4}
+//        |fn main() int {3}
 //      """.stripMargin)
 //    compile.getTemputs()
 //
@@ -29,8 +29,8 @@ class VirtualTests extends FunSuite with Matchers {
 //        |interface I {}
 //        |struct S {}
 //        |S implements I;
-//        |fn doThing(i: virtual I) {4}
-//        |fn main() {3}
+//        |fn doThing(i: virtual I) int  {4}
+//        |fn main() int {3}
 //      """.stripMargin)
 //    compile.getTemputs()
 //
@@ -47,9 +47,9 @@ class VirtualTests extends FunSuite with Matchers {
 //        |interface I {}
 //        |struct S {}
 //        |S implements I;
-//        |fn doThing(i: virtual &I) {4}
-//        |fn doThing(s: &S for I) {4}
-//        |fn main() {3}
+//        |fn doThing(i: virtual &I) int  {4}
+//        |fn doThing(s: &S for I) int  {4}
+//        |fn main() int {3}
 //      """.stripMargin)
 //    compile.getTemputs()
 //
@@ -74,10 +74,10 @@ class VirtualTests extends FunSuite with Matchers {
 //        |S1 implements I;
 //        |struct S2 {}
 //        |S2 implements I;
-//        |fn doThing(i: virtual I) {4}
-//        |fn doThing(s: S1 for I) {5}
-//        |fn doThing(s: S2 for I) {6}
-//        |fn main() {3}
+//        |fn doThing(i: virtual I) int  {4}
+//        |fn doThing(s: S1 for I) int  {5}
+//        |fn doThing(s: S2 for I) int  {6}
+//        |fn main() int {3}
 //      """.stripMargin)
 //    compile.getTemputs()
 //
@@ -93,10 +93,10 @@ class VirtualTests extends FunSuite with Matchers {
 //        |I2 implements I1;
 //        |struct S {}
 //        |S implements I2;
-//        |fn doThing(i: virtual I1) {4}
-//        |fn doThing(override i: I2) {5}
-//        |fn doThing(override s: S) {6}
-//        |fn main() {3}
+//        |fn doThing(i: virtual I1) int  {4}
+//        |fn doThing(override i: I2) int  {5}
+//        |fn doThing(override s: S) int  {6}
+//        |fn main() int {3}
 //      """.stripMargin)
 //    vfail("what would this test become in the new world order")
 //    compile.getTemputs()
@@ -121,10 +121,10 @@ class VirtualTests extends FunSuite with Matchers {
 //        |I2 implements I1;
 //        |struct S {}
 //        |S implements I2;
-//        |fn doThing(i: virtual I1) {4}
-//        |fn doThing(i: virtual I2) {5}
-//        |fn doThing(override s: S) {6}
-//        |fn main() {3}
+//        |fn doThing(i: virtual I1) int  {4}
+//        |fn doThing(i: virtual I2) int  {5}
+//        |fn doThing(override s: S) int  {6}
+//        |fn main() int {3}
 //      """.stripMargin)
 //    vfail("what would this test become in the new world order")
 //    compile.getTemputs()
@@ -162,7 +162,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |   print(2);
 //        |}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  dance(SA<int>());
 //        |}
 //        |
@@ -210,7 +210,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |   print(3);
 //        |}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = SB<int>();
 //        |  dance(SA<int>());
 //        |}
@@ -250,7 +250,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |
 //        |fn doThing<T>(x: virtual T) {}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
@@ -323,7 +323,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |
 //        |fn doThing<T>(x: virtual I<T>) {}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
@@ -363,7 +363,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual J<T>) {}
 //        |fn doThing<T>(x: virtual MyStruct<T>) {}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
@@ -391,7 +391,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |fn doThing<T>(x: virtual J<T>) {}
 //        |fn doThing<T>(x: MyStruct<T> for I<T>) {}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = MyStruct<int>();
 //        |  doThing(x);
 //        |}
@@ -441,7 +441,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |MyStruct<T> implements MyInterface<T>;
 //        |fn doThing<T>(x: MyStruct<T> for MyInterface<T>) {}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = MyStruct<int>();
 //        |  y = MyStruct<Str>();
 //        |  doThing(x);
@@ -464,7 +464,7 @@ class VirtualTests extends FunSuite with Matchers {
 //        |MyStruct<T> implements MyInterface<T>;
 //        |fn doThing<T>(x: MyStruct<T> for MyInterface<T>) {}
 //        |
-//        |fn main() {
+//        |fn main() int {
 //        |  x = MyStruct<int>();
 //        |  y = MyStruct<Str>();
 //        |  doThing(x);

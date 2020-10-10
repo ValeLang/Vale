@@ -13,20 +13,21 @@ class SpannerTests extends FunSuite with Matchers {
   }
 
   test("Spanner simple function") {
-    val program1 = compile("fn main() { 3 }")
+    val program1 = compile("fn main() infer-ret { 3 }")
     val main = program1.lookupFunction("main")
     Spanner.forFunction(main) shouldEqual
-      Span(Fn,Range(0,15),List(
+      Span(Fn,Range(0,25),List(
         Span(FnName,Range(3,7),List()),
         Span(Params,Range(7,9),List()),
-        Span(Block,Range(10,15),List(
-          Span(Num,Range(12,13),List())))))
+        Span(Ret,Range(10,20),List(Span(Ret,Range(10,19),List()))),
+        Span(Block,Range(20,25),List(
+          Span(Num,Range(22,23),List())))))
   }
 
 
   test("Spanner map call") {
     val program1 = compile(
-      """fn main() {
+      """fn main() infer-ret {
         |  this.abilities*.getImpulse();
         |}
         |""".stripMargin)
@@ -37,6 +38,7 @@ class SpannerTests extends FunSuite with Matchers {
         List(
           Span(FnName,_,List()),
           Span(Params,_,List()),
+          Span(Ret,_,List(Span(Ret,_,List()))),
           Span(Block,_,
             List(
               Span(Call,_,

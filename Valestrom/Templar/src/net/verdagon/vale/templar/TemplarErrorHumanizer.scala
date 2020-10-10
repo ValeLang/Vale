@@ -5,7 +5,7 @@ import net.verdagon.vale.astronomer.{ConstructorNameA, FunctionA, FunctionNameA,
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
-import net.verdagon.vale.templar.types.ParamFilter
+import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Float2, Int2, Kind, Own, ParamFilter, Share, Str2, StructRef2, Weak}
 import net.verdagon.vale.vimpl
 
 object TemplarErrorHumanizer {
@@ -18,6 +18,10 @@ object TemplarErrorHumanizer {
       case CantMoveOutOfMemberT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
+      }
+      case CantMutateFinalMember(range, structRef2, memberName) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of struct " + printableKindName(structRef2)
       }
       case CantMutateUnstackifiedLocal(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -129,6 +133,35 @@ object TemplarErrorHumanizer {
       case ImmConcreteDestructorNameA() => vimpl()
       case ImmInterfaceDestructorNameA() => vimpl()
       case ImmDropNameA() => vimpl()
+    }
+  }
+
+  private def printableCoordName(coord: Coord): String = {
+    val Coord(ownership, kind) = coord
+    (ownership match {
+      case Share => ""
+      case Own => ""
+      case Borrow => "&"
+      case Weak => "&&"
+    }) +
+    printableKindName(kind)
+  }
+
+  private def printableKindName(kind: Kind): String = {
+    kind match {
+      case Int2() => "int"
+      case Bool2() => "bool"
+      case Float2() => "float"
+      case Str2() => "str"
+      case StructRef2(FullName2(_, CitizenName2(humanName, templateArgs))) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+    }
+  }
+
+  private def printableVarName(
+    name: IVarName2):
+  String = {
+    name match {
+      case CodeVarName2(n) => n
     }
   }
 

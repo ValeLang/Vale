@@ -50,7 +50,7 @@ object FunctionScout {
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
         paramsP,
-        maybeRetPT),
+        FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       maybeBody0
     ) = functionP
     val codeLocation = Scout.evalPos(file, range.begin)
@@ -87,12 +87,25 @@ object FunctionScout {
     val myStackFrame = StackFrame(file, name, functionEnv, None, noDeclarations)
 
     val (implicitRulesFromRet, maybeRetCoordRune) =
-      PatternScout.translateMaybeTypeIntoMaybeRune(
-        functionEnv,
-        rate,
-        Scout.evalRange(file, range),
-        maybeRetPT,
-        CoordTypePR)
+      (maybeInferRet, maybeRetType) match {
+        case (None, None) => {
+          // If nothing's present, assume void
+          val rangeS = Scout.evalRange(file, retRange)
+          val rune = rate.newImplicitRune()
+          val rule = EqualsSR(rangeS, TypedSR(rangeS, rune, CoordTypeSR), TemplexSR(NameST(rangeS, CodeTypeNameS("void"))))
+          (List(rule), Some(rune))
+        }
+        case (Some(_), None) => (List(), None) // Infer the return
+        case (None, Some(retTypePT)) => {
+          PatternScout.translateMaybeTypeIntoMaybeRune(
+            functionEnv,
+            rate,
+            Scout.evalRange(file, retRange),
+            Some(retTypePT),
+            CoordTypePR)
+        }
+        case (Some(_), Some(_)) => vfail("Can't have return type and infer-ret at the same time")
+      }
 
     val rulesS = userRulesS ++ implicitRulesFromPatterns ++ implicitRulesFromRet
 
@@ -202,7 +215,7 @@ object FunctionScout {
   (FunctionS, VariableUses) = {
     val FunctionP(range,
       FunctionHeaderP(_,
-        _, attrsP, userSpecifiedIdentifyingRuneNames, None, paramsP, maybeRetPT),
+        _, attrsP, userSpecifiedIdentifyingRuneNames, None, paramsP, FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       Some(body0)) = lambdaFunction0;
     val codeLocation = Scout.evalPos(parentStackFrame.file, range.begin)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
@@ -301,12 +314,18 @@ object FunctionScout {
     val totalParams = closureParamS :: explicitParams1 ++ magicParams;
 
     val (implicitRulesFromReturn, maybeRetCoordRune) =
-      PatternScout.translateMaybeTypeIntoMaybeRune(
-        parentStackFrame.parentEnv,
-        rate,
-        Scout.evalRange(myStackFrame.file, range),
-        maybeRetPT,
-        CoordTypePR)
+      (maybeInferRet, maybeRetType) match {
+        case (_, None) => (List(), None) // Infer the return
+        case (None, Some(retTypePT)) => {
+          PatternScout.translateMaybeTypeIntoMaybeRune(
+            functionEnv,
+            rate,
+            Scout.evalRange(myStackFrame.file, retRange),
+            Some(retTypePT),
+            CoordTypePR)
+        }
+        case (Some(_), Some(_)) => vfail("Can't have return type and infer-ret at the same time")
+      }
 
     val rulesS = rulesFromClosureParam ++ magicParamsRules ++ implicitRulesFromParams ++ implicitRulesFromReturn
 
@@ -484,7 +503,7 @@ object FunctionScout {
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
         paramsP,
-        maybeReturnType),
+        FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       None) = functionP;
     val codeLocation = Scout.evalPos(interfaceEnv.file, range.begin)
     val funcName = FunctionNameS(codeName, codeLocation)
@@ -506,12 +525,20 @@ object FunctionScout {
     val paramsS = patternsS.map(ParameterS)
 
     val (implicitRulesFromRet, maybeReturnRune) =
-      PatternScout.translateMaybeTypeIntoMaybeRune(
-        interfaceEnv,
-        rate,
-        Scout.evalRange(myStackFrame.file, range),
-        maybeReturnType,
-        CoordTypePR)
+      (maybeInferRet, maybeRetType) match {
+        case (_, None) => {
+          vfail("Can't infer the return type of an interface method!")
+        }
+        case (None, Some(retTypePT)) => {
+          PatternScout.translateMaybeTypeIntoMaybeRune(
+            interfaceEnv,
+            rate,
+            Scout.evalRange(myStackFrame.file, retRange),
+            Some(retTypePT),
+            CoordTypePR)
+        }
+        case (Some(_), Some(_)) => vfail("Can't have return type and infer-ret at the same time")
+      }
 
     val rulesS = userRulesS ++ implicitRulesFromParams ++ implicitRulesFromRet
 

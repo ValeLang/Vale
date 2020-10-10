@@ -18,12 +18,12 @@ Ref translateExternCall(
   if (name == "__addIntInt") {
     assert(call->argExprs.size() == 2);
     auto leftLE =
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0]));
     auto rightLE =
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1]));
@@ -32,12 +32,12 @@ Ref translateExternCall(
   } else if (name == "__divideIntInt") {
     assert(call->argExprs.size() == 2);
     auto leftLE =
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0]));
     auto rightLE =
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1]));
@@ -79,7 +79,7 @@ Ref translateExternCall(
     auto leftStrRef =
         translateExpression(
             globalState, functionState, blockState, builder, call->argExprs[0]);
-    auto resultLenLE = globalState->region->getStringLen(functionState, builder, leftStrRef);
+    auto resultLenLE = functionState->defaultRegion->getStringLen(functionState, builder, leftStrRef);
 
     functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
 
@@ -97,11 +97,11 @@ Ref translateExternCall(
     auto resultIntLE =
         LLVMBuildMul(
             builder,
-            globalState->region->checkValidReference(FL(),
+            functionState->defaultRegion->checkValidReference(FL(),
                 functionState, builder, call->function->params[0],
                 translateExpression(
                     globalState, functionState, blockState, builder, call->argExprs[0])),
-            globalState->region->checkValidReference(FL(),
+            functionState->defaultRegion->checkValidReference(FL(),
                 functionState, builder, call->function->params[1],
                 translateExpression(
                     globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -112,11 +112,11 @@ Ref translateExternCall(
     auto resultIntLE =
         LLVMBuildSub(
             builder,
-            globalState->region->checkValidReference(FL(),
+            functionState->defaultRegion->checkValidReference(FL(),
                 functionState, builder, call->function->params[0],
                 translateExpression(
                     globalState, functionState, blockState, builder, call->argExprs[0])),
-            globalState->region->checkValidReference(FL(),
+            functionState->defaultRegion->checkValidReference(FL(),
                 functionState, builder, call->function->params[1],
                 translateExpression(
                     globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -153,7 +153,7 @@ Ref translateExternCall(
     functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
 
     auto destStrRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, destStrWrapperPtrLE);
-    globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, destStrRef);
+    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->returnType, destStrRef);
 
     return destStrRef;
   } else if (name == "__getch") {
@@ -164,11 +164,11 @@ Ref translateExternCall(
     auto result = LLVMBuildICmp(
         builder,
         LLVMIntSLT,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -179,11 +179,11 @@ Ref translateExternCall(
     auto result = LLVMBuildICmp(
         builder,
         LLVMIntSGT,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -194,11 +194,11 @@ Ref translateExternCall(
     auto result = LLVMBuildICmp(
         builder,
         LLVMIntSGE,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -209,11 +209,11 @@ Ref translateExternCall(
     auto result = LLVMBuildICmp(
         builder,
         LLVMIntSLE,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -224,11 +224,11 @@ Ref translateExternCall(
     auto result = LLVMBuildICmp(
         builder,
         LLVMIntEQ,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -239,11 +239,11 @@ Ref translateExternCall(
     auto result = LLVMBuildICmp(
         builder,
         LLVMIntEQ,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -269,7 +269,7 @@ Ref translateExternCall(
     assert(call->argExprs.size() == 1);
     auto result = LLVMBuildNot(
         builder,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
@@ -278,7 +278,7 @@ Ref translateExternCall(
   } else if (name == "__castIntStr") {
     assert(call->argExprs.size() == 1);
     auto intLE =
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0]));
@@ -319,11 +319,11 @@ Ref translateExternCall(
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildAnd(
         builder,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -333,11 +333,11 @@ Ref translateExternCall(
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildOr(
         builder,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -347,11 +347,11 @@ Ref translateExternCall(
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildSRem(
         builder,
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[0],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, call->function->params[1],
             translateExpression(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
@@ -372,7 +372,7 @@ Ref translateExternCall(
     argsLE.reserve(call->argExprs.size());
     for (int i = 0; i < call->argExprs.size(); i++) {
       auto argRefMT = call->function->params[i];
-      auto argLE = globalState->region->checkValidReference(FL(), functionState, builder, argRefMT, args[i]);
+      auto argLE = functionState->defaultRegion->checkValidReference(FL(), functionState, builder, argRefMT, args[i]);
 
       if (call->argTypes[i] == globalState->metalCache.intRef) {
       } else if (call->argTypes[i] == globalState->metalCache.boolRef) {
@@ -387,7 +387,7 @@ Ref translateExternCall(
         if (argRefMT->ownership == Ownership::SHARE) {
           if (argRefMT->location == Location::INLINE) {
             assert(LLVMTypeOf(argLE) ==
-                globalState->region->getReferendStructsSource()->getInnerStruct(structReferend));
+                functionState->defaultRegion->getReferendStructsSource()->getInnerStruct(structReferend));
           } else {
             std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
             assert(false);
@@ -413,12 +413,12 @@ Ref translateExternCall(
 
     auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
     auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
-    globalState->region->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
+    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
 
     for (int i = 0; i < call->argExprs.size(); i++) {
       auto argRefMT = call->function->params[i];
       // Extern isnt expected to drop the ref, so we do
-      globalState->region->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
+      functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
     }
 
     if (call->function->returnType->referend == globalState->metalCache.never) {

@@ -549,6 +549,11 @@ class StructTemplarCore(
             ArgLookup2(index + 1, param.tyype)
           })
 
+        if (lambdaFunctionPrototype.returnType.referend != Never2() &&
+          forwarderHeader.returnType != lambdaFunctionPrototype.returnType) {
+          throw CompileErrorExceptionT(LambdaReturnDoesntMatchInterfaceConstructor(range))
+        }
+
         val forwarderFunction =
           Function2(
             forwarderHeader,

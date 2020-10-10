@@ -4,7 +4,7 @@ import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
 import net.verdagon.vale.metal.{Immutable => _, Mutable => _, Variability => _, Varying => _, _}
 import net.verdagon.vale.{vassert, vassertSome, metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{CoordTemplata, Export2}
+import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, FunctionHeader2}
 import net.verdagon.vale.templar.types._
 
 import scala.collection.immutable.ListMap
@@ -137,7 +137,12 @@ object StructHammer {
     }
   }
 
-  def makeBox(hinputs: Hinputs, hamuts: HamutsBox, conceptualVariability: Variability, type2: Coord, typeH: ReferenceH[ReferendH]):
+  def makeBox(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    conceptualVariability: Variability,
+    type2: Coord,
+    typeH: ReferenceH[ReferendH]):
   (StructRefH) = {
     val boxFullName2 = FullName2(List(), CitizenName2(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
     val boxFullNameH = NameHammer.translateFullName(hinputs, hamuts, boxFullName2)

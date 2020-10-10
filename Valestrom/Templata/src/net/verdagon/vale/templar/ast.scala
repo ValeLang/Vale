@@ -75,6 +75,11 @@ case class Function2(
   variables: List[ILocalVariable2],
   body: ReferenceExpression2) extends Queriable2 {
 
+  vassert(
+    body.resultRegister.referend == Never2() ||
+    header.returnType.referend == Never2() ||
+    body.resultRegister.reference == header.returnType)
+
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ header.all(func) ++ variables.flatMap(_.all(func)) ++ body.all(func)
   }

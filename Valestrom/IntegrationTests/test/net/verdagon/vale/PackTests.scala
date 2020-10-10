@@ -10,7 +10,7 @@ class PackTests extends FunSuite with Matchers {
   test("Extract seq") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() int {
         |  (x, y, z) = [5, 6, 7];
         |  = x;
         |}
@@ -26,7 +26,7 @@ class PackTests extends FunSuite with Matchers {
   test("Nested seqs") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() int {
         |  (x, (y, z)) = [[4, 5], [6, 7]];
         |  = y;
         |}
@@ -49,7 +49,7 @@ class PackTests extends FunSuite with Matchers {
   test("Nested tuples") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() int {
         |  (x, (y, z)) = [5, [6, false]];
         |  = x;
         |}

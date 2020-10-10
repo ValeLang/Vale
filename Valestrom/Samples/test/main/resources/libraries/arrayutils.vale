@@ -1,5 +1,5 @@
 
-fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) {
+fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) Array<M, E> {
   Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
 }
 

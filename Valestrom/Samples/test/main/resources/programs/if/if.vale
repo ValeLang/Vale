@@ -1,4 +1,4 @@
-fn main() {
+fn main() int {
   = if (true) {
       42
     } else {

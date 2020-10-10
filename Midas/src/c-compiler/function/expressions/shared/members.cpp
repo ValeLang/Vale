@@ -50,7 +50,7 @@ Ref swapMember(
   // a reference to it, the struct is losing its reference, so it cancels out.
 
   auto newMemberLE =
-      globalState->region->checkValidReference(FL(), functionState, builder, memberRefMT, newMemberRef);
+      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, memberRefMT, newMemberRef);
   functionState->defaultRegion->storeMember(
       functionState, builder, structRefMT, structRef, structKnownLive, memberIndex, memberName, newMemberLE);
   // We don't adjust the newMember's RC here because even though the struct is

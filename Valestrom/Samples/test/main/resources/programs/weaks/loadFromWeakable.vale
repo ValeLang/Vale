@@ -1,5 +1,5 @@
 
 struct Muta weakable { hp int; }
-fn main() {
+fn main() int {
   = Muta(7).hp;
 }

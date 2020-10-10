@@ -97,6 +97,12 @@ case class FunctionP(
   header: FunctionHeaderP,
   body: Option[BlockPE])
 
+case class FunctionReturnP(
+  range: Range,
+  inferRet: Option[UnitP],
+  retType: Option[ITemplexPT]
+)
+
 case class FunctionHeaderP(
   range: Range,
   name: Option[StringP],
@@ -107,7 +113,7 @@ case class FunctionHeaderP(
   templateRules: Option[TemplateRulesP],
 
   params: Option[ParamsP],
-  ret: Option[ITemplexPT]
+  ret: FunctionReturnP
 )
 
 

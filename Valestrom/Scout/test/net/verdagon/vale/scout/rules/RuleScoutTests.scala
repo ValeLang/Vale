@@ -35,7 +35,7 @@ class RuleScoutTests extends FunSuite with Matchers {
 
     val results =
       compile(
-        """fn main<A>(a A)
+        """fn main<A>(a A) infer-ret
           |rules(
           |  B Ref = List<A>,
           |  C Ref = B | A | int)
@@ -58,7 +58,7 @@ class RuleScoutTests extends FunSuite with Matchers {
   }
 
   test("B") {
-    val rulesS = compile("fn main() rules(B Ref = List<A>, A Ref, C Ref = B | A | Int) {}")
+    val rulesS = compile("fn main() infer-ret rules(B Ref = List<A>, A Ref, C Ref = B | A | Int) {}")
     RuleSUtils.getDistinctOrderedRunesForRulexes(rulesS) match {
       case List(
         CodeRuneS("B"),

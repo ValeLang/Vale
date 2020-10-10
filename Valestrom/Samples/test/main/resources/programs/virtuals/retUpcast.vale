@@ -7,7 +7,7 @@ fn doIt() Opt {
   ret Some(9);
 }
 
-fn main() {
+fn main() int {
   a = doIt();
   = 3;
 }

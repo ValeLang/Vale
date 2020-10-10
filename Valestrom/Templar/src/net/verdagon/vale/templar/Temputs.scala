@@ -52,7 +52,7 @@ case class Temputs() {
   private val arraySequenceTypes: mutable.HashMap[(Int, RawArrayT2), KnownSizeArrayT2] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
   private val unknownSizeArrayTypes: mutable.HashMap[RawArrayT2, UnknownSizeArrayT2] = mutable.HashMap()
-
+  
   def lookupFunction(signature2: Signature2): Option[Function2] = {
     functions.find(_.header.toSignature == signature2)
   }

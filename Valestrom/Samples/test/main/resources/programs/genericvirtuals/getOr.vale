@@ -13,7 +13,7 @@ fn getOr<T>(opt &Some<*T> impl Opt<*T>, default *T) *T {
   opt.value
 }
 
-fn main() {
+fn main() int {
   a Opt<int> = Some(9);
   = a.getOr<int>(12);
 }

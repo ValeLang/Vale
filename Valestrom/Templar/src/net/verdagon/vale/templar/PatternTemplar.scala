@@ -152,7 +152,7 @@ class PatternTemplar(
         // This will mark the variable as moved
         val localLookupExpr =
           localHelper.softLoad(
-            fate, range, LocalLookup2(range, export, inputExpr.resultRegister.reference), Own)
+            fate, range, LocalLookup2(range, export, inputExpr.resultRegister.reference, Final), Own)
 
         expectedCoord.referend match {
           case StructRef2(_) => {
@@ -358,7 +358,7 @@ class PatternTemplar(
               case (((innerPattern, memberType), index)) => {
                 val loadExpr =
                   SoftLoad2(
-                    ArraySequenceLookup2(range, inputArraySeqExpr, arraySeqT, IntLiteral2(index)),
+                    ArraySequenceLookup2(range, inputArraySeqExpr, arraySeqT, IntLiteral2(index), Final),
                     Share)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
@@ -389,13 +389,13 @@ class PatternTemplar(
     val Coord(structOwnership, structRef2 @ StructRef2(_)) = structType2
     val structDef2 = temputs.getStructDefForRef(structRef2)
     // We don't pattern match against closure structs.
-    val memberTypes = structDef2.members.map(_.tyype.expectReferenceMember().reference)
 
     val counter = fate.nextVarCounter()
 
     structOwnership match {
       case Own => {
-        val memberLocalVariables = makeLocals(fate, counter, memberTypes)
+        val memberLocalVariables =
+          makeLocals(fate, counter, structDef2.members.map(_.tyype.expectReferenceMember().reference))
 
         val destroy2 = Destroy2(inputStructExpr, structRef2, memberLocalVariables)
 
@@ -412,16 +412,17 @@ class PatternTemplar(
         fate.addVariable(packLocalVariable)
 
         val innerLets =
-          innerPatternMaybes.zip(memberTypes).zipWithIndex
+          innerPatternMaybes.zip(structDef2.members).zipWithIndex
             .flatMap({
-              case (((innerPattern, memberType), index)) => {
+              case (((innerPattern, member), index)) => {
                 val loadExpr =
                   SoftLoad2(
                     ReferenceMemberLookup2(
                       range,
-                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2), Share),
+                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), Share),
                       structDef2.fullName.addStep(structDef2.members(index).name),
-                      memberType),
+                      member.tyype.expectReferenceMember().reference,
+                      member.variability),
                     Share)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }

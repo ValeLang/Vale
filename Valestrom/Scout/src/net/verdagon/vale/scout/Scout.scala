@@ -13,7 +13,9 @@ case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
 
 sealed trait ICompileErrorS
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
-case class CantImplCoord(range: RangeS) extends ICompileErrorS
+case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
+case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
+case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
 
 sealed trait IEnvironment {
   def file: Int
@@ -140,6 +142,20 @@ object Scout {
         Scout.evalRange(file, range),
         Some(struct),
         KindTypePR)
+
+    interface match {
+      case OwnershippedPT(range, _, _) => {
+        throw CompileErrorExceptionS(CantOwnershipInterfaceInImpl(Scout.evalRange(file, range)))
+      }
+      case _ =>
+    }
+
+    struct match {
+      case OwnershippedPT(range, _, _) => {
+        throw CompileErrorExceptionS(CantOwnershipStructInImpl(Scout.evalRange(file, range)))
+      }
+      case _ =>
+    }
 
     val (implicitRulesFromInterfaceDirection, interfaceRune) =
       PatternScout.translateMaybeTypeIntoRune(

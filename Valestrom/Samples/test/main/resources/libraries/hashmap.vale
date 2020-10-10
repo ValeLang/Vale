@@ -1,14 +1,14 @@
 
 struct HashMapNode<K, V> {
   key K;
-  value V;
+  value! V;
 }
 
 struct HashMap<K, V, H, E> {
   hasher H;
   equator E;
-  table Array<mut, Opt<HashMapNode<K, V>>>;
-  size int;
+  table! Array<mut, Opt<HashMapNode<K, V>>>;
+  size! int;
 }
 
 fn HashMap<K, V, H, E>(hasher H, equator E) HashMap<K, V, H, E> {

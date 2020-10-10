@@ -20,7 +20,7 @@ Ref translateNewArrayFromValues(
       translateExpressions(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
   for (auto elementLE : elementsLE) {
-    globalState->region->checkValidReference(FL(), functionState, builder,
+    functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
         newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
   }
 
@@ -48,7 +48,7 @@ Ref translateNewArrayFromValues(
                 newArrayFromValues->arrayRefType,
                 newArrayFromValues->arrayReferend,
                 elementsLE);
-        globalState->region->checkValidReference(FL(), functionState, builder,
+        functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
             newArrayFromValues->arrayRefType, resultLE);
         return resultLE;
       }

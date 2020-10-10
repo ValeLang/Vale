@@ -6,7 +6,7 @@ struct Inner {
   x! int;
 }
 
-fn main() {
+fn main() int {
   o = Outer(Inner(73));
   mut o.inner.x = 42;
   = o.inner.x;

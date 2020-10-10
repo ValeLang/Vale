@@ -7,6 +7,6 @@ struct UnitSnapshot imm {
   intelligence int;
 }
 
-fn main() {
+fn main() int {
   = UnitSnapshot(4, 5, 6, 7, 42, 9).agility;
 }

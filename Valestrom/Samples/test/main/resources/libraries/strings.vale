@@ -98,7 +98,7 @@ fn slice(s StrSlice, begin int) StrSlice {
   = StrSlice(s.string, newBegin, s.end);
 }
 
-fn len(s StrSlice) {
+fn len(s StrSlice) int {
   ret s.end - s.begin;
 }
 

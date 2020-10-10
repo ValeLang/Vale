@@ -23,6 +23,10 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of struct " + printableKindName(structRef2)
       }
+      case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Argument function return type doesn't match interface method param"
+      }
       case CantMutateUnstackifiedLocal(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Can't mutate local that was already moved (" + name + ")"

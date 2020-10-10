@@ -5,12 +5,14 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.metal._
 import net.verdagon.vale.templar.Block2
+import net.verdagon.vale.templar.templata.FunctionHeader2
 import net.verdagon.vale.{vassert, vfail}
 
 object BlockHammer {
   def translateBlock(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     parentLocals: LocalsBox,
     block2: Block2):
   (BlockH) = {
@@ -18,7 +20,7 @@ object BlockHammer {
 
     val unfilteredExprsH =
       ExpressionHammer.translateExpressionsAndDeferreds(
-        hinputs, hamuts, blockLocals, block2.exprs);
+        hinputs, hamuts, currentFunctionHeader, blockLocals, block2.exprs);
 
     val indexOfFirstNever = unfilteredExprsH.indexWhere(_.resultType.kind == NeverH())
     // If there's an expression returning a Never, then remove all the expressions after that.

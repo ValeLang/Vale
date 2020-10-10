@@ -32,7 +32,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Lookup +") {
-    val program1 = compile("fn main() { +(3, 4) }")
+    val program1 = compile("fn main() int { +(3, 4) }")
     val main = program1.lookupFunction("main")
     
     val CodeBody1(BodySE(_, block)) = main.body
@@ -55,7 +55,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Lambda") {
-    val program1 = compile("fn main() { {_ + _}(4, 6) }")
+    val program1 = compile("fn main() int { {_ + _}(4, 6) }")
 
     val CodeBody1(BodySE(_, BlockSE(_, List(expr)))) = program1.lookupFunction("main").body
     val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _, _,_, _, _, _)), _) = expr
@@ -143,7 +143,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Method call") {
-    val program1 = compile("fn main() { x = 4; = x.shout(); }")
+    val program1 = compile("fn main() int { x = 4; = x.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBody1(BodySE(_, block)) = main.body
@@ -157,7 +157,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Moving method call") {
-    val program1 = compile("fn main() { x = 4; = x^.shout(); }")
+    val program1 = compile("fn main() int { x = 4; = x^.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBody1(BodySE(_, block)) = main.body
@@ -171,7 +171,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val program1 =
       compile(
-        """fn main() {
+        """fn main() int {
           |  {_};
           |  (a){a};
           |}
@@ -279,7 +279,7 @@ class ScoutTests extends FunSuite with Matchers {
 
   test("Reports when mutating nonexistant local") {
     val err = compileForError(
-      """fn main() {
+      """fn main() int {
         |  mut a = a + 1;
         |}
         |""".stripMargin)
@@ -288,14 +288,39 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
-  // Intentional failure 2020.09.23
-  test("Reports when impling a non-kind") {
+  test("Reports when overriding non-kind in param") {
     val err = compileForError(
       """
+        |struct Moo {}
+        |interface IMoo {}
         |fn func(moo &Moo impl &IMoo) int { 73 }
         |""".stripMargin)
     err match {
-      case CouldntFindVarToMutateS(_, "a") =>
+      case CantOverrideOwnershipped(_) =>
+    }
+  }
+
+  test("Reports when non-kind interface in impl") {
+    val err = compileForError(
+      """
+        |struct Moo {}
+        |interface IMoo {}
+        |impl &IMoo for Moo;
+        |""".stripMargin)
+    err match {
+      case CantOwnershipInterfaceInImpl(_) =>
+    }
+  }
+
+  test("Reports when non-kind struct in impl") {
+    val err = compileForError(
+      """
+        |struct Moo {}
+        |interface IMoo {}
+        |impl IMoo for &Moo;
+        |""".stripMargin)
+    err match {
+      case CantOwnershipStructInImpl(_) =>
     }
   }
 }

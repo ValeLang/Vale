@@ -177,7 +177,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   def statement: Parser[IExpressionPE] = {
     // bracedBlock is at the end because we want to be able to parse "{print(_)}(4);" as an expression.
     // debt: "block" is here temporarily because we get ambiguities in this case:
-    //   fn main() { {_ + _}(4 + 5) }
+    //   fn main() int { {_ + _}(4 + 5) }
     // because it mistakenly successfully parses {_ + _} then dies on the next part.
     (mutate <~ optWhite <~ ";") |
     (let <~ optWhite <~ ";") |
@@ -477,7 +477,14 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   private[parser] def lambda: Parser[LambdaPE] = {
     pos ~ existsMW("[]") ~ opt(patternPrototypeParams) ~ pos ~ bracedBlock ~ pos ^^ {
       case begin ~ maybeCaptures ~ maybeParams ~ headerEnd ~ block ~ end => {
-        LambdaPE(maybeCaptures, FunctionP(Range(begin, end), FunctionHeaderP(Range(begin, headerEnd), None, List(), None, None, maybeParams, None), Some(block)))
+        LambdaPE(
+          maybeCaptures,
+          FunctionP(
+            Range(begin, end),
+            FunctionHeaderP(
+              Range(begin, headerEnd),
+              None, List(), None, None, maybeParams, FunctionReturnP(Range(headerEnd, headerEnd), None, None)),
+            Some(block)))
       }
     }
   }
@@ -497,7 +504,15 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   def caase: Parser[LambdaPE] = {
     pos ~ patternPrototypeParam ~ (pos <~ optWhite) ~ bracedBlock ~ pos ^^ {
       case begin ~ param ~ paramsEnd ~ body ~ end => {
-        LambdaPE(None, FunctionP(Range(begin, end), FunctionHeaderP(Range(begin, paramsEnd), None, List(), None, None, Some(ParamsP(Range(begin, paramsEnd), List(param))), None), Some(body)))
+        LambdaPE(
+          None,
+          FunctionP(
+            Range(begin, end),
+            FunctionHeaderP(
+              Range(begin, paramsEnd),
+              None, List(), None, None,
+              Some(ParamsP(Range(begin, paramsEnd), List(param))),
+              FunctionReturnP(Range(end, end), None, None)), Some(body)))
       }
     }
   }

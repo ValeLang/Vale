@@ -3,6 +3,6 @@ struct Carrier {
   interceptors int;
 }
 
-fn main() {
+fn main() int {
   = Carrier(400, 8).interceptors;
 }

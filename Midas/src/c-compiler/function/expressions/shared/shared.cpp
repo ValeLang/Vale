@@ -51,7 +51,7 @@ void makeHammerLocal(
     Local* local,
     Ref refToStore) {
   auto toStoreLE =
-      globalState->region->checkValidReference(FL(), functionState, builder, local->type, refToStore);
+      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, local->type, refToStore);
   auto localAddr =
       makeMidasLocal(
           functionState,
@@ -201,7 +201,7 @@ Ref buildInterfaceCall(
   auto virtualParamMT = prototype->params[virtualParamIndex];
   auto virtualArgRef = argRefs[virtualParamIndex];
   auto virtualArgLE =
-      globalState->region->checkValidReference(FL(), functionState, builder, virtualParamMT, virtualArgRef);
+      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, virtualParamMT, virtualArgRef);
 
   LLVMValueRef itablePtrLE = nullptr;
   LLVMValueRef newVirtualArgLE = nullptr;
@@ -214,7 +214,7 @@ Ref buildInterfaceCall(
   std::vector<LLVMValueRef> argsLE;
   for (int i = 0; i < argRefs.size(); i++) {
     argsLE.push_back(
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, prototype->params[i], argRefs[i]));
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
@@ -285,13 +285,13 @@ Ref buildCall(
   std::vector<LLVMValueRef> argsLE;
   for (int i = 0; i < argRefs.size(); i++) {
     argsLE.push_back(
-        globalState->region->checkValidReference(FL(),
+        functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, prototype->params[i], argRefs[i]));
   }
 
   auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
   auto resultRef = wrap(functionState->defaultRegion, prototype->returnType, resultLE);
-  globalState->region->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
+  functionState->defaultRegion->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
 
   if (prototype->returnType->referend == globalState->metalCache.never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);

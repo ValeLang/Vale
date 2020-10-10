@@ -12,8 +12,8 @@ class VirtualTests extends FunSuite with Matchers {
       val compile = Compilation(
         """
           |interface I {}
-          |fn doThing(virtual i I) {4}
-          |fn main(i I) {
+          |fn doThing(virtual i I) int {4}
+          |fn main(i I) int {
           |  doThing(i)
           |}
         """.stripMargin)
@@ -43,8 +43,8 @@ class VirtualTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |interface I {}
-        |fn doThing(virtual i I) {4}
-        |fn main(i I) {
+        |fn doThing(virtual i I) int {4}
+        |fn main(i I) int {
         |  doThing(i)
         |}
       """.stripMargin)
@@ -77,7 +77,7 @@ class VirtualTests extends FunSuite with Matchers {
         |interface I {
         |  fn doThing(virtual i I) int;
         |}
-        |fn main(i I) {
+        |fn main(i I) int {
         |  doThing(i)
         |}
       """.stripMargin)

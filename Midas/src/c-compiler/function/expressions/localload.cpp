@@ -33,12 +33,12 @@ Ref translateLocalLoad(
   buildFlare(FL(), globalState, functionState, builder);
 
   auto sourceRef = wrap(functionState->defaultRegion, localType, sourceLE);
-  globalState->region->checkValidReference(FL(), functionState, builder, localType, sourceRef);
+  functionState->defaultRegion->checkValidReference(FL(), functionState, builder, localType, sourceRef);
 
   buildFlare(FL(), globalState, functionState, builder);
 
   auto resultRefLE =
-      globalState->region->upgradeLoadResultToRefWithTargetOwnership(
+      functionState->defaultRegion->upgradeLoadResultToRefWithTargetOwnership(
           functionState, builder, localType, resultType, sourceRef);
   buildFlare(FL(), globalState, functionState, builder);
 

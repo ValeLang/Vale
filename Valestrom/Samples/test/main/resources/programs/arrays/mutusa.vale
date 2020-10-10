@@ -4,7 +4,7 @@ struct MyIntIdentity {}
 impl IFunction1<mut, int, int> for MyIntIdentity;
 fn __call(this &MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
 
-fn main() {
+fn main() int {
   a = Array<mut>(5, &MyIntIdentity());
   = a[3];
 }

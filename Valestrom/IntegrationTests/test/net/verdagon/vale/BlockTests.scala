@@ -12,7 +12,7 @@ class BlockTests extends FunSuite with Matchers {
   test("Empty block") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() int {
         |  block {
         |  }
         |  = 3;
@@ -27,7 +27,7 @@ class BlockTests extends FunSuite with Matchers {
   test("Simple block with a variable") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() int {
         |  block {
         |    y = 6;
         |  }
@@ -47,7 +47,7 @@ class BlockTests extends FunSuite with Matchers {
   test("Simple block with a variable, another variable outside with same name") {
     val compile = Compilation(
       """
-        |fn main() {
+        |fn main() int {
         |  block {
         |    y = 6;
         |  }

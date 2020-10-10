@@ -23,7 +23,7 @@ int64_t vstr_indexOf(
   char* needle = needleContainerChars + needleBegin;
   int64_t needleLen = needleEnd - needleBegin;
 
-  for (int64_t i = 0; i < haystackLen - needleLen; i++) {
+  for (int64_t i = 0; i <= haystackLen - needleLen; i++) {
     if (strncmp(needle, haystack + i, needleLen) == 0) {
       return i;
     }

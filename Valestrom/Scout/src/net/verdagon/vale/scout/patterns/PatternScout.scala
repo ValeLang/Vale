@@ -81,13 +81,18 @@ object PatternScout {
   (List[IRulexSR], AtomSP) = {
     val PatternPP(range,_,maybeCaptureP, maybeTypeP, maybeDestructureP, maybeVirtualityP) = patternPP
 
-    val declaredRunes = stackFrame.parentEnv.allUserDeclaredRunes()
-
     val (newRulesFromVirtuality, maybeVirtualityS) =
       maybeVirtualityP match {
         case None => (List(), None)
         case Some(AbstractP) => (List(), Some(AbstractSP))
         case Some(OverrideP(range, typeP)) => {
+          typeP match {
+            case OwnershippedPT(range, _, _) => {
+              throw CompileErrorExceptionS(CantOverrideOwnershipped(Scout.evalRange(stackFrame.file, range)))
+            }
+            case _ =>
+          }
+
           val (newRulesFromVirtuality, rune) =
             translateMaybeTypeIntoRune(
               stackFrame.parentEnv,

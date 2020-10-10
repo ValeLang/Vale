@@ -1,6 +1,6 @@
 
 fn extMakeTuple(i int) [int, int] extern;
 
-fn main() {
+fn main() int {
   extMakeTuple(14).1
 }

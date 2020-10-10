@@ -1,5 +1,5 @@
 
-fn main() {
+fn main() int {
   __panic();
   = 73;
 }

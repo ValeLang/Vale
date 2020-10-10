@@ -1,11 +1,12 @@
 struct List<E> rules(E Ref) {
-  array Array<mut, Opt<E>>;
-  size int;
+  array! Array<mut, Opt<E>>;
+  size! int;
 }
-fn List<E>() rules(E Ref) {
+fn List<E>() List<E>
+rules(E Ref) {
   List<E>(Array<mut, Opt<E>>(0, &IFunction1<mut, int, Opt<E>>((index){ __panic()})), 0)
 }
-fn len<E>(list &List<E>) { list.size }
+fn len<E>(list &List<E>) int { list.size }
 fn add<E>(list &List<E>, newElement E) {
   if (list.size == list.len()) {
     newLen = if (len(list) == 0) { 1 } else { len(list) * 2 };

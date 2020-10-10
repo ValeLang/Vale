@@ -19,7 +19,7 @@ Ref translateDestructure(
   auto structRef =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
-  globalState->region->checkValidReference(FL(),
+  functionState->defaultRegion->checkValidReference(FL(),
       functionState, builder, destructureM->structType, structRef);
 //  buildFlare(FL(), globalState, functionState, builder, "structLE is ", structLE);
 

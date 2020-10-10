@@ -93,7 +93,7 @@ trait ParserUtils extends RegexParsers {
   }
 
   private[parser] def string: Parser[StringP] = {
-    pos ~ ("\"" ~> "[^\"]*".r <~ "\"") ~ pos ^^ {
+    pos ~ ("\"" ~> "(?:[^\"\\\\]|\\\\.)*".r <~ "\"") ~ pos ^^ {
       case begin ~ s ~ end => {
         StringP(
           Range(begin, end),

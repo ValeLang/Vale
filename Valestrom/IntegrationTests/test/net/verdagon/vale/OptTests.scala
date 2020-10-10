@@ -15,7 +15,7 @@ class OptTests extends FunSuite with Matchers {
         Samples.get("libraries/castutils.vale") +
       Samples.get("libraries/opt.vale") +
         """
-          |fn main() {
+          |fn main() int {
           |  opt Opt<int> = Some(9);
           |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
@@ -34,7 +34,7 @@ class OptTests extends FunSuite with Matchers {
         Samples.get("libraries/castutils.vale"),
       Samples.get("libraries/opt.vale"),
         """
-          |fn main() {
+          |fn main() int {
           |  opt Opt<int> = None<int>();
           |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }

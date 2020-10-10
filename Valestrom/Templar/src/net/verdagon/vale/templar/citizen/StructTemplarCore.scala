@@ -542,7 +542,8 @@ class StructTemplarCore(
                   if (structDef.mutability == Immutable) Share else Borrow,
                   structDef.getRef)),
               structDef.fullName.addStep(structDef.members(methodIndex).name),
-              structDef.members(methodIndex).tyype.reference),
+              structDef.members(methodIndex).tyype.reference,
+              Final),
             if (structDef.members(methodIndex).tyype.reference.ownership == Share) Share else Borrow) ::
           forwarderHeader.params.tail.zipWithIndex.map({ case (param, index) =>
             ArgLookup2(index + 1, param.tyype)

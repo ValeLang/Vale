@@ -6,7 +6,7 @@ rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
   Array<M>(n, &IFunction1<mut, int, T>(generator))
 }
 
-fn main() {
+fn main() int {
   a = Arr<imm>(5, {_});
   = len(a);
 }

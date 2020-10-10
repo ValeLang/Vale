@@ -9,7 +9,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   test("Function then struct") {
     val program = compileProgram(
       """
-        |fn main(){}
+        |fn main() int {}
         |
         |struct mork { }
         |""".stripMargin)
@@ -18,10 +18,10 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   }
 
   test("Simple function") {
-    compile(CombinatorParsers.topLevelFunction, "fn sum(){3}") match {
+    compile(CombinatorParsers.topLevelFunction, "fn sum() int {3}") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(), None, None, Some(ParamsP(_,List())), None),
+          Some(StringP(_, "sum")), List(), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, Some(_))),
         Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
     }
   }
@@ -30,7 +30,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() pure {3}") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(PureAttributeP(_)), None, None, Some(ParamsP(_,List())), None),
+          Some(StringP(_, "sum")), List(PureAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
         Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
     }
   }
@@ -39,7 +39,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() extern;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(ExternAttributeP(_)), None, None, Some(ParamsP(_,List())), None),
+          Some(StringP(_, "sum")), List(ExternAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
         None) =>
     }
   }
@@ -48,7 +48,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() abstract;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,List())), None),
+          Some(StringP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
         None) =>
     }
   }
@@ -65,7 +65,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
           None,
           None,
           Some(ParamsP(_,List())),
-          Some(NameOrRunePT(StringP(_,"int")))),
+          FunctionReturnP(_, None, Some(NameOrRunePT(StringP(_,"int"))))),
         Some(BlockPE(_,List(VoidPE(_))))) =>
     }
   }
@@ -74,7 +74,12 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() Int abstract;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,List())), Some(NameOrRunePT(StringP(_,"Int")))),
+          Some(StringP(_, "sum")),
+          List(AbstractAttributeP(_)),
+          None,
+          None,
+          Some(ParamsP(_,List())),
+          FunctionReturnP(_, None, Some(NameOrRunePT(StringP(_,"Int"))))),
         None) =>
     }
   }
@@ -83,7 +88,12 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
     compile(CombinatorParsers.topLevelFunction, "fn sum() abstract Int;") match {
       case FunctionP(_,
         FunctionHeaderP(_,
-          Some(StringP(_, "sum")), List(AbstractAttributeP(_)), None, None, Some(ParamsP(_,List())), Some(NameOrRunePT(StringP(_,"Int")))),
+          Some(StringP(_, "sum")),
+          List(AbstractAttributeP(_)),
+          None,
+          None,
+          Some(ParamsP(_,List())),
+          FunctionReturnP(_, None, Some(NameOrRunePT(StringP(_,"Int"))))),
         None) =>
     }
   }
@@ -160,7 +170,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
         FunctionHeaderP(_,
           Some(StringP(_, "doCivicDance")), List(), None, None,
           Some(ParamsP(_, List(PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "this")), FinalP)), Some(NameOrRunePT(StringP(_, "Car"))), None, Some(AbstractP))))),
-          Some(NameOrRunePT(StringP(_, "int")))),
+          FunctionReturnP(_, None, Some(NameOrRunePT(StringP(_, "int"))))),
         None) =>
     }
   }

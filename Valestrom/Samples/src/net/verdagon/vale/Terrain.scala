@@ -12,7 +12,7 @@ object Terrain {
       |}
       |
       |struct LocationHasher { }
-      |fn __call(this: &LocationHasher, loc: Location) {
+      |fn __call(this: &LocationHasher, loc: Location) int {
       |  hash = 0;
       |  mut hash = 41 * hash + loc.groupX;
       |  mut hash = 41 * hash + loc.groupY;
@@ -21,7 +21,7 @@ object Terrain {
       |}
       |
       |struct LocationEquator { }
-      |fn __call(this: &LocationEquator, a: Location, b: Location) {
+      |fn __call(this: &LocationEquator, a: Location, b: Location) bool {
       |  (a.groupX == b.groupX) and (a.groupY == b.groupY) and (a.indexInGroup == b.indexInGroup)
       |}
       |
@@ -167,7 +167,7 @@ object Terrain {
         |//    }
         |//
         |
-        |fn main() {
+        |fn main() int {
         |  pattern = makePentagonPattern9();
         |  //adjacent1Locations = getAdjacentLocations(pattern, Location(0, 0, 0), true);
         |  //println("Adjacent 1s: " + str(adjacent1Locations.len()));

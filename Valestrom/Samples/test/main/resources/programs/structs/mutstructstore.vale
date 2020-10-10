@@ -3,7 +3,7 @@ struct Carrier {
   interceptors int;
 }
 
-fn main() {
+fn main() int {
   c = Carrier(400, 8);
   mut c.interceptors = 42;
   = c.interceptors;

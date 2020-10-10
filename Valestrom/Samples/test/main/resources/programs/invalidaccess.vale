@@ -1,7 +1,7 @@
 
 struct Marine { hp int; }
 
-fn main() {
+fn main() int {
   m = Marine(7);
   b = &m;
   drop(m);

@@ -61,16 +61,19 @@ object CombinatorParsers
       ("fn" ~> optWhite ~> (comparisonOperators | exprIdentifier) <~ optWhite) ~
       opt(identifyingRunesPR <~ optWhite) ~
       (patternPrototypeParams <~ optWhite) ~
+      pos ~
+      existsMW("infer-ret") ~
       // We have template rules before and after the return type because the return type likes
       // to parse the `rules` in `rules(stuff here)` as a type and then fail when it hits the
       // parentheses.
       opt(templateRulesPR <~ optWhite) ~
       (repsep(functionAttribute, white) <~ optWhite) ~
       opt(templex <~ optWhite) ~
+      pos ~
       opt(templateRulesPR <~ optWhite) ~
       (repsep(functionAttribute, white) <~ optWhite) ~
     pos ^^ {
-      case begin ~ name ~ identifyingRunes ~ patternParams ~ maybeTemplateRulesBeforeReturn ~ attributesBeforeReturn ~ maybeReturnType ~ maybeTemplateRulesAfterReturn ~ attributesBeforeBody ~ end => {
+      case begin ~ name ~ identifyingRunes ~ patternParams ~ retBegin ~ maybeInferRet ~ maybeTemplateRulesBeforeReturn ~ attributesBeforeReturn ~ maybeRetType ~ retEnd ~ maybeTemplateRulesAfterReturn ~ attributesBeforeBody ~ end => {
         vassert(!(maybeTemplateRulesBeforeReturn.nonEmpty && maybeTemplateRulesAfterReturn.nonEmpty))
         FunctionHeaderP(
           Range(begin, end),
@@ -79,7 +82,7 @@ object CombinatorParsers
           identifyingRunes,
           (maybeTemplateRulesBeforeReturn.toList ++ maybeTemplateRulesAfterReturn.toList).headOption,
           Some(patternParams),
-          maybeReturnType)
+          FunctionReturnP(Range(retBegin, retEnd), maybeInferRet, maybeRetType))
       }
     }
   }

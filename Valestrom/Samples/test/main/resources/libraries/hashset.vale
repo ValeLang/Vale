@@ -2,8 +2,8 @@
 struct HashSet<K, H, E> {
   hasher H;
   equator E;
-  table Array<mut, Opt<K>>;
-  size int;
+  table! Array<mut, Opt<K>>;
+  size! int;
 }
 
 fn HashSet<K, H, E>(hasher H, equator E) HashSet<K, H, E> {

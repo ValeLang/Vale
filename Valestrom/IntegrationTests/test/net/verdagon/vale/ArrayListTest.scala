@@ -12,9 +12,9 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct List<E> rules(E Ref) {
-        |  array Array<mut, E>;
+        |  array! Array<mut, E>;
         |}
-        |fn len<E>(list &List<E>) { len(list.array) }
+        |fn len<E>(list &List<E>) int { len(list.array) }
         |fn add<E>(list &List<E>, newElement E) {
         |  newArray =
         |      Array<mut, E>(len(list) + 1, &IFunction1<mut, int, int>((index){
@@ -33,7 +33,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |  = a[index];
         |}
         |
-        |fn main() {
+        |fn main() int {
         |  l =
         |      List<int>(
         |           Array<mut, int>(
@@ -60,7 +60,7 @@ class ArrayListTest extends FunSuite with Matchers {
       Samples.get("libraries/list.vale") +
       """
         |
-        |fn main() {
+        |fn main() int {
         |  l =
         |      List<int>(
         |          Array<mut, Opt<int>>(
@@ -89,7 +89,7 @@ class ArrayListTest extends FunSuite with Matchers {
         Samples.get("libraries/list.vale") +
         """
           |
-          |fn main() {
+          |fn main() int {
           |  l = List<int>();
           |  add(&l, 5);
           |  add(&l, 9);
@@ -107,7 +107,7 @@ class ArrayListTest extends FunSuite with Matchers {
         Samples.get("libraries/list.vale") +
         """
           |
-          |fn main() {
+          |fn main() int {
           |  l = List<int>();
           |  add(&l, 5);
           |  add(&l, 9);
@@ -128,7 +128,7 @@ class ArrayListTest extends FunSuite with Matchers {
         Samples.get("libraries/list.vale") +
         """
           |
-          |fn main() {
+          |fn main() int {
           |  l = List<int>();
           |  add(&l, 5);
           |  add(&l, 9);
@@ -151,7 +151,7 @@ class ArrayListTest extends FunSuite with Matchers {
         """
           |struct Marine { hp int; }
           |
-          |fn main() {
+          |fn main() int {
           |  l =
           |      List<Marine>(
           |          Array<mut, Opt<Marine>>(
@@ -176,7 +176,7 @@ class ArrayListTest extends FunSuite with Matchers {
         """
           |struct Marine { hp int; }
           |
-          |fn main() {
+          |fn main() int {
           |  m = Marine(6);
           |  lam = {
           |    mut m = Marine(9);
@@ -200,7 +200,7 @@ class ArrayListTest extends FunSuite with Matchers {
       """
         |struct Marine { hp int; }
         |
-        |fn main() {
+        |fn main() int {
         |  m Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (mut m = None<Marine>())^.get();

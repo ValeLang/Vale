@@ -1,31 +1,31 @@
 
 struct ScreenColor imm { i int; }
-fn Black() { ScreenColor(0) }
-fn DarkGray() { ScreenColor(1) }
-fn Turquoise() { ScreenColor(2) }
-fn Red() { ScreenColor(3) }
-fn LightGray() { ScreenColor(4) }
-fn Orange() { ScreenColor(5) }
-fn Yellow() { ScreenColor(6) }
-fn OrangeYellow() { ScreenColor(7) }
-fn Green() { ScreenColor(8) }
-fn White() { ScreenColor(9) }
-fn Gray() { ScreenColor(10) }
+fn Black() ScreenColor { ScreenColor(0) }
+fn DarkGray() ScreenColor { ScreenColor(1) }
+fn Turquoise() ScreenColor { ScreenColor(2) }
+fn Red() ScreenColor { ScreenColor(3) }
+fn LightGray() ScreenColor { ScreenColor(4) }
+fn Orange() ScreenColor { ScreenColor(5) }
+fn Yellow() ScreenColor { ScreenColor(6) }
+fn OrangeYellow() ScreenColor { ScreenColor(7) }
+fn Green() ScreenColor { ScreenColor(8) }
+fn White() ScreenColor { ScreenColor(9) }
+fn Gray() ScreenColor { ScreenColor(10) }
 
-fn ==(a ScreenColor, b ScreenColor) { a.i == b.i }
+fn ==(a ScreenColor, b ScreenColor) bool { a.i == b.i }
 
 struct ScreenCell {
-    fg_color ScreenColor;
-    bg_color ScreenColor;
-    character str;
-    dirty bool;
+    fg_color! ScreenColor;
+    bg_color! ScreenColor;
+    character! str;
+    dirty! bool;
 }
 
 struct Screen {
     width int;
     height int;
     cells List<List<ScreenCell>>;
-    status_line str;
+    status_line! str;
 }
 
 struct StrBox {

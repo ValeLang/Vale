@@ -28,7 +28,7 @@ case class BadLetEndError(pos: Int) extends IParseError
 
 // TODO: Get rid of all the below when we've migrated away from combinators.
 
-case class CombinatorParseError(pos: Int, msg: String)
+case class CombinatorParseError(pos: Int, msg: String) extends IParseError
 case class BadWhileCondition(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadWhileBody(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadIfCondition(pos: Int, cause: CombinatorParseError) extends IParseError
@@ -43,7 +43,7 @@ case class BadBlockError(pos: Int, cause: CombinatorParseError) extends IParseEr
 case class BadResultError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadReturnError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadDestructError(pos: Int, cause: CombinatorParseError) extends IParseError
-case class BadStandaloneError(pos: Int, cause: CombinatorParseError) extends IParseError
+case class BadStandaloneExpressionError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadMutDestinationError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadMutSourceError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadLetDestinationError(pos: Int, cause: CombinatorParseError) extends IParseError

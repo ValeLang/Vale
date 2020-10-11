@@ -144,8 +144,8 @@ class LocalHelper(
           case Own => {
             val localVar =
               a match {
-                case LocalLookup2(_, lv, _) => lv
-                case AddressMemberLookup2(_, _, name, _) => {
+                case LocalLookup2(_, lv, _, _) => lv
+                case AddressMemberLookup2(_, _, name, _, _) => {
                   throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
                 }
               }

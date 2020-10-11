@@ -18,6 +18,9 @@ case class AndPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionP
 case class OrPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionPE
 
 case class IfPE(range: Range, condition: BlockPE, thenBody: BlockPE, elseBody: BlockPE) extends IExpressionPE
+// condition and body are both blocks because otherwise, if we declare a variable inside them, then
+// we could be declaring a variable twice. a block ensures that its scope is cleaned up, which helps
+// know we can run it again.
 case class WhilePE(range: Range, condition: BlockPE, body: BlockPE) extends IExpressionPE
 case class DestructPE(range: Range, inner: IExpressionPE) extends IExpressionPE
 case class MatchPE(range: Range, condition: IExpressionPE, lambdas: List[LambdaPE]) extends IExpressionPE

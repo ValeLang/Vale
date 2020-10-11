@@ -8,7 +8,10 @@ import net.verdagon.vale.templar.templata.{Export2, Extern2, FunctionHeader2, IF
 
 object FunctionHammer {
 
-  def translateFunctions(hinputs: Hinputs, hamuts: HamutsBox, functions2: List[Function2]):
+  def translateFunctions(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    functions2: List[Function2]):
   (List[FunctionRefH]) = {
     functions2.foldLeft((List[FunctionRefH]()))({
       case ((previousFunctionsH), function2) => {
@@ -18,7 +21,10 @@ object FunctionHammer {
     })
   }
 
-  def translateFunction(hinputs: Hinputs, hamuts: HamutsBox, function2: Function2):
+  def translateFunction(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    function2: Function2):
   (FunctionRefH) = {
 //    opts.debugOut("Translating function " + function2.header.fullName)
     hamuts.functionRefs.get(function2.header.toPrototype) match {
@@ -40,7 +46,7 @@ object FunctionHammer {
               Set[VariableIdH](),
               Map[VariableIdH,Local]()));
         val (bodyH, List()) =
-          ExpressionHammer.translate(hinputs, hamuts, locals, body)
+          ExpressionHammer.translate(hinputs, hamuts, header, locals, body)
         vassert(locals.unstackifiedVars.size == locals.locals.size)
         val resultCoord = bodyH.resultType
         if (resultCoord.kind != NeverH() && resultCoord != prototypeH.returnType) {
@@ -104,6 +110,7 @@ object FunctionHammer {
   def translateFunctionRef(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       prototype2: Prototype2):
   (FunctionRefH) = {
     val (prototypeH) = translatePrototype(hinputs, hamuts, prototype2);

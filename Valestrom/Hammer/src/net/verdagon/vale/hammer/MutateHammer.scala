@@ -1,11 +1,12 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hammer.ExpressionHammer.{ translate, translateDeferreds}
+import net.verdagon.vale.hammer.ExpressionHammer.{translate, translateDeferreds}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.{BorrowH => _, Variability => _, _}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, ReferenceLocalVariable2}
+import net.verdagon.vale.templar.templata.FunctionHeader2
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vassert
 
@@ -14,53 +15,55 @@ object MutateHammer {
   def translateMutate(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       mutate2: Mutate2):
   (ExpressionH[ReferendH]) = {
     val Mutate2(destinationExpr2, sourceExpr2) = mutate2
 
     val (sourceExprResultLine, sourceDeferreds) =
-      translate(hinputs, hamuts, locals, sourceExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.resultRegister.reference)
 
     val (oldValueAccess, destinationDeferreds) =
       destinationExpr2 match {
-        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2) => {
-          translateMundaneLocalMutate(hinputs, hamuts, locals, sourceExprResultLine, varId)
+        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2, _) => {
+          translateMundaneLocalMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, varId)
         }
-        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, reference), varType2) => {
-          translateAddressibleLocalMutate(hinputs, hamuts, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
+        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, reference), varType2, _) => {
+          translateAddressibleLocalMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
         }
-        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2) => {
-          translateMundaneMemberMutate(hinputs, hamuts, locals, sourceExprResultLine, structExpr2, memberName)
+        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
+          translateMundaneMemberMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, structExpr2, memberName)
         }
-        case AddressMemberLookup2(_,structExpr2, memberName, memberType2) => {
-          translateAddressibleMemberMutate(hinputs, hamuts, locals, sourceExprResultLine, structExpr2, memberName)
+        case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
+          translateAddressibleMemberMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, structExpr2, memberName)
         }
-        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
-          translateMundaneKnownSizeArrayMutate(hinputs, hamuts, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
+        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+          translateMundaneKnownSizeArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
-        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
-          translateMundaneUnknownSizeArrayMutate(hinputs, hamuts, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
+        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+          translateMundaneUnknownSizeArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
       }
 
-    translateDeferreds(hinputs, hamuts, locals, oldValueAccess, sourceDeferreds ++ destinationDeferreds)
+    translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, oldValueAccess, sourceDeferreds ++ destinationDeferreds)
   }
 
   private def translateMundaneUnknownSizeArrayMutate(
                                                       hinputs: Hinputs,
                                                       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
                                                       locals: LocalsBox,
                                                       sourceExprResultLine: ExpressionH[ReferendH],
                                                       arrayExpr2: ReferenceExpression2,
                                                       indexExpr2: ReferenceExpression2
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
-      translate(hinputs, hamuts, locals, arrayExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
-      translate(hinputs, hamuts, locals, indexExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     // We're storing into a regular reference element of an array.
     val storeNode =
         UnknownSizeArrayStoreH(
@@ -74,15 +77,16 @@ object MutateHammer {
   private def translateMundaneKnownSizeArrayMutate(
                                                     hinputs: Hinputs,
                                                     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
                                                     locals: LocalsBox,
                                                     sourceExprResultLine: ExpressionH[ReferendH],
                                                     arrayExpr2: ReferenceExpression2,
                                                     indexExpr2: ReferenceExpression2
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
-      translate(hinputs, hamuts, locals, arrayExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
-      translate(hinputs, hamuts, locals, indexExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     // We're storing into a regular reference element of an array.
     val storeNode =
         KnownSizeArrayStoreH(
@@ -96,13 +100,14 @@ object MutateHammer {
   private def translateAddressibleMemberMutate(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     sourceExprResultLine: ExpressionH[ReferendH],
     structExpr2: ReferenceExpression2,
     memberName: FullName2[IVarName2]
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
-      translate(hinputs, hamuts, locals, structExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
       structExpr2.resultRegister.reference.referend match {
@@ -151,13 +156,14 @@ object MutateHammer {
   private def translateMundaneMemberMutate(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     sourceExprResultLine: ExpressionH[ReferendH],
     structExpr2: ReferenceExpression2,
     memberName: FullName2[IVarName2]
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
-      translate(hinputs, hamuts, locals, structExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
       structExpr2.resultRegister.reference.referend match {
@@ -185,6 +191,7 @@ object MutateHammer {
   private def translateAddressibleLocalMutate(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     sourceExprResultLine: ExpressionH[ReferendH],
     sourceResultPointerTypeH: ReferenceH[ReferendH],
@@ -219,6 +226,7 @@ object MutateHammer {
   private def translateMundaneLocalMutate(
                                            hinputs: Hinputs,
                                            hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
                                            locals: LocalsBox,
                                            sourceExprResultLine: ExpressionH[ReferendH],
                                            varId: FullName2[IVarName2]

@@ -6,6 +6,7 @@ import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, metal => m}
 import net.verdagon.vale.metal.{Variability => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, ReferenceLocalVariable2}
+import net.verdagon.vale.templar.templata.FunctionHeader2
 import net.verdagon.vale.templar.types._
 
 object LetHammer {
@@ -13,13 +14,14 @@ object LetHammer {
   def translateLet(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+      currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       let2: LetNormal2):
   ExpressionH[ReferendH] = {
     val LetNormal2(localVariable, sourceExpr2) = let2
 
     val (sourceExprResultLine, deferreds) =
-      translate(hinputs, hamuts, locals, sourceExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.resultRegister.reference)
 
@@ -27,28 +29,29 @@ object LetHammer {
       localVariable match {
         case ReferenceLocalVariable2(varId, variability, type2) => {
           translateMundaneLet(
-            hinputs, hamuts, locals, sourceExprResultLine, sourceResultPointerTypeH, varId)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId)
         }
         case AddressibleLocalVariable2(varId, variability, reference) => {
           translateAddressibleLet(
-            hinputs, hamuts, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
         }
       }
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, locals, stackifyNode, deferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, stackifyNode, deferreds)
   }
 
   def translateLetAndLend(
-      hinputs: Hinputs,
-      hamuts: HamutsBox,
-      locals: LocalsBox,
-      let2: LetAndLend2):
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
+    locals: LocalsBox,
+    let2: LetAndLend2):
   (ExpressionH[ReferendH]) = {
     val LetAndLend2(localVariable, sourceExpr2) = let2
 
     val (sourceExprResultLine, deferreds) =
-      translate(hinputs, hamuts, locals, sourceExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
     val (sourceResultPointerTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, sourceExpr2.resultRegister.reference)
 
@@ -56,21 +59,22 @@ object LetHammer {
       localVariable match {
         case ReferenceLocalVariable2(varId, variability, type2) => {
           translateMundaneLetAndLend(
-            hinputs, hamuts, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId)
         }
         case AddressibleLocalVariable2(varId, variability, reference) => {
           translateAddressibleLetAndLend(
-            hinputs, hamuts, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId, variability, reference)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId, variability, reference)
         }
       }
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, locals, borrowAccess, deferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, borrowAccess, deferreds)
   }
 
   private def translateAddressibleLet(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     sourceExprResultLine: ExpressionH[ReferendH],
     sourceResultPointerTypeH: ReferenceH[ReferendH],
@@ -97,6 +101,7 @@ object LetHammer {
   private def translateAddressibleLetAndLend(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+      currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     sourceExpr2: ReferenceExpression2,
     sourceExprResultLine: ExpressionH[ReferendH],
@@ -108,11 +113,12 @@ object LetHammer {
   (ExpressionH[ReferendH]) = {
     val stackifyH =
       translateAddressibleLet(
-        hinputs, hamuts, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
+        hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
     val (borrowAccess, List()) =
       LoadHammer.translateAddressibleLocalLoad(
         hinputs,
         hamuts,
+        currentFunctionHeader,
         locals,
         varId,
         variability,
@@ -124,6 +130,7 @@ object LetHammer {
   private def translateMundaneLet(
                                    hinputs: Hinputs,
                                    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
                                    locals: LocalsBox,
                                    sourceExprResultLine: ExpressionH[ReferendH],
                                    sourceResultPointerTypeH: ReferenceH[ReferendH],
@@ -142,6 +149,7 @@ object LetHammer {
     private def translateMundaneLetAndLend(
                                             hinputs: Hinputs,
                                             hamuts: HamutsBox,
+      currentFunctionHeader: FunctionHeader2,
                                             locals: LocalsBox,
                                             sourceExpr2: ReferenceExpression2,
                                             sourceExprResultLine: ExpressionH[ReferendH],
@@ -154,6 +162,7 @@ object LetHammer {
         translateMundaneLet(
           hinputs,
           hamuts,
+          currentFunctionHeader,
           locals,
           sourceExprResultLine,
           sourceResultPointerTypeH,
@@ -163,6 +172,7 @@ object LetHammer {
       LoadHammer.translateMundaneLocalLoad(
         hinputs,
         hamuts,
+        currentFunctionHeader,
         locals,
         varId,
         sourceExpr2.resultRegister.reference,
@@ -174,6 +184,7 @@ object LetHammer {
   def translateUnlet(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       unlet2: Unlet2):
   (ExpressionH[ReferendH]) = {
@@ -219,13 +230,14 @@ object LetHammer {
   def translateDestructureArraySequence(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+      currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     des2: DestroyArraySequenceIntoLocals2
   ): ExpressionH[ReferendH] = {
     val DestroyArraySequenceIntoLocals2(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
-      translate(hinputs, hamuts, locals, sourceExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
     vassert(destinationReferenceLocalVariables.size == arrSeqT.size)
 
@@ -257,19 +269,20 @@ object LetHammer {
           localIndices.toVector)
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, locals, stackNode, sourceExprDeferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, stackNode, sourceExprDeferreds)
   }
 
   def translateDestroy(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       des2: Destroy2):
   ExpressionH[ReferendH] = {
     val Destroy2(sourceExpr2, structRef2, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
-      translate(hinputs, hamuts, locals, sourceExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
 
     val structDef2 = hinputs.lookupStruct(structRef2)
 
@@ -348,6 +361,6 @@ object LetHammer {
     val destructureAndUnboxings = ConsecutorH(destructureH :: unboxingsH)
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, locals, destructureAndUnboxings, sourceExprDeferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, destructureAndUnboxings, sourceExprDeferreds)
   }
 }

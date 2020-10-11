@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
 import net.verdagon.vale.hammer.{Hammer, VonHammer}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseFailure, ParseSuccess, Parser}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer, Temputs}
 import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, vassert, vfail, vwat}
@@ -50,9 +50,11 @@ class Compilation(
       case None => {
         parsedsCache =
           Some(
-            filenamesAndSources.map({ case (filename, source) =>
+            filenamesAndSources.zipWithIndex.map({ case ((filename, source), fileIndex) =>
               Parser.runParserForProgramAndCommentRanges(source) match {
-                case ParseFailure(err) => vwat(err.toString)
+                case ParseFailure(err) => {
+                  vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, err))
+                }
                 case ParseSuccess((program0, _)) => {
                   program0
                 }

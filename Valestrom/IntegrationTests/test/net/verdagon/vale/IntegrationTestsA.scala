@@ -395,7 +395,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
 
-
   test("Test shaking") {
     // Make sure that functions that cant be called by main will not be included.
 

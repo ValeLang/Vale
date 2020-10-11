@@ -892,6 +892,22 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Lambda is compatible anonymous interface") {
+    val compile = new Compilation(
+        """
+          |interface AFunction1<P> rules(P Ref) {
+          |  fn __call(virtual this &AFunction1<P>, a P) int;
+          |}
+          |fn main() {
+          |  arr = &AFunction1<int>((_){ true });
+          |}
+          |""".stripMargin)
+
+    compile.getTemplarError() match {
+      case LambdaReturnDoesntMatchInterfaceConstructor(_) =>
+    }
+  }
+
   test("Humanize errors") {
     val fireflyKind = StructRef2(FullName2(List(), CitizenName2("Firefly", List())))
     val fireflyCoord = Coord(Own, fireflyKind)
@@ -958,6 +974,10 @@ class TemplarTests extends FunSuite with Matchers {
         RangeS.testZero,
         serenityKind,
         FullName2(List(), CodeVarName2("bork"))))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      LambdaReturnDoesntMatchInterfaceConstructor(
+        RangeS.testZero))
       .length > 0
   }
 }

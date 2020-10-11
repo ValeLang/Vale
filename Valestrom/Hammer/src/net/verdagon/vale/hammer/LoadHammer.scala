@@ -7,6 +7,7 @@ import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.{types => t}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, ReferenceLocalVariable2}
+import net.verdagon.vale.templar.templata.FunctionHeader2
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail}
 
@@ -15,6 +16,7 @@ object LoadHammer {
   def translateLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       load2: SoftLoad2):
   (ExpressionH[ReferendH], List[Expression2]) = {
@@ -22,25 +24,25 @@ object LoadHammer {
 
     val (loadedAccessH, sourceDeferreds) =
       sourceExpr2 match {
-        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2) => {
+        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2, _) => {
           vassert(reference == varType2)
-          translateMundaneLocalLoad(hinputs, hamuts, locals, varId, reference, targetOwnership)
+          translateMundaneLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, reference, targetOwnership)
         }
-        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, localReference2), varType2) => {
+        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, localReference2), varType2, _) => {
           vassert(localReference2 == varType2)
-          translateAddressibleLocalLoad(hinputs, hamuts, locals, varId, variability, localReference2, targetOwnership)
+          translateAddressibleLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, variability, localReference2, targetOwnership)
         }
-        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2) => {
-          translateMundaneMemberLoad(hinputs, hamuts, locals, structExpr2, memberType2, memberName, targetOwnership)
+        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
+          translateMundaneMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberType2, memberName, targetOwnership)
         }
-        case AddressMemberLookup2(_,structExpr2, memberName, memberType2) => {
-          translateAddressibleMemberLoad(hinputs, hamuts, locals, structExpr2, memberName, memberType2, targetOwnership)
+        case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
+          translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, targetOwnership)
         }
-        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
-          translateMundaneUnknownSizeArrayLoad(hinputs, hamuts, locals, arrayExpr2, indexExpr2, targetOwnership)
+        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+          translateMundaneUnknownSizeArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership)
         }
-        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2) => {
-          translateMundaneKnownSizeArrayLoad(hinputs, hamuts, locals, arrayExpr2, indexExpr2, targetOwnership)
+        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+          translateMundaneKnownSizeArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership)
         }
       }
 
@@ -52,6 +54,7 @@ object LoadHammer {
   private def translateMundaneUnknownSizeArrayLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       arrayExpr2: ReferenceExpression2,
       indexExpr2: ReferenceExpression2,
@@ -60,11 +63,11 @@ object LoadHammer {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val (arrayResultLine, arrayDeferreds) =
-      translate(hinputs, hamuts, locals, arrayExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val arrayAccess = arrayResultLine.expectUnknownSizeArrayAccess()
 
     val (indexExprResultLine, indexDeferreds) =
-      translate(hinputs, hamuts, locals, indexExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val indexAccess = indexExprResultLine.expectIntAccess()
 
     vassert(targetOwnership == BorrowH || targetOwnership == ShareH)
@@ -82,6 +85,7 @@ object LoadHammer {
   private def translateMundaneKnownSizeArrayLoad(
     hinputs: Hinputs,
     hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     arrayExpr2: ReferenceExpression2,
     indexExpr2: ReferenceExpression2,
@@ -90,11 +94,11 @@ object LoadHammer {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val (arrayResultLine, arrayDeferreds) =
-      translate(hinputs, hamuts, locals, arrayExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val arrayAccess = arrayResultLine.expectKnownSizeArrayAccess()
 
     val (indexExprResultLine, indexDeferreds) =
-      translate(hinputs, hamuts, locals, indexExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val indexAccess = indexExprResultLine.expectIntAccess()
 
     vassert(targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
@@ -112,6 +116,7 @@ object LoadHammer {
   private def translateAddressibleMemberLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       structExpr2: ReferenceExpression2,
       memberName: FullName2[IVarName2],
@@ -121,7 +126,7 @@ object LoadHammer {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val (structResultLine, structDeferreds) =
-      translate(hinputs, hamuts, locals, structExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
       structExpr2.resultRegister.reference.referend match {
@@ -173,6 +178,7 @@ object LoadHammer {
   private def translateMundaneMemberLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       structExpr2: ReferenceExpression2,
       expectedMemberType2: Coord,
@@ -182,7 +188,7 @@ object LoadHammer {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
 
     val (structResultLine, structDeferreds) =
-      translate(hinputs, hamuts, locals, structExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val (expectedMemberTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, expectedMemberType2);
@@ -211,6 +217,7 @@ object LoadHammer {
   def translateAddressibleLocalLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       varId: FullName2[IVarName2],
       variability: Variability,
@@ -250,6 +257,7 @@ object LoadHammer {
   def translateMundaneLocalLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       varId: FullName2[IVarName2],
       expectedType2: Coord,
@@ -281,10 +289,11 @@ object LoadHammer {
   def translateLocalAddress(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       lookup2: LocalLookup2):
   (ExpressionH[ReferendH]) = {
-    val LocalLookup2(_,localVar, type2) = lookup2;
+    val LocalLookup2(_,localVar, type2, _) = lookup2;
     vassert(type2 == localVar.reference)
 
     val local = locals.get(localVar.id).get
@@ -305,13 +314,14 @@ object LoadHammer {
   def translateMemberAddress(
       hinputs: Hinputs,
       hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       lookup2: AddressMemberLookup2):
   (ExpressionH[ReferendH], List[Expression2]) = {
-    val AddressMemberLookup2(_,structExpr2, memberName, resultType2) = lookup2;
+    val AddressMemberLookup2(_,structExpr2, memberName, resultType2, _) = lookup2;
 
     val (structResultLine, structDeferreds) =
-      translate(hinputs, hamuts, locals, structExpr2);
+      translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
       structExpr2.resultRegister.reference.referend match {

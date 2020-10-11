@@ -5,13 +5,13 @@ import net.verdagon.vale.{vassert, vfail}
 trait TestParseUtils {
   def compileProgramWithComments(code: String): FileP = {
     Parser.runParserForProgramAndCommentRanges(code) match {
-      case ParseFailure(err) => vfail(err.toString)
+      case ParseFailure(err) => vfail(ParseErrorHumanizer.humanize(List(("0", code)), 0, err))
       case ParseSuccess(result) => result._1
     }
   }
   def compileProgram(code: String): FileP = {
     Parser.runParser(code) match {
-      case ParseFailure(err) => vfail(err.toString)
+      case ParseFailure(err) => vfail(ParseErrorHumanizer.humanize(List(("0", code)), 0, err))
       case ParseSuccess(result) => result
     }
   }

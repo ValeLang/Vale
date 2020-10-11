@@ -1,7 +1,9 @@
 package net.verdagon.vale.vivem
 
+import java.lang.ArithmeticException
+
 import net.verdagon.vale.metal.{InlineH, ShareH, YonderH}
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vfail}
 
 object VivemExterns {
   def panic(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -70,7 +72,11 @@ object VivemExterns {
     val bReferend = memory.dereference(args(1))
     (aReferend, bReferend) match {
       case (IntV(aValue), IntV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue % bValue))
+        try {
+          memory.addAllocationForReturn(ShareH, InlineH, IntV(aValue % bValue))
+        } catch {
+          case _ : ArithmeticException => vfail()
+        }
       }
     }
   }

@@ -190,8 +190,10 @@ class ValeCompiler:
             del args[ind]
             parseds_output_dir = val
 
-        vale_files = []
-        c_files = []
+        # builtin files which should be included in all vale programs
+        vale_files = glob.glob(f"vstl/*utils.vale") + ["vstl/strings.vale", "vstl/opt.vale"]
+        c_files = ["vstl/strings.c"]
+        
         for arg in args:
             if arg.endswith(".vale"):
                 vale_files.append(arg)
@@ -205,6 +207,7 @@ class ValeCompiler:
             if os.path.exists(build_dir):
                 shutil.rmtree(build_dir)
             os.makedirs(build_dir)
+
 
         vir_file = build_dir + "/build.vir"
         valestrom_options.append("-o")

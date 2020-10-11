@@ -164,15 +164,17 @@ object Parser {
       vwat()
     }
     iter.consumeWhitespace()
-    val condBegin = iter.getPos()
     if (!iter.tryConsume("^\\(".r)) {
       return ParseFailure(BadStartOfWhileCondition(iter.position))
     }
+    val condBegin = iter.getPos()
+    iter.consumeWhitespace()
     val condition =
-      iter.consumeWithCombinator(CombinatorParsers.expression) match {
-        case Ok(result) => result
-        case Err(cpe) => return ParseFailure(BadWhileCondition(iter.getPos(), cpe))
+      parseBlockContents(iter) match {
+        case ParseSuccess(result) => BlockPE(Range(condBegin, iter.getPos()), result)
+        case ParseFailure(cpe) => return ParseFailure(cpe)
       }
+    iter.consumeWhitespace()
     val condEnd = iter.getPos()
     if (!iter.tryConsume("^\\)".r)) {
       return ParseFailure(BadEndOfWhileCondition(iter.position))
@@ -184,9 +186,9 @@ object Parser {
     }
     iter.consumeWhitespace()
     val body =
-      iter.consumeWithCombinator(CombinatorParsers.blockExprs) match {
-        case Ok(result) => result
-        case Err(cpe) => return ParseFailure(BadWhileBody(iter.getPos(), cpe))
+      parseBlockContents(iter) match {
+        case ParseSuccess(result) => result
+        case ParseFailure(cpe) => return ParseFailure(cpe)
       }
     val bodyEnd = iter.getPos()
     iter.consumeWhitespace()
@@ -230,9 +232,9 @@ object Parser {
         val elseBegin = iter.getPos()
         iter.consumeWhitespace()
         val elseBody =
-          iter.consumeWithCombinator(CombinatorParsers.blockExprs) match {
-            case Ok(result) => result
-            case Err(cpe) => return ParseFailure(BadElseBody(iter.getPos(), cpe))
+          parseBlockContents(iter) match {
+            case ParseSuccess(result) => result
+            case ParseFailure(cpe) => return ParseFailure(cpe)
           }
         iter.consumeWhitespace()
         val elseEnd = iter.getPos()
@@ -354,9 +356,9 @@ object Parser {
     }
     iter.consumeWhitespace()
     val body =
-      iter.consumeWithCombinator(CombinatorParsers.blockExprs) match {
-        case Ok(result) => result
-        case Err(cpe) => return ParseFailure(BadIfBody(iter.getPos(), cpe))
+      parseBlockContents(iter) match {
+        case ParseSuccess(result) => result
+        case ParseFailure(cpe) => return ParseFailure(cpe)
       }
     val bodyEnd = iter.getPos()
     iter.consumeWhitespace()
@@ -370,30 +372,19 @@ object Parser {
         BlockPE(Range(bodyBegin, bodyEnd), body)))
   }
 
-
-  private def parseFunction(iter: ParsingIterator): IParseResult[FunctionP] = {
-    val funcBegin = iter.getPos()
-    val header =
-      iter.consumeWithCombinator(CombinatorParsers.topLevelFunctionBegin) match {
-        case Err(err) => return ParseFailure(BadFunctionHeaderError(iter.getPos(), err))
-        case Ok(result) => result
-      }
-    iter.consumeWhitespace()
-    if (iter.tryConsume("^;".r)) {
-      return ParseSuccess(FunctionP(Range(funcBegin, iter.getPos()), header, None))
-    }
-    val bodyBegin = iter.getPos()
-    if (!iter.tryConsume("^('\\w+\\s*)?\\{".r)) {
-      return ParseFailure(BadFunctionBodyError(iter.position))
-    }
-    iter.consumeWhitespace()
-
+  private def parseBlockContents(iter: ParsingIterator): IParseResult[List[IExpressionPE]] = {
     val statements = new mutable.MutableList[IExpressionPE]
 
-    while (!iter.peek("^\\}".r)) {
-      if (iter.peek("^\\)".r) || iter.peek("^\\]".r)) {
+    // Just ignore this if we see it (as a hack for the syntax highlighter).
+    iter.tryConsume("^\\s*\\.\\.\\.".r)
+    iter.tryConsume("^\\s*;".r)
+
+    while (!iter.peek("^\\s*\\}".r) && !iter.peek("^\\s*\\)".r)) {
+      if (iter.peek("^\\s*\\)".r) || iter.peek("^\\s*\\]".r)) {
         return ParseFailure(BadStartOfStatementError(iter.position))
       }
+
+      iter.consumeWhitespace()
 
       if (iter.peek("^while\\s".r)) {
         parseWhile(iter) match {
@@ -416,7 +407,15 @@ object Parser {
           }
         }
       } else if (iter.peek("^if\\s".r)) {
-        parseIfLadder(iter)
+        parseIfLadder(iter) match {
+          case ParseFailure(err) => return ParseFailure(err)
+          case ParseSuccess(result) => {
+            statements += result
+            if (iter.peek("^\\s*\\}".r)) {
+              statements += VoidPE(Range(iter.getPos(), iter.getPos()))
+            }
+          }
+        }
       } else if (iter.peek("^block\\s".r)) {
         iter.consumeWithCombinator(CombinatorParsers.blockStatement) match {
           case Err(err) => return ParseFailure(BadBlockError(iter.getPos(), err))
@@ -432,7 +431,7 @@ object Parser {
           case Err(err) => return ParseFailure(BadResultError(iter.getPos(), err))
           case Ok(result) => {
             statements += result._1
-            if (!iter.peek("^\\s*\\}"r)) {
+            if (!iter.peek("^\\s*[})]"r)) {
               return ParseFailure(StatementAfterResult(iter.position))
             }
           }
@@ -459,10 +458,16 @@ object Parser {
         parseMut(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(expression) => {
+            val werePreviousStatements = statements.nonEmpty
             statements += expression
-            endExpression(iter) match {
-              case ParseFailure(err) => return ParseFailure(err)
-              case ParseSuccess(maybeExtra) => statements ++= maybeExtra
+
+            endExpression(iter, werePreviousStatements) match {
+              case Some(Ok(toAdd)) => {
+                statements ++= toAdd
+                return ParseSuccess(statements.toList)
+              }
+              case Some(Err(e)) => return ParseFailure(e)
+              case None => // continue
             }
           }
         }
@@ -477,12 +482,20 @@ object Parser {
         }
       } else {
         iter.consumeWithCombinator(CombinatorParsers.expression) match {
-          case Err(err) => return ParseFailure(BadStandaloneError(iter.getPos(), err))
+          case Err(err) => return ParseFailure(BadStandaloneExpressionError(iter.getPos(), err))
           case Ok(expression) => {
+            val werePreviousStatements = statements.nonEmpty
             statements += expression
-            endExpression(iter) match {
-              case ParseFailure(err) => return ParseFailure(err)
-              case ParseSuccess(maybeExtra) => statements ++= maybeExtra
+
+            iter.consumeWhitespace()
+
+            endExpression(iter, werePreviousStatements) match {
+              case Some(Ok(toAdd)) => {
+                statements ++= toAdd
+                return ParseSuccess(statements.toList)
+              }
+              case Some(Err(e)) => return ParseFailure(e)
+              case None => // continue
             }
           }
         }
@@ -490,7 +503,73 @@ object Parser {
 
       iter.consumeWhitespace()
     }
-    vassert(iter.peek("^\\}".r))
+
+    if (statements.isEmpty) {
+      statements += VoidPE(Range(iter.getPos(), iter.getPos()))
+    }
+
+    ParseSuccess(statements.toList)
+  }
+
+  // If returns Some(Err), then thats what the caller should return
+  // If returns Some(Ok(list)), then caller should add that to the end and return
+  // If returns None, then continue
+  private def endExpression(
+    iter: ParsingIterator,
+    werePreviousExprs: Boolean
+  ): Option[Result[List[IExpressionPE], BadExpressionEnd]] = {
+    if (iter.peek("^\\s*;\\s*[)}]".r)) {
+      iter.consumeWhitespace()
+      if (!iter.tryConsume("^;".r)) {
+        vwat()
+      }
+      iter.consumeWhitespace()
+      return Some(Ok(List(VoidPE(Range(iter.getPos(), iter.getPos())))))
+    }
+
+    if (iter.peek("^\\s*[)}]".r)) {
+      iter.consumeWhitespace()
+      if (werePreviousExprs) {
+        return Some(Err(BadExpressionEnd(iter.getPos())))
+      } else {
+        return Some(Ok(List()))
+      }
+    }
+
+    if (!iter.tryConsume("^\\s*;".r)) {
+      return Some(Err(BadExpressionEnd(iter.getPos())))
+    }
+
+    None
+  }
+
+  private def parseFunction(iter: ParsingIterator): IParseResult[FunctionP] = {
+    val funcBegin = iter.getPos()
+    val header =
+      iter.consumeWithCombinator(CombinatorParsers.topLevelFunctionBegin) match {
+        case Err(err) => return ParseFailure(BadFunctionHeaderError(iter.getPos(), err))
+        case Ok(result) => result
+      }
+    iter.consumeWhitespace()
+    if (iter.tryConsume("^;".r)) {
+      return ParseSuccess(FunctionP(Range(funcBegin, iter.getPos()), header, None))
+    }
+    val bodyBegin = iter.getPos()
+    if (!iter.tryConsume("^('\\w+\\s*)?\\{".r)) {
+      return ParseFailure(BadFunctionBodyError(iter.position))
+    }
+    iter.consumeWhitespace()
+
+    val statements =
+      parseBlockContents(iter) match {
+        case ParseFailure(err) => return ParseFailure(err)
+        case ParseSuccess(result) => result
+      }
+
+    if (iter.peek("^\\s*\\)".r)) {
+      return ParseFailure(BadStartOfStatementError(iter.getPos()))
+    }
+    vassert(iter.peek("^\\s*\\}".r))
     iter.advance()
     val bodyEnd = iter.getPos()
     val body =
@@ -501,25 +580,5 @@ object Parser {
       }
 
     ParseSuccess(FunctionP(Range(funcBegin, bodyEnd), header, Some(body)))
-  }
-
-  // An expression is something that can return a value, such as `foo()` or `mut x = 7`, and doesn't
-  // include statements, like `destruct 7;`
-  // Returns a possible extra VoidPE to put on the end, if we're ending the block with a semicolon.
-  private def endExpression(iter: ParsingIterator): IParseResult[Option[IExpressionPE]] = {
-    if (iter.peek("^\\s*;\\s*\\}".r)) {
-      if (!iter.tryConsume("^\\s*;" r)) {
-        vwat()
-      }
-      ParseSuccess(Some(VoidPE(Range(iter.getPos(), iter.getPos()))))
-      // continue, and the while loop will break itself
-    } else if (iter.peek("^\\s*\\}".r)) {
-      ParseSuccess(None)
-      // continue, and the while loop will break itself
-    } else if (iter.tryConsume("^\\s*;".r)) {
-      ParseSuccess(None)
-    } else {
-      ParseFailure(BadExpressionEnd(iter.position))
-    }
   }
 }

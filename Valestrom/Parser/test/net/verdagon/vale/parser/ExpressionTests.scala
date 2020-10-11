@@ -219,6 +219,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     compileProgramForError(
       """
         |fn doCivicDance(virtual this Car) {
+        |  a = 3;
         |  mut x = 7 )
         |}
         """.stripMargin) match {

@@ -139,11 +139,16 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
   }
 }
 
-LgtWeaks::LgtWeaks(GlobalState* globalState_, IReferendStructsSource* referendStructsSource_, IWeakRefStructsSource* weakRefStructsSource_)
+LgtWeaks::LgtWeaks(
+    GlobalState* globalState_,
+    IReferendStructsSource* referendStructsSource_,
+    IWeakRefStructsSource* weakRefStructsSource_,
+    bool elideChecksForKnownLive_)
   : globalState(globalState_),
     fatWeaks_(globalState_, weakRefStructsSource_),
     referendStructsSource(referendStructsSource_),
-    weakRefStructsSource(weakRefStructsSource_) {
+    weakRefStructsSource(weakRefStructsSource_),
+    elideChecksForKnownLive(elideChecksForKnownLive_) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int1LT = LLVMInt1TypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
@@ -320,33 +325,42 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    WeakFatPtrLE weakRefLE) {
+    WeakFatPtrLE weakRefLE,
+    bool knownLive) {
   auto fatPtrLE = weakRefLE;
-  auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE);
-  buildIf(
-      globalState, functionState, builder, isZeroLE(builder, isAliveLE),
-      [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
-        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
-        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
-        {
-          auto lgtiLE = getLgtiFromWeakRef(thenBuilder, fatPtrLE);
-          buildPrint(globalState, thenBuilder, "lgti ");
-          buildPrint(globalState, thenBuilder, lgtiLE);
-          buildPrint(globalState, thenBuilder, " ");
-          auto targetGenLE = getTargetGenFromWeakRef(thenBuilder, fatPtrLE);
-          buildPrint(globalState, thenBuilder, "targetGen ");
-          buildPrint(globalState, thenBuilder, targetGenLE);
-          buildPrint(globalState, thenBuilder, " ");
-          auto actualGenLE = getActualGenFromLGT(functionState, thenBuilder,
-              lgtiLE);
-          buildPrint(globalState, thenBuilder, "actualGen ");
-          buildPrint(globalState, thenBuilder, actualGenLE);
-          buildPrint(globalState, thenBuilder, " ");
-        }
-        buildPrint(globalState, thenBuilder, "Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-      });
+  if (elideChecksForKnownLive && knownLive) {
+    // Do nothing
+  } else {
+    auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
+    buildIf(
+        globalState, functionState, builder, isZeroLE(builder, isAliveLE),
+        [this, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
+          //        buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
+          //        buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
+          //        {
+          //          auto lgtiLE = getLgtiFromWeakRef(thenBuilder, fatPtrLE);
+          //          buildPrint(globalState, thenBuilder, "lgti ");
+          //          buildPrint(globalState, thenBuilder, lgtiLE);
+          //          buildPrint(globalState, thenBuilder, " ");
+          //          auto targetGenLE = getTargetGenFromWeakRef(thenBuilder, fatPtrLE);
+          //          buildPrint(globalState, thenBuilder, "targetGen ");
+          //          buildPrint(globalState, thenBuilder, targetGenLE);
+          //          buildPrint(globalState, thenBuilder, " ");
+          //          auto actualGenLE = getActualGenFromLGT(functionState, thenBuilder,
+          //              lgtiLE);
+          //          buildPrint(globalState, thenBuilder, "actualGen ");
+          //          buildPrint(globalState, thenBuilder, actualGenLE);
+          //          buildPrint(globalState, thenBuilder, " ");
+          //        }
+          //        buildPrint(globalState, thenBuilder, "Exiting!\n");
+          //        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+          //        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+
+          auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal,
+              "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
+          LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
+        });
+  }
   return fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, fatPtrLE);
 }
 
@@ -435,40 +449,55 @@ LLVMValueRef LgtWeaks::getIsAliveFromWeakFatPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    WeakFatPtrLE weakFatPtrLE) {
-  // Get target generation from the ref
-  auto targetGenLE = getTargetGenFromWeakRef(builder, weakFatPtrLE);
+    WeakFatPtrLE weakFatPtrLE,
+    bool knownLive) {
+  if (knownLive && elideChecksForKnownLive) {
+    // Do nothing, just return a constant true
+    return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
+  } else {
+    // Get target generation from the ref
+    auto targetGenLE = getTargetGenFromWeakRef(builder, weakFatPtrLE);
 
-  // Get actual generation from the table
-  auto lgtiLE = getLgtiFromWeakRef(builder, weakFatPtrLE);
-  if (globalState->opt->census) {
-    buildCheckLgti(builder, lgtiLE);
+    // Get actual generation from the table
+    auto lgtiLE = getLgtiFromWeakRef(builder, weakFatPtrLE);
+    if (globalState->opt->census) {
+      buildCheckLgti(builder, lgtiLE);
+    }
+    auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
+    auto actualGenLE = LLVMBuildLoad(builder, ptrToActualGenLE, "gen");
+
+    return LLVMBuildICmp(
+        builder,
+        LLVMIntEQ,
+        actualGenLE,
+        targetGenLE,
+        "genLive");
   }
-  auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
-  auto actualGenLE = LLVMBuildLoad(builder, ptrToActualGenLE, "gen");
-
-  return LLVMBuildICmp(
-      builder,
-      LLVMIntEQ,
-      actualGenLE,
-      targetGenLE,
-      "genLive");
 }
 
 Ref LgtWeaks::getIsAliveFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* weakRefM,
-    Ref weakRef) {
+    Ref weakRef,
+    bool knownLive) {
   assert(
       weakRefM->ownership == Ownership::BORROW ||
           weakRefM->ownership == Ownership::WEAK);
 
-  auto weakFatPtrLE =
-      weakRefStructsSource->makeWeakFatPtr(
-          weakRefM, globalState->region->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
-  auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE);
-  return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+  if (knownLive && elideChecksForKnownLive) {
+    // Do nothing, just return a constant true
+    auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
+    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+  } else {
+    auto weakFatPtrLE =
+        weakRefStructsSource->makeWeakFatPtr(
+            weakRefM,
+            globalState->region->checkValidReference(FL(), functionState, builder, weakRefM,
+                weakRef));
+    auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE, knownLive);
+    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+  }
 }
 
 LLVMValueRef LgtWeaks::fillWeakableControlBlock(

@@ -140,11 +140,12 @@ Mega::Mega(GlobalState* globalState_) :
         }),
     fatWeaks(globalState_, &weakRefStructs),
     wrcWeaks(globalState_, &referendStructs, &weakRefStructs),
-    lgtWeaks(globalState_, &referendStructs, &weakRefStructs),
+    lgtWeaks(
+        globalState_, &referendStructs, &weakRefStructs,
+        globalState->opt->elideChecksForKnownLive),
     hgmWeaks(
         globalState_, &referendStructs, &weakRefStructs,
-        globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-            globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT,
+        globalState->opt->elideChecksForKnownLive,
         globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT) {
 }
 
@@ -457,7 +458,7 @@ WrapperPtrLE Mega::lockWeakRef(
                       FL(), functionState, builder, refM, weakRefLE));
           return referendStructs.makeWrapperPtr(
               FL(), functionState, builder, refM,
-              lgtWeaks.lockLgtiFatPtr(from, functionState, builder, refM, weakFatPtrLE));
+              lgtWeaks.lockLgtiFatPtr(from, functionState, builder, refM, weakFatPtrLE, weakRefKnownLive));
         }
         default:
           assert(false);
@@ -1408,7 +1409,7 @@ Ref Mega::getIsAliveFromWeakRef(
     case RegionOverride::RESILIENT_V0:
       return wrcWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
     case RegionOverride::RESILIENT_V1:
-      return lgtWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef);
+      return lgtWeaks.getIsAliveFromWeakRef(functionState, builder, weakRefM, weakRef, knownLive);
     case RegionOverride::RESILIENT_V2:
     case RegionOverride::RESILIENT_V3:
     case RegionOverride::RESILIENT_LIMIT:

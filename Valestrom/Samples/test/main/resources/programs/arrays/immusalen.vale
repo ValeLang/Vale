@@ -1,10 +1,10 @@
 // immutable unknown-size-array length
 
-fn Arr<M, F>(n int, generator &F) Array<M, T>
-rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
-{
-  Array<M>(n, &IFunction1<mut, int, T>(generator))
-}
+// fn Arr<M, F>(n int, generator &F) Array<M, T>
+// rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+// {
+//   Array<M>(n, &IFunction1<mut, int, T>(generator))
+// }
 
 fn main() int {
   a = Arr<imm>(5, {_});

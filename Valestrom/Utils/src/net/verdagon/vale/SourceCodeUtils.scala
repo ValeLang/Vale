@@ -9,19 +9,18 @@ object SourceCodeUtils {
       return "internal(" + file + ")"
     }
     val (filename, source) = filenamesAndSources(file)
-    var line = 0;
-    var col = 0;
+
+    var line = 0
+    var lineBegin = 0
     var i = 0
-    while (i <= pos) {
+    while (i < pos) {
       if (source(i) == '\n') {
-        line = line + 1;
-        col = 0;
-      } else {
-        col = col + 1;
+        lineBegin = i + 1
+        line = line + 1
       }
-      i = i + 1;
+      i = i + 1
     }
-    filename + ":" + (line + 1) + ":" + (col + 1)
+    filename + ":" + (line + 1) + ":" + (i - lineBegin + 1)
   }
 
   def nextThingAndRestOfLine(

@@ -155,6 +155,9 @@ class ValeCompiler:
         if "--llvmir" in args:
             args.remove("--llvmir")
             midas_options.append("--llvmir")
+        if "--elide-checks-for-known-live" in args:
+            args.remove("--elide-checks-for-known-live")
+            midas_options.append("--elide-checks-for-known-live")
         if "--region-override" in args:
             ind = args.index("--region-override")
             del args[ind]
@@ -191,43 +194,63 @@ class ValeCompiler:
             parseds_output_dir = val
 
         # builtin files which should be included in all vale programs
-        vale_files = glob.glob(f"vstl/*utils.vale") + ["vstl/strings.vale", "vstl/opt.vale"]
-        c_files = ["vstl/strings.c"]
+        user_vale_files = []
+        user_c_files = []
+        user_vir_files = []
         
         for arg in args:
             if arg.endswith(".vale"):
-                vale_files.append(arg)
+                user_vale_files.append(arg)
             elif arg.endswith(".c"):
-                c_files.append(arg)
+                user_c_files.append(arg)
+            elif arg.endswith(".vir"):
+                user_vir_files.append(arg)
             else:
                 print("Unrecognized input: " + arg)
                 sys.exit(22)
 
-        if build_dir != ".":
-            if os.path.exists(build_dir):
-                shutil.rmtree(build_dir)
-            os.makedirs(build_dir)
+        vir_file = None
+        if len(user_vir_files) == 0 and len(user_vale_files) > 0:
+            # Add in the default vale files
+            user_vale_files = (
+                user_vale_files +
+                glob.glob(cwd + "/vstl/*utils.vale") +
+                [cwd + "/vstl/strings.vale", cwd + "/vstl/opt.vale"])
 
+            if build_dir != ".":
+                if os.path.exists(build_dir):
+                    shutil.rmtree(build_dir)
+                os.makedirs(build_dir)
 
-        vir_file = build_dir + "/build.vir"
-        valestrom_options.append("-o")
-        valestrom_options.append(vir_file)
+            output_vir_file = build_dir + "/build.vir"
+            valestrom_options.append("-o")
+            valestrom_options.append(output_vir_file)
 
-        if parseds_output_dir != None:
-            valestrom_options.append("-op")
-            valestrom_options.append(parseds_output_dir)
+            if parseds_output_dir != None:
+                valestrom_options.append("-op")
+                valestrom_options.append(parseds_output_dir)
 
-        proc = self.valestrom(vale_files, valestrom_options)
-        print(proc.stdout)
-        print(proc.stderr)
-        if proc.returncode == 0:
-          pass
-        elif proc.returncode == 22:
-          print(proc.stdout + "\n" + proc.stderr)
-          sys.exit(22)
+            proc = self.valestrom(user_vale_files, valestrom_options)
+            print(proc.stdout)
+            print(proc.stderr)
+            if proc.returncode == 0:
+                vir_file = output_vir_file
+                pass
+            elif proc.returncode == 22:
+                print(proc.stdout + "\n" + proc.stderr)
+                sys.exit(22)
+            else:
+                print(f"Internal error while compiling {user_vale_files}:\n" + proc.stdout + "\n" + proc.stderr)
+                sys.exit(proc.returncode)
+        elif len(user_vir_files) > 0 and len(user_vale_files) == 0:
+            if len(user_vir_files) > 1:
+                print("Can't have more than one VIR file!")
+                sys.exit(1)
+            vir_file = user_vir_files[0]
         else:
-          print(f"Internal error while compiling {vale_files}:\n" + proc.stdout + "\n" + proc.stderr)
-          sys.exit(proc.returncode)
+            print(f"Specify at least one .vale file, or exactly one .vir file (but not both)")
+            sys.exit(1)
+
 
         proc = self.valec(vir_file, build_dir, midas_options)
         print(proc.stdout)
@@ -236,17 +259,24 @@ class ValeCompiler:
              print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
              sys.exit(1)
 
+        c_files = user_c_files.copy() + glob.glob(f"{self.valestd_path}/*.c") +[cwd + "/vstl/strings.c"]
 
-        o_files = (
-            glob.glob(f"{build_dir}/*.o") + 
-            glob.glob(f"{build_dir}/*.obj") +
-            glob.glob(f"{self.valestd_path}/*.c") +
-            c_files)
-        proc = self.clang(o_files, build_dir + "/" + exe_file)
+        # Get .o or .obj
+        o_files = glob.glob(vir_file[0:len(vir_file)-4] + ".o") + glob.glob(vir_file[0:len(vir_file)-4] + ".obj")
+        if len(o_files) == 0:
+             print("Internal error, no produced object files!")
+             sys.exit(1)
+        if len(o_files) > 1:
+             print("Internal error, multiple produced object files! " + ", ".join(o_files))
+             sys.exit(1)
+
+
+        clang_inputs = o_files + c_files
+        proc = self.clang(clang_inputs, build_dir + "/" + exe_file)
         # print(proc.stdout)
         # print(proc.stderr)
         if proc.returncode != 0:
-             print(f"Linker couldn't compile {o_files}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
+             print(f"Linker couldn't compile {clang_inputs}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
              sys.exit(1)
 
         print("Compiled to " + build_dir + "/" + exe_file)

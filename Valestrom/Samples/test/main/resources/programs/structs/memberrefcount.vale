@@ -1,5 +1,5 @@
 struct Thing {
-  v Vec3i;
+  v! Vec3i;
 }
 
 struct Vec3i imm {

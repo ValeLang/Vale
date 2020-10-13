@@ -1,6 +1,6 @@
 struct Carrier {
   hp int;
-  interceptors int;
+  interceptors! int;
 }
 
 fn main() int {

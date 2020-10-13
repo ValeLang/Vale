@@ -14,7 +14,7 @@ public:
       GlobalState* globalState_,
       IReferendStructsSource* referendStructsSource_,
       IWeakRefStructsSource* weakRefStructsSource_,
-      bool skipChecksForKnownLive_,
+      bool elideChecksForKnownLive_,
       bool limitMode_);
 
   Ref assembleWeakRef(
@@ -141,7 +141,7 @@ private:
   IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 
-  bool skipChecksForKnownLive;
+  bool elideChecksForKnownLive;
 
   // If true, then pretend all references are known live, dont fill in any generations, basically
   // pretend to be unsafe mode as much as possible.

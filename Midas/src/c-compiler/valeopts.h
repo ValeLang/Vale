@@ -44,6 +44,7 @@ struct ValeOptions {
     bool census = false;    // Enable census checking
     bool flares = false;    // Enable flare output
     bool genHeap = false;    // Enables generational heap
+    bool elideChecksForKnownLive = false;    // Enables generational heap
 
     RegionOverride regionOverride = RegionOverride::ASSIST;
 };

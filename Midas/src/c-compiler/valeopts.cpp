@@ -43,6 +43,7 @@ enum
     OPT_VERIFY,
     OPT_FLARES,
     OPT_GEN_HEAP,
+    OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE,
     OPT_CENSUS,
     OPT_REGION_OVERRIDE,
     OPT_FILENAMES,
@@ -84,6 +85,7 @@ static opt_arg_t args[] =
     { "verbose", 'V', OPT_ARG_REQUIRED, OPT_VERBOSE },
     { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
     { "gen-heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
+    { "elide-checks-for-known-live", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE },
     { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
     { "region-override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
@@ -183,6 +185,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     opt->release = 1;
     opt->flares = false;
     opt->genHeap = false;
+    opt->elideChecksForKnownLive = false;
     opt->census = false;
 
     while ((id = optNext(&s)) != -1) {
@@ -229,6 +232,17 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->genHeap = true;
             } else if (s.arg_val == std::string("off")) {
               opt->genHeap = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE: {
+            if (!s.arg_val) {
+              opt->elideChecksForKnownLive = true;
+            } else if (s.arg_val == std::string("on")) {
+              opt->elideChecksForKnownLive = true;
+            } else if (s.arg_val == std::string("off")) {
+              opt->elideChecksForKnownLive = false;
             } else assert(false);
             break;
           }

@@ -5,7 +5,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 
 
-class BiggerTests extends FunSuite with Matchers with Collector {
+class IfTests extends FunSuite with Matchers with Collector {
   private def compileProgramWithComments(code: String): FileP = {
     Parser.runParserForProgramAndCommentRanges(code) match {
       case ParseFailure(err) => fail(err.toString)

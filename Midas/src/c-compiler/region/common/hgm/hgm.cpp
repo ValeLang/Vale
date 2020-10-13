@@ -14,13 +14,13 @@ HybridGenerationalMemory::HybridGenerationalMemory(
     GlobalState* globalState_,
     IReferendStructsSource* referendStructsSource_,
     IWeakRefStructsSource* weakRefStructsSource_,
-    bool skipChecksForKnownLive_,
+    bool elideChecksForKnownLive_,
     bool limitMode_)
   : globalState(globalState_),
     fatWeaks_(globalState_, weakRefStructsSource_),
     referendStructsSource(referendStructsSource_),
     weakRefStructsSource(weakRefStructsSource_),
-    skipChecksForKnownLive(skipChecksForKnownLive_),
+    elideChecksForKnownLive(elideChecksForKnownLive_),
     limitMode(limitMode_) {}
 
 LLVMValueRef HybridGenerationalMemory::getTargetGenFromWeakRef(
@@ -220,7 +220,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
   auto fatPtrLE = weakRefLE;
   auto innerLE = fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, fatPtrLE);
 
-  if (limitMode || (knownLive && skipChecksForKnownLive)) {
+  if (limitMode || (knownLive && elideChecksForKnownLive)) {
     // Do nothing
   } else {
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
@@ -326,7 +326,7 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     Reference* weakRefM,
     WeakFatPtrLE weakFatPtrLE,
     bool knownLive) {
-  if (limitMode || (knownLive && skipChecksForKnownLive)) {
+  if (limitMode || (knownLive && elideChecksForKnownLive)) {
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else {
     // Get target generation from the ref
@@ -357,7 +357,8 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
     Reference* weakRefM,
     Ref weakRef,
     bool knownLive) {
-  if (limitMode || (knownLive && skipChecksForKnownLive)) {
+  if (limitMode || (knownLive && elideChecksForKnownLive)) {
+    // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
   } else {

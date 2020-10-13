@@ -10,7 +10,11 @@
 
 class LgtWeaks {
 public:
-  LgtWeaks(GlobalState* globalState, IReferendStructsSource* referendStructsSource, IWeakRefStructsSource* weakRefStructsSource);
+  LgtWeaks(
+      GlobalState* globalState,
+      IReferendStructsSource* referendStructsSource,
+      IWeakRefStructsSource* weakRefStructsSource,
+      bool elideChecksForKnownLive);
 
   Ref assembleWeakRef(
       FunctionState* functionState,
@@ -66,7 +70,8 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* refM,
-      WeakFatPtrLE weakRefLE);
+      WeakFatPtrLE weakRefLE,
+      bool knownLive);
 
   void innerNoteWeakableDestroyed(
       FunctionState* functionState,
@@ -93,13 +98,15 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      WeakFatPtrLE weakFatPtrLE);
+      WeakFatPtrLE weakFatPtrLE,
+      bool knownLive);
 
   Ref getIsAliveFromWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* weakRefM,
-      Ref weakRef);
+      Ref weakRef,
+      bool knownLive);
 
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
@@ -158,6 +165,7 @@ private:
   FatWeaks fatWeaks_;
   IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
+  bool elideChecksForKnownLive;
 
   LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
 

@@ -1,7 +1,6 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.astronomer.builtins._
-import net.verdagon.vale.astronomer.externs.Externs
 import net.verdagon.vale.astronomer.ruletyper._
 import net.verdagon.vale.parser.{CaptureP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
@@ -665,7 +664,7 @@ object Astronomer {
 
   def runAstronomer(programS: ProgramS): Either[ProgramA, ICompileErrorA] = {
     try {
-      val suppliedFunctions = /*stlFunctions ++*/ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
+      val suppliedFunctions = wrapperFunctions
       val suppliedInterfaces = List(IFunction1.interface)
       val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS) =
         Astronomer.translateProgram(programS, primitives, suppliedFunctions, suppliedInterfaces)

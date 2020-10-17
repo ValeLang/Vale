@@ -59,9 +59,9 @@ WrapperPtrLE buildConstantVStr(
       globalState->getOrMakeStringConstant(contents),
       lengthLE
   };
-  LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
+  LLVMBuildCall(builder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
 
-  buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(globalState, builder, getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE)));
+  buildFlare(FL(), globalState, functionState, builder, "making chars ptr: ", getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE));
 
   return strWrapperPtrLE;
 }

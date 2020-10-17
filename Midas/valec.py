@@ -215,6 +215,7 @@ class ValeCompiler:
             user_vale_files = (
                 user_vale_files +
                 glob.glob(cwd + "/vstl/*utils.vale") +
+                glob.glob(cwd + "/vstl/externs.vale") +
                 [cwd + "/vstl/strings.vale", cwd + "/vstl/opt.vale"])
 
             if build_dir != ".":

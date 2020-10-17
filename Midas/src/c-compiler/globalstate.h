@@ -47,13 +47,15 @@ public:
   // We can use this to easily write an i64 into NULL or the write only global at runtime.
   LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;
   LLVMValueRef malloc = nullptr, free = nullptr, assert = nullptr, exit = nullptr,
-      assertI64Eq = nullptr, flareI64 = nullptr, printCStr = nullptr,
-      getch = nullptr, printInt = nullptr, printBool = nullptr, intToCStr = nullptr,
+      assertI64Eq = nullptr, printCStr = nullptr,
+      getch = nullptr, printInt = nullptr,
       strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr,
-      panic = nullptr, newVStr = nullptr, getStrCharsFunc = nullptr, getStrNumBytesFunc = nullptr;
+      newVStr = nullptr,
+  getStrCharsFunc = nullptr,
+      getStrNumBytesFunc = nullptr;
 
 
-  LLVMValueRef initStr = nullptr, addStr = nullptr, eqStr = nullptr, printVStr = nullptr;
+  LLVMValueRef strncpy = nullptr;
 
   LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 

@@ -7,7 +7,7 @@ import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer, Temputs}
-import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, vassert, vfail, vwat}
+import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, Samples, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.IVonData
 
@@ -36,8 +36,10 @@ case class CompilationOptions(
 )
 
 class Compilation(
-    filenamesAndSources: List[(String, String)],
+    var filenamesAndSources: List[(String, String)],
     options: CompilationOptions = CompilationOptions()) {
+  filenamesAndSources = filenamesAndSources :+ ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
+
   var parsedsCache: Option[List[FileP]] = None
   var scoutputCache: Option[ProgramS] = None
   var astroutsCache: Option[ProgramA] = None

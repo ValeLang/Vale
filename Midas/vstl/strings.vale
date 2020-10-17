@@ -1,9 +1,4 @@
 
-fn __vprintStr(s str, start int, length int) extern;
-
-fn print(s StrSlice) { __vprintStr(s.string, s.begin, s.end) }
-fn print(s str) void { __vprintStr(s, 0, len(s)) }
-
 
 fn vstr_indexOf(
   haystackContainer str,
@@ -37,8 +32,6 @@ fn vstr_cmp(
   bBegin int,
   bEnd int)
 int extern;
-
-fn __vaddStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
 
 struct StrSlice imm {
   string str;
@@ -184,9 +177,14 @@ fn splice(original str, at int, removeNumChars int, insert str) {
   = before + insert + after;
 }
 
-fn +(a str, b str) str { a.slice() + b.slice() }
 fn +(a str, b StrSlice) str { a.slice() + b }
 fn +(a StrSlice, b str) str { a + b.slice() }
 fn +(a StrSlice, b StrSlice) str {
   __vaddStr(a.string, a.begin, a.end, b.string, b.begin, b.end)
+}
+
+fn print(s StrSlice) { __vprintStr(s.string, s.begin, s.end) }
+
+fn println(s StrSlice) void {
+  print(s + "\n");
 }

@@ -2,6 +2,12 @@
 fn getch() int { __getch() }
 fn __getch() int extern;
 
+fn +(a str, b str) str { __vaddStr(a, 0, len(a), b, 0, len(b)) }
+fn __vaddStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
+
+fn print(s str) void { __vprintStr(s, 0, len(s)) }
+fn __vprintStr(s str, start int, length int) extern;
+
 fn float(x int) float { __castIntFloat(x) }
 fn __castIntFloat(x int) float extern;
 

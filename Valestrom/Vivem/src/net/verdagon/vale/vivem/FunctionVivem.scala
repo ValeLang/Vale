@@ -59,7 +59,7 @@ object FunctionVivem {
 //      case PrototypeH(FullNameH(List(NamePartH("__multiplyFloatFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,FloatH())) =>
 //        VivemExterns.multiplyFloatFloat
       case """F("__subtractIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.subtractIntInt
-      case """F("__addStrStr",[],[R(*,>,s),R(*,>,s)])""" => VivemExterns.addStrStr
+      case """F("__vaddStr",[],[R(*,>,s),R(*,<,i),R(*,<,i),R(*,>,s),R(*,<,i),R(*,<,i)])""" => VivemExterns.addStrStr
       case """F("__getch")""" => VivemExterns.getch
       case """F("sqrt",[],[R(*,<,f)])""" => VivemExterns.sqrt
 //      case PrototypeH(FullNameH(List(NamePartH("__sqrt", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,FloatH())) =>
@@ -74,7 +74,7 @@ object FunctionVivem {
       case """F("__greaterThanOrEqInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.greaterThanOrEqInt
       case """F("__eqIntInt",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.eqIntInt
       case """F("__eqBoolBool",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.eqBoolBool
-      case """F("__print",[],[R(*,>,s)])""" => VivemExterns.print
+      case """F("__vprintStr",[],[R(*,>,s),R(*,<,i),R(*,<,i)])""" => VivemExterns.print
       case """F("__not",[],[R(*,<,b)])""" => VivemExterns.not
       case """F("__castIntStr",[],[R(*,<,i)])""" => VivemExterns.castIntStr
       case """F("__castIntFloat",[],[R(*,<,i)])""" => VivemExterns.castIntFloat
@@ -86,7 +86,7 @@ object FunctionVivem {
       case """F("__or",[],[R(*,<,b),R(*,<,b)])""" => VivemExterns.or
       case """F("__mod",[],[R(*,<,i),R(*,<,i)])""" => VivemExterns.mod
       case """F("__strLength",[],[R(*,>,s)])""" => VivemExterns.strLength
-      case _ => vimpl(ref.fullName.toString)
+      case _ => vimpl(ref.fullName.toFullString())
     }
   }
 }

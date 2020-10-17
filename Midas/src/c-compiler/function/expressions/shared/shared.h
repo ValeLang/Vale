@@ -130,6 +130,10 @@ LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef build
 LLVMValueRef makeConstExpr(
     FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr);
 
+inline LLVMValueRef constI8LE(GlobalState* globalState, int n) {
+  return LLVMConstInt(LLVMInt8TypeInContext(globalState->context), n, false);
+}
+
 inline LLVMValueRef constI64LE(GlobalState* globalState, int n) {
   return LLVMConstInt(LLVMInt64TypeInContext(globalState->context), n, false);
 }

@@ -146,8 +146,8 @@ void buildPrint(
   } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
     auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
     LLVMBuildCall(builder, globalState->printInt, &i64LE, 1, "");
-//  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
-//    LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
+  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
+    LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
 //  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
 //    auto asIntLE = LLVMBuildPointerCast(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
 //    LLVMBuildCall(builder, globalState->printInt, &asIntLE, 1, "");

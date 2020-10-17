@@ -275,7 +275,8 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
           globalState, functionState, builder, isZeroLE(builder, isAliveLE),
           [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
 //            auto ptrToWriteToLE = LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
-            auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal, "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
+            auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal,
+                "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
             LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
           });
     } else {

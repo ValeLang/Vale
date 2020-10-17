@@ -515,6 +515,11 @@ class ExpressionTemplar(
           val isConvertible =
             templataTemplar.isTypeConvertible(
               temputs, unconvertedSourceExpr2.resultRegister.reference, destinationExpr2.resultRegister.reference)
+          if (!isConvertible) {
+            throw CompileErrorExceptionT(
+              CouldntConvertForMutateT(
+                range, destinationExpr2.resultRegister.reference, unconvertedSourceExpr2.resultRegister.reference))
+          }
           vassert(isConvertible)
           val convertedSourceExpr2 =
             convertHelper.convert(fate.snapshot, temputs, unconvertedSourceExpr2, destinationExpr2.resultRegister.reference);

@@ -1,4 +1,10 @@
 
+fn __vprintStr(s str, start int, length int) extern;
+
+fn print(s StrSlice) { __vprintStr(s.string, s.begin, s.end) }
+fn print(s str) void { __vprintStr(s, 0, len(s)) }
+
+
 fn vstr_indexOf(
   haystackContainer str,
   haystackBegin int,
@@ -32,6 +38,8 @@ fn vstr_cmp(
   bEnd int)
 int extern;
 
+fn __vaddStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
+
 struct StrSlice imm {
   string str;
   begin int;
@@ -39,50 +47,57 @@ struct StrSlice imm {
   // Will soon have a private bytesBegin and bytesEnd
 }
 
-fn find(a str, b str) Opt<StrSlice> { find(a.slice(), b.slice()) }
-fn find(a str, b StrSlice) Opt<StrSlice> { find(a.slice(), b) }
-fn find(a StrSlice, b str) Opt<StrSlice> { find(a, b.slice()) }
-fn find(a StrSlice, b StrSlice) Opt<StrSlice> {
-  offsetAfterBegin =
-      vstr_indexOf(
-          a.string, a.begin, a.end,
-          b.string, b.begin, b.end);
-
-  = if (offsetAfterBegin < 0) {
+fn find(haystack str, needle str) Opt<StrSlice> { find(haystack.slice(), needle.slice()) }
+fn find(haystack str, needle StrSlice) Opt<StrSlice> { find(haystack.slice(), needle) }
+fn find(haystack StrSlice, needle str) Opt<StrSlice> { find(haystack, needle.slice()) }
+fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
+  maybeOffsetAfterBegin = find(haystack, needle);
+  = if (maybeOffsetAfterBegin.isEmpty()) {
       r Opt<StrSlice> = None<StrSlice>();
       = r;
     } else {
+      offsetAfterBegin = maybeOffsetAfterBegin.get();
       r Opt<StrSlice> =
           Some<StrSlice>(
               StrSlice(
-                  a.string,
-                  a.begin + offsetAfterBegin,
-                  a.begin + offsetAfterBegin + b.len()));
+                  haystack.string,
+                  haystack.begin + offsetAfterBegin.begin,
+                  haystack.begin + offsetAfterBegin.begin + needle.len()));
       = r;
     }
 }
 
-fn splitAt(haystack StrSlice, needle StrSlice) Opt<[StrSlice, StrSlice]> {
-  offsetAfterBegin =
-      vstr_indexOf(
-          haystack.string, haystack.begin, haystack.end,
-          needle.string, needle.begin, needle.end);
-  = if (offsetAfterBegin < 0) {
-      r Opt<StrSlice> = None<StrSlice>();
+struct SplitResult {
+  beforeSplit StrSlice;
+  afterSplit StrSlice;
+}
+fn splitAt(haystack str, needle str) Opt<SplitResult> {
+  splitAt(haystack.slice(), needle.slice())
+}
+fn splitAt(haystack StrSlice, needle str) Opt<SplitResult> {
+  splitAt(haystack, needle.slice())
+}
+fn splitAt(haystack str, needle StrSlice) Opt<SplitResult> {
+  splitAt(haystack.slice(), needle)
+}
+fn splitAt(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
+  maybeOffsetAfterBegin = find(haystack, needle);
+  = if (maybeOffsetAfterBegin.isEmpty()) {
+      r Opt<SplitResult> = None<SplitResult>();
       = r;
     } else {
-      r Opt<[StrSlice, StrSlice]> =
-          Some<[StrSlice, StrSlice]>(
-              [
+      offsetAfterBegin = maybeOffsetAfterBegin.get();
+      r Opt<SplitResult> =
+          Some<SplitResult>(
+              SplitResult(
                   StrSlice(
                       haystack.string,
                       haystack.begin,
-                      haystack.begin + offsetAfterBegin),
+                      haystack.begin + offsetAfterBegin.begin),
                   StrSlice(
                       haystack.string,
-                      haystack.begin + offsetAfterBegin + needle.len(),
-                      haystack.end)
-              ]);
+                      haystack.begin + offsetAfterBegin.begin + needle.len(),
+                      haystack.end)));
       = r;
     }
 }
@@ -132,6 +147,7 @@ fn str(s StrSlice) str {
   ret vstr_substring(s.string, s.begin, s.len());
 }
 
+fn ==(a str, b str) bool { a.slice() == b.slice() }
 fn ==(a str, b StrSlice) bool { a.slice() == b }
 fn ==(a StrSlice, b str) bool { a == b.slice() }
 fn ==(a StrSlice, b StrSlice) bool {
@@ -166,4 +182,11 @@ fn splice(original str, at int, removeNumChars int, insert str) {
   before = original.slice(0, at).str();
   after = original.slice(at + removeNumChars, original.len()).str();
   = before + insert + after;
+}
+
+fn +(a str, b str) str { a.slice() + b.slice() }
+fn +(a str, b StrSlice) str { a.slice() + b }
+fn +(a StrSlice, b str) str { a + b.slice() }
+fn +(a StrSlice, b StrSlice) str {
+  __vaddStr(a.string, a.begin, a.end, b.string, b.begin, b.end)
 }

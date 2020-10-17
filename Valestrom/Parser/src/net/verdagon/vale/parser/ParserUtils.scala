@@ -48,6 +48,12 @@ trait ParserUtils extends RegexParsers {
     }
   }
 
+  private[parser] def functionIdentifier: Parser[StringP] = {
+    pos ~ """[^\s\.\$\&\,\:\(\)\;\[\]\{\}\'\^\"\<\>\=\`]+""".r ~ pos ^^ {
+      case begin ~ str ~ end => StringP(Range(begin, end), str)
+    }
+  }
+
   private[parser] def infixFunctionIdentifier: Parser[StringP] = {
     pos ~ """[^\s\.\$\&\,\:\(\)\;\[\]\{\}\'\"\<\>\=\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => StringP(Range(begin, end), str)

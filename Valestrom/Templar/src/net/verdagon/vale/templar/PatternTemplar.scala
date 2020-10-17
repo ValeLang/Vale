@@ -402,7 +402,7 @@ class PatternTemplar(
         val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
         (destroy2 :: lets)
       }
-      case Share => {
+      case Share | Borrow => {
         // This is different from the Own case because we're not destructuring the incoming thing, we're just
         // loading from it.
 
@@ -415,15 +415,17 @@ class PatternTemplar(
           innerPatternMaybes.zip(structDef2.members).zipWithIndex
             .flatMap({
               case (((innerPattern, member), index)) => {
+                val memberCoord = member.tyype.expectReferenceMember().reference
+                val resultOwnership = if (memberCoord.ownership == Share) Share else Borrow
                 val loadExpr =
                   SoftLoad2(
                     ReferenceMemberLookup2(
                       range,
-                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), Share),
+                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), structOwnership),
                       structDef2.fullName.addStep(structDef2.members(index).name),
-                      member.tyype.expectReferenceMember().reference,
+                      memberCoord,
                       member.variability),
-                    Share)
+                    resultOwnership)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
             })
@@ -433,11 +435,6 @@ class PatternTemplar(
           dropHelper.drop(fate, temputs, packUnlet)
 
         ((packLet :: innerLets) :+ dropExpr)
-      }
-      case Borrow => {
-        // here, instead of doing a destructure, we'd just put this in a variable
-        // and do a bunch of lookups on it.
-        vfail("implement!")
       }
     }
   }

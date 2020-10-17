@@ -111,7 +111,7 @@ object TemplarErrorHumanizer {
       case FunctionAlreadyExists(oldFunctionRange, newFunctionRange, signature) => {
         humanizePos(filenamesAndSources, newFunctionRange.file, newFunctionRange.begin.offset) +
           ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
-          humanizePos(filenamesAndSources, newFunctionRange.file, newFunctionRange.begin.offset)
+          humanizePos(filenamesAndSources, oldFunctionRange.file, oldFunctionRange.begin.offset)
       }
     }
   }

@@ -537,6 +537,37 @@ class TemplarTests extends FunSuite with Matchers {
     })
   }
 
+  // See DSDCTD
+  test("Tests destructuring borrow doesnt compile to destroy") {
+    val compile = new Compilation(
+      """
+        |struct Vec3i {
+        |  x int;
+        |  y int;
+        |  z int;
+        |}
+        |
+        |fn main() int {
+        |  v = Vec3i(3, 4, 5);
+        |	 (x, y, z) = &v;
+        |  = y;
+        |}
+      """.stripMargin)
+    val temputs = compile.getTemputs()
+
+    val main = temputs.lookupFunction("main")
+
+    main.all({
+      case Destroy2(_, _, _) =>
+    }).size shouldEqual 0
+
+    main.only({
+      case ReferenceMemberLookup2(_,
+        SoftLoad2(LocalLookup2(_, _, Coord(_,StructRef2(_)), Final), Borrow),
+        FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Int2()),Final) =>
+    })
+  }
+
   test("Tests making a variable with a pattern") {
     // Tests putting MyOption<int> as the type of x.
     val compile = new Compilation(
@@ -892,6 +923,20 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when we try to mutate a local variable with wrong type") {
+    val compile = new Compilation(
+      """
+        |fn main() {
+        |  a! = 5;
+        |  mut a = "blah";
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CouldntConvertForMutateT(_, Coord(Share, Int2()), Coord(Share, Str2())) =>
+      case _ => vfail()
+    }
+  }
+
   test("Lambda is compatible anonymous interface") {
     val compile = new Compilation(
         """
@@ -945,6 +990,11 @@ class TemplarTests extends FunSuite with Matchers {
       .length > 0
     TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForReturnT(
+        RangeS.testZero,
+        fireflyCoord, serenityCoord))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntConvertForMutateT(
         RangeS.testZero,
         fireflyCoord, serenityCoord))
       .length > 0

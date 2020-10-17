@@ -1,11 +1,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 // These are exposed by the compiled vale .obj/.o, they're
 // the start of a Vale native API.
 typedef struct ValeStr ValeStr;
-ValeStr* vale_newstr(char* source, int64_t begin, int64_t length);
+ValeStr* vale_newstr(int64_t length);
 char* vale_getstrchars(ValeStr* str);
 
 
@@ -33,18 +34,18 @@ int64_t vstr_indexOf(
 
 
 ValeStr* vstr_substring(
-    ValeStr* str,
+    ValeStr* sourceStr,
     int64_t begin,
     int64_t length) {
-  // printf("calling getstrchars\n");
-  char* strChars = vale_getstrchars(str);
-
-  // printf("in substring, %d %d %d %d\n", haystackBegin, haystackEnd, beginInHaystack, endInHaystack);
+  char* sourceChars = vale_getstrchars(sourceStr);
 
   assert(begin >= 0);
   assert(length >= 0);
 
-  return vale_newstr(strChars, begin, length);
+  ValeStr* result = vale_newstr(length);
+  char* resultChars = vale_getstrchars(result);
+  strncpy(resultChars, sourceChars, length);
+  return result;
 }
 
 char vstr_eq(
@@ -108,4 +109,41 @@ int64_t vstr_cmp(
     }
   }
   return 0;
+}
+
+ValeStr* __vaddStr(
+    ValeStr* aStr, int aBegin, int aLength,
+    ValeStr* bStr, int bBegin, int bLength) {
+  char* a = vale_getstrchars(aStr);
+  char* b = vale_getstrchars(bStr);
+
+  ValeStr* result = vale_newstr(aLength + bLength);
+  char* dest = vale_getstrchars(result);
+
+  for (int i = 0; i < aLength; i++) {
+    dest[i] = a[aBegin + i];
+  }
+  for (int i = 0; i < bLength; i++) {
+    dest[i + aLength] = b[bBegin + i];
+  }
+  // Add a null terminating char for compatibility with C.
+  // Midas should allocate an extra byte to accommodate this.
+  // (Midas also adds this in case we didn't do it here)
+  dest[aLength + bLength] = 0;
+
+  return result;
+}
+
+ValeStr* __castIntStr(int n) {
+  char tempBuffer[150];
+  int charsWritten = snprintf(tempBuffer, 150, "%d", n);
+  ValeStr* result = vale_newstr(charsWritten);
+  char* resultChars = vale_getstrchars(result);
+  strncpy(resultChars, tempBuffer, charsWritten);
+  return result;
+}
+
+void __vprintStr(ValeStr* s, int start, int length) {
+  char* chars = vale_getstrchars(s);
+  fwrite(chars + start, 1, length, stdout);
 }

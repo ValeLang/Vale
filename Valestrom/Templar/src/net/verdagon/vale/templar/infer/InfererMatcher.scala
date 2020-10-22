@@ -5,7 +5,7 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
-import net.verdagon.vale.templar.{FunctionName2, IName2, IRune2, NameTranslator}
+import net.verdagon.vale.templar.{CompileErrorExceptionT, FunctionName2, IName2, IRune2, NameTranslator, RangedInternalErrorT}
 import net.verdagon.vale.templar.infer.infer._
 import net.verdagon.vale.templar.templata.{Conversions, _}
 import net.verdagon.vale.templar.types._
@@ -33,10 +33,8 @@ trait IInfererMatcherDelegate[Env, State] {
 
   def structIsClosure(state: State, structRef: StructRef2): Boolean
 
-  def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
-
-  def lookupTemplata(env: Env, name: IName2): ITemplata
-  def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata
+  def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata
+  def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 }
 
 class InfererMatcher[Env, State](
@@ -71,7 +69,7 @@ class InfererMatcher[Env, State](
       } else {
         // We might be grabbing a rune from a parent environment thats already solved,
         // such as when we do spaceship.fly() in TMRE.
-        val templataFromEnv = delegate.lookupTemplata(env, rune)
+        val templataFromEnv = delegate.lookupTemplata(env, range, rune)
         if (templataFromEnv.tyype != expectedType) {
           return (InferMatchConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templataFromEnv.tyype + ", specifically " + templataFromEnv, List()))
         }
@@ -140,6 +138,7 @@ class InfererMatcher[Env, State](
   private[infer] def matchReference2AgainstDestructure(
     env: Env,
     state: State,
+    range: RangeS,
       typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
     inferences: InferencesBox,
@@ -149,7 +148,7 @@ class InfererMatcher[Env, State](
 
     val structMemberTypes =
       delegate.lookupMemberTypes(state, instance.referend, expectedNumMembers = parts.size) match {
-        case None => vfail("this thing cant be destructured, has no member types!")
+        case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "this thing cant be destructured, has no member types!"))
         case Some(x) => x
       }
 
@@ -189,7 +188,7 @@ class InfererMatcher[Env, State](
       destructure match {
         case None => (true)
         case Some(parts) => {
-          matchReference2AgainstDestructure(env, state, typeByRune, localRunes, inferences, instance.tyype, parts) match {
+          matchReference2AgainstDestructure(env, state, patternRange, typeByRune, localRunes, inferences, instance.tyype, parts) match {
             case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ds)) => (ds)
           }
@@ -346,7 +345,7 @@ class InfererMatcher[Env, State](
         }
       }
       case (AbsoluteNameTT(range, expectedName, expectedType), actualTemplata) => {
-        val expectedUncoercedTemplata = delegate.lookupTemplata(env, NameTranslator.translateNameStep(expectedName))
+        val expectedUncoercedTemplata = delegate.lookupTemplata(env, range, NameTranslator.translateNameStep(expectedName))
 
         if (templataTemplar.uncoercedTemplataEquals(env, state, actualTemplata, expectedUncoercedTemplata, expectedType)) {
           return InferMatchSuccess(true)
@@ -355,7 +354,7 @@ class InfererMatcher[Env, State](
         }
       }
       case (NameTT(range, expectedName, expectedType), actualTemplata) => {
-        val expectedUncoercedTemplata = delegate.lookupTemplata(profiler, env, expectedName)
+        val expectedUncoercedTemplata = delegate.lookupTemplata(profiler, env, range, expectedName)
 
         if (templataTemplar.uncoercedTemplataEquals(env, state, actualTemplata, expectedUncoercedTemplata, expectedType)) {
           return InferMatchSuccess(true)
@@ -526,7 +525,7 @@ class InfererMatcher[Env, State](
       case (CallTT(range, expectedTemplate, expectedArgs, resultType), ct @ CoordTemplata(_)) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match " + ct + " against CallTT", List()))
       }
-      case (PrototypeTT(_, _, _), _) => {
+      case (PrototypeTT(_, _, _, _), _) => {
         vfail("what even is this")
       }
 //      case (PackTT(expectedMembers, _), KindTemplata(PackT2(actualMembers, _))) => {
@@ -640,7 +639,7 @@ class InfererMatcher[Env, State](
           (InferMatchConflict(inferences.inferences, range, s"Couldn't match incoming ${instanceOwnership} against expected ${expectedOwnership}", List()))
         }
       }
-      case _ => vfail("Can't match rule " + rule + " against instance " + instance)
+      case other => throw CompileErrorExceptionT(RangedInternalErrorT(other._1.range, "Can't match rule " + rule + " against instance " + instance))
     }
   }
 

@@ -251,7 +251,7 @@ class ExpressionTemplar(
         case StructMember2(memberName, variability, tyype) => {
           val lookup =
             evaluateAddressibleLookup(temputs, fate, range, memberName) match {
-              case None => vfail("Couldn't find " + memberName)
+              case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find " + memberName))
               case Some(l) => l
             }
           tyype match {
@@ -313,7 +313,7 @@ class ExpressionTemplar(
       evaluate(temputs, fate, expr1)
     expr2 match {
       case a : AddressExpression2 => (a, returns)
-      case _ : ReferenceExpression2 => vfail("Expected reference expression!")
+      case _ : ReferenceExpression2 => throw CompileErrorExceptionT(RangedInternalErrorT(expr1.range, "Expected reference expression!"))
     }
   }
 
@@ -329,19 +329,19 @@ class ExpressionTemplar(
   (Expression2, Set[Coord]) = {
     profiler.newProfile(expr1.getClass.getSimpleName, fate.fullName.toString, () => {
       expr1 match {
-        case VoidAE() => (VoidLiteral2(), Set())
-        case IntLiteralAE(i) => (IntLiteral2(i), Set())
-        case BoolLiteralAE(i) => (BoolLiteral2(i), Set())
-        case StrLiteralAE(s) => (StrLiteral2(s), Set())
-        case FloatLiteralAE(f) => (FloatLiteral2(f), Set())
-        case ArgLookupAE(index) => {
+        case VoidAE(range) => (VoidLiteral2(), Set())
+        case IntLiteralAE(range, i) => (IntLiteral2(i), Set())
+        case BoolLiteralAE(range, i) => (BoolLiteral2(i), Set())
+        case StrLiteralAE(range, s) => (StrLiteral2(s), Set())
+        case FloatLiteralAE(range, f) => (FloatLiteral2(f), Set())
+        case ArgLookupAE(range, index) => {
           val paramCoordRuneA = fate.function.params(index).pattern.coordRune
           val paramCoordRune = NameTranslator.translateRune(paramCoordRuneA)
           val paramCoordTemplata = fate.getNearestTemplataWithAbsoluteName2(paramCoordRune, Set(TemplataLookupContext)).get
           val CoordTemplata(paramCoord) = paramCoordTemplata
           (ArgLookup2(index, paramCoord), Set())
         }
-        case FunctionCallAE(range, TemplateSpecifiedLookupAE(name, templateArgTemplexesS), argsExprs1) => {
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS), argsExprs1) => {
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -354,7 +354,7 @@ class ExpressionTemplar(
               argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallAE(range, TemplateSpecifiedLookupAE(name, templateArgTemplexesS), argsExprs1) => {
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS), argsExprs1) => {
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -382,7 +382,7 @@ class ExpressionTemplar(
           (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
         }
 
-        case LendAE(innerExpr1, targetOwnership) => {
+        case LendAE(range, innerExpr1, targetOwnership) => {
           val (innerExpr2, returnsFromInner) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
           val resultExpr2 =
@@ -450,7 +450,7 @@ class ExpressionTemplar(
           val someConstructor =
             delegate.evaluateTemplatedFunctionFromCallForPrototype(
               temputs, range, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
-              case seff@EvaluateFunctionFailure(_) => vfail(seff.toString)
+              case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
               case EvaluateFunctionSuccess(p) => p
             }
 
@@ -462,7 +462,7 @@ class ExpressionTemplar(
           val noneConstructor =
             delegate.evaluateTemplatedFunctionFromCallForPrototype(
               temputs, range, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
-              case seff@EvaluateFunctionFailure(_) => vfail(seff.toString)
+              case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
               case EvaluateFunctionSuccess(p) => p
             }
 
@@ -473,7 +473,7 @@ class ExpressionTemplar(
           val name = NameTranslator.translateVarNameStep(nameA)
           val lookupExpr1 =
             evaluateLookup(temputs, fate, range, name, targetOwnership) match {
-              case (None) => vfail("Couldnt find " + name)
+              case (None) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldnt find " + name))
               case (Some(x)) => (x)
             }
           (lookupExpr1, Set())
@@ -493,12 +493,12 @@ class ExpressionTemplar(
                 newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name))
               }
               case things if things.size > 1 => {
-                vfail("Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _));
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Found too many different things named \"" + name + "\" in env:\n" + things.map("\n" + _)))
               }
               case List() => {
                 //              println("members: " + fate.getAllTemplatasWithName(name, Set(ExpressionLookupContext, TemplataLookupContext)))
                 throw CompileErrorExceptionT(CouldntFindIdentifierToLoadT(range, name))
-                vfail("Couldn't find anything named \"" + name + "\" in env:\n" + fate);
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find anything named \"" + name + "\" in env:\n" + fate))
               }
             }
           (templataFromEnv, Set())
@@ -506,7 +506,7 @@ class ExpressionTemplar(
         case LocalMutateAE(range, name, sourceExpr1) => {
           val destinationExpr2 =
             evaluateAddressibleLookup(temputs, fate, range, name) match {
-              case None => vfail("Couldnt find " + name)
+              case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldnt find " + name))
               case Some(x) => x
             }
           val (unconvertedSourceExpr2, returnsFromSource) =
@@ -522,7 +522,7 @@ class ExpressionTemplar(
           }
           vassert(isConvertible)
           val convertedSourceExpr2 =
-            convertHelper.convert(fate.snapshot, temputs, unconvertedSourceExpr2, destinationExpr2.resultRegister.reference);
+            convertHelper.convert(fate.snapshot, temputs, range, unconvertedSourceExpr2, destinationExpr2.resultRegister.reference);
 
           val mutate2 = Mutate2(destinationExpr2, convertedSourceExpr2);
           (mutate2, returnsFromSource)
@@ -551,19 +551,19 @@ class ExpressionTemplar(
             throw CompileErrorExceptionT(CouldntConvertForMutateT(range, destinationExpr2.resultRegister.reference, unconvertedSourceExpr2.resultRegister.reference))
           }
           val convertedSourceExpr2 =
-            convertHelper.convert(fate.snapshot, temputs, unconvertedSourceExpr2, destinationExpr2.resultRegister.reference);
+            convertHelper.convert(fate.snapshot, temputs, range, unconvertedSourceExpr2, destinationExpr2.resultRegister.reference);
 
           val mutate2 = Mutate2(destinationExpr2, convertedSourceExpr2);
           (mutate2, returnsFromSource ++ returnsFromDestination)
         }
-        case CheckRefCountAE(refExpr1, category, numExpr1) => {
+        case CheckRefCountAE(range, refExpr1, category, numExpr1) => {
           val (refExpr2, returnsFromRef) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, refExpr1);
           val (numExpr2, returnsFromNum) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, numExpr1);
           (CheckRefCount2(refExpr2, Conversions.evaluateRefCountCategory(category), numExpr2), returnsFromRef ++ returnsFromNum)
         }
-        case TemplateSpecifiedLookupAE(name, templateArgs1) => {
+        case TemplateSpecifiedLookupAE(range, name, templateArgs1) => {
           // So far, we only allow these when they're immediately called like functions
           vfail("unimplemented")
         }
@@ -646,7 +646,7 @@ class ExpressionTemplar(
                     IntLiteral2(memberNameStr.toInt),
                     Final)
                 } else {
-                  vfail("Sequence has no member named " + memberNameStr)
+                  throw CompileErrorExceptionT(RangedInternalErrorT(range, "Sequence has no member named " + memberNameStr))
                 }
               }
               case at@UnknownSizeArrayT2(_) => {
@@ -658,11 +658,11 @@ class ExpressionTemplar(
                     IntLiteral2(memberNameStr.toInt),
                     Varying)
                 } else {
-                  vfail("Array has no member named " + memberNameStr)
+                  throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array has no member named " + memberNameStr))
                 }
               }
               case other => {
-                vfail("Can't apply ." + memberNameStr + " to " + other)
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't apply ." + memberNameStr + " to " + other))
               }
             }
 
@@ -672,7 +672,7 @@ class ExpressionTemplar(
           val callExpr2 = evaluateClosure(temputs, fate, range, name, BFunctionA(function1, body))
           (callExpr2, Set())
         }
-        case SequenceEAE(elements1) => {
+        case SequenceEAE(range, elements1) => {
           val (exprs2, returnsFromElements) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, elements1);
 
@@ -720,12 +720,12 @@ class ExpressionTemplar(
           val isConvertible =
             templataTemplar.isTypeTriviallyConvertible(temputs, memberType2, elementCoord)
           if (!isConvertible) {
-            vfail(memberType2 + " cant convert to " + elementCoord)
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, memberType2 + " cant convert to " + elementCoord))
           }
 
           if (arrayMutability == Immutable &&
             Templar.getMutability(temputs, elementCoord.referend) == Mutable) {
-            vfail("Can't have an immutable array of mutable elements!")
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't have an immutable array of mutable elements!"))
           }
           val arrayType = arrayTemplar.makeUnknownSizeArrayType(fate.snapshot, temputs, elementCoord, arrayMutability)
 
@@ -754,7 +754,7 @@ class ExpressionTemplar(
               generatorMethod2)
           (constructExpr2, returnsFromSize ++ returnsFromGenerator)
         }
-        case LetAE(rulesA, typeByRune, localRunesA, pattern, sourceExpr1) => {
+        case LetAE(range, rulesA, typeByRune, localRunesA, pattern, sourceExpr1) => {
           val (sourceExpr2, returnsFromSource) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, sourceExpr1)
 
@@ -767,15 +767,20 @@ class ExpressionTemplar(
 
           (resultExprBlock2, returnsFromSource)
         }
-        case RuneLookupAE(runeA, tyype) => {
+        case RuneLookupAE(range, runeA, tyype) => {
           val templata = vassertSome(fate.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(runeA), Set(TemplataLookupContext)))
           (tyype, templata) match {
             case (IntegerTemplataType, IntegerTemplata(value)) => (IntLiteral2(value), Set())
           }
         }
-        case IfAE(condition1, thenBody1, elseBody1) => {
+        case IfAE(range, condition1, thenBody1, elseBody1) => {
           val (conditionExpr2, returnsFromCondition) =
             blockTemplar.evaluateBlock(fate, temputs, condition1)
+
+          if (conditionExpr2.resultRegister.reference != Coord(Share, Bool2())) {
+            throw CompileErrorExceptionT(IfConditionIsntBoolean(condition1.range, conditionExpr2.resultRegister.reference))
+          }
+
           val fateAfterBranch = fate.functionEnvironment
 
           val FunctionEnvironment(parentEnv, function, functionFullName, entries, maybeReturnType, scoutedLocals, counterBeforeBranch, variablesBeforeBranch, _) = fateAfterBranch
@@ -812,7 +817,7 @@ class ExpressionTemplar(
                 val commonAncestors = aAncestors.intersect(bAncestors)
 
                 if (uncoercedElseExpr2.resultRegister.reference.ownership != uncoercedElseExpr2.resultRegister.reference.ownership) {
-                  vfail("Two branches of if have different ownerships!\\n${a}\\n${b}")
+                  throw CompileErrorExceptionT(RangedInternalErrorT(range, "Two branches of if have different ownerships!\\n${a}\\n${b}"))
                 }
                 val ownership = uncoercedElseExpr2.resultRegister.reference.ownership
 
@@ -828,8 +833,8 @@ class ExpressionTemplar(
                 vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
               }
             }
-          val thenExpr2 = convertHelper.convert(fate.snapshot, temputs, uncoercedThenExpr2, commonType)
-          val elseExpr2 = convertHelper.convert(fate.snapshot, temputs, uncoercedElseExpr2, commonType)
+          val thenExpr2 = convertHelper.convert(fate.snapshot, temputs, range, uncoercedThenExpr2, commonType)
+          val elseExpr2 = convertHelper.convert(fate.snapshot, temputs, range, uncoercedElseExpr2, commonType)
 
           val ifExpr2 = If2(conditionExpr2, thenExpr2, elseExpr2)
 
@@ -841,7 +846,7 @@ class ExpressionTemplar(
             if (thenContinues == elseContinues) { // Both continue, or both don't
               // Each branch might have moved some things. Make sure they moved the same things.
               if (movedsAfterThen != movedsAfterElse) {
-                vfail("Must move same variables from inside branches!\nFrom then branch: " + movedsAfterThen + "\nFrom else branch: " + movedsAfterElse)
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Must move same variables from inside branches!\nFrom then branch: " + movedsAfterThen + "\nFrom else branch: " + movedsAfterElse))
               }
 
               val mergedFate =
@@ -866,9 +871,14 @@ class ExpressionTemplar(
           fate.functionEnvironment = finalFate
           (ifExpr2, returnsFromCondition ++ returnsFromThen ++ returnsFromElse)
         }
-        case WhileAE(condition1, body1) => {
+        case WhileAE(range, condition1, body1) => {
           val (conditionExpr2, returnsFromCondition) =
             blockTemplar.evaluateBlock(fate, temputs, condition1)
+
+          if (conditionExpr2.resultRegister.reference != Coord(Share, Bool2())) {
+            throw CompileErrorExceptionT(WhileConditionIsntBoolean(condition1.range, conditionExpr2.resultRegister.reference))
+          }
+
           val (bodyExpr2, returnsFromBody) =
             blockTemplar.evaluateBlock(fate, temputs, body1)
 
@@ -890,17 +900,17 @@ class ExpressionTemplar(
           val whileExpr2 = While2(Block2(List(ifExpr2)))
           (whileExpr2, returnsFromCondition ++ returnsFromBody)
         }
-        case b@BlockAE(_, _) => {
+        case b@BlockAE(range, _, _) => {
           val (block2, returnsFromBlock) =
             blockTemplar.evaluateBlock(fate, temputs, b);
           (block2, returnsFromBlock)
         }
-        case ArrayLengthAE(arrayExprA) => {
+        case ArrayLengthAE(range, arrayExprA) => {
           val (arrayExpr2, returnsFromArrayExpr) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, arrayExprA);
           (ArrayLength2(arrayExpr2), returnsFromArrayExpr)
         }
-        case DestructAE(innerAE) => {
+        case DestructAE(range, innerAE) => {
           val (innerExpr2, returnsFromArrayExpr) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, innerAE);
 
@@ -938,7 +948,7 @@ class ExpressionTemplar(
                       CouldntConvertForReturnT(range, returnType, uncastedInnerExpr2.resultRegister.reference))
                   }
                   case (true) => {
-                    convertHelper.convert(fate.snapshot, temputs, uncastedInnerExpr2, returnType)
+                    convertHelper.convert(fate.snapshot, temputs, range, uncastedInnerExpr2, returnType)
                   }
                 }
               }

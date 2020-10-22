@@ -230,7 +230,7 @@ class FunctionTemplarMiddleLayer(
             (Prototype2(namedEnv.fullName, returnType2))
           }
           case None => {
-            vfail("Need return type for " + needleSignature + ", cycle found")
+            throw CompileErrorExceptionT(RangedInternalErrorT(runedEnv.function.range, "Need return type for " + needleSignature + ", cycle found"))
           }
         }
       }

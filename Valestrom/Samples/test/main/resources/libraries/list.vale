@@ -51,3 +51,15 @@ fn each<E, F>(list &List<E>, func F) void {
     mut i = i + 1;
   }
 }
+
+fn contains<E>(list &List<E>, element E) bool {
+  i! = 0;
+  l = len(&list);
+  while (i < l) {
+    if (list.get(i).get() == element) {
+      ret true;
+    }
+    mut i = i + 1;
+  }
+  ret false;
+}

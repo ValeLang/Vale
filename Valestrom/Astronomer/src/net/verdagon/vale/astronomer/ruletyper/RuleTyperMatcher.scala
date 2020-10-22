@@ -349,7 +349,7 @@ class RuleTyperMatcher[Env, State](
       case (BorrowST(range, inner), CoordTemplataType) => {
         matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, inner)
       }
-      case _ => vfail("Can't match! Expected type " + expectedType + ", rule " + rule)
+      case other => throw CompileErrorExceptionA(RangedInternalErrorA(other._1.range, "Can't match! Expected type " + expectedType + ", rule " + rule))
     }
   }
 
@@ -376,7 +376,7 @@ class RuleTyperMatcher[Env, State](
       case MutabilityTemplataType =>
       case IntegerTemplataType =>
       case TemplateTemplataType(_, _) => // We check for strict equality, nothing fancy here.
-      case _ => vfail(expectedType.toString)
+      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(range, expectedType.toString))
     }
     // When something's missing, consider all of the combinations it has with everything
     // else, then once youve considered them, add them to the above matches.
@@ -609,7 +609,7 @@ class RuleTyperMatcher[Env, State](
               }
             }
           }
-          case _ => vfail("Wrong number of components for kind")
+          case _ => throw CompileErrorExceptionA(RangedInternalErrorA(range, "Wrong number of components for kind"))
         }
       }
       case CoordTypeSR => {
@@ -638,7 +638,7 @@ class RuleTyperMatcher[Env, State](
               case (_, _) => RuleTyperMatchUnknown()
             }
           }
-          case _ => vfail("Wrong number of components for kind")
+          case _ => throw CompileErrorExceptionA(RangedInternalErrorA(range, "Wrong number of components for kind"))
         }
       }
     }

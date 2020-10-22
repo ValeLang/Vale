@@ -10,6 +10,7 @@ object ParseErrorHumanizer {
       err: IParseError):
   String = {
     err match {
+
       case UnrecognizedTopLevelThingError(pos) => humanizePos(filenamesAndSources, file, pos) + ": expected fn, struct, interface, or impl, but found:\n"  + nextThingAndRestOfLine(filenamesAndSources, file, pos) + "\n"
       case BadFunctionBodyError(pos) => humanizePos(filenamesAndSources, file, pos) + ": expected a function body, or `;` to note there is none. Found:\n" + nextThingAndRestOfLine(filenamesAndSources, file, pos) + "\n"
       case BadStartOfStatementError(pos) => humanizePos(filenamesAndSources, file, pos) + ": expected `}` to end the block, but found:\n" + nextThingAndRestOfLine(filenamesAndSources, file, pos) + "\n"

@@ -53,11 +53,14 @@ object BuiltInFunctions {
             TemplexAR(NameAT(RangeS.internal(-91),CodeTypeNameA("int"), CoordTemplataType)))),
         CodeBodyA(
           BodyAE(
+            RangeS.internal(-62),
             List(),
             BlockAE(
+              RangeS.internal(-62),
               List(LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
                 ArrayLengthAE(
+                  RangeS.internal(-62),
                   LocalLoadAE(RangeS.internal(-62),CodeVarNameA("arr"), OwnP))))))),
       FunctionA(
         RangeS.internal(-62),
@@ -95,11 +98,13 @@ object BuiltInFunctions {
             TemplexAR(NameAT(RangeS.internal(-91),CodeTypeNameA("int"), CoordTemplataType)))),
         CodeBodyA(
           BodyAE(
+            RangeS.internal(-62),
             List(),
             BlockAE(
+              RangeS.internal(-62),
               List(LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
-                RuneLookupAE(CodeRuneA("N"), IntegerTemplataType)))))),
+                RuneLookupAE(RangeS.internal(-62),CodeRuneA("N"), IntegerTemplataType)))))),
       FunctionA(
         RangeS.internal(-67),
         FunctionNameA("__panic", s.CodeLocationS.internal(-22)),
@@ -141,8 +146,10 @@ object BuiltInFunctions {
               OwnershippedAT(RangeS.internal(-91),WeakP, RuneAT(RangeS.internal(-91),CodeRuneA("OwningRune"), CoordTemplataType))))),
         CodeBodyA(
           BodyAE(
+            RangeS.internal(-62),
             List(),
             BlockAE(
+              RangeS.internal(-62),
               List(LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
                 LockWeakAE(RangeS.internal(-91), LocalLoadAE(RangeS.internal(-62),CodeVarNameA("weakRef"), WeakP))))))))

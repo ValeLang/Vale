@@ -25,16 +25,17 @@ class ConvertHelper(
   def convertExprs(
       env: IEnvironment,
       temputs: Temputs,
+      range: RangeS,
       sourceExprs: List[ReferenceExpression2],
       targetPointerTypes: List[Coord]):
   (List[ReferenceExpression2]) = {
     if (sourceExprs.size != targetPointerTypes.size) {
-      vfail("num exprs mismatch, source:\n" + sourceExprs + "\ntarget:\n" + targetPointerTypes)
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "num exprs mismatch, source:\n" + sourceExprs + "\ntarget:\n" + targetPointerTypes))
     }
     (sourceExprs zip targetPointerTypes).foldLeft((List[ReferenceExpression2]()))({
       case ((previousRefExprs), (sourceExpr, targetPointerType)) => {
         val refExpr =
-          convert(env, temputs, sourceExpr, targetPointerType)
+          convert(env, temputs, range, sourceExpr, targetPointerType)
         (previousRefExprs :+ refExpr)
       }
     })
@@ -43,6 +44,7 @@ class ConvertHelper(
   def convert(
       env: IEnvironment,
       temputs: Temputs,
+      range: RangeS,
       sourceExpr: ReferenceExpression2,
       targetPointerType: Coord):
   (ReferenceExpression2) = {
@@ -70,10 +72,10 @@ class ConvertHelper(
       (sourceOwnership, targetOwnership) match {
         case (Own, Own) => sourceExpr
         case (Borrow, Own) => {
-          vfail("Supplied a borrow but target wants to own the argument")
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
         }
         case (Own, Borrow) => {
-          vfail("Supplied an owning but target wants to only borrow")
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
         }
         case (Borrow, Borrow) => sourceExpr
         case (Share, Share) => sourceExpr
@@ -92,7 +94,7 @@ class ConvertHelper(
       } else {
         (sourceType, targetType) match {
           case (s @ StructRef2(_), i : InterfaceRef2) => {
-            convert(env.globalEnv, temputs, sourceExprDecayedOwnershipped, s, i)
+            convert(env.globalEnv, temputs, range, sourceExprDecayedOwnershipped, s, i)
           }
           case _ => vfail()
         }
@@ -104,6 +106,7 @@ class ConvertHelper(
   def convert(
     env: IEnvironment,
     temputs: Temputs,
+    range: RangeS,
     sourceExpr: ReferenceExpression2,
     sourceStructRef: StructRef2,
     targetInterfaceRef: InterfaceRef2):
@@ -111,7 +114,7 @@ class ConvertHelper(
     if (delegate.isAncestor(temputs, sourceStructRef, targetInterfaceRef)) {
       StructToInterfaceUpcast2(sourceExpr, targetInterfaceRef)
     } else {
-      vfail("Can't upcast a " + sourceStructRef + " to a " + targetInterfaceRef)
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't upcast a " + sourceStructRef + " to a " + targetInterfaceRef))
     }
   }
 }

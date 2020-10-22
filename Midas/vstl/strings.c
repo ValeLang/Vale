@@ -135,7 +135,7 @@ ValeStr* __vaddStr(
 }
 
 ValeStr* __castIntStr(int n) {
-  char tempBuffer[150];
+  char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 150, "%d", n);
   ValeStr* result = vale_newstr(charsWritten);
   char* resultChars = vale_getstrchars(result);
@@ -146,4 +146,10 @@ ValeStr* __castIntStr(int n) {
 void __vprintStr(ValeStr* s, int start, int length) {
   char* chars = vale_getstrchars(s);
   fwrite(chars + start, 1, length, stdout);
+}
+
+int vstr_toascii(ValeStr* s, int begin, int end) {
+  assert(begin + 1 <= end);
+  char* chars = vale_getstrchars(s);
+  return (int)*(chars + begin);
 }

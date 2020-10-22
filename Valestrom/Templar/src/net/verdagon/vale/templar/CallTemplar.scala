@@ -39,7 +39,7 @@ class CallTemplar(
   (FunctionCall2) = {
     callableExpr.resultRegister.reference.referend match {
       case Never2() | Bool2() => {
-        vfail("wot " + callableExpr.resultRegister.reference.referend)
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.resultRegister.reference.referend))
       }
       case structRef @ StructRef2(_) => {
         evaluateClosureCall(
@@ -80,7 +80,7 @@ class CallTemplar(
           }
         val argsExprs2 =
           convertHelper.convertExprs(
-            fate.snapshot, temputs, givenArgsExprs2, prototype.paramTypes)
+            fate.snapshot, temputs, range, givenArgsExprs2, prototype.paramTypes)
 
         checkTypes(
           temputs,
@@ -145,7 +145,7 @@ class CallTemplar(
       }
     val argsExprs2 =
       convertHelper.convertExprs(
-        fate, temputs, givenArgsExprs2, prototype.paramTypes)
+        fate, temputs, range, givenArgsExprs2, prototype.paramTypes)
 
     checkTypes(
       temputs,
@@ -215,7 +215,7 @@ class CallTemplar(
 
     val argTypes = actualArgsExprs2.map(_.resultRegister.reference)
     if (argTypes != prototype2.paramTypes) {
-      vfail("arg param type mismatch. params: " + prototype2.paramTypes + " args: " + argTypes)
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "arg param type mismatch. params: " + prototype2.paramTypes + " args: " + argTypes))
     }
 
     checkTypes(temputs, prototype2.paramTypes, argTypes, exact = true)

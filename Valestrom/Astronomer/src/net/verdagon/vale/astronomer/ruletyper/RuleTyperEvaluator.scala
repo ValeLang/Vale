@@ -243,7 +243,7 @@ class RuleTyperEvaluator[Env, State](
         val ruleT = CallAR(range, "resolveExactSignature", List(nameRuleT, argsListRuleT), PrototypeTemplataType)
         RuleTyperEvaluateSuccess(ruleT)
       }
-      case _ => vfail("Unknown function \"" + name + "\"!");
+      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(range, "Unknown function \"" + name + "\"!"));
     }
   }
 
@@ -363,7 +363,7 @@ class RuleTyperEvaluator[Env, State](
         }
       }
       case PrototypeST(range, _, _, _) => {
-        vfail("Unimplemented")
+        throw CompileErrorExceptionA(RangedInternalErrorA(range, "Unimplemented"))
       }
       case PackST(range, _) => {
 //        evaluateTemplexes(env, conclusions, memberTemplexes) match {
@@ -644,7 +644,7 @@ class RuleTyperEvaluator[Env, State](
             case (RuleTyperEvaluateSuccess(templataFromRune)) => (Some(templataFromRune))
           }
         }
-        case _ => vfail("Can only destructure coords and kinds!")
+        case _ => throw CompileErrorExceptionA(RangedInternalErrorA(range, "Can only destructure coords and kinds!"))
       }
 
     (maybeTypeAndRuneRuleT, maybeComponentRulesT) match {
@@ -705,7 +705,7 @@ class RuleTyperEvaluator[Env, State](
         }
 
       }
-      case _ => vfail("Coords must have 2 components")
+      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(outerRange, "Coords must have 2 components"))
     }
   }
 
@@ -748,7 +748,7 @@ class RuleTyperEvaluator[Env, State](
         }
 
       }
-      case _ => vfail("Prototypes must have 3 components")
+      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(outerRange, "Prototypes must have 3 components"))
     }
   }
 
@@ -772,7 +772,7 @@ class RuleTyperEvaluator[Env, State](
           case Some(mutabilityRuleT) => (RuleTyperEvaluateSuccess(List(mutabilityRuleT)))
         }
       }
-      case _ => vfail("Kind rule must have one component")
+      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(outerRange, "Kind rule must have one component"))
     }
   }
   

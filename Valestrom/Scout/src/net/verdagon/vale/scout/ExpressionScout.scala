@@ -95,7 +95,7 @@ object ExpressionScout {
       VariableUses(childUses.uses.filter(selfUseName => !locals.map(_.varName).contains(selfUseName.name)))
 
     // Notice how the fate is continuing on
-    (NormalResult(Scout.evalRange(parentStackFrame.file, blockPE.range), BlockSE(locals, exprsWithConstructingIfNecessary)), selfUsesOfThingsFromAbove, childUsesOfThingsFromAbove)
+    (NormalResult(Scout.evalRange(parentStackFrame.file, blockPE.range), BlockSE(Scout.evalRange(parentStackFrame.file, blockPE.range), locals, exprsWithConstructingIfNecessary)), selfUsesOfThingsFromAbove, childUsesOfThingsFromAbove)
   }
 
   // Returns:
@@ -109,7 +109,7 @@ object ExpressionScout {
     val evalRange = (range: Range) => Scout.evalRange(stackFrame0.file, range)
 
     expr match {
-      case VoidPE(range) => (stackFrame0, NormalResult(evalRange(range), VoidSE()), noVariableUses, noVariableUses)
+      case VoidPE(range) => (stackFrame0, NormalResult(evalRange(range), VoidSE(evalRange(range))), noVariableUses, noVariableUses)
       case lam @ LambdaPE(captures,_) => {
         val (function1, childUses) =
           FunctionScout.scoutLambda(stackFrame0, lam.function)
@@ -122,17 +122,17 @@ object ExpressionScout {
       case LendPE(range, innerPE, targetOwnership) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, innerPE, targetOwnership)
-        (stackFrame1, NormalResult(evalRange(range), LendSE(inner1, targetOwnership)), innerSelfUses, innerChildUses)
+        (stackFrame1, NormalResult(evalRange(range), LendSE(evalRange(range), inner1, targetOwnership)), innerSelfUses, innerChildUses)
       }
       case ReturnPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
         (stackFrame1, NormalResult(evalRange(range), ReturnSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
-      case IntLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), IntLiteralSE(value)), noVariableUses, noVariableUses)
-      case BoolLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), BoolLiteralSE(value)), noVariableUses, noVariableUses)
-      case StrLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), StrLiteralSE(value)), noVariableUses, noVariableUses)
-      case FloatLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), FloatLiteralSE(value)), noVariableUses, noVariableUses)
+      case IntLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), IntLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
+      case BoolLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), BoolLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
+      case StrLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), StrLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
+      case FloatLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), FloatLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
 
       case MethodCallPE(range, container, operatorRange, targetOwnership, isMapCall, memberLookup, methodArgs) => {
         val maybeLendContainer =
@@ -163,7 +163,7 @@ object ExpressionScout {
             }
             case None => {
               if (stackFrame0.parentEnv.allUserDeclaredRunes().contains(CodeRuneS(name))) {
-                (NormalResult(evalRange(range), RuneLookupSE(CodeRuneS(name))), noDeclarations)
+                (NormalResult(evalRange(range), RuneLookupSE(evalRange(range), CodeRuneS(name))), noDeclarations)
               } else {
                 (OutsideLookupResult(evalRange(range), name), noDeclarations)
               }
@@ -174,13 +174,14 @@ object ExpressionScout {
       case DestructPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
-        (stackFrame1, NormalResult(evalRange(range), DestructSE(inner1)), innerSelfUses, innerChildUses)
+        (stackFrame1, NormalResult(evalRange(range), DestructSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
       case LookupPE(StringP(range, templateName), Some(TemplateArgsP(_, templateArgs))) => {
         val result =
           NormalResult(
             evalRange(range),
             TemplateSpecifiedLookupSE(
+              evalRange(range),
               templateName,
               templateArgs.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))))
         (stackFrame0, result, noVariableUses, noVariableUses)
@@ -196,12 +197,52 @@ object ExpressionScout {
       case SequencePE(range, elementsPE) => {
         val (stackFrame1, elements1, selfUses, childUses) =
           scoutElementsAsExpressions(stackFrame0, elementsPE)
-        (stackFrame1, NormalResult(evalRange(range), scout.SequenceESE(elements1)), selfUses, childUses)
+        (stackFrame1, NormalResult(evalRange(range), scout.SequenceESE(evalRange(range), elements1)), selfUses, childUses)
       }
       case b @ BlockPE(_, _) => {
         val (result, selfUses, childUses) =
           scoutBlock(stackFrame0, b, noDeclarations)
         (stackFrame0, result, selfUses, childUses)
+      }
+      case AndPE(range, leftPE, rightPE) => {
+        val rightRange = evalRange(rightPE.range)
+        val endRange = RangeS(rightRange.end, rightRange.end)
+
+        val (NormalResult(_, condSE), condUses, condChildUses) =
+          scoutBlock(stackFrame0, leftPE, VariableDeclarations(List()))
+        val (NormalResult(_, thenSE), thenUses, thenChildUses) =
+          scoutBlock(stackFrame0, rightPE, VariableDeclarations(List()))
+        val elseUses = VariableUses(List())
+        val elseChildUses = VariableUses(List())
+        val elseSE = BlockSE(endRange, List(), List(BoolLiteralSE(endRange, false)))
+
+        val selfCaseUses = thenUses.branchMerge(elseUses)
+        val selfUses = condUses.thenMerge(selfCaseUses);
+        val childCaseUses = thenChildUses.branchMerge(elseChildUses)
+        val childUses = condChildUses.thenMerge(childCaseUses);
+
+        val ifSE = IfSE(evalRange(range), condSE, thenSE, elseSE)
+        (stackFrame0, NormalResult(evalRange(range), ifSE), selfUses, childUses)
+      }
+      case OrPE(range, leftPE, rightPE) => {
+        val rightRange = evalRange(rightPE.range)
+        val endRange = RangeS(rightRange.end, rightRange.end)
+
+        val (NormalResult(_, condSE), condUses, condChildUses) =
+          scoutBlock(stackFrame0, leftPE, VariableDeclarations(List()))
+        val thenUses = VariableUses(List())
+        val thenChildUses = VariableUses(List())
+        val thenSE = BlockSE(endRange, List(), List(BoolLiteralSE(endRange, true)))
+        val (NormalResult(_, elseSE), elseUses, elseChildUses) =
+          scoutBlock(stackFrame0, rightPE, VariableDeclarations(List()))
+
+        val selfCaseUses = thenUses.branchMerge(elseUses)
+        val selfUses = condUses.thenMerge(selfCaseUses);
+        val childCaseUses = thenChildUses.branchMerge(elseChildUses)
+        val childUses = condChildUses.thenMerge(childCaseUses);
+
+        val ifSE = IfSE(evalRange(range), condSE, thenSE, elseSE)
+        (stackFrame0, NormalResult(evalRange(range), ifSE), selfUses, childUses)
       }
       case IfPE(range, condition, thenBody, elseBody) => {
         val (NormalResult(_, cond1), condUses, condChildUses) =
@@ -216,7 +257,8 @@ object ExpressionScout {
         val childCaseUses = thenChildUses.branchMerge(elseChildUses)
         val childUses = condChildUses.thenMerge(childCaseUses);
 
-        (stackFrame0, NormalResult(evalRange(range), IfSE(cond1, then1, else1)), selfUses, childUses)
+        val ifSE = IfSE(evalRange(range), cond1, then1, else1)
+        (stackFrame0, NormalResult(evalRange(range), ifSE), selfUses, childUses)
       }
       case WhilePE(range, condition, body) => {
         val (NormalResult(_, cond1), condSelfUses, condChildUses) =
@@ -234,7 +276,7 @@ object ExpressionScout {
         val selfUses = condSelfUses.thenMerge(bodySelfMaybeUses)
         val childUses = condChildUses.thenMerge(bodyChildMaybeUses)
 
-        (stackFrame0, NormalResult(evalRange(range), WhileSE(cond1, body1)), selfUses, childUses)
+        (stackFrame0, NormalResult(evalRange(range), WhileSE(evalRange(range), cond1, body1)), selfUses, childUses)
       }
       case let @ LetPE(range, rulesP, patternP, exprPE) => {
         val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)

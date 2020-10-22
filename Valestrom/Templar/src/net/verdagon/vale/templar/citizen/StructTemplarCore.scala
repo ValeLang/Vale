@@ -109,7 +109,7 @@ class StructTemplarCore(
               sefResult match {
                 case ScoutExpectedFunctionSuccess(_) =>
                 case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
-                  vfail(sefResult.toString)
+                  throw CompileErrorExceptionT(RangedInternalErrorT(struct1.range, sefResult.toString))
                 }
               }
             }
@@ -422,7 +422,7 @@ class StructTemplarCore(
     // Dont want any mutables in our immutable interface's substruct
     if (mutability == Immutable) {
       if (StructTemplar.getCompoundTypeMutability(callables) == Mutable) {
-        vfail("Trying to make a mutable anonymous substruct of an immutable interface!")
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Trying to make a mutable anonymous substruct of an immutable interface!"))
       }
     }
 
@@ -528,7 +528,7 @@ class StructTemplarCore(
             forwardedCallArgs,
             List(),
             true) match {
-            case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => vfail(seff.toString)
+            case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
             case ScoutExpectedFunctionSuccess(prototype) => prototype
           }
 

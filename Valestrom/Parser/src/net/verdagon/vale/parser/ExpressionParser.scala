@@ -379,7 +379,12 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       binariableExpression(
         withComparisons,
         white ~> conjunctionOperators <~ white,
-        (range, op: StringP, left, right) => FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP))
+        (range, op: StringP, left, right) => {
+          op.str match {
+            case "and" => AndPE(range, BlockPE(left.range, List(left)), BlockPE(right.range, List(right)))
+            case "or" => OrPE(range, BlockPE(left.range, List(left)), BlockPE(right.range, List(right)))
+          }
+        })
 
     withConjunctions |
     (conjunctionOperators ^^ (op => LookupPE(op, None))) |

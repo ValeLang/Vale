@@ -1,4 +1,5 @@
 
+fn vstr_toascii(s str, begin int, end int) int extern;
 
 fn vstr_indexOf(
   haystackContainer str,
@@ -33,6 +34,21 @@ fn vstr_cmp(
   bEnd int)
 int extern;
 
+struct StrSliceHasher { }
+fn __call(self &StrSliceHasher, s! StrSlice) int {
+  sum! = 0;
+  while (s != "") {
+    mut sum = sum * 1337 + toAscii(s.slice(0, 1));
+    mut s = s.slice(1);
+  }
+  ret sum;
+}
+
+struct StrSliceEquator { }
+fn __call(self &StrSliceEquator, a StrSlice, b StrSlice) bool {
+  a == b
+}
+
 struct StrSlice imm {
   string str;
   begin int;
@@ -52,6 +68,11 @@ fn newStrSlice(string str, begin int, end int) StrSlice {
   // this.begin = begin;
   // this.end = end;
 }
+
+fn has(haystack str, needle str) bool { has(haystack.slice(), needle.slice()) }
+fn has(haystack StrSlice, needle str) bool { has(haystack, needle.slice()) }
+fn has(haystack str, needle StrSlice) bool { has(haystack.slice(), needle) }
+fn has(haystack StrSlice, needle StrSlice) bool { not find(haystack, needle).isEmpty() }
 
 fn find(haystack str, needle str) Opt<StrSlice> { find(haystack.slice(), needle.slice()) }
 fn find(haystack str, needle StrSlice) Opt<StrSlice> { find(haystack.slice(), needle) }
@@ -79,16 +100,16 @@ struct SplitResult {
   beforeSplit StrSlice;
   afterSplit StrSlice;
 }
-fn splitAt(haystack str, needle str) Opt<SplitResult> {
-  splitAt(haystack.slice(), needle.slice())
+fn splitOnce(haystack str, needle str) Opt<SplitResult> {
+  splitOnce(haystack.slice(), needle.slice())
 }
-fn splitAt(haystack StrSlice, needle str) Opt<SplitResult> {
-  splitAt(haystack, needle.slice())
+fn splitOnce(haystack StrSlice, needle str) Opt<SplitResult> {
+  splitOnce(haystack, needle.slice())
 }
-fn splitAt(haystack str, needle StrSlice) Opt<SplitResult> {
-  splitAt(haystack.slice(), needle)
+fn splitOnce(haystack str, needle StrSlice) Opt<SplitResult> {
+  splitOnce(haystack.slice(), needle)
 }
-fn splitAt(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
+fn splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
   maybeOffsetAfterBegin = find(haystack, needle);
   = if (maybeOffsetAfterBegin.isEmpty()) {
       r Opt<SplitResult> = None<SplitResult>();
@@ -117,7 +138,7 @@ fn slice(s str) StrSlice {
 fn slice(s str, begin int) StrSlice { s.slice().slice(begin) }
 fn slice(s StrSlice, begin int) StrSlice {
   newBegin = s.begin + begin;
-  vassert(newBegin < s.string.len(), "slice begin isnt less than string length!");
+  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
   = newStrSlice(s.string, newBegin, s.end);
 }
 
@@ -139,6 +160,10 @@ fn slice(s StrSlice, begin int, end int) StrSlice {
 fn str(s StrSlice) str {
   ret vstr_substring(s.string, s.begin, s.len());
 }
+
+
+fn !=(a str, b StrSlice) bool { a.slice() != b }
+fn !=(a StrSlice, b str) bool { a != b.slice() }
 
 fn ==(a str, b str) bool { a.slice() == b.slice() }
 fn ==(a str, b StrSlice) bool { a.slice() == b }
@@ -193,14 +218,68 @@ fn println(s StrSlice) void {
 }
 
 
-fn trim(s str) StrSlice { trim(s.slice()) }
-fn trim(s! StrSlice) StrSlice {
+
+fn ltrim(s str) StrSlice { ltrim(s.slice()) }
+fn ltrim(s! StrSlice) StrSlice {
   whitespace = " \r\n\t";
-  while (not whitespace.find(s.slice(0, 1)).isEmpty()) {
+  while (true) {
+    if (s == "") {
+      ret s;
+    }
+    if (whitespace.find(s.slice(0, 1)).isEmpty()) {
+      ret s;
+    }
     mut s = s.slice(1, s.len());
   }
-  while (not whitespace.find(s.slice(s.len() - 1, s.len())).isEmpty()) {
+  panic("unreachable");
+}
+fn rtrim(s str) StrSlice { rtrim(s.slice()) }
+fn rtrim(s! StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while (true) {
+    if (s == "") {
+      ret s;
+    }
+    if (whitespace.find(s.slice(s.len() - 1, s.len())).isEmpty()) {
+      ret s;
+    }
     mut s = s.slice(0, s.len() - 1);
   }
-  ret s;
+  panic("unreachable");
+}
+
+fn trim(s str) StrSlice { trim(s.slice()) }
+fn trim(s! StrSlice) StrSlice { ltrim(rtrim(s)) }
+
+fn int(s! StrSlice) Opt<int> {
+  hasNegative! = false;
+  totalSoFar! = 0;
+
+  if (s == "") {
+    ret None<int>();
+  }
+
+  while (s != "") {
+    digitStr = s.slice(0, 1);
+
+    if (digitStr == "-") {
+      mut hasNegative = true;
+    } else {
+      ascii = toAscii(digitStr);
+      if (ascii < 48 or ascii >= 58) {
+        ret None<int>();
+      }
+      digit = ascii - 48;
+      mut totalSoFar = totalSoFar * 10 + digit;
+    }
+
+    mut s = s.slice(1);
+  }
+
+  ret Some(totalSoFar);
+}
+
+fn toAscii(s StrSlice) int {
+  vassert(s.begin + 1 <= s.end);
+  = vstr_toascii(s.string, s.begin, s.end);
 }

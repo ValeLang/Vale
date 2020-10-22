@@ -65,8 +65,8 @@ class InferTemplar(
         case (InferSolveSuccess(inferences)) => {
           (inferences.templatasByRune)
         }
-        case (isf@InferSolveFailure(_, _, _, _, _, _, _)) => {
-          vfail("Conflict in determining ordinary rules' runes: " + isf)
+        case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Conflict in determining ordinary rules' runes: " + isf))
         }
       }
     })
@@ -86,7 +86,7 @@ class InferTemplar(
   ): (IInferSolveResult) = {
     profiler.childFrame("inferFromExplicitTemplateArgs", () => {
       if (identifyingRunes.size != explicits.size) {
-        vfail("Wrong number of template args!")
+        throw CompileErrorExceptionT(RangedInternalErrorT(invocationRange, "Wrong number of template args!"))
       }
 
       solve(

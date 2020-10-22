@@ -17,6 +17,8 @@ case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
 case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
 
+case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
+
 sealed trait IEnvironment {
   def file: Int
   def name: INameS

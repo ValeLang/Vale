@@ -9,23 +9,24 @@ import net.verdagon.vale.vassert
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
 case class LetAE(
+    range: RangeS,
     rules: List[IRulexAR],
     typeByRune: Map[IRuneA, ITemplataType],
     localRunes: Set[IRuneA],
     pattern: AtomAP,
     expr: IExpressionAE) extends IExpressionAE
 
-case class DestructAE(inner: IExpressionAE) extends IExpressionAE
+case class DestructAE(range: RangeS, inner: IExpressionAE) extends IExpressionAE
 
-case class IfAE(condition: BlockAE, thenBody: BlockAE, elseBody: BlockAE) extends IExpressionAE
+case class IfAE(range: RangeS, condition: BlockAE, thenBody: BlockAE, elseBody: BlockAE) extends IExpressionAE
 
-case class WhileAE(condition: BlockAE, body: BlockAE) extends IExpressionAE
+case class WhileAE(range: RangeS, condition: BlockAE, body: BlockAE) extends IExpressionAE
 
 case class ExprMutateAE(range: RangeS, mutatee: IExpressionAE, expr: IExpressionAE) extends IExpressionAE
-case class GlobalMutateAE(name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
+case class GlobalMutateAE(range: RangeS, name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
 case class LocalMutateAE(range: RangeS, name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
 
-case class LendAE(innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extends IExpressionAE {
+case class LendAE(range: RangeS, innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extends IExpressionAE {
   targetOwnership match {
     case WeakP =>
     case BorrowP =>
@@ -50,6 +51,7 @@ case class ReturnAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressio
 //case object MaybeUsed extends IVariableUseCertainty
 
 case class BodyAE(
+    range: RangeS,
     // These are all the variables we use from parent environments.
     // We have these so templar doesn't have to dive through all the functions
     // that it calls (impossible) to figure out what's needed in a closure struct.
@@ -59,6 +61,7 @@ case class BodyAE(
 ) extends IExpressionAE
 
 case class BlockAE(
+  range: RangeS,
   // This shouldn't be ordered yet because we introduce new locals all the
   // time in templar, easier to just order them in hammer.
   locals: List[LocalVariableA],
@@ -84,38 +87,41 @@ case class ConstructArrayAE(
     generatorExpr: IExpressionAE,
     mutability: MutabilityP) extends IExpressionAE
 
-case class ArgLookupAE(index: Int) extends IExpressionAE
+case class ArgLookupAE(range: RangeS, index: Int) extends IExpressionAE
 
 case class CheckRefCountAE(
-    refExpr: IExpressionAE,
-    category: RefCountCategory,
-    numExpr: IExpressionAE) extends IExpressionAE
+  range: RangeS,
+  refExpr: IExpressionAE,
+  category: RefCountCategory,
+  numExpr: IExpressionAE) extends IExpressionAE
 
  // These things will be separated by semicolons, and all be joined in a block
-case class RepeaterBlockAE(expression: IExpressionAE) extends IExpressionAE
+case class RepeaterBlockAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE
 
 // Results in a pack, represents the differences between the expressions
-case class RepeaterBlockIteratorAE(expression: IExpressionAE) extends IExpressionAE
+case class RepeaterBlockIteratorAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE
 
-case class VoidAE() extends IExpressionAE {}
+case class VoidAE(range: RangeS) extends IExpressionAE {}
 
-case class SequenceEAE(elements: List[IExpressionAE]) extends IExpressionAE
+case class SequenceEAE(range: RangeS, elements: List[IExpressionAE]) extends IExpressionAE
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
-case class RepeaterPackAE(expression: IExpressionAE) extends IExpressionAE
+case class RepeaterPackAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE
 
 // Results in a pack, represents the differences between the elements
-case class RepeaterPackIteratorAE(expression: IExpressionAE) extends IExpressionAE
+case class RepeaterPackIteratorAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE
 
-case class IntLiteralAE(value: Int) extends IExpressionAE
+case class IntLiteralAE(range: RangeS, value: Int) extends IExpressionAE
 
-case class BoolLiteralAE(value: Boolean) extends IExpressionAE
+case class BoolLiteralAE(range: RangeS, value: Boolean) extends IExpressionAE
 
-case class StrLiteralAE(value: String) extends IExpressionAE
+case class StrLiteralAE(range: RangeS, value: String) extends IExpressionAE
 
-case class FloatLiteralAE(value: Float) extends IExpressionAE
+case class FloatLiteralAE(range: RangeS, value: Float) extends IExpressionAE
 
-case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressionAE
+case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressionAE {
+  override def range: RangeS = function.range
+}
 
 case class DotAE(range: RangeS, left: IExpressionAE, member: String, borrowContainer: Boolean) extends IExpressionAE
 
@@ -125,15 +131,15 @@ case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1
 
 //case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0
 
-case class TemplateSpecifiedLookupAE(name: String, templateArgs: List[ITemplexS]) extends IExpressionAE
-case class RuneLookupAE(rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
+case class TemplateSpecifiedLookupAE(range: RangeS, name: String, templateArgs: List[ITemplexS]) extends IExpressionAE
+case class RuneLookupAE(range: RangeS, rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
 
 case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: OwnershipP) extends IExpressionAE
 case class OutsideLoadAE(range: RangeS, name: String) extends IExpressionAE
 
-case class UnletAE(name: String) extends IExpressionAE
+case class UnletAE(range: RangeS, name: String) extends IExpressionAE
 
-case class ArrayLengthAE(arrayExpr: IExpressionAE) extends IExpressionAE
+case class ArrayLengthAE(range: RangeS, arrayExpr: IExpressionAE) extends IExpressionAE
 
 
 case class LocalVariableA(

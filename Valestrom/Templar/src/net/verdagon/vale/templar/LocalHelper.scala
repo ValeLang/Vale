@@ -77,17 +77,18 @@ class LocalHelper(
   def makeUserLocalVariable(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
+    range: RangeS,
     varId: IVarName2,
     variability: Variability,
     referenceType2: Coord):
   ILocalVariable2 = {
     if (fate.getVariable(varId).nonEmpty) {
-      vfail("There's already a variable named " + varId)
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
     }
 
     val variable1 =
       fate.scoutedLocals.find(localA => NameTranslator.translateVarNameStep(localA.varName) == varId) match {
-        case None => vfail("Missing local variable information from FunctionA for " + fate.function.name + " for variable " + varId)
+        case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Missing local variable information from FunctionA for " + fate.function.name + " for variable " + varId))
         case Some(v) => v
       }
 
@@ -124,7 +125,7 @@ class LocalHelper(
           a.resultRegister.reference.ownership match {
             case Own => Borrow
             case Borrow => Borrow // it's fine if they accidentally borrow a borrow ref
-            case Weak => vfail("Can't borrow a weak local, must lock()")
+            case Weak => throw CompileErrorExceptionT(RangedInternalErrorT(loadRange, "Can't borrow a weak local, must lock()"))
             case Share => Share
           }
         (SoftLoad2(a, actualTargetOwnership))

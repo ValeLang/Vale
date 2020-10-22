@@ -31,13 +31,16 @@ object RefCounting {
         EqualsAR(RangeS.internal(-1420),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
+          RangeS.internal(-35),
           List(),
           BlockAE(
+            RangeS.internal(-35),
             List(
               LocalVariableA(CodeVarNameA("obj"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
               LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
               CheckRefCountAE(
+                RangeS.internal(-35),
                 LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP),
                 VariableRefCount,
                 FunctionCallAE(
@@ -46,8 +49,8 @@ object RefCounting {
                   OutsideLoadAE(RangeS.internal(-38),"+"),
                   List(
                     LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP),
-                    IntLiteralAE(1)))),
-              VoidAE())))))
+                    IntLiteralAE(RangeS.internal(-35), 1)))),
+              VoidAE(RangeS.internal(-35)))))))
 
   val checkMemberRcName = FunctionNameA("__checkmemberrc", CodeLocationS.internal(-5))
   val checkmemberrc =
@@ -74,12 +77,14 @@ object RefCounting {
         EqualsAR(RangeS.internal(-1423),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
+          RangeS.internal(-35),
           List(),
           BlockAE(
+            RangeS.internal(-35),
             List(
               LocalVariableA(CodeVarNameA("obj"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
               LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
-              CheckRefCountAE(LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP), MemberRefCount, LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP)),
-              VoidAE())))))
+              CheckRefCountAE(RangeS.internal(-35), LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP), MemberRefCount, LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP)),
+              VoidAE(RangeS.internal(-35)))))))
 }

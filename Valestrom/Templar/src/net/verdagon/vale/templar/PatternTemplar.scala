@@ -76,7 +76,7 @@ class PatternTemplar(
 
       val templatasByRune =
         inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-          case (isf@InferSolveFailure(_, _, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
+          case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
           case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
         }
 
@@ -123,21 +123,21 @@ class PatternTemplar(
     val expectedCoord =
       expectedTemplata match {
         case Some(CoordTemplata(coord)) => coord
-        case Some(_) => vfail("not a coord!")
-        case None => vfail("not found!")
+        case Some(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "not a coord!"))
+        case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "not found!"))
       }
 
     // Now we convert m to a Marine. This also checks that it *can* be
     // converted to a Marine.
     val inputExpr =
-      convertHelper.convert(fate.snapshot, temputs, unconvertedInputExpr, expectedCoord);
+      convertHelper.convert(fate.snapshot, temputs, range, unconvertedInputExpr, expectedCoord);
 
     val CaptureA(name, variability) = maybeCapture
     val variableId = NameTranslator.translateVarNameStep(name)
 
     val export =
       localHelper.makeUserLocalVariable(
-        temputs, fate, variableId, Conversions.evaluateVariability(variability), expectedCoord)
+        temputs, fate, range, variableId, Conversions.evaluateVariability(variability), expectedCoord)
     val let = LetNormal2(export, inputExpr);
 
     fate.addVariable(export)
@@ -187,7 +187,7 @@ class PatternTemplar(
           }
           case KnownSizeArrayT2(size, RawArrayT2(memberType, mutability)) => {
             if (size != listOfMaybeDestructureMemberPatterns.size) {
-              vfail("Wrong num exprs!")
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
             }
             val innerLets =
               nonCheckingTranslateArraySeq(

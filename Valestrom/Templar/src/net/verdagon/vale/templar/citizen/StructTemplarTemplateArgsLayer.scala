@@ -79,7 +79,7 @@ class StructTemplarTemplateArgsLayer(
           val inferences =
             result match {
               case isf@InferSolveFailure(_, _, _, _, _, _, _) => {
-                vfail("Couldnt figure out template args! Cause:\n" + isf)
+                throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Couldnt figure out template args! Cause:\n" + isf))
               }
               case InferSolveSuccess(i) => i
             }
@@ -144,7 +144,7 @@ class StructTemplarTemplateArgsLayer(
           val inferences =
             result match {
               case isf@InferSolveFailure(_, _, _, _, _, _, _) => {
-                vfail("Couldnt figure out template args! Cause:\n" + isf)
+                throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Couldnt figure out template args! Cause:\n" + isf))
               }
               case InferSolveSuccess(i) => i
             }

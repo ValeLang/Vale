@@ -232,8 +232,8 @@ class ValeCompiler:
                 valestrom_options.append(parseds_output_dir)
 
             proc = self.valestrom(user_vale_files, valestrom_options)
-            print(proc.stdout)
-            print(proc.stderr)
+            # print(proc.stdout)
+            # print(proc.stderr)
             if proc.returncode == 0:
                 vir_file = output_vir_file
                 pass
@@ -254,8 +254,8 @@ class ValeCompiler:
 
 
         proc = self.valec(vir_file, build_dir, midas_options)
-        print(proc.stdout)
-        print(proc.stderr)
+        # print(proc.stdout)
+        # print(proc.stderr)
         if proc.returncode != 0:
              print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
              sys.exit(1)

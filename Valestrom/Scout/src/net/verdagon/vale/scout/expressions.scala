@@ -15,15 +15,20 @@ case class LetSE(
     pattern: AtomSP,
     expr: IExpressionSE) extends IExpressionSE
 
-case class IfSE(condition: BlockSE, thenBody: BlockSE, elseBody: BlockSE) extends IExpressionSE
+case class IfSE(
+  range: RangeS,
+  condition: BlockSE,
+  thenBody: BlockSE,
+  elseBody: BlockSE
+) extends IExpressionSE
 
-case class WhileSE(condition: BlockSE, body: BlockSE) extends IExpressionSE
+case class WhileSE(range: RangeS, condition: BlockSE, body: BlockSE) extends IExpressionSE
 
 case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpressionSE) extends IExpressionSE
-case class GlobalMutateSE(name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
+case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
 
-case class LendSE(innerExpr1: IExpressionSE, targetOwnership: OwnershipP) extends IExpressionSE {
+case class LendSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: OwnershipP) extends IExpressionSE {
   targetOwnership match {
     case WeakP =>
     case BorrowP =>
@@ -55,6 +60,7 @@ case class LocalVariable1(
     childMutated: IVariableUseCertainty)
 
 case class BodySE(
+    range: RangeS,
     // These are all the variables we use from parent environments.
     // We have these so templar doesn't have to dive through all the functions
     // that it calls (impossible) to figure out what's needed in a closure struct.
@@ -64,6 +70,7 @@ case class BodySE(
 )// extends IExpressionSE
 
 case class BlockSE(
+  range: RangeS,
   locals: List[LocalVariable1],
 
   exprs: List[IExpressionSE],
@@ -76,9 +83,10 @@ case class BlockSE(
   vassert(locals == locals.distinct)
 }
 
-case class ArgLookupSE(index: Int) extends IExpressionSE
+case class ArgLookupSE(range: RangeS, index: Int) extends IExpressionSE
 
 case class CheckRefCountSE(
+  range: RangeS,
     refExpr: IExpressionSE,
     category: RefCountCategory,
     numExpr: IExpressionSE) extends IExpressionSE
@@ -93,33 +101,35 @@ case object MemberRefCount extends RefCountCategory
 case object RegisterRefCount extends RefCountCategory
 
  // These things will be separated by semicolons, and all be joined in a block
-case class RepeaterBlockSE(expression: IExpressionSE) extends IExpressionSE
+case class RepeaterBlockSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
 
 // Results in a pack, represents the differences between the expressions
-case class RepeaterBlockIteratorSE(expression: IExpressionSE) extends IExpressionSE
+case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
 
 case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
-case class VoidSE() extends IExpressionSE {}
+case class VoidSE(range: RangeS) extends IExpressionSE {}
 
-case class SequenceESE(elements: List[IExpressionSE]) extends IExpressionSE
+case class SequenceESE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
-case class RepeaterPackSE(expression: IExpressionSE) extends IExpressionSE
+case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
 
 // Results in a pack, represents the differences between the elements
-case class RepeaterPackIteratorSE(expression: IExpressionSE) extends IExpressionSE
+case class RepeaterPackIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
 
-case class IntLiteralSE(value: Int) extends IExpressionSE
+case class IntLiteralSE(range: RangeS, value: Int) extends IExpressionSE
 
-case class BoolLiteralSE(value: Boolean) extends IExpressionSE
+case class BoolLiteralSE(range: RangeS, value: Boolean) extends IExpressionSE
 
-case class StrLiteralSE(value: String) extends IExpressionSE
+case class StrLiteralSE(range: RangeS, value: String) extends IExpressionSE
 
-case class FloatLiteralSE(value: Float) extends IExpressionSE
+case class FloatLiteralSE(range: RangeS, value: Float) extends IExpressionSE
 
-case class DestructSE(inner: IExpressionSE) extends IExpressionSE
+case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 
-case class FunctionSE(function: FunctionS) extends IExpressionSE
+case class FunctionSE(function: FunctionS) extends IExpressionSE {
+  override def range: RangeS = function.range
+}
 
 case class DotSE(range: RangeS, left: IExpressionSE, member: String, borrowContainer: Boolean) extends IExpressionSE
 
@@ -129,15 +139,15 @@ case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1
 
 //case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0
 
-case class TemplateSpecifiedLookupSE(name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
+case class TemplateSpecifiedLookupSE(range: RangeS, name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
 
 case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
 // Loads a non-local. In well formed code, this will be a function, but the user also likely
 // tried to access a variable they forgot to declare.
 case class OutsideLoadSE(range: RangeS, name: String) extends IExpressionSE
-case class RuneLookupSE(rune: IRuneS) extends IExpressionSE
+case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE
 
-case class UnletSE(name: String) extends IExpressionSE
+case class UnletSE(range: RangeS, name: String) extends IExpressionSE
 
 
 //case class Scramble0(elements: List[Expression0]) extends Expression0 {

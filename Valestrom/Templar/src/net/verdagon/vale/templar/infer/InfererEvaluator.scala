@@ -4,7 +4,7 @@ import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
 import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
-import net.verdagon.vale.templar.{IName2, IRune2, NameTranslator, SolverKindRune2}
+import net.verdagon.vale.templar.{CompileErrorExceptionT, IName2, IRune2, NameTranslator, RangedInternalErrorT, SolverKindRune2}
 import net.verdagon.vale.templar.infer.infer._
 import net.verdagon.vale.templar.templata.{Conversions, ITemplata, _}
 import net.verdagon.vale.templar.types.{Kind, _}
@@ -26,14 +26,12 @@ private[infer] trait IInfererEvaluatorDelegate[Env, State] {
 
   def getAncestorInterfaces(temputs: State, descendantCitizenRef: CitizenRef2): Set[InterfaceRef2]
 
-  def lookupTemplata(env: Env, rune: IName2): ITemplata
-  def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata
+  def lookupTemplata(env: Env, range: RangeS, rune: IName2): ITemplata
+  def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
   def getMemberCoords(state: State, structRef: StructRef2): List[Coord]
 
   def structIsClosure(state: State, structRef: StructRef2): Boolean
-
-  def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
 
   def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2
 }
@@ -614,7 +612,7 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case _ => vfail("Unknown function \"" + name + "\"!");
+      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Unknown function \"" + name + "\"!"))
     }
   }
 
@@ -672,7 +670,7 @@ class InfererEvaluator[Env, State](
         } else {
           // We might be grabbing a rune from a parent environment thats already solved,
           // such as when we do spaceship.fly() in TMRE.
-          val templata = delegate.lookupTemplata(env, rune)
+          val templata = delegate.lookupTemplata(env, range, rune)
           if (templata.tyype != expectedType) {
             return (InferEvaluateConflict(inferences.inferences, range, "Rune " + rune + " is of type " + expectedType + ", but it received a " + templata.tyype + ", specifically " + templata, List()))
           }
@@ -775,7 +773,7 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case PrototypeTT(_, _, _) => {
+      case PrototypeTT(_, _, _, _) => {
         vfail("Unimplemented")
       }
       case CoordListTT(range, memberTemplexes) => {
@@ -787,7 +785,7 @@ class InfererEvaluator[Env, State](
           case (InferEvaluateSuccess(memberTemplatas, deeplySatisfied)) => {
             val memberCoords = memberTemplatas.collect({ case CoordTemplata(coord) => coord })
             if (memberCoords.size != memberTemplatas.size) {
-              vfail("Packs can only take coords!")
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Packs can only take coords!"))
             }
             InferEvaluateSuccess(CoordListTemplata(memberCoords), deeplySatisfied)
           }
@@ -851,7 +849,7 @@ class InfererEvaluator[Env, State](
           case Some(templatas) => {
             val coords = templatas.collect({ case CoordTemplata(coord) => coord })
             if (coords.size != templatas.size) {
-              vfail("Not all templatas given to tuple were coords!")
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Not all templatas given to tuple were coords!"))
             }
             val tuple = templataTemplar.getTupleKind(env, state, range, coords, resultType)
             (InferEvaluateSuccess(tuple, elementsDeeplySatisfied))
@@ -1077,7 +1075,7 @@ class InfererEvaluator[Env, State](
           case (InferEvaluateSuccess(templataFromRune, ds)) => (InferEvaluateSuccess(templataFromRune, ds))
         }
       }
-      case _ => vfail("Can only destructure coords and kinds!")
+      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can only destructure coords and kinds!"))
     }
   }
 
@@ -1102,7 +1100,7 @@ class InfererEvaluator[Env, State](
             case (InferEvaluateSuccess(templata, ds)) => {
               templata match {
                 case OwnershipTemplata(ownership) => (Some(ownership), ds)
-                case _ => vfail("First component of Coord must be an ownership!")
+                case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "First component of Coord must be an ownership!"))
               }
             }
           }
@@ -1113,7 +1111,7 @@ class InfererEvaluator[Env, State](
             case (InferEvaluateSuccess(templata, ds)) => {
               templata match {
                 case KindTemplata(kind) => (Some(kind), ds)
-                case _ => vfail("Fourth component of Coord must be a kind!")
+                case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Fourth component of Coord must be a kind!"))
               }
             }
           }
@@ -1131,7 +1129,7 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case _ => vfail("Coords must have 4 components")
+      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Coords must have 4 components"))
     }
   }
 
@@ -1178,7 +1176,7 @@ class InfererEvaluator[Env, State](
         case (InferEvaluateSuccess(templata, ds)) => {
           templata match {
             case StringTemplata(name) => (Some(name), ds)
-            case _ => vfail("First component of Prototype must be a string!")
+            case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "First component of Prototype must be a string!"))
           }
         }
       }
@@ -1189,7 +1187,7 @@ class InfererEvaluator[Env, State](
         case (InferEvaluateSuccess(templata, ds)) => {
           templata match {
             case CoordListTemplata(coords) => (Some(coords), ds)
-            case _ => vfail("First component of Coord must be an ownership!")
+            case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "First component of Coord must be an ownership!"))
           }
         }
       }
@@ -1264,15 +1262,11 @@ class InfererEvaluator[Env, State](
           delegate.structIsClosure(state, structRef)
         }
 
-        def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2 = {
-          delegate.getSimpleInterfaceMethod(state, interfaceRef)
+        override def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata = {
+          delegate.lookupTemplata(env, range, name)
         }
-
-        override def lookupTemplata(env: Env, name: IName2): ITemplata = {
-          delegate.lookupTemplata(env, name)
-        }
-        override def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata = {
-          delegate.lookupTemplata(profiler, env, name)
+        override def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
+          delegate.lookupTemplata(profiler, env, range, name)
         }
       })
   }

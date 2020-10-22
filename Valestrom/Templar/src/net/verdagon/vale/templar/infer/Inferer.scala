@@ -28,8 +28,8 @@ trait IInfererDelegate[Env, State] {
 
   def getMutability(state: State, kind: Kind): Mutability
 
-  def lookupTemplata(env: Env, name: IName2): ITemplata
-  def lookupTemplataImprecise(env: Env, name: IImpreciseNameStepA): ITemplata
+  def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata
+  def lookupTemplataImprecise(env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
   def evaluateStructTemplata(
     state: State,
@@ -62,8 +62,6 @@ trait IInfererDelegate[Env, State] {
   def getMemberCoords(state: State, structRef: StructRef2): List[Coord]
 
   def structIsClosure(state: State, structRef: StructRef2): Boolean
-
-  def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2
 
   def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2
 }
@@ -121,12 +119,12 @@ object Inferer {
 //        delegate.getPackKind(env, state, members)
 //      }
 
-      override def lookupTemplata(env: Env, name: IName2): ITemplata = {
-        delegate.lookupTemplata(env, name)
+      override def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata = {
+        delegate.lookupTemplata(env, range, name)
       }
 
-      override def lookupTemplataImprecise(env: Env, name: IImpreciseNameStepA): ITemplata = {
-        delegate.lookupTemplataImprecise(env, name)
+      override def lookupTemplataImprecise(env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
+        delegate.lookupTemplataImprecise(env, range, name)
       }
 
       override def evaluateInterfaceTemplata(state: State, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]): (Kind) = {
@@ -168,11 +166,11 @@ object Inferer {
         delegate.getAncestorInterfaces(temputs, descendantCitizenRef)
       }
 
-      override def lookupTemplata(env: Env, name: IName2): ITemplata = {
-        delegate.lookupTemplata(env, name)
+      override def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata = {
+        delegate.lookupTemplata(env, range, name)
       }
-      override def lookupTemplata(profiler: IProfiler, env: Env, name: IImpreciseNameStepA): ITemplata = {
-        delegate.lookupTemplataImprecise(env, name)
+      override def lookupTemplata(profiler: IProfiler, env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
+        delegate.lookupTemplataImprecise(env, range, name)
       }
 
       override def lookupMemberTypes(state: State, kind: Kind, expectedNumMembers: Int):
@@ -194,10 +192,6 @@ object Inferer {
 
       override def structIsClosure(state: State, structRef: StructRef2): Boolean = {
         delegate.structIsClosure(state, structRef)
-      }
-
-      override def getSimpleInterfaceMethod(state: State, interfaceRef: InterfaceRef2): Prototype2 = {
-        delegate.getSimpleInterfaceMethod(state, interfaceRef)
       }
 
       override def resolveExactSignature(env: Env, state: State, range: RangeS, name: String, coords: List[Coord]): Prototype2 = {

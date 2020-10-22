@@ -64,8 +64,10 @@ object Arrays {
               CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
+          RangeS.internal(-56),
           List(),
           BlockAE(
+            RangeS.internal(-56),
             List(
               LocalVariableA(CodeVarNameA("size"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
               LocalVariableA(CodeVarNameA("generator"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),

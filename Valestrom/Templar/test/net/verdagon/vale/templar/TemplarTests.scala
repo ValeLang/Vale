@@ -1048,5 +1048,13 @@ class TemplarTests extends FunSuite with Matchers {
       LambdaReturnDoesntMatchInterfaceConstructor(
         RangeS.testZero))
       .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      IfConditionIsntBoolean(
+        RangeS.testZero, fireflyCoord))
+      .length > 0
+    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      WhileConditionIsntBoolean(
+        RangeS.testZero, fireflyCoord))
+      .length > 0
   }
 }

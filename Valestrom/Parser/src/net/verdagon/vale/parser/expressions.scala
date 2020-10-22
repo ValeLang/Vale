@@ -2,7 +2,9 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.vassert
 
-trait IExpressionPE
+trait IExpressionPE {
+  def range: Range
+}
 
 case class VoidPE(range: Range) extends IExpressionPE {}
 
@@ -13,9 +15,9 @@ case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: OwnershipP
   }
 }
 
-case class AndPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionPE
+case class AndPE(range: Range, left: BlockPE, right: BlockPE) extends IExpressionPE
 
-case class OrPE(left: IExpressionPE, right: IExpressionPE) extends IExpressionPE
+case class OrPE(range: Range, left: BlockPE, right: BlockPE) extends IExpressionPE
 
 case class IfPE(range: Range, condition: BlockPE, thenBody: BlockPE, elseBody: BlockPE) extends IExpressionPE
 // condition and body are both blocks because otherwise, if we declare a variable inside them, then
@@ -75,14 +77,21 @@ case class MethodCallPE(
 ) extends IExpressionPE
 
 case class TemplateArgsP(range: Range, args: List[ITemplexPT])
-case class LookupPE(name: StringP, templateArgs: Option[TemplateArgsP]) extends IExpressionPE
+case class LookupPE(
+  name: StringP,
+  templateArgs: Option[TemplateArgsP]
+) extends IExpressionPE {
+  override def range: Range = name.range
+}
 case class MagicParamLookupPE(range: Range) extends IExpressionPE
 
 case class LambdaPE(
   // Just here for syntax highlighting so far
   captures: Option[UnitP],
   function: FunctionP
-) extends IExpressionPE
+) extends IExpressionPE {
+  override def range: Range = function.range
+}
 
 case class BlockPE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE {
   // Every element should have at least one expression, because a block will

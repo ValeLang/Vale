@@ -38,7 +38,7 @@ class DestructorTemplar(
             List(),
             true)  match {
           case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-            vfail("Couldn't find concrete destructor!\n" + seff.toString)
+            throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find concrete destructor!\n" + seff.toString))
           }
           case (ScoutExpectedFunctionSuccess(p)) => (p)
         }
@@ -58,7 +58,7 @@ class DestructorTemplar(
           List(),
           true) match {
           case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-            vfail("Couldn't find interface destructor!\n" + seff.toString)
+            throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find interface destructor!\n" + seff.toString))
           }
           case (ScoutExpectedFunctionSuccess(p)) => (p)
         }
@@ -86,7 +86,7 @@ class DestructorTemplar(
       List(),
       true) match {
       case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-        vfail("Couldn't find array destructor!\n" + seff.toString)
+        throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find array destructor!\n" + seff.toString))
       }
       case (ScoutExpectedFunctionSuccess(p)) => (p)
     }
@@ -113,7 +113,7 @@ class DestructorTemplar(
       List(),
       true) match {
       case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-        vfail("Couldn't find drop function!\n" + seff.toString)
+        throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find drop function!\n" + seff.toString))
       }
       case (ScoutExpectedFunctionSuccess(p)) => (p)
     }
@@ -471,7 +471,7 @@ class DestructorTemplar(
     sefResult match {
       case ScoutExpectedFunctionSuccess(prototype) => prototype
       case ScoutExpectedFunctionFailure(_, _, _, _, _) => {
-        vfail(sefResult.toString)
+        throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), sefResult.toString))
       }
     }
   }

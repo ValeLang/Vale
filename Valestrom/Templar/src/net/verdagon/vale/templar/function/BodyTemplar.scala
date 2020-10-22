@@ -63,7 +63,7 @@ class BodyTemplar(
 
           vassert(returns.nonEmpty)
           if (returns.size > 1) {
-            vfail("Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _))
+            throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _)))
           }
           val returnType2 = returns.head
 
@@ -105,7 +105,7 @@ class BodyTemplar(
           } else if (returns == Set(Coord(Share, Never2()))) {
             // Let it through, it returns a never but we expect something else, that's fine
           } else {
-            vfail("In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns)
+            throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns))
           }
 
           (header, body2)
@@ -137,7 +137,7 @@ class BodyTemplar(
     funcOuterEnv.addScoutedLocals(body1.block.locals)
 
     val letExprs2 =
-      evaluateLets(funcOuterEnv, temputs, params1, params2);
+      evaluateLets(funcOuterEnv, temputs, body1.range, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
       delegate.evaluateBlockStatements(temputs, startingFuncOuterEnv, funcOuterEnv, body1.block.exprs);
@@ -157,7 +157,7 @@ class BodyTemplar(
             if (lastUnconvertedUnreturnedExpr.referend == Never2()) {
               lastUnconvertedUnreturnedExpr
             } else {
-              convertHelper.convert(funcOuterEnv.snapshot, temputs, lastUnconvertedUnreturnedExpr, expectedResultType);
+              convertHelper.convert(funcOuterEnv.snapshot, temputs, body1.range, lastUnconvertedUnreturnedExpr, expectedResultType);
             }
           } else {
             return Err(ResultTypeMismatchError(expectedResultType, lastUnconvertedUnreturnedExpr.resultRegister.reference))
@@ -189,7 +189,7 @@ class BodyTemplar(
       // promise it gets destroyed.
       val destructeeName = params2.head.name
       if (!funcOuterEnv.moveds.exists(_.last == destructeeName)) {
-        vfail("Destructee wasn't moved/destroyed!");
+        throw CompileErrorExceptionT(RangedInternalErrorT(body1.range, "Destructee wasn't moved/destroyed!"))
       }
     }
 
@@ -202,6 +202,7 @@ class BodyTemplar(
   private def evaluateLets(
       fate: FunctionEnvironmentBox,
       temputs: Temputs,
+    range: RangeS,
       params1: List[ParameterA],
       params2: List[Parameter2]):
   (List[ReferenceExpression2]) = {
@@ -217,7 +218,7 @@ class BodyTemplar(
     params1.foreach({
       case ParameterA(AtomAP(_, CaptureA(name, _), _, _, _)) => {
         if (!fate.variables.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
-          vfail("wot couldnt find " + name)
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }
       case _ =>

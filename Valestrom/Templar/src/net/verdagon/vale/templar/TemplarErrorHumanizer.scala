@@ -15,6 +15,9 @@ object TemplarErrorHumanizer {
       err: ICompileErrorT):
   String = {
     err match {
+      case RangedInternalErrorT(range, message) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) + message
+      }
       case CantMoveOutOfMemberT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
@@ -112,6 +115,14 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, newFunctionRange.file, newFunctionRange.begin.offset) +
           ": Function " + signature.fullName.last + " already exists! Previous declaration at:\n" +
           humanizePos(filenamesAndSources, oldFunctionRange.file, oldFunctionRange.begin.offset)
+      }
+      case IfConditionIsntBoolean(range, actualType) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": If condition should be a bool, but was: " + actualType
+      }
+      case WhileConditionIsntBoolean(range, actualType) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": If condition should be a bool, but was: " + actualType
       }
     }
   }

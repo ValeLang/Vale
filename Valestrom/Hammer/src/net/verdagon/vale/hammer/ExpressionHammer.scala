@@ -2,6 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, metal => m}
+import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.metal.{ShareH, BorrowH => _, Immutable => _, Mutable => _, OwnH => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.AddressibleLocalVariable2
@@ -488,7 +489,7 @@ object ExpressionHammer {
         val void = NewStructH(List(), List(), ProgramH.emptyTupleStructType)
         originalExpr :: (deferredExprs :+ void)
       } else {
-        val temporaryResultLocal = locals.addHammerLocal(originalExpr.resultType)
+        val temporaryResultLocal = locals.addHammerLocal(originalExpr.resultType, m.Final)
         val stackify = StackifyH(originalExpr, temporaryResultLocal, None)
         val unstackify = UnstackifyH(temporaryResultLocal)
         locals.markUnstackified(temporaryResultLocal.id)

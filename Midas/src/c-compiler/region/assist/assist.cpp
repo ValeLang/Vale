@@ -125,7 +125,7 @@ Ref Assist::lockWeak(
   auto resultOptTypeLE = translateType(resultOptTypeM);
   return regularInnerLockWeak(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM,
-      constraintRefM, sourceWeakRefMT, sourceWeakRef, sourceKnownLive, buildThen, buildElse,
+      constraintRefM, sourceWeakRefMT, sourceWeakRef, buildThen, buildElse,
       isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
 }
 

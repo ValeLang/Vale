@@ -524,7 +524,7 @@ Ref Mega::lockWeak(
       auto resultOptTypeLE = translateType(resultOptTypeM);
       return regularInnerLockWeak(
           globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM,
-          constraintRefM, sourceWeakRefMT, sourceWeakRefLE, weakRefKnownLive, buildThen, buildElse,
+          constraintRefM, sourceWeakRefMT, sourceWeakRefLE, buildThen, buildElse,
           isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
       break;
     }

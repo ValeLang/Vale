@@ -633,6 +633,9 @@ case class Local(
   // No two variables in a FunctionH have the same id.
   id: VariableIdH,
 
+  // Whether the local is ever changed or not.
+  variability: Variability,
+
   // The type of the reference this local variable has.
   typeH: ReferenceH[ReferendH])
 

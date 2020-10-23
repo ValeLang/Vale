@@ -2,6 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hammer.ExpressionHammer.translate
 import net.verdagon.vale.hinputs.Hinputs
+import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, metal => m}
 import net.verdagon.vale.metal.{Variability => _, _}
 import net.verdagon.vale.templar._
@@ -29,7 +30,7 @@ object LetHammer {
       localVariable match {
         case ReferenceLocalVariable2(varId, variability, type2) => {
           translateMundaneLet(
-            hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability)
         }
         case AddressibleLocalVariable2(varId, variability, reference) => {
           translateAddressibleLet(
@@ -59,7 +60,7 @@ object LetHammer {
       localVariable match {
         case ReferenceLocalVariable2(varId, variability, type2) => {
           translateMundaneLetAndLend(
-            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId)
+            hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2, sourceExprResultLine, sourceResultPointerTypeH, let2, varId, variability)
         }
         case AddressibleLocalVariable2(varId, variability, reference) => {
           translateAddressibleLetAndLend(
@@ -87,7 +88,7 @@ object LetHammer {
     val expectedLocalBoxType = ReferenceH(m.OwnH, YonderH, boxStructRefH)
 
     val local =
-      locals.addTemplarLocal(hinputs, hamuts, varId, expectedLocalBoxType)
+      locals.addTemplarLocal(hinputs, hamuts, varId, Conversions.evaluateVariability(variability), expectedLocalBoxType)
 
     StackifyH(
       NewStructH(
@@ -128,16 +129,17 @@ object LetHammer {
   }
 
   private def translateMundaneLet(
-                                   hinputs: Hinputs,
-                                   hamuts: HamutsBox,
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
-                                   locals: LocalsBox,
-                                   sourceExprResultLine: ExpressionH[ReferendH],
-                                   sourceResultPointerTypeH: ReferenceH[ReferendH],
-                                   varId: FullName2[IVarName2]):
+    locals: LocalsBox,
+    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    varId: FullName2[IVarName2],
+    variability: Variability):
   StackifyH = {
     val localIndex =
-      locals.addTemplarLocal(hinputs, hamuts, varId, sourceResultPointerTypeH)
+      locals.addTemplarLocal(hinputs, hamuts, varId, Conversions.evaluateVariability(variability), sourceResultPointerTypeH)
     val stackNode =
       StackifyH(
         sourceExprResultLine,
@@ -155,7 +157,8 @@ object LetHammer {
                                             sourceExprResultLine: ExpressionH[ReferendH],
                                             sourceResultPointerTypeH: ReferenceH[ReferendH],
                                             let2: LetAndLend2,
-                                            varId: FullName2[IVarName2]):
+                                            varId: FullName2[IVarName2],
+      variability: Variability):
     ExpressionH[ReferendH] = {
 
       val stackifyH =
@@ -166,7 +169,8 @@ object LetHammer {
           locals,
           sourceExprResultLine,
           sourceResultPointerTypeH,
-          varId)
+          varId,
+          variability)
 
     val (borrowAccess, List()) =
       LoadHammer.translateMundaneLocalLoad(
@@ -211,7 +215,7 @@ object LetHammer {
         val unstackifyBoxNode = UnstackifyH(local)
         locals.markUnstackified(varId)
 
-        val innerLocal = locals.addHammerLocal(innerTypeH)
+        val innerLocal = locals.addHammerLocal(innerTypeH, Conversions.evaluateVariability(variability))
 
         val desH =
           DestroyH(
@@ -257,7 +261,7 @@ object LetHammer {
             TypeHammer.translateReference(hinputs, hamuts, arrSeqT.array.memberType)
           val localIndex =
             locals.addTemplarLocal(
-              hinputs, hamuts, destinationReferenceLocalVariable.id, memberRefTypeH)
+              hinputs, hamuts, destinationReferenceLocalVariable.id, Conversions.evaluateVariability(destinationReferenceLocalVariable.variability), memberRefTypeH)
           (memberRefTypeH, localIndex)
         })
         .unzip
@@ -308,7 +312,7 @@ object LetHammer {
                 TypeHammer.translateReference(hinputs, hamuts, memberRefType2)
               val localIndex =
                 locals.addTemplarLocal(
-                  hinputs, hamuts, destinationReferenceLocalVariable.id, memberRefTypeH)
+                  hinputs, hamuts, destinationReferenceLocalVariable.id, Conversions.evaluateVariability(destinationReferenceLocalVariable.variability), memberRefTypeH)
               (remainingDestinationReferenceLocalVariables.tail, previousLocalTypes :+ memberRefTypeH, previousLocalIndices :+ localIndex)
             }
             // The struct might have addressibles in them, which translate to
@@ -324,7 +328,7 @@ object LetHammer {
                 StructHammer.makeBox(hinputs, hamuts, member2.variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.
               val localBoxType = ReferenceH(m.BorrowH, YonderH, boxStructRefH)
-              val localIndex = locals.addHammerLocal(localBoxType)
+              val localIndex = locals.addHammerLocal(localBoxType, m.Final)
 
               (remainingDestinationReferenceLocalVariables, previousLocalTypes :+ localBoxType, previousLocalIndices :+ localIndex)
             }

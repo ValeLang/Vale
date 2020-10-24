@@ -7,9 +7,15 @@ import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.util.parsing.input.{CharSequenceReader, Position}
 
-sealed trait IParseResult[T]
-case class ParseFailure[T](error: IParseError) extends IParseResult[T]
-case class ParseSuccess[T](result: T) extends IParseResult[T]
+sealed trait IParseResult[T] {
+  def get(): T
+}
+case class ParseFailure[T](error: IParseError) extends IParseResult[T] {
+  override def get(): T = { vfail() }
+}
+case class ParseSuccess[T](result: T) extends IParseResult[T] {
+  override def get(): T = result
+}
 
 object Parser {
   case class ParsingIterator(code: String, var position: Int = 0) {

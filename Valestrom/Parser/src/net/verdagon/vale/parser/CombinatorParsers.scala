@@ -58,7 +58,7 @@ object CombinatorParsers
 
   def topLevelFunctionBegin = {
     pos ~
-      ("fn" ~> optWhite ~> (comparisonOperators | exprIdentifier) <~ optWhite) ~
+      ("fn" ~> optWhite ~> (comparisonOperators | functionIdentifier) <~ optWhite) ~
       opt(identifyingRunesPR <~ optWhite) ~
       (patternPrototypeParams <~ optWhite) ~
       pos ~

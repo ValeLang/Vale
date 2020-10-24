@@ -1,0 +1,203 @@
+fn writeBeginJson() void {
+    print("{\"__type\": \"File\", \n");
+    print("\"topLevelThings\": [\n");
+}
+
+fn writeSeperatorJson() {
+    print(", ");
+}
+
+fn writeEndJson() {
+    print("]}");
+}
+
+fn writeJson(str str) void {
+    print("\"");
+    print(str);
+    print("\"");
+}
+
+fn writeJson(struct &StructP) void {
+    print("{\"__type\": \"Struct\", \n");
+    
+    print("  \"range\": ");
+    struct.range.writeJson();
+    print(",\n");
+    
+    print("\"name\": ");
+    struct.name.writeJson();
+    print(",\n");
+    
+    print("\"attributes\": ");
+    struct.attributes.writeJson();
+    
+    //i = 0;
+    //while (i < struct.attributes.len()) {
+    //    attribute = struct.attributes.get(i).get();
+    //    attribute.writeJson();
+    //    print(", ");
+    //    mut i = i + 1;
+    //}
+    //print("],\n");
+    print(",\n");
+    
+    print("\"mutability\": ");
+    struct.mutability.writeJson();
+    print(",\n");
+    
+    print("\"identifyingRunes\": ");
+    struct.identifyingRunes.writeJson();
+    print(",\n");
+    
+    print("\"templateRules\": ");
+    struct.templateRules.writeJson();
+    print(",\n");
+
+    print("\"members\": ");
+    struct.members.writeJson();
+    print("}\n");
+}
+
+fn writeJson(range &Range) void {
+    print("{\"__type\": \"Range\", \"begin\": ");
+    print(range.begin);
+    print(", \"end\": ");
+    print(range.end);
+    print("}");
+}
+
+fn writeJson(name &NameP) void {
+    print("{\"__type\": \"Name\", \"range\": ");
+    name.range.writeJson();
+    print(",\n");
+    print("  \"name\": ");
+    name.string.writeJson();
+    print("}");
+}
+
+fn writeJson(citizenAttributeP &ICitizenAttributeP) void {
+    //TODO: Missing
+    print("----------MISSING--------------");
+}
+
+fn writeJson(virtual mutabilityP &MutabilityP) void abstract;
+fn writeJson(mutabilityP &MutableP impl MutabilityP) void {
+    print("{\"__type\": \"Mutable\"}");
+}
+fn writeJson(mutabilityP &ImmutableP impl MutabilityP) void {
+    print("{\"__type\": \"Immutable\"}");
+}
+
+fn writeJson(virtual variabilityP &VariabilityP) void abstract;
+fn writeJson(finalP &FinalP impl VariabilityP) void {
+    print("{\"__type\": \"Final\"}");
+}
+fn writeJson(varyingP &VaryingP impl VariabilityP) void {
+    print("{\"__type\": \"Varying\"}");
+}
+
+fn writeJson(virtual structContent &IStructContent) void abstract;
+fn writeJson(structMemberP &StructMemberP impl IStructContent) void {
+    print("{\"__type\": \"StructMember\"");
+    print(",\n");
+    print("  \"range\": ");
+    structMemberP.range.writeJson();
+    print(",\n");
+    print("  \"name\": ");
+    structMemberP.name.writeJson();
+    print(",\n");
+    print("  \"variability\": ");
+    structMemberP.variability.writeJson();
+    print(",\n");
+    print("  \"type\": ");
+    structMemberP.type.writeJson();
+    print("}");
+}
+fn writeJson(virtual templexPT &ITemplexPT) void abstract;
+fn writeJson(nameOrRunePT &NameOrRunePT impl ITemplexPT) void {
+    print("{\"__type\": \"NameOrRuneT\"");
+    print(",\n");
+    print("  \"rune\": ");
+    nameOrRunePT.name.writeJson();
+    print("}");
+}
+
+fn writeJson<T>(opt &Opt<T>) void {
+    if (opt.isEmpty()) {
+        print("{\"__type\": \"None\"}");
+    } else {
+        print("{\"__type\": \"Some\",\n  \"value\": ");
+        opt.get().writeJson();
+        print("}");
+    }
+}
+
+fn writeJson<T>(list &List<T>) {
+    print("[");
+    i = 0;
+    while (i < list.len()) {
+        if (i != 0) {
+            print(",");
+        }
+        print("\n");
+        item = list.get(i).get();
+        item.writeJson();
+        mut i = i + 1;
+    }
+    print("]");
+}
+
+fn writeJson(identifyingRunes &IdentifyingRunesP) void {
+    print("{\"__type\": \"IdentifyingRunes\", ");
+    print("  \"range\": ");
+    identifyingRunes.range.writeJson();
+    print(",\n");
+    print("  \"identifyingRunes\": ");
+    identifyingRunes.runes.writeJson();
+    print("}");
+}
+
+fn writeJson(identifyingRune &IdentifyingRuneP) void {
+    print("{\"__type\": \"IdentifyingRune\", \n");
+    print("  \"range\": ");
+    identifyingRune.range.writeJson();
+    print(",\n");
+    print("  \"name\": ");
+    identifyingRune.name.writeJson();
+    print("}");
+}
+
+fn writeJson(templateRulesP &TemplateRulesP) void {
+    //TODO: Missing
+    print("----------MISSING--------------");
+}
+
+fn writeJson(structMembers &StructMembersP) void {
+    print("{\"__type\": \"StructMembers\", ");
+    print("  \"range\": ");
+    structMembers.range.writeJson();
+    print(",\n");
+    print("  \"members\": ");
+    structMembers.contents.writeJson();
+    print("}");
+}
+
+
+
+fn writeJson(functionP &FunctionP) void {
+    print("{\"__type\": \"Function\", ");
+    print("  \"range\": ");
+    functionP.range.writeJson();
+    print("  \"header\": ");
+    functionP.header.writeJson();
+    print("  \"body\": ");
+    functionP.body.writeJson();
+    print("}");
+}
+
+fn writeJson(functionHeaderP &FunctionHeaderP) void {
+    //Missing
+}
+fn writeJson(blockPE &BlockPE) void {
+    //Missing
+}

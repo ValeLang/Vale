@@ -6,7 +6,9 @@ import net.verdagon.vale.{vassert, vwat}
 
 import scala.collection.immutable.List
 
-trait IExpressionAE
+trait IExpressionAE {
+  def range: RangeS
+}
 
 case class ProgramA(
     structs: List[StructA],

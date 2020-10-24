@@ -2,8 +2,10 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
+import net.verdagon.vale.parser.VariabilityP
 import net.verdagon.vale.templar.{CitizenName2, ExternFunctionName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
 import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.templar.{types => t}
 
 case class FunctionRefH(prototype: PrototypeH) {
   //  def functionType = prototype.functionType
@@ -29,9 +31,10 @@ case class LocalsBox(var inner: Locals) {
   }
 
   def addHammerLocal(
-    tyype: ReferenceH[ReferendH]):
+    tyype: ReferenceH[ReferendH],
+    variability: Variability):
   Local = {
-    val (newInner, local) = inner.addHammerLocal(tyype)
+    val (newInner, local) = inner.addHammerLocal(tyype, variability)
     inner = newInner
     local
   }
@@ -40,9 +43,10 @@ case class LocalsBox(var inner: Locals) {
     hinputs: Hinputs,
     hamuts: HamutsBox,
     varId2: FullName2[IVarName2],
+    variability: Variability,
     tyype: ReferenceH[ReferendH]):
   Local = {
-    val (newInner, local) = inner.addTemplarLocal(hinputs, hamuts, varId2, tyype)
+    val (newInner, local) = inner.addTemplarLocal(hinputs, hamuts, varId2, variability, tyype)
     inner = newInner
     local
   }
@@ -66,6 +70,7 @@ case class Locals(
     hinputs: Hinputs,
     hamuts: HamutsBox,
     varId2: FullName2[IVarName2],
+    variability: Variability,
     tyype: ReferenceH[ReferendH]):
   (Locals, Local) = {
     if (templarLocals.contains(varId2)) {
@@ -74,7 +79,7 @@ case class Locals(
     val newLocalIdNumber = locals.size
     val varIdNameH = NameHammer.translateFullName(hinputs, hamuts, varId2)
     val newLocalId = VariableIdH(newLocalIdNumber, Some(varIdNameH))
-    val newLocal = Local(newLocalId, tyype)
+    val newLocal = Local(newLocalId, variability, tyype)
     val newLocals =
       Locals(
         templarLocals + (varId2 -> newLocalId),
@@ -84,11 +89,12 @@ case class Locals(
   }
 
   def addHammerLocal(
-    tyype: ReferenceH[ReferendH]):
+    tyype: ReferenceH[ReferendH],
+    variability: Variability):
   (Locals, Local) = {
     val newLocalIdNumber = locals.size
     val newLocalId = VariableIdH(newLocalIdNumber, None)
-    val newLocal = Local(newLocalId, tyype)
+    val newLocal = Local(newLocalId, variability, tyype)
     val newLocals =
       Locals(
         templarLocals,

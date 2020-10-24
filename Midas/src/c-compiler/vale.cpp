@@ -57,7 +57,7 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  std::vector<LLVMTypeRef> paramTypesL = { int8PtrLT, int64LT, int64LT };
+  std::vector<LLVMTypeRef> paramTypesL = { int64LT };
   auto returnTypeL = globalState->region->translateType(globalState->metalCache.strRef);
 
   LLVMTypeRef functionTypeL =
@@ -74,32 +74,23 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
 
   FunctionState functionState("vale_newstr", globalState->region, functionL, returnTypeL, localsBuilder);
 
-  auto sourceCharsPtrContainerLE = LLVMGetParam(functionL, 0);
-  auto beginIntLE = LLVMGetParam(functionL, 1);
-  auto lengthLE = LLVMGetParam(functionL, 2);
+  auto lengthLE = LLVMGetParam(functionL, 0);
   buildAssert(
       globalState, &functionState, builder,
       LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(globalState, 0), "nonneg"),
       "Can't have negative length string!");
 
-  std::vector<LLVMValueRef> indices = { beginIntLE };
-  auto sourceCharsPtrLE =
-      LLVMBuildGEP(builder, sourceCharsPtrContainerLE, indices.data(), indices.size(), "");
-
+  // This will allocate lengthLE + 1
   auto strWrapperPtrLE = globalState->region->mallocStr(&functionState, builder, lengthLE);
 
   // Set the length
   LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
-  // Fill the chars
-  std::vector<LLVMValueRef> argsLE = {
-      getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE),
-      sourceCharsPtrLE,
-      lengthLE
-  };
-  LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
 
-  buildFlare(FL(), globalState, &functionState, builder, "making chars ptr", ptrToVoidPtrLE(globalState, builder, getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE)));
-
+  // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
+  auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE);
+  LLVMBuildStore(builder, constI8LE(globalState, 0), charsBeginPtr);
+  auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
+  LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
 
   auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strWrapperPtrLE);
   auto resultStrPtrLE =
@@ -219,14 +210,14 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->assert = addExtern(globalState->mod, "__vassert", LLVMVoidTypeInContext(globalState->context), {int1LT, int8PtrLT});
   globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", LLVMVoidTypeInContext(globalState->context),
       {int64LT, int64LT, int8PtrLT});
-  globalState->flareI64 = addExtern(globalState->mod, "__vflare_i64", LLVMVoidTypeInContext(globalState->context), {int64LT, int64LT});
+//  globalState->flareI64 = addExtern(globalState->mod, "__vflare_i64", LLVMVoidTypeInContext(globalState->context), {int64LT, int64LT});
   globalState->printCStr = addExtern(globalState->mod, "__vprintCStr", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
   globalState->getch = addExtern(globalState->mod, "getchar", int64LT, {});
   globalState->printInt = addExtern(globalState->mod, "__vprintI64", LLVMVoidTypeInContext(globalState->context), {int64LT});
-  globalState->printBool = addExtern(globalState->mod, "__vprintBool", LLVMVoidTypeInContext(globalState->context), {int1LT});
+//  globalState->printBool = addExtern(globalState->mod, "__vprintBool", LLVMVoidTypeInContext(globalState->context), {int1LT});
 
-  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", LLVMVoidTypeInContext(globalState->context),
-      {int64LT, int8PtrLT, int64LT});
+//  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", LLVMVoidTypeInContext(globalState->context),
+//      {int64LT, int8PtrLT, int64LT});
   globalState->strlen = addExtern(globalState->mod, "strlen", int64LT, {int8PtrLT});
 }
 
@@ -409,18 +400,15 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  globalState->initStr =
-      addExtern(globalState->mod, "__vinitStr", LLVMVoidTypeInContext(globalState->context),
+  globalState->strncpy =
+      addExtern(globalState->mod, "strncpy", LLVMVoidTypeInContext(globalState->context),
           {int8PtrLT, int8PtrLT, int64LT});
-  globalState->addStr =
-      addExtern(globalState->mod, "__vaddStr", LLVMVoidTypeInContext(globalState->context),
-          {int8PtrLT, int8PtrLT, int8PtrLT});
-  globalState->eqStr =
-      addExtern(globalState->mod, "__veqStr", int8LT,
-          {int8PtrLT, int8PtrLT});
-  globalState->printVStr =
-      addExtern(globalState->mod, "__vprintStr", LLVMVoidTypeInContext(globalState->context),
-          {int8PtrLT});
+//  globalState->eqStr =
+//      addExtern(globalState->mod, "__veqStr", int8LT,
+//          {int8PtrLT, int8PtrLT});
+//  globalState->printVStr =
+//      addExtern(globalState->mod, "__vprintStr", LLVMVoidTypeInContext(globalState->context),
+//          {int8PtrLT});
 
   initInternalFuncs(globalState);
 

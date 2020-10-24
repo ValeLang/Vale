@@ -811,11 +811,21 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonStr(value))))
       }
-      case AndPE(left, right) => {
+      case AndPE(range, left, right) => {
         VonObject(
           "And",
           None,
           Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("left", vonifyExpression(left)),
+            VonMember("right", vonifyExpression(right))))
+      }
+      case OrPE(range, left, right) => {
+        VonObject(
+          "Or",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
             VonMember("left", vonifyExpression(left)),
             VonMember("right", vonifyExpression(right))))
       }
@@ -853,14 +863,6 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("condition", vonifyExpression(condition)),
             VonMember("lambdas", VonArray(None, lambdas.map(vonifyExpression).toVector))))
-      }
-      case OrPE(left, right) => {
-        VonObject(
-          "Or",
-          None,
-          Vector(
-            VonMember("left", vonifyExpression(left)),
-            VonMember("right", vonifyExpression(right))))
       }
       case SequencePE(range, elements) => {
         VonObject(

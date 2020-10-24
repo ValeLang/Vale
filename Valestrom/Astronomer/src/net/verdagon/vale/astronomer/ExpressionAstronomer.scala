@@ -7,9 +7,9 @@ import net.verdagon.vale.vfail
 
 object ExpressionAstronomer {
   def translateBlock(env: Environment, astrouts: AstroutsBox, blockS: BlockSE): BlockAE = {
-    val BlockSE(locals, exprsS) = blockS
+    val BlockSE(range, locals, exprsS) = blockS
     val exprsA = exprsS.map(translateExpression(env, astrouts, _))
-    BlockAE(locals.map(translateLocalVariable), exprsA)
+    BlockAE(range, locals.map(translateLocalVariable), exprsA)
   }
 
   def translateLocalVariable(varS: LocalVariable1): LocalVariableA = {
@@ -25,7 +25,7 @@ object ExpressionAstronomer {
         val localRunesA = localRunesS.map(Astronomer.translateRune)
         val (conclusions, rulesA) =
           Astronomer.makeRuleTyper().solve(astrouts, env, rules, range, List(patternS), Some(allRunesA)) match {
-            case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+            case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(RangedInternalErrorA(range, rtsf.toString))
             case (c, RuleTyperSolveSuccess(r)) => (c, r)
           }
         val exprA = translateExpression(env, astrouts, expr)
@@ -33,85 +33,86 @@ object ExpressionAstronomer {
         val patternA = Astronomer.translateAtom(patternS)
 
         LetAE(
+          range,
           rulesA,
           conclusions.typeByRune,
           localRunesA,
           patternA,
           exprA)
       }
-      case IfSE(conditionS, thenBodyS, elseBodyS) => {
+      case IfSE(range, conditionS, thenBodyS, elseBodyS) => {
         val conditionA = translateBlock(env, astrouts, conditionS)
         val thenBodyA = translateBlock(env, astrouts, thenBodyS)
         val elseBodyA = translateBlock(env, astrouts, elseBodyS)
-        IfAE(conditionA, thenBodyA, elseBodyA)
+        IfAE(range, conditionA, thenBodyA, elseBodyA)
       }
-      case WhileSE(conditionS, bodyS) => {
+      case WhileSE(range, conditionS, bodyS) => {
         val conditionA = translateBlock(env, astrouts, conditionS)
         val bodyA = translateBlock(env, astrouts, bodyS)
-        WhileAE(conditionA, bodyA)
+        WhileAE(range, conditionA, bodyA)
       }
-      case DestructSE(innerS) => {
+      case DestructSE(range, innerS) => {
         val exprA = translateExpression(env, astrouts, innerS)
-        DestructAE(exprA)
+        DestructAE(range, exprA)
       }
       case ExprMutateSE(rangeS, mutateeS, exprS) => {
         val conditionA = translateExpression(env, astrouts, mutateeS)
         val bodyA = translateExpression(env, astrouts, exprS)
         ExprMutateAE(rangeS, conditionA, bodyA)
       }
-      case GlobalMutateSE(name, exprS) => {
+      case GlobalMutateSE(range, name, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)
-        GlobalMutateAE(Astronomer.translateImpreciseName(name), exprA)
+        GlobalMutateAE(range, Astronomer.translateImpreciseName(name), exprA)
       }
       case LocalMutateSE(range, nameS, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)
         LocalMutateAE(range, Astronomer.translateVarNameStep(nameS), exprA)
       }
-      case LendSE(innerExprS, targetOwnership) => {
+      case LendSE(range, innerExprS, targetOwnership) => {
         val innerExprA = translateExpression(env, astrouts, innerExprS)
-        LendAE(innerExprA, targetOwnership)
+        LendAE(range, innerExprA, targetOwnership)
       }
       case ReturnSE(range, innerExprS) => {
         val innerExprA = translateExpression(env, astrouts, innerExprS)
         (ReturnAE(range, innerExprA))
       }
-      case blockS @ BlockSE(_, _) => translateBlock(env, astrouts, blockS)
-      case ArgLookupSE(index) => (ArgLookupAE(index))
-      case CheckRefCountSE(refExprS, category, numExprS) => {
+      case blockS @ BlockSE(_, _, _) => translateBlock(env, astrouts, blockS)
+      case ArgLookupSE(range, index) => (ArgLookupAE(range, index))
+      case CheckRefCountSE(range, refExprS, category, numExprS) => {
         val refExprA = translateExpression(env, astrouts, refExprS)
         val numExprA = translateExpression(env, astrouts, numExprS)
-        (CheckRefCountAE(refExprA, category, numExprA))
+        (CheckRefCountAE(range, refExprA, category, numExprA))
       }
-      case RepeaterBlockSE(exprS) => {
+      case RepeaterBlockSE(range, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)
-        (RepeaterBlockAE(exprA))
+        (RepeaterBlockAE(range, exprA))
       }
-      case RepeaterBlockIteratorSE(exprS) => {
+      case RepeaterBlockIteratorSE(range, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)
-        (RepeaterBlockIteratorAE(exprA))
+        (RepeaterBlockIteratorAE(range, exprA))
       }
-      case VoidSE() => VoidAE()
-      case SequenceESE(elementsS) => {
+      case VoidSE(range) => VoidAE(range)
+      case SequenceESE(range, elementsS) => {
         val elementsA = elementsS.map(translateExpression(env, astrouts, _))
-        SequenceEAE(elementsA)
+        SequenceEAE(range, elementsA)
       }
-      case RepeaterPackSE(exprS) => {
+      case RepeaterPackSE(range, exprS) => {
         val elementsA = translateExpression(env, astrouts, exprS)
-        RepeaterPackAE(elementsA)
+        RepeaterPackAE(range, elementsA)
       }
-      case RepeaterPackIteratorSE(exprS) => {
+      case RepeaterPackIteratorSE(range, exprS) => {
         val exprA = translateExpression(env, astrouts, exprS)
-        RepeaterPackIteratorAE(exprA)
+        RepeaterPackIteratorAE(range, exprA)
       }
-      case RuneLookupSE(runeS) => {
+      case RuneLookupSE(range, runeS) => {
         val runeA = Astronomer.translateRune(runeS)
         val tyype = env.lookupRune(runeA)
-        RuneLookupAE(runeA, tyype)
+        RuneLookupAE(range, runeA, tyype)
       }
-      case IntLiteralSE(value) => IntLiteralAE(value)
-      case BoolLiteralSE(value) => BoolLiteralAE(value)
-      case StrLiteralSE(value) => StrLiteralAE(value)
-      case FloatLiteralSE(value) => FloatLiteralAE(value)
+      case IntLiteralSE(range, value) => IntLiteralAE(range, value)
+      case BoolLiteralSE(range, value) => BoolLiteralAE(range, value)
+      case StrLiteralSE(range, value) => StrLiteralAE(range, value)
+      case FloatLiteralSE(range, value) => FloatLiteralAE(range, value)
       case FunctionSE(functionS) => {
         val functionA = Astronomer.translateFunction(astrouts, env, functionS)
         val lambdaName = functionA.name match { case n @ LambdaNameA(_) => n }
@@ -131,9 +132,9 @@ object ExpressionAstronomer {
         val argsExprsA = argsExprsS.map(translateExpression(env, astrouts, _))
         FunctionCallAE(rangeS, callableExprA, argsExprsA)
       }
-      case TemplateSpecifiedLookupSE(name, templateArgsS) => {
+      case TemplateSpecifiedLookupSE(range, name, templateArgsS) => {
         // We don't translate the templexes, we can't until we know what the template expects.
-        TemplateSpecifiedLookupAE(name, templateArgsS)
+        TemplateSpecifiedLookupAE(range, name, templateArgsS)
       }
       case LocalLoadSE(range, name, borrow) => {
         LocalLoadAE(range, Astronomer.translateVarNameStep(name), borrow)
@@ -141,7 +142,7 @@ object ExpressionAstronomer {
       case OutsideLoadSE(range, name) => {
         OutsideLoadAE(range, name)
       }
-      case UnletSE(name) => UnletAE(name)
+      case UnletSE(range, name) => UnletAE(range, name)
     }
   }
 }

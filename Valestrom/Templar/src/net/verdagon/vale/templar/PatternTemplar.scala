@@ -76,7 +76,7 @@ class PatternTemplar(
 
       val templatasByRune =
         inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-          case (isf@InferSolveFailure(_, _, _, _, _, _, _)) => vfail("Couldn't figure out runes for pattern!\n" + isf)
+          case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
           case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
         }
 
@@ -123,21 +123,21 @@ class PatternTemplar(
     val expectedCoord =
       expectedTemplata match {
         case Some(CoordTemplata(coord)) => coord
-        case Some(_) => vfail("not a coord!")
-        case None => vfail("not found!")
+        case Some(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "not a coord!"))
+        case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "not found!"))
       }
 
     // Now we convert m to a Marine. This also checks that it *can* be
     // converted to a Marine.
     val inputExpr =
-      convertHelper.convert(fate.snapshot, temputs, unconvertedInputExpr, expectedCoord);
+      convertHelper.convert(fate.snapshot, temputs, range, unconvertedInputExpr, expectedCoord);
 
     val CaptureA(name, variability) = maybeCapture
     val variableId = NameTranslator.translateVarNameStep(name)
 
     val export =
       localHelper.makeUserLocalVariable(
-        temputs, fate, variableId, Conversions.evaluateVariability(variability), expectedCoord)
+        temputs, fate, range, variableId, Conversions.evaluateVariability(variability), expectedCoord)
     val let = LetNormal2(export, inputExpr);
 
     fate.addVariable(export)
@@ -187,7 +187,7 @@ class PatternTemplar(
           }
           case KnownSizeArrayT2(size, RawArrayT2(memberType, mutability)) => {
             if (size != listOfMaybeDestructureMemberPatterns.size) {
-              vfail("Wrong num exprs!")
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
             }
             val innerLets =
               nonCheckingTranslateArraySeq(
@@ -402,7 +402,7 @@ class PatternTemplar(
         val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
         (destroy2 :: lets)
       }
-      case Share => {
+      case Share | Borrow => {
         // This is different from the Own case because we're not destructuring the incoming thing, we're just
         // loading from it.
 
@@ -415,15 +415,17 @@ class PatternTemplar(
           innerPatternMaybes.zip(structDef2.members).zipWithIndex
             .flatMap({
               case (((innerPattern, member), index)) => {
+                val memberCoord = member.tyype.expectReferenceMember().reference
+                val resultOwnership = if (memberCoord.ownership == Share) Share else Borrow
                 val loadExpr =
                   SoftLoad2(
                     ReferenceMemberLookup2(
                       range,
-                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), Share),
+                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), structOwnership),
                       structDef2.fullName.addStep(structDef2.members(index).name),
-                      member.tyype.expectReferenceMember().reference,
+                      memberCoord,
                       member.variability),
-                    Share)
+                    resultOwnership)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
             })
@@ -433,11 +435,6 @@ class PatternTemplar(
           dropHelper.drop(fate, temputs, packUnlet)
 
         ((packLet :: innerLets) :+ dropExpr)
-      }
-      case Borrow => {
-        // here, instead of doing a destructure, we'd just put this in a variable
-        // and do a bunch of lookups on it.
-        vfail("implement!")
       }
     }
   }

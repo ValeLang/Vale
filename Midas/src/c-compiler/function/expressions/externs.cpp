@@ -43,36 +43,36 @@ Ref translateExternCall(
                 globalState, functionState, blockState, builder, call->argExprs[1]));
     auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, result);
-  } else if (name == "__eqStrStr") {
-    assert(call->argExprs.size() == 2);
-
-    auto leftStrTypeM = call->argTypes[0];
-    auto leftStrRef =
-        translateExpression(
-            globalState, functionState, blockState, builder, call->argExprs[0]);
-
-    auto rightStrTypeM = call->argTypes[1];
-    auto rightStrRef =
-        translateExpression(
-            globalState, functionState, blockState, builder, call->argExprs[1]);
-
-    std::vector<LLVMValueRef> argsLE = {
-        functionState->defaultRegion->getStringBytesPtr(functionState, builder, leftStrRef),
-        functionState->defaultRegion->getStringBytesPtr(functionState, builder, rightStrRef)
-    };
-    auto resultInt8LE =
-        LLVMBuildCall(
-            builder,
-            globalState->eqStr,
-            argsLE.data(),
-            argsLE.size(),
-            "eqStrResult");
-    auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 0, false), "");
-
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
-
-    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultBoolLE);
+//  } else if (name == "__eqStrStr") {
+//    assert(call->argExprs.size() == 2);
+//
+//    auto leftStrTypeM = call->argTypes[0];
+//    auto leftStrRef =
+//        translateExpression(
+//            globalState, functionState, blockState, builder, call->argExprs[0]);
+//
+//    auto rightStrTypeM = call->argTypes[1];
+//    auto rightStrRef =
+//        translateExpression(
+//            globalState, functionState, blockState, builder, call->argExprs[1]);
+//
+//    std::vector<LLVMValueRef> argsLE = {
+//        functionState->defaultRegion->getStringBytesPtr(functionState, builder, leftStrRef),
+//        functionState->defaultRegion->getStringBytesPtr(functionState, builder, rightStrRef)
+//    };
+//    auto resultInt8LE =
+//        LLVMBuildCall(
+//            builder,
+//            globalState->eqStr,
+//            argsLE.data(),
+//            argsLE.size(),
+//            "eqStrResult");
+//    auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 0, false), "");
+//
+//    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
+//    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
+//
+//    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, resultBoolLE);
   } else if (name == "__strLength") {
     assert(call->argExprs.size() == 1);
 
@@ -122,40 +122,6 @@ Ref translateExternCall(
                     globalState, functionState, blockState, builder, call->argExprs[1])),
             "diff");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultIntLE);
-  } else if (name == "__addStrStr") {
-    assert(call->argExprs.size() == 2);
-
-    auto leftStrTypeM = call->argTypes[0];
-    auto leftStrRef =
-        translateExpression(
-            globalState, functionState, blockState, builder, call->argExprs[0]);
-    auto leftStrLenLE = functionState->defaultRegion->getStringLen(functionState, builder, leftStrRef);
-
-    auto rightStrTypeM = call->argTypes[1];
-    auto rightStrRef =
-        translateExpression(
-            globalState, functionState, blockState, builder, call->argExprs[1]);
-    auto rightStrLenLE = functionState->defaultRegion->getStringLen(functionState, builder, rightStrRef);
-
-    auto combinedLenLE =
-        LLVMBuildAdd(builder, leftStrLenLE, rightStrLenLE, "lenSum");
-
-    auto destStrWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, combinedLenLE);
-
-    std::vector<LLVMValueRef> argsLE = {
-        functionState->defaultRegion->getStringBytesPtr(functionState, builder, leftStrRef),
-        functionState->defaultRegion->getStringBytesPtr(functionState, builder, rightStrRef),
-        getCharsPtrFromWrapperPtr(globalState, builder, destStrWrapperPtrLE),
-    };
-    LLVMBuildCall(builder, globalState->addStr, argsLE.data(), argsLE.size(), "");
-
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, rightStrRef);
-
-    auto destStrRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, destStrWrapperPtrLE);
-    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->returnType, destStrRef);
-
-    return destStrRef;
   } else if (name == "__getch") {
     auto resultIntLE = LLVMBuildCall(builder, globalState->getch, nullptr, 0, "");
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultIntLE);
@@ -249,22 +215,6 @@ Ref translateExternCall(
                 globalState, functionState, blockState, builder, call->argExprs[1])),
         "");
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, result);
-  } else if (name == "__print") {
-    assert(call->argExprs.size() == 1);
-
-    auto argStrTypeM = call->argTypes[0];
-    auto argStrWrapperRef =
-        translateExpression(
-            globalState, functionState, blockState, builder, call->argExprs[0]);
-
-    std::vector<LLVMValueRef> argsLE = {
-        functionState->defaultRegion->getStringBytesPtr(functionState, builder, argStrWrapperRef)
-    };
-    LLVMBuildCall(builder, globalState->printVStr, argsLE.data(), argsLE.size(), "");
-
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, argStrWrapperRef);
-
-    return makeEmptyTupleRef(globalState, functionState, builder);
   } else if (name == "__not") {
     assert(call->argExprs.size() == 1);
     auto result = LLVMBuildNot(
@@ -275,46 +225,6 @@ Ref translateExternCall(
                 globalState, functionState, blockState, builder, call->argExprs[0])),
         "");
     return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, result);
-  } else if (name == "__castIntStr") {
-    assert(call->argExprs.size() == 1);
-    auto intLE =
-        functionState->defaultRegion->checkValidReference(FL(),
-            functionState, builder, call->function->params[0],
-            translateExpression(
-                globalState, functionState, blockState, builder, call->argExprs[0]));
-
-    int bufferSize = 150;
-    auto charsPtrLocalLE =
-        makeMidasLocal(
-            functionState,
-            builder,
-            LLVMArrayType(LLVMInt8TypeInContext(globalState->context), bufferSize),
-            "charsPtrLocal",
-            LLVMGetUndef(LLVMArrayType(LLVMInt8TypeInContext(globalState->context), bufferSize)));
-    auto itoaDestPtrLE =
-        LLVMBuildPointerCast(
-            builder, charsPtrLocalLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "itoaDestPtr");
-    std::vector<LLVMValueRef> atoiArgsLE = { intLE, itoaDestPtrLE, constI64LE(globalState, bufferSize) };
-    LLVMBuildCall(builder, globalState->intToCStr, atoiArgsLE.data(), atoiArgsLE.size(), "");
-
-    std::vector<LLVMValueRef> strlenArgsLE = { itoaDestPtrLE };
-    auto lengthLE = LLVMBuildCall(builder, globalState->strlen, strlenArgsLE.data(), strlenArgsLE.size(), "");
-
-    auto strWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, lengthLE);
-    // Set the length
-    LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
-    // Fill the chars
-    auto charsPtrLE = getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE);
-    std::vector<LLVMValueRef> argsLE = {
-        charsPtrLE,
-        itoaDestPtrLE,
-        lengthLE
-    };
-    LLVMBuildCall(builder, globalState->initStr, argsLE.data(), argsLE.size(), "");
-
-    buildFlare(FL(), globalState, functionState, builder, "making chars ptr", ptrToVoidPtrLE(globalState, builder, charsPtrLE));
-
-    return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
   } else if (name == "__and") {
     assert(call->argExprs.size() == 2);
     auto result = LLVMBuildAnd(

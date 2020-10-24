@@ -8,6 +8,8 @@ sealed trait ICompileErrorA
 case class CouldntFindTypeA(range: RangeS, name: String) extends ICompileErrorA //  vfail("Nothing found with name " + name)
 case class WrongNumArgsForTemplateA(range: RangeS, expectedNumArgs: Int, actualNumArgs: Int) extends ICompileErrorA
 
+case class RangedInternalErrorA(range: RangeS, message: String) extends ICompileErrorA
+
 object ErrorReporter {
   def report(err: ICompileErrorA): Nothing = {
     throw CompileErrorExceptionA(err)

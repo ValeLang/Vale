@@ -1,7 +1,6 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.scout.{CodeLocationS, CodeRuneS, ParameterS, RangeS}
-import net.verdagon.vale.astronomer.externs.Externs._
 import net.verdagon.vale.parser.{CaptureP, FinalP}
 import net.verdagon.vale.scout.patterns.AtomSP
 

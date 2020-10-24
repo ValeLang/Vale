@@ -49,6 +49,7 @@ case class IsaTR(
 // See PVSBUFI
 sealed trait ITemplexT {
   def resultType: ITemplataType
+  def range: RangeS
 }
 case class IntTT(range: RangeS, value: Int) extends ITemplexT {
   override def resultType: ITemplataType = IntegerTemplataType
@@ -111,7 +112,9 @@ case class OwnershippedTT(
   override def resultType: ITemplataType = CoordTemplataType
 }
 
-case class NullableTT(inner: ITemplexT) extends ITemplexT {
+case class NullableTT(
+  range: RangeS,
+  inner: ITemplexT) extends ITemplexT {
   override def resultType: ITemplataType = KindTemplataType
 }
 
@@ -131,6 +134,7 @@ case class CallTT(
 //) extends ITemplexT
 
 case class PrototypeTT(
+  range: RangeS,
   name: String,
   parameters: List[ITemplexT],
   returnType: ITemplexT

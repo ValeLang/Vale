@@ -138,22 +138,22 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           })
         }
 
-        override def lookupTemplata(env: IEnvironment, name: IName2): ITemplata = {
+        override def lookupTemplata(env: IEnvironment, range: RangeS, name: IName2): ITemplata = {
           profiler.childFrame("InferTemplarDelegate.lookupTemplata", () => {
             // We can only ever lookup types by name in expression context,
             // otherwise we have no idea what List<Str> means; it could
             // mean a list of strings or a list of the Str(:Int)Str function.
             env.getNearestTemplataWithAbsoluteName2(name, Set[ILookupContext](TemplataLookupContext)) match {
-              case None => vfail("Couldn't find anything with name: " + name)
+              case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find anything with name: " + name))
               case Some(x) => x
             }
           })
         }
 
-        override def lookupTemplataImprecise(env: IEnvironment, name: IImpreciseNameStepA): ITemplata = {
+        override def lookupTemplataImprecise(env: IEnvironment, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
           profiler.childFrame("InferTemplarDelegate.lookupTemplataImprecise", () => {
             env.getNearestTemplataWithName(name, Set[ILookupContext](TemplataLookupContext)) match {
-              case None => vfail("Couldn't find anything with name: " + name)
+              case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find anything with name: " + name))
               case Some(x) => x
             }
           })
@@ -237,23 +237,12 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           })
         }
 
-        // A simple interface is one that has only one method
-        def getSimpleInterfaceMethod(state: Temputs, interfaceRef: InterfaceRef2): Prototype2 = {
-          profiler.childFrame("InferTemplarDelegate.getSimpleInterfaceMethod", () => {
-            val interfaceDef2 = state.lookupInterface(interfaceRef)
-            if (interfaceDef2.internalMethods.size != 1) {
-              vfail("Interface is not simple!")
-            }
-            interfaceDef2.internalMethods.head.toPrototype
-          })
-        }
-
         override def resolveExactSignature(env: IEnvironment, state: Temputs, range: RangeS, name: String, coords: List[Coord]): Prototype2 = {
           profiler.childFrame("InferTemplarDelegate.resolveExactSignature", () => {
             overloadTemplar.scoutExpectedFunctionForPrototype(env, state, range, GlobalFunctionFamilyNameA(name), List(), coords.map(ParamFilter(_, None)), List(), true) match {
               case sef@ScoutExpectedFunctionFailure(humanName, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
                 throw new CompileErrorExceptionT(CouldntFindFunctionToCallT(range, sef))
-                vfail(sef.toString)
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, sef.toString))
               }
               case ScoutExpectedFunctionSuccess(prototype) => prototype
             }
@@ -661,7 +650,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           List(),
           true) match {
           case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
-            vfail("Couldn't find function for vtable!\n" + seff.toString)
+            throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find function for vtable!\n" + seff.toString))
           }
           case (ScoutExpectedFunctionSuccess(_)) =>
         }

@@ -252,19 +252,16 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "Return") {
     return new Return(
         readExpression(cache, expression["sourceExpr"]),
-        readReference(cache, expression["sourceType"]),
-        expression["sourceKnownLive"]);
+        readReference(cache, expression["sourceType"]));
   } else if (type == "Stackify") {
     return new Stackify(
         readExpression(cache, expression["sourceExpr"]),
-        expression["sourceKnownLive"],
         readLocal(cache, expression["local"]),
         "");
   } else if (type == "LocalStore") {
     return new LocalStore(
         readLocal(cache, expression["local"]),
         readExpression(cache, expression["sourceExpr"]),
-        expression["sourceKnownLive"],
         expression["localName"]);
   } else if (type == "MemberStore") {
     return new MemberStore(
@@ -278,17 +275,14 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "Discard") {
     return new Discard(
         readExpression(cache, expression["sourceExpr"]),
-        readReference(cache, expression["sourceResultType"]),
-        expression["sourceKnownLive"]);
+        readReference(cache, expression["sourceResultType"]));
   } else if (type == "Argument") {
     return new Argument(
         readReference(cache, expression["resultType"]),
-        expression["argumentIndex"],
-        expression["knownLive"]);
+        expression["argumentIndex"]);
   } else if (type == "Unstackify") {
     return new Unstackify(
-        readLocal(cache, expression["local"]),
-        expression["knownLive"]);
+        readLocal(cache, expression["local"]));
   } else if (type == "LocalLoad") {
     return new LocalLoad(
         readLocal(cache, expression["local"]),
@@ -299,7 +293,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         readReferend(cache, expression["sourceReferend"]),
-        expression["sourceKnownLive"],
         readReference(cache, expression["resultType"]));
   } else if (type == "Call") {
     return new Call(
@@ -331,7 +324,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "NewStruct") {
     return new NewStruct(
         readArray(cache, expression["sourceExprs"], readExpression),
-        readArray(cache, expression["sourcesKnownLive"], [](MetalCache*, const json& j) -> bool { return j; }),
         readReference(cache, expression["resultType"]));
   } else if (type == "Destroy") {
     return new Destroy(
@@ -354,7 +346,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "NewArrayFromValues") {
     return new NewArrayFromValues(
         readArray(cache, expression["sourceExprs"], readExpression),
-        readArray(cache, expression["sourcesKnownLive"], [](MetalCache*, const json& j) -> bool { return j; }),
         readReference(cache, expression["resultType"]),
         readKnownSizeArray(cache, expression["resultReferend"]));
   } else if (type == "KnownSizeArrayLoad") {
@@ -388,8 +379,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReferend(cache, expression["indexReferend"]),
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
-        readReferend(cache, expression["sourceReferend"]),
-        expression["sourceKnownLive"]);
+        readReferend(cache, expression["sourceReferend"]));
   } else if (type == "ConstructUnknownSizeArray") {
     return new ConstructUnknownSizeArray(
         readExpression(cache, expression["sizeExpr"]),
@@ -422,7 +412,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceStructType"]),
         readStructReferend(cache, expression["sourceStructReferend"]),
-        expression["sourceStructKnownLive"],
         readReference(cache, expression["targetInterfaceType"]),
         readInterfaceReferend(cache, expression["targetInterfaceReferend"]));
   } else if (type == "DestroyKnownSizeArrayIntoFunction") {

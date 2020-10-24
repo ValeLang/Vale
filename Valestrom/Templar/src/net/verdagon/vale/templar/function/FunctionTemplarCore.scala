@@ -93,7 +93,7 @@ class FunctionTemplarCore(
       case AbstractBodyA => {
         val maybeRetCoord =
           startingFullEnv.function.maybeRetCoordRune match {
-            case None => vfail("Need return type for abstract function!")
+            case None => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Need return type for abstract function!"))
             case Some(r) => fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(r), Set(TemplataLookupContext))
           }
         val retCoord =
@@ -117,6 +117,7 @@ class FunctionTemplarCore(
           makeExternFunction(
             temputs,
             fullEnv.fullName,
+            startingFullEnv.function.range,
             translateFunctionAttributes(startingFullEnv.function.attributes),
             params2,
             retCoord,
@@ -139,7 +140,7 @@ class FunctionTemplarCore(
               temputs.declareFunctionReturnType(signature2, retCoord)
               (Some(retCoord))
             }
-            case _ => vfail("Must be a coord!")
+            case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Must be a coord!"))
           }
 
         // Funny story... let's say we're current instantiating a constructor,
@@ -161,9 +162,9 @@ class FunctionTemplarCore(
             val header =
               delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, callRange, Some(startingFullEnv.function), params2, maybeRetCoord)
             if (header.toSignature != signature2) {
-              vfail("Generator made a function whose signature doesn't match the expected one!\n" +
+              throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
               "Expected:  " + signature2 + "\n" +
-              "Generated: " + header.toSignature)
+              "Generated: " + header.toSignature))
             }
             (header)
           }
@@ -175,6 +176,7 @@ class FunctionTemplarCore(
   def makeExternFunction(
       temputs: Temputs,
       fullName: FullName2[IFunctionName2],
+    range: RangeS,
       attributes: List[IFunctionAttribute2],
       params2: List[Parameter2],
       returnType2: Coord,
@@ -185,7 +187,7 @@ class FunctionTemplarCore(
     val (humanName, params) =
       fullName.last match {
         case FunctionName2(humanName, List(), parameters) => (humanName, parameters)
-        case _ => vfail("Only human-named function can be extern!")
+        case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Only human-named function can be extern!"))
       }
     val externFullName = FullName2(List(), ExternFunctionName2(humanName, params))
     val externPrototype = Prototype2(externFullName, header.returnType)

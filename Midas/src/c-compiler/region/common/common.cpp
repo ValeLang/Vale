@@ -1500,7 +1500,6 @@ Ref regularInnerLockWeak(
     Reference* constraintRefM,
     Reference* sourceWeakRefMT,
     Ref sourceWeakRefLE,
-    bool weakRefKnownLive,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse,
     Ref isAliveLE,

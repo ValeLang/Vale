@@ -283,19 +283,17 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("or and == precedence") {
     compile(CombinatorParsers.expression,
       """2 == 0 or false""") shouldHave {
-      case FunctionCallPE(_,
-        None,_,false,
-        LookupPE(StringP(_,"or"),None),
-        List(
-          FunctionCallPE(_,
-            None,_,false,
-            LookupPE(StringP(_,"=="),None),
-            List(
-              IntLiteralPE(_,2),
-              IntLiteralPE(_,0)),
-            BorrowP),
-          BoolLiteralPE(_,false)),
-        BorrowP) =>
+      case OrPE(_,
+        BlockPE(_,
+          List(
+            FunctionCallPE(_,
+              None,_,false,
+              LookupPE(StringP(_,"=="),None),
+              List(
+                IntLiteralPE(_,2),
+                IntLiteralPE(_,0)),
+              BorrowP))),
+        BlockPE(_, List(BoolLiteralPE(_,false)))) =>
     }
   }
 }

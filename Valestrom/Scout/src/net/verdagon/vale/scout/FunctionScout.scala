@@ -104,7 +104,7 @@ object FunctionScout {
             Some(retTypePT),
             CoordTypePR)
         }
-        case (Some(_), Some(_)) => vfail("Can't have return type and infer-ret at the same time")
+        case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(file, range), "Can't have return type and infer-ret at the same time"))
       }
 
     val rulesS = userRulesS ++ implicitRulesFromPatterns ++ implicitRulesFromRet
@@ -267,7 +267,7 @@ object FunctionScout {
         paramDeclarations)
 
     if (lambdaMagicParamNames.nonEmpty && (explicitParams1.nonEmpty)) {
-      vfail("Cant have a lambda with _ and params");
+      throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Cant have a lambda with _ and params"))
     }
 
 //    val closurePatternId = fate.nextPatternNumber();
@@ -324,7 +324,7 @@ object FunctionScout {
             Some(retTypePT),
             CoordTypePR)
         }
-        case (Some(_), Some(_)) => vfail("Can't have return type and infer-ret at the same time")
+        case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(parentStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
       }
 
     val rulesS = rulesFromClosureParam ++ magicParamsRules ++ implicitRulesFromParams ++ implicitRulesFromReturn
@@ -447,7 +447,7 @@ object FunctionScout {
           childUses.isMoved(declared.name),
           childUses.isMutated(declared.name))
       })
-    val block1WithParamLocals = BlockSE(block1.locals ++ magicParamLocals, block1.exprs)
+    val block1WithParamLocals = BlockSE(Scout.evalRange(stackFrame.file, body0.range), block1.locals ++ magicParamLocals, block1.exprs)
 
     val allUses =
       selfUses.combine(childUses, {
@@ -490,7 +490,7 @@ object FunctionScout {
         }
       })
 
-    val bodySE = BodySE(usesOfParentVariables.map(_.name), block1WithParamLocals)
+    val bodySE = BodySE(Scout.evalRange(stackFrame.file, body0.range), usesOfParentVariables.map(_.name), block1WithParamLocals)
     (bodySE, VariableUses(usesOfParentVariables), magicParamNames)
   }
 
@@ -527,7 +527,7 @@ object FunctionScout {
     val (implicitRulesFromRet, maybeReturnRune) =
       (maybeInferRet, maybeRetType) match {
         case (_, None) => {
-          vfail("Can't infer the return type of an interface method!")
+          throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't infer the return type of an interface method!"))
         }
         case (None, Some(retTypePT)) => {
           PatternScout.translateMaybeTypeIntoMaybeRune(
@@ -537,7 +537,7 @@ object FunctionScout {
             Some(retTypePT),
             CoordTypePR)
         }
-        case (Some(_), Some(_)) => vfail("Can't have return type and infer-ret at the same time")
+        case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't have return type and infer-ret at the same time"))
       }
 
     val rulesS = userRulesS ++ implicitRulesFromParams ++ implicitRulesFromRet
@@ -578,7 +578,7 @@ object FunctionScout {
       }
 
     if (attrsP.collect({ case AbstractAttributeP(_) => true  }).nonEmpty) {
-      vfail("Dont need abstract here")
+      throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(interfaceEnv.file, range), "Dont need abstract here"))
     }
 
     FunctionS(

@@ -112,7 +112,7 @@ object PredictorEvaluator {
 //        val evaluateArgsSuccess = evaluateRule(conclusions, argsRule)
 //        evaluateNameSuccess && evaluateArgsSuccess
 //      }
-      case _ => vfail("Unknown function \"" + name + "\"!");
+      case _ => throw CompileErrorExceptionS(RangedInternalErrorS(range, "Unknown function \"" + name + "\"!"))
     }
   }
   private def evaluateTemplexes(

@@ -1,6 +1,6 @@
 rm -rf ../release-ubuntu
 mkdir -p ../release-ubuntu
-cp ../Valestrom/out/artifacts/Driver_jar/Driver.jar ../release-ubuntu/Driver.jar
+cp ../Valestrom/out/artifacts/Valestrom_jar/Valestrom.jar ../release-ubuntu/Valestrom.jar
 cp -r ../Valestrom/Samples/test/main/resources/libraries ../release-ubuntu/vstl
 cp -r ../Midas/vstl/* ../release-ubuntu/vstl
 cp -r ../Valestrom/Samples/test/main/resources/programs ../release-ubuntu/samples

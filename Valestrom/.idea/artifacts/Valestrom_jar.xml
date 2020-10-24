@@ -1,7 +1,7 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="Driver:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/Driver_jar</output-path>
-    <root id="archive" name="Driver.jar">
+  <artifact type="jar" name="Valestrom:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Valestrom_jar</output-path>
+    <root id="archive" name="Valestrom.jar">
       <element id="module-output" name="Driver" />
       <element id="module-output" name="Astronomer" />
       <element id="module-output" name="Parser" />

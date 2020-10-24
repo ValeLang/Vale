@@ -23,5 +23,19 @@ class TupleTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
 
+
+  // Intentional failure 2020-10-15
+  test("Tuple type") {
+    val compile = Compilation(
+      """
+        |fn moo(a [int, int]) { }
+        |
+        |fn main() {
+        |  moo([3, 4]);
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+  }
+
   // todo: indexing into it with a variable, to get a union type
 }

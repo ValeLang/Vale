@@ -21,8 +21,8 @@ case class TypeDistance(upcastDistance: Int, ownershipDistance: Int) {
 }
 
 trait ITemplataTemplarInnerDelegate[Env, State] {
-  def lookupTemplata(env: Env, name: IName2): ITemplata
-  def lookupTemplataImprecise(env: Env, name: IImpreciseNameStepA): ITemplata
+  def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata
+  def lookupTemplataImprecise(env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
   def getMutability(state: State, kind: Kind): Mutability
 
@@ -113,11 +113,11 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     vassert(type1.isInstanceOf[ITemplexA])
     type1 match {
       case NameAT(range, name, tyype) => {
-        val thing = delegate.lookupTemplataImprecise(env, name)
+        val thing = delegate.lookupTemplataImprecise(env, range, name)
         coerce(state, range, thing, tyype)
       }
       case RuneAT(range, rune, resultType) => {
-        val thing = delegate.lookupTemplata(env, NameTranslator.translateRune(rune))
+        val thing = delegate.lookupTemplata(env, range, NameTranslator.translateRune(rune))
         coerce(state, range, thing, resultType)
       }
       case RepeaterSequenceAT(range, mutabilityTemplexS, sizeTemplexS, elementTemplexS, tyype) => {
@@ -474,7 +474,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     name: IName2,
     expectedType: ITemplataType):
   (ITemplata) = {
-    val uncoercedTemplata = delegate.lookupTemplata(env, name)
+    val uncoercedTemplata = delegate.lookupTemplata(env, range, name)
     coerce(state, range, uncoercedTemplata, expectedType)
   }
 
@@ -485,7 +485,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     name: IImpreciseNameStepA,
     expectedType: ITemplataType):
   (ITemplata) = {
-    val uncoercedTemplata = delegate.lookupTemplataImprecise(env, name)
+    val uncoercedTemplata = delegate.lookupTemplataImprecise(env, range, name)
     coerce(state, range, uncoercedTemplata, expectedType)
   }
 

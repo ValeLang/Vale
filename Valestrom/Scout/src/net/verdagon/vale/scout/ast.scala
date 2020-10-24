@@ -32,7 +32,9 @@ import scala.collection.immutable.List
 //case object YonderS extends LocationS
 
 
-trait IExpressionSE
+trait IExpressionSE {
+  def range: RangeS
+}
 
 case class ProgramS(
     structs: List[StructS],

@@ -104,14 +104,14 @@ object VivemExterns {
   }
 
   def addStrStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
-    vassert(args.size == 2)
-    val aReferend = memory.dereference(args(0))
-    val bReferend = memory.dereference(args(1))
-    (aReferend, bReferend) match {
-      case (StrV(aValue), StrV(bValue)) => {
-        memory.addAllocationForReturn(ShareH, YonderH, StrV(aValue + bValue))
-      }
-    }
+    vassert(args.size == 6)
+    val StrV(aStr) = memory.dereference(args(0))
+    val IntV(aBegin) = memory.dereference(args(1))
+    val IntV(aLength) = memory.dereference(args(2))
+    val StrV(bStr) = memory.dereference(args(3))
+    val IntV(bBegin) = memory.dereference(args(4))
+    val IntV(bLength) = memory.dereference(args(5))
+    memory.addAllocationForReturn(ShareH, YonderH, StrV(aStr.substring(aBegin, aBegin + aLength) + bStr.substring(bBegin, bBegin + bLength)))
   }
 
   def getch(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
@@ -285,12 +285,11 @@ object VivemExterns {
   }
 
   def print(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
-    vassert(args.size == 1)
-    memory.dereference(args(0)) match {
-      case StrV(value) => {
-        memory.stdout(value)
-      }
-    }
+    vassert(args.size == 3)
+    val StrV(aStr) = memory.dereference(args(0))
+    val IntV(aBegin) = memory.dereference(args(1))
+    val IntV(aLength) = memory.dereference(args(2))
+    memory.stdout(aStr.substring(aBegin, aBegin + aLength))
     memory.makeVoid()
   }
 }

@@ -63,10 +63,10 @@ class ValeCompiler:
         self.valestrom_path = os.environ.get('VALESTROM_PATH', '')
         if len(self.valestrom_path) > 0:
             pass
-        elif path.exists(cwd + "/Driver.jar"):
-            self.valestrom_path = cwd + "/Driver.jar"
-        elif path.exists(cwd + "/test/Driver.jar"):
-            self.valestrom_path = cwd + "/test/Driver.jar"
+        elif path.exists(cwd + "/Valestrom.jar"):
+            self.valestrom_path = cwd + "/Valestrom.jar"
+        elif path.exists(cwd + "/test/Valestrom.jar"):
+            self.valestrom_path = cwd + "/test/Valestrom.jar"
 
         self.valestd_path = os.environ.get('VALESTD_PATH', '')
         if len(self.valestd_path) > 0:
@@ -231,8 +231,8 @@ class ValeCompiler:
                 valestrom_options.append(parseds_output_dir)
 
             proc = self.valestrom(user_vale_files, valestrom_options)
-            print(proc.stdout)
-            print(proc.stderr)
+            # print(proc.stdout)
+            # print(proc.stderr)
             if proc.returncode == 0:
                 vir_file = output_vir_file
                 pass
@@ -253,8 +253,8 @@ class ValeCompiler:
 
 
         proc = self.valec(vir_file, build_dir, midas_options)
-        print(proc.stdout)
-        print(proc.stderr)
+        # print(proc.stdout)
+        # print(proc.stderr)
         if proc.returncode != 0:
              print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
              sys.exit(1)

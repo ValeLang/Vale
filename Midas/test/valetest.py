@@ -194,6 +194,21 @@ class ValeTest(unittest.TestCase):
     def test_naiverc_upcastif(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/upcastif.vale"], "naive-rc", 42)
 
+    def test_assist_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "assist", 42)
+    def test_unsafefast_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "unsafe-fast", 42)
+    def test_resilientv0_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "resilient-v0", 42)
+    def test_resilientv1_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "resilient-v1", 42)
+    def test_resilientv2_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "resilient-v2", 42)
+    def test_resilientv3_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "resilient-v3", 42)
+    def test_naiverc_ifnevers(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/if/ifnevers.vale"], "naive-rc", 42)
+
     def test_assist_mutlocal(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutlocal.vale"], "assist", 42)
     def test_unsafefast_mutlocal(self) -> None:

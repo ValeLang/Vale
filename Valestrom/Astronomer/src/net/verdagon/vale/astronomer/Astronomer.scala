@@ -1,7 +1,6 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.astronomer.builtins._
-import net.verdagon.vale.astronomer.externs.Externs
 import net.verdagon.vale.astronomer.ruletyper._
 import net.verdagon.vale.parser.{CaptureP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
@@ -201,23 +200,23 @@ object Astronomer {
     val (structsS, interfacesS) = env.lookupType(name)
 
     if (structsS.isEmpty && interfacesS.isEmpty) {
-      vfail("Nothing found with name " + name)
+      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Nothing found with name " + name))
     }
     if (structsS.size.signum + interfacesS.size.signum > 1) {
-      vfail("Name doesn't correspond to only one of primitive or struct or interface: " + name)
+      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
     }
 
     if (structsS.nonEmpty) {
       val types = structsS.map(lookupStructType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        vfail("'" + name + "' has multiple types: " + types.toSet)
+        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
     } else if (interfacesS.nonEmpty) {
       val types = interfacesS.map(lookupInterfaceType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        vfail("'" + name + "' has multiple types: " + types.toSet)
+        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
@@ -236,7 +235,7 @@ object Astronomer {
       ErrorReporter.report(CouldntFindTypeA(range, name.name))
     }
     if (primitivesS.size.signum + structsS.size.signum + interfacesS.size.signum > 1) {
-      vfail("Name doesn't correspond to only one of primitive or struct or interface: " + name)
+      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
     }
 
     if (primitivesS.nonEmpty) {
@@ -245,14 +244,14 @@ object Astronomer {
     } else if (structsS.nonEmpty) {
       val types = structsS.map(lookupStructType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        vfail("'" + name + "' has multiple types: " + types.toSet)
+        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
     } else if (interfacesS.nonEmpty) {
       val types = interfacesS.map(lookupInterfaceType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        vfail("'" + name + "' has multiple types: " + types.toSet)
+        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
@@ -493,9 +492,9 @@ object Astronomer {
       case ExternBody1 => ExternBodyA
       case AbstractBody1 => AbstractBodyA
       case GeneratedBody1(generatorId) => GeneratedBodyA(generatorId)
-      case CodeBody1(BodySE(closuredNamesS, blockS)) => {
+      case CodeBody1(BodySE(range, closuredNamesS, blockS)) => {
         val blockA = ExpressionAstronomer.translateBlock(env, astrouts, blockS)
-        CodeBodyA(BodyAE(closuredNamesS.map(translateVarNameStep), blockA))
+        CodeBodyA(BodyAE(range, closuredNamesS.map(translateVarNameStep), blockA))
       }
     }
   }
@@ -665,7 +664,7 @@ object Astronomer {
 
   def runAstronomer(programS: ProgramS): Either[ProgramA, ICompileErrorA] = {
     try {
-      val suppliedFunctions = /*stlFunctions ++*/ wrapperFunctions ++ Forwarders.forwarders ++ Externs.externs
+      val suppliedFunctions = wrapperFunctions
       val suppliedInterfaces = List(IFunction1.interface)
       val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS) =
         Astronomer.translateProgram(programS, primitives, suppliedFunctions, suppliedInterfaces)

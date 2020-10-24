@@ -14,4 +14,24 @@ class ConjunctionTests extends FunSuite with Matchers {
     val compile = Compilation("fn main() bool {true or false}")
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
+
+  test("And short-circuiting") {
+    val compile = Compilation(
+      """
+        |fn printAndFalse() bool { print("bork!"); = false; }
+        |fn main() bool {printAndFalse() and printAndFalse()}
+        |""".stripMargin)
+
+    compile.evalForStdout(Vector()) shouldEqual "bork!"
+  }
+
+  test("Or short-circuiting") {
+    val compile = Compilation(
+      """
+        |fn printAndTrue() bool { print("bork!"); = true; }
+        |fn main() bool {printAndTrue() or printAndTrue()}
+        |""".stripMargin)
+
+    compile.evalForStdout(Vector()) shouldEqual "bork!"
+  }
 }

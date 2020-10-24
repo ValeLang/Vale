@@ -166,14 +166,14 @@ class TemplataTemplar(
   def makeInner(): TemplataTemplarInner[IEnvironment, Temputs] = {
     new TemplataTemplarInner[IEnvironment, Temputs](
       new ITemplataTemplarInnerDelegate[IEnvironment, Temputs] {
-        override def lookupTemplataImprecise(env: IEnvironment, name: IImpreciseNameStepA): ITemplata = {
+        override def lookupTemplataImprecise(env: IEnvironment, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
           // Changed this from AnythingLookupContext to TemplataLookupContext
           // because this is called from StructTemplar to figure out its members.
           // We could instead pipe a lookup context through, if this proves problematic.
           vassertSome(env.getNearestTemplataWithName(name, Set(TemplataLookupContext)))
         }
 
-        override def lookupTemplata(env: IEnvironment, name: IName2): ITemplata = {
+        override def lookupTemplata(env: IEnvironment, range: RangeS, name: IName2): ITemplata = {
           // Changed this from AnythingLookupContext to TemplataLookupContext
           // because this is called from StructTemplar to figure out its members.
           // We could instead pipe a lookup context through, if this proves problematic.

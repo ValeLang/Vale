@@ -79,17 +79,13 @@ class FakeInfererEvaluatorDelegate extends IInfererEvaluatorDelegate[SimpleEnvir
     vfail()
   }
 
-  override def getSimpleInterfaceMethod(state: FakeState, interfaceRef: InterfaceRef2): Prototype2 = {
-    vfail()
-  }
-
-  override def lookupTemplata(env: SimpleEnvironment, rune: IName2): ITemplata = {
+  override def lookupTemplata(env: SimpleEnvironment, range: RangeS, rune: IName2): ITemplata = {
     val results = env.getAllTemplatasWithAbsoluteName2(rune, Set(TemplataLookupContext))
     vassert(results.size == 1)
     results.head
   }
 
-  override def lookupTemplata(profiler: IProfiler, env: SimpleEnvironment, name: IImpreciseNameStepA): ITemplata = {
+  override def lookupTemplata(profiler: IProfiler, env: SimpleEnvironment, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
     val results = env.getAllTemplatasWithName(profiler, name, Set(TemplataLookupContext))
     vassert(results.size == 1)
     results.head
@@ -120,7 +116,7 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
 //  override def getPackKind(env: SimpleEnvironment, state: FakeState, types2: List[Coord]): (PackT2, Mutability) = {
 //    vfail()
 //  }
-  override def lookupTemplata(env: SimpleEnvironment, name: IName2): ITemplata = {
+  override def lookupTemplata(env: SimpleEnvironment, range: RangeS, name: IName2): ITemplata = {
     vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
   }
 
@@ -138,7 +134,7 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
     vfail()
   }
 
-  override def lookupTemplataImprecise(env: SimpleEnvironment, name: IImpreciseNameStepA): ITemplata = {
+  override def lookupTemplataImprecise(env: SimpleEnvironment, range: RangeS, name: IImpreciseNameStepA): ITemplata = {
     vassertSome(env.getNearestTemplataWithName(name, Set(TemplataLookupContext)))
   }
 }

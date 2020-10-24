@@ -230,10 +230,10 @@ class OverloadTemplar(
                       val ruleTyper =
                         new RuleTyperEvaluator[IEnvironment, Temputs](
                           new IRuleTyperEvaluatorDelegate[IEnvironment, Temputs] {
-                            override def lookupType(state: Temputs, env: IEnvironment, rangeS: RangeS, name: INameS): ITemplataType = {
+                            override def lookupType(state: Temputs, env: IEnvironment, range: RangeS, name: INameS): ITemplataType = {
                               val templata =
                                 env.getNearestTemplataWithAbsoluteName2(NameTranslator.translateNameStep(Astronomer.translateName(name)), Set[ILookupContext](TemplataLookupContext)) match {
-                                  case None => vfail("Nothing found with name " + name)
+                                  case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Nothing found with name " + name))
                                   case Some(t) => t
                                 }
                               (templata.tyype)
@@ -250,7 +250,7 @@ class OverloadTemplar(
                         )
 
                       if (explicitlySpecifiedTemplateArgTemplexesS.size > identifyingRuneTemplataTypes.size) {
-                        vfail("Supplied more arguments than there are identifying runes!")
+                        throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Supplied more arguments than there are identifying runes!"))
                       }
 
                       // Now that we know what types are expected, we can FINALLY rule-type these explicitly
@@ -424,7 +424,7 @@ class OverloadTemplar(
         (Some(candidateBanners.head), Map(), rejectionReasonByBanner, rejectionReasonByFunction)
       } else {
         val (best, outscoreReasonByBanner) =
-          narrowDownCallableOverloads(temputs, candidateBanners, args.map(_.tyype))
+          narrowDownCallableOverloads(temputs, callRange, candidateBanners, args.map(_.tyype))
         (Some(best), outscoreReasonByBanner, rejectionReasonByBanner, rejectionReasonByFunction)
       }
     })
@@ -448,6 +448,7 @@ class OverloadTemplar(
 
   private def narrowDownCallableOverloads(
       temputs: Temputs,
+      callRange: RangeS,
       unfilteredBanners: Set[IPotentialBanner],
       argTypes: List[Coord]):
   (
@@ -518,7 +519,7 @@ class OverloadTemplar(
       if (bannerByIsBestScore.getOrElse(true, List()).isEmpty) {
         vfail("wat")
       } else if (bannerByIsBestScore.getOrElse(true, List()).size > 1) {
-        vfail("Can't resolve between:\n" + bannerByIsBestScore.mapValues(_.mkString("\n")).mkString("\n"))
+        throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Can't resolve between:\n" + bannerByIsBestScore.mapValues(_.mkString("\n")).mkString("\n")))
       } else {
         bannerByIsBestScore(true).head._1
       };

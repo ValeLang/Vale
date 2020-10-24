@@ -6,6 +6,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.vivem.IntV
 
 class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
@@ -17,7 +18,7 @@ class IfTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = compile.getScoutput()
     val main = scoutput.lookupFunction("main")
-    val CodeBody1(BodySE(_, BlockSE(_, List(IfSE(_, _, _))))) = main.body
+    val CodeBody1(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
 
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").only({ case If2(_, _, _) => })
@@ -193,6 +194,31 @@ class IfTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "5\n5\n5\n5\n"
+  }
+
+  test("If nevers") {
+    val compile = Compilation(Samples.get("programs/if/ifnevers.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  // Intentional failure 2020-10-23
+  test("Toast") {
+    val compile = Compilation(
+      """
+        |fn main() int {
+        |  a = 0;
+        |  if (a == 2) {t;
+        |    ret 71;
+        |  } else if (a == 5) {t;
+        |    ret 73;
+        |  } else {t;
+        |    ret 42;
+        |  }
+        |}
+        |""".stripMargin)
+
+    val main = compile.getTemputs().lookupFunction("main")
+    compile.evalForReferend(Vector()) shouldEqual IntV(42)
   }
 
 }

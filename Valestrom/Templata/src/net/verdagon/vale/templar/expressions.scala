@@ -186,6 +186,7 @@ case class Defer2(
   }
 }
 
+
 // Eventually, when we want to do if-let, we'll have a different construct
 // entirely. See comment below If2.
 // These are blocks because we don't want inner locals to escape.
@@ -571,17 +572,6 @@ case class FunctionCall2(
     List(this).collect(func) ++ callable.all(func) ++ args.flatMap(_.all(func))
   }
 }
-case class And2(
-    left: ReferenceExpression2,
-    right: ReferenceExpression2) extends ReferenceExpression2 {
-
-  override def resultRegister = ReferenceRegister2(Coord(Share, Bool2()))
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ left.all(func) ++ right.all(func)
-  }
-}
-
 case class Tuple2(
     elements: List[ReferenceExpression2],
     tupleReference: Coord) extends ReferenceExpression2 {

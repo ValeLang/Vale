@@ -1,4 +1,6 @@
 
+fn vstr_toascii(s str, begin int, end int) int extern;
+
 fn vstr_indexOf(
   haystackContainer str,
   haystackBegin int,
@@ -32,6 +34,21 @@ fn vstr_cmp(
   bEnd int)
 int extern;
 
+struct StrSliceHasher { }
+fn __call(self &StrSliceHasher, s! StrSlice) int {
+  sum! = 0;
+  while (s != "") {
+    mut sum = sum * 1337 + toAscii(s.slice(0, 1));
+    mut s = s.slice(1);
+  }
+  ret sum;
+}
+
+struct StrSliceEquator { }
+fn __call(self &StrSliceEquator, a StrSlice, b StrSlice) bool {
+  a == b
+}
+
 struct StrSlice imm {
   string str;
   begin int;
@@ -39,14 +56,32 @@ struct StrSlice imm {
   // Will soon have a private bytesBegin and bytesEnd
 }
 
-fn find(a str, b str) Opt<StrSlice> { find(a.slice(), b.slice()) }
-fn find(a str, b StrSlice) Opt<StrSlice> { find(a.slice(), b) }
-fn find(a StrSlice, b str) Opt<StrSlice> { find(a, b.slice()) }
-fn find(a StrSlice, b StrSlice) Opt<StrSlice> {
+fn newStrSlice(string str, begin int, end int) StrSlice {
+  vassert(begin >= 0, "slice begin was negative!");
+  vassert(end >= 0, "slice end was negative!");
+  vassert(begin <= string.len(), "slice begin was more than length!");
+  vassert(end <= string.len(), "slice end was more than length!");
+  vassert(end >= begin, "slice end was before begin!");
+
+  ret StrSlice(string, begin, end);
+  // this.string = string;
+  // this.begin = begin;
+  // this.end = end;
+}
+
+fn has(haystack str, needle str) bool { has(haystack.slice(), needle.slice()) }
+fn has(haystack StrSlice, needle str) bool { has(haystack, needle.slice()) }
+fn has(haystack str, needle StrSlice) bool { has(haystack.slice(), needle) }
+fn has(haystack StrSlice, needle StrSlice) bool { not find(haystack, needle).isEmpty() }
+
+fn find(haystack str, needle str) Opt<StrSlice> { find(haystack.slice(), needle.slice()) }
+fn find(haystack str, needle StrSlice) Opt<StrSlice> { find(haystack.slice(), needle) }
+fn find(haystack StrSlice, needle str) Opt<StrSlice> { find(haystack, needle.slice()) }
+fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
   offsetAfterBegin =
       vstr_indexOf(
-          a.string, a.begin, a.end,
-          b.string, b.begin, b.end);
+          haystack.string, haystack.begin, haystack.end,
+          needle.string, needle.begin, needle.end);
 
   = if (offsetAfterBegin < 0) {
       r Opt<StrSlice> = None<StrSlice>();
@@ -54,48 +89,58 @@ fn find(a StrSlice, b StrSlice) Opt<StrSlice> {
     } else {
       r Opt<StrSlice> =
           Some<StrSlice>(
-              StrSlice(
-                  a.string,
-                  a.begin + offsetAfterBegin,
-                  a.begin + offsetAfterBegin + b.len()));
+              newStrSlice(
+                  haystack.string,
+                  haystack.begin + offsetAfterBegin,
+                  haystack.begin + offsetAfterBegin + needle.len()));
       = r;
     }
 }
 
-fn splitAt(haystack StrSlice, needle StrSlice) Opt<[StrSlice, StrSlice]> {
-  offsetAfterBegin =
-      vstr_indexOf(
-          haystack.string, haystack.begin, haystack.end,
-          needle.string, needle.begin, needle.end);
-  = if (offsetAfterBegin < 0) {
-      r Opt<StrSlice> = None<StrSlice>();
+struct SplitResult {
+  beforeSplit StrSlice;
+  afterSplit StrSlice;
+}
+fn splitOnce(haystack str, needle str) Opt<SplitResult> {
+  splitOnce(haystack.slice(), needle.slice())
+}
+fn splitOnce(haystack StrSlice, needle str) Opt<SplitResult> {
+  splitOnce(haystack, needle.slice())
+}
+fn splitOnce(haystack str, needle StrSlice) Opt<SplitResult> {
+  splitOnce(haystack.slice(), needle)
+}
+fn splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
+  maybeOffsetAfterBegin = find(haystack, needle);
+  = if (maybeOffsetAfterBegin.isEmpty()) {
+      r Opt<SplitResult> = None<SplitResult>();
       = r;
     } else {
-      r Opt<[StrSlice, StrSlice]> =
-          Some<[StrSlice, StrSlice]>(
-              [
-                  StrSlice(
+      offsetAfterBegin = maybeOffsetAfterBegin.get();
+      r Opt<SplitResult> =
+          Some<SplitResult>(
+              SplitResult(
+                  newStrSlice(
                       haystack.string,
                       haystack.begin,
-                      haystack.begin + offsetAfterBegin),
-                  StrSlice(
+                      offsetAfterBegin.begin),
+                  newStrSlice(
                       haystack.string,
-                      haystack.begin + offsetAfterBegin + needle.len(),
-                      haystack.end)
-              ]);
+                      offsetAfterBegin.begin + needle.len(),
+                      haystack.end)));
       = r;
     }
 }
 
 fn slice(s str) StrSlice {
-  StrSlice(s, 0, s.len())
+  newStrSlice(s, 0, s.len())
 }
 
 fn slice(s str, begin int) StrSlice { s.slice().slice(begin) }
 fn slice(s StrSlice, begin int) StrSlice {
   newBegin = s.begin + begin;
-  vassert(newBegin < s.string.len());
-  = StrSlice(s.string, newBegin, s.end);
+  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
+  = newStrSlice(s.string, newBegin, s.end);
 }
 
 fn len(s StrSlice) int {
@@ -103,35 +148,25 @@ fn len(s StrSlice) int {
 }
 
 fn slice(s str, begin int, end int) StrSlice {
-  vassert(begin >= 0);
-  vassert(end >= 0);
-  vassert(begin < s.len());
-  vassert(end <= s.len());
-  vassert(end >= begin);
-  = StrSlice(s, begin, end);
+  = newStrSlice(s, begin, end);
 }
 
 fn slice(s StrSlice, begin int, end int) StrSlice {
-  vassert(begin >= 0);
-  vassert(end >= 0);
-  vassert(begin < s.len());
-  vassert(end <= s.len());
-  vassert(end >= begin);
-
   newGlyphBeginOffset = s.begin + begin;
   newGlyphEndOffset = s.begin + end;
-  = StrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
+  = newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
 }
 
 
 fn str(s StrSlice) str {
-  vassert(s.begin >= 0);
-  vassert(s.end >= 0);
-  vassert(s.len() >= 0);
-  vassert(s.begin < s.end);
   ret vstr_substring(s.string, s.begin, s.len());
 }
 
+
+fn !=(a str, b StrSlice) bool { a.slice() != b }
+fn !=(a StrSlice, b str) bool { a != b.slice() }
+
+fn ==(a str, b str) bool { a.slice() == b.slice() }
 fn ==(a str, b StrSlice) bool { a.slice() == b }
 fn ==(a StrSlice, b str) bool { a == b.slice() }
 fn ==(a StrSlice, b StrSlice) bool {
@@ -150,7 +185,10 @@ fn startsWith(a str, b str) bool { startsWith(a.slice(), b.slice()) }
 fn startsWith(a str, b StrSlice) bool { startsWith(a.slice(), b) }
 fn startsWith(a StrSlice, b str) bool { startsWith(a, b.slice()) }
 fn startsWith(a StrSlice, b StrSlice) bool {
-  a.slice(0, b.len()) == b
+  if (b.len() > a.len()) {
+    ret false;
+  }
+  ret a.slice(0, b.len()) == b;
 }
 
 
@@ -166,4 +204,83 @@ fn splice(original str, at int, removeNumChars int, insert str) {
   before = original.slice(0, at).str();
   after = original.slice(at + removeNumChars, original.len()).str();
   = before + insert + after;
+}
+
+fn +(a str, b StrSlice) str { a.slice() + b }
+fn +(a StrSlice, b str) str { a + b.slice() }
+fn +(a StrSlice, b StrSlice) str {
+  __vaddStr(a.string, a.begin, a.end - a.begin, b.string, b.begin, b.end - b.begin)
+}
+
+fn print(s StrSlice) { __vprintStr(s.string, s.begin, s.end - s.begin) }
+
+fn println(s StrSlice) void {
+  print(s + "\n");
+}
+
+
+
+fn ltrim(s str) StrSlice { ltrim(s.slice()) }
+fn ltrim(s! StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while (true) {
+    if (s == "") {
+      ret s;
+    }
+    if (whitespace.find(s.slice(0, 1)).isEmpty()) {
+      ret s;
+    }
+    mut s = s.slice(1, s.len());
+  }
+  panic("unreachable");
+}
+fn rtrim(s str) StrSlice { rtrim(s.slice()) }
+fn rtrim(s! StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while (true) {
+    if (s == "") {
+      ret s;
+    }
+    if (whitespace.find(s.slice(s.len() - 1, s.len())).isEmpty()) {
+      ret s;
+    }
+    mut s = s.slice(0, s.len() - 1);
+  }
+  panic("unreachable");
+}
+
+fn trim(s str) StrSlice { trim(s.slice()) }
+fn trim(s! StrSlice) StrSlice { ltrim(rtrim(s)) }
+
+fn int(s! StrSlice) Opt<int> {
+  hasNegative! = false;
+  totalSoFar! = 0;
+
+  if (s == "") {
+    ret None<int>();
+  }
+
+  while (s != "") {
+    digitStr = s.slice(0, 1);
+
+    if (digitStr == "-") {
+      mut hasNegative = true;
+    } else {
+      ascii = toAscii(digitStr);
+      if (ascii < 48 or ascii >= 58) {
+        ret None<int>();
+      }
+      digit = ascii - 48;
+      mut totalSoFar = totalSoFar * 10 + digit;
+    }
+
+    mut s = s.slice(1);
+  }
+
+  ret Some(totalSoFar);
+}
+
+fn toAscii(s StrSlice) int {
+  vassert(s.begin + 1 <= s.end);
+  = vstr_toascii(s.string, s.begin, s.end);
 }

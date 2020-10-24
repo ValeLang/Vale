@@ -16,7 +16,7 @@ object TemplarErrorHumanizer {
   String = {
     err match {
       case RangedInternalErrorT(range, message) => {
-        humanizePos(filenamesAndSources, range.file, range.begin.offset) + message
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) + " " + message
       }
       case CantMoveOutOfMemberT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +

@@ -190,6 +190,13 @@ Ref buildIfElse(
   auto conditionLE = globalState->region->checkValidReference(FL(), functionState, builder, globalState->metalCache.boolRef, conditionRef);
   LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, elseStartBlockL);
 
+  if (thenResultMT == globalState->metalCache.neverRef && elseResultMT == globalState->metalCache.neverRef) {
+    // Bail early, even though builder is still pointing at the preceding block. Nobody should use
+    // it, since nothing can happen after a never.
+    return wrap(globalState->region, globalState->metalCache.neverRef, globalState->neverPtr);
+//    assert(false); // impl
+  }
+
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlockInContext(globalState->context,
           functionState->containingFuncL,
@@ -210,10 +217,8 @@ Ref buildIfElse(
   // block we're making here.
   LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
 
-  if (thenResultMT == globalState->metalCache.neverRef && elseResultMT == globalState->metalCache.neverRef) {
-    //    return wrap(globalState->region, globalState->metalCache.neverRef, globalState->neverPtr);
-    assert(false); // impl
-  } else if (thenResultMT == globalState->metalCache.neverRef) {
+
+  if (thenResultMT == globalState->metalCache.neverRef) {
     return elseResultRef;
   } else if (elseResultMT == globalState->metalCache.neverRef) {
     return thenResultRef;

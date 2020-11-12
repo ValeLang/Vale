@@ -223,73 +223,24 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
   if (limitMode || (knownLive && elideChecksForKnownLive)) {
     // Do nothing
   } else {
+    adjustCounter(globalState, builder, globalState->livenessCheckCounter, 1);
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
-    if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
-////      auto constraintRefM = globalState->metalCache.getReference(Ownership::BORROW, refM->location, refM->referend);
-////      auto controlBlockPtrLE =
-////          referendStructsSource->getControlBlockPtr(
-////              FL(), functionState, builder, innerLE, constraintRefM);
-////      auto controlBlockPtrAsIntLE =
-////          LLVMBuildPointerCast(
-////              builder,
-////              controlBlockPtrLE.refLE,
-////              LLVMInt64TypeInContext(globalState->context),
-////              "controlBlockPtrAsIntLE");
-////      auto isAlive64LE =
-////          LLVMBuildZExt(builder, isAliveLE, LLVMInt64TypeInContext(globalState->context), "__ptrAsIntToNullOrWriteOnlyGlobal");
-//
-//
-//      auto ptrToWriteToLE =
-//          buildSimpleIfElse(
-//              globalState, functionState, builder, isAliveLE,
-//              LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0),
-//              [this](LLVMBuilderRef thenBuilder) -> LLVMValueRef {
-//                return globalState->writeOnlyGlobal;
-//              },
-//              [this](LLVMBuilderRef elseBuilder) -> LLVMValueRef {
-//                return LLVMBuildLoad(elseBuilder, globalState->crashGlobal, "crashGlobal");
-//              });
-//
-//
-//
-////      // We can write anything we want into devNull here, but we're arbitrarily choosing innerLE
-////      // because it will fool the optimizer a little better.
-////      auto ram64IndexToNullOrWriteOnlyGlobal =
-////          LLVMBuildMul(
-////              builder,
-////              isAlive64LE,
-////              LLVMBuildLoad(builder, globalState->ram64IndexToWriteOnlyGlobal, "ram64IndexToWriteOnlyGlobal"),
-////              "ram64IndexToNullOrWriteOnlyGlobal");
-////
-////      auto ptrToNullOrWriteOnlyGlobal =
-////        LLVMBuildGEP(
-////            builder,
-////            LLVMBuildLoad(builder, globalState->ram64, "ram64"),
-////            &ram64IndexToNullOrWriteOnlyGlobal,
-////            1,
-////            "ptrToNullOrWriteOnlyGlobal");
-//
-//      LLVMBuildStore(builder, constI64LE(globalState, 0), ptrToWriteToLE);
-
-      buildIf(
-          globalState, functionState, builder, isZeroLE(builder, isAliveLE),
-          [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
-//            auto ptrToWriteToLE = LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
+    buildIf(
+        globalState, functionState, builder, isZeroLE(builder, isAliveLE),
+        [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
+          if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
             auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal,
-                "crashGlobal");// LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
+                "crashGlobal");
             LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
-          });
-    } else {
-      buildIf(
-          globalState, functionState, builder, isZeroLE(builder, isAliveLE),
-          [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
+          } else {
             buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
             buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
             buildPrint(globalState, thenBuilder, "Exiting!\n");
-            auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+            auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255,
+                false);
             LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
-          });
-    }
+          }
+        });
   }
   return innerLE;
 }

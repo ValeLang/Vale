@@ -39,6 +39,7 @@ public:
   LLVMValueRef liveHeapObjCounter = nullptr;
   LLVMValueRef derefCounter = nullptr;
   LLVMValueRef mutRcAdjustCounter = nullptr;
+  LLVMValueRef livenessCheckCounter = nullptr;
   // an i64 pointer to null.
   LLVMValueRef ram64 = nullptr;
   LLVMValueRef writeOnlyGlobal = nullptr;

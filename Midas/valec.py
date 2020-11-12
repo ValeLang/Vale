@@ -27,7 +27,7 @@ class ValeCompiler:
             [
                 "java",
                 "-cp",
-                self.valestrom_path,
+                self.valestrom_path + "/Valestrom.jar" + ":" + self.valestrom_path + "/lift-json_2.12-3.3.0-RC1.jar",
                 "net.verdagon.vale.driver.Driver",
                 "build"
             ] + valestrom_options + vale_files
@@ -64,9 +64,9 @@ class ValeCompiler:
         if len(self.valestrom_path) > 0:
             pass
         elif path.exists(cwd + "/Valestrom.jar"):
-            self.valestrom_path = cwd + "/Valestrom.jar"
+            self.valestrom_path = cwd
         elif path.exists(cwd + "/test/Valestrom.jar"):
-            self.valestrom_path = cwd + "/test/Valestrom.jar"
+            self.valestrom_path = cwd + "/test"
 
         self.valestd_path = os.environ.get('VALESTD_PATH', '')
         if len(self.valestd_path) > 0:
@@ -146,6 +146,9 @@ class ValeCompiler:
         if "--census" in args:
             args.remove("--census")
             midas_options.append("--census")
+        if "--print-mem-overhead" in args:
+            args.remove("--print-mem-overhead")
+            midas_options.append("--print-mem-overhead")
         if "--verify" in args:
             args.remove("--verify")
             midas_options.append("--verify")
@@ -193,27 +196,28 @@ class ValeCompiler:
             del args[ind]
             parseds_output_dir = val
 
-        # builtin files which should be included in all vale programs
-        user_vale_files = []
-        user_c_files = []
+        user_valestrom_files = []
         user_vir_files = []
+        user_c_files = []
         
         for arg in args:
             if arg.endswith(".vale"):
-                user_vale_files.append(arg)
-            elif arg.endswith(".c"):
-                user_c_files.append(arg)
+                user_valestrom_files.append(arg)
+            elif arg.endswith(".vpr"):
+                user_valestrom_files.append(arg)
             elif arg.endswith(".vir"):
                 user_vir_files.append(arg)
+            elif arg.endswith(".c"):
+                user_c_files.append(arg)
             else:
                 print("Unrecognized input: " + arg)
                 sys.exit(22)
 
         vir_file = None
-        if len(user_vir_files) == 0 and len(user_vale_files) > 0:
+        if len(user_valestrom_files) > 0 and len(user_vir_files) == 0:
             # Add in the default vale files
-            user_vale_files = (
-                user_vale_files +
+            user_valestrom_files = (
+                user_valestrom_files +
                 glob.glob(cwd + "/vstl/*utils.vale") +
                 glob.glob(cwd + "/vstl/externs.vale") +
                 [cwd + "/vstl/strings.vale", cwd + "/vstl/opt.vale"])
@@ -231,7 +235,7 @@ class ValeCompiler:
                 valestrom_options.append("-op")
                 valestrom_options.append(parseds_output_dir)
 
-            proc = self.valestrom(user_vale_files, valestrom_options)
+            proc = self.valestrom(user_valestrom_files, valestrom_options)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode == 0:
@@ -241,9 +245,9 @@ class ValeCompiler:
                 print(proc.stdout + "\n" + proc.stderr)
                 sys.exit(22)
             else:
-                print(f"Internal error while compiling {user_vale_files}:\n" + proc.stdout + "\n" + proc.stderr)
+                print(f"Internal error while compiling {user_valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
                 sys.exit(proc.returncode)
-        elif len(user_vir_files) > 0 and len(user_vale_files) == 0:
+        elif len(user_vir_files) > 0 and len(user_valestrom_files) == 0:
             if len(user_vir_files) > 1:
                 print("Can't have more than one VIR file!")
                 sys.exit(1)

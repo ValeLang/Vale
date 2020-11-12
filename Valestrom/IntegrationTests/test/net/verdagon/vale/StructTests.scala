@@ -141,14 +141,14 @@ class StructTests extends FunSuite with Matchers {
         |
         |struct Weapon {
         |  name str;
-        |  owner Opt<&Marine>;
+        |  owner! Opt<&Marine>;
         |}
         |fn destructor(weapon Weapon) void {
         |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&GetMarineWeaponNameFunc()).getOr("none"));
         |  Weapon(name, owner) = weapon;
         |}
         |struct Marine {
-        |  weapon Weapon;
+        |  weapon! Weapon;
         |}
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");

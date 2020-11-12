@@ -1,0 +1,408 @@
+struct ExpressionPart {
+    expressionStr Opt<StrSlice>;
+    expression Opt<IExpressionPE>;
+    rightOperatorStr Opt<StrSlice>;
+    priority int;
+}
+
+fn main() void {
+    code = "\nstruct Hello<A, B> {\n   horse int;\n   pferd str; another str; \n}\nfn main() {\n h = Hello<int, bool>(1, \"a\", \"b\");\n println(h.horse); \n} ";
+    //println(code);
+    //println("----------- Parsing -----------");
+    parse(code);
+}
+
+fn parse(s str) void {
+   c = Context(s.slice());
+   parseRoot(&c);
+}
+
+fn parseRoot(c &Context) void {
+    writeBeginJson();
+    readWhitespace(c);
+    
+    if (c.code.len() > 1) {
+        word = readWord(c);
+        c.parseRootByWord(&word);
+        c.readWhitespace();
+    }
+    
+    while (c.code.len() > 1) {
+        writeSeperatorJson();
+        word = readWord(c);
+        c.parseRootByWord(&word);
+        c.readWhitespace();
+    }
+    
+    writeEndJson();
+}
+
+fn parseRootByWord(c &Context, word &StrSlice) void {
+    if (word == "fn") {
+        function = c.parseFunction();
+        function.writeJson();
+    } else if (word == "struct") {
+        struct = c.parseStruct();
+        struct.writeJson();
+    } else if (word == "interface") {
+        c.parseInterface();
+    } else if (word == "impl") {
+        c.parseImpl();
+    } else {
+        panic("Unknown root type: " + word.str());
+    }
+}
+
+fn parseIdentifyingRunes(c &Context) IdentifyingRunesP {
+    identifyingRunes = IdentifyingRunesP(Range(c.index() - 1,-1), List<IdentifyingRuneP>());
+    
+    parseRuneTypePR(c, &identifyingRunes);
+    
+    c.readWhitespace();
+    while (c.peek() == ",") {
+        c.advance();
+        c.readWhitespace();
+        
+        parseRuneTypePR(c, &identifyingRunes);
+        
+        c.readWhitespace();
+    }
+        
+    if (c.peek() != ">") {
+        panic("Expected end of generic type >, but got: " + c.peek().str());
+    }
+    c.advance();
+    mut identifyingRunes.range.end = c.index();
+    
+    = identifyingRunes;
+}
+
+fn parseRuneTypePR(c &Context, identifyingRunesP &IdentifyingRunesP) void {
+    name = c.readWord();
+    if (name.len() == 0) {
+        panic("Expected generic type name, but got: " + c.peek().str());
+    }
+    nameStr = name.str();
+    range = Range(name.begin, name.end);
+    
+    //TODO: Range should fit with extra stuff, not just name
+    identifyingRuneP = IdentifyingRuneP(Range(name.begin, name.end), NameP(Range(name.begin, name.end), nameStr), List<IRuneAttributeP>());
+    
+    //TODO: Add more rune support
+    type ITypePR = if (nameStr == "int") {
+        temp ITypePR = IntTypePR();
+        = temp;
+    }
+    else if (nameStr == "bool") {
+        temp ITypePR = BoolTypePR();
+        = temp;
+    }
+    else if (nameStr == "imm" or nameStr == "mut") {
+        temp ITypePR = MutabilityTypePR();
+        = temp;
+    } else if (nameStr.len() > 0) {
+        temp ITypePR = PrototypeTypePR();
+        = temp;
+    } else {
+        panic("Expected rune, but got: " + c.peek().str());
+    };
+    identifyingRuneP.attributes.add(TypeRuneAttributeP(Range(name.begin, name.end), type));
+    
+    identifyingRunesP.runes.add(identifyingRuneP);
+}
+
+fn parseStruct(c &Context) StructP {
+    structP = StructP(
+        Range(c.index() - 7, -1),
+        NameP(Range(-1, -1), ""),
+        List<ICitizenAttributeP>(),
+        MutableP(),
+        None<IdentifyingRunesP>(),
+        None<TemplateRulesP>(),
+        StructMembersP(Range(-1, -1), List<IStructContent>())
+    );
+    
+    c.readWhitespace();
+    structName = c.readWord();
+    if (structName.len() == 0) {
+        panic("Expected struct name, but got: " + c.peek().str());
+    }
+    mut structP.name.string = structName.str();
+    mut structP.name.range.begin = structName.begin;
+    mut structP.name.range.end = structName.end;
+    
+    c.readWhitespace();
+    if (c.peek() == "<") {
+        c.advance();
+        identifyingRunes = parseIdentifyingRunes(c);
+        mut structP.identifyingRunes = Some(identifyingRunes);
+    }
+    
+    c.readWhitespace();
+    while (c.peek() != "{") {
+        word = c.readWord();
+        if (word == "imm") {
+            mut structP.mutability = ImmutableP();
+        }
+        else if (word == "export") {
+            structP.attributes.add(ExportP(Range(c.index() - 6, c.index())));
+        }
+        else if (word == "rules") {
+            parseStructRules(c);
+        }
+        else if (word.len() == 0) {
+            panic("Expected start of struct scope {, but got: " + c.peek().str());
+        }
+        c.readWhitespace();
+    }
+    mut structP.members.range.begin = c.index();
+    c.advance();
+    
+    c.readWhitespace();
+    while (c.peek() != "}") {
+        startIndex = c.index();
+        fieldName = c.readWord();
+        if (fieldName.len() == 0) {
+            panic("Expected struct field name, but got: " + c.peek().str());
+        }
+        
+        c.readWhitespace();
+        type = parseType(c);
+        
+        structContent = StructMemberP(Range(startIndex, c.index()), NameP(Range(fieldName.begin, fieldName.end), fieldName.str()), FinalP(), type); //TODO: FinalP?
+        structP.members.contents.add(structContent);
+        
+        c.readWhitespace();
+        if (c.peek() != ";") {
+            panic("Expected end of struct field type ;, but got: " + c.peek().str());
+        }
+        c.advance();
+        
+        c.readWhitespace();
+    }
+    mut structP.range.end = c.index();
+    mut structP.members.range.end = c.index();
+    c.advance();
+    = structP;
+}
+fn parseStructRules(c &Context) void {
+    panic("Struct rules not implemented yet");
+}
+
+fn parseInterface(c &Context) void {
+    panic("Interface not implemented yet");
+}
+
+fn parseImpl(c &Context) void {
+    panic("Impl not implemented yet");
+}
+
+fn parseType(c &Context) ITemplexPT {
+    //TODO: This should support more than just word types (arrays and stuff)
+    wordType = c.readWord();
+    if (wordType.len() == 0) {
+        panic("Expected type, but got: " + c.peek().str());
+    }
+    = NameOrRunePT(NameP(Range(wordType.begin, wordType.end), wordType.str()));
+}
+
+fn parseFunction(c &Context) FunctionP {
+                        
+    startIndex = c.index() - 2;
+    
+    c.readWhitespace();
+    fnName = c.readWord();
+    if (fnName.len() == 0) {
+        panic("Expected function name, but got: " + c.peek().str());
+    }
+    
+    functionP = FunctionP(Range(startIndex,-1), 
+                          FunctionHeaderP(Range(startIndex,-1),
+                                          Some(NameP(Range(fnName.begin, fnName.end), fnName.str())), 
+                                          None<IdentifyingRunesP>(), 
+                                          None<TemplateRulesP>(), //Missing
+                                          None<ParamsP>(), // Missing
+                                          None<ITemplexPT>() // Missing
+                          ), 
+                          None<BlockPE>());
+                          
+    if (c.peek() == "<") {
+        identifyingRunes = parseIdentifyingRunes(c);
+        mut functionP.header.maybeUserSpecifiedIdentifyingRunes = Some(identifyingRunes);
+    }
+    
+    c.readWhitespace();
+    if (c.peek() != "(") {
+        panic("Expected start of parameter (, but got: " + c.peek().str());
+    }
+    c.advance();
+    
+    //TODO: params
+    
+    c.readWhitespace();
+    if (c.peek() != ")") {
+        panic("Expected end of fn parameter list ), but got: " + c.peek().str());
+    }
+    c.advance();
+    mut functionP.range.end = c.index();
+    mut functionP.header.range.end = c.index();
+    
+    
+    c.readWhitespace();
+    if (c.peek() != "{") {
+        panic("Expected start of fn scope {, but got: " + c.peek().str());
+    }
+    c.advance();
+    
+    mut functionP.body = Some(parseBody(c));
+    
+    c.readWhitespace();
+    while (c.peek() != "}") {
+        c.advance();
+    }
+    c.advance();
+    
+    = functionP;
+}
+
+fn parseBody(c &Context) BlockPE {
+    blockPE = BlockPE(Range(c.index(), -1), List<IExpressionPE>());
+    
+    c.readWhitespace();
+    while (c.peek() != "}") {
+        expression = c.parseBodyExpression();
+        blockPE.elements.add(expression);
+        c.readWhitespace();
+        if (c.peek() == ";") {
+            c.advance();
+        }
+       c.readWhitespace();
+    }
+    println("done parseBody");
+    c.advance();
+    mut blockPE.range.end = c.index();
+    = blockPE;
+}
+
+fn parseBodyExpression(c &Context) IExpressionPE {
+    = c.parseExpression();
+}
+
+fn parseExpression(c &Context) IExpressionPE {
+    parts = List<ExpressionPart>();
+    
+    
+    while (",);}".find(c.peek()).isEmpty()) {
+        
+        expressionStr Opt<StrSlice> = None<StrSlice>();
+        expression Opt<IExpressionPE> = None<IExpressionPE>();
+        
+        word = c.readWord();
+        
+        if (word.len() != 0) {
+            if (c.peek() == " ") {
+                if (word == "if") {
+                    panic("'if' not supported yet");
+                }
+                else if (word == "while") {
+                    panic("'while' not supported yet");
+                }
+                else if (word == "mut") {
+                    panic("'mut' not supported yet");
+                }
+            }
+            
+            //Assume variable name
+            if (c.peek() == "<") { // Function call with generic
+                c.advance();
+                identifyingRunes = parseIdentifyingRunes(c);
+                if (c.peek() != "(") {
+                    panic("Expected method call after identifying runes. But got " + c.peek().str());
+                }
+                c.advance();
+                args = c.parseFunctionCallParameters();
+            }
+            else if (c.peek() == "(") { // Function call without generic
+                c.advance();
+                args = c.parseFunctionCallParameters();
+                
+            }
+            else { // named
+                mut expressionStr = Some(word);
+            }
+            
+        } else { // Empty word
+            number = c.readNumber();
+            if (number.len() != 0) {
+                mut expressionStr = Some(number);
+            } else {
+                stringLitteral = c.readStringLitteral();
+                if (stringLitteral.len() != 0) {
+                    mut expressionStr = Some(stringLitteral);
+                }else{
+                    panic("Dunno how to read expression: " + c.code.slice(0, 10).str());
+                }
+            }
+        }
+        // Try read numbers or other fun stuff
+
+        c.readAllWhitespaceButTheLast();
+        operator = c.readOperator();        
+        
+        part = ExpressionPart(expressionStr,
+                         expression,
+                         operator,
+                         0);
+
+        println("@");
+        if (not part.expressionStr.isEmpty()) {
+            println("part.expressionStr: " + part.expressionStr.get().str());
+            //if (part.expressionStr.get() == "\"b\"") { panic("test"); }
+        }
+        if (not part.rightOperatorStr.isEmpty()) {
+            println("part.rightOperatorStr: " + part.rightOperatorStr.get().str());
+        }
+        println("@");
+
+        parts.add(part);
+                         
+        
+        //print("Dunno how to read2 :\"");
+        //print(c.peek().str());
+        //print("\"");
+        //panic("");
+    }
+    //panic("got here");
+    
+    = VoidPE(Range(-1,-1)); // Temp
+}
+fn parseFunctionCallParameters(c &Context) List<IExpressionPE> {
+    println("@@ parseFunctionCallParameters()");
+    result = List<IExpressionPE>();
+    
+    
+    c.readWhitespace();
+    
+    if (c.peek() != ")") {
+        expr = c.parseExpression();
+        result.add(expr);
+    }
+    c.readWhitespace();
+    
+    while (c.peek() != ")") {
+        if (c.peek() != ",") {
+            panic("Expected parameter seperator, but got: " + c.peek().str());
+        }
+        c.advance();
+        c.readWhitespace();
+        expr = c.parseExpression();
+        result.add(expr);
+        
+        c.readWhitespace();
+    }
+    c.advance();
+    
+    //panic("test");
+    
+    = result;
+}

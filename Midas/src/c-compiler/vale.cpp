@@ -373,6 +373,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__mutRcAdjustCounter");
   LLVMSetInitializer(globalState->mutRcAdjustCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
+  globalState->livenessCheckCounter =
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__livenessCheckCounter");
+  LLVMSetInitializer(globalState->livenessCheckCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+
   initInternalExterns(globalState);
 
 //  Assist assistRegion(globalState);
@@ -538,6 +542,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMValueRef mainResult =
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
+  if (globalState->opt->printMemOverhead) {
+    buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
+    buildPrint(globalState, entryBuilder, LLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
+    buildPrint(globalState, entryBuilder, "\n");
+  }
 
   if (globalState->opt->census) {
     // Remove all the things from the census that we added at the start of the program.

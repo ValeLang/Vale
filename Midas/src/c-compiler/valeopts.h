@@ -45,6 +45,7 @@ struct ValeOptions {
     bool flares = false;    // Enable flare output
     bool genHeap = false;    // Enables generational heap
     bool elideChecksForKnownLive = false;    // Enables generational heap
+    bool printMemOverhead = false;    // Enables generational heap
 
     RegionOverride regionOverride = RegionOverride::ASSIST;
 };

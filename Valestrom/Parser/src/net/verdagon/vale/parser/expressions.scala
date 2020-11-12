@@ -66,6 +66,12 @@ case class FunctionCallPE(
   targetOwnershipForCallable: OwnershipP
 ) extends IExpressionPE
 
+case class IsPE(
+  range: Range,
+  left: IExpressionPE,
+  right: IExpressionPE
+) extends IExpressionPE
+
 case class MethodCallPE(
   range: Range,
   callableExpr: IExpressionPE,

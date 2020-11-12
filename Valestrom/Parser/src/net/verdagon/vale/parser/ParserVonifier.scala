@@ -19,36 +19,6 @@ object ParserVonifier {
       None,
       Vector(
         VonMember("topLevelThings", VonArray(None, topLevelThings.map(vonifyTopLevelThing).toVector))))
-//        VonMember("structs", VonArray(None, structs.map(vonfiyStruct).toVector)),
-//        VonMember("externs", VonArray(None, externs.map(vonifyPrototype).toVector)),
-//        VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
-//        VonMember("knownSizeArrays", VonArray(None, knownSizeArrays.map(vonifyKind).toVector)),
-//        VonMember("unknownSizeArrays", VonArray(None, unknownSizeArrays.map(vonifyKind).toVector)),
-//        VonMember("emptyTupleStructReferend", vonifyKind(ProgramH.emptyTupleStructRef)),
-//        VonMember(
-//          "immDestructorsByReferend",
-//          VonArray(
-//            None,
-//            immDestructorsByKind.toVector.map({ case (kind, destructor) =>
-//              VonObject(
-//                "Entry",
-//                None,
-//                Vector(
-//                  VonMember("referend", vonifyKind(kind)),
-//                  VonMember("destructor", vonifyPrototype(destructor))))
-//            }))),
-//        VonMember(
-//          "exportedNameByFullName",
-//          VonArray(
-//            None,
-//            exportedNameByFullName.toVector.map({ case (fullName, exportedName) =>
-//              VonObject(
-//                "Entry",
-//                None,
-//                Vector(
-//                  VonMember("fullName", VonStr(fullName.toReadableString)),
-//                  VonMember("exportedName", VonStr(exportedName))))
-//            })))))
   }
 
   def vonifyTopLevelThing(topLevelThingP: ITopLevelThingP): VonObject = {

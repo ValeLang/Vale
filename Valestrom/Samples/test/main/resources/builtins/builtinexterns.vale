@@ -85,3 +85,5 @@ fn __or(left bool, right bool) bool extern;
 
 fn mod(left int, right int) int { __mod(left, right) }
 fn __mod(left int, right int) int extern;
+
+fn is<T>(left T, right T) bool extern;

@@ -582,7 +582,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBody1(BodySE(_, mainBlock)) = main.body
+    val CodeBody1(BodySE(_, _, mainBlock)) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
@@ -607,7 +607,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = program1
     val main = scoutput.lookupFunction("main")
-    val CodeBody1(BodySE(_, mainBlock)) = main.body
+    val CodeBody1(BodySE(_, _, mainBlock)) = main.body
     // __Closure is shown as not used... we could change scout to automatically
     // borrow it whenever we try to access a closure variable?
     val lamBlock =

@@ -207,11 +207,11 @@ class IfTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  a = 0;
-        |  if (a == 2) {t;
+        |  if (a == 2) {
         |    ret 71;
-        |  } else if (a == 5) {t;
+        |  } else if (a == 5) {
         |    ret 73;
-        |  } else {t;
+        |  } else {
         |    ret 42;
         |  }
         |}

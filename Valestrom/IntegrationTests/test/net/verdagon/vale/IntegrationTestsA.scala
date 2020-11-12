@@ -149,6 +149,31 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
+  test("Is true") {
+    val compile = Compilation(
+      """
+        |struct MyStruct { a int; }
+        |fn main() int {
+        |  a = MyStruct(7);
+        |  = &a is &a;
+        |}
+      """.stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+  }
+
+  test("Is false") {
+    val compile = Compilation(
+      """
+        |struct MyStruct { a int; }
+        |fn main() int {
+        |  a = MyStruct(7);
+        |  b = MyStruct(7);
+        |  = &a is &b;
+        |}
+      """.stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonBool(false)
+  }
+
   // Known failure 2020-08-20
   test("Tests virtual doesn't get called if theres a better override") {
     val compile = Compilation(

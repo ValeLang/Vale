@@ -7,7 +7,7 @@ import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, Progr
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser, ParserVonifier, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
@@ -102,9 +102,16 @@ object Driver {
 
     val parseds =
       filepathsAndSources.zipWithIndex.map({ case ((filepath, source), file) =>
-        Parser.runParserForProgramAndCommentRanges(source) match {
-          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
-          case ParseSuccess((program0, _)) => program0
+        if (filepath.endsWith(".vpr")) {
+          ParsedLoader.load(source) match {
+            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
+            case ParseSuccess(program0) => program0
+          }
+        } else {
+          Parser.runParserForProgramAndCommentRanges(source) match {
+            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
+            case ParseSuccess((program0, _)) => program0
+          }
         }
       })
     opts.parsedsOutputDir match {

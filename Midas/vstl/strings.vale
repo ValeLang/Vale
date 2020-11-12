@@ -82,6 +82,7 @@ fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
       vstr_indexOf(
           haystack.string, haystack.begin, haystack.end,
           needle.string, needle.begin, needle.end);
+
   = if (offsetAfterBegin < 0) {
       r Opt<StrSlice> = None<StrSlice>();
       = r;

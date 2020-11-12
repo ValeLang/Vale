@@ -219,7 +219,6 @@ class ValeCompiler:
             user_valestrom_files = (
                 user_valestrom_files +
                 glob.glob(cwd + "/vstl/*utils.vale") +
-                glob.glob(cwd + "/vstl/externs.vale") +
                 [cwd + "/vstl/strings.vale", cwd + "/vstl/opt.vale"])
 
             if build_dir != ".":

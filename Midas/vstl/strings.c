@@ -153,3 +153,4 @@ int vstr_toascii(ValeStr* s, int begin, int end) {
   char* chars = vale_getstrchars(s);
   return (int)*(chars + begin);
 }
+

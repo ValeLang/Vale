@@ -149,26 +149,26 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
-  test("Is true") {
+  test("=== true") {
     val compile = Compilation(
       """
         |struct MyStruct { a int; }
-        |fn main() int {
+        |fn main() bool {
         |  a = MyStruct(7);
-        |  = &a is &a;
+        |  = &a === &a;
         |}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
 
-  test("Is false") {
+  test("=== false") {
     val compile = Compilation(
       """
         |struct MyStruct { a int; }
-        |fn main() int {
+        |fn main() bool {
         |  a = MyStruct(7);
         |  b = MyStruct(7);
-        |  = &a is &b;
+        |  = &a === &b;
         |}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonBool(false)

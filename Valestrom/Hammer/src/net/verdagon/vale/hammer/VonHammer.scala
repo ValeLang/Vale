@@ -678,6 +678,16 @@ object VonHammer {
             VonMember("innerExpr", vonifyExpression(inner)),
             VonMember("innerType", vonifyCoord(inner.resultType))))
       }
+      case IsH(left, right) => {
+        VonObject(
+          "Is",
+          None,
+          Vector(
+            VonMember("leftExpr", vonifyExpression(left)),
+            VonMember("leftExprType", vonifyCoord(left.resultType)),
+            VonMember("rightExpr", vonifyExpression(right)),
+            VonMember("rightExprType", vonifyCoord(right.resultType))))
+      }
     }
   }
 

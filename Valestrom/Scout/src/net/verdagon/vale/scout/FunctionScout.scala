@@ -116,6 +116,8 @@ object FunctionScout {
         AbstractBody1
       } else if (attributes.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
         ExternBody1
+      } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
+        GeneratedBody1(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)
       } else {
         vassert(maybeBody0.nonEmpty)
         val (body1, _, List()) = scoutBody(myStackFrame, maybeBody0.get, captureDeclarations)
@@ -205,6 +207,7 @@ object FunctionScout {
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS
       case ExternAttributeP(_) => ExternS
+      case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
       case x => vimpl(x.toString)
     })
   }

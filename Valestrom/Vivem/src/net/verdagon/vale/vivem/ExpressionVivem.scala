@@ -118,6 +118,30 @@ object ExpressionVivem {
           }
         return NodeReturn(sourceRef)
       }
+      case IsH(leftExpr, rightExpr) => {
+        val leftRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), leftExpr) match {
+            case r @ NodeReturn(_) => {
+              vcurious()
+              return r
+            }
+            case NodeContinue(r) => r
+          }
+        val rightRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(1), rightExpr) match {
+            case r @ NodeReturn(_) => {
+              vcurious()
+              return r
+            }
+            case NodeContinue(r) => r
+          }
+        discard(programH, heap, stdout, stdin, callId, leftExpr.resultType, leftRef)
+        discard(programH, heap, stdout, stdin, callId, rightExpr.resultType, rightRef)
+
+        val ref = heap.isSameInstance(callId, leftRef, rightRef)
+
+        NodeContinue(ref)
+      }
       case CheckRefCountH(objExpr, category, numExpr) => {
 
         val objRef =

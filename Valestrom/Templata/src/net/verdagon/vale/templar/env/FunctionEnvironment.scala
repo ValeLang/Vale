@@ -95,11 +95,6 @@ case class FunctionEnvironment(
   def addVariable(newVar: IVariable2): FunctionEnvironment = {
     FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, scoutedLocals, varCounter, variables :+ newVar, moveds)
   }
-  def markVariablesMoved(newMoveds: Set[FullName2[IVarName2]]): FunctionEnvironment = {
-    newMoveds.foldLeft(this)({
-      case (intermediateFate, newMoved) => intermediateFate.markVariableMoved(newMoved)
-    })
-  }
   def markVariableMoved(newMoved: FullName2[IVarName2]): FunctionEnvironment = {
     if (variables.exists(_.id == newMoved)) {
       FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, scoutedLocals, varCounter, variables, moveds + newMoved)
@@ -217,9 +212,6 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def addVariable(newVar: IVariable2): Unit= {
     functionEnvironment = functionEnvironment.addVariable(newVar)
   }
-  def markVariablesMoved(newMoveds: Set[FullName2[IVarName2]]): Unit= {
-    functionEnvironment = functionEnvironment.markVariablesMoved(newMoveds)
-  }
   def markVariableMoved(newMoved: FullName2[IVarName2]): Unit= {
     functionEnvironment = functionEnvironment.markVariableMoved(newMoved)
   }
@@ -274,7 +266,9 @@ sealed trait IVariable2 extends Queriable2 {
   def variability: Variability
   def reference: Coord
 }
-sealed trait ILocalVariable2 extends IVariable2
+sealed trait ILocalVariable2 extends IVariable2 {
+  def reference: Coord
+}
 // Why the difference between reference and addressible:
 // If we mutate/move a variable from inside a closure, we need to put
 // the local's address into the struct. But, if the closures don't

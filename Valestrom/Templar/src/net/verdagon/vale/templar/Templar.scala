@@ -64,7 +64,31 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           case _ => vfail()
         }
       (id, generator)
-    }).toMap
+    }).toMap +
+    ("vale_is" ->
+      new IFunctionGenerator {
+        override def generate(
+          functionTemplarCore: FunctionTemplarCore,
+          structTemplar: StructTemplar,
+          destructorTemplar: DestructorTemplar,
+          namedEnv: FunctionEnvironment,
+          temputs: Temputs,
+          callRange: RangeS,
+          maybeOriginFunction1: Option[FunctionA],
+          paramCoords: List[Parameter2],
+          maybeReturnType2: Option[Coord]):
+        (FunctionHeader2) = {
+          val header =
+            FunctionHeader2(namedEnv.fullName, List(), paramCoords, maybeReturnType2.get, maybeOriginFunction1)
+          temputs.declareFunctionReturnType(header.toSignature, header.returnType)
+          temputs.addFunction(
+            Function2(
+              header,
+              List(),
+              Block2(List(Return2(Is2(ArgLookup2(0, paramCoords(0).tyype), ArgLookup2(1, paramCoords(1).tyype)))))))
+          header
+        }
+      })
 
   val opts = TemplarOptions(generatorsById, debugOut, verbose, useOptimization)
 

@@ -12,7 +12,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 //  private[parser] def templex: Parser[ITemplexPT]
 
   private[parser] def comparisonOperators: Parser[StringP] = {
-    (pstr("<=>") | pstr("<=") | pstr("<") | pstr(">=") | pstr(">") | pstr("==") | pstr("!=") | pstr("is"))
+    (pstr("<=>") | pstr("<=") | pstr("<") | pstr(">=") | pstr(">") | pstr("===") | pstr("==") | pstr("!="))
   }
   private[parser] def conjunctionOperators: Parser[StringP] = {
     (pstr("and") | pstr("or"))
@@ -374,11 +374,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
         not(white ~> conjunctionOperators <~ white) ~>
           white ~> comparisonOperators <~ white,
         (range, op: StringP, left, right) => {
-          if (op.str == "is") {
-            IsPE(range, left, right)
-          } else {
-            FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP)
-          }
+          FunctionCallPE(range, None, Range(op.range.begin, op.range.begin), false, LookupPE(op, None), List(left, right), BorrowP)
         })
 
     val withConjunctions =

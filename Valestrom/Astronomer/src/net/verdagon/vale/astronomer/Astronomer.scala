@@ -330,10 +330,11 @@ object Astronomer {
     })
   }
 
-  def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]) = {
-    attrsS.map({
-      case ExportS => ExportA
-      case ExternS => ExternA
+  def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]): List[IFunctionAttributeA] = {
+    attrsS.flatMap({
+      case ExportS => List(ExportA)
+      case ExternS => List(ExternA)
+      case BuiltinS(_) => List()
       case x => vimpl(x.toString)
     })
   }

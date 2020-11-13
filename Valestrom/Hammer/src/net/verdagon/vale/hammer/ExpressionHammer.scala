@@ -451,6 +451,17 @@ object ExpressionHammer {
         (WeakAliasH(innerExprResultLine), innerDeferreds)
       }
 
+      case Is2(leftExprT, rightExprT) => {
+        val (leftExprResultLine, leftDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprT);
+        val (rightExprResultLine, rightDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, rightExprT);
+        val resultLine = IsH(leftExprResultLine, rightExprResultLine)
+
+        val expr = translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, resultLine, leftDeferreds ++ rightDeferreds)
+        (expr, List())
+      }
+
       case _ => {
         vfail("wat " + expr2)
       }

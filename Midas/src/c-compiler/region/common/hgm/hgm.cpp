@@ -223,7 +223,9 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
   if (limitMode || (knownLive && elideChecksForKnownLive)) {
     // Do nothing
   } else {
-    adjustCounter(globalState, builder, globalState->livenessCheckCounter, 1);
+    if (globalState->opt->printMemOverhead) {
+      adjustCounter(globalState, builder, globalState->livenessCheckCounter, 1);
+    }
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
     buildIf(
         globalState, functionState, builder, isZeroLE(builder, isAliveLE),

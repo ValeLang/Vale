@@ -63,3 +63,23 @@ fn contains<E>(list &List<E>, element E) bool {
   }
   ret false;
 }
+
+fn remove<E>(list &List<E>, removeAtIndex int) E {
+  if (removeAtIndex < 0) {
+    panic("Can't remove at negative index!");
+  }
+  if (removeAtIndex >= list.size) {
+    panic("Can't remove, index out of bounds!");
+  }
+
+  temp = (mut list.array[list.size - 1] = None<E>());
+  i! = list.size - 2;
+  while (i >= removeAtIndex) {
+    mut temp = (mut list.array[i] = (mut temp = None<E>()));
+    mut i = i - 1;
+  }
+
+  mut list.size = list.size - 1;
+
+  ret temp^.get();
+}

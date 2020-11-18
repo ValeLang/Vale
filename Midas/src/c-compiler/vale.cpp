@@ -587,8 +587,8 @@ void createModule(GlobalState *globalState) {
     globalState->compileUnit =
         LLVMDIBuilderCreateCompileUnit(
             globalState->dibuilder, LLVMDWARFSourceLanguageC, globalState->difile, "Vale compiler",
-            13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0);//,
-            //"isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
+            13, 0, "", 0, 0, "", 0, LLVMDWARFEmissionFull, 0, 0, 0,
+            "isysroothere", strlen("isysroothere"), "sdkhere", strlen("sdkhere"));
   }
   compileValeCode(globalState, globalState->opt->srcpath);
   if (!globalState->opt->release)

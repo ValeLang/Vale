@@ -217,4 +217,33 @@ class ArrayListTest extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
+
+
+  test("Remove") {
+    val compile = Compilation(
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        """
+          |struct Marine { hp int; }
+          |
+          |fn main() {
+          |  l = List<Marine>();
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
+          |  add(&l, Marine(9));
+          |  add(&l, Marine(11));
+          |  add(&l, Marine(13));
+          |  l.remove(2);
+          |  vassert(l.get(0).get().hp == 5);
+          |  vassert(l.get(1).get().hp == 7);
+          |  vassert(l.get(2).get().hp == 11);
+          |  vassert(l.get(3).get().hp == 13);
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector())
+  }
 }

@@ -2,6 +2,7 @@ package net.verdagon.vale.parser
 
 import net.verdagon.vale.parser.patterns.PatternParser
 import net.verdagon.vale.{vassert, vcheck, vfail}
+import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -192,6 +193,79 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 
   private[parser] def blockStatement = {
     ("block" ~> optWhite ~> bracedBlock)
+  }
+
+
+  private[parser] def shortStringPart: Parser[IExpressionPE] = {
+//    ("\"" ~> failure("ended string")) |
+    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\t") }) |
+    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
+    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\"") }) |
+    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\\") }) |
+    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "{") }) |
+    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "}") }) |
+    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
+    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    ("{" ~> expression <~ "}") |
+    (pos ~ (not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => StrLiteralPE(Range(begin, end), thing) })
+  }
+
+  private[parser] def shortStringExpr: Parser[IExpressionPE] = {
+    pos ~ ("\"" ~> rep(shortStringPart) <~ "\"") ~ pos ^^ {
+      case begin ~ parts ~ end => {
+        simplifyStringInterpolate(StrInterpolatePE(Range(begin, end), parts))
+      }
+    }
+  }
+
+  private[parser] def longStringPart: Parser[IExpressionPE] = {
+    ("\"\"\"" ~> failure("ended string")) |
+    (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\t") }) |
+    (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
+    (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\"") }) |
+    (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\\") }) |
+    (pos ~ "\\{" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "{") }) |
+    (pos ~ "\\}" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "}") }) |
+    (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\n") }) |
+    (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => StrLiteralPE(Range(begin, end), "\r") }) |
+    ("{" ~> expression <~ "}") |
+    (pos ~ (not("\"\"\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => StrLiteralPE(Range(begin, end), thing) })
+  }
+
+  private[parser] def longStringExpr: Parser[IExpressionPE] = {
+    pos ~ ("\"\"\"" ~> rep(longStringPart) <~ "\"\"\"") ~ pos ^^ {
+      case begin ~ parts ~ end => {
+        simplifyStringInterpolate(StrInterpolatePE(Range(begin, end), parts))
+      }
+    }
+  }
+
+  def simplifyStringInterpolate(stringExpr: StrInterpolatePE) = {
+    def combine(previousReversed: List[IExpressionPE], next: List[IExpressionPE]): List[IExpressionPE] = {
+      (previousReversed, next) match {
+        case (StrLiteralPE(Range(prevBegin, _), prev) :: earlier, StrLiteralPE(Range(_, nextEnd), next) :: later) => {
+          combine(StrLiteralPE(Range(prevBegin, nextEnd), prev + next) :: earlier, later)
+        }
+        case (earlier, next :: later) => {
+          combine(next :: earlier, later)
+        }
+        case (earlier, Nil) => earlier
+      }
+    }
+
+    val StrInterpolatePE(range, parts) = stringExpr
+
+    combine(List(), parts).reverse match {
+      case List() => StrLiteralPE(range, "")
+      case List(s @ StrLiteralPE(_, _)) => s
+      case multiple => StrInterpolatePE(range, multiple)
+    }
+  }
+
+  private[parser] def stringExpr: Parser[IExpressionPE] = {
+    longStringExpr | shortStringExpr
   }
 
   private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {

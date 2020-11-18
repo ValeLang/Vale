@@ -18,9 +18,9 @@ case class LetAE(
 
 case class DestructAE(range: RangeS, inner: IExpressionAE) extends IExpressionAE
 
-case class IfAE(range: RangeS, condition: BlockAE, thenBody: BlockAE, elseBody: BlockAE) extends IExpressionAE
+case class IfAE(range: RangeS, condition: IExpressionAE, thenBody: BlockAE, elseBody: BlockAE) extends IExpressionAE
 
-case class WhileAE(range: RangeS, condition: BlockAE, body: BlockAE) extends IExpressionAE
+case class WhileAE(range: RangeS, condition: IExpressionAE, body: IExpressionAE) extends IExpressionAE
 
 case class ExprMutateAE(range: RangeS, mutatee: IExpressionAE, expr: IExpressionAE) extends IExpressionAE
 case class GlobalMutateAE(range: RangeS, name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
@@ -51,20 +51,17 @@ case class ReturnAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressio
 //case object MaybeUsed extends IVariableUseCertainty
 
 case class BodyAE(
-    range: RangeS,
-    // These are all the variables we use from parent environments.
-    // We have these so templar doesn't have to dive through all the functions
-    // that it calls (impossible) to figure out what's needed in a closure struct.
-    closuredNames: List[IVarNameA],
+  range: RangeS,
+  // These are all the variables we use from parent environments.
+  // We have these so templar doesn't have to dive through all the functions
+  // that it calls (impossible) to figure out what's needed in a closure struct.
+  closuredNames: List[IVarNameA],
 
-    block: BlockAE
+  block: BlockAE
 ) extends IExpressionAE
 
 case class BlockAE(
   range: RangeS,
-  // This shouldn't be ordered yet because we introduce new locals all the
-  // time in templar, easier to just order them in hammer.
-  locals: List[LocalVariableA],
 
   exprs: List[IExpressionAE],
 ) extends IExpressionAE {
@@ -72,8 +69,6 @@ case class BlockAE(
   // return the last expression's result as its result.
   // Even empty blocks aren't empty, they have a void() at the end.
   vassert(exprs.nonEmpty)
-
-  vassert(locals == locals.distinct)
 }
 
 //case class ConstructAE(

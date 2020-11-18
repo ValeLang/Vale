@@ -184,11 +184,11 @@ class ExpressionTemplar(
   Option[AddressExpression2] = {
     fate.getVariable(name2) match {
       case Some(alv @ AddressibleLocalVariable2(varId, variability, reference)) => {
-        vassert(!fate.moveds.contains(varId))
+        vassert(!fate.unstackifieds.contains(varId))
         Some(LocalLookup2(range, alv, reference, variability))
       }
       case Some(rlv @ ReferenceLocalVariable2(varId, variability, reference)) => {
-        if (fate.moveds.contains(varId)) {
+        if (fate.unstackifieds.contains(varId)) {
           throw CompileErrorExceptionT(CantMutateUnstackifiedLocal(range, varId.last))
         }
         Some(LocalLookup2(range, rlv, reference, variability))
@@ -318,8 +318,6 @@ class ExpressionTemplar(
   }
 
   // returns:
-  // - temputs
-  // - "fate", moved locals (subset of exporteds)
   // - resulting expression
   // - all the types that are returned from inside the body via ret
   private def evaluate(
@@ -773,53 +771,60 @@ class ExpressionTemplar(
             case (IntegerTemplataType, IntegerTemplata(value)) => (IntLiteral2(value), Set())
           }
         }
-        case IfAE(range, condition1, thenBody1, elseBody1) => {
-          val (conditionExpr2, returnsFromCondition) =
-            blockTemplar.evaluateBlock(fate, temputs, condition1)
+        case IfAE(range, conditionSE, thenBody1, elseBody1) => {
+          // We make a block for the if-statement which contains its condition (the "if block"),
+          // and then two child blocks under that for the then and else blocks.
+          // The then and else blocks are children of the block which contains the condition
+          // so they can access any locals declared by the condition.
 
-          if (conditionExpr2.resultRegister.reference != Coord(Share, Bool2())) {
-            throw CompileErrorExceptionT(IfConditionIsntBoolean(condition1.range, conditionExpr2.resultRegister.reference))
+          val ifBlockFate = fate.makeChildEnvironment(newTemplataStore)
+
+          val (conditionExpr, returnsFromCondition) =
+            evaluateAndCoerceToReferenceExpression(temputs, ifBlockFate, conditionSE)
+          if (conditionExpr.resultRegister.reference != Coord(Share, Bool2())) {
+            throw CompileErrorExceptionT(IfConditionIsntBoolean(conditionSE.range, conditionExpr.resultRegister.reference))
           }
 
-          val fateAfterBranch = fate.functionEnvironment
 
-          val FunctionEnvironment(parentEnv, function, functionFullName, entries, maybeReturnType, scoutedLocals, counterBeforeBranch, variablesBeforeBranch, _) = fateAfterBranch
+          val thenFate = ifBlockFate.makeChildEnvironment(newTemplataStore)
 
-          val fateForThen = FunctionEnvironmentBox(fateAfterBranch)
-          val (uncoercedThenExpr2, returnsFromThen) = blockTemplar.evaluateBlock(fateForThen, temputs, thenBody1)
-          val fateAfterThen = fateForThen.functionEnvironment
+          val (thenExpressionsWithResult, thenReturnsFromExprs) =
+            evaluateBlockStatements(temputs, thenFate.snapshot, thenFate, thenBody1.exprs)
+          val uncoercedThenBlock2 = Block2(thenExpressionsWithResult)
 
-          val thenContinues = uncoercedThenExpr2.resultRegister.reference.referend != Never2()
-          val FunctionEnvironment(_, _, _, _, _, _, counterAfterThen, variablesAfterThen, movedsAfterThen) = fateAfterThen
+          val (thenUnstackifiedAncestorLocals, thenVarCountersUsed) = thenFate.getEffects()
+          val thenContinues = uncoercedThenBlock2.resultRegister.reference.referend != Never2()
 
-          // Give the else branch the same fate the then branch got, except let the counter
-          // remain higher.
-          val fateForElse = FunctionEnvironmentBox(fateAfterBranch)
-          val _ = fateForElse.nextCounters(counterAfterThen - counterBeforeBranch)
-          val (uncoercedElseExpr2, returnsFromElse) =
-            blockTemplar.evaluateBlock(fateForElse, temputs, elseBody1)
-          val fateAfterElse = fateForElse.functionEnvironment
+          ifBlockFate.nextCounters(thenVarCountersUsed)
 
-          val elseContinues = uncoercedElseExpr2.resultRegister.reference.referend != Never2()
-          val FunctionEnvironment(_, _, _, _, _, _, counterAfterElse, variablesAfterElse, movedsAfterElse) = fateAfterElse
 
+          val elseFate = ifBlockFate.makeChildEnvironment(newTemplataStore)
+
+          val (elseExpressionsWithResult, elseReturnsFromExprs) =
+            evaluateBlockStatements(temputs, elseFate.snapshot, elseFate, elseBody1.exprs)
+          val uncoercedElseBlock2 = Block2(elseExpressionsWithResult)
+
+          val (elseUnstackifiedAncestorLocals, elseVarCountersUsed) = elseFate.getEffects()
+          val elseContinues = uncoercedElseBlock2.resultRegister.reference.referend != Never2()
+
+          ifBlockFate.nextCounters(elseVarCountersUsed)
 
 
           val commonType =
-            (uncoercedThenExpr2.referend, uncoercedElseExpr2.referend) match {
-              case (Never2(), Never2()) => uncoercedThenExpr2.resultRegister.reference
-              case (Never2(), _) => uncoercedElseExpr2.resultRegister.reference
-              case (_, Never2()) => uncoercedThenExpr2.resultRegister.reference
-              case (a, b) if a == b => uncoercedThenExpr2.resultRegister.reference
+            (uncoercedThenBlock2.referend, uncoercedElseBlock2.referend) match {
+              case (Never2(), Never2()) => uncoercedThenBlock2.resultRegister.reference
+              case (Never2(), _) => uncoercedElseBlock2.resultRegister.reference
+              case (_, Never2()) => uncoercedThenBlock2.resultRegister.reference
+              case (a, b) if a == b => uncoercedThenBlock2.resultRegister.reference
               case (a : CitizenRef2, b : CitizenRef2) => {
                 val aAncestors = ancestorHelper.getAncestorInterfacesWithDistance(temputs, a).keys.toSet
                 val bAncestors = ancestorHelper.getAncestorInterfacesWithDistance(temputs, b).keys.toSet
                 val commonAncestors = aAncestors.intersect(bAncestors)
 
-                if (uncoercedElseExpr2.resultRegister.reference.ownership != uncoercedElseExpr2.resultRegister.reference.ownership) {
+                if (uncoercedElseBlock2.resultRegister.reference.ownership != uncoercedElseBlock2.resultRegister.reference.ownership) {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Two branches of if have different ownerships!\\n${a}\\n${b}"))
                 }
-                val ownership = uncoercedElseExpr2.resultRegister.reference.ownership
+                val ownership = uncoercedElseBlock2.resultRegister.reference.ownership
 
                 if (commonAncestors.isEmpty) {
                   vimpl(s"No common ancestors of two branches of if:\n${a}\n${b}")
@@ -833,77 +838,89 @@ class ExpressionTemplar(
                 vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
               }
             }
-          val thenExpr2 = convertHelper.convert(fate.snapshot, temputs, range, uncoercedThenExpr2, commonType)
-          val elseExpr2 = convertHelper.convert(fate.snapshot, temputs, range, uncoercedElseExpr2, commonType)
+          val thenExpr2 = convertHelper.convert(thenFate.snapshot, temputs, range, uncoercedThenBlock2, commonType)
+          val elseExpr2 = convertHelper.convert(elseFate.snapshot, temputs, range, uncoercedElseBlock2, commonType)
 
-          val ifExpr2 = If2(conditionExpr2, thenExpr2, elseExpr2)
+          val ifExpr2 = If2(conditionExpr, thenExpr2, elseExpr2)
 
-          // We should have no new variables introduced.
-          vassert(variablesBeforeBranch == variablesAfterThen)
-          vassert(variablesBeforeBranch == variablesAfterElse)
 
-          val finalFate =
-            if (thenContinues == elseContinues) { // Both continue, or both don't
-              // Each branch might have moved some things. Make sure they moved the same things.
-              if (movedsAfterThen != movedsAfterElse) {
-                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Must move same variables from inside branches!\nFrom then branch: " + movedsAfterThen + "\nFrom else branch: " + movedsAfterElse))
-              }
-
-              val mergedFate =
-                FunctionEnvironment(
-                  parentEnv, function, functionFullName, entries, maybeReturnType, scoutedLocals,
-                  counterAfterElse, // Since else took up where then left off
-                  variablesBeforeBranch,
-                  movedsAfterThen)
-
-              // vfail("merge these function states!")
-              // we used to do conditionExporteds ++ thenExporteds ++ elseExporteds
-
-              (mergedFate)
-            } else {
-              // One of them continues and the other does not.
-              if (thenContinues) {
-                (fateAfterThen)
-              } else if (elseContinues) {
-                (fateAfterElse)
-              } else vfail()
+          if (thenContinues == elseContinues) { // Both continue, or both don't
+            // Each branch might have moved some things. Make sure they moved the same things.
+            if (thenUnstackifiedAncestorLocals != elseUnstackifiedAncestorLocals) {
+              throw CompileErrorExceptionT(RangedInternalErrorT(range, "Must move same variables from inside branches!\nFrom then branch: " + thenUnstackifiedAncestorLocals + "\nFrom else branch: " + elseUnstackifiedAncestorLocals))
             }
-          fate.functionEnvironment = finalFate
-          (ifExpr2, returnsFromCondition ++ returnsFromThen ++ returnsFromElse)
-        }
-        case WhileAE(range, condition1, body1) => {
-          val (conditionExpr2, returnsFromCondition) =
-            blockTemplar.evaluateBlock(fate, temputs, condition1)
-
-          if (conditionExpr2.resultRegister.reference != Coord(Share, Bool2())) {
-            throw CompileErrorExceptionT(WhileConditionIsntBoolean(condition1.range, conditionExpr2.resultRegister.reference))
+            thenUnstackifiedAncestorLocals.foreach(ifBlockFate.markLocalUnstackified)
+          } else {
+            // One of them continues and the other does not.
+            if (thenContinues) {
+              thenUnstackifiedAncestorLocals.foreach(ifBlockFate.markLocalUnstackified)
+            } else if (elseContinues) {
+              elseUnstackifiedAncestorLocals.foreach(ifBlockFate.markLocalUnstackified)
+            } else vfail()
           }
 
-          val (bodyExpr2, returnsFromBody) =
-            blockTemplar.evaluateBlock(fate, temputs, body1)
 
-          vassert(fate.variables == fate.variables)
-          (fate.moveds != fate.moveds, "Don't move things from inside whiles!")
+          val (ifBlockUnstackifiedAncestorLocals, ifBlockVarCountersUsed) = ifBlockFate.getEffects()
+          fate.nextCounters(ifBlockVarCountersUsed)
+          ifBlockUnstackifiedAncestorLocals.foreach(fate.markLocalUnstackified)
+
+
+          (ifExpr2, returnsFromCondition ++ thenReturnsFromExprs ++ elseReturnsFromExprs)
+        }
+        case WhileAE(range, conditionSE, body1) => {
+          // We make a block for the while-statement which contains its condition (the "if block"),
+          // and the body block, so they can access any locals declared by the condition.
+
+          val whileBlockFate = fate.makeChildEnvironment(newTemplataStore)
+
+          val (conditionExpr, returnsFromCondition) =
+            evaluateAndCoerceToReferenceExpression(temputs, whileBlockFate, conditionSE)
+          if (conditionExpr.resultRegister.reference != Coord(Share, Bool2())) {
+            throw CompileErrorExceptionT(WhileConditionIsntBoolean(conditionSE.range, conditionExpr.resultRegister.reference))
+          }
+
+
+          val (bodyExpressionsWithResult, bodyReturnsFromExprs) =
+            evaluateBlockStatements(temputs, whileBlockFate.snapshot, whileBlockFate, List(body1))
+          val uncoercedBodyBlock2 = Block2(bodyExpressionsWithResult)
+
+          val bodyContinues = uncoercedBodyBlock2.resultRegister.reference.referend != Never2()
+
+
+          val (bodyUnstackifiedAncestorLocals, bodyVarCountersUsed) = whileBlockFate.getEffects()
+          if (bodyUnstackifiedAncestorLocals.nonEmpty) {
+            throw CompileErrorExceptionT(CantUnstackifyOutsideLocalFromInsideWhile(range, bodyUnstackifiedAncestorLocals.head.last))
+          }
+          whileBlockFate.nextCounters(bodyVarCountersUsed)
+
 
           val thenBody =
-            if (bodyExpr2.referend == Never2()) {
-              bodyExpr2
+            if (uncoercedBodyBlock2.referend == Never2()) {
+              uncoercedBodyBlock2
             } else {
-              Block2(List(bodyExpr2, BoolLiteral2(true)))
+              Block2(List(uncoercedBodyBlock2, BoolLiteral2(true)))
             }
 
           val ifExpr2 =
             If2(
-              conditionExpr2,
+              conditionExpr,
               thenBody,
               Block2(List(BoolLiteral2(false))))
           val whileExpr2 = While2(Block2(List(ifExpr2)))
-          (whileExpr2, returnsFromCondition ++ returnsFromBody)
+          (whileExpr2, returnsFromCondition ++ bodyReturnsFromExprs)
         }
-        case b@BlockAE(range, _, _) => {
-          val (block2, returnsFromBlock) =
-            blockTemplar.evaluateBlock(fate, temputs, b);
-          (block2, returnsFromBlock)
+        case BlockAE(range, blockExprs) => {
+          val childEnvironment = fate.makeChildEnvironment(newTemplataStore)
+
+          val (expressionsWithResult, returnsFromExprs) =
+            evaluateBlockStatements(temputs, childEnvironment.functionEnvironment, childEnvironment, blockExprs)
+          val block2 = Block2(expressionsWithResult)
+
+          val (unstackifiedAncestorLocals, varCountersUsed) = childEnvironment.getEffects()
+          unstackifiedAncestorLocals.foreach(fate.markLocalUnstackified)
+          fate.nextCounters(varCountersUsed)
+
+          (block2, returnsFromExprs)
         }
         case ArrayLengthAE(range, arrayExprA) => {
           val (arrayExpr2, returnsFromArrayExpr) =
@@ -954,7 +971,9 @@ class ExpressionTemplar(
               }
             }
 
-          val variablesToDestruct = fate.getAllLiveLocals()
+          val allLocals = fate.getAllLocals(true)
+          val unstackifiedLocals = fate.getAllUnstackifiedLocals(true)
+          val variablesToDestruct = allLocals.filter(x => !unstackifiedLocals.contains(x.id))
           val reversedVariablesToDestruct = variablesToDestruct.reverse
 
           val resultVarId = fate.fullName.addStep(TemplarFunctionResultVarName2())

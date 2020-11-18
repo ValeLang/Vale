@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.function
 
 
-import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, CaptureA, ExportA, IExpressionAE, IFunctionAttributeA, ParameterA, UserFunctionA}
+import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, ExportA, IExpressionAE, IFunctionAttributeA, LocalVariableA, ParameterA, UserFunctionA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.CaptureP
@@ -33,6 +33,7 @@ trait IBodyTemplarDelegate {
 class BodyTemplar(
   opts: TemplarOptions,
   profiler: IProfiler,
+  newTemplataStore: () => TemplatasStore,
     templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IBodyTemplarDelegate) {
@@ -132,15 +133,14 @@ class BodyTemplar(
       isDestructor: Boolean,
       maybeExpectedResultType: Option[Coord]):
   Result[(Block2, Set[Coord]), ResultTypeMismatchError] = {
-    val startingFuncOuterEnv = funcOuterEnv.functionEnvironment
-
-    funcOuterEnv.addScoutedLocals(body1.block.locals)
+    val env = funcOuterEnv.makeChildEnvironment(newTemplataStore)
+    val startingEnv = env.functionEnvironment
 
     val letExprs2 =
       evaluateLets(funcOuterEnv, temputs, body1.range, params1, params2);
 
     val (statementsFromBlock, returnsFromInsideMaybeWithNever) =
-      delegate.evaluateBlockStatements(temputs, startingFuncOuterEnv, funcOuterEnv, body1.block.exprs);
+      delegate.evaluateBlockStatements(temputs, startingEnv, funcOuterEnv, body1.block.exprs);
 
     vassert(statementsFromBlock.nonEmpty)
 
@@ -188,7 +188,7 @@ class BodyTemplar(
       // We don't want the user to accidentally just move it somewhere, they need to
       // promise it gets destroyed.
       val destructeeName = params2.head.name
-      if (!funcOuterEnv.moveds.exists(_.last == destructeeName)) {
+      if (!funcOuterEnv.unstackifieds.exists(_.last == destructeeName)) {
         throw CompileErrorExceptionT(RangedInternalErrorT(body1.range, "Destructee wasn't moved/destroyed!"))
       }
     }
@@ -216,8 +216,8 @@ class BodyTemplar(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterA(AtomAP(_, CaptureA(name, _), _, _, _)) => {
-        if (!fate.variables.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
+      case ParameterA(AtomAP(_, LocalVariableA(name, _, _, _, _, _, _, _), _, _, _)) => {
+        if (!fate.locals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }
       }

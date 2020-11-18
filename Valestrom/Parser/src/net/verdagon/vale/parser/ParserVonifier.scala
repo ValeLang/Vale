@@ -255,6 +255,14 @@ object ParserVonifier {
       case ExternAttributeP(range) => VonObject("ExternAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ExportAttributeP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case PureAttributeP(range) => VonObject("PureAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case BuiltinAttributeP(range, generatorName) => {
+        VonObject(
+          "BuiltinAttribute",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("generatorName", vonifyName(generatorName))))
+      }
     }
   }
 

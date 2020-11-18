@@ -112,7 +112,7 @@ class PatternTemplar(
       unconvertedInputExpr: ReferenceExpression2):
   (List[ReferenceExpression2]) = {
 
-    val AtomAP(range, maybeCapture, maybeVirtuality, coordRuneA, maybeDestructure) = pattern
+    val AtomAP(range, lv @ LocalVariableA(varName, variability, _, _, _, _, _, _), maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
     if (maybeVirtuality.nonEmpty) {
       // This is actually to be expected for when we translate the patterns from the
@@ -132,12 +132,9 @@ class PatternTemplar(
     val inputExpr =
       convertHelper.convert(fate.snapshot, temputs, range, unconvertedInputExpr, expectedCoord);
 
-    val CaptureA(name, variability) = maybeCapture
-    val variableId = NameTranslator.translateVarNameStep(name)
-
     val export =
       localHelper.makeUserLocalVariable(
-        temputs, fate, range, variableId, Conversions.evaluateVariability(variability), expectedCoord)
+        temputs, fate, range, lv, expectedCoord)
     val let = LetNormal2(export, inputExpr);
 
     fate.addVariable(export)

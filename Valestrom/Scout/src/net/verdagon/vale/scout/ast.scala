@@ -196,9 +196,6 @@ object structSName {
 case class ParameterS(
     // Note the lack of a VariabilityP here. The only way to get a variability is with a Capture.
     pattern: AtomSP) {
-  // The name they supplied, or a generated one. This is actually not used at all by the templar,
-  // it's probably only used by IDEs. The templar gets arguments by index.
-  def name = pattern.name
 }
 
 case class SimpleParameter1(

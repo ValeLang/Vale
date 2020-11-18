@@ -789,6 +789,14 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonStr(value))))
       }
+      case StrInterpolatePE(range, parts) => {
+        VonObject(
+          "StrInterpolate",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("parts", VonArray(None, parts.toVector.map(vonifyExpression)))))
+      }
       case AndPE(range, left, right) => {
         VonObject(
           "And",

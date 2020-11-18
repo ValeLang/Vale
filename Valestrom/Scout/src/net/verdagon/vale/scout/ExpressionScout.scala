@@ -119,6 +119,24 @@ object ExpressionScout {
 
         (stackFrame0, NormalResult(function1.range, FunctionSE(function1)), noVariableUses, childMaybeUses)
       }
+      case StrInterpolatePE(range, partsPE) => {
+        val (stackFrame1, partsSE, partsSelfUses, partsChildUses) =
+          scoutElementsAsExpressions(stackFrame0, partsPE)
+
+        val rangeS = evalRange(range)
+        val startingExpr: IExpressionSE = StrLiteralSE(RangeS(rangeS.begin, rangeS.begin), "")
+        val addedExpr =
+          partsSE.foldLeft(startingExpr)({
+            case (prevExpr, partSE) => {
+              val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
+              FunctionCallSE(
+                addCallRange,
+                TemplateSpecifiedLookupSE(addCallRange, "+", List()),
+                List(prevExpr, partSE))
+            }
+          })
+        (stackFrame1, NormalResult(rangeS, addedExpr), partsSelfUses, partsChildUses)
+      }
       case LendPE(range, innerPE, targetOwnership) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, innerPE, targetOwnership)

@@ -27,7 +27,7 @@ class FunctionTemplarClosureOrLightLayer(
   convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val ordinaryOrTemplatedLayer = new FunctionTemplarOrdinaryOrTemplatedLayer(opts, profiler, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
+  val ordinaryOrTemplatedLayer = new FunctionTemplarOrdinaryOrTemplatedLayer(opts, profiler, newTemplataStore, templataTemplar, inferTemplar, convertHelper, structTemplar, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.

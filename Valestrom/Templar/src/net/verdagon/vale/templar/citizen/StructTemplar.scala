@@ -94,7 +94,7 @@ class StructTemplar(
             ParameterA(
               AtomAP(
                 member.range,
-                CaptureA(CodeVarNameA(member.name), FinalP),
+                LocalVariableA(CodeVarNameA(member.name), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
                 None,
                 MemberRuneA(index),
                 None))
@@ -150,7 +150,7 @@ class StructTemplar(
           ParameterA(
             AtomAP(
               method.range,
-              CaptureA(AnonymousSubstructMemberNameA(index), FinalP),
+              LocalVariableA(AnonymousSubstructMemberNameA(index), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
               None,
               CodeRuneA("Functor" + index),
               None))

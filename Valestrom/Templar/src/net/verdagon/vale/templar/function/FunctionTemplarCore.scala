@@ -15,10 +15,11 @@ import scala.collection.immutable.{List, Set}
 class FunctionTemplarCore(
     opts: TemplarOptions,
   profiler: IProfiler,
+  newTemplataStore: () => TemplatasStore,
   templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
-  val bodyTemplar = new BodyTemplar(opts, profiler, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+  val bodyTemplar = new BodyTemplar(opts, profiler, newTemplataStore, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
@@ -70,10 +71,10 @@ class FunctionTemplarCore(
         // Remember, the near env contains closure variables, which we
         // don't care about here. So find the difference between the near
         // env and our latest env.
-        vassert(fullEnv.variables.startsWith(startingFullEnv.variables))
+        vassert(fullEnv.locals.startsWith(startingFullEnv.locals))
         val introducedLocals =
-          fullEnv.variables
-            .drop(startingFullEnv.variables.size)
+          fullEnv.locals
+            .drop(startingFullEnv.locals.size)
             .collect({
               case x @ ReferenceLocalVariable2(_, _, _) => x
               case x @ AddressibleLocalVariable2(_, _, _) => x

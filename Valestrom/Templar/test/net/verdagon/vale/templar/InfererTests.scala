@@ -581,7 +581,7 @@ class InfererTests extends FunSuite with Matchers {
             CodeRune2("YT") -> CoordTemplataType),
           Set(CodeRune2("1337"), CodeRune2("0"), CodeRune2("T")),
           Map(),
-          List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("m"),FinalP),None,CodeRuneA("0"),None)),
+          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("m"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("0"),None)),
           Some(List(ParamFilter(Coord(Borrow,InterfaceRef2(FullName2(List(), CitizenName2("MutInterface", List())))),None))),
           true)
 
@@ -603,7 +603,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRune2("__Let0_") -> CoordTemplataType),
           Set(CodeRune2("__Let0_")),
           Map(),
-          List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("x"),FinalP),None,CodeRuneA("__Let0_"),None)),
+          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0_"),None)),
           Some(List(ParamFilter(Coord(Own,StructRef2(FullName2(List(), CitizenName2("MutStruct",List())))),None))),
           true)
 
@@ -633,7 +633,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRune2("__Let0_") -> CoordTemplataType, CodeRune2("T") -> CoordTemplataType),
           Set(CodeRune2("__Let0_"), CodeRune2("T")),
           Map(),
-          List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("x"),FinalP),None,CodeRuneA("__Let0_"),None)),
+          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0_"),None)),
           Some(List(ParamFilter(Coord(Own,StructRef2(FullName2(List(), CitizenName2("MutTStruct",List(CoordTemplata(Coord(Share, Int2()))))))),None))),
           true)
 
@@ -662,7 +662,7 @@ class InfererTests extends FunSuite with Matchers {
               CallTR(RangeS.testZero,"passThroughIfConcrete",List(TemplexTR(RuneTT(RangeS.testZero,CodeRune2("Z"), KindTemplataType))), KindTemplataType)))),
         EqualsTR(RangeS.testZero,TemplexTR(RuneTT(RangeS.testZero,CodeRune2("V"), CoordTemplataType)),CallTR(RangeS.testZero,"toRef",List(TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("void"),KindTemplataType))), CoordTemplataType)))
     val atoms =
-      List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val solve =
       (paramFilter: ParamFilter) => {
@@ -719,7 +719,7 @@ class InfererTests extends FunSuite with Matchers {
           TemplexTR(RuneTT(RangeS.testZero,CodeRune2("V"), CoordTemplataType)),
           CallTR(RangeS.testZero,"toRef",List(TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("void"), KindTemplataType))), CoordTemplataType)))
     val atoms =
-      List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val solve =
       (paramFilter: ParamFilter) => {
@@ -767,7 +767,7 @@ class InfererTests extends FunSuite with Matchers {
               OrTR(RangeS.testZero,List(TemplexTR(OwnershipTT(RangeS.testZero,OwnP)), TemplexTR(OwnershipTT(RangeS.testZero,ShareP)))),
               CallTR(RangeS.testZero,"passThroughIfStruct",List(TemplexTR(RuneTT(RangeS.testZero,CodeRune2("Z"), KindTemplataType))), KindTemplataType)))))
     val atoms =
-      List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("this"), FinalP),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val solve =
       (paramFilter: ParamFilter) => {
@@ -821,7 +821,7 @@ class InfererTests extends FunSuite with Matchers {
               List(NameTT(RangeS.testZero,CodeTypeNameA("int"), CoordTemplataType)),
               CoordTemplataType))))
     val atoms =
-      List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val (InferSolveSuccess(inferencesD)) =
       makeCannedEvaluator().solve(
@@ -847,7 +847,7 @@ class InfererTests extends FunSuite with Matchers {
         TemplexTR(RuneTT(RangeS.testZero,CodeRune2("__Par0"), CoordTemplataType)),
         EqualsTR(RangeS.testZero,TemplexTR(RuneTT(RangeS.testZero,CodeRune2("__Par0"), CoordTemplataType)),TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutStruct"), CoordTemplataType))))
     val atoms =
-      List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val (InferSolveSuccess(inferencesD)) =
       makeCannedEvaluator().solve(
@@ -886,7 +886,7 @@ class InfererTests extends FunSuite with Matchers {
         Map(CodeRune2("0") -> CoordTemplataType, CodeRune2("T") -> CoordTemplataType),
         Set(CodeRune2("0"), CodeRune2("T")),
         Map(),
-        List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("x"),FinalP),Some(AbstractAP),CodeRuneA("0"),None)),
+        List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),Some(AbstractAP),CodeRuneA("0"),None)),
         Some(List(ParamFilter(Coord(Own,StructRef2(FullName2(List(), CitizenName2("MutTStruct",List(CoordTemplata(Coord(Share,Int2()))))))),None))),
         true)
     inferencesD.templatasByRune(CodeRune2("0")) shouldEqual
@@ -908,13 +908,13 @@ class InfererTests extends FunSuite with Matchers {
         Map(),
         List(
           AtomAP(RangeS.testZero,
-            CaptureA(CodeVarNameA("a"), FinalP),
+            LocalVariableA(CodeVarNameA("a"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
             None,
             CodeRuneA("__Let0_"),
             Some(
               List(
-                AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("x"), FinalP),None,CodeRuneA("__Let0__Mem_0"),None),
-                AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("y"), FinalP),None,CodeRuneA("__Let0__Mem_1"),None))))),
+                AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0__Mem_0"),None),
+                AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0__Mem_1"),None))))),
         Some(List(ParamFilter(Coord(Share,PackT2(List(Coord(Share,Int2()), Coord(Share,Int2())),StructRef2(FullName2(List(), CitizenName2("__Pack",List(CoordTemplata(Coord(Share,Int2())), CoordTemplata(Coord(Share,Int2())))))))),None))),
         true)
     inferencesD.templatasByRune(CodeRune2("__Let0_")) shouldEqual
@@ -1293,7 +1293,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRune2("T") -> CoordTemplataType),
           Set(CodeRune2("T")),
           Map(),
-          List(AtomAP(RangeS.testZero,CaptureA(CodeVarNameA("this"),FinalP),None,CodeRuneA("T"),None)),
+          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None)),
           None,
           true)
       result

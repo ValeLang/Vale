@@ -108,19 +108,16 @@ class Destroy : public Expression {
 public:
   Expression* structExpr;
   Reference* structType;
-  bool structKnownLive;
   std::vector<Reference*> localTypes;
   std::vector<Local*> localIndices;
 
   Destroy(
       Expression* structExpr_,
       Reference* structType_,
-      bool structKnownLive_,
       std::vector<Reference*> localTypes_,
       std::vector<Local*> localIndices_) :
       structExpr(structExpr_),
       structType(structType_),
-      structKnownLive(structKnownLive_),
       localTypes(localTypes_),
       localIndices(localIndices_) {}
 };
@@ -540,7 +537,6 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   KnownSizeArrayT* arrayReferend;
-  bool arrayKnownLive;
   Expression* consumerExpr;
   Reference* consumerType;
   Prototype* consumerMethod;
@@ -550,7 +546,6 @@ public:
       Expression* arrayExpr_,
       Reference* arrayType_,
       KnownSizeArrayT* arrayReferend_,
-      bool arrayKnownLive_,
       Expression* consumerExpr_,
       Reference* consumerType_,
       Prototype* consumerMethod_,
@@ -558,7 +553,6 @@ public:
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
-    arrayKnownLive(arrayKnownLive_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
     consumerMethod(consumerMethod_),
@@ -576,7 +570,6 @@ public:
   Expression* arrayExpr;
   Reference* arrayType;
   UnknownSizeArrayT* arrayReferend;
-  bool arrayKnownLive;
   Expression* consumerExpr;
   Reference* consumerType;
   InterfaceReferend* consumerReferend;
@@ -587,7 +580,6 @@ public:
       Expression* arrayExpr_,
       Reference* arrayType_,
       UnknownSizeArrayT* arrayReferend_,
-      bool arrayKnownLive_,
       Expression* consumerExpr_,
       Reference* consumerType_,
       InterfaceReferend* consumerReferend_,
@@ -596,7 +588,6 @@ public:
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
-    arrayKnownLive(arrayKnownLive_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
     consumerReferend(consumerReferend_),

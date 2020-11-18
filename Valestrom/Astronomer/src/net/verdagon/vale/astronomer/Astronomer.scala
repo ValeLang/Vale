@@ -20,9 +20,13 @@ case class Environment(
     interfaces: List[InterfaceS],
     impls: List[ImplS],
     functions: List[FunctionS],
-    typeByRune: Map[IRuneA, ITemplataType]) {
+    typeByRune: Map[IRuneA, ITemplataType],
+    locals: List[LocalVariableA]) {
+  def addLocals(newLocals: List[LocalVariableA]): Environment = {
+    Environment(maybeName, maybeParentEnv, primitives, structs, interfaces, impls, functions, typeByRune, locals ++ newLocals)
+  }
   def addRunes(newTypeByRune: Map[IRuneA, ITemplataType]): Environment = {
-    Environment(maybeName, maybeParentEnv, primitives, structs, interfaces, impls, functions, typeByRune ++ newTypeByRune)
+    Environment(maybeName, maybeParentEnv, primitives, structs, interfaces, impls, functions, typeByRune ++ newTypeByRune, locals)
   }
 
   // Returns whether the imprecise name could be referring to the absolute name.
@@ -423,12 +427,12 @@ object Astronomer {
       translateRune(interfaceKindRuneS))
   }
 
-  def translateParameter(paramS: ParameterS): ParameterA = {
+  def translateParameter(env: Environment, paramS: ParameterS): ParameterA = {
     val ParameterS(atomS) = paramS
-    ParameterA(translateAtom(atomS))
+    ParameterA(translateAtom(env, atomS))
   }
 
-  def translateAtom(atomS: AtomSP): AtomAP = {
+  def translateAtom(env: Environment, atomS: AtomSP): AtomAP = {
     val AtomSP(range, CaptureS(nameS, variability), virtualityS, coordRuneS, destructureS) = atomS
     val nameA = translateVarNameStep(nameS)
 
@@ -440,19 +444,39 @@ object Astronomer {
 
     val coordRuneA = translateRune(coordRuneS)
 
-    val destructureA = destructureS.map(_.map(translateAtom))
+    val destructureA = destructureS.map(_.map(translateAtom(env, _)))
 
-    AtomAP(range, CaptureA(nameA, variability), virtualityA, coordRuneA, destructureA)
+    val local = env.locals.find(_.varName == nameA).get
+
+    AtomAP(range, local, virtualityA, coordRuneA, destructureA)
   }
 
-  def translateFunction(astrouts: AstroutsBox, env: Environment, functionS: FunctionS): FunctionA = {
+  def translateFunction(astrouts: AstroutsBox, outerEnv: Environment, functionS: FunctionS): FunctionA = {
     val FunctionS(rangeS, nameS, attributesS, knowableRunesS, identifyingRunesS, localRunesS, maybePredictedType, paramsS, maybeRetCoordRune, isTemplate, templateRules, bodyS) = functionS
     val nameA = translateFunctionDeclarationName(nameS)
     val knowableRunesA = knowableRunesS.map(Astronomer.translateRune)
     val localRunesA = localRunesS.map(Astronomer.translateRune)
     val identifyingRunesA = identifyingRunesS.map(Astronomer.translateRune)
 
-    val paramsA = paramsS.map(translateParameter)
+    val locals =
+      bodyS match {
+        case CodeBody1(body) => body.block.locals.map(ExpressionAstronomer.translateLocalVariable)
+        case _ => {
+          // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
+          paramsS.map(_.pattern.name)
+            .map({
+              case CaptureS(name, variability) => {
+                LocalVariableA(
+                  Astronomer.translateVarNameStep(name),
+                  variability,
+                  NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)
+              }
+            })
+        }
+      }
+    val env = outerEnv.addLocals(locals)
+
+    val paramsA = paramsS.map(translateParameter(env, _))
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List(), Some(localRunesA)) match {
@@ -630,7 +654,7 @@ object Astronomer {
     val astrouts = AstroutsBox(Astrouts(Map(), Map(), Map(), Map()))
 
 
-    val env = Environment(None, None, primitives, structsS, interfacesS, implsS, functionsS, Map())
+    val env = Environment(None, None, primitives, structsS, interfacesS, implsS, functionsS, Map(), List())
 
     val structsA = structsS.map(translateStruct(astrouts, env, _))
 

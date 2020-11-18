@@ -15,11 +15,12 @@ import scala.collection.immutable.{List, Set}
 class FunctionTemplarMiddleLayer(
     opts: TemplarOptions,
   profiler: IProfiler,
+  newTemplataStore: () => TemplatasStore,
   templataTemplar: TemplataTemplar,
   convertHelper: ConvertHelper,
     structTemplar: StructTemplar,
     delegate: IFunctionTemplarDelegate) {
-  val core = new FunctionTemplarCore(opts, profiler, templataTemplar, convertHelper, delegate)
+  val core = new FunctionTemplarCore(opts, profiler, newTemplataStore, templataTemplar, convertHelper, delegate)
 
   // This is for the early stages of Templar when it's scanning banners to put in
   // its env. We just want its banner, we don't want to evaluate it.
@@ -271,7 +272,7 @@ class FunctionTemplarMiddleLayer(
           evaluateMaybeVirtuality(env, temputs, param1.pattern.virtuality)
         val newParam2 =
           Parameter2(
-            NameTranslator.translateVarNameStep(param1.name.name),
+            NameTranslator.translateVarNameStep(param1.pattern.capture.varName),
             maybeVirtuality,
             coord)
         (previousParams2 :+ newParam2)
@@ -319,7 +320,7 @@ class FunctionTemplarMiddleLayer(
     // We fill out the params here to get the function's full name.
     val newName = assembleName(oldName, paramTypes)
 
-    FunctionEnvironment(parentEnv, newName, function, entries, maybeReturnType, List(), 0, variables, Set())
+    FunctionEnvironment(parentEnv, newName, function, entries, maybeReturnType, 0, variables, Set())
   }
 
   private def assembleName(

@@ -44,6 +44,8 @@ case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE
 case class StrLiteralPE(range: Range, value: String) extends IExpressionPE
 case class FloatLiteralPE(range: Range, value: Float) extends IExpressionPE
 
+case class StrInterpolatePE(range: Range, parts: List[IExpressionPE]) extends IExpressionPE
+
 case class DotPE(
   range: Range,
   left: IExpressionPE,

@@ -92,7 +92,7 @@ object FunctionScout {
           // If nothing's present, assume void
           val rangeS = Scout.evalRange(file, retRange)
           val rune = rate.newImplicitRune()
-          val rule = EqualsSR(rangeS, TypedSR(rangeS, rune, CoordTypeSR), TemplexSR(NameST(rangeS, CodeTypeNameS("void"))))
+          val rule = EqualsSR(rangeS, TemplexSR(NameST(rangeS, CodeTypeNameS("void"))), TypedSR(rangeS, rune, CoordTypeSR))
           (List(rule), Some(rune))
         }
         case (Some(_), None) => (List(), None) // Infer the return
@@ -102,7 +102,9 @@ object FunctionScout {
             rate,
             Scout.evalRange(file, retRange),
             Some(retTypePT),
-            CoordTypePR)
+            CoordTypePR,
+            // The rune should be on the right, see DCRC option A.
+            false)
         }
         case (Some(_), Some(_)) => throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(file, range), "Can't have return type and infer-ret at the same time"))
       }

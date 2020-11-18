@@ -19,8 +19,6 @@ fn get<T>(virtual opt &Opt<T>) &T abstract;
 fn get<T>(opt &None<T> impl Opt<T>) &T { print("Called get() on a None!"); ret __panic(); }
 fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
 
-fn borrowGet<T>(opt &Some<T>) &T { opt.value }
-
 fn getOr<T>(virtual opt &Opt<T>, default T) T abstract;
 fn getOr<T>(opt &None<T> impl Opt<T>, default T) T {
   default

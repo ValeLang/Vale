@@ -145,9 +145,13 @@ object PatternScout {
   def translateMaybeTypeIntoRune(
       env: IEnvironment,
       rulesS: RuleStateBox,
-    range: RangeS,
+      range: RangeS,
       maybeTypeP: Option[ITemplexPT],
-      runeType: ITypePR):
+      runeType: ITypePR,
+      // Determines whether the rune is on the left or the right in the Equals rule, which
+      // can (unfortunately) affect the order in which the generics engine evaluates things.
+      // This is a temporary solution, see DCRC, option A.
+      runeOnLeft: Boolean = true):
   (List[IRulexSR], IRuneS) = {
     maybeTypeP match {
       case None => {
@@ -167,7 +171,12 @@ object PatternScout {
           case Some(rune) => (newRulesFromInner, rune)
           case None => {
             val rune = rulesS.newImplicitRune()
-            val newRule = EqualsSR(templexS.range, TypedSR(range, rune, RuleScout.translateType(runeType)), TemplexSR(templexS))
+            val newRule =
+              if (runeOnLeft) {
+                EqualsSR(templexS.range, TypedSR(range, rune, RuleScout.translateType(runeType)), TemplexSR(templexS))
+              } else {
+                EqualsSR(templexS.range, TemplexSR(templexS), TypedSR(range, rune, RuleScout.translateType(runeType)))
+              }
             (newRulesFromInner ++ List(newRule), rune)
           }
         }
@@ -179,14 +188,18 @@ object PatternScout {
     rulesS: RuleStateBox,
     range: RangeS,
     maybeTypeP: Option[ITemplexPT],
-    runeType: ITypePR):
+    runeType: ITypePR,
+    // Determines whether the rune is on the left or the right in the Equals rule, which
+    // can (unfortunately) affect the order in which the generics engine evaluates things.
+    // This is a temporary solution, see DCRC, option A.
+    runeOnLeft: Boolean = true):
   (List[IRulexSR], Option[IRuneS]) = {
     if (maybeTypeP.isEmpty) {
       (List(), None)
     } else {
       val (newRules, rune) =
         translateMaybeTypeIntoRune(
-          env, rulesS, range, maybeTypeP, runeType)
+          env, rulesS, range, maybeTypeP, runeType, runeOnLeft)
       (newRules, Some(rune))
     }
   }
@@ -244,32 +257,6 @@ object PatternScout {
         }
       }
       case MutabilityPT(range, mutability) => (List(), MutabilityST(evalRange(range), mutability), None)
-      case OwnershippedPT(rangeP,ownership @ (BorrowP|WeakP), NameOrRunePT(StringP(_, ownedCoordRuneName))) if env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)) => {
-        val range = evalRange(rangeP)
-        vassert(env.allUserDeclaredRunes().contains(CodeRuneS(ownedCoordRuneName)))
-        val ownedCoordRune = CodeRuneS(ownedCoordRuneName)
-        val kindRune = rulesS.newImplicitRune()
-        val borrowedCoordRune = rulesS.newImplicitRune()
-        val newRules =
-          List(
-            TypedSR(range, kindRune, KindTypeSR),
-            // It's a user rune so it's already in the orderedRunes
-            TypedSR(range, ownedCoordRune, CoordTypeSR),
-            TypedSR(range, borrowedCoordRune, CoordTypeSR),
-            ComponentsSR(
-              range,
-              TypedSR(range, ownedCoordRune, CoordTypeSR),
-              List(
-                TemplexSR(OwnershipST(range, OwnP)),
-                TemplexSR(RuneST(range, kindRune)))),
-            ComponentsSR(
-              range,
-              TypedSR(range, borrowedCoordRune, CoordTypeSR),
-              List(
-                TemplexSR(OwnershipST(range, ownership)),
-                TemplexSR(RuneST(range, kindRune)))))
-        (newRules, RuneST(range, borrowedCoordRune), Some(borrowedCoordRune))
-      }
       case OwnershippedPT(range,ownership, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)

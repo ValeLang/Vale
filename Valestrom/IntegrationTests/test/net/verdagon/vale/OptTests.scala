@@ -47,8 +47,6 @@ class OptTests extends FunSuite with Matchers {
     println(profiler.assembleResults())
   }
 
-  // Intentional failure 2020-11-17
-  // When this is fixed, get rid of borrowGet in opt.vale
   test("Test empty and get for borrow") {
     val profiler = new Profiler()
     val compile = Compilation.multiple(
@@ -58,6 +56,10 @@ class OptTests extends FunSuite with Matchers {
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/opt.vale"),
         """
+          |// This is the same as the one in opt.vale, just named differently,
+          |// so its easier to debug.
+          |fn borrowGet<T>(opt &Some<T>) &T { opt.value }
+          |
           |struct Spaceship { fuel int; }
           |fn main() int {
           |  s = Spaceship(42);

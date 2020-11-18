@@ -230,7 +230,7 @@ Ref translateExpressionInner(
     auto consumerExpr = destroyKnownSizeArrayIntoFunction->consumerExpr;
     auto consumerMethod = destroyKnownSizeArrayIntoFunction->consumerMethod;
     auto arrayType = destroyKnownSizeArrayIntoFunction->arrayType;
-    bool arrayKnownLive = destroyKnownSizeArrayIntoFunction->arrayKnownLive;
+    bool arrayKnownLive = true;
 
     auto sizeRef =
         wrap(
@@ -283,7 +283,7 @@ Ref translateExpressionInner(
     auto consumerExpr = destroyUnknownSizeArrayIntoFunction->consumerExpr;
     auto consumerMethod = destroyUnknownSizeArrayIntoFunction->consumerMethod;
     auto arrayType = destroyUnknownSizeArrayIntoFunction->arrayType;
-    bool arrayKnownLive = destroyUnknownSizeArrayIntoFunction->arrayKnownLive;
+    bool arrayKnownLive = true;
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
     functionState->defaultRegion->checkValidReference(FL(), functionState, builder, arrayType, arrayRef);

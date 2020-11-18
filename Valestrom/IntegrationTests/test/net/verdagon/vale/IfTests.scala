@@ -176,8 +176,8 @@ class IfTests extends FunSuite with Matchers {
         |}
         |
         |fn main() {
-        |  i! = 0;
-        |  while (i < 4) {
+        |  zork! = 0;
+        |  while (zork < 4) {
         |    moo = Moo(Bork(5));
         |    if (true) {
         |      (bork) = moo;
@@ -185,7 +185,7 @@ class IfTests extends FunSuite with Matchers {
         |    } else {
         |      drop(moo);
         |    }
-        |    mut i = i + 1;
+        |    mut zork = zork + 1;
         |  }
         |}
         |""".stripMargin +
@@ -201,7 +201,6 @@ class IfTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
-  // Intentional failure 2020-10-23
   test("Toast") {
     val compile = Compilation(
       """
@@ -218,7 +217,7 @@ class IfTests extends FunSuite with Matchers {
         |""".stripMargin)
 
     val main = compile.getTemputs().lookupFunction("main")
-    compile.evalForReferend(Vector()) shouldEqual IntV(42)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
 }

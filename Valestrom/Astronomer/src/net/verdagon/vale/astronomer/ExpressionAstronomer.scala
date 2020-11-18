@@ -8,8 +8,9 @@ import net.verdagon.vale.vfail
 object ExpressionAstronomer {
   def translateBlock(env: Environment, astrouts: AstroutsBox, blockS: BlockSE): BlockAE = {
     val BlockSE(range, locals, exprsS) = blockS
-    val exprsA = exprsS.map(translateExpression(env, astrouts, _))
-    BlockAE(range, locals.map(translateLocalVariable), exprsA)
+    val childEnv = env.addLocals(locals.map(translateLocalVariable))
+    val exprsA = exprsS.map(translateExpression(childEnv, astrouts, _))
+    BlockAE(range, exprsA)
   }
 
   def translateLocalVariable(varS: LocalVariable1): LocalVariableA = {
@@ -30,7 +31,7 @@ object ExpressionAstronomer {
           }
         val exprA = translateExpression(env, astrouts, expr)
 
-        val patternA = Astronomer.translateAtom(patternS)
+        val patternA = Astronomer.translateAtom(env, patternS)
 
         LetAE(
           range,

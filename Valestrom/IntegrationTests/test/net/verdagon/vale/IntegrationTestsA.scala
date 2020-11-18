@@ -557,4 +557,52 @@ class IntegrationTestsA extends FunSuite with Matchers {
       case ConstraintViolatedException(_) => // good!
     }
   }
+
+  // This test is here because we had a bug where the compiler was enforcing that we unstackify
+  // the same locals from all branches of if, even if they were constraint refs.
+  test("Using same constraint ref from both branches of if") {
+    val compile = Compilation(
+      """
+        |struct Moo {}
+        |fn foo(a &Moo) int { 41 }
+        |fn bork(a &Moo) int {
+        |  if (false) {
+        |    ret foo(a);
+        |  } else if (false) {
+        |    ret foo(a);
+        |  } else {
+        |    // continue
+        |  }
+        |  ret foo(a) + 1;
+        |}
+        |fn main() int {
+        |  ret bork(&Moo());
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+
+  // Compiler should be fine with moving things from if statements if we ret out.
+  test("Moving same thing from both branches of if") {
+    val compile = Compilation(
+      """
+        |struct Moo {}
+        |fn foo(a Moo) int { 41 }
+        |fn bork(a Moo) int {
+        |  if (false) {
+        |    ret foo(a);
+        |  } else if (false) {
+        |    ret foo(a);
+        |  } else {
+        |    // continue
+        |  }
+        |  ret 42;
+        |}
+        |fn main() int {
+        |  ret bork(Moo());
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
 }

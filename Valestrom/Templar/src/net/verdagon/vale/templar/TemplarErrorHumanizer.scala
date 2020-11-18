@@ -4,6 +4,7 @@ import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
 import net.verdagon.vale.astronomer.{ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
+import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
 import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Float2, Int2, Kind, Own, ParamFilter, Share, Str2, StructRef2, Weak}
 import net.verdagon.vale.vimpl
@@ -82,8 +83,9 @@ object TemplarErrorHumanizer {
             (if (outscoredReasonByPotentialBanner.nonEmpty) {
               "Outscored candidates:\n" + outscoredReasonByPotentialBanner.map({
                 case (potentialBanner, outscoredReason) => {
-                  "  " + TemplataNamer.getFullNameIdentifierName(potentialBanner.banner.fullName) + ":\n    " +
+                  "  " + TemplataNamer.getFullNameIdentifierName(potentialBanner.banner.fullName) + ":\n" +
                     humanizeRejectionReason(
+                      2,
                       verbose,
                       filenamesAndSources,
                       outscoredReason)
@@ -96,14 +98,14 @@ object TemplarErrorHumanizer {
                 "Rejected candidates:\n" +
                   (rejectedReasonByBanner.map({
                     case (banner, rejectedReason) => {
-                      "  " + humanizeBanner(filenamesAndSources, banner) + "\n    " +
-                        humanizeRejectionReason(verbose, filenamesAndSources, rejectedReason)
+                      "  " + humanizeBanner(filenamesAndSources, banner) + "\n" +
+                        humanizeRejectionReason(2, verbose, filenamesAndSources, rejectedReason)
                     }
                   }) ++
                     rejectedReasonByFunction.map({
                       case (functionA, rejectedReason) => {
-                        "  " + printableName(filenamesAndSources, functionA.name) + ":\n    " +
-                          humanizeRejectionReason(verbose, filenamesAndSources, rejectedReason)
+                        "  " + printableName(filenamesAndSources, functionA.name) + ":\n" +
+                          humanizeRejectionReason(2, verbose, filenamesAndSources, rejectedReason)
                       }
                     })).mkString("\n") + "\n"
               } else {
@@ -193,37 +195,44 @@ object TemplarErrorHumanizer {
   }
 
   private def humanizeRejectionReason(
+      indentations: Int,
       verbose: Boolean,
       filenamesAndSources: List[(String, String)],
       reason: IScoutExpectedFunctionFailureReason): String = {
     reason match {
       case WrongNumberOfArguments(supplied, expected) => {
-        "Number of params doesn't match! Supplied " + supplied + " but function takes " + expected
+        "  ".repeat(indentations) + "Number of params doesn't match! Supplied " + supplied + " but function takes " + expected
       }
       case WrongNumberOfTemplateArguments(supplied, expected) => {
-        "Number of template params doesn't match! Supplied " + supplied + " but function takes " + expected
+        "  ".repeat(indentations) + "Number of template params doesn't match! Supplied " + supplied + " but function takes " + expected
       }
-      case SpecificParamDoesntMatch(index, reason) => "Param at index " + index + " doesn't match: " + reason
-      case SpecificParamVirtualityDoesntMatch(index) => "Virtualities don't match at index " + index
-      case Outscored() => "Outscored!"
+      case SpecificParamDoesntMatch(index, reason) => "  ".repeat(indentations) + "Param at index " + index + " doesn't match: " + reason
+      case SpecificParamVirtualityDoesntMatch(index) => "  ".repeat(indentations) + "Virtualities don't match at index " + index
+      case Outscored() => "  ".repeat(indentations) + "Outscored!"
       case InferFailure(reason) => {
         if (verbose) {
-          if (reason.rootCauses.size == 1) {
-            val rootCause = reason.rootCauses.head
-            "Failed to infer: " +
-              humanizePos(filenamesAndSources, rootCause.range.file, rootCause.range.begin.offset) + ": " +
-              rootCause.message + "\n" +
-              rootCause.inferences.templatasByRune.map({ case (key, value) => "    - " + key + " = " + value }).mkString("\n") + "\n" +
-              rootCause.inferences.typeByRune
-                .filter(x => !rootCause.inferences.templatasByRune.contains(x._1))
-                .map({ case (rune, _) => "    - " + rune + " = unknown" }).mkString("\n") + "\n"
-          } else {
-            "(too many causes)"
-          }
+          "  ".repeat(indentations) +
+            "Failed to infer:\n" +
+            humanizeConflictCause(indentations + 1, filenamesAndSources, reason)
         } else {
           "(run with --verbose to see some incomprehensible details)"
         }
       }
     }
+  }
+
+  def humanizeConflictCause(
+    indentations: Int,
+    filenamesAndSources: List[(String, String)],
+    reason: IConflictCause):
+  String = {
+    "  ".repeat(indentations) +
+    humanizePos(filenamesAndSources, reason.range.file, reason.range.begin.offset) + ": " +
+    reason.message + "\n" +
+      reason.inferences.templatasByRune.map({ case (key, value) => "  ".repeat(indentations) + "- " + key + " = " + value + "\n" }).mkString("") +
+      reason.inferences.typeByRune
+        .filter(x => !reason.inferences.templatasByRune.contains(x._1))
+        .map({ case (rune, _) => "  ".repeat(indentations) + "- " + rune + " = unknown" + "\n" }).mkString("") +
+      reason.causes.map(humanizeConflictCause(indentations + 1, filenamesAndSources, _)).mkString("")
   }
 }

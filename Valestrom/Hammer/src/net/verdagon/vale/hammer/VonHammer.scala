@@ -435,7 +435,6 @@ object VonHammer {
             VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("arrayKnownLive", VonBool(false)),
             VonMember("consumerExpr", vonifyExpression(consumerExpr)),
             VonMember("consumerType", vonifyCoord(consumerExpr.resultType)),
             VonMember("consumerMethod", vonifyPrototype(consumerMethod)),
@@ -446,8 +445,7 @@ object VonHammer {
           "DestroyKnownSizeArrayIntoLocals",
           None,
           Vector(
-            VonMember("structExpr", vonifyExpression(structExpr)),
-            VonMember("structKnownLive", VonBool(false)),
+            VonMember("arrayExpr", vonifyExpression(structExpr)),
             VonMember(
               "localTypes",
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
@@ -462,7 +460,6 @@ object VonHammer {
           Vector(
             VonMember("structExpr", vonifyExpression(structExpr)),
             VonMember("structType", vonifyCoord(structExpr.resultType)),
-            VonMember("structKnownLive", VonBool(false)),
             VonMember(
               "localTypes",
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
@@ -478,7 +475,6 @@ object VonHammer {
             VonMember("arrayExpr", vonifyExpression(arrayExpr)),
             VonMember("arrayType", vonifyCoord(arrayExpr.resultType)),
             VonMember("arrayReferend", vonifyKind(arrayExpr.resultType.kind)),
-            VonMember("arrayKnownLive", VonBool(false)),
             VonMember("consumerExpr", vonifyExpression(consumerExpr)),
             VonMember("consumerType", vonifyCoord(consumerExpr.resultType)),
             VonMember("consumerReferend", vonifyKind(consumerExpr.resultType.kind)),

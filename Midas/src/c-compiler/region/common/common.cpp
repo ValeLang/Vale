@@ -433,6 +433,11 @@ WrapperPtrLE mallocStr(
       referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache.strRef, newStrWrapperPtrLE));
   LLVMBuildStore(builder, LLVMBuildZExt(builder, lengthLE, LLVMInt64TypeInContext(globalState->context), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
+  // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
+  auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, newStrWrapperPtrLE);
+  LLVMBuildStore(builder, constI8LE(globalState, 0), charsBeginPtr);
+  auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
+  LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
 
   // The caller still needs to initialize the actual chars inside!
 

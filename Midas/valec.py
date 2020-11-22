@@ -79,7 +79,7 @@ class ValeCompiler:
         # Maybe we can add a command line param here too, relying on environments is always irksome.
         self.valec_path: str = os.environ.get('VALEC_PATH', '')
         if len(self.valec_path) > 0:
-            print(f"Using valec at {valec_path}. ", file=sys.stderr)
+            print(f"Using valec at {self.valec_path}. ", file=sys.stderr)
         elif shutil.which("valec") != None:
             self.valec_path = shutil.which("valec")
             print(f"No VALEC_PATH in env, assuming the one in {self.valec_path}", file=sys.stderr)

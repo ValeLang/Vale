@@ -44,7 +44,7 @@ ValeStr* vstr_substring(
 
   ValeStr* result = vale_newstr(length);
   char* resultChars = vale_getstrchars(result);
-  strncpy(resultChars, sourceChars, length);
+  strncpy(resultChars, sourceChars + begin, length);
   return result;
 }
 

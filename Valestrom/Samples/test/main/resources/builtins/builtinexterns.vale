@@ -87,3 +87,6 @@ fn mod(left int, right int) int { __mod(left, right) }
 fn __mod(left int, right int) int extern;
 
 fn ===<T>(left &T, right &T) bool extern(vale_is);
+
+fn numMainArgs() int extern;
+fn getMainArg(i int) str extern;

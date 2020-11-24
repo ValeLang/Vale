@@ -1,6 +1,17 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
+
+
+// These are exposed by the compiled vale .obj/.o, they're
+// the start of a Vale native API.
+typedef struct ValeStr ValeStr;
+ValeStr* vale_newstr(int64_t length);
+char* vale_getstrchars(ValeStr* str);
+int64_t vale_getstrnumbytes(ValeStr* str);
+
+
 
 void __vprintCStr(const char* str) {
   printf("%s", str);
@@ -17,41 +28,16 @@ void __vprintBool(int8_t x) {
     printf("false");
   }
 }
-//
-//void printStr(char *p, size_t len) {
-//	fwrite(p, len, 1, stdout);
-//	assert(false);
-//}
-//
-//void printInt(int64_t nbr) {
-//	printf("%"PRId64, nbr);
-//}
-//
-//void printFloat(double nbr) {
-//	printf("%g", nbr);
-//}
-//
-//void printChar(uint64_t code) {
-//	char result[6];
-//	char *p = &result[0];
-//
-//	if (code<0x80)
-//		*p++ = (unsigned char) code;
-//	else if (code<0x800) {
-//		*p++ = 0xC0 | (unsigned char)(code >> 6);
-//		*p++ = 0x80 | (code & 0x3f);
-//	}
-//	else if (code<0x10000) {
-//		*p++ = 0xE0 | (unsigned char)(code >> 12);
-//		*p++ = 0x80 | ((code >> 6) & 0x3F);
-//		*p++ = 0x80 | (code & 0x3f);
-//	}
-//	else if (code<0x110000) {
-//		*p++ = 0xF0 | (unsigned char)(code >> 18);
-//		*p++ = 0x80 | ((code >> 12) & 0x3F);
-//		*p++ = 0x80 | ((code >> 6) & 0x3F);
-//		*p++ = 0x80 | (code & 0x3f);
-//	}
-//	*p = '\0';
-//	printf("%s", result);
-//}
+
+extern int64_t __main_num_args;
+extern char** __main_args;
+int64_t numMainArgs() {
+  return __main_num_args;
+}
+ValeStr* getMainArg(int64_t i) {
+  char* argCStr = __main_args[i];
+  int64_t len = strlen(argCStr);
+  ValeStr* vstr = vale_newstr(len);
+  strncpy(vale_getstrchars(vstr), argCStr, len);
+  return vstr;
+}

@@ -35,6 +35,10 @@ public:
   LLVMTypeRef ram64Struct = nullptr;
 
   Program* program = nullptr;
+
+  LLVMValueRef numMainArgs = nullptr;
+  LLVMValueRef mainArgs = nullptr;
+
   LLVMValueRef objIdCounter = nullptr;
   LLVMValueRef liveHeapObjCounter = nullptr;
   LLVMValueRef derefCounter = nullptr;

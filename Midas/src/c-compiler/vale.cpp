@@ -337,6 +337,16 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   globalState->stringConstantBuilder = entryBuilder;
 
+  globalState->numMainArgs =
+      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__main_num_args");
+  LLVMSetInitializer(globalState->numMainArgs, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
+
+  auto mainArgsLT =
+      LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), 0);
+  globalState->mainArgs =
+      LLVMAddGlobal(globalState->mod, mainArgsLT, "__main_args");
+  LLVMSetInitializer(globalState->mainArgs, LLVMConstNull(mainArgsLT));
+
   globalState->liveHeapObjCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__liveHeapObjCounter");
   LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
@@ -537,6 +547,63 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       LLVMBuildCall(entryBuilder, globalState->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
     }
   }
+
+  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
+  auto argsLE = LLVMGetParam(entryFunctionL, 1);
+  LLVMBuildStore(entryBuilder, numArgsLE, globalState->numMainArgs);
+  LLVMBuildStore(entryBuilder, argsLE, globalState->mainArgs);
+
+
+//  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
+//  auto argStrsArrayPtr = LLVMGetParam(entryFunctionL, 1);
+//
+//  auto argIndexPtrLE = LLVMBuildAlloca(entryBuilder, LLVMInt64TypeInContext(globalState->context), "argIPtr");
+//  LLVMBuildStore(entryBuilder, constI64LE(globalState, 0), argIndexPtrLE);
+//
+//
+//  LLVMBasicBlockRef argsBlockL =
+//      LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "argsBlock");
+//  LLVMBuilderRef argsBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
+//  LLVMPositionBuilderAtEnd(argsBlockBuilder, argsBlockL);
+//
+//  // Jump from our previous block into the body for the first time.
+//  LLVMBuildBr(entryBuilder, argsBlockL);
+//
+//  auto continueLE =
+//      LLVMBuildICmp(
+//          argsBlockBuilder,
+//          LLVMIntSLE,
+//          LLVMBuildLoad(entryBuilder, argIndexPtrLE, "argI"),
+//          numArgsLE,
+//          "argsContinue");
+//
+//  auto argILE = LLVMBuildLoad(entryBuilder, argIndexPtrLE, "argI");
+//
+//  auto argStrLE =
+//      LLVMBuildLoad(argsBlockBuilder,
+//          LLVMBuildGEP(argsBlockBuilder,
+//              argStrsArrayPtr, &argILE, 1, "ptrToArgStrEntry"), "argStr");
+//
+//  add argStrLE to the args array here
+//
+//  LLVMBuildStore(
+//      argsBlockBuilder,
+//      LLVMBuildAdd(argsBlockBuilder,
+//          LLVMBuildLoad(argsBlockBuilder, argIndexPtrLE, "i"),
+//          constI64LE(globalState, 1),
+//          "iPlus1"),
+//      argIndexPtrLE);
+//
+//  LLVMBasicBlockRef afterwardBlockL =
+//      LLVMAppendBasicBlockInContext(globalState->context,
+//          entryFunctionL,
+//          "afterArgsBlock");
+//  LLVMBuildCondBr(argsBlockBuilder, continueLE, argsBlockL, afterwardBlockL);
+//  LLVMPositionBuilderAtEnd(entryBuilder, afterwardBlockL);
+
+
+
+
 
   LLVMValueRef emptyValues[1] = {};
   LLVMValueRef mainResult =

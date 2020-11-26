@@ -29,7 +29,7 @@ Ref translateNewArrayFromValues(
   switch (newArrayFromValues->arrayReferend->rawArray->mutability) {
 //    case Mutability::MUTABLE: {
 //      auto countedArrayL = globalState->getWrapperStruct(structReferend->fullName);
-//      return constructCountedStruct(
+//      return constructWrappedStruct(
 //          globalState, builder, countedStructL, structM, membersLE);
 //    }
     case Mutability::IMMUTABLE: {

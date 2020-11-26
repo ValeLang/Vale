@@ -154,7 +154,7 @@ LLVMValueRef fillControlBlockCensusFields(
             globalState->getOrMakeStringConstant(typeName),
             globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
             "strControlBlockWithTypeStr");
-    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, objIdLE);
+    buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, " ", objIdLE);
   }
   return newControlBlockLE;
 }
@@ -241,7 +241,7 @@ LLVMValueRef makeInterfaceRefStruct(
           itablePtrLE,
           1,
           "interfaceRef");
-  buildFlare(FL(), globalState, functionState, builder, "itable: ", ptrToVoidPtrLE(globalState, builder, itablePtrLE), " for ", sourceStructReferendM->fullName->name, " for ", targetInterfaceReferendM->fullName->name);
+  buildFlare(FL(), globalState, functionState, builder, "itable: ", ptrToIntLE(globalState, builder, itablePtrLE), " for ", sourceStructReferendM->fullName->name, " for ", targetInterfaceReferendM->fullName->name);
 
   return interfaceRefLE;
 }
@@ -293,6 +293,14 @@ void innerDeallocateYonder(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref refLE) {
+  if (globalState->opt->census) {
+    auto ptrLE = functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
+        refMT, refLE);
+    auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, refMT, refLE);
+    buildFlare(FL(), globalState, functionState, builder,
+        "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE, "\n");
+  }
+
   auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder,
       refLE, refMT);
 
@@ -503,7 +511,7 @@ void fillInnerStruct(
   }
 }
 
-Ref constructCountedStruct(
+Ref constructWrappedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     IReferendStructsSource* referendStructsSource,
@@ -514,12 +522,13 @@ Ref constructCountedStruct(
     Weakability effectiveWeakability,
     std::vector<Ref> membersLE,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
-  buildFlare(FL(), globalState, functionState, builder, "Filling new struct: ", structM->name->name);
+
+  auto ptrLE = mallocKnownSize(globalState, functionState, builder, structTypeM->location, structL);
+
   WrapperPtrLE newStructWrapperPtrLE =
       referendStructsSource->makeWrapperPtr(
           FL(), functionState, builder, structTypeM,
-          mallocKnownSize(
-              globalState, functionState, builder, structTypeM->location, structL));
+          ptrLE);
 //  globalState->region->fillControlBlock(
 //      from,
 //      functionState, builder,
@@ -534,8 +543,18 @@ Ref constructCountedStruct(
       globalState, functionState,
       builder, structM, membersLE,
       referendStructsSource->getStructContentsPtr(builder, structTypeM->referend, newStructWrapperPtrLE));
-  buildFlare(FL(), globalState, functionState, builder, "Done filling new struct");
-  return wrap(functionState->defaultRegion, structTypeM, newStructWrapperPtrLE.refLE);
+
+  auto refLE = wrap(functionState->defaultRegion, structTypeM, newStructWrapperPtrLE.refLE);
+
+  if (globalState->opt->census) {
+    auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, structTypeM, refLE);
+    buildFlare(
+        FL(), globalState, functionState, builder,
+        "Allocated object ", structM->name->name, " &", ptrToIntLE(globalState, builder, ptrLE),
+        " obj id ", objIdLE, "\n");
+  }
+
+  return refLE;
 }
 
 LLVMValueRef constructInnerStruct(
@@ -586,8 +605,9 @@ Ref innerAllocate(
   switch (structM->mutability) {
     case Mutability::MUTABLE: {
       auto countedStructL = referendStructs->getWrapperStruct(structReferend);
-      return constructCountedStruct(
-          globalState, functionState, referendStructs, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE, fillControlBlock);
+      return constructWrappedStruct(
+          globalState, functionState, referendStructs, builder, countedStructL, desiredReference,
+          structM, effectiveWeakability, membersLE, fillControlBlock);
     }
     case Mutability::IMMUTABLE: {
       if (desiredReference->location == Location::INLINE) {
@@ -600,8 +620,9 @@ Ref innerAllocate(
       } else {
         auto countedStructL =
             referendStructs->getWrapperStruct(structReferend);
-        return constructCountedStruct(
-            globalState, functionState, referendStructs, builder, countedStructL, desiredReference, structM, effectiveWeakability, membersLE, fillControlBlock);
+        return constructWrappedStruct(
+            globalState, functionState, referendStructs, builder, countedStructL, desiredReference,
+            structM, effectiveWeakability, membersLE, fillControlBlock);
       }
     }
     default:
@@ -1135,11 +1156,9 @@ Ref constructUnknownSizeArrayCountedStruct(
   auto sizeLE =
       globalState->region->checkValidReference(FL(),
           functionState, builder, globalState->metalCache.intRef, sizeRef);
+  auto ptrLE = mallocUnknownSizeArray(globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
   auto usaWrapperPtrLE =
-      referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, usaMT,
-          mallocUnknownSizeArray(
-              globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE));
+      referendStructs->makeWrapperPtr(FL(), functionState, builder, usaMT, ptrLE);
   fillControlBlock(
       builder,
       referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, usaMT, usaWrapperPtrLE));
@@ -1155,7 +1174,17 @@ Ref constructUnknownSizeArrayCountedStruct(
       generatorRef,
       sizeRef,
       getUnknownSizeArrayContentsPtr(builder, usaWrapperPtrLE));
-  return wrap(functionState->defaultRegion, usaMT, usaWrapperPtrLE.refLE);
+  auto refLE = wrap(functionState->defaultRegion, usaMT, usaWrapperPtrLE.refLE);
+
+  if (globalState->opt->census) {
+    auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, usaMT, refLE);
+    auto addrIntLE = ptrToIntLE(globalState, builder, ptrLE);
+    buildFlare(
+        FL(), globalState, functionState, builder,
+        "Allocated object ", typeName, " &", addrIntLE, " obj id ", objIdLE, "\n");
+  }
+
+  return refLE;
 }
 
 Ref regularLoadMember(

@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
-import net.verdagon.vale.astronomer.{ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
+import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
@@ -125,6 +125,9 @@ object TemplarErrorHumanizer {
       case WhileConditionIsntBoolean(range, actualType) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": If condition should be a bool, but was: " + actualType
+      }
+      case InferAstronomerError(err) => {
+        AstronomerErrorHumanizer.humanize(filenamesAndSources, err)
       }
     }
   }

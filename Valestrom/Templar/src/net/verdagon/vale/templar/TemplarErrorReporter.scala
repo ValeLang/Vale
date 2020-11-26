@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, IImpreciseNameStepA}
+import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, ICompileErrorA, IFunctionDeclarationNameA, IImpreciseNameStepA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.ScoutExpectedFunctionFailure
 import net.verdagon.vale.templar.templata.Signature2
@@ -25,6 +25,7 @@ case class CantMutateFinalMember(range: RangeS, structRef2: StructRef2, memberNa
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT
 case class IfConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class WhileConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
+case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test
 
 case class RangedInternalErrorT(range: RangeS, message: String) extends ICompileErrorT

@@ -174,6 +174,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonBool(false)
   }
 
+  test("mut swapping locals") {
+    val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
   // Known failure 2020-08-20
   test("Tests virtual doesn't get called if theres a better override") {
     val compile = Compilation(

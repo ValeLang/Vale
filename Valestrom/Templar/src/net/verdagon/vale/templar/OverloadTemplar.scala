@@ -272,10 +272,14 @@ class OverloadTemplar(
                       val templateArgRuneNamesA = templateArgRuneNamesS.map(Astronomer.translateRune)
                       val templateArgRuneNames2 = templateArgRuneNamesA.map(NameTranslator.translateRune)
 
-                      // And now that we know the types that are expected of these template arguments, we can
-                      // run these template argument templexes through the solver so it can evaluate them in
-                      // context of the current environment and spit out some templatas.
-                      ruleTyper.solve(temputs, env, equalsRules, callRange, List(), Some(templateArgRuneNamesA.toSet)) match {
+                      (try {
+                        // And now that we know the types that are expected of these template arguments, we can
+                        // run these template argument templexes through the solver so it can evaluate them in
+                        // context of the current environment and spit out some templatas.
+                        ruleTyper.solve(temputs, env, equalsRules, callRange, List(), Some(templateArgRuneNamesA.toSet))
+                      } catch {
+                        case CompileErrorExceptionA(err) => throw CompileErrorExceptionT(InferAstronomerError(err))
+                      }) match {
                         case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
                           val reason = WrongNumberOfTemplateArguments(identifyingRuneTemplataTypes.size, explicitlySpecifiedTemplateArgTemplexesS.size)
                           (List(), Map(), Map(function -> reason))

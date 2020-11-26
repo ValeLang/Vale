@@ -31,6 +31,7 @@ class ValeTest(unittest.TestCase):
              "--verify",
              "--llvmir",
              "--census",
+             "--flares",
              "--region-override", region_override,
              "--output-dir", o_files_dir,
              "-o",
@@ -73,6 +74,21 @@ class ValeTest(unittest.TestCase):
         # print(proc.stderr)
         self.assertEqual(proc.returncode, expected_return_code,
                          f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
+
+    def test_assist_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "assist", 7)
+    def test_unsafefast_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "unsafe-fast", 7)
+    def test_resilientv0_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v0", 7)
+    def test_resilientv1_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v1", 7)
+    def test_resilientv2_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v2", 7)
+    def test_resilientv3_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v3", 7)
+    def test_naiverc_mutswaplocals(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "naive-rc", 7)
 
     def test_assist_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)

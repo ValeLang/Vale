@@ -145,7 +145,7 @@ void fillInnerStruct(
     StructDefinition* structM,
     std::vector<Ref> membersLE,
     LLVMValueRef innerStructPtrLE);
-Ref constructCountedStruct(
+Ref constructWrappedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     IReferendStructsSource* referendStructsSource,

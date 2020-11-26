@@ -104,15 +104,8 @@ trait ParserUtils extends RegexParsers {
         StringP(
           Range(begin, end),
           StringEscapeUtils.unescapeJava(s))
-//          "\\\\t".r.replaceAllIn(
-//            "\\\\n".r.replaceAllIn(s, "\n"),
-//            "\t"))
       }
     }
-  }
-
-  private[parser] def stringExpr: Parser[IExpressionPE] = {
-    string ^^ { case s => StrLiteralPE(s.range, s.str) }
   }
 
   // ww = with whitespace

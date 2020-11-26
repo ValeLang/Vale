@@ -7,10 +7,7 @@ import scala.collection.immutable.List
 
 case class AtomAP(
   range: RangeS,
-  // This is an option because in PatternTemplar, if it's None, we'll explode the
-  // expression into the destructure, and if it's Some, we'll make this variable
-  // an owning ref.
-  name: CaptureA,
+  capture: LocalVariableA,
   virtuality: Option[VirtualityAP],
   coordRune: IRuneA,
   destructure: Option[List[AtomAP]])

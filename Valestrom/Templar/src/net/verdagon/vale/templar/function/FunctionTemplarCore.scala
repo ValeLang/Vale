@@ -8,17 +8,18 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcheck, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.{List, Set}
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
   profiler: IProfiler,
+  newTemplataStore: () => TemplatasStore,
   templataTemplar: TemplataTemplar,
     convertHelper: ConvertHelper,
     delegate: IFunctionTemplarDelegate) {
-  val bodyTemplar = new BodyTemplar(opts, profiler, templataTemplar, convertHelper, new IBodyTemplarDelegate {
+  val bodyTemplar = new BodyTemplar(opts, profiler, newTemplataStore, templataTemplar, convertHelper, new IBodyTemplarDelegate {
     override def evaluateBlockStatements(temputs: Temputs, startingFate: FunctionEnvironment, fate: FunctionEnvironmentBox, exprs: List[IExpressionAE]): (List[ReferenceExpression2], Set[Coord]) = {
       delegate.evaluateBlockStatements(temputs, startingFate, fate, exprs)
     }
@@ -70,10 +71,10 @@ class FunctionTemplarCore(
         // Remember, the near env contains closure variables, which we
         // don't care about here. So find the difference between the near
         // env and our latest env.
-        vassert(fullEnv.variables.startsWith(startingFullEnv.variables))
+        vassert(fullEnv.locals.startsWith(startingFullEnv.locals))
         val introducedLocals =
-          fullEnv.variables
-            .drop(startingFullEnv.variables.size)
+          fullEnv.locals
+            .drop(startingFullEnv.locals.size)
             .collect({
               case x @ ReferenceLocalVariable2(_, _, _) => x
               case x @ AddressibleLocalVariable2(_, _, _) => x
@@ -176,34 +177,44 @@ class FunctionTemplarCore(
   def makeExternFunction(
       temputs: Temputs,
       fullName: FullName2[IFunctionName2],
-    range: RangeS,
+      range: RangeS,
       attributes: List[IFunctionAttribute2],
       params2: List[Parameter2],
       returnType2: Coord,
       maybeOrigin: Option[FunctionA]):
   (FunctionHeader2) = {
-    val header = FunctionHeader2(fullName, Extern2 :: attributes, params2, returnType2, maybeOrigin)
+    fullName.last match {
+//      case FunctionName2("===", templateArgs, paramTypes) => {
+//        vcheck(templateArgs.size == 1, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 1 template params!")))
+//        vcheck(paramTypes.size == 2, () => CompileErrorExceptionT(RangedInternalErrorT(range, "=== should have 2 params!")))
+//        val List(tyype) = templateArgs
+//        val List(leftParamType, rightParamType) = paramTypes
+//        vassert(leftParamType == rightParamType, "=== left and right params should be same type")
+//        vassert(leftParamType == tyype)
+//        vassert(rightParamType == tyype)
+//
+//      }
+      case FunctionName2(humanName, List(), params) => {
+        val header = FunctionHeader2(fullName, Extern2 :: attributes, params2, returnType2, maybeOrigin)
 
-    val (humanName, params) =
-      fullName.last match {
-        case FunctionName2(humanName, List(), parameters) => (humanName, parameters)
-        case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Only human-named function can be extern!"))
+        val externFullName = FullName2(List(), ExternFunctionName2(humanName, params))
+        val externPrototype = Prototype2(externFullName, header.returnType)
+        temputs.addExternPrototype(externPrototype)
+
+        val argLookups =
+          header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })
+        val function2 =
+          Function2(
+            header,
+            List(),
+            Return2(ExternFunctionCall2(externPrototype, argLookups)))
+
+        temputs.declareFunctionReturnType(header.toSignature, header.returnType)
+        temputs.addFunction(function2)
+        (header)
       }
-    val externFullName = FullName2(List(), ExternFunctionName2(humanName, params))
-    val externPrototype = Prototype2(externFullName, header.returnType)
-    temputs.addExternPrototype(externPrototype)
-
-    val argLookups =
-      header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })
-    val function2 =
-      Function2(
-        header,
-        List(),
-        Return2(ExternFunctionCall2(externPrototype, argLookups)))
-
-    temputs.declareFunctionReturnType(header.toSignature, header.returnType)
-    temputs.addFunction(function2)
-    (header)
+      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Only human-named function can be extern!"))
+    }
   }
 
   def translateFunctionAttributes(a: List[IFunctionAttributeA]): List[IFunctionAttribute2] = {

@@ -16,9 +16,9 @@ package object infer {
 
   trait IConflictCause {
     def range: RangeS
-    def rootCauses: List[IConflictCause]
     def inferences: Inferences
     def message: String
+    def causes: List[IConflictCause]
   }
 
   sealed trait IInferSolveResult
@@ -29,12 +29,9 @@ package object infer {
     inferences: Inferences,
     range: RangeS,
     message: String,
-    inner: List[IConflictCause]
+    causes: List[IConflictCause]
   ) extends IInferSolveResult with IConflictCause {
-    vassert(message.nonEmpty || inner.nonEmpty)
-    override def rootCauses: List[IConflictCause] = {
-      if (inner.isEmpty) { List(this) } else { inner.flatMap(_.rootCauses) }
-    }
+    vassert(message.nonEmpty || causes.nonEmpty)
   }
   case class InferSolveSuccess(
     inferences: Inferences
@@ -48,12 +45,9 @@ package object infer {
     inferences: Inferences,
     range: RangeS,
     message: String,
-    cause: List[IConflictCause]
+    causes: List[IConflictCause]
   ) extends IInferEvaluateResult[T] with IConflictCause {
-    vassert(message.nonEmpty || cause.nonEmpty)
-    override def rootCauses: List[IConflictCause] = {
-      if (cause.isEmpty) { List(this) } else { cause.flatMap(_.rootCauses) }
-    }
+    vassert(message.nonEmpty || causes.nonEmpty)
   }
   case class InferEvaluateUnknown[T](
     // Whether we've satisfied every rule in this subtree.
@@ -89,9 +83,6 @@ package object infer {
     override def toString: String = {
       // The # signals the reader that we overrode toString
       "InferMatchConflict#(" + message + ", " + causes + ", " + inferences + ")"
-    }
-    override def rootCauses: List[IConflictCause] = {
-      if (causes.isEmpty) { List(this) } else { causes.flatMap(_.rootCauses) }
     }
   }
   case class InferMatchSuccess(

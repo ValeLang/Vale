@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, IImpreciseNameStepA}
+import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, ICompileErrorA, IFunctionDeclarationNameA, IImpreciseNameStepA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.ScoutExpectedFunctionFailure
 import net.verdagon.vale.templar.templata.Signature2
@@ -19,11 +19,13 @@ case class CouldntConvertForReturnT(range: RangeS, expectedType: Coord, actualTy
 case class CouldntConvertForMutateT(range: RangeS, expectedType: Coord, actualType: Coord) extends ICompileErrorT
 case class CantMoveOutOfMemberT(range: RangeS, name: IVarName2) extends ICompileErrorT
 case class CantMutateUnstackifiedLocal(range: RangeS, localId: IVarName2) extends ICompileErrorT
+case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarName2) extends ICompileErrorT
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: Signature2) extends ICompileErrorT
 case class CantMutateFinalMember(range: RangeS, structRef2: StructRef2, memberName: FullName2[IVarName2]) extends ICompileErrorT
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT
 case class IfConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class WhileConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
+case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test
 
 case class RangedInternalErrorT(range: RangeS, message: String) extends ICompileErrorT

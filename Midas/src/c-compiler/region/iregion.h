@@ -124,6 +124,13 @@ public:
       Reference* refM,
       Ref refLE) = 0;
 
+  virtual LLVMValueRef getCensusObjectId(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref refLE) = 0;
+
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
   virtual void translateKnownSizeArray(

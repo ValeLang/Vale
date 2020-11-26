@@ -112,6 +112,13 @@ public:
 //      LLVMBuilderRef builder,
 //      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
 
+  LLVMValueRef getCensusObjectId(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref refLE) override;
+
   Ref getUnknownSizeArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,

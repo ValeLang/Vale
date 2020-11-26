@@ -85,6 +85,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
   if (refM->ownership == Ownership::SHARE) {
     // Shares never have weak refs
     assert(false);
+    return nullptr;
   } else {
     auto wrciPtrLE =
         LLVMBuildStructGEP(

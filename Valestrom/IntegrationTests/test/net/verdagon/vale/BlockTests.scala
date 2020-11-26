@@ -20,7 +20,7 @@ class BlockTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = compile.getScoutput()
     val main = scoutput.lookupFunction("main")
-    main.body match { case CodeBody1(BodySE(_,BlockSE(_,List(BlockSE(_,_), _)))) => }
+    main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(BlockSE(_, _,_), _)))) => }
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
@@ -36,7 +36,7 @@ class BlockTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = compile.getScoutput()
     val main = scoutput.lookupFunction("main")
-    val block = main.body match { case CodeBody1(BodySE(_,BlockSE(_,List(b @ BlockSE(_,_), _)))) => b }
+    val block = main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(b @ BlockSE(_, _,_), _)))) => b }
     vassert(block.locals.size == 1)
     block.locals.head match {
       case LocalVariable1(CodeVarNameS("y"), FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>

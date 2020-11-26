@@ -35,9 +35,9 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("fn main() int { +(3, 4) }")
     val main = program1.lookupFunction("main")
     
-    val CodeBody1(BodySE(_, block)) = main.body
+    val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, List(FunctionCallSE(_, OutsideLoadSE(_, "+"), _))) =>
+      case BlockSE(_, _, List(FunctionCallSE(_, OutsideLoadSE(_, "+"), _))) =>
     }
   }
 
@@ -57,7 +57,7 @@ class ScoutTests extends FunSuite with Matchers {
   test("Lambda") {
     val program1 = compile("fn main() int { {_ + _}(4, 6) }")
 
-    val CodeBody1(BodySE(_, BlockSE(_, List(expr)))) = program1.lookupFunction("main").body
+    val CodeBody1(BodySE(_, _, BlockSE(_, _, List(expr)))) = program1.lookupFunction("main").body
     val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _, _,_, _, _, _)), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
@@ -146,9 +146,9 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("fn main() int { x = 4; = x.shout(); }")
     val main = program1.lookupFunction("main")
 
-    val CodeBody1(BodySE(_, block)) = main.body
+    val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LendSE(LocalLoadSE(_,name, BorrowP), BorrowP))))) => {
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LendSE(_, LocalLoadSE(_,name, BorrowP), BorrowP))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -160,9 +160,9 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("fn main() int { x = 4; = x^.shout(); }")
     val main = program1.lookupFunction("main")
 
-    val CodeBody1(BodySE(_, block)) = main.body
+    val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LocalLoadSE(_,_, OwnP))))) =>
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LocalLoadSE(_,_, OwnP))))) =>
     }
   }
 
@@ -178,8 +178,8 @@ class ScoutTests extends FunSuite with Matchers {
         """.stripMargin)
     val main = program1.lookupFunction("main")
 
-    val CodeBody1(BodySE(_, block)) = main.body
-    val BlockSE(_, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
+    val CodeBody1(BodySE(_, _, block)) = main.body
+    val BlockSE(_, _, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
     lambda1.params match {
       case List(_, ParameterS(AtomSP(_,CaptureS(MagicParamNameS(_),FinalP),None,MagicParamRuneS(_),None))) =>
     }
@@ -198,9 +198,9 @@ class ScoutTests extends FunSuite with Matchers {
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
 
-    val CodeBody1(BodySE(_, block)) = main.body
+    val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(
+      case BlockSE(_,
         List(
           LocalVariable1(ConstructingMemberNameS("x"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed),
           LocalVariable1(ConstructingMemberNameS("y"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed)),
@@ -210,13 +210,13 @@ class ScoutTests extends FunSuite with Matchers {
             _,
             _,
             AtomSP(_,CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
-            IntLiteralSE(4)),
+            IntLiteralSE(_, 4)),
           LetSE(_,
             _,
             _,
             _,
             AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
-            BoolLiteralSE(true)),
+            BoolLiteralSE(_, true)),
           FunctionCallSE(_,
             OutsideLoadSE(_, "MyStruct"),
             List(
@@ -234,19 +234,19 @@ class ScoutTests extends FunSuite with Matchers {
         |""".stripMargin)
     val main = program1.lookupFunction("MyStruct")
 
-    val CodeBody1(BodySE(_, block)) = main.body
+    val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(
+      case BlockSE(_,
         List(
           LocalVariable1(ConstructingMemberNameS("x"),FinalP,Used,Used,NotUsed,NotUsed,NotUsed,NotUsed),
           LocalVariable1(ConstructingMemberNameS("y"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed)),
         List(
           LetSE(_, _,_,_,
             AtomSP(_,CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
-            IntLiteralSE(4)),
+            IntLiteralSE(_, 4)),
           LetSE(_, _,_,_,
             AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
-            LendSE(LocalLoadSE(_,ConstructingMemberNameS("x"),BorrowP), BorrowP)),
+            LendSE(_, LocalLoadSE(_,ConstructingMemberNameS("x"),BorrowP), BorrowP)),
           FunctionCallSE(_,
             OutsideLoadSE(_, "MyStruct"),
             List(
@@ -265,15 +265,15 @@ class ScoutTests extends FunSuite with Matchers {
     val main = program1.lookupFunction("moo")
     main.body match {
       case CodeBody1(
-        BodySE(
+        BodySE(_,
           List(),
-          BlockSE(
+          BlockSE(_,
             List(LocalVariable1(CodeVarNameS("this"),FinalP,Used,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed)),
             List(
               FunctionCallSE(_,
                 OutsideLoadSE(_, "println"),
                 List(DotSE(_, LocalLoadSE(_,CodeVarNameS("this"),BorrowP),"x",true))),
-              VoidSE())))) =>
+              VoidSE(_))))) =>
     }
   }
 

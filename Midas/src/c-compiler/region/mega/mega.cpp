@@ -1397,6 +1397,17 @@ void Mega::discardWeakRef(
   }
 }
 
+LLVMValueRef Mega::getCensusObjectId(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref ref) {
+  auto controlBlockPtrLE =
+      referendStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
+  return getObjIdFromControlBlockPtr(globalState, builder, refM->referend, controlBlockPtrLE);
+}
+
 Ref Mega::getIsAliveFromWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,

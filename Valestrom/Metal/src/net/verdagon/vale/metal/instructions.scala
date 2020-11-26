@@ -564,6 +564,14 @@ case class WeakAliasH(
   override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refExpression.resultType.kind)
 }
 
+// Checks if the given args are the same instance.
+case class IsH(
+  leftExpression: ExpressionH[ReferendH],
+  rightExpression: ExpressionH[ReferendH],
+) extends ExpressionH[ReferendH] {
+  override def resultType: ReferenceH[ReferendH] = ReferenceH(ShareH, InlineH, BoolH())
+}
+
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(
   // Expression containing the array whose length we'll get.

@@ -27,41 +27,26 @@ class BlockTemplar(
   // This is NOT USED FOR EVERY BLOCK!
   // This is just for the simplest kind of block.
   // This can serve as an example for how we can use together all the tools provided by BlockTemplar.
+  // Returns:
+  // - The resulting block expression
+  // - All locals from outside the block that we unstackified inside the block
+  // - Num anonymous variables that were made
+  // - Types of all returns from inside the block
   def evaluateBlock(
     parentFate: FunctionEnvironmentBox,
     temputs: Temputs,
     block1: BlockAE):
-  (Block2, Set[Coord]) = {
-    val fate =
-      FunctionEnvironmentBox(
-        FunctionEnvironment(
-          parentFate.snapshot,
-          parentFate.fullName,
-          parentFate.function,
-          newTemplataStore(),
-          parentFate.maybeReturnType,
-          List(),
-          parentFate.varCounter,
-          List(),
-          Set()))
+  (Block2, Set[FullName2[IVarName2]], Int, Set[Coord]) = {
+    val fate = parentFate.makeChildEnvironment(newTemplataStore)
     val startingFate = fate.snapshot
-
-    fate.addScoutedLocals(block1.locals)
 
     val (expressionsWithResult, returnsFromExprs) =
       evaluateBlockStatements(temputs, startingFate, fate, block1.exprs)
 
     val block2 = Block2(expressionsWithResult)
 
-    // We don't just use the old parentFate because this one might have had moveds added to it.
-    val newParentFate @ FunctionEnvironment(_, _, _, _, _, _, _, _, _) = fate.parentEnv
-    parentFate.functionEnvironment = newParentFate
-
-    // We may have made some temporary vars in the block, make sure we don't accidentally reuse their numbers,
-    // carry the var counter into the original fate.
-    parentFate.nextCounters(fate.varCounter - parentFate.varCounter)
-
-    (block2, returnsFromExprs)
+    val (unstackifiedAncestorLocals, varCountersUsed) = fate.getEffects()
+    (block2, unstackifiedAncestorLocals, varCountersUsed, returnsFromExprs)
   }
 
   def evaluateBlockStatements(
@@ -108,12 +93,12 @@ class BlockTemplar(
     currentFate: FunctionEnvironmentBox):
   List[ILocalVariable2] = {
     val localsAsOfThen =
-      sinceFate.variables.collect({
+      sinceFate.locals.collect({
         case x @ ReferenceLocalVariable2(_, _, _) => x
         case x @ AddressibleLocalVariable2(_, _, _) => x
       })
     val localsAsOfNow =
-      currentFate.variables.collect({
+      currentFate.locals.collect({
         case x @ ReferenceLocalVariable2(_, _, _) => x
         case x @ AddressibleLocalVariable2(_, _, _) => x
       })
@@ -123,7 +108,7 @@ class BlockTemplar(
     vassert(localsDeclaredSinceThen.size == localsAsOfNow.size - localsAsOfThen.size)
 
     val unmovedLocalsDeclaredSinceThen =
-      localsDeclaredSinceThen.filter(x => !currentFate.moveds.contains(x.id))
+      localsDeclaredSinceThen.filter(x => !currentFate.unstackifieds.contains(x.id))
 
     unmovedLocalsDeclaredSinceThen
   }

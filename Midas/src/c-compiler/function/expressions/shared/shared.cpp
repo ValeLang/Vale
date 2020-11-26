@@ -219,17 +219,12 @@ Ref buildInterfaceCall(
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
-  buildFlare(FL(), globalState, functionState, builder);
-
   assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
   auto funcPtrPtrLE =
       LLVMBuildStructGEP(
           builder, itablePtrLE, indexInEdge, "methodPtrPtr");
-  buildFlare(FL(), globalState, functionState, builder);
 
   auto funcPtrLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
-
-  buildFlare(FL(), globalState, functionState, builder);
 
   auto resultLE =
       LLVMBuildCall(builder, funcPtrLE, argsLE.data(), argsLE.size(), "");
@@ -255,14 +250,18 @@ void buildAssertCensusContains(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildPointerCast(
             builder, ptrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    auto isRegisteredIntLE = LLVMBuildCall(builder, globalState->censusContains, &resultAsVoidPtrLE,
-        1, "");
-    auto isRegisteredBoolLE = LLVMBuildTruncOrBitCast(builder, isRegisteredIntLE, LLVMInt1TypeInContext(globalState->context),
-        "");
+    auto isRegisteredIntLE =
+        LLVMBuildCall(
+            builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
+    auto isRegisteredBoolLE =
+        LLVMBuildTruncOrBitCast(
+            builder, isRegisteredIntLE, LLVMInt1TypeInContext(globalState->context), "");
     buildIf(globalState, functionState, builder, isZeroLE(builder, isRegisteredBoolLE),
-        [globalState, checkerAFL](LLVMBuilderRef thenBuilder) {
+        [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
           buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
-          buildPrint(globalState, thenBuilder, "Object not registered with census, exiting!\n");
+          buildPrint(globalState, thenBuilder, "Object &");
+          buildPrint(globalState, thenBuilder, ptrToIntLE(globalState, thenBuilder, ptrLE));
+          buildPrint(globalState, thenBuilder, " not registered with census, exiting!\n");
           auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
           LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
         });

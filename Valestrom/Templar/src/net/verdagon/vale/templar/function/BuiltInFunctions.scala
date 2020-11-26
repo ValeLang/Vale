@@ -31,7 +31,7 @@ object BuiltInFunctions {
           CodeRuneA("__1") -> CoordTemplataType,
           CodeRuneA("I") -> CoordTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1337), CaptureA(CodeVarNameA("arr"), FinalP), None, CodeRuneA("T"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1337), LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
         Some(CodeRuneA("I")),
         List(
           EqualsAR(RangeS.internal(-91),
@@ -57,7 +57,6 @@ object BuiltInFunctions {
             List(),
             BlockAE(
               RangeS.internal(-62),
-              List(LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
                 ArrayLengthAE(
                   RangeS.internal(-62),
@@ -77,7 +76,7 @@ object BuiltInFunctions {
           CodeRuneA("I") -> CoordTemplataType,
           CodeRuneA("M") -> MutabilityTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1338), CaptureA(CodeVarNameA("arr"), FinalP), None, CodeRuneA("A"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1338), LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("A"), None))),
         Some(CodeRuneA("I")),
         List(
           EqualsAR(RangeS.internal(-91),
@@ -102,7 +101,6 @@ object BuiltInFunctions {
             List(),
             BlockAE(
               RangeS.internal(-62),
-              List(LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
                 RuneLookupAE(RangeS.internal(-62),CodeRuneA("N"), IntegerTemplataType)))))),
       FunctionA(
@@ -130,7 +128,7 @@ object BuiltInFunctions {
         List(CodeRuneA("OwningRune")),
         Set(CodeRuneA("OwningRune"), CodeRuneA("OptBorrowRune"), CodeRuneA("WeakRune")),
         Map(CodeRuneA("OwningRune") -> CoordTemplataType, CodeRuneA("OptBorrowRune") -> CoordTemplataType, CodeRuneA("WeakRune") -> CoordTemplataType),
-        List(ParameterA(AtomAP(RangeS.internal(-1350), CaptureA(CodeVarNameA("weakRef"), FinalP), None, CodeRuneA("WeakRune"), None))),
+        List(ParameterA(AtomAP(RangeS.internal(-1350), LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("WeakRune"), None))),
         Some(CodeRuneA("OptBorrowRune")),
         List(
           EqualsAR(RangeS.internal(-91),
@@ -150,7 +148,6 @@ object BuiltInFunctions {
             List(),
             BlockAE(
               RangeS.internal(-62),
-              List(LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
               List(
                 LockWeakAE(RangeS.internal(-91), LocalLoadAE(RangeS.internal(-62),CodeVarNameA("weakRef"), WeakP))))))))
 }

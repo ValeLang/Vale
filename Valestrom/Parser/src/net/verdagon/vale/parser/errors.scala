@@ -25,6 +25,9 @@ case class BadLetEqualsError(pos: Int) extends IParseError
 case class BadMutateEqualsError(pos: Int) extends IParseError
 case class BadLetEndError(pos: Int) extends IParseError
 
+case class BadVPRException(err: BadVPRError) extends RuntimeException
+case class BadVPRError(message: String) extends IParseError
+
 
 // TODO: Get rid of all the below when we've migrated away from combinators.
 

@@ -1,8 +1,8 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CaptureA, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, RuneAT, TemplateTemplataType, TemplexAR, UserFunctionA}
+import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, LocalVariableA, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, RuneAT, TemplateTemplataType, TemplexAR, UserFunctionA}
 import net.verdagon.vale.parser.{FinalP, OwnP, ShareP}
-import net.verdagon.vale.scout.{CodeLocationS, RangeS}
+import net.verdagon.vale.scout.{CodeLocationS, NotUsed, RangeS, Used}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
@@ -500,7 +500,7 @@ object DestructorTemplar {
         CodeRuneA("T") -> CoordTemplataType,
         CodeRuneA("V") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-1339), CaptureA(CodeVarNameA("this"), FinalP), None, CodeRuneA("T"), None))),
+        ParameterA(AtomAP(RangeS.internal(-1339), LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1672),
@@ -584,7 +584,7 @@ object DestructorTemplar {
           CodeRuneA("V") -> CoordTemplataType,
           CodeRuneA("XX") -> KindTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1340), CaptureA(CodeVarNameA("this"), FinalP), Some(AbstractAP), CodeRuneA("T"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1340), LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), Some(AbstractAP), CodeRuneA("T"), None))),
         Some(CodeRuneA("V")),
         List(
           EqualsAR(RangeS.internal(-1672),
@@ -663,7 +663,7 @@ object DestructorTemplar {
           CodeRuneA("V") -> CoordTemplataType,
           CodeRuneA("XX") -> KindTemplataType),
         List(
-          ParameterA(AtomAP(RangeS.internal(-1341), CaptureA(CodeVarNameA("this"), FinalP), Some(OverrideAP(RangeS.internal(-1133), CodeRuneA("I"))), CodeRuneA("T"), None))),
+          ParameterA(AtomAP(RangeS.internal(-1341), LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), Some(OverrideAP(RangeS.internal(-1133), CodeRuneA("I"))), CodeRuneA("T"), None))),
         Some(CodeRuneA("V")),
         List(
           EqualsAR(RangeS.internal(-1672),
@@ -757,7 +757,7 @@ object DestructorTemplar {
         CodeRuneA("V") -> CoordTemplataType,
         CodeRuneA("O") -> OwnershipTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-1342), CaptureA(CodeVarNameA("x"), FinalP), None, CodeRuneA("T"), None))),
+        ParameterA(AtomAP(RangeS.internal(-1342), LocalVariableA(CodeVarNameA("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1672),

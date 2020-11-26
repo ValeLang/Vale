@@ -2,12 +2,13 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // These are exposed by the compiled vale .obj/.o, they're
 // the start of a Vale native API.
 typedef struct ValeStr ValeStr;
 ValeStr* vale_newstr(int64_t length);
-char* vale_getstrbytes(ValeStr* str);
+char* vale_getstrchars(ValeStr* str);
 int64_t vale_getstrnumbytes(ValeStr* str);
 
 

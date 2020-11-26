@@ -4,6 +4,7 @@ import net.verdagon.vale.astronomer.LocalVariableA
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
+import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
 import net.verdagon.vale.{vassert, vfail}
 
@@ -47,7 +48,7 @@ class LocalHelper(
 
   def unletLocal(fate: FunctionEnvironmentBox, localVar: ILocalVariable2):
   (Unlet2) = {
-    fate.markVariableMoved(localVar.id)
+    fate.markLocalUnstackified(localVar.id)
     Unlet2(localVar)
   }
 
@@ -78,22 +79,18 @@ class LocalHelper(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
-    varId: IVarName2,
-    variability: Variability,
+    localVariableA: LocalVariableA,
     referenceType2: Coord):
   ILocalVariable2 = {
+    val varId = NameTranslator.translateVarNameStep(localVariableA.varName)
+    val variability = Conversions.evaluateVariability(localVariableA.variability)
+
     if (fate.getVariable(varId).nonEmpty) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
     }
 
-    val variable1 =
-      fate.scoutedLocals.find(localA => NameTranslator.translateVarNameStep(localA.varName) == varId) match {
-        case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Missing local variable information from FunctionA for " + fate.function.name + " for variable " + varId))
-        case Some(v) => v
-      }
-
     val mutable = Templar.getMutability(temputs, referenceType2.referend)
-    val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, variable1)
+    val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, localVariableA)
 
     val fullVarName = fate.fullName.addStep(varId)
     val localVar =
@@ -150,7 +147,7 @@ class LocalHelper(
                   throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
                 }
               }
-            fate.markVariableMoved(localVar.id)
+            fate.markLocalUnstackified(localVar.id)
             (Unlet2(localVar))
           }
           case Borrow | Share | Weak => {

@@ -73,7 +73,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |  add(&l, 5);
         |  add(&l, 9);
         |  add(&l, 7);
-        |  = l.get(1).get();
+        |  = l.get(1);
         |}
       """.stripMargin)
 
@@ -94,7 +94,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&l, 5);
           |  add(&l, 9);
           |  add(&l, 7);
-          |  = l.get(1).get();
+          |  = l.get(1);
           |}
         """.stripMargin)
 
@@ -135,7 +135,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&l, 9);
           |  add(&l, 7);
           |  set(&l, 1, 11);
-          |  = l.get(1).get();
+          |  = l.get(1);
           |}
         """.stripMargin)
 
@@ -165,7 +165,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |  add(&l, Marine(5));
           |  add(&l, Marine(9));
           |  add(&l, Marine(7));
-          |  = l.get(1).get().hp;
+          |  = l.get(1).hp;
           |}
         """.stripMargin)
 
@@ -216,5 +216,60 @@ class ArrayListTest extends FunSuite with Matchers {
     main.variables.collect({ case AddressibleLocalVariable2(FullName2(_, CodeVarName2("m")), Varying, _) => })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+  }
+
+
+  test("Remove from middle") {
+    val compile = Compilation(
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        """
+          |struct Marine { hp int; }
+          |
+          |fn main() {
+          |  l = List<Marine>();
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
+          |  add(&l, Marine(9));
+          |  add(&l, Marine(11));
+          |  add(&l, Marine(13));
+          |  l.remove(2);
+          |  vassert(l.get(0).hp == 5);
+          |  vassert(l.get(1).hp == 7);
+          |  vassert(l.get(2).hp == 11);
+          |  vassert(l.get(3).hp == 13);
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector())
+  }
+
+
+
+
+  test("Remove from beginning") {
+    val compile = Compilation(
+      Samples.get("libraries/utils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        """
+          |struct Marine { hp int; }
+          |
+          |fn main() {
+          |  l = List<Marine>();
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
+          |  l.remove(0);
+          |  l.remove(0);
+          |  vassert(l.len() == 0);
+          |}
+        """.stripMargin)
+
+    compile.evalForReferend(Vector())
   }
 }

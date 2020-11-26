@@ -363,6 +363,15 @@ case class ArraySize2(array: ReferenceExpression2) extends ReferenceExpression2 
   }
 }
 
+case class Is2(left: ReferenceExpression2, right: ReferenceExpression2) extends ReferenceExpression2 {
+  vassert(left.resultRegister.reference == right.resultRegister.reference)
+
+  override def resultRegister = ReferenceRegister2(Coord(Share, Bool2()))
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ left.all(func) ++ right.all(func)
+  }
+}
+
 case class VoidLiteral2() extends ReferenceExpression2 {
   override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
 

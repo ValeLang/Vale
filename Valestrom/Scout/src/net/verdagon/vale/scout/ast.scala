@@ -96,6 +96,7 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 sealed trait ICitizenAttributeS
 sealed trait IFunctionAttributeS
 case object ExternS extends IFunctionAttributeS with ICitizenAttributeS // For optimization later
+case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS
 case object ExportS extends IFunctionAttributeS with ICitizenAttributeS
 case object UserFunctionS extends IFunctionAttributeS // Whether it was written by a human. Mostly for tests right now.
 
@@ -195,9 +196,6 @@ object structSName {
 case class ParameterS(
     // Note the lack of a VariabilityP here. The only way to get a variability is with a Capture.
     pattern: AtomSP) {
-  // The name they supplied, or a generated one. This is actually not used at all by the templar,
-  // it's probably only used by IDEs. The templar gets arguments by index.
-  def name = pattern.name
 }
 
 case class SimpleParameter1(

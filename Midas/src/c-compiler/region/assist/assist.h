@@ -50,6 +50,13 @@ public:
 
   LLVMTypeRef translateType(Reference* referenceM) override;
 
+  LLVMValueRef getCensusObjectId(
+      AreaAndFileAndLine checkerAFL,
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refM,
+      Ref refLE) override;
+
   Ref upcastWeak(
       FunctionState* functionState,
       LLVMBuilderRef builder,

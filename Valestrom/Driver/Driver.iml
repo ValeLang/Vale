@@ -13,7 +13,7 @@
     <orderEntry type="module" module-name="Highlighter" />
     <orderEntry type="module" module-name="Hinputs" />
     <orderEntry type="module" module-name="Metal" />
-    <orderEntry type="module" module-name="Parser" />
+    <orderEntry type="module" module-name="Parser" exported="" />
     <orderEntry type="module" module-name="Samples" exported="" />
     <orderEntry type="module" module-name="Scout" />
     <orderEntry type="module" module-name="Templar" />
@@ -23,5 +23,6 @@
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="library" name="org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1" level="project" />
     <orderEntry type="library" name="commons-lang:commons-lang:2.6" level="project" />
+    <orderEntry type="library" exported="" name="net.liftweb:lift-json_2.12:3.3.0-RC1" level="project" />
   </component>
 </module>

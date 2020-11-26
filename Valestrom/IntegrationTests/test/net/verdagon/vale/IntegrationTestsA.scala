@@ -149,6 +149,36 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
+  test("=== true") {
+    val compile = Compilation(
+      """
+        |struct MyStruct { a int; }
+        |fn main() bool {
+        |  a = MyStruct(7);
+        |  = &a === &a;
+        |}
+      """.stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+  }
+
+  test("=== false") {
+    val compile = Compilation(
+      """
+        |struct MyStruct { a int; }
+        |fn main() bool {
+        |  a = MyStruct(7);
+        |  b = MyStruct(7);
+        |  = &a === &b;
+        |}
+      """.stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonBool(false)
+  }
+
+  test("mut swapping locals") {
+    val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
   // Known failure 2020-08-20
   test("Tests virtual doesn't get called if theres a better override") {
     val compile = Compilation(
@@ -531,5 +561,53 @@ class IntegrationTestsA extends FunSuite with Matchers {
     } catch {
       case ConstraintViolatedException(_) => // good!
     }
+  }
+
+  // This test is here because we had a bug where the compiler was enforcing that we unstackify
+  // the same locals from all branches of if, even if they were constraint refs.
+  test("Using same constraint ref from both branches of if") {
+    val compile = Compilation(
+      """
+        |struct Moo {}
+        |fn foo(a &Moo) int { 41 }
+        |fn bork(a &Moo) int {
+        |  if (false) {
+        |    ret foo(a);
+        |  } else if (false) {
+        |    ret foo(a);
+        |  } else {
+        |    // continue
+        |  }
+        |  ret foo(a) + 1;
+        |}
+        |fn main() int {
+        |  ret bork(&Moo());
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+
+  // Compiler should be fine with moving things from if statements if we ret out.
+  test("Moving same thing from both branches of if") {
+    val compile = Compilation(
+      """
+        |struct Moo {}
+        |fn foo(a Moo) int { 41 }
+        |fn bork(a Moo) int {
+        |  if (false) {
+        |    ret foo(a);
+        |  } else if (false) {
+        |    ret foo(a);
+        |  } else {
+        |    // continue
+        |  }
+        |  ret 42;
+        |}
+        |fn main() int {
+        |  ret bork(Moo());
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 }

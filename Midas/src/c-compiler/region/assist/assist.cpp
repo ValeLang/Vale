@@ -520,6 +520,32 @@ Ref Assist::getUnknownSizeArrayLength(
   return getUnknownSizeArrayLengthStrong(globalState, functionState, builder, &referendStructs, usaRefMT, arrayRef);
 }
 
+
+LLVMValueRef Assist::getCensusObjectId(
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref ref) {
+  if (refM == globalState->metalCache.intRef) {
+    return constI64LE(globalState, -2);
+  } else if (refM == globalState->metalCache.boolRef) {
+    return constI64LE(globalState, -3);
+  } else if (refM == globalState->metalCache.neverRef) {
+    return constI64LE(globalState, -4);
+  } else if (refM == globalState->metalCache.floatRef) {
+    return constI64LE(globalState, -5);
+  } else if (refM->location == Location::INLINE) {
+    return constI64LE(globalState, -1);
+  } else {
+    auto controlBlockPtrLE =
+        referendStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
+    auto exprLE =
+        getObjIdFromControlBlockPtr(globalState, builder, refM->referend, controlBlockPtrLE);
+    return exprLE;
+  }
+}
+
 LLVMValueRef Assist::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
@@ -540,8 +566,7 @@ LLVMValueRef Assist::checkValidReference(
       defaultImmutables.checkValidReference(checkerAFL, functionState, builder, &referendStructs, refM, refLE);
     } else {
       if (refM->ownership == Ownership::BORROW) {
-        regularCheckValidReference(checkerAFL, globalState, functionState, builder,
-            &referendStructs, refM, refLE);
+        regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
       } else if (refM->ownership == Ownership::WEAK) {
         wrcWeaks.buildCheckWeakRef(checkerAFL, functionState, builder, refM, ref);
       } else

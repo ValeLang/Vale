@@ -44,6 +44,7 @@ enum
     OPT_FLARES,
     OPT_GEN_HEAP,
     OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE,
+    OPT_PRINT_MEM_OVERHEAD,
     OPT_CENSUS,
     OPT_REGION_OVERRIDE,
     OPT_FILENAMES,
@@ -86,6 +87,7 @@ static opt_arg_t args[] =
     { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
     { "gen-heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
     { "elide-checks-for-known-live", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE },
+    { "print-mem-overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
     { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
     { "region-override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
     { "ir", '\0', OPT_ARG_NONE, OPT_IR },
@@ -243,6 +245,17 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
               opt->elideChecksForKnownLive = true;
             } else if (s.arg_val == std::string("off")) {
               opt->elideChecksForKnownLive = false;
+            } else assert(false);
+            break;
+          }
+
+          case OPT_PRINT_MEM_OVERHEAD: {
+            if (!s.arg_val) {
+              opt->printMemOverhead = true;
+            } else if (s.arg_val == std::string("on")) {
+              opt->printMemOverhead = true;
+            } else if (s.arg_val == std::string("off")) {
+              opt->printMemOverhead = false;
             } else assert(false);
             break;
           }

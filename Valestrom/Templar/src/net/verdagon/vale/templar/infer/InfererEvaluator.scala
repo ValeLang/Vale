@@ -968,7 +968,7 @@ class InfererEvaluator[Env, State](
         maybeInferencesH match {
           case imc @ InferMatchConflict(_, _, _, _) => {
             // None from the match means something conflicted, bail!
-            return (InferEvaluateConflict(inferences.inferences, range, "Failed to match known left against the right side!", List(imc)))
+            return (InferEvaluateConflict(inferences.inferences, range, "Failed to match known left against the right side!\nLeft: " + leftTemplata + "\nRight rule: " + rightRule, List(imc)))
           }
           case InferMatchSuccess(rightMatchDeeplySatisfied) => {
             (InferEvaluateSuccess(leftTemplata, leftDeeplySatisfied && rightMatchDeeplySatisfied))

@@ -24,16 +24,15 @@ fn add<E>(list &List<E>, newElement E) {
   mut list.array[list.size] = Some<E>(newElement);
   mut list.size = list.size + 1;
 }
-// todo make that return a &E
-fn get<E>(list &List<E>, index int) &Opt<E> {
+fn get<E>(list &List<E>, index int) &E {
   a = list.array;
-  = a[index];
+  = a[index].get();
 }
 fn set<E>(list &List<E>, index int, value E) void {
   mut list.array[index] = Some(value);
 }
 fn toArray<M, E>(list &List<E>) Array<M, E> rules(M Mutability) {
-  Array<M, E>(list.len(), &IFunction1<mut, int, E>((i){ list.get(i).get()}))
+  Array<M, E>(list.len(), &IFunction1<mut, int, E>((i){ list.get(i) }))
 }
 fn toList<E>(arr &Array<_, E>) List<E> {
   list = List<E>();
@@ -47,7 +46,7 @@ fn each<E, F>(list &List<E>, func F) void {
   i! = 0;
   l = len(&list);
   while (i < l) {
-    func(list.get(i).get());
+    func(list.get(i));
     mut i = i + 1;
   }
 }
@@ -56,10 +55,31 @@ fn contains<E>(list &List<E>, element E) bool {
   i! = 0;
   l = len(&list);
   while (i < l) {
-    if (list.get(i).get() == element) {
+    if (list.get(i) == element) {
       ret true;
     }
     mut i = i + 1;
   }
   ret false;
+}
+
+
+fn remove<E>(list &List<E>, removeAtIndex int) E {
+  if (removeAtIndex < 0) {
+    panic("Can't remove at negative index!");
+  }
+  if (removeAtIndex >= list.size) {
+    panic("Can't remove, index out of bounds!");
+  }
+
+  temp = (mut list.array[list.size - 1] = None<E>());
+  i! = list.size - 2;
+  while (i >= removeAtIndex) {
+    mut temp = (mut list.array[i] = (mut temp = None<E>()));
+    mut i = i - 1;
+  }
+
+  mut list.size = list.size - 1;
+
+  ret temp^.get();
 }

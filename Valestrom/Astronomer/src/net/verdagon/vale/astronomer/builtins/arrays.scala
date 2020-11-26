@@ -29,8 +29,8 @@ object Arrays {
         CodeRuneA("M") -> MutabilityTemplataType,
         CodeRuneA("R") -> CoordTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-121), CaptureA(CodeVarNameA("size"), FinalP), None, CodeRuneA("I"), None)),
-        ParameterA(AtomAP(RangeS.internal(-122), CaptureA(CodeVarNameA("generator"), FinalP), None, CodeRuneA("Generator"), None))),
+        ParameterA(AtomAP(RangeS.internal(-121), LocalVariableA(CodeVarNameA("size"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None)),
+        ParameterA(AtomAP(RangeS.internal(-122), LocalVariableA(CodeVarNameA("generator"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("Generator"), None))),
       Some(CodeRuneA("R")),
       List(
         EqualsAR(RangeS.internal(-1403),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("ArrayMutability"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.internal(-56),mutability))),
@@ -68,9 +68,6 @@ object Arrays {
           List(),
           BlockAE(
             RangeS.internal(-56),
-            List(
-              LocalVariableA(CodeVarNameA("size"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-              LocalVariableA(CodeVarNameA("generator"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
             List(
               ConstructArrayAE(
                 RangeS.internal(-56),

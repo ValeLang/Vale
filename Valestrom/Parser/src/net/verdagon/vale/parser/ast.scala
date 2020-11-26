@@ -76,6 +76,7 @@ case class InterfaceP(
 sealed trait IFunctionAttributeP
 case class AbstractAttributeP(range: Range) extends IFunctionAttributeP
 case class ExternAttributeP(range: Range) extends IFunctionAttributeP
+case class BuiltinAttributeP(range: Range, generatorName: StringP) extends IFunctionAttributeP
 case class ExportAttributeP(range: Range) extends IFunctionAttributeP
 case class PureAttributeP(range: Range) extends IFunctionAttributeP
 

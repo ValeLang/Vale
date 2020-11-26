@@ -95,4 +95,24 @@ class VirtualTests extends FunSuite with Matchers {
     vassert(doThing.header.params(0).virtuality.get == Abstract2)
   }
 
+
+  test("Interface with method with param of substruct") {
+    val compile = Compilation.multiple(
+      List(
+        Samples.get("libraries/opt.vale"),
+        Samples.get("libraries/list.vale"),
+        """
+          |interface SectionMember {}
+          |struct Header {}
+          |impl SectionMember for Header;
+          |fn collectHeaders2(header &List<&Header>, virtual this &SectionMember) abstract;
+          |fn collectHeaders2(header &List<&Header>, this &Header impl SectionMember) { }
+        """.stripMargin))
+    val temputs = compile.getHamuts()
+  }
+
+
+
+
+
 }

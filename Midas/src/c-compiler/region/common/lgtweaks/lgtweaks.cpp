@@ -128,6 +128,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
   if (refM->ownership == Ownership::SHARE) {
     // Shares never have weak refs
     assert(false);
+    return nullptr;
   } else {
     auto lgtiPtrLE =
         LLVMBuildStructGEP(

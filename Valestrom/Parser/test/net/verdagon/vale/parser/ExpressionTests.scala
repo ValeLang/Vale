@@ -17,7 +17,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   }
 
   test("Simple string") {
-    compile(CombinatorParsers.expression, """"moo"""") shouldHave { case StrLiteralPE(_, "moo") => }
+    compile(CombinatorParsers.stringExpr, """"moo"""") shouldHave { case StrLiteralPE(_, "moo") => }
   }
 
   test("String with quote inside") {
@@ -26,6 +26,34 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("String with apostrophe inside") {
     compile(CombinatorParsers.expression, """"m'oo"""") shouldHave { case StrLiteralPE(_, "m'oo") => }
+  }
+
+  test("Short string interpolating") {
+    compile(CombinatorParsers.expression, """"bl{4}rg"""") shouldHave { case StrInterpolatePE(_, List(StrLiteralPE(_, "bl"), IntLiteralPE(_, 4), StrLiteralPE(_, "rg"))) => }
+  }
+
+  test("Short string interpolating with call") {
+    compile(CombinatorParsers.expression, """"bl{ns(4)}rg"""") shouldHave {
+      case StrInterpolatePE(_,
+        List(
+          StrLiteralPE(_, "bl"),
+          FunctionCallPE(_, _, _, _, LookupPE(StringP(_, "ns"), _), List(IntLiteralPE(_, 4)), _),
+          StrLiteralPE(_, "rg"))) =>
+    }
+  }
+
+  test("Long string interpolating") {
+    compile(CombinatorParsers.expression, "\"\"\"bl{4}rg\"\"\"") shouldHave { case StrInterpolatePE(_, List(StrLiteralPE(_, "bl"), IntLiteralPE(_, 4), StrLiteralPE(_, "rg"))) => }
+  }
+
+  test("Long string interpolating with call") {
+    compile(CombinatorParsers.expression, "\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave {
+      case StrInterpolatePE(_,
+      List(
+        StrLiteralPE(_, "bl\""),
+        FunctionCallPE(_, _, _, _, LookupPE(StringP(_, "ns"), _), List(IntLiteralPE(_, 4)), _),
+        StrLiteralPE(_, "rg"))) =>
+    }
   }
 
   test("4") {

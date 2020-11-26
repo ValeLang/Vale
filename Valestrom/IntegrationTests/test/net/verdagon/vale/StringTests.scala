@@ -58,6 +58,15 @@ class StringTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(11)
   }
 
+  test("String interpolate") {
+    val compile = Compilation(
+      "fn +(s str, i int) str { s + str(i) }\n" +
+      "fn ns(i int) int { i }\n" +
+      "fn main() str { \"\"\"bl\"{ns(4)}rg\"\"\" }")
+
+    compile.evalForReferend(Vector()) shouldEqual VonStr("bl\"4rg")
+  }
+
   // Intentional failure 2020.09.26
   test("Slice a slice") {
     val compile = Compilation(Samples.get("programs/strings/complex/strlen.vale"))

@@ -329,7 +329,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new Destroy(
         readExpression(cache, expression["structExpr"]),
         readReference(cache, expression["structType"]),
-        expression["structKnownLive"],
         readArray(cache, expression["localTypes"], readReference),
         readArray(cache, expression["localIndices"], readLocal));
   } else if (type == "MemberLoad") {
@@ -396,7 +395,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
         readUnknownSizeArray(cache, expression["arrayReferend"]),
-        expression["arrayKnownLive"],
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
         readInterfaceReferend(cache, expression["consumerReferend"]),
@@ -419,7 +417,6 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
         readKnownSizeArray(cache, expression["arrayReferend"]),
-        expression["arrayKnownLive"],
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
         readPrototype(cache, expression["consumerMethod"]),

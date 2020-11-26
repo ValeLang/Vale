@@ -96,6 +96,16 @@ inline void buildPrintAreaAndFileAndLine(GlobalState* globalState, LLVMBuilderRe
   }
 }
 
+inline void buildPrintIndent(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder) {
+  std::string indentStr = "";
+  for (int i = 0; i < functionState->instructionDepthInAst; i++)
+    indentStr += " ";
+  buildPrint(globalState, builder, indentStr);
+}
+
 template<typename... T>
 inline void buildFlare(
     AreaAndFileAndLine from,
@@ -166,6 +176,10 @@ LLVMValueRef addExtern(
 
 inline LLVMValueRef ptrToVoidPtrLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
   return LLVMBuildPointerCast(builder, ptrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "asVoidP");
+}
+
+inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
+  return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "asI64");
 }
 
 #endif

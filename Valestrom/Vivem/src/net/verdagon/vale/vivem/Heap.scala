@@ -302,6 +302,12 @@ class Heap(in_vivemDout: PrintStream) {
     objectsById.get(reference.allocId).referend
   }
 
+  def isSameInstance(callId: CallId, left: ReferenceV, right: ReferenceV): ReferenceV = {
+    val ref = allocateTransient(ShareH, InlineH, BoolV(left.allocId == right.allocId))
+    incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), ref)
+    ref
+  }
+
   def incrementReferenceHoldCount(expressionId: ExpressionId, reference: ReferenceV) = {
     incrementObjectRefCount(RegisterHoldToObjectReferrer(expressionId, reference.ownership), reference.allocId)
   }

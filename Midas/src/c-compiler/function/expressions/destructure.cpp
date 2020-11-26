@@ -21,7 +21,6 @@ Ref translateDestructure(
           globalState, functionState, blockState, builder, destructureM->structExpr);
   functionState->defaultRegion->checkValidReference(FL(),
       functionState, builder, destructureM->structType, structRef);
-//  buildFlare(FL(), globalState, functionState, builder, "structLE is ", structLE);
 
   auto structReferend =
       dynamic_cast<StructReferend *>(destructureM->structType->referend);

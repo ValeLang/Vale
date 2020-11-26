@@ -104,6 +104,16 @@ Ref translateExpressionInner(
     // what was in it.
     auto localAddr = blockState->getLocalAddr(localStore->local->id);
 
+    auto refToStore =
+        translateExpression(
+            globalState, functionState, blockState, builder, localStore->sourceExpr);
+    if (localStore->local->type->referend == globalState->metalCache.innt) {
+      buildFlare(FL(), globalState, functionState, builder, "Storing ", refToStore);
+    }
+
+    // We need to load the old ref *after* we evaluate the source expression,
+    // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
+    // See mutswaplocals.vale for test case.
     auto oldRefLE =
         wrap(
             functionState->defaultRegion,
@@ -111,12 +121,7 @@ Ref translateExpressionInner(
             LLVMBuildLoad(builder, localAddr, localStore->localName.c_str()));
     functionState->defaultRegion->checkValidReference(FL(),
         functionState, builder, localStore->local->type, oldRefLE);
-    auto refToStore =
-        translateExpression(
-            globalState, functionState, blockState, builder, localStore->sourceExpr);
-    if (localStore->local->type->referend == globalState->metalCache.innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Storing ", refToStore);
-    }
+
     auto toStoreLE =
         functionState->defaultRegion->checkValidReference(FL(),
             functionState, builder, localStore->local->type, refToStore);
@@ -170,7 +175,7 @@ Ref translateExpressionInner(
     auto resultLE =
         translateConstruct(
             AFL("NewStruct"), globalState, functionState, builder, newStruct->resultType, memberExprs);
-    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, newStruct->resultType, resultLE);
+
     return resultLE;
   } else if (auto consecutor = dynamic_cast<Consecutor*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -191,7 +196,7 @@ Ref translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateDestructure(globalState, functionState, blockState, builder, destructureM);
   } else if (auto memberLoad = dynamic_cast<MemberLoad*>(expr)) {
-    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", memberLoad->memberName);
     auto structRef =
         translateExpression(
             globalState, functionState, blockState, builder, memberLoad->structExpr);
@@ -417,19 +422,19 @@ Ref translateExpressionInner(
     // what was in it.
 
 
-    auto oldValueLE =
-        functionState->defaultRegion->loadElementFromUSAWithoutUpgrade(
-            functionState, builder, arrayType, arrayReferend,
-            arrayRefLE, arrayKnownLive, indexRef);
-    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, arrayReferend->rawArray->elementType, oldValueLE);
-    // We dont acquireReference here because we aren't aliasing the reference, we're moving it out.
-
 
     auto valueToStoreLE =
         translateExpression(
             globalState, functionState, blockState, builder, unknownSizeArrayStore->sourceExpr);
 
     functionState->defaultRegion->checkValidReference(FL(), functionState, builder, arrayReferend->rawArray->elementType, valueToStoreLE);
+
+    auto oldValueLE =
+        functionState->defaultRegion->loadElementFromUSAWithoutUpgrade(
+            functionState, builder, arrayType, arrayReferend,
+            arrayRefLE, arrayKnownLive, indexRef);
+    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, arrayReferend->rawArray->elementType, oldValueLE);
+    // We dont acquireReference here because we aren't aliasing the reference, we're moving it out.
 
     functionState->defaultRegion->storeElementInUSA(
         functionState, builder,
@@ -462,7 +467,7 @@ Ref translateExpressionInner(
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateConstructUnknownSizeArray(globalState, functionState, blockState, builder, constructUnknownSizeArray);
   } else if (auto call = dynamic_cast<Call*>(expr)) {
-    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", call->function->name->name);
     auto resultLE = translateCall(globalState, functionState, blockState, builder, call);
     return resultLE;
   } else if (auto externCall = dynamic_cast<ExternCall*>(expr)) {

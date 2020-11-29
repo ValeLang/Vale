@@ -86,7 +86,7 @@ fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
 
   = if (offsetAfterBegin < 0) {
       r Opt<StrSlice> = None<StrSlice>();
-      = r;
+      = ^r;
     } else {
       r Opt<StrSlice> =
           Some<StrSlice>(
@@ -94,7 +94,7 @@ fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
                   haystack.string,
                   haystack.begin + offsetAfterBegin,
                   haystack.begin + offsetAfterBegin + needle.len()));
-      = r;
+      = ^r;
     }
 }
 
@@ -115,7 +115,7 @@ fn splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
   maybeOffsetAfterBegin = find(haystack, needle);
   = if (maybeOffsetAfterBegin.isEmpty()) {
       r Opt<SplitResult> = None<SplitResult>();
-      = r;
+      = ^r;
     } else {
       offsetAfterBegin = maybeOffsetAfterBegin.get();
       r Opt<SplitResult> =
@@ -129,7 +129,7 @@ fn splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
                       haystack.string,
                       offsetAfterBegin.begin + needle.len(),
                       haystack.end)));
-      = r;
+      = ^r;
     }
 }
 
@@ -289,3 +289,49 @@ fn toAscii(s StrSlice) int {
 fn fromAscii(code int) str {
   ret vstr_fromascii(code);
 }
+
+
+
+fn isWhitespace(s str) bool { isWhitespace(s.slice()) }
+fn isWhitespace(s! StrSlice) bool {
+  while (len(s) > 0) {
+    if (" \r\n\t".find(s).isEmpty()) {
+      // then its not whitespace
+      ret false;
+    }
+    mut s = s.slice(1);
+  }
+  ret true;
+}
+
+
+fn ltrimnl(s str) StrSlice { ltrimnl(s.slice()) }
+fn ltrimnl(s! StrSlice) StrSlice {
+  while (true) {
+    if (s == "") {
+      ret s;
+    }
+    if (s.slice(0, 1) != "\n") {
+      ret s;
+    }
+    mut s = s.slice(1, s.len());
+  }
+  panic("unreachable");
+}
+fn rtrimnl(s str) StrSlice { rtrimnl(s.slice()) }
+fn rtrimnl(s! StrSlice) StrSlice {
+  whitespace = " \r\n\t";
+  while (true) {
+    if (s == "") {
+      ret s;
+    }
+    if (s.slice(s.len() - 1, s.len()) != "\n") {
+      ret s;
+    }
+    mut s = s.slice(0, s.len() - 1);
+  }
+  panic("unreachable");
+}
+
+fn trimnl(s str) StrSlice { trimnl(s.slice()) }
+fn trimnl(s! StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }

@@ -1,5 +1,6 @@
 
 fn vstr_toascii(s str, begin int, end int) int extern;
+fn vstr_fromascii(code int) str extern;
 
 fn vstr_indexOf(
   haystackContainer str,
@@ -283,4 +284,8 @@ fn int(s! StrSlice) Opt<int> {
 fn toAscii(s StrSlice) int {
   vassert(s.begin + 1 <= s.end);
   = vstr_toascii(s.string, s.begin, s.end);
+}
+
+fn fromAscii(code int) str {
+  ret vstr_fromascii(code);
 }

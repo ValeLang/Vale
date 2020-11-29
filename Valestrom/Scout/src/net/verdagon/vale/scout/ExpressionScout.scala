@@ -11,7 +11,7 @@ import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
 object ExpressionScout {
   sealed trait IScoutResult[+T <: IExpressionSE]
   // Will contain the address of a local.
-  case class LocalLookupResult(range: RangeS, name: IVarNameS) extends IScoutResult[IExpressionSE]
+  case class LocalLookupResult(range: RangeS, name: IVarNameS, targetOwnership: OwnershipP) extends IScoutResult[IExpressionSE]
   // Looks up something that's not a local.
   // Should be just a function, but its also super likely that the user just forgot
   // to declare a variable, and we interpreted it as an outside lookup.
@@ -66,9 +66,8 @@ object ExpressionScout {
               stackFrameBeforeConstructing.parentEnv.name match {
                 case FunctionNameS(n, _) => StringP(rangeAtEnd, n)
                 case _ => vwat()
-              }, None),
-            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), Range.zero, false, StringP(rangeAtEnd, n))),
-            BorrowP)
+              }, None, BorrowP),
+            constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None, BorrowP), Range.zero, false, OwnP, StringP(rangeAtEnd, n))))
 
         val (stackFrameAfterConstructing, NormalResult(_, constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, constructorCallP)
@@ -137,14 +136,14 @@ object ExpressionScout {
           })
         (stackFrame1, NormalResult(rangeS, addedExpr), partsSelfUses, partsChildUses)
       }
-      case LendPE(range, innerPE, targetOwnership) => {
+      case OwnershippedPE(range, innerPE, targetOwnership) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, targetOwnership)
+          scoutExpressionAndCoerce(stackFrame0, innerPE)
         (stackFrame1, NormalResult(evalRange(range), LendSE(evalRange(range), inner1, targetOwnership)), innerSelfUses, innerChildUses)
       }
       case ReturnPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
+          scoutExpressionAndCoerce(stackFrame0, innerPE)
         (stackFrame1, NormalResult(evalRange(range), ReturnSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
       case IntLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), IntLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
@@ -152,32 +151,30 @@ object ExpressionScout {
       case StrLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), StrLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
       case FloatLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), FloatLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
 
-      case MethodCallPE(range, container, operatorRange, targetOwnership, isMapCall, memberLookup, methodArgs) => {
-        val maybeLendContainer =
-          if (targetOwnership == BorrowP)
-            LendPE(Range(range.begin, range.begin), container, BorrowP)
-          else
-            container
+      case MethodCallPE(range, container, operatorRange, isMapCall, memberLookup, methodArgs) => {
         // Correct method calls like anExpr.bork(4) from FunctionCall(Dot(anExpr, bork), List(4))
         // to FunctionCall(bork, List(anExpr, 4))
-        val newExprP = FunctionCallPE(range, None, operatorRange, isMapCall, memberLookup, maybeLendContainer :: methodArgs, OwnP)
+        val newExprP = FunctionCallPE(range, None, operatorRange, isMapCall, memberLookup, container :: methodArgs)
         // Try again, with this new transformed expression.
         scoutExpression(stackFrame0, newExprP)
       }
-      case MagicParamLookupPE(range) => {
+      case MagicParamLookupPE(range, targetOwnership) => {
+        if (targetOwnership != OwnP)
+          vimpl()
+
         val name = MagicParamNameS(Scout.evalPos(stackFrame0.file, range.begin))
-        val lookup = LocalLookupResult(evalRange(range), name)
+        val lookup = LocalLookupResult(evalRange(range), name, targetOwnership)
         // We dont declare it here, because then scoutBlock will think its a local and
         // hide it from those above.
         //   val declarations = VariableDeclarations(List(VariableDeclaration(lookup.name, FinalP)))
         // Leave it to scoutLambda to declare it.
         (stackFrame0, lookup, noVariableUses.markMoved(name), noVariableUses)
       }
-      case LookupPE(StringP(range, name), None) => {
+      case LookupPE(StringP(range, name), None, targetOwnershipP) => {
         val (lookup, declarations) =
           stackFrame0.findVariable(name) match {
             case Some(fullName) => {
-              (LocalLookupResult(evalRange(range), fullName), noDeclarations)
+              (LocalLookupResult(evalRange(range), fullName, targetOwnershipP), noDeclarations)
             }
             case None => {
               if (stackFrame0.parentEnv.allUserDeclaredRunes().contains(CodeRuneS(name))) {
@@ -191,10 +188,10 @@ object ExpressionScout {
       }
       case DestructPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
+          scoutExpressionAndCoerce(stackFrame0, innerPE)
         (stackFrame1, NormalResult(evalRange(range), DestructSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
-      case LookupPE(StringP(range, templateName), Some(TemplateArgsP(_, templateArgs))) => {
+      case LookupPE(StringP(range, templateName), Some(TemplateArgsP(_, templateArgs)), targetOwnership) => {
         val result =
           NormalResult(
             evalRange(range),
@@ -204,9 +201,9 @@ object ExpressionScout {
               templateArgs.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))))
         (stackFrame0, result, noVariableUses, noVariableUses)
       }
-      case FunctionCallPE(range, inline, _, isMapCall, callablePE, args, borrowCallable) => {
+      case FunctionCallPE(range, inline, _, isMapCall, callablePE, args) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, callablePE, borrowCallable)
+          scoutExpressionAndCoerce(stackFrame0, callablePE)
         val (stackFrame2, args1, argsSelfUses, argsChildUses) =
           scoutElementsAsExpressions(stackFrame1, args)
         val result = NormalResult(evalRange(range), FunctionCallSE(evalRange(range), callable1, args1))
@@ -299,7 +296,7 @@ object ExpressionScout {
       case let @ LetPE(range, rulesP, patternP, exprPE) => {
         val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)
         val (stackFrame1, expr1, selfUses, childUses) =
-          scoutExpressionAndCoerce(stackFrame0, exprPE, OwnP);
+          scoutExpressionAndCoerce(stackFrame0, exprPE);
 
         val letFullName = LetNameS(codeLocation)
 
@@ -328,12 +325,12 @@ object ExpressionScout {
       }
       case MutatePE(mutateRange, destinationExprPE, sourceExprPE) => {
         val (stackFrame1, sourceExpr1, sourceInnerSelfUses, sourceChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, sourceExprPE, OwnP);
+          scoutExpressionAndCoerce(stackFrame0, sourceExprPE);
         val (stackFrame2, destinationResult1, destinationSelfUses, destinationChildUses) =
           scoutExpression(stackFrame1, destinationExprPE);
         val (mutateExpr1, sourceSelfUses) =
           destinationResult1 match {
-            case LocalLookupResult(range, name) => {
+            case LocalLookupResult(range, name, targetOwnership) => {
               (LocalMutateSE(range, name, sourceExpr1), sourceInnerSelfUses.markMutated(name))
             }
             case OutsideLookupResult(range, name) => {
@@ -345,50 +342,49 @@ object ExpressionScout {
           }
         (stackFrame2, NormalResult(evalRange(mutateRange), mutateExpr1), sourceSelfUses.thenMerge(destinationSelfUses), sourceChildUses.thenMerge(destinationChildUses))
       }
-      case DotPE(rangeP, containerExprPE, _, isMapCall, StringP(_, memberName)) => {
+      case DotPE(rangeP, containerExprPE, _, isMapCall, targetOwnership, StringP(_, memberName)) => {
         containerExprPE match {
           // Here, we're special casing lookups of this.x when we're in a constructor.
           // We know we're in a constructor if there's no `this` variable yet. After all,
           // in a constructor, `this` is just an imaginary concept until we actually
           // fill all the variables.
-          case LookupPE(StringP(range, "this"), _) if (stackFrame0.findVariable("this").isEmpty) => {
-            val result = LocalLookupResult(evalRange(range), ConstructingMemberNameS(memberName))
+          case LookupPE(StringP(range, "this"), _, _) if (stackFrame0.findVariable("this").isEmpty) => {
+            val result = LocalLookupResult(evalRange(range), ConstructingMemberNameS(memberName), targetOwnership)
             (stackFrame0, result, noVariableUses, noVariableUses)
           }
           case _ => {
             val (stackFrame1, containerExpr, selfUses, childUses) =
-              scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
+              scoutExpressionAndCoerce(stackFrame0, containerExprPE);
             (stackFrame1, NormalResult(evalRange(rangeP), DotSE(evalRange(rangeP), containerExpr, memberName, true)), selfUses, childUses)
           }
         }
       }
       case IndexPE(range, containerExprPE, List(indexExprPE)) => {
         val (stackFrame1, containerExpr1, containerSelfUses, containerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
+          scoutExpressionAndCoerce(stackFrame0, containerExprPE);
         val (stackFrame2, indexExpr1, indexSelfUses, indexChildUses) =
-          scoutExpressionAndCoerce(stackFrame1, indexExprPE, OwnP);
+          scoutExpressionAndCoerce(stackFrame1, indexExprPE);
         val dot1 = DotCallSE(evalRange(range), containerExpr1, indexExpr1)
         (stackFrame2, NormalResult(evalRange(range), dot1), containerSelfUses.thenMerge(indexSelfUses), containerChildUses.thenMerge(indexChildUses))
       }
     }
   }
 
-  // If we load an immutable with targetOwnershipIfLookupResult = Own or Borrow, it will just be Share.
   def scoutExpressionAndCoerce(
-      stackFramePE: StackFrame,  exprPE: IExpressionPE, targetOwnershipIfLookupResult: OwnershipP):
+      stackFramePE: StackFrame,  exprPE: IExpressionPE):
   (StackFrame, IExpressionSE, VariableUses, VariableUses) = {
     val (namesFromInsideFirst, firstResult1, firstInnerSelfUses, firstChildUses) =
       scoutExpression(stackFramePE, exprPE);
     val (firstExpr1, firstSelfUses) =
       firstResult1 match {
-        case LocalLookupResult(range, name) => {
+        case LocalLookupResult(range, name, targetOwnership) => {
           val uses =
-            targetOwnershipIfLookupResult match {
+            targetOwnership match {
               case BorrowP => firstInnerSelfUses.markBorrowed(name)
               case WeakP => firstInnerSelfUses.markBorrowed(name)
               case _ => firstInnerSelfUses.markMoved(name)
             }
-          (LocalLoadSE(range, name, targetOwnershipIfLookupResult), uses)
+          (LocalLoadSE(range, name, targetOwnership), uses)
         }
         case OutsideLookupResult(range, name) => {
           (OutsideLoadSE(range, name), firstInnerSelfUses)
@@ -403,13 +399,13 @@ object ExpressionScout {
   // Need a better name for this...
   // It's more like, scout elements as non-lookups, in other words,
   // if we get lookups then coerce them into moves.
-  def scoutElementsAsExpressions(stackFramePE: StackFrame,  exprs: List[IExpressionPE]):
+  def scoutElementsAsExpressions(stackFramePE: StackFrame, exprs: List[IExpressionPE]):
   (StackFrame, List[IExpressionSE], VariableUses, VariableUses) = {
     exprs match {
       case Nil => (stackFramePE, Nil, noVariableUses, noVariableUses)
       case firstPE :: restPE => {
         val (stackFrame1, firstExpr1, firstSelfUses, firstChildUses) =
-          scoutExpressionAndCoerce(stackFramePE, firstPE, OwnP)
+          scoutExpressionAndCoerce(stackFramePE, firstPE)
         val (finalStackFrame, rest1, restSelfUses, restChildUses) =
           scoutElementsAsExpressions(stackFrame1, restPE);
         (finalStackFrame, firstExpr1 :: rest1, firstSelfUses.thenMerge(restSelfUses), firstChildUses.thenMerge(restChildUses))

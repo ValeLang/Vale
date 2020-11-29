@@ -44,25 +44,25 @@ class ScoutParametersTests extends FunSuite with Matchers {
           AtomSP(_,
             CaptureS(CodeVarNameS("moo"),FinalP),
             None,
-            tcr @ ImplicitRuneS(_, 1),
+            tcr @ ImplicitRuneS(_, _),
             None)) => tcr
       }
 
     main.templateRules match {
       case List(
-        TypedSR(_, ImplicitRuneS(_, 0),KindTypeSR),
+        TypedSR(_, ImplicitRuneS(_, _),KindTypeSR),
         TypedSR(_, CodeRuneS("T"),CoordTypeSR),
-        TypedSR(_, ImplicitRuneS(_, 1),CoordTypeSR),
+        TypedSR(_, ImplicitRuneS(_, _),CoordTypeSR),
         ComponentsSR(_,
           TypedSR(_, CodeRuneS("T"),CoordTypeSR),
           List(
             TemplexSR(OwnershipST(_, OwnP)),
             TemplexSR(RuneST(_, ImplicitRuneS(_, 0))))),
         ComponentsSR(_,
-          TypedSR(_, ImplicitRuneS(_, 1),CoordTypeSR),
+          TypedSR(_, ImplicitRuneS(_, _),CoordTypeSR),
           List(
             TemplexSR(OwnershipST(_, BorrowP)),
-            TemplexSR(RuneST(_, ImplicitRuneS(_, 0)))))) =>
+            TemplexSR(RuneST(_, ImplicitRuneS(_, _)))))) =>
     }
 
     RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) match {

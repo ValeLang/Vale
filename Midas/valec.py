@@ -46,7 +46,7 @@ class ValeCompiler:
               o_files: List[str],
               exe_file: str) -> subprocess.CompletedProcess:
         if self.windows:
-            return procrun(["link.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + exe_file] + o_files)
+            return procrun(["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + exe_file] + o_files)
         else:
             return procrun(["clang-7", "-O3", "-lm", "-o", exe_file] + o_files)
 

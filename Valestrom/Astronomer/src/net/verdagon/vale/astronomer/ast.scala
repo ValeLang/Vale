@@ -78,6 +78,7 @@ case class StructMemberA(
     typeRune: IRuneA)
 
 case class ImplA(
+    range: RangeS,
     // The name of an impl is the human name of the subcitizen, see INSHN.
     name: ImplNameA,
     rulesFromStructDirection: List[IRulexAR],

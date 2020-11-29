@@ -88,7 +88,7 @@ object Terrain {
         |      loc.groupY + relativeLoc.groupY,
         |      relativeLoc.indexInGroup));
         |  };
-        |  = toArray<imm>(&result);
+        |  = toArray<imm>(result);
         |}
         |
         |fn str(loc: Location) {

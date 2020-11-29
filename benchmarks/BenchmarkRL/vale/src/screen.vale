@@ -57,7 +57,7 @@ struct StrBox {
                 mut y = y + 1;
             }
 
-            cells.add(q);
+            cells.add(q^);
 
             mut x = x + 1;
         }
@@ -65,7 +65,7 @@ struct StrBox {
         ret Screen(
             width,
             height,
-            cells,
+            cells^,
             "");
     }
 
@@ -81,7 +81,7 @@ struct StrBox {
         fg_color ScreenColor,
         character str
     ) {
-        cell = &self.cells.get(x).get().get(y).get();
+        cell = &self.cells.get(x).get(y);
 
         if (bg_color != cell.bg_color) {
             mut cell.bg_color = bg_color;
@@ -105,7 +105,7 @@ struct StrBox {
 
             y! = 0;
             while (y < self.height) {
-                if (self.cells.get(x).get().get(y).get().dirty) {
+                if (self.cells.get(x).get(y).dirty) {
                     self.paint_cell(x, y);
                 }
 
@@ -119,7 +119,7 @@ struct StrBox {
     }
 
     fn paint_cell(&self, x int, y int) {
-        cell = &self.cells.get(x).get().get(y).get();
+        cell = &self.cells.get(x).get(y);
 
         // For precise colors:
         // https://askubuntu.com/questions/558280/changing-colour-of-text-and-bg-of-terminal

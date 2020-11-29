@@ -1520,7 +1520,17 @@ Ref regularWeakAlias(
             functionState, builder,
             sourceRefMT, targetRefMT, structReferendM, objPtrLE));
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(sourceRefMT->referend)) {
-    assert(false); // impl
+    auto objPtrLE =
+        referendStructs->makeInterfaceFatPtr(
+            FL(), functionState, builder, sourceRefMT,
+            globalState->region->checkValidReference(FL(), functionState, builder, sourceRefMT,
+                sourceRef));
+    return wrap(
+        globalState->region,
+        targetRefMT,
+        wrcWeaks->assembleInterfaceWeakRef(
+            functionState, builder,
+            sourceRefMT, targetRefMT, interfaceReferend, objPtrLE));
   } else assert(false);
 }
 

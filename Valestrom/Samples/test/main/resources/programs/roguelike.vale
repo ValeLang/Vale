@@ -44,8 +44,8 @@ fn display(
     playerCol int)
 {
   toPrint! = "";
-  eachI (&board) (rowI, row){
-    eachI (&row) (cellI, cell){
+  eachI (board) (rowI, row){
+    eachI (row) (cellI, cell){
       charToPrint! = cell;
 
       if (and(rowI == playerRow, cellI == playerCol)) {

@@ -6,9 +6,9 @@ fn main() int {
 
   Ship() = (mut b = (mut a = (mut b = Ship())));
   print("goin for it");
-  Ship() = a;
+  Ship() = ^a;
   print("did new a");
-  Ship() = b;
+  Ship() = ^b;
   print("did new b");
   ret 7;
 }

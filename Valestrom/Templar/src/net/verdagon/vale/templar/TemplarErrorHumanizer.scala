@@ -51,6 +51,10 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find member " + memberName + "!"
       }
+      case CouldntReconcileIfBranches(range, thenResultType, elseResultType) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Couldn't find common type between then block result type " + thenResultType + " and else block result type " + elseResultType
+      }
       case BodyResultDoesntMatch(range, functionName, expectedReturnType, resultType) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Function " + printableName(filenamesAndSources, functionName) + " return type " + expectedReturnType + " doesn't match body's result: " + resultType
@@ -62,6 +66,10 @@ object TemplarErrorHumanizer {
       case CouldntFindTypeT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find any type named `" + name + "`!"
+      }
+      case CantExtendStruct(range, structRef) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": `" + structRef + "` is not an interface; can only implement an interface. (Perhaps you swapped the struct and interface positions?)"
       }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +

@@ -28,5 +28,5 @@ fn sum(opt &MySome impl MyOption) int {
 
 fn main() int {
   list = MyList(7, MySome(MyList(17, MySome(MyList(18, MyNone())))));
-  = sum(&list);
+  = sum(list);
 }

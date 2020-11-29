@@ -22,9 +22,11 @@ case class CantMutateUnstackifiedLocal(range: RangeS, localId: IVarName2) extend
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarName2) extends ICompileErrorT
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: Signature2) extends ICompileErrorT
 case class CantMutateFinalMember(range: RangeS, structRef2: StructRef2, memberName: FullName2[IVarName2]) extends ICompileErrorT
+case class CouldntReconcileIfBranches(range: RangeS, thenResultType: Coord, elseResultType: Coord) extends ICompileErrorT
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT
 case class IfConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class WhileConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
+case class CantExtendStruct(range: RangeS, struct: StructRef2) extends ICompileErrorT
 case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test
 

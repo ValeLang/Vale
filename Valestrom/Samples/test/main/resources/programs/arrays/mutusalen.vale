@@ -8,5 +8,5 @@
 
 fn main() int {
   a = Arr<mut>(5, {_});
-  = len(&a);
+  = len(a);
 }

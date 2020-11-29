@@ -154,3 +154,11 @@ int vstr_toascii(ValeStr* s, int begin, int end) {
   return (int)*(chars + begin);
 }
 
+ValeStr* vstr_fromascii(int code) {
+  ValeStr* result = vale_newstr(1);
+  char* dest = vale_getstrchars(result);
+  *dest = code;
+  return result;
+}
+
+

@@ -63,7 +63,7 @@ class OptTests extends FunSuite with Matchers {
           |struct Spaceship { fuel int; }
           |fn main() int {
           |  s = Spaceship(42);
-          |  ret Some<&Spaceship>(&s).borrowGet().fuel;
+          |  ret (&Some<&Spaceship>(s)).borrowGet().fuel;
           |}
         """.stripMargin),
       CompilationOptions(profiler = profiler))

@@ -16,5 +16,5 @@ fn doCivicDance(toyota Toyota impl Car) int {
 
 fn main() int {
   x Car = Toyota();
-  = doCivicDance(x);
+  = doCivicDance(^x);
 }

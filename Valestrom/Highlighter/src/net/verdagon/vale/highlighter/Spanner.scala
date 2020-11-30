@@ -232,6 +232,11 @@ object Spanner {
         val allSpans = (callableSpan :: argSpans).sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
       }
+      case ShortcallPE(range, argExprs) => {
+        val argSpans = argExprs.map(forExpression)
+        val allSpans = argSpans.sortWith(_.range.begin < _.range.begin)
+        makeSpan(Call, range, allSpans)
+      }
       case ReturnPE(range, expr) => {
         makeSpan(Ret, range, List(forExpression(expr)))
       }

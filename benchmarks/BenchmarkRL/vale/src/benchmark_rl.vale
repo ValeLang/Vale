@@ -279,11 +279,11 @@ fn benchmark_rl(
                 newScreen(
                 game.get_current_level().max_width,
                 game.get_current_level().max_height));
-          = z;
+          = ^z;
         } else {
           z Opt<Screen> =
             None<Screen>();
-          = z;
+          = ^z;
         };
 
 //     loop {

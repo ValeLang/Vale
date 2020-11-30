@@ -10,6 +10,13 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     }
   }
 
+  // To support the examples on the site for the syntax highlighter
+  test("empty") {
+    compile(CombinatorParsers.statement,"...") shouldHave {
+      case LookupPE(StringP(_,"..."),None,BorrowP) =>
+    }
+  }
+
   test("8") {
     compile(CombinatorParsers.statement, "(x, y) = [4, 5];") shouldHave {
       case LetPE(_,

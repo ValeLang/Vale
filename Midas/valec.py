@@ -22,17 +22,16 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
 
 class ValeCompiler:
     def valestrom(self,
-                  vale_files: List[str],
+                  vale_files: List[PurePath],
                   valestrom_options: List[str]) -> subprocess.CompletedProcess:
         return procrun(
             [
                 "java",
                 "-cp",
-                str(self.valestrom_path / "Valestrom.jar"), # + ":" \
-                #+ str((self.valestrom_path / "lift-json_2.12-3.3.0-RC1.jar")),
+                str(self.valestrom_path / "Valestrom.jar"),
                 "net.verdagon.vale.driver.Driver",
                 "build"
-            ] + valestrom_options + vale_files
+            ] + valestrom_options + list(map(lambda x : str(x), vale_files))
         )
 
     def valec(self,
@@ -209,13 +208,13 @@ class ValeCompiler:
 
         for arg in args:
             if arg.endswith(".vale"):
-                user_valestrom_files.append(arg)
+                user_valestrom_files.append(PurePath(arg))
             elif arg.endswith(".vpr"):
-                user_valestrom_files.append(arg)
+                user_valestrom_files.append(PurePath(arg))
             elif arg.endswith(".vir"):
-                user_vir_files.append(arg)
+                user_vir_files.append(PurePath(arg))
             elif arg.endswith(".c"):
-                user_c_files.append(arg)
+                user_c_files.append(PurePath(arg))
             else:
                 print("Unrecognized input: " + arg)
                 sys.exit(22)
@@ -270,7 +269,7 @@ class ValeCompiler:
             print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
             sys.exit(1)
 
-        c_files = user_c_files.copy() + glob.glob(str(self.valestd_path / "*.c")) + [str(cwd / "vstl/strings.c")]
+        c_files = user_c_files.copy() + glob.glob(str(self.valestd_path / "*.c")) + [str(cwd / "vstl/strings.c"), str(cwd / "vstl/mainargs.c")]
 
         # Get .o or .obj
         o_files = glob.glob(str(vir_file.with_suffix(".o"))) + glob.glob(str(vir_file.with_suffix(".obj")))

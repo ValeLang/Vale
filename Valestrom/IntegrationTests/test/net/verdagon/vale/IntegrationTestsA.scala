@@ -298,7 +298,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |fn main() int {
         |	x MyOption<int> = MySome<int>();
-        |	= doSomething(x);
+        |	= doSomething(^x);
         |}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)

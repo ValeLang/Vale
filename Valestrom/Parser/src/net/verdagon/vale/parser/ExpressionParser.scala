@@ -205,6 +205,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     // debt: "block" is here temporarily because we get ambiguities in this case:
     //   fn main() int { {_ + _}(4 + 5) }
     // because it mistakenly successfully parses {_ + _} then dies on the next part.
+    (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(StringP(Range(begin, end), "..."), None, BorrowP) }) |
     (mutate <~ optWhite <~ ";") |
     (let <~ optWhite <~ ";") |
     mat |
@@ -296,6 +297,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {
+    (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(StringP(Range(begin, end), "..."), None, BorrowP) }) |
     stringExpr |
       integer |
       bool |
@@ -311,9 +313,9 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
             List())
         }
       }) |
-      (packExpr ^^ {
-        case List(only) => only
-        case _ => vfail()
+      (pos ~ packExpr ~ pos ^^ {
+        case begin ~ List(inner) ~ end => inner
+        case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners)
       }) |
       tupleExpr |
       (exprIdentifier ~ (optWhite ~> templateArgs)) ^^ {
@@ -322,8 +324,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       (localLookup ^^ {
         case LookupPE(StringP(r, "_"), None, targetOwnership) => MagicParamLookupPE(r, targetOwnership)
         case other => other
-      }) |
-      (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(StringP(Range(begin, end), "..."), None, BorrowP) })
+      })
   }
 
   private[parser] def expressionLevel9: Parser[IExpressionPE] = {

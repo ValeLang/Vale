@@ -297,8 +297,11 @@ void innerDeallocateYonder(
     auto ptrLE = functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
         refMT, refLE);
     auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, refMT, refLE);
-    buildFlare(FL(), globalState, functionState, builder,
-        "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE, "\n");
+    if (dynamic_cast<InterfaceReferend*>(refMT->referend) == nullptr) {
+      buildFlare(FL(), globalState, functionState, builder,
+          "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE,
+          "\n");
+    }
   }
 
   auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder,

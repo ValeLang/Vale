@@ -179,7 +179,7 @@ inline LLVMValueRef ptrToVoidPtrLE(GlobalState* globalState, LLVMBuilderRef buil
 }
 
 inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
-  return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "asI64");
+  return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "ptrAsI64");
 }
 
 #endif

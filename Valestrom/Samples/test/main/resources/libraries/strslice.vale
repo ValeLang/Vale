@@ -1,0 +1,26 @@
+
+fn split(haystack str, needle str) List<StrSlice> {
+  split(haystack.slice(), needle.slice())
+}
+fn split(haystack str, needle StrSlice) List<StrSlice> {
+  split(haystack.slice(), needle)
+}
+fn split(haystack StrSlice, needle str) List<StrSlice> {
+  split(haystack, needle.slice())
+}
+fn split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
+  result = List<StrSlice>();
+
+  while (true) {
+    maybeFirstAndRest = haystack.splitOnce(needle);
+    if (maybeFirstAndRest.isEmpty()) {
+      result.add(haystack);
+      ret result;
+    }
+    (first, rest) = maybeFirstAndRest.get();
+    result.add(first);
+    mut haystack = rest;
+  }
+
+  panic("unreachable");
+}

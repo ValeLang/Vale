@@ -103,6 +103,8 @@ case class LambdaPE(
   override def range: Range = function.range
 }
 
+case class ShortcallPE(range: Range, argExprs: List[IExpressionPE]) extends IExpressionPE
+
 case class BlockPE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE {
   // Every element should have at least one expression, because a block will
   // return the last expression's result as its result.

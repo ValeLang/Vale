@@ -28,4 +28,15 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       case UnrecognizedTopLevelThingError(12) =>
     }
   }
+
+  // To support the examples on the site for the syntax highlighter
+  test("empty") {
+    val program = compileProgram("fn foo() { ... }")
+    program.topLevelThings(0) match {
+      case TopLevelFunctionP(
+        FunctionP(_,
+          _,
+          Some(BlockPE(_,List(VoidPE(_)))))) =>
+    }
+  }
 }

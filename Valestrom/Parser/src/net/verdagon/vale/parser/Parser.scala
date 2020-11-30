@@ -576,6 +576,7 @@ object Parser {
       return ParseFailure(BadStartOfStatementError(iter.getPos()))
     }
     vassert(iter.peek("^\\s*\\}".r))
+    iter.consumeWhitespace()
     iter.advance()
     val bodyEnd = iter.getPos()
     val body =

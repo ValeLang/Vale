@@ -14,7 +14,7 @@ class VirtualTests extends FunSuite with Matchers {
           |interface I {}
           |fn doThing(virtual i I) int {4}
           |fn main(i I) int {
-          |  doThing(^i)
+          |  doThing(i)
           |}
         """.stripMargin)
       val temputs = compile.getTemputs()
@@ -45,7 +45,7 @@ class VirtualTests extends FunSuite with Matchers {
         |interface I {}
         |fn doThing(virtual i I) int {4}
         |fn main(i I) int {
-        |  doThing(^i)
+        |  doThing(i)
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -78,7 +78,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  fn doThing(virtual i I) int;
         |}
         |fn main(i I) int {
-        |  doThing(^i)
+        |  doThing(i)
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()

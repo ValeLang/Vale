@@ -15,7 +15,7 @@ class InferTemplateTests extends FunSuite with Matchers {
         |fn moo<T>(m &T) int { m.hp }
         |fn main() int {
         |  x = Muta(10);
-        |  = moo(x);
+        |  = moo(&x);
         |}
       """.stripMargin)
 

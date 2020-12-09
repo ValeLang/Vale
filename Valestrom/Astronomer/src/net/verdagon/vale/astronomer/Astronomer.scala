@@ -418,7 +418,6 @@ object Astronomer {
     val conclusions = conclusionsForRulesFromStructDirection
 
     ImplA(
-      range,
       nameA,
       rulesFromStructDirectionA,
       rulesFromInterfaceDirectionA,

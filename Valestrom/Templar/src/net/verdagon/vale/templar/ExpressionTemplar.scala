@@ -835,9 +835,7 @@ class ExpressionTemplar(
                 }
               }
               case (a, b) => {
-                throw CompileErrorExceptionT(
-                  CouldntReconcileIfBranches(
-                    range, uncoercedThenBlock2.resultRegister.reference, uncoercedElseBlock2.resultRegister.reference))
+                vimpl(s"Couldnt reconcile branches of if:\n${a}\n${b}")
               }
             }
           val thenExpr2 = convertHelper.convert(thenFate.snapshot, temputs, range, uncoercedThenBlock2, commonType)

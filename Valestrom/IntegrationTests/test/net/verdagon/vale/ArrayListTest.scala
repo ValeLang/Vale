@@ -19,13 +19,13 @@ class ArrayListTest extends FunSuite with Matchers {
         |  newArray =
         |      Array<mut, E>(len(list) + 1, &IFunction1<mut, int, int>((index){
         |        = if (index == len(list)) {
-        |            = ^newElement;
+        |            = newElement;
         |          } else {
         |            a = list.array;
         |            = a[index];
         |          }
         |      }));
-        |  mut list.array = ^newArray;
+        |  mut list.array = newArray;
         |}
         |// todo: make that return a &E
         |fn get<E>(list &List<E>, index int) E {
@@ -41,9 +41,9 @@ class ArrayListTest extends FunSuite with Matchers {
         |               &IFunction1<mut, int, int>((index){
         |                 index
         |               })));
-        |  add(l, 5);
-        |  add(l, 9);
-        |  add(l, 7);
+        |  add(&l, 5);
+        |  add(&l, 9);
+        |  add(&l, 7);
         |  = l.get(1);
         |}
       """.stripMargin)
@@ -52,31 +52,30 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list with optionals") {
-    val compile = Compilation.multiple(
-      List(
-        Samples.get("libraries/utils.vale"),
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        """
-          |
-          |fn main() int {
-          |  l =
-          |      List<int>(
-          |          Array<mut, Opt<int>>(
-          |              0,
-          |              &IFunction1<mut, int, Opt<int>>((index){
-          |                result Opt<int> = Some(index);
-          |                = ^result;
-          |              })),
-          |          0);
-          |  add(l, 5);
-          |  add(l, 9);
-          |  add(l, 7);
-          |  = l.get(1);
-          |}
-        """.stripMargin))
+    val compile = Compilation(
+      Samples.get("libraries/utils.vale") +
+      Samples.get("libraries/castutils.vale") +
+      Samples.get("libraries/printutils.vale") +
+      Samples.get("libraries/opt.vale") +
+      Samples.get("libraries/list.vale") +
+      """
+        |
+        |fn main() int {
+        |  l =
+        |      List<int>(
+        |          Array<mut, Opt<int>>(
+        |              0,
+        |              &IFunction1<mut, int, Opt<int>>((index){
+        |                result Opt<int> = Some(index);
+        |                = result;
+        |              })),
+        |          0);
+        |  add(&l, 5);
+        |  add(&l, 9);
+        |  add(&l, 7);
+        |  = l.get(1);
+        |}
+      """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
@@ -92,9 +91,9 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |fn main() int {
           |  l = List<int>();
-          |  add(l, 5);
-          |  add(l, 9);
-          |  add(l, 7);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
           |  = l.get(1);
           |}
         """.stripMargin)
@@ -111,9 +110,9 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |fn main() int {
           |  l = List<int>();
-          |  add(l, 5);
-          |  add(l, 9);
-          |  add(l, 7);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
           |  = l.len();
           |}
         """.stripMargin))
@@ -132,10 +131,10 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |fn main() int {
           |  l = List<int>();
-          |  add(l, 5);
-          |  add(l, 9);
-          |  add(l, 7);
-          |  set(l, 1, 11);
+          |  add(&l, 5);
+          |  add(&l, 9);
+          |  add(&l, 7);
+          |  set(&l, 1, 11);
           |  = l.get(1);
           |}
         """.stripMargin)
@@ -160,12 +159,12 @@ class ArrayListTest extends FunSuite with Matchers {
           |              0,
           |              &IFunction1<mut, int, Opt<Marine>>((index){
           |                result Opt<Marine> = Some(Marine(index));
-          |                = ^result;
+          |                = result;
           |              })),
           |          0);
-          |  add(l, Marine(5));
-          |  add(l, Marine(9));
-          |  add(l, Marine(7));
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(9));
+          |  add(&l, Marine(7));
           |  = l.get(1).hp;
           |}
         """.stripMargin)
@@ -205,7 +204,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |fn main() int {
         |  m Opt<Marine> = Some(Marine(6));
         |  lam = {
-        |    m2 = (mut m = None<Marine>()).get();
+        |    m2 = (mut m = None<Marine>())^.get();
         |    = m2.hp;
         |  };
         |  = lam();
@@ -232,11 +231,11 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |fn main() {
           |  l = List<Marine>();
-          |  add(l, Marine(5));
-          |  add(l, Marine(7));
-          |  add(l, Marine(9));
-          |  add(l, Marine(11));
-          |  add(l, Marine(13));
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
+          |  add(&l, Marine(9));
+          |  add(&l, Marine(11));
+          |  add(&l, Marine(13));
           |  l.remove(2);
           |  vassert(l.get(0).hp == 5);
           |  vassert(l.get(1).hp == 7);
@@ -263,8 +262,8 @@ class ArrayListTest extends FunSuite with Matchers {
           |
           |fn main() {
           |  l = List<Marine>();
-          |  add(l, Marine(5));
-          |  add(l, Marine(7));
+          |  add(&l, Marine(5));
+          |  add(&l, Marine(7));
           |  l.remove(0);
           |  l.remove(0);
           |  vassert(l.len() == 0);

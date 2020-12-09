@@ -28,7 +28,7 @@ fn set_screen_cell(
             panic("unrecognized tile display class");
         }
     } else {
-        tile?^.drop();
+        drop(tile?);
     }
 
 //     if let Some(tile) = game.get_current_level().tiles.get(&loc) {
@@ -119,8 +119,8 @@ Game {
             List<Level>());
             //, None);
 
-  level = make_level(max_width, max_height, rand); // DIFFERENCE need &!
-  game.levels.add(level^);
+  level = make_level(max_width, max_height, &rand); // DIFFERENCE need &!
+  game.levels.add(level);
 //     for _ in 0..num_levels {
 //         let level_index = game.levels.len();
 //         game.levels.push(make_level(max_width, max_height, &mut rand));
@@ -168,7 +168,7 @@ Game {
 //     player.components.insert(Box::new(SeekUnitCapability::new()));
 //     player.components.insert(Box::new(IncendiumShortSword::new()));
 
-    ret game^;
+    ret game;
 }
 
 // // Advance the game by 1 turn for all units.
@@ -270,7 +270,7 @@ fn benchmark_rl(
 ) {
   rand = LCGRand(seed);
 
-    game = setup(rand, level_width, level_height, num_levels);
+    game = setup(&rand, level_width, level_height, num_levels);
 
     maybe_screen =
         if (should_display) {
@@ -279,11 +279,11 @@ fn benchmark_rl(
                 newScreen(
                 game.get_current_level().max_width,
                 game.get_current_level().max_height));
-          = ^z;
+          = z;
         } else {
           z Opt<Screen> =
             None<Screen>();
-          = ^z;
+          = z;
         };
 
 //     loop {
@@ -298,7 +298,7 @@ fn benchmark_rl(
 //             }
 //         }
 
-        display(seed, maybe_screen, game);
+        display(seed, &maybe_screen, &game);
 
 //         if turn_delay > 0 {
 //             sleep(Duration::new(turn_delay as u64 / 1000, turn_delay as u32 % 1000 * 1000000));

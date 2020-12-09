@@ -7,7 +7,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
     <orderEntry type="module" module-name="Astronomer" />
     <orderEntry type="module" module-name="Hammer" />
     <orderEntry type="module" module-name="Highlighter" />
@@ -24,5 +23,6 @@
     <orderEntry type="library" name="org.scala-lang.modules:scala-parser-combinators_2.12:1.1.1" level="project" />
     <orderEntry type="library" name="commons-lang:commons-lang:2.6" level="project" />
     <orderEntry type="library" exported="" name="net.liftweb:lift-json_2.12:3.3.0-RC1" level="project" />
+    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
   </component>
 </module>

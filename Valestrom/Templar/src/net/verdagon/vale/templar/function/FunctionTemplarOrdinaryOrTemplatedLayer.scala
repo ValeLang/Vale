@@ -1,6 +1,5 @@
 package net.verdagon.vale.templar.function
 
-import com.jprofiler.api.probe.embedded.{Split, SplitProbe}
 import net.verdagon.vale.astronomer.{CodeBodyA, FunctionA, IRulexAR, IRuneA, ITemplataType}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._

@@ -134,6 +134,7 @@ LLVMValueRef fillControlBlockCensusFields(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     LLVMValueRef newControlBlockLE,
@@ -145,14 +146,14 @@ LLVMValueRef fillControlBlockCensusFields(
             builder,
             newControlBlockLE,
             objIdLE,
-            globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
+            structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
             "strControlBlockWithObjId");
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,
             newControlBlockLE,
             globalState->getOrMakeStringConstant(typeName),
-            globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
+            structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
             "strControlBlockWithTypeStr");
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, " ", objIdLE);
   }
@@ -162,6 +163,7 @@ LLVMValueRef fillControlBlockCensusFields(
 LLVMValueRef insertStrongRc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Referend* referendM,
     LLVMValueRef newControlBlockLE) {
   return LLVMBuildInsertValue(
@@ -169,7 +171,7 @@ LLVMValueRef insertStrongRc(
       newControlBlockLE,
       // Start at 1, 0 would mean it's dead.
       LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 1, false),
-      globalState->region->getControlBlock(referendM)->getMemberIndex(
+      structs->getControlBlock(referendM)->getMemberIndex(
           ControlBlockMember::STRONG_RC),
       "controlBlockWithRc");
 }
@@ -1349,26 +1351,27 @@ void regularFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName,
     WrcWeaks* wrcWeaks) {
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->region->getControlBlock(referendM)->getStruct());
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(referendM)->getStruct());
 
   newControlBlockLE =
       fillControlBlockCensusFields(
-          from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+          from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
 
   if (mutability == Mutability::IMMUTABLE) {
     newControlBlockLE =
-        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
   } else {
     newControlBlockLE =
-        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
     if (globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
-      newControlBlockLE = wrcWeaks->fillWeakableControlBlock(functionState, builder, referendM,
+      newControlBlockLE = wrcWeaks->fillWeakableControlBlock(functionState, builder, structs, referendM,
           newControlBlockLE);
     }
   }
@@ -1382,6 +1385,7 @@ void gmFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
@@ -1389,15 +1393,15 @@ void gmFillControlBlock(
     const std::string& typeName,
     HybridGenerationalMemory* hgmWeaks) {
 
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->region->getControlBlock(referendM)->getStruct());
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(referendM)->getStruct());
 
   newControlBlockLE =
       fillControlBlockCensusFields(
-          from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+          from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
 
   if (mutability == Mutability::IMMUTABLE) {
     newControlBlockLE =
-        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
   } else {
     newControlBlockLE = hgmWeaks->fillWeakableControlBlock(functionState, builder, referendM,
         newControlBlockLE);

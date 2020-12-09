@@ -181,7 +181,7 @@ public:
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM);
+      InterfaceReferend* targetInterfaceReferendM) override;
 
   WrapperPtrLE lockWeakRef(
       AreaAndFileAndLine from,

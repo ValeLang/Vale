@@ -51,6 +51,7 @@ LLVMValueRef adjustStrongRc(
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE exprLE);

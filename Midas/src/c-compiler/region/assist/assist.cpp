@@ -303,7 +303,7 @@ void Assist::noteWeakableDestroyed(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {
-  auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
+  auto rcIsZeroLE = strongRcIsZero(globalState, &referendStructs, builder, refM, controlBlockPtrLE);
   buildAssert(globalState, functionState, builder, rcIsZeroLE,
       "Tried to free concrete that had nonzero RC!");
 
@@ -541,7 +541,7 @@ LLVMValueRef Assist::getCensusObjectId(
     auto controlBlockPtrLE =
         referendStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
     auto exprLE =
-        getObjIdFromControlBlockPtr(globalState, builder, refM->referend, controlBlockPtrLE);
+        referendStructs.getObjIdFromControlBlockPtr(builder, refM->referend, controlBlockPtrLE);
     return exprLE;
   }
 }
@@ -656,7 +656,7 @@ void Assist::fillControlBlock(
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName) {
   regularFillControlBlock(
-      from, globalState, functionState, builder, referendM, mutability, controlBlockPtrLE,
+      from, globalState, functionState, &referendStructs, builder, referendM, mutability, controlBlockPtrLE,
       typeName, &wrcWeaks);
 }
 

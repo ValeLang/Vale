@@ -58,7 +58,7 @@ public:
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM);
+      InterfaceReferend* targetInterfaceReferendM) override;
 
 
   void translateKnownSizeArray(

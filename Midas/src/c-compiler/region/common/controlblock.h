@@ -57,25 +57,4 @@ private:
   bool built;
 };
 
-// See CRCISFAORC for why we don't take in a mutability.
-// Strong means owning or borrow or shared; things that control the lifetime.
-LLVMValueRef getStrongRcPtrFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE controlBlockPtr);
-
-LLVMValueRef getObjIdFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Referend* referendM,
-    ControlBlockPtrLE controlBlockPtr);
-
-// Strong means owning or borrow or shared; things that control the lifetime.
-LLVMValueRef getStrongRcFromControlBlockPtr(
-    GlobalState* globalState,
-    LLVMBuilderRef builder,
-    Reference* refM,
-    ControlBlockPtrLE controlBlockPtrLE);
-
 #endif //VALEC_CONTROLBLOCK_H

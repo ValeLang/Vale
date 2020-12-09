@@ -133,6 +133,20 @@ public:
       Reference* virtualParamMT,
       InterfaceFatPtrLE virtualArgLE) override;
 
+  LLVMValueRef getObjIdFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  LLVMValueRef getStrongRcPtrFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  LLVMValueRef getStrongRcFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
 
 private:
   GlobalState* globalState;

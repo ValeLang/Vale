@@ -7,6 +7,27 @@
 #include "metal/ast.h"
 #include "instructions.h"
 
+namespace std {
+    template<>
+    struct hash<Location> {
+        inline size_t operator()(Location location) const {
+            return (size_t)location;
+        }
+    };
+    template<>
+    struct hash<Ownership> {
+        inline size_t operator()(Ownership ownership) const {
+            return (size_t)ownership;
+        }
+    };
+    template<>
+    struct hash<Mutability> {
+        inline size_t operator()(Mutability mutability) const {
+            return (size_t)mutability;
+        }
+    };
+}
+
 template<typename K, typename V, typename H, typename E, typename F>
 V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeElement) {
   auto iter = map->find(key);
@@ -77,7 +98,7 @@ public:
   std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
 
   Reference* getReference(Ownership ownership, Location location, Referend* referend) {
-    return makeIfNotPresent(
+    return makeIfNotPresent<Location, Reference*>(
         &unconvertedReferences[referend][ownership],
         location,
         [&](){ return new Reference(ownership, location, referend); });

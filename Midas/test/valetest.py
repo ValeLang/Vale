@@ -26,7 +26,7 @@ class ValeTest(unittest.TestCase):
               region_override: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
         return procrun(
-            ["python3.8",
+            ["python3",
              f"{self.GENPATH}/valec.py",
              "--verify",
              "--llvmir",

@@ -842,7 +842,7 @@ void Mega::noteWeakableDestroyed(
     // In fast mode, only shared things are strong RC'd
     if (refM->ownership == Ownership::SHARE) {
       // Only shared stuff is RC'd in fast mode
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
+      auto rcIsZeroLE = strongRcIsZero(globalState, &referendStructs, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
@@ -864,7 +864,7 @@ void Mega::noteWeakableDestroyed(
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
     if (refM->ownership == Ownership::SHARE) {
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
+      auto rcIsZeroLE = strongRcIsZero(globalState, &referendStructs, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
@@ -875,7 +875,7 @@ void Mega::noteWeakableDestroyed(
     }
   } else if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
     if (refM->ownership == Ownership::SHARE) {
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
+      auto rcIsZeroLE = strongRcIsZero(globalState, &referendStructs, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
@@ -888,7 +888,7 @@ void Mega::noteWeakableDestroyed(
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT) {
     if (refM->ownership == Ownership::SHARE) {
-      auto rcIsZeroLE = strongRcIsZero(globalState, builder, refM, controlBlockPtrLE);
+      auto rcIsZeroLE = strongRcIsZero(globalState, &referendStructs, builder, refM, controlBlockPtrLE);
       buildAssert(globalState, functionState, builder, rcIsZeroLE,
           "Tried to free concrete that had nonzero RC!");
     } else {
@@ -1405,7 +1405,7 @@ LLVMValueRef Mega::getCensusObjectId(
     Ref ref) {
   auto controlBlockPtrLE =
       referendStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
-  return getObjIdFromControlBlockPtr(globalState, builder, refM->referend, controlBlockPtrLE);
+  return referendStructs.getObjIdFromControlBlockPtr(builder, refM->referend, controlBlockPtrLE);
 }
 
 Ref Mega::getIsAliveFromWeakRef(
@@ -1444,23 +1444,23 @@ void Mega::fillControlBlock(
     case RegionOverride::ASSIST:
     case RegionOverride::NAIVE_RC: {
       regularFillControlBlock(
-          from, globalState, functionState, builder, referendM, mutability, controlBlockPtrLE,
+          from, globalState, functionState, &referendStructs, builder, referendM, mutability, controlBlockPtrLE,
           typeName, &wrcWeaks);
       break;
     }
     case RegionOverride::FAST: {
-      LLVMValueRef newControlBlockLE = LLVMGetUndef(getControlBlock(referendM)->getStruct());
+      LLVMValueRef newControlBlockLE = LLVMGetUndef(referendStructs.getControlBlock(referendM)->getStruct());
 
       newControlBlockLE =
           fillControlBlockCensusFields(
-              from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+              from, globalState, functionState, &referendStructs, builder, referendM, newControlBlockLE, typeName);
 
       if (mutability == Mutability::IMMUTABLE) {
         newControlBlockLE =
-            insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+            insertStrongRc(globalState, builder, &referendStructs, referendM, newControlBlockLE);
       } else {
         if (globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
-          newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, referendM,
+          newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, &referendStructs, referendM,
               newControlBlockLE);
         }
       }
@@ -1471,17 +1471,17 @@ void Mega::fillControlBlock(
       break;
     }
     case RegionOverride::RESILIENT_V0: {
-      LLVMValueRef newControlBlockLE = LLVMGetUndef(getControlBlock(referendM)->getStruct());
+      LLVMValueRef newControlBlockLE = LLVMGetUndef(referendStructs.getControlBlock(referendM)->getStruct());
 
       newControlBlockLE =
           fillControlBlockCensusFields(
-              from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+              from, globalState, functionState, &referendStructs, builder, referendM, newControlBlockLE, typeName);
 
       if (mutability == Mutability::IMMUTABLE) {
         newControlBlockLE =
-            insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+            insertStrongRc(globalState, builder, &referendStructs, referendM, newControlBlockLE);
       } else {
-        newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, referendM,
+        newControlBlockLE = wrcWeaks.fillWeakableControlBlock(functionState, builder, &referendStructs, referendM,
             newControlBlockLE);
       }
       LLVMBuildStore(
@@ -1491,17 +1491,17 @@ void Mega::fillControlBlock(
       break;
     }
     case RegionOverride::RESILIENT_V1: {
-      LLVMValueRef newControlBlockLE = LLVMGetUndef(getControlBlock(referendM)->getStruct());
+      LLVMValueRef newControlBlockLE = LLVMGetUndef(referendStructs.getControlBlock(referendM)->getStruct());
 
       newControlBlockLE =
           fillControlBlockCensusFields(
-              from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+              from, globalState, functionState, &referendStructs, builder, referendM, newControlBlockLE, typeName);
 
       if (mutability == Mutability::IMMUTABLE) {
         newControlBlockLE =
-            insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+            insertStrongRc(globalState, builder, &referendStructs, referendM, newControlBlockLE);
       } else {
-        newControlBlockLE = lgtWeaks.fillWeakableControlBlock(functionState, builder, referendM,
+        newControlBlockLE = lgtWeaks.fillWeakableControlBlock(functionState, builder, &referendStructs, referendM,
             newControlBlockLE);
       }
       LLVMBuildStore(
@@ -1514,7 +1514,7 @@ void Mega::fillControlBlock(
     case RegionOverride::RESILIENT_V3:
     case RegionOverride::RESILIENT_LIMIT: {
       gmFillControlBlock(
-          from, globalState, functionState, builder, referendM, mutability, controlBlockPtrLE,
+          from, globalState, functionState, &referendStructs, builder, referendM, mutability, controlBlockPtrLE,
           typeName, &hgmWeaks);
       break;
     }

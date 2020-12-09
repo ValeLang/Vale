@@ -1,51 +1,35 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.4.3)
 project(valec)
-cmake_policy(VERSION 3.11)
-
-find_package(LLVM 7 REQUIRED CONFIG)
-
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 
-include(FetchContent)
-
-include_directories(
-		${LLVM_INCLUDE_DIRS}
-		"${CMAKE_SOURCE_DIR}/src/c-compiler/"
-)
+find_package(LLVM 11 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
+include_directories(
+	${LLVM_INCLUDE_DIRS}
+	"${CMAKE_SOURCE_DIR}/src/c-compiler/"
+)
+
+message(STATUS "LLVM VERSION : ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
 
 # See either:
-#   llvm-config-7 --libfiles --link-static
+#   llvm-config-11 --libfiles --link-static
 #   llvm-config --components | tr " " "\n"
 # for what we could use here.
 # We'll keep it to a minimum for now, because different machines
 # seem to support different components.
 set(LLVM_LINK_COMPONENTS
 		Core
-		Passes
-
-#		WebAssemblyAsmParser
-#		WebAssemblyAsmPrinter
-#		WebAssemblyCodeGen
-#		WebAssemblyDesc
-#		WebAssemblyDisassembler
-#		WebAssemblyInfo
-
-		X86AsmParser
-		X86AsmPrinter
-		X86CodeGen
-		X86Desc
-		X86Disassembler
-		X86Info
-		X86Utils
-
+		Support
 		IRReader
+		x86asmparser x86codegen x86desc x86disassembler x86info
 )
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
+
+# llvm_map_components_to_libnames(llvm_libs support core irreader)
 
 add_executable(valec
 		src/c-compiler/vale.cpp
@@ -100,4 +84,3 @@ add_executable(valec
         src/c-compiler/options.cpp)
 
 target_link_libraries(valec ${llvm_libs})
-

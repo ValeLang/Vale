@@ -61,7 +61,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is lending to function") {
-    val program1 = compile("fn main() int { x = 4; doBlarks(x); }")
+    val program1 = compile("fn main() int { x = 4; doBlarks(&x); }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -83,7 +83,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving to function") {
-    val program1 = compile("fn main() int { x = 4; doBlarks(x^); }")
+    val program1 = compile("fn main() int { x = 4; doBlarks(x); }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -122,7 +122,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalVariable1(
       CodeVarNameS("x"),
-      VaryingP, Used, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
+      VaryingP, NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -131,7 +131,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  { doBlarks(x); }();
+        |  { doBlarks(&x); }();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -148,7 +148,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  { doBlarks(x^); }();
+        |  { doBlarks(x); }();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -182,7 +182,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { doBlarks(x); } else { }
+        |  if (true) { doBlarks(&x); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -199,7 +199,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { doBlarks(x^); } else { }
+        |  if (true) { doBlarks(x); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -233,7 +233,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { doBlarks(x); }(); } else { }
+        |  if (true) { { doBlarks(&x); }(); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -250,7 +250,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { doBlarks(x^); }(); } else { }
+        |  if (true) { { doBlarks(x); }(); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -284,7 +284,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { doBoinks(x); } else { doBloops(x); }
+        |  if (true) { doBoinks(&x); } else { doBloops(&x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -301,7 +301,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { doBoinks(x); }(); } else { { doBloops(x); }(); }
+        |  if (true) { { doBoinks(&x); }(); } else { { doBloops(&x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -318,7 +318,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { doBoinks(x^); } else { doBloops(x^); }
+        |  if (true) { doBoinks(x); } else { doBloops(x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -335,7 +335,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { doBoinks(x^); }(); } else { { doBloops(x^); }(); }
+        |  if (true) { { doBoinks(x); }(); } else { { doBloops(x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -386,7 +386,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { doThings(x); } else { moveThis(x^); }
+        |  if (true) { doThings(&x); } else { moveThis(x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -403,7 +403,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { doThings(x); }(); } else { { moveThis(x^); }(); }
+        |  if (true) { { doThings(&x); }(); } else { { moveThis(x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -420,7 +420,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { mut x = 9; } else { moveThis(x^); }
+        |  if (true) { mut x = 9; } else { moveThis(x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -437,7 +437,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { mut x = 9; }(); } else { { moveThis(x^); }(); }
+        |  if (true) { { mut x = 9; }(); } else { { moveThis(x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -456,7 +456,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalVariable1(
           CodeVarNameS("x"),
-          VaryingP, Used, NotUsed, Used, NotUsed, NotUsed, NotUsed) =>
+          VaryingP, NotUsed, Used, Used, NotUsed, NotUsed, NotUsed) =>
     }
   }
 
@@ -467,7 +467,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     body.block.locals.head match {
       case LocalVariable1(
           CodeVarNameS("x"),
-          VaryingP, NotUsed, NotUsed, NotUsed, MaybeUsed, NotUsed, MaybeUsed) =>
+          VaryingP, NotUsed, NotUsed, NotUsed, NotUsed, MaybeUsed, MaybeUsed) =>
     }
   }
 
@@ -475,7 +475,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     val program1 = compile(
       """
         |fn main(x int) {
-        |  print(x);
+        |  print(&x);
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -491,7 +491,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     val program1 = compile(
       """
         |fn main(x int) {
-        |  { print(x); }();
+        |  { print(&x); }();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -508,7 +508,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { mut x = 9; } else if (true) { moveThis(x^); } else { blark(x); }
+        |  if (true) { mut x = 9; } else if (true) { moveThis(x); } else { blark(&x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -525,7 +525,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = 4;
-        |  if (true) { { mut x = 9; }(); } else if (true) { { moveThis(^x); }(); } else { { blark(x); }(); }
+        |  if (true) { { mut x = 9; }(); } else if (true) { { moveThis(x); }(); } else { { blark(&x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -542,7 +542,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = Marine();
-        |  while (x) { }
+        |  while (&x) { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -560,7 +560,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  x = Marine();
-        |  while (true) { doThing(x); }
+        |  while (true) { doThing(&x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")

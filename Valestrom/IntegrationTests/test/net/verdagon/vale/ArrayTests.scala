@@ -68,7 +68,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
         |fn main() int {
         |  a = [MutableStruct(2), MutableStruct(3), MutableStruct(4)];
-        |  = doThings(a);
+        |  = doThings(&a);
         |}
       """.stripMargin)
 
@@ -254,7 +254,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn __call(this &MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
         |fn main() {
         |  m = MyIntIdentity();
-        |  arr = Array<mut, int>(10, m);
+        |  arr = Array<mut, int>(10, &m);
         |  lam = { println(arr.6); };
         |  (lam)();
         |}
@@ -275,7 +275,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn __call(this &GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
         |fn main() int {
         |  m = GoblinMaker();
-        |  arr = Array<mut, Goblin>(1, m);
+        |  arr = Array<mut, Goblin>(1, &m);
         |  mut arr.0 = Goblin();
         |  = 4;
         |}
@@ -291,7 +291,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  a = Array<mut, int>(11, &IFunction1<imm, int, int>({_}));
-        |  = len(a);
+        |  = len(&a);
         |}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(11)

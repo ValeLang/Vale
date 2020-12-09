@@ -9,6 +9,6 @@ fn doThing<T>(x MyStruct<T> impl MyInterface<T>) int {4}
 fn main() int {
   x = MyStruct<int>();
   y = MyStruct<str>();
-  doThing(^x);
-  = doThing(^y);
+  doThing(x);
+  = doThing(y);
 }

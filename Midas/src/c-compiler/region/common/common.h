@@ -55,6 +55,7 @@ LLVMValueRef fillControlBlockCensusFields(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     LLVMValueRef newControlBlockLE,
@@ -63,6 +64,7 @@ LLVMValueRef fillControlBlockCensusFields(
 LLVMValueRef insertStrongRc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Referend* referendM,
     LLVMValueRef newControlBlockLE);
 
@@ -408,6 +410,7 @@ void regularFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
@@ -419,6 +422,7 @@ void gmFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,

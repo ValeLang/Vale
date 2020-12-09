@@ -285,9 +285,6 @@ public:
   virtual LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
 
   // TODO Get rid of these once refactor is done
-//  virtual InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
-//  virtual ControlBlockPtrLE makeControlBlockPtr(Referend* referendM_, LLVMValueRef ptrLE) = 0;
-//  virtual WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
   virtual ControlBlock* getControlBlock(Referend* referend) = 0;
   virtual IReferendStructsSource* getReferendStructsSource() = 0;
   virtual IWeakRefStructsSource* getWeakRefStructsSource() = 0;

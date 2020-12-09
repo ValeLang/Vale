@@ -47,7 +47,7 @@ class ValeCompiler:
         if self.windows:
             return procrun(["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + exe_file] + o_files)
         else:
-            return procrun(["clang-7", "-O3", "-lm", "-o", exe_file] + o_files)
+            return procrun(["clang", "-O3", "-lm", "-o", exe_file] + o_files)
 
     def exec(self, exe_file: str) -> subprocess.CompletedProcess:
         return procrun([f"./{exe_file}"])

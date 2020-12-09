@@ -23,7 +23,7 @@ object CombinatorParsers
 //        with PatternTemplexParser
         with ExpressionParser {
   override def skipWhitespace = false
-  override val whiteSpace = "[ \t\r\f]+".r
+  //override val whiteSpace = "[ \t\r\f]+".r
 
   def filledBody: Parser[BlockPE] = {
     // A hack to do region highlighting

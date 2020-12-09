@@ -92,7 +92,7 @@ LLVMValueRef adjustStrongRc(
 
   auto controlBlockPtrLE =
       referendStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
-  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
+  auto rcPtrLE = referendStructsSource->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(globalState, builder, rcPtrLE, amount);
 //  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
@@ -101,6 +101,7 @@ LLVMValueRef adjustStrongRc(
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {
@@ -123,7 +124,7 @@ LLVMValueRef strongRcIsZero(
       assert(false);
   }
 
-  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE));
+  return isZeroLE(builder, structs->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE));
 }
 
 

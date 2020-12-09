@@ -123,7 +123,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |impl<T> MyInterface<T> for SomeStruct<T>;
         |
         |fn main(a SomeStruct<int>) {
-        |  doAThing<int>(^a);
+        |  doAThing<int>(a);
         |}
       """.stripMargin)
     val hamuts = compile.getHamuts()
@@ -176,7 +176,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("mut swapping locals") {
     val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   // Known failure 2020-08-20
@@ -212,7 +212,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |fn main() int {
         |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
-        |  = sum(list);
+        |  = sum(&list);
         |}
         |
         |""".stripMargin)
@@ -298,7 +298,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |
         |fn main() int {
         |	x MyOption<int> = MySome<int>();
-        |	= doSomething(^x);
+        |	= doSomething(x);
         |}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
@@ -596,9 +596,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn foo(a Moo) int { 41 }
         |fn bork(a Moo) int {
         |  if (false) {
-        |    ret foo(^a);
+        |    ret foo(a);
         |  } else if (false) {
-        |    ret foo(^a);
+        |    ret foo(a);
         |  } else {
         |    // continue
         |  }

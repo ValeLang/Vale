@@ -5,10 +5,10 @@ impl IUnit for Muta;
 fn getHp(self &&Muta impl IUnit) int {
   maybeBorrowSelf = lock(self);
   = if (maybeBorrowSelf.isEmpty()) {
-      drop(^maybeBorrowSelf);
+      drop(maybeBorrowSelf);
       = 0;
     } else {
-      drop(^maybeBorrowSelf);
+      drop(maybeBorrowSelf);
       = 42;
     }
 }
@@ -16,6 +16,6 @@ fn getHp(self &&Muta impl IUnit) int {
 fn main() int {
   ownMuta = Muta(73);
   weakUnit &&IUnit = &&ownMuta;
-  drop(^ownMuta);
+  drop(ownMuta);
   = getHp(weakUnit);
 }

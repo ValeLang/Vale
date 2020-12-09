@@ -301,8 +301,7 @@ void innerDeallocateYonder(
     auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, refMT, refLE);
     if (dynamic_cast<InterfaceReferend*>(refMT->referend) == nullptr) {
       buildFlare(FL(), globalState, functionState, builder,
-          "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE,
-          "\n");
+          "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE, "\n");
     }
   }
 

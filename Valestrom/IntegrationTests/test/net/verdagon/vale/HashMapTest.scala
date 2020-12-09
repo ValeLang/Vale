@@ -9,14 +9,13 @@ import net.verdagon.vale.driver.Compilation
 
 class HashMapTest extends FunSuite with Matchers {
   test("Hash map update") {
-    val compile = Compilation.multiple(
-      List(
-      Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = Compilation(
+      Samples.get("libraries/castutils.vale") +
+        Samples.get("libraries/printutils.vale") +
+        Samples.get("libraries/opt.vale") +
+        Samples.get("libraries/list.vale") +
+        Samples.get("libraries/hashmap.vale") +
+        Samples.get("libraries/utils.vale") +
         """
           |fn main() int {
           |  m = HashMap<int, int>({_}, ==);
@@ -27,7 +26,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  m.update(8, 108);
           |  = m.get(8).get();
           |}
-      """.stripMargin))
+      """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(108)
   }
@@ -90,7 +89,7 @@ class HashMapTest extends FunSuite with Matchers {
         |
         |fn main() int {
         |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
-        |  add42(m);
+        |  add42(&m);
         |  = m.get(42).get();
         |}
       """.stripMargin)

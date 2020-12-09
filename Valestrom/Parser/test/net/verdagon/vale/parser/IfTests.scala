@@ -34,10 +34,10 @@ class IfTests extends FunSuite with Matchers with Collector {
   }
 
   test("ifs") {
-    compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(x) } else { }") shouldHave {
+    compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
       case IfPE(_,
       BlockPE(_, List(BoolLiteralPE(_, true))),
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doBlarks"), None, BorrowP), List(LookupPE(StringP(_, "x"), None, BorrowP))))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doBlarks"), None), List(LendPE(_,LookupPE(StringP(_, "x"), None), BorrowP)), BorrowP))),
       BlockPE(_, List(VoidPE(_)))) =>
     }
   }
@@ -54,7 +54,7 @@ class IfTests extends FunSuite with Matchers with Collector {
                     List(
                       PatternPP(_,None,Some(CaptureP(_,LocalNameP(StringP(_,"u")),FinalP)),None,None,None)))),
                 None),
-              LookupPE(StringP(_,"a"), None,BorrowP)))),
+              LookupPE(StringP(_,"a"),None)))),
         BlockPE(_,List(VoidPE(_))),
         BlockPE(_,List(VoidPE(_)))) =>
     }
@@ -68,7 +68,7 @@ class IfTests extends FunSuite with Matchers with Collector {
       None,
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "newLen")), FinalP)), None, None, None),
       IfPE(_,
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None, BorrowP), List(LookupPE(StringP(_, "num"), None, BorrowP), IntLiteralPE(_, 0))))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), BorrowP))),
       BlockPE(_, List(IntLiteralPE(_, 1))),
       BlockPE(_, List(IntLiteralPE(_, 2))))) =>
     }

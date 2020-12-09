@@ -41,7 +41,7 @@ rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
 
 fn each<M, N, T, F>(arr &[<M> N * T], func F) void {
   i! = 0;
-  l = len(arr);
+  l = len(&arr);
   while (i < l) {
     func(arr[i]);
     mut i = i + 1;
@@ -50,7 +50,7 @@ fn each<M, N, T, F>(arr &[<M> N * T], func F) void {
 
 fn each<M, T, F>(arr &Array<M, T>, func F) void {
   i! = 0;
-  l = len(arr);
+  l = len(&arr);
   while (i < l) {
     func(arr[i]);
     mut i = i + 1;
@@ -63,7 +63,7 @@ fn indices<>(arr &Array<_, _>) Array<imm, int> {
 
 fn eachI<F>(arr &Array<_, _>, func F) void {
   i! = 0;
-  l = len(arr);
+  l = len(&arr);
   while (i < l) {
     func(i, arr[i]);
     mut i = i + 1;

@@ -43,7 +43,7 @@ struct Game {
 // impl Game {
     fn get_current_level(self &Game) &Level {
         // ret &self.levels[self.get_player().level_index];
-        self.levels.get(0)
+        self.levels.get(0).get()
     }
 //     pub fn get_current_level_mut(&mut self) -> &mut Level {
 //         let level_index = self.get_player().level_index;
@@ -159,7 +159,7 @@ List<Location> {
         result.add(Location(center.x + 1, center.y - 1));
         result.add(Location(center.x + 1, center.y + 1));
     }
-    ret ^result;
+    ret result;
 }
 
 // Get all the locations adjacent to any of the ones in `source_locs`.
@@ -177,7 +177,7 @@ HashSet<Location, LocationHasher, LocationEquator> {
         if (include_source_locs) {
             adjacents.add(original_location);
         }
-        each (adjacents) (adjacent_location){
+        each (&adjacents) (adjacent_location){
             if (include_source_locs or not source_locs.has(adjacent_location)) {
                 // DIFFERENCE our set doesnt let you insert if already there
                 if (not result.has(adjacent_location)) {
@@ -186,5 +186,5 @@ HashSet<Location, LocationHasher, LocationEquator> {
             }
         }
     }
-    ret ^result;
+    ret result;
 }

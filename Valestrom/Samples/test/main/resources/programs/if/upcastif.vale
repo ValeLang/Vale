@@ -10,5 +10,5 @@ fn moo(b &B impl I) int { 42 }
 
 fn main() int {
   myVar I = if (false) { A() } else { B() };
-  = moo(myVar);
+  = moo(&myVar);
 }

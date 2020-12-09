@@ -55,7 +55,7 @@ class StructTests extends FunSuite with Matchers {
         |}
         |fn main() int {
         |  m = Marine(4, 7);
-        |  Marine(hp, ammo) = ^m;
+        |  Marine(hp, ammo) = m;
         |  = ammo;
         |}
       """.stripMargin)
@@ -72,7 +72,7 @@ class StructTests extends FunSuite with Matchers {
         |}
         |fn main() int {
         |  m = Marine(4, 7);
-        |  destruct ^m;
+        |  destruct m;
         |  = 9;
         |}
       """.stripMargin)
@@ -86,14 +86,14 @@ class StructTests extends FunSuite with Matchers {
         |struct Weapon { }
         |fn destructor(weapon Weapon) {
         |  println("Destroying weapon!");
-        |  Weapon() = ^weapon;
+        |  Weapon() = weapon;
         |}
         |struct Marine {
         |  weapon Weapon;
         |}
         |fn destructor(marine Marine) {
         |  println("Destroying marine!");
-        |  Marine(weapon) = ^marine;
+        |  Marine(weapon) = marine;
         |}
         |fn main() {
         |  Marine(Weapon());
@@ -145,7 +145,7 @@ class StructTests extends FunSuite with Matchers {
         |}
         |fn destructor(weapon Weapon) void {
         |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&GetMarineWeaponNameFunc()).getOr("none"));
-        |  Weapon(name, owner) = ^weapon;
+        |  Weapon(name, owner) = weapon;
         |}
         |struct Marine {
         |  weapon! Weapon;
@@ -153,12 +153,12 @@ class StructTests extends FunSuite with Matchers {
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  mut marine.weapon.owner = None<&Marine>();
-        |  Marine(weapon) = ^marine;
+        |  Marine(weapon) = marine;
         |}
         |fn main() {
         |  m = Marine(Weapon("Sword", None<&Marine>()));
-        |  mut m.weapon.owner = Some(m);
-        |  mut m.weapon = Weapon("Spear", Some(m));
+        |  mut m.weapon.owner = Some(&m);
+        |  mut m.weapon = Weapon("Spear", Some(&m));
         |}
       """.stripMargin)
 

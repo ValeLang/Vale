@@ -665,7 +665,7 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonBool(value))))
       }
-      case DotPE(range, left, operatorRange, isMapAccess, targetOwnership, member) => {
+      case DotPE(range, left, operatorRange, isMapAccess, member) => {
         VonObject(
           "Dot",
           None,
@@ -674,7 +674,6 @@ object ParserVonifier {
             VonMember("left", vonifyExpression(left)),
             VonMember("operatorRange", vonifyRange(operatorRange)),
             VonMember("isMapAccess", VonBool(isMapAccess)),
-            VonMember("targetOwnership", vonifyOwnership(targetOwnership)),
             VonMember("member", vonifyName(member))))
       }
       case FloatLiteralPE(range, value) => {
@@ -685,7 +684,7 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonFloat(value))))
       }
-      case FunctionCallPE(range, inline, operatorRange, isMapCall, callableExpr, argExprs) => {
+      case FunctionCallPE(range, inline, operatorRange, isMapCall, callableExpr, argExprs, callableTargetOwnership) => {
         VonObject(
           "FunctionCall",
           None,
@@ -695,7 +694,8 @@ object ParserVonifier {
             VonMember("operatorRange", vonifyRange(operatorRange)),
             VonMember("isMapCall", VonBool(isMapCall)),
             VonMember("callableExpr", vonifyExpression(callableExpr)),
-            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector))))
+            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
+            VonMember("callableTargetOwnership", vonifyOwnership(callableTargetOwnership))))
       }
       case IfPE(range, condition, thenBody, elseBody) => {
         VonObject(
@@ -724,9 +724,9 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("value", VonInt(value))))
       }
-      case OwnershippedPE(range, inner, targetOwnership) => {
+      case LendPE(range, inner, targetOwnership) => {
         VonObject(
-          "Ownershipped",
+          "Lend",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -743,16 +743,15 @@ object ParserVonifier {
             VonMember("pattern", vonifyPattern(pattern)),
             VonMember("source", vonifyExpression(source))))
       }
-      case LookupPE(name, templateArgs, targetOwnership) => {
+      case LookupPE(name, templateArgs) => {
         VonObject(
           "Lookup",
           None,
           Vector(
             VonMember("name", vonifyName(name)),
-            VonMember("templateArgs", vonifyOptional(templateArgs, vonifyTemplateArgs)),
-            VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
+            VonMember("templateArgs", vonifyOptional(templateArgs, vonifyTemplateArgs))))
       }
-      case MethodCallPE(range, callableExpr, operatorRange, isMapCall, methodLookup, argExprs) => {
+      case MethodCallPE(range, callableExpr, operatorRange, callableTargetOwnership, isMapCall, methodLookup, argExprs) => {
         VonObject(
           "MethodCall",
           None,
@@ -762,7 +761,8 @@ object ParserVonifier {
             VonMember("isMapCall", VonBool(isMapCall)),
             VonMember("callableExpr", vonifyExpression(callableExpr)),
             VonMember("method", vonifyExpression(methodLookup)),
-            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector))))
+            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
+            VonMember("callableTargetOwnership", vonifyOwnership(callableTargetOwnership))))
       }
       case MutatePE(range, mutatee, expr) => {
         VonObject(
@@ -834,13 +834,12 @@ object ParserVonifier {
             VonMember("captures", vonifyOptional(captures, vonifyUnit)),
             VonMember("function", vonifyFunction(function))))
       }
-      case MagicParamLookupPE(range, targetOwnership) => {
+      case MagicParamLookupPE(range) => {
         VonObject(
           "MagicParamLookup",
           None,
           Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
+            VonMember("range", vonifyRange(range))))
       }
       case MatchPE(range, condition, lambdas) => {
         VonObject(

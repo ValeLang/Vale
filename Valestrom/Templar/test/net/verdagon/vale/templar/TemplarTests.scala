@@ -253,7 +253,7 @@ class TemplarTests extends FunSuite with Matchers {
       """struct Muta { }
         |
         |fn destructor(m ^Muta) {
-        |  Muta() = ^m;
+        |  Muta() = m;
         |}
         |
         |fn main() {
@@ -602,7 +602,7 @@ class TemplarTests extends FunSuite with Matchers {
         |
         |fn main() int {
         |	x MyOption<int> = MySome<int>();
-        |	= doSomething(^x);
+        |	= doSomething(x);
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -681,7 +681,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |fn main() int {
         |  a = Array<mut, int>(11, &IFunction1<imm, int, int>({_}));
-        |  = len(a);
+        |  = len(&a);
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -746,26 +746,6 @@ class TemplarTests extends FunSuite with Matchers {
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("programs/genericvirtuals/templatedinterface.vale"))
-    val temputs = compile.getTemputs()
-  }
-
-  // Intentional failure 2020-11-27
-  test("Returning from both sides of if, but unstackifying different locals") {
-    val compile = Compilation.multiple(
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        """
-          |fn bork(b int) {}
-          |fn main(b int) int {
-          |  if (true) {
-          |    ret 42;
-          |  } else {
-          |    bork(b^);
-          |    __panic();
-          |  }
-          |}
-          |""".stripMargin))
     val temputs = compile.getTemputs()
   }
 
@@ -884,7 +864,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn main() int {
         |  m = Marine(Weapon(7));
         |  newWeapon = Weapon(10);
-        |  mut m.weapon = ^newWeapon;
+        |  mut m.weapon = newWeapon;
         |  mut newWeapon.ammo = 11;
         |  = 42;
         |}

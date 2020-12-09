@@ -9,7 +9,7 @@ fn main() int {
   weakUnit &&IUnit = &&ownMuta;
   maybeBorrowUnit = lock(weakUnit);
   = if (maybeBorrowUnit.isEmpty()) {
-      drop(^maybeBorrowUnit);
+      drop(maybeBorrowUnit);
       = 73;
     } else {
       maybeBorrowUnit^.get().getHp()

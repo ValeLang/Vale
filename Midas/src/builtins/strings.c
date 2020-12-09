@@ -160,5 +160,3 @@ ValeStr* vstr_fromascii(int code) {
   *dest = code;
   return result;
 }
-
-

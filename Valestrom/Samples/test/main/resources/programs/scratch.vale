@@ -38,7 +38,7 @@ fn !=(a StrSlice, b StrSlice) bool {
 
 fn parse(s str) void {
    c = Context(s, 0);
-   parseRoot(c);
+   parseRoot(&c);
 }
 
 fn readValidChars(c &Context, validChars str) StrSlice {

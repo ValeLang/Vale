@@ -22,16 +22,17 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
 
 class ValeCompiler:
     def valestrom(self,
-                  vale_files: List[PurePath],
+                  vale_files: List[str],
                   valestrom_options: List[str]) -> subprocess.CompletedProcess:
         return procrun(
             [
                 "java",
                 "-cp",
-                str(self.valestrom_path / "Valestrom.jar"),
+                str(self.valestrom_path / "Valestrom.jar"), # + ":" \
+                #+ str((self.valestrom_path / "lift-json_2.12-3.3.0-RC1.jar")),
                 "net.verdagon.vale.driver.Driver",
                 "build"
-            ] + valestrom_options + list(map(lambda x : str(x), vale_files))
+            ] + valestrom_options + vale_files
         )
 
     def valec(self,
@@ -73,13 +74,13 @@ class ValeCompiler:
             self.valestrom_path = cwd
 
         if len(os.environ.get('VALESTD_PATH', '')) > 0:
-            self.valestd_path = PurePath(os.environ.get('VALESTD_PATH', ''))
-        elif path.exists(cwd / "src/valestd"):
-            self.valestd_path = cwd / "src/valestd"
-        elif path.exists(cwd / "runtime"):
-            self.valestd_path = cwd / "runtime"
+            self.builtins_path = PurePath(os.environ.get('VALESTD_PATH', ''))
+        elif path.exists(cwd / "src/builtins"):
+            self.builtins_path = cwd / "src/builtins"
+        elif path.exists(cwd / "builtins"):
+            self.builtins_path = cwd / "builtins"
         else:
-            self.valestd_path = cwd
+            self.builtins_path = cwd
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
         self.valec_path: PurePath = cwd
@@ -208,13 +209,13 @@ class ValeCompiler:
 
         for arg in args:
             if arg.endswith(".vale"):
-                user_valestrom_files.append(PurePath(arg))
+                user_valestrom_files.append(arg)
             elif arg.endswith(".vpr"):
-                user_valestrom_files.append(PurePath(arg))
+                user_valestrom_files.append(arg)
             elif arg.endswith(".vir"):
-                user_vir_files.append(PurePath(arg))
+                user_vir_files.append(arg)
             elif arg.endswith(".c"):
-                user_c_files.append(PurePath(arg))
+                user_c_files.append(arg)
             else:
                 print("Unrecognized input: " + arg)
                 sys.exit(22)
@@ -224,8 +225,7 @@ class ValeCompiler:
             # Add in the default vale files
             user_valestrom_files = (
                 user_valestrom_files +
-                glob.glob(str(cwd / "vstl/*utils.vale")) +
-                [str(cwd / "vstl/strings.vale"), str(cwd / "vstl/opt.vale")])
+                glob.glob(str(cwd / "builtins/*.vale")))
 
             if build_dir != PurePath("."):
                 if os.path.exists(build_dir):
@@ -269,7 +269,7 @@ class ValeCompiler:
             print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
             sys.exit(1)
 
-        c_files = user_c_files.copy() + glob.glob(str(self.valestd_path / "*.c")) + [str(cwd / "vstl/strings.c"), str(cwd / "vstl/mainargs.c")]
+        c_files = user_c_files.copy() + glob.glob(str(self.builtins_path / "*.c"))
 
         # Get .o or .obj
         o_files = glob.glob(str(vir_file.with_suffix(".o"))) + glob.glob(str(vir_file.with_suffix(".obj")))

@@ -4,6 +4,6 @@ fn main() int {
   ownMuta = Muta(73);
   weakMuta = &&ownMuta;
   maybeBorrowMuta = lock(weakMuta);
-  drop(^ownMuta);
+  drop(ownMuta);
   = maybeBorrowMuta^.get().hp;
 }

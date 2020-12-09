@@ -7,10 +7,10 @@ fn getHp(self &Muta impl IUnit) int { self.hp }
 fn main() int {
   ownMuta = Muta(73);
   weakUnit &&IUnit = &&ownMuta;
-  drop(^ownMuta);
+  drop(ownMuta);
   maybeBorrowUnit = lock(weakUnit);
   = if (maybeBorrowUnit.isEmpty()) {
-      drop(^maybeBorrowUnit);
+      drop(maybeBorrowUnit);
       = 42;
     } else {
       maybeBorrowUnit^.get().getHp()

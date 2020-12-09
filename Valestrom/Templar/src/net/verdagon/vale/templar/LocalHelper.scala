@@ -122,7 +122,7 @@ class LocalHelper(
           a.resultRegister.reference.ownership match {
             case Own => Borrow
             case Borrow => Borrow // it's fine if they accidentally borrow a borrow ref
-            case Weak => Weak // If you borrow a weak, just interpret it as a weak
+            case Weak => throw CompileErrorExceptionT(RangedInternalErrorT(loadRange, "Can't borrow a weak local, must lock()"))
             case Share => Share
           }
         (SoftLoad2(a, actualTargetOwnership))

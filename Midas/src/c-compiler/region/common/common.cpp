@@ -50,24 +50,23 @@ LLVMValueRef upcastThinPtr(
           FL(), functionState, builder, sourceStructTypeM, sourceRefLE);
   auto interfaceRefLE =
       makeInterfaceRefStruct(
-          globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM,
+          globalState, functionState, builder, referendStructsSource, sourceStructReferendM, targetInterfaceReferendM,
           controlBlockPtrLE);
   return interfaceRefLE;
 }
 
-LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referend) {
+LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend) {
   if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
     assert(false); // impl
   } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
     auto unknownSizeArrayCountedStructLT =
-        globalState->region->getReferendStructsSource()->getUnknownSizeArrayWrapperStruct(usaMT);
+        structs->getUnknownSizeArrayWrapperStruct(usaMT);
     return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
-    auto countedStructL = globalState->region->getReferendStructsSource()->getWrapperStruct(structReferend);
+    auto countedStructL = structs->getWrapperStruct(structReferend);
     return LLVMPointerType(countedStructL, 0);
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
-    auto interfaceRefStructL =
-        globalState->region->getReferendStructsSource()->getInterfaceRefStruct(interfaceReferend);
+    auto interfaceRefStructL = structs->getInterfaceRefStruct(interfaceReferend);
     return interfaceRefStructL;
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referend).name() << std::endl;
@@ -76,15 +75,15 @@ LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referen
   }
 }
 
-LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend) {
+LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend) {
   if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
     assert(false); // impl
   } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
-    return globalState->region->getWeakRefStructsSource()->getUnknownSizeArrayWeakRefStruct(usaMT);
+    return weakRefStructs->getUnknownSizeArrayWeakRefStruct(usaMT);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
-    return globalState->region->getWeakRefStructsSource()->getStructWeakRefStruct(structReferend);
+    return weakRefStructs->getStructWeakRefStruct(structReferend);
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
-    return globalState->region->getWeakRefStructsSource()->getInterfaceWeakRefStruct(interfaceReferend);
+    return weakRefStructs->getInterfaceWeakRefStruct(interfaceReferend);
   } else {
     assert(false);
   }
@@ -216,13 +215,12 @@ LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
     ControlBlockPtrLE controlBlockPtrLE) {
 
-  auto interfaceRefLT =
-      globalState->region->getReferendStructsSource()->getInterfaceRefStruct(
-          targetInterfaceReferendM);
+  auto interfaceRefLT = structs->getInterfaceRefStruct(targetInterfaceReferendM);
 
   auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
   interfaceRefLE =

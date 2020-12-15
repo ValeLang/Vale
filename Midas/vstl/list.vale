@@ -12,12 +12,14 @@ fn add<E>(list &List<E>, newElement E) {
     newLen = if (len(list) == 0) { 1 } else { len(list) * 2 };
     newArray =
         Array<mut, Opt<E>>(newLen, &IFunction1<mut, int, Opt<E>>((index){
-          = if (index < len(list)) {
-              = (mut list.array[index] = None<E>());
+          res Opt<E> = if (index < len(list)) {
+              result Opt<E> = (mut list.array[index] = None<E>());
+              = result;
             } else {
               result Opt<E> = None<E>();
               = result;
-            }
+            };
+          ret res;
         }));
     mut list.array = newArray;
   }

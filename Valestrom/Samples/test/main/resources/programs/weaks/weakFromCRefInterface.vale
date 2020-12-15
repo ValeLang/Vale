@@ -8,5 +8,5 @@ fn main() int {
   ownMuta = Muta(7);
   weakUnit &&IUnit = &&(&ownMuta);
   maybeBorrowUnit = lock(weakUnit);
-  = maybeBorrowUnit^.get().getHp();
+  = maybeBorrowUnit.get().getHp();
 }

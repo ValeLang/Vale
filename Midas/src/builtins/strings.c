@@ -136,7 +136,7 @@ ValeStr* __vaddStr(
 
 ValeStr* __castIntStr(int n) {
   char tempBuffer[100] = { 0 };
-  int charsWritten = snprintf(tempBuffer, 150, "%d", n);
+  int charsWritten = snprintf(tempBuffer, 100, "%d", n);
   ValeStr* result = vale_newstr(charsWritten);
   char* resultChars = vale_getstrchars(result);
   strncpy(resultChars, tempBuffer, charsWritten);

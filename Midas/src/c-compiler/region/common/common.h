@@ -30,9 +30,9 @@ LLVMValueRef upcastThinPtr(
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);
 
-LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referend);
+LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend);
 
-LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend);
+LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend);
 
 
 
@@ -88,6 +88,7 @@ LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
     ControlBlockPtrLE controlBlockPtrLE);

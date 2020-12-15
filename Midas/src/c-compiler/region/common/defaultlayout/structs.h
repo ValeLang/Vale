@@ -152,6 +152,12 @@ public:
   virtual LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT *usaMT) = 0;
   virtual LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend *interfaceReferend) = 0;
   virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
+
+  virtual LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) = 0;
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  virtual LLVMTypeRef getWeakVoidRefStruct(Referend* referend) = 0;
 };
 
 
@@ -513,6 +519,17 @@ public:
       Reference* refM,
       ControlBlockPtrLE controlBlockPtr) override;
 
+  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override {
+    return weakRefHeaderStructL;
+  }
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override {
+    return weakVoidRefStructL;
+  }
+
+private:
   GlobalState* globalState;
 
   ReferendStructs referendStructs;

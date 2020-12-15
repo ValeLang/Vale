@@ -1,0 +1,10 @@
+struct Spaceship export {
+  a int;
+  b int;
+}
+
+fn sumSpaceshipFields(s &Spaceship) int extern;
+
+fn main() int {
+  sumSpaceshipFields(&Spaceship(73, 42))
+}

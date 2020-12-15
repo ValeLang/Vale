@@ -236,6 +236,12 @@ public:
       Reference* targetType,
       Ref sourceRef) override;
 
+  void checkInlineStructType(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref refLE) override;
+
   Ref loadElementFromKSAWithUpgrade(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -300,7 +306,6 @@ public:
       Reference* generatorType,
       Prototype* generatorMethod,
       Ref generatorRef,
-      LLVMTypeRef usaWrapperPtrLT,
       LLVMTypeRef usaElementLT,
       Ref sizeRef,
       const std::string& typeName) override;
@@ -328,24 +333,24 @@ public:
 //    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
 //  }
   // TODO get rid of these once refactor is done
-  ControlBlock* getControlBlock(Referend* referend) override {
-    return referendStructs.getControlBlock(referend);
-  }
-  IReferendStructsSource* getReferendStructsSource() override {
-    return &referendStructs;
-  }
-  IWeakRefStructsSource* getWeakRefStructsSource() override {
-    return &weakRefStructs;
-  }
+//  ControlBlock* getControlBlock(Referend* referend) override {
+//    return referendStructs.getControlBlock(referend);
+//  }
+//  IReferendStructsSource* getReferendStructsSource() override {
+//    return &referendStructs;
+//  }
+//  IWeakRefStructsSource* getWeakRefStructsSource() override {
+//    return &weakRefStructs;
+//  }
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     return referendStructs.getStringLen(functionState, builder, ref);
   }
-  LLVMTypeRef getWeakRefHeaderStruct() override {
-    return mutWeakableStructs.weakRefHeaderStructL;
-  }
-  LLVMTypeRef getWeakVoidRefStruct() override {
-    return mutWeakableStructs.weakVoidRefStructL;
-  }
+//  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override {
+//    return mutWeakableStructs.getWeakRefHeaderStruct(referend);
+//  }
+//  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override {
+//    return mutWeakableStructs.getWeakVoidRefStruct(referend);
+//  }
   void fillControlBlock(
       AreaAndFileAndLine from,
       FunctionState* functionState,
@@ -358,6 +363,7 @@ public:
 
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
+      InterfaceReferend* referend,
       InterfaceMethod* method);
 
 

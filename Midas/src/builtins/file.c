@@ -65,10 +65,12 @@ void writeStringToFile(ValeStr* filenameVStr, ValeStr* contentsVStr) {
     exit(1);
   }
 
-  if (1 != fwrite(contents, contentsLen, sizeof(char), fp)) {
-    fclose(fp);
-    fputs("Failed to write file", stderr);
-    exit(1);
+  if (contentsLen > 0) {
+    if (1 != fwrite(contents, contentsLen, 1, fp)) {
+      fclose(fp);
+      fputs("Failed to write file", stderr);
+      exit(1);
+    }
   }
 
   fclose(fp);

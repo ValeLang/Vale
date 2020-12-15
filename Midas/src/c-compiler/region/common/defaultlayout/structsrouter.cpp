@@ -224,3 +224,10 @@ LLVMTypeRef WeakRefStructsRouter::getInterfaceWeakRefStruct(InterfaceReferend* i
 WeakFatPtrLE WeakRefStructsRouter::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
   return getWeakRefStructsSource(referenceM_->referend)->makeWeakFatPtr(referenceM_, ptrLE);
 }
+
+LLVMTypeRef WeakRefStructsRouter::getWeakRefHeaderStruct(Referend* referend) {
+  return getWeakRefStructsSource(referend)->getWeakRefHeaderStruct(referend);
+}
+LLVMTypeRef WeakRefStructsRouter::getWeakVoidRefStruct(Referend* referend) {
+  return getWeakRefStructsSource(referend)->getWeakVoidRefStruct(referend);
+}

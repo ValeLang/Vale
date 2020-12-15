@@ -223,9 +223,9 @@ class ValeCompiler:
         vir_file = None
         if len(user_valestrom_files) > 0 and len(user_vir_files) == 0:
             # Add in the default vale files
-            user_valestrom_files = (
+            valestrom_files = (
                 user_valestrom_files +
-                glob.glob(str(cwd / "builtins/*.vale")))
+                glob.glob(str(self.builtins_path / "*.vale")))
 
             if build_dir != PurePath("."):
                 if os.path.exists(build_dir):
@@ -240,7 +240,7 @@ class ValeCompiler:
                 valestrom_options.append("-op")
                 valestrom_options.append(str(parseds_output_dir))
 
-            proc = self.valestrom(user_valestrom_files, valestrom_options)
+            proc = self.valestrom(valestrom_files, valestrom_options)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode == 0:
@@ -250,7 +250,7 @@ class ValeCompiler:
                 print(proc.stdout + "\n" + proc.stderr)
                 sys.exit(22)
             else:
-                print(f"Internal error while compiling {user_valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
+                print(f"Internal error while compiling {valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
                 sys.exit(proc.returncode)
         elif len(user_vir_files) > 0 and len(user_valestrom_files) == 0:
             if len(user_vir_files) > 1:

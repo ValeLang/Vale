@@ -5,5 +5,5 @@ fn main() int {
   borrowMuta = &ownMuta;
   weakMuta = &&borrowMuta;
   maybeBorrowMuta = lock(weakMuta);
-  = maybeBorrowMuta^.get().hp;
+  = maybeBorrowMuta.get().hp;
 }

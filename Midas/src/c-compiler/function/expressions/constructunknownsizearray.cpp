@@ -34,8 +34,6 @@ Ref translateConstructUnknownSizeArray(
       constructUnknownSizeArray->generatorType, generatorLE);
 
   // If we get here, arrayLT is a pointer to our counted struct.
-  auto unknownSizeArrayCountedStructLT =
-      functionState->defaultRegion->getReferendStructsSource()->getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT);
   auto usaRef =
       functionState->defaultRegion->constructUnknownSizeArrayCountedStruct(
           functionState,
@@ -46,7 +44,6 @@ Ref translateConstructUnknownSizeArray(
           generatorType,
           constructUnknownSizeArray->generatorMethod,
           generatorLE,
-          unknownSizeArrayCountedStructLT,
           usaElementLT,
           sizeLE,
           unknownSizeArrayMT->name->name);

@@ -76,19 +76,19 @@ class ValeTest(unittest.TestCase):
                          f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
 
     def test_assist_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "assist", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "assist", 42)
     def test_unsafefast_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "unsafe-fast", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "unsafe-fast", 42)
     def test_resilientv0_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v0", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v0", 42)
     def test_resilientv1_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v1", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v1", 42)
     def test_resilientv2_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v2", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v2", 42)
     def test_resilientv3_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v3", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v3", 42)
     def test_naiverc_mutswaplocals(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "naive-rc", 7)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "naive-rc", 42)
 
     def test_assist_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)
@@ -779,6 +779,21 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externtupleret.vale", PATH_TO_SAMPLES + "programs/externs/externtupleret.c"], "resilient-v3", 42)
     def test_naiverc_externtupleret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externtupleret.vale", PATH_TO_SAMPLES + "programs/externs/externtupleret.c"], "naive-rc", 42)
+
+    def test_assist_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "assist", 42)
+    def test_unsafefast_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "unsafe-fast", 42)
+    def test_resilientv0_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "resilient-v0", 42)
+    def test_resilientv1_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "resilient-v1", 42)
+    def test_resilientv2_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "resilient-v2", 42)
+    def test_resilientv3_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "resilient-v3", 42)
+    def test_naiverc_externstructparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstructparam.vale", PATH_TO_SAMPLES + "programs/externs/externstructparam.c"], "naive-rc", 42)
 
     def test_assist_externstrlen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstrlen.vale", PATH_TO_SAMPLES + "programs/externs/externstrlen.c"], "assist", 11)

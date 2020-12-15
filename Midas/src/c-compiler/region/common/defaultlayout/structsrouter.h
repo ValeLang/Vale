@@ -165,6 +165,8 @@ public:
   LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) override;
   LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) override;
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
+  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override;
+  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override;
 
 private:
   GetWeakRefStructsSource getWeakRefStructsSource;

@@ -136,10 +136,10 @@ LLVMTypeRef Assist::translateType(Reference* referenceM) {
     case Ownership::OWN:
     case Ownership::BORROW:
       assert(referenceM->location != Location::INLINE);
-      return translateReferenceSimple(globalState, referenceM->referend);
+      return translateReferenceSimple(globalState, &referendStructs, referenceM->referend);
     case Ownership::WEAK:
       assert(referenceM->location != Location::INLINE);
-      return translateWeakReference(globalState, referenceM->referend);
+      return translateWeakReference(globalState, &weakRefStructs, referenceM->referend);
     default:
       assert(false);
   }
@@ -218,7 +218,7 @@ void Assist::translateEdge(
   std::vector<LLVMValueRef> edgeFunctionsL;
   for (int i = 0; i < edge->structPrototypesByInterfaceMethod.size(); i++) {
     auto interfaceFunctionLT =
-        translateInterfaceMethodToFunctionType(interfaceM->methods[i]);
+        translateInterfaceMethodToFunctionType(edge->interfaceName, interfaceM->methods[i]);
     interfaceFunctionsLT.push_back(interfaceFunctionLT);
 
     auto funcName = edge->structPrototypesByInterfaceMethod[i].second->name;
@@ -239,7 +239,7 @@ void Assist::translateInterface(
   for (int i = 0; i < interfaceM->methods.size(); i++) {
     interfaceMethodTypesL.push_back(
         LLVMPointerType(
-            translateInterfaceMethodToFunctionType(interfaceM->methods[i]),
+            translateInterfaceMethodToFunctionType(interfaceM->referend, interfaceM->methods[i]),
             0));
   }
   referendStructs.translateInterface(
@@ -248,6 +248,7 @@ void Assist::translateInterface(
 }
 
 LLVMTypeRef Assist::translateInterfaceMethodToFunctionType(
+    InterfaceReferend* referend,
     InterfaceMethod* method) {
   auto returnMT = method->prototype->returnType;
   auto paramsMT = method->prototype->params;
@@ -261,7 +262,7 @@ LLVMTypeRef Assist::translateInterfaceMethodToFunctionType(
       paramsLT[method->virtualParamIndex] = LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
       break;
     case Ownership::WEAK:
-      paramsLT[method->virtualParamIndex] = mutWeakableStructs.weakVoidRefStructL;
+      paramsLT[method->virtualParamIndex] = mutWeakableStructs.getWeakVoidRefStruct(referend);
       break;
   }
 
@@ -773,10 +774,11 @@ Ref Assist::constructUnknownSizeArrayCountedStruct(
     Reference* generatorType,
     Prototype* generatorMethod,
     Ref generatorRef,
-    LLVMTypeRef usaWrapperPtrLT,
     LLVMTypeRef usaElementLT,
     Ref sizeRef,
     const std::string& typeName) {
+  auto usaWrapperPtrLT =
+      referendStructs.getUnknownSizeArrayWrapperStruct(unknownSizeArrayT);
   return ::constructUnknownSizeArrayCountedStruct(
       globalState, functionState, blockState, builder, &referendStructs, usaMT, unknownSizeArrayT, generatorType, generatorMethod,
       generatorRef, usaWrapperPtrLT, usaElementLT, sizeRef, typeName,
@@ -791,4 +793,15 @@ Ref Assist::constructUnknownSizeArrayCountedStruct(
             controlBlockPtrLE,
             typeName);
       });
+}
+
+void Assist::checkInlineStructType(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refMT,
+    Ref refLE) {
+  auto argLE = checkValidReference(FL(), functionState, builder, refMT, refLE);
+  auto structReferend = dynamic_cast<StructReferend*>(refMT->referend);
+  assert(structReferend);
+  assert(LLVMTypeOf(argLE) == referendStructs.getInnerStruct(structReferend));
 }

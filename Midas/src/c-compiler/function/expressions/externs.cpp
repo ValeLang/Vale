@@ -296,8 +296,7 @@ Ref translateExternCall(
       } else if (auto structReferend = dynamic_cast<StructReferend*>(argRefMT->referend)) {
         if (argRefMT->ownership == Ownership::SHARE) {
           if (argRefMT->location == Location::INLINE) {
-            assert(LLVMTypeOf(argLE) ==
-                functionState->defaultRegion->getReferendStructsSource()->getInnerStruct(structReferend));
+            functionState->defaultRegion->checkInlineStructType(functionState, builder, argRefMT, args[i]);
           } else {
             std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
             assert(false);

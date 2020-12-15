@@ -643,6 +643,15 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     assert(false);
   }
   LLVMDisposeBuilder(entryBuilder);
+
+
+  for (auto p : program->structs) {
+    auto name = p.first;
+    auto structM = p.second;
+    for (auto e : structM->edges) {
+      defaultRegion->declareEdge(e);
+    }
+  }
 }
 
 void createModule(GlobalState *globalState) {

@@ -1006,5 +1006,5 @@ LLVMValueRef WeakableReferendStructs::getStrongRcFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
-  return referendStructs.getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
+  return referendStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
 }

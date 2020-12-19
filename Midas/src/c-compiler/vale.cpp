@@ -29,6 +29,7 @@
 #include <region/assist/assist.h>
 #include <region/mega/mega.h>
 #include <function/expressions/shared/string.h>
+#include <sstream>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -644,13 +645,47 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
   LLVMDisposeBuilder(entryBuilder);
 
-
+  auto cByExportedName = std::unordered_map<std::string, std::string>();
   for (auto p : program->structs) {
-    auto name = p.first;
     auto structM = p.second;
-    for (auto e : structM->edges) {
-      defaultRegion->declareEdge(e);
+    if (globalState->program->isExported(structM->name)) {
+      defaultRegion->generateStructDefsC(&cByExportedName, structM);
     }
+  }
+  for (auto p : program->interfaces) {
+    auto interfaceM = p.second;
+    if (globalState->program->isExported(interfaceM->name)) {
+      defaultRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+    }
+  }
+  for (auto p : program->functions) {
+    auto functionM = p.second;
+    if (globalState->program->isExported(functionM->prototype->name)) {
+      auto exportedName = program->getExportedName(functionM->prototype->name);
+      std::stringstream s;
+      s << "extern " << defaultRegion->getRefNameC(functionM->prototype->returnType) << " ";
+      s << exportedName << "(";
+      for (int i = 0; i < functionM->prototype->params.size(); i++) {
+        if (i > 0) {
+          s << ", ";
+        }
+        s << defaultRegion->getRefNameC(functionM->prototype->params[i]) << " param" << i;
+      }
+      s << ");" << std::endl;
+      cByExportedName.insert(std::make_pair(exportedName, s.str()));
+    }
+  }
+  for (auto p : cByExportedName) {
+    auto exportedName = p.first;
+    auto c = p.second;
+    auto filepath = globalState->opt->srcDir + "/" + exportedName + ".h";
+    std::ofstream out(filepath, std::ofstream::out);
+    if (!out) {
+      std::cerr << "Couldn't make file: " << filepath << std::endl;
+      exit(1);
+    }
+    std::cout << "Writing " << filepath;
+    out << c;
   }
 }
 

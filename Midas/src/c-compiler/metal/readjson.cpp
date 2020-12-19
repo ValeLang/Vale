@@ -590,5 +590,13 @@ Program* readProgram(MetalCache* cache, const json& program) {
       readArrayIntoMap<Referend*, Prototype*>(
           cache,
           program["immDestructorsByReferend"],
-          readReferendAndPrototypeEntry));
+          readReferendAndPrototypeEntry),
+      readArrayIntoMap<Name*, std::string>(
+          cache,
+          program["exportedNameByFullName"],
+          [](MetalCache* cache, json j){
+            auto fullName = readName(cache, j["fullName"]);
+            std::string exportedName = j["exportedName"];
+            return std::make_pair(fullName, exportedName);
+          }));
 }

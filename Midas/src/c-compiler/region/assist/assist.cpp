@@ -6,6 +6,7 @@
 #include <translatetype.h>
 #include <region/common/common.h>
 #include <region/common/heap.h>
+#include <sstream>
 #include "assist.h"
 
 Assist::Assist(GlobalState* globalState_) :
@@ -235,6 +236,7 @@ void Assist::declareInterface(
 
 void Assist::translateInterface(
     InterfaceDefinition* interfaceM) {
+  assert((uint64_t)interfaceM->referend > 0x10000);
   std::vector<LLVMTypeRef> interfaceMethodTypesL;
   for (int i = 0; i < interfaceM->methods.size(); i++) {
     interfaceMethodTypesL.push_back(
@@ -804,4 +806,64 @@ void Assist::checkInlineStructType(
   auto structReferend = dynamic_cast<StructReferend*>(refMT->referend);
   assert(structReferend);
   assert(LLVMTypeOf(argLE) == referendStructs.getInnerStruct(structReferend));
+}
+
+void Assist::generateStructDefsC(std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* structDefM) {
+  if (structDefM->mutability == Mutability::IMMUTABLE) {
+    return defaultImmutables.generateStructDefsC(cByExportedName, structDefM);
+  } else {
+    auto baseName = globalState->program->getExportedName(structDefM->referend->fullName);
+    auto refTypeName = baseName + "Ref";
+    std::stringstream s;
+    s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+
+    for (auto member : structDefM->members) {
+      // Getter
+      s << "extern " << getRefNameC(member->type);
+      s << " " << refTypeName << "_get_" << member->name;
+      s << "(" << refTypeName << " ref" << ");" << std::endl;
+
+      // Setter
+      if (member->variability == Variability::VARYING) {
+        s << "void " << refTypeName << "_set_" << member->name;
+        s << "(" << refTypeName << " ref" << ", " << getRefNameC(member->type) << " value);" << std::endl;
+      }
+    }
+
+    cByExportedName->insert(std::make_pair(baseName, s.str()));
+  }
+}
+
+void Assist::generateInterfaceDefsC(std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* interfaceDefM) {
+  if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
+    defaultImmutables.generateInterfaceDefsC(cByExportedName, interfaceDefM);
+  } else {
+    auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
+    std::stringstream s;
+    s << "typedef struct " << name << "Ref { void* unused1; void* unused2; } " << name << ";";
+    cByExportedName->insert(std::make_pair(name, s.str()));
+  }
+}
+
+std::string Assist::getRefNameC(Reference* refMT) {
+  if (refMT->ownership == Ownership::SHARE) {
+    return defaultImmutables.getRefNameC(refMT);
+  } else if (auto structRefMT = dynamic_cast<StructReferend*>(refMT->referend)) {
+    auto structMT = globalState->program->getStruct(structRefMT->fullName);
+    auto baseName = globalState->program->getExportedName(structRefMT->fullName);
+    if (structMT->mutability == Mutability::MUTABLE) {
+      assert(refMT->location != Location::INLINE);
+      return baseName + "Ref";
+    } else {
+      if (refMT->location == Location::INLINE) {
+        return baseName + "Inl";
+      } else {
+        return baseName + "Ref";
+      }
+    }
+  } else if (auto interfaceMT = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+    return globalState->program->getExportedName(interfaceMT->fullName) + "Ref";
+  } else {
+    assert(false);
+  }
 }

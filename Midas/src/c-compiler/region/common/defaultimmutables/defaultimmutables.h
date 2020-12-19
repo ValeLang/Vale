@@ -51,6 +51,10 @@ public:
       Reference* refM,
       LLVMValueRef refLE);
 
+  std::string getRefNameC(Reference* refMT);
+  void generateStructDefsC(std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT);
+  void generateInterfaceDefsC(std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT);
+
 private:
   GlobalState* globalState;
 

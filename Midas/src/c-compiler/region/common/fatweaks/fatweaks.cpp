@@ -113,7 +113,7 @@ WeakFatPtrLE FatWeaks::assembleVoidStructWeakRef(
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "objAsVoidPtr");
 
-  auto weakRefLE = LLVMGetUndef(globalState->region->getWeakVoidRefStruct());
+  auto weakRefLE = LLVMGetUndef(weakRefStructsSource->getWeakVoidRefStruct(refM->referend));
   weakRefLE = LLVMBuildInsertValue(builder, weakRefLE, headerLE, WEAK_REF_MEMBER_INDEX_FOR_HEADER, "");
   weakRefLE =
       LLVMBuildInsertValue(builder, weakRefLE, objVoidPtrLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");

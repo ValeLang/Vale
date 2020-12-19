@@ -47,13 +47,11 @@ std::string getFileNameNoExt(std::string fn) {
 std::string fileDirectory(std::string fn) {
   char *fnp = &fn[fn.length()-1];
 
-  // Look backwards for '.' If not found, we are done
-  while (fnp != fn && *fnp != '.' && *fnp != '/' && *fnp != '\\')
+  // Look backwards for '/' If not found, we are done
+  while (fnp != fn && *fnp != '/' && *fnp != '\\')
     --fnp;
   if (fnp == fn)
     return fn;
-  if (*fnp == '/' || *fnp == '\\')
-    return fnp + 1;
 
   // Create string to hold filename and return
   return std::string(fn.c_str(), fnp-fn.c_str());

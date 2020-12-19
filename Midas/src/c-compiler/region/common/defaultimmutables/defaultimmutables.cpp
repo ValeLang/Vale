@@ -5,6 +5,7 @@
 #include <region/common/heap.h>
 #include <function/expressions/shared/string.h>
 #include <region/common/common.h>
+#include <sstream>
 #include "defaultimmutables.h"
 
 ControlBlock makeImmControlBlock(GlobalState* globalState) {
@@ -229,4 +230,63 @@ void DefaultImmutables::checkValidReference(
     Reference* refM,
     LLVMValueRef refLE) {
   regularCheckValidReference(checkerAFL, globalState, functionState, builder, referendStructs, refM, refLE);
+}
+
+std::string DefaultImmutables::getRefNameC(Reference* sourceMT) {
+  auto sourceRnd = sourceMT->referend;
+  if (dynamic_cast<Int *>(sourceRnd)) {
+    return "int64_t";
+  } else if (dynamic_cast<Bool *>(sourceRnd)) {
+    return "int8_t";
+  } else if (dynamic_cast<Float *>(sourceRnd)) {
+    return "double";
+  } else if (dynamic_cast<Str *>(sourceRnd)) {
+    return "Str";
+  } else if (auto interfaceRnd = dynamic_cast<InterfaceReferend *>(sourceRnd)) {
+    auto baseName = globalState->program->getExportedName(interfaceRnd->fullName);
+    assert(sourceMT->ownership == Ownership::SHARE);
+    if (sourceMT->location == Location::INLINE) {
+      return baseName + "Inl";
+    } else {
+      return baseName + "Ref";
+    }
+  } else if (auto structRnd = dynamic_cast<StructReferend *>(sourceRnd)) {
+    auto baseName = globalState->program->getExportedName(structRnd->fullName);
+    assert(sourceMT->ownership == Ownership::SHARE);
+    if (sourceMT->location == Location::INLINE) {
+      return baseName + "Inl";
+    } else {
+      return baseName + "Ref";
+    }
+  } else if (dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
+             dynamic_cast<UnknownSizeArrayT *>(sourceRnd)) {
+    assert(false); // impl
+  } else {
+    std::cerr << "Unimplemented type in immutables' getRefNameC: "
+              << typeid(*sourceMT->referend).name() << std::endl;
+    assert(false);
+  }
+}
+
+void DefaultImmutables::generateStructDefsC(std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* structDefM) {
+  auto name = globalState->program->getExportedName(structDefM->referend->fullName);
+  std::stringstream s;
+  s << "typedef struct " << name << "Ref { void* unused; } " << name << ";" << std::endl;
+
+  // For inlines
+  s << "typedef struct " << name << "Inl {";
+  for (int i = 0; i < structDefM->members.size(); i++) {
+    auto member = structDefM->members[i];
+    s << getRefNameC(member->type) << " unused" << i << ";";
+  }
+  s << " } " + name + ";" << std::endl;
+
+  cByExportedName->insert(std::make_pair(name, s.str()));
+}
+
+void DefaultImmutables::generateInterfaceDefsC(std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* interfaceDefM) {
+  auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
+  std::stringstream s;
+  s << "typedef struct " << name << "Ref { void* unused1; void* unused2; } " << name << ";";
+  cByExportedName->insert(std::make_pair(name, s.str()));
 }

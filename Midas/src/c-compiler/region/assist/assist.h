@@ -360,6 +360,13 @@ public:
       ControlBlockPtrLE controlBlockPtrLE,
       const std::string& typeName);
 
+  std::string getRefNameC(
+      Reference* refMT) override;
+  void generateStructDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;
+  void generateInterfaceDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
+
 
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(

@@ -51,24 +51,27 @@ public:
     std::unordered_map<std::string, Prototype*> externs;
     std::unordered_map<std::string, Function*> functions;
     std::unordered_map<Referend*, Prototype*> immDestructorsByKind;
+    std::unordered_map<Name*, std::string> exportedNameByFullName;
 
     Program(
-      std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
-      std::unordered_map<std::string, StructDefinition*> structs_,
-      std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays_,
-      std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays_,
-      StructReferend* emptyTupleStructRef_,
-      std::unordered_map<std::string, Prototype*> externs_,
-      std::unordered_map<std::string, Function*> functions_,
-        std::unordered_map<Referend*, Prototype*> immDestructorsByKind_) :
-        interfaces(move(interfaces_)),
-        structs(move(structs_)),
-        knownSizeArrays(move(knownSizeArrays_)),
-        unknownSizeArrays(move(unknownSizeArrays_)),
-        emptyTupleStructRef(emptyTupleStructRef_),
-        externs(move(externs_)),
-        functions(move(functions_)),
-        immDestructorsByKind(move(immDestructorsByKind_)) {}
+        std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
+        std::unordered_map<std::string, StructDefinition*> structs_,
+        std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays_,
+        std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays_,
+        StructReferend* emptyTupleStructRef_,
+        std::unordered_map<std::string, Prototype*> externs_,
+        std::unordered_map<std::string, Function*> functions_,
+        std::unordered_map<Referend*, Prototype*> immDestructorsByKind_,
+        std::unordered_map<Name*, std::string> exportedNameByFullName_) :
+      interfaces(move(interfaces_)),
+      structs(move(structs_)),
+      knownSizeArrays(move(knownSizeArrays_)),
+      unknownSizeArrays(move(unknownSizeArrays_)),
+      emptyTupleStructRef(emptyTupleStructRef_),
+      externs(move(externs_)),
+      functions(move(functions_)),
+      immDestructorsByKind(move(immDestructorsByKind_)),
+      exportedNameByFullName(move(exportedNameByFullName_)) {}
 
 
   StructDefinition* getStruct(Name* name) {
@@ -85,6 +88,18 @@ public:
     auto iter = immDestructorsByKind.find(referend);
     assert(iter != immDestructorsByKind.end());
     return iter->second;
+  }
+  bool isExported(Name* name) {
+    auto exportedNameI = exportedNameByFullName.find(name);
+    return exportedNameI != exportedNameByFullName.end();
+  }
+  std::string getExportedName(Name* name) {
+    auto exportedNameI = exportedNameByFullName.find(name);
+    if (exportedNameI == exportedNameByFullName.end()) {
+      std::cerr << "No exported name for " << name->name << std::endl;
+      assert(false);
+    }
+    return exportedNameI->second;
   }
   Weakability getReferendWeakability(Referend* referend);
   Mutability getReferendMutability(Referend* referendM);
@@ -189,7 +204,10 @@ public:
       mutability(mutability_),
       superInterfaces(superInterfaces_),
       methods(methods_),
-      weakability(weakable_) {}
+      weakability(weakable_) {
+      assert((uint64_t)name > 0x10000);
+      assert((uint64_t)referend > 0x10000);
+    }
 };
 
 class Function {

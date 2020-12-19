@@ -1833,3 +1833,51 @@ void Mega::checkInlineStructType(
   assert(structReferend);
   assert(LLVMTypeOf(argLE) == referendStructs.getInnerStruct(structReferend));
 }
+
+
+std::string Mega::getRefNameC(Reference* refMT) {
+  assert(false); // impl
+}
+
+void Mega::generateStructDefsC(
+    std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      assert(false);
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+//      return "void* unused;";
+      assert(false); // impl
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+      assert(false); // impl
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      // generate this from the control block?
+//      return "uint64_t unused1; void* unused2;";
+      assert(false); // impl
+  }
+}
+
+void Mega::generateInterfaceDefsC(
+    std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      assert(false);
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+//      return "void* unused; void* unused;";
+      assert(false); // impl
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      // generate this from the control block?
+//      return "uint64_t unused1; void* unused2; void* unused3;";
+      assert(false); // impl
+  }
+}

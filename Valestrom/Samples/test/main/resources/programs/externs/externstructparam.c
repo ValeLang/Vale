@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "exports.h"
+#include "Spaceship.h"
 
 //typedef struct {
 //  uint64_t ignore_1; // generation. if 0xFF, this is the owning reference.
@@ -10,5 +10,5 @@
 //extern int32_t Spaceship_get_b(Spaceship* s);
 
 int64_t sumSpaceshipFields(SpaceshipRef s) {
-  return Spaceship_get_a(s) + Spaceship_get_b(s);
+  return SpaceshipRef_get_a(s) + SpaceshipRef_get_b(s);
 }

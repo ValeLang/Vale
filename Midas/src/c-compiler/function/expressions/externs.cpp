@@ -298,13 +298,13 @@ Ref translateExternCall(
           if (argRefMT->location == Location::INLINE) {
             functionState->defaultRegion->checkInlineStructType(functionState, builder, argRefMT, args[i]);
           } else {
-            std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
-            assert(false);
+//            std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
+            assert(false); // impl
           }
         } else {
-          std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
-          assert(false);
         }
+      } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(argRefMT->referend)) {
+        assert(false); // impl
       } else {
         std::cerr << "Invalid type for extern!" << std::endl;
         assert(false);

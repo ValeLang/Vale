@@ -150,6 +150,13 @@ public:
   virtual void translateStruct(
       StructDefinition* structM) = 0;
 
+  virtual std::string getRefNameC(
+      Reference* refMT) = 0;
+  virtual void generateStructDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) = 0;
+  virtual void generateInterfaceDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) = 0;
+
   virtual void declareStruct(
       StructDefinition* structM) = 0;
 

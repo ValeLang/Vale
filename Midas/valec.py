@@ -44,11 +44,12 @@ class ValeCompiler:
 
     def clang(self,
               o_files: List[str],
+              o_files_dir: str,
               exe_file: str) -> subprocess.CompletedProcess:
         if self.windows:
             return procrun(["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + exe_file] + o_files)
         else:
-            return procrun(["clang", "-O3", "-lm", "-o", exe_file] + o_files)
+            return procrun(["clang", "-O3", "-lm", "-o", exe_file, "-I" + o_files_dir] + o_files)
 
     def exec(self, exe_file: str) -> subprocess.CompletedProcess:
         return procrun([f"./{exe_file}"])
@@ -282,7 +283,7 @@ class ValeCompiler:
 
 
         clang_inputs = o_files + c_files
-        proc = self.clang([str(n) for n in clang_inputs], str(build_dir / exe_file))
+        proc = self.clang([str(n) for n in clang_inputs], str(build_dir), str(build_dir / exe_file))
         # print(proc.stdout)
         # print(proc.stderr)
         if proc.returncode != 0:

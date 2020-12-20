@@ -320,15 +320,21 @@ Ref translateExternCall(
     buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", call->function->name->name);
 
+    for (int i = 0; i < call->argExprs.size(); i++) {
+      auto argRefMT = call->function->params[i];
+      if (argRefMT->ownership != Ownership::OWN) {
+        if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+          std::cerr << "Naive-rc can't call externs with non-primitives safely yet. (Naive-rc is an experimental region only for use in perf comparisons)" << std::endl;
+          exit(1);
+        }
+        // Dealias any object heading into the outside world, see DEPAR.
+        functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
+      }
+    }
+
     auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
     auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
     functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
-
-    for (int i = 0; i < call->argExprs.size(); i++) {
-      auto argRefMT = call->function->params[i];
-      // Extern isnt expected to drop the ref, so we do
-      functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
-    }
 
     if (call->function->returnType->referend == globalState->metalCache.never) {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
@@ -338,6 +344,12 @@ Ref translateExternCall(
     } else {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
       buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
+
+      if (call->function->returnType->ownership != Ownership::OWN) {
+        // Alias any object coming from the outside world, see DEPAR.
+        functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, call->function->returnType, resultRef);
+      }
+
       return resultRef;
     }
   }

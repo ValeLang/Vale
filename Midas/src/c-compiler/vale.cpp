@@ -650,38 +650,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto structM = p.second;
     if (globalState->program->isExported(structM->name)) {
       defaultRegion->generateStructDefsC(&cByExportedName, structM);
-
-      for (auto member : structM->members) {
-        auto returnTypeL = translateType(member->type);
-        // For the assist region, an owning reference is just a raw pointer, which we want here.
-        auto paramTypeL =
-            translateType(
-                globalState->metalCache.getReference(
-                    Ownership::OWN, Location::YONDER, structDefM->referend));
-        LLVMTypeRef functionTypeL =
-            LLVMFunctionType(returnTypeL, &paramTypeL, 1, false);
-        LLVMValueRef getterFunctionL = LLVMAddFunction(globalState->mod, getterName.c_str(), functionTypeL);
-        LLVMSetLinkage(getterFunctionL, LLVMExternalLinkage);
-
-        LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, getterFunctionL, "entry");
-        LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-        LLVMPositionBuilderAtEnd(builder, block);
-        // This is unusual because normally we have a separate localsBuilder which points to a separate
-        // block at the beginning. This is a simple function which should require no locals, so this
-        // should be fine.
-        LLVMBuilderRef localsBuilder = builder;
-
-        FunctionState functionState(getterName.c_str(), this, getterFunctionL, returnTypeL,
-                                    localsBuilder);
-
-        auto strRefLE = LLVMGetParam(getterFunctionL, 0);
-
-        auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strRefLE);
-
-        LLVMBuildRet(builder, globalState->region->getStringBytesPtr(&functionState, builder, strRef));
-
-        LLVMDisposeBuilder(builder);
-      }
     }
   }
   for (auto p : program->interfaces) {

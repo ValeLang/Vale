@@ -4,6 +4,8 @@ struct Spaceship export {
 }
 
 fn sumSpaceshipFields(s &Spaceship) int extern;
+fn spaceshipGetA(s &Spaceship) int export { s.a }
+fn spaceshipGetB(s &Spaceship) int export { s.b }
 
 fn main() int {
   sumSpaceshipFields(&Spaceship(73, 42))

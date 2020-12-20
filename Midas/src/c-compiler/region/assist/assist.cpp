@@ -817,18 +817,20 @@ void Assist::generateStructDefsC(std::unordered_map<std::string, std::string>* c
     std::stringstream s;
     s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
 
-    for (auto member : structDefM->members) {
-      // Getter
-      s << "extern " << getRefNameC(member->type);
-      s << " " << refTypeName << "_get_" << member->name;
-      s << "(" << refTypeName << " ref" << ");" << std::endl;
-
-      // Setter
-      if (member->variability == Variability::VARYING) {
-        s << "void " << refTypeName << "_set_" << member->name;
-        s << "(" << refTypeName << " ref" << ", " << getRefNameC(member->type) << " value);" << std::endl;
-      }
-    }
+//    for (auto member : structDefM->members) {
+//      // Getter
+//      {
+//        auto getterName = refTypeName + "_get_" + member->name;
+//        s << "extern " << getRefNameC(member->type) << " " << getterName;
+//        s << "(" << refTypeName << " ref" << ");" << std::endl;
+//      }
+//
+//      // Setter
+//      if (member->variability == Variability::VARYING) {
+//        s << "void " << refTypeName << "_set_" << member->name;
+//        s << "(" << refTypeName << " ref" << ", " << getRefNameC(member->type) << " value);" << std::endl;
+//      }
+//    }
 
     cByExportedName->insert(std::make_pair(baseName, s.str()));
   }

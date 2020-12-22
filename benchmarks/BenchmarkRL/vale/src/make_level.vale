@@ -80,7 +80,7 @@ Level {
         y! = 0;
         while (y < max_height) {
             loc = Location(x, y);
-            walkable = walkabilities.get(x).get().get(y).get();
+            walkable = walkabilities.get(x).get(y);
             on_edge = x == 0 or y == 0 or x == max_width - 1 or y == max_height - 1;
             if (walkable and not on_edge) {
                 display_class =
@@ -105,7 +105,7 @@ Level {
                     while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
 
                         neighbor_walkable =
-                            walkabilities.get(neighbor_x).get().get(neighbor_y).get();
+                            walkabilities.get(neighbor_x).get(neighbor_y);
                         if (neighbor_walkable) {
                             mut next_to_walkable = true;
                         }
@@ -172,7 +172,7 @@ List<List<bool>> {
           neighbor_y! = max(0, y - 1);
           while (neighbor_y < min(max_height - 1, y + 1 + 1)) {
 
-            if (walkabilities.get(neighbor_x).get().get(neighbor_y).get()) {
+            if (walkabilities.get(neighbor_x).get(neighbor_y)) {
                 mut num_walkable_neighbors = num_walkable_neighbors + 1;
             }
 
@@ -181,7 +181,7 @@ List<List<bool>> {
           mut neighbor_x = neighbor_x + 1;
         }
 
-        new_walkabilities.get(x).get().set(y, num_walkable_neighbors >= 5);
+        new_walkabilities.get(x).set(y, num_walkable_neighbors >= 5);
 
         mut y = y + 1;
       }
@@ -204,10 +204,10 @@ fn connect_all_rooms(
 
     i! = 0;
     while (i < rooms.len()) {
-        new_room = rooms.get(i).get();
+        new_room = rooms.get(i);
 
         each (new_room) (loc){
-            walkabilities.get(loc.x).get().set(loc.y, true);
+            walkabilities.get(loc.x).set(loc.y, true);
         }
 
         mut i = i + 1;
@@ -228,8 +228,8 @@ List<HashSet<Location, LocationHasher, LocationEquator>> {
     x! = 0;
     while (x < walkabilities.len()) {
         y! = 0;
-        while (y < walkabilities.get(x).get().len()) {
-            if (walkabilities.get(x).get().get(y).get()) {
+        while (y < walkabilities.get(x).len()) {
+            if (walkabilities.get(x).get(y)) {
                 spark_location = Location(x, y);
                 if (not room_index_by_location.has(spark_location)) {
                     connected_locations =
@@ -288,7 +288,7 @@ HashSet<Location, LocationHasher, LocationEquator> {
 
         i! = 0;
         while (i < adj_walkable_locs.len()) {
-            neighbor = adj_walkable_locs.get(i).get();
+            neighbor = adj_walkable_locs.get(i);
 
             if (not connected_with_explored_neighbors.has(neighbor)) {
                 if (not connected_with_unexplored_neighbors.has(neighbor)) {
@@ -314,7 +314,7 @@ fn connect_rooms(
 
     room_index! = 0;
     while (room_index < rooms.len()) {
-        room = rooms.get(room_index).get();
+        room = rooms.get(room_index);
         i! = 0;
         // DIFFERENCE
         room_keys = room.toArray();
@@ -368,7 +368,7 @@ fn connect_rooms(
 
             region_a_room_index =
                 get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_a)^.get()).get();
-            region_a_room = &rooms.get(region_a_room_index).get();
+            region_a_room = &rooms.get(region_a_room_index);
             region_a_location = get_hash_set_random_nth(&rand, &region_a_room).get();
 
             room_indices_by_region_num.get(region_b);
@@ -377,7 +377,7 @@ fn connect_rooms(
 
             region_b_room_index =
                 get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_b)^.get()).get();
-            region_b_room = &rooms.get(region_b_room_index).get();
+            region_b_room = &rooms.get(region_b_room_index);
             region_b_location = get_hash_set_random_nth(&rand, &region_b_room).get();
 
             // Now lets drive from region_a_location to region_b_location, and see what happens on the
@@ -511,7 +511,7 @@ List<Location> {
 
     i! = 0;
     while (i < pals.len()) {
-        adjacent = pals.get(i).get();
+        adjacent = pals.get(i);
 
         if (adjacent.x >= 0 and adjacent.y >= 0 and adjacent.x < width and adjacent.y < height) {
             result.add(adjacent);
@@ -532,15 +532,15 @@ List<Location> {
     adjacents =
         get_adjacent_locations(
             walkabilities.len(),
-            walkabilities.get(0).get().len(),
+            walkabilities.get(0).len(),
             center,
             consider_corners_adjacent);
 
     i! = 0;
     while (i < adjacents.len()) {
-        neighbor = adjacents.get(i).get();
+        neighbor = adjacents.get(i);
 
-        if (walkabilities.get(neighbor.x).get().get(neighbor.y).get()) {
+        if (walkabilities.get(neighbor.x).get(neighbor.y)) {
             result.add(neighbor);
         }
 

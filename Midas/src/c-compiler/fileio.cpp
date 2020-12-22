@@ -50,8 +50,10 @@ std::string fileDirectory(std::string fn) {
   // Look backwards for '/' If not found, we are done
   while (fnp != fn && *fnp != '/' && *fnp != '\\')
     --fnp;
-  if (fnp == fn)
-    return fn;
+  if (fnp == fn) {
+    // No / was found, which means the directory is the current one.
+    return ".";
+  }
 
   // Create string to hold filename and return
   return std::string(fn.c_str(), fnp-fn.c_str());

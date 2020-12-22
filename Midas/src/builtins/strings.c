@@ -23,6 +23,14 @@ ValeStr* ValeStrNew(int64_t length) {
   return result;
 }
 
+ValeStr* ValeStrFrom(char* source) {
+  int length = strlen(source);
+  ValeStr* result = ValeStrNew(length);
+  strncpy(result->chars, source, length);
+  result->chars[length] = 0;
+  return result;
+}
+
 int64_t vstr_indexOf(
     ValeStr* haystackContainerStr, int64_t haystackBegin, int64_t haystackEnd,
     ValeStr* needleContainerStr, int64_t needleBegin, int64_t needleEnd) {

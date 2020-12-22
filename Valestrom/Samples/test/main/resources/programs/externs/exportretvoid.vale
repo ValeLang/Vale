@@ -1,0 +1,8 @@
+fn donothing() export { }
+
+fn runExtCommand() extern;
+
+fn main() int export {
+  runExtCommand();
+  = 42;
+}

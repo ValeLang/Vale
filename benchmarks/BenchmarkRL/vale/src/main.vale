@@ -68,7 +68,7 @@
 // }
 
 
-fn main() int {
+fn main() int export {
   seed = 44; // DIFFERENCE
   benchmark_rl(
     seed,

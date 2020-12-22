@@ -34,6 +34,8 @@ class ValeTest(unittest.TestCase):
              "--flares",
              "--region-override", region_override,
              "--output-dir", o_files_dir,
+             "--exports-dir", o_files_dir,
+             "--add-exports-include-path",
              "-o",
              exe_name] + in_filepaths)
 
@@ -824,6 +826,21 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "resilient-v3", 42)
     # def test_naiverc_extretmutstruct(self) -> None:
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "naive-rc", 42)
+
+    def test_assist_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "assist", 42)
+    def test_unsafefast_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "unsafe-fast", 42)
+    def test_resilientv0_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "resilient-v0", 42)
+    def test_resilientv1_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "resilient-v1", 42)
+    def test_resilientv2_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "resilient-v2", 42)
+    def test_resilientv3_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "resilient-v3", 42)
+    def test_naiverc_exportretvoid(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid.vale", PATH_TO_SAMPLES + "programs/externs/exportretvoid.c"], "naive-rc", 42)
 
     def test_assist_strlen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/strings/strlen.vale"], "assist", 11)

@@ -61,14 +61,19 @@ LLVMValueRef declareFunction(
     }
 
     auto returnRef = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
-    auto returnRefLE =
-        globalState->region->externalify(
-            &functionState, builder, functionM->prototype->returnType, returnRef);
-    // Dealias before sending into the outside world, see DEPAR.
-    functionState.defaultRegion->dealias(
-        FL(), &functionState, &initialBlockState, builder, functionM->prototype->returnType, returnRef);
 
-    LLVMBuildRet(builder, returnRefLE);
+    if (functionM->prototype->returnType == globalState->metalCache.emptyTupleStructRef) {
+      LLVMBuildRetVoid(builder);
+    } else {
+      auto returnRefLE =
+          globalState->region->externalify(
+              &functionState, builder, functionM->prototype->returnType, returnRef);
+      // Dealias before sending into the outside world, see DEPAR.
+      functionState.defaultRegion->dealias(
+          FL(), &functionState, &initialBlockState, builder, functionM->prototype->returnType, returnRef);
+
+      LLVMBuildRet(builder, returnRefLE);
+    }
 
     LLVMDisposeBuilder(builder);
   }
@@ -110,8 +115,12 @@ LLVMValueRef declareExternFunction(
     paramTypesL.push_back(globalState->region->getExternalType(paramTypeM));
   }
 
-  auto returnTypeL = LLVMVoidTypeInContext(globalState->context);
-  if (prototypeM->returnType != globalState->metalCache.neverRef) {
+  LLVMTypeRef returnTypeL;
+  if (prototypeM->returnType == globalState->metalCache.neverRef) {
+    returnTypeL = LLVMVoidTypeInContext(globalState->context);
+  } else if (prototypeM->returnType == globalState->metalCache.emptyTupleStructRef) {
+    returnTypeL = LLVMVoidTypeInContext(globalState->context);
+  } else {
     returnTypeL = globalState->region->getExternalType(prototypeM->returnType);
   }
 

@@ -1,9 +1,16 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "Result.h"
 
-extern ResultRef makeResult(int64_t a, int64_t b);
+typedef struct ValeStr {
+  uint64_t length;
+  char* chars;
+} ValeStr;
+extern ValeStr* ValeStrFrom(char* source);
+
+extern ResultRef makeResult(ValeStr* a, int64_t b);
 
 ResultRef runExtCommand() {
-  return makeResult(42, 73);
+  return makeResult(ValeStrFrom("hello"), 37);
 }

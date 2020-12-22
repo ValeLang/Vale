@@ -57,6 +57,14 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     }
   }
 
+  test("Test expr starting with ret") {
+    // This test is here because we had a bug where we didn't check that there
+    // was whitespace after a "ret".
+    compile(CombinatorParsers.statement, "retcode();") shouldHave {
+      case FunctionCallPE(_,_,_,_,LookupPE(StringP(_,"retcode"),None),List(),_) =>
+    }
+  }
+
   test("Test destruct") {
     compile(CombinatorParsers.statement, "destruct x;") shouldHave {
       case DestructPE(_,LookupPE(StringP(_,"x"), None)) =>

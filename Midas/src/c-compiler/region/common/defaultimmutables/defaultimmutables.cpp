@@ -249,7 +249,7 @@ std::string DefaultImmutables::getRefNameC(Reference* sourceMT) {
   } else if (dynamic_cast<Float *>(sourceRnd)) {
     return "double";
   } else if (dynamic_cast<Str *>(sourceRnd)) {
-    return "Str";
+    return "ValeStr*";
   } else if (auto interfaceRnd = dynamic_cast<InterfaceReferend *>(sourceRnd)) {
     auto baseName = globalState->program->getExportedName(interfaceRnd->fullName);
     assert(sourceMT->ownership == Ownership::SHARE);
@@ -258,6 +258,8 @@ std::string DefaultImmutables::getRefNameC(Reference* sourceMT) {
     } else {
       return baseName + "Ref";
     }
+  } else if (sourceRnd == globalState->metalCache.emptyTupleStruct) {
+    return "void";
   } else if (auto structRnd = dynamic_cast<StructReferend *>(sourceRnd)) {
     auto baseName = globalState->program->getExportedName(structRnd->fullName);
     assert(sourceMT->ownership == Ownership::SHARE);
@@ -318,7 +320,7 @@ LLVMTypeRef DefaultImmutables::getExternalType(
     assert(false); // How can we hand a never into something?
     return nullptr;
   } else if (refMT == globalState->metalCache.emptyTupleStructRef) {
-    return translateType(globalState, globalState->metalCache.emptyTupleStructRef);
+    return LLVMVoidTypeInContext(globalState->context);
   } else if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
     assert(false); // impl
     return nullptr;

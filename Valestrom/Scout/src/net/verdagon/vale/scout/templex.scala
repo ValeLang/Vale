@@ -14,7 +14,7 @@ import scala.collection.immutable.List
 //}
 //// An imprecise name is one where we don't know exactly where the thing is defined.
 //// For example, in
-////   fn main() int {
+////   fn main() int export {
 ////     doStuff("hello");
 ////   }
 //// we don't know exactly where doStuff was defined, that depends on what overload the

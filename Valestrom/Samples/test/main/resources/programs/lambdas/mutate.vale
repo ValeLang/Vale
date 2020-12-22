@@ -1,5 +1,5 @@
 
-fn main() int {
+fn main() int export {
   x = 4;
   {
     mut x = x + 1;

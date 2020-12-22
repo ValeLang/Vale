@@ -167,7 +167,7 @@ object Terrain {
         |//    }
         |//
         |
-        |fn main() int {
+        |fn main() int export {
         |  pattern = makePentagonPattern9();
         |  //adjacent1Locations = getAdjacentLocations(pattern, Location(0, 0, 0), true);
         |  //println("Adjacent 1s: " + str(adjacent1Locations.len()));

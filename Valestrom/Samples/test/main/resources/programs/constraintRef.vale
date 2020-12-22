@@ -3,7 +3,7 @@ struct Carrier {
   interceptors int;
 }
 
-fn main() int {
+fn main() int export {
   carrier = Carrier(400, 8);
   ref = &carrier;
   = ref.interceptors;

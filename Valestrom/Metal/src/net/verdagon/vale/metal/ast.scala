@@ -43,11 +43,12 @@ case class ProgramH(
   // Convenience function for the tests to look up a function.
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
-    val matches = functions.filter(a => {
-      a.fullName.toReadableString() == readableName
-    })
-    vassert(matches.size == 1)
-    matches.head
+    val matches =
+      exportedNameByFullName.filter(_._2 == readableName).keys ++
+        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName)
+    vassert(matches.size <= 1)
+    vassert(matches.size >= 1)
+    functions.find(_.prototype.fullName == matches.head).get
   }
 
   // Convenience function for the tests to look up a struct.
@@ -185,13 +186,13 @@ case class PrototypeH(
 )
 
 // A unique name for something in the program.
-case class FullNameH(readableName: String, id: Int, parts: List[IVonData]) {
+case class FullNameH(
+    readableName: String,
+    // -1 means extern and we wont suffix the readableName with the ID.
+    id: Int,
+    parts: List[IVonData]) {
   def toReadableString(): String = {
-    if (id > 0) {
-      readableName + "_" + id
-    } else {
-      readableName
-    }
+    readableName + (if (id >= 0) "_" + id else "")
   }
   def toFullString(): String = { FullNameH.namePartsToString(parts) }
 }

@@ -285,11 +285,6 @@ public:
   virtual LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
   virtual LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
 
-  virtual WrapperPtrLE mallocStr(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      LLVMValueRef lengthLE) = 0;
-
   virtual void checkInlineStructType(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -302,6 +297,26 @@ public:
       Reference* sourceType,
       Reference* targetType,
       Ref sourceRef) = 0;
+
+  virtual LLVMTypeRef getExternalType(
+      Reference* refMT) = 0;
+  virtual LLVMValueRef externalify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref ref) = 0;
+  virtual Ref internalify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      LLVMValueRef ref) = 0;
+
+
+  // Get rid of this
+  virtual WrapperPtrLE mallocStr(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      LLVMValueRef lengthLE) = 0;
 };
 
 #endif

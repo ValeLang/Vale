@@ -8,7 +8,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  while (false) {}
         |  = 5;
         |}
@@ -20,7 +20,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Test a for-ish while loop") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  i! = 0;
         |  while (i < 4) {
         |    mut i = i + 1;
@@ -35,7 +35,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Tests a while loop with a complex condition") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  key! = 0;
         |  while (mut key = __getch(); = key < 96;) {
         |    print(key);
@@ -52,7 +52,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Tests a while loop with a != in it") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  key! = 0;
         |  while (mut key = __getch(); = key != 99;) {
         |    print(key);
@@ -70,7 +70,7 @@ class WhileTests extends FunSuite with Matchers {
   test("Return from infinite while loop") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  while (true) {
         |    ret 9;
         |  }
@@ -86,7 +86,7 @@ class WhileTests extends FunSuite with Matchers {
 //      """
 //        |fn doThings(m: Marine) { }
 //        |struct Marine { hp: int; }
-//        |fn main() int {
+//        |fn main() int export {
 //        |  m = Marine(7);
 //        |  while (true) {
 //        |    doThings(m);

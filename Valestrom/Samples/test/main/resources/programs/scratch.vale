@@ -17,7 +17,7 @@ fn peekNext(c &Context) StrSlice {
 
 
 fn main() void {
-    code = "\nstruct Hello<A, B> {\n   horse int;\n   pferd str; another str; \n}\nfn main() int {\n   println(123); \n}";
+    code = "\nstruct Hello<A, B> {\n   horse int;\n   pferd str; another str; \n}\nfn main() int export {\n   println(123); \n}";
     println(code);
     println("----------- Parsing -----------");
     parse(code);

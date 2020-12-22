@@ -25,7 +25,7 @@ struct MyEquals9Functor { }
 impl IFunction1<mut, int, bool> for MyEquals9Functor;
 fn __call(this &MyEquals9Functor impl IFunction1<mut, int, bool>, i int) bool { i == 9 }
 
-fn main() bool {
+fn main() bool export {
   a Opt<int> = Some(9);
   f = MyEquals9Functor();
   b Opt<bool> = a.map<int, bool>(&f);

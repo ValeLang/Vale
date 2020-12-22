@@ -6,12 +6,12 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ConjunctionTests extends FunSuite with Matchers {
   test("And") {
-    val compile = Compilation("fn main() bool {true and true}")
+    val compile = Compilation("fn main() bool export {true and true}")
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
 
   test("Or") {
-    val compile = Compilation("fn main() bool {true or false}")
+    val compile = Compilation("fn main() bool export {true or false}")
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
 
@@ -19,7 +19,7 @@ class ConjunctionTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn printAndFalse() bool { print("bork!"); = false; }
-        |fn main() bool {printAndFalse() and printAndFalse()}
+        |fn main() bool export {printAndFalse() and printAndFalse()}
         |""".stripMargin)
 
     compile.evalForStdout(Vector()) shouldEqual "bork!"
@@ -29,7 +29,7 @@ class ConjunctionTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn printAndTrue() bool { print("bork!"); = true; }
-        |fn main() bool {printAndTrue() or printAndTrue()}
+        |fn main() bool export {printAndTrue() or printAndTrue()}
         |""".stripMargin)
 
     compile.evalForStdout(Vector()) shouldEqual "bork!"

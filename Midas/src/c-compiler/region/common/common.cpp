@@ -168,14 +168,11 @@ LLVMValueRef insertStrongRc(
   return LLVMBuildInsertValue(
       builder,
       newControlBlockLE,
-      // Start at 1, 0 would mean it's dead.
-      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 1, false),
-      structs->getControlBlock(referendM)->getMemberIndex(
-          ControlBlockMember::STRONG_RC),
+      // Start RC at 0, see SRCAZ.
+      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 0, false),
+      structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
       "controlBlockWithRc");
 }
-
-
 
 Ref loadElementFromKSAWithoutUpgradeInner(
     GlobalState* globalState,

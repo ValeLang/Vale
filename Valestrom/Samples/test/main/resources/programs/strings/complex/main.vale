@@ -1,5 +1,5 @@
 
-fn main() int {
+fn main() int export {
   // find
   println("Test 1");
   vassert(find("Hello world!", "bork").isEmpty(), "Failed 1a");

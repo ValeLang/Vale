@@ -25,6 +25,7 @@ struct ValeOptions {
     std::string srcDirAndNameNoExt;    // Just the name of the file, without extension
 
     std::string output;
+    std::string exportsDir;
 
     std::string triple;
     std::string cpu;

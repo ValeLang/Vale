@@ -2072,7 +2072,6 @@ Ref Mega::internalify(FunctionState *functionState, LLVMBuilderRef builder, Refe
         case Ownership::SHARE:
           return defaultImmutables.internalify(functionState, builder, refMT, ref);
         case Ownership::OWN:
-
           if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
             assert(refMT->location != Location::INLINE);
             // When in the outside world, they're like weak references. We need to turn them back into

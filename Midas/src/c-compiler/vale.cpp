@@ -298,8 +298,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
+  if (str.size() == 0) {
+    std::cerr << "Nothing found in " << filename << std::endl;
+    exit(1);
+  }
 
-  assert(str.size() > 0);
   auto programJ = json::parse(str.c_str());
   auto program = readProgram(&globalState->metalCache, programJ);
 
@@ -664,7 +667,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
   for (auto p : program->functions) {
     auto functionM = p.second;
-    if (globalState->program->isExported(functionM->prototype->name)) {
+    if (functionM->prototype->name != mainM->name &&
+        globalState->program->isExported(functionM->prototype->name)) {
       auto exportedName = program->getExportedName(functionM->prototype->name);
       std::stringstream s;
       s << "extern " << defaultRegion->getRefNameC(functionM->prototype->returnType) << " ";
@@ -682,7 +686,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   for (auto p : cByExportedName) {
     auto exportedName = p.first;
     auto c = p.second;
-    auto filepath = globalState->opt->srcDir + "/" + exportedName + ".h";
+    std::string filepath = "";
+    if (!globalState->opt->exportsDir.empty()) {
+      filepath = globalState->opt->exportsDir + "/" + exportedName + ".h";
+    }
     std::ofstream out(filepath, std::ofstream::out);
     if (!out) {
       std::cerr << "Couldn't make file: " << filepath << std::endl;

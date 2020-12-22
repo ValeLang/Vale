@@ -88,7 +88,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def ret: Parser[IExpressionPE] = {
-    pos ~ ("ret" ~> optWhite ~> expression) ~ pos ^^ {
+    pos ~ ("ret" ~> white ~> expression) ~ pos ^^ {
       case begin ~ sourceExpr ~ end => ReturnPE(Range(begin, end), sourceExpr)
     }
   }
@@ -481,7 +481,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 
   // The boolean means it's a result or a return, it should be the last thing in the block.
   def statementOrResult: Parser[(IExpressionPE, Boolean)] = {
-    pos ~ (opt(("="|"ret") <~ optWhite) ~ statement) ~ pos ^^ {
+    pos ~ (opt("=" <~ optWhite | "ret" <~ white) ~ statement) ~ pos ^^ {
       case begin ~ (maybeResult ~ expr) ~ end => {
         (maybeResult, expr) match {
           case (None, expr) => (expr, false)

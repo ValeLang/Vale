@@ -6,7 +6,7 @@
 //   Array<M>(n, &IFunction1<mut, int, T>(generator))
 // }
 
-fn main() int {
+fn main() int export {
   a = Arr<mut>(5, {_});
   = len(&a);
 }

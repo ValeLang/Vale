@@ -368,6 +368,17 @@ public:
       std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
 
 
+  LLVMTypeRef getExternalType(
+      Reference* refMT) override;
+
+  LLVMValueRef externalify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref ref) override;
+
+  Ref internalify(FunctionState *functionState, LLVMBuilderRef builder, Reference *refMT, LLVMValueRef ref) override;
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
       InterfaceReferend* referend,

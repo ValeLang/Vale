@@ -367,7 +367,7 @@ case class OverloadSet(
 }
 
 //// In the case of:
-//// fn main() int {
+//// fn main() int export {
 ////   x = 3;
 ////   {
 ////     println(x);

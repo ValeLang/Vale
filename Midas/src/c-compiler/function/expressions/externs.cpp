@@ -81,7 +81,8 @@ Ref translateExternCall(
             globalState, functionState, blockState, builder, call->argExprs[0]);
     auto resultLenLE = functionState->defaultRegion->getStringLen(functionState, builder, leftStrRef);
 
-    functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
+    functionState->defaultRegion->dealias(
+        FL(), functionState, blockState, builder, globalState->metalCache.strRef, leftStrRef);
 
     return wrap(functionState->defaultRegion, globalState->metalCache.intRef, resultLenLE);
   } else if (name == "__addFloatFloat") {
@@ -282,35 +283,10 @@ Ref translateExternCall(
     argsLE.reserve(call->argExprs.size());
     for (int i = 0; i < call->argExprs.size(); i++) {
       auto argRefMT = call->function->params[i];
-      auto argLE = functionState->defaultRegion->checkValidReference(FL(), functionState, builder, argRefMT, args[i]);
 
-      if (call->argTypes[i] == globalState->metalCache.intRef) {
-      } else if (call->argTypes[i] == globalState->metalCache.boolRef) {
-        // Outside has i8, we have i1, but clang should be fine doing the conversion
-      } else if (call->argTypes[i] == globalState->metalCache.floatRef) {
-      } else if (call->argTypes[i] == globalState->metalCache.strRef) {
-      } else if (call->argTypes[i] == globalState->metalCache.neverRef) {
-        assert(false); // How can we hand a never into something?
-      } else if (call->argTypes[i] == globalState->metalCache.emptyTupleStructRef) {
-        assert(false); // How can we hand a void into something?
-      } else if (auto structReferend = dynamic_cast<StructReferend*>(argRefMT->referend)) {
-        if (argRefMT->ownership == Ownership::SHARE) {
-          if (argRefMT->location == Location::INLINE) {
-            functionState->defaultRegion->checkInlineStructType(functionState, builder, argRefMT, args[i]);
-          } else {
-//            std::cerr << "Can only pass inline imm structs between C and Vale currently." << std::endl;
-            assert(false); // impl
-          }
-        } else {
-        }
-      } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(argRefMT->referend)) {
-        assert(false); // impl
-      } else {
-        std::cerr << "Invalid type for extern!" << std::endl;
-        assert(false);
-      }
+      auto externalArgRefLE = functionState->defaultRegion->externalify(functionState, builder, argRefMT, args[i]);
 
-      argsLE.push_back(argLE);
+      argsLE.push_back(externalArgRefLE);
     }
 
     auto externFuncIter = globalState->externFunctions.find(call->function->name->name);
@@ -322,19 +298,13 @@ Ref translateExternCall(
 
     for (int i = 0; i < call->argExprs.size(); i++) {
       auto argRefMT = call->function->params[i];
-      if (argRefMT->ownership != Ownership::OWN) {
-        if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
-          std::cerr << "Naive-rc can't call externs with non-primitives safely yet. (Naive-rc is an experimental region only for use in perf comparisons)" << std::endl;
-          exit(1);
-        }
-        // Dealias any object heading into the outside world, see DEPAR.
-        functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
-      }
+      // Dealias any object heading into the outside world, see DEPAR.
+      functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, argRefMT, args[i]);
     }
 
     auto resultLE = LLVMBuildCall(builder, externFuncL, argsLE.data(), argsLE.size(), "");
-    auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
-    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
+//    auto resultRef = wrap(functionState->defaultRegion, call->function->returnType, resultLE);
+//    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
 
     if (call->function->returnType->referend == globalState->metalCache.never) {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
@@ -345,12 +315,12 @@ Ref translateExternCall(
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", call->function->name->name);
       buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
 
-      if (call->function->returnType->ownership != Ownership::OWN) {
-        // Alias any object coming from the outside world, see DEPAR.
-        functionState->defaultRegion->dealias(FL(), functionState, blockState, builder, call->function->returnType, resultRef);
-      }
+      auto internalArgRef = functionState->defaultRegion->internalify(functionState, builder, call->function->returnType, resultLE);
 
-      return resultRef;
+      // Alias any object coming from the outside world, see DEPAR.
+      functionState->defaultRegion->alias(FL(), functionState, builder, call->function->returnType, internalArgRef);
+
+      return internalArgRef;
     }
   }
   assert(false);

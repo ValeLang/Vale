@@ -63,7 +63,7 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_newstr", functionTypeL);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_newstr", functionTypeL);
 
   LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
   LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
@@ -74,6 +74,7 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
   LLVMBuilderRef localsBuilder = builder;
 
   FunctionState functionState("vale_newstr", globalState->region, functionL, returnTypeL, localsBuilder);
+  BlockState childBlockState(nullptr);
 
   auto lengthLE = LLVMGetParam(functionL, 0);
   buildAssert(
@@ -98,6 +99,9 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
       globalState->region->checkValidReference(
           FL(), &functionState, builder, globalState->metalCache.strRef, strRef);
 
+  // Note the lack of an alias() call to increment the string's RC from 0 to 1.
+  // This is because the users of this function increment that themselves.
+
   LLVMBuildRet(builder, resultStrPtrLE);
 
   LLVMDisposeBuilder(builder);
@@ -119,7 +123,7 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrchars", functionTypeL);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_getstrchars", functionTypeL);
   LLVMSetLinkage(functionL, LLVMExternalLinkage);
 
   LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
@@ -130,7 +134,7 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
   // should be fine.
   LLVMBuilderRef localsBuilder = builder;
 
-  FunctionState functionState("vale_getstrchars", globalState->region, functionL, returnTypeL, localsBuilder);
+  FunctionState functionState("__vale_getstrchars", globalState->region, functionL, returnTypeL, localsBuilder);
 
   auto strRefLE = LLVMGetParam(functionL, 0);
 
@@ -499,7 +503,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto function = p.second;
     LLVMValueRef entryFunctionL = declareFunction(globalState, defaultRegion, function);
-    if (function->prototype->name->name == "main") {
+    if (program->isExported(function->prototype->name) && program->getExportedName(function->prototype->name) == "main") {
       mainM = function->prototype;
       mainL = entryFunctionL;
     }

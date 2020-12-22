@@ -33,7 +33,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |  = a[index];
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  l =
         |      List<int>(
         |           Array<mut, int>(
@@ -60,7 +60,7 @@ class ArrayListTest extends FunSuite with Matchers {
       Samples.get("libraries/list.vale") +
       """
         |
-        |fn main() int {
+        |fn main() int export {
         |  l =
         |      List<int>(
         |          Array<mut, Opt<int>>(
@@ -89,7 +89,7 @@ class ArrayListTest extends FunSuite with Matchers {
         Samples.get("libraries/list.vale") +
         """
           |
-          |fn main() int {
+          |fn main() int export {
           |  l = List<int>();
           |  add(&l, 5);
           |  add(&l, 9);
@@ -108,7 +108,7 @@ class ArrayListTest extends FunSuite with Matchers {
         Samples.get("libraries/list.vale"),
         """
           |
-          |fn main() int {
+          |fn main() int export {
           |  l = List<int>();
           |  add(&l, 5);
           |  add(&l, 9);
@@ -129,7 +129,7 @@ class ArrayListTest extends FunSuite with Matchers {
         Samples.get("libraries/list.vale") +
         """
           |
-          |fn main() int {
+          |fn main() int export {
           |  l = List<int>();
           |  add(&l, 5);
           |  add(&l, 9);
@@ -152,7 +152,7 @@ class ArrayListTest extends FunSuite with Matchers {
         """
           |struct Marine { hp int; }
           |
-          |fn main() int {
+          |fn main() int export {
           |  l =
           |      List<Marine>(
           |          Array<mut, Opt<Marine>>(
@@ -177,7 +177,7 @@ class ArrayListTest extends FunSuite with Matchers {
         """
           |struct Marine { hp int; }
           |
-          |fn main() int {
+          |fn main() int export {
           |  m = Marine(6);
           |  lam = {
           |    mut m = Marine(9);
@@ -201,7 +201,7 @@ class ArrayListTest extends FunSuite with Matchers {
       """
         |struct Marine { hp int; }
         |
-        |fn main() int {
+        |fn main() int export {
         |  m Opt<Marine> = Some(Marine(6));
         |  lam = {
         |    m2 = (mut m = None<Marine>())^.get();

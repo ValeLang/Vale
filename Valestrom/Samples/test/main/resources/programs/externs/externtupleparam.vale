@@ -1,5 +1,5 @@
 fn extGetFromTuple(i [int, int]) int extern;
 
-fn main() int {
+fn main() int export {
   extGetFromTuple([73, 42])
 }

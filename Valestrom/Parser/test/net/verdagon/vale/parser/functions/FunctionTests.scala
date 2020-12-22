@@ -9,7 +9,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
   test("Function then struct") {
     val program = compileProgram(
       """
-        |fn main() int {}
+        |fn main() int export {}
         |
         |struct mork { }
         |""".stripMargin)

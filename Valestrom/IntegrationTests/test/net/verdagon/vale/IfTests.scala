@@ -12,7 +12,7 @@ class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  = if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
@@ -29,7 +29,7 @@ class IfTests extends FunSuite with Matchers {
   test("Simple false branch returning an int") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  = if (false) { 3 } else { 5 }
         |}
       """.stripMargin)
@@ -40,7 +40,7 @@ class IfTests extends FunSuite with Matchers {
   test("Ladder") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  = if (false) { 3 } else if (true) { 5 } else { 7 }
         |}
       """.stripMargin)
@@ -64,7 +64,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct Marine { x int; }
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(5);
         |  = if (false) {
         |      (x) = m;
@@ -116,7 +116,7 @@ class IfTests extends FunSuite with Matchers {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(5);
         |  x =
         |    if (true) {
@@ -143,7 +143,7 @@ class IfTests extends FunSuite with Matchers {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(5);
         |  x =
         |    if (false) {
@@ -204,7 +204,7 @@ class IfTests extends FunSuite with Matchers {
   test("Toast") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  a = 0;
         |  if (a == 2) {
         |    ret 71;

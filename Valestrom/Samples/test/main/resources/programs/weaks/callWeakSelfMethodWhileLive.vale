@@ -13,7 +13,7 @@ fn getHp(self &&Muta impl IUnit) int {
     }
 }
 
-fn main() int {
+fn main() int export {
   ownMuta = Muta(73);
   weakUnit &&IUnit = &&ownMuta;
   = getHp(weakUnit);

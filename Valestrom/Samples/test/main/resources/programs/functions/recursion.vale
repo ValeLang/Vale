@@ -7,6 +7,6 @@ fn factorial(x int) int {
     }
 }
 
-fn main() int {
+fn main() int export {
   = factorial(5);
 }

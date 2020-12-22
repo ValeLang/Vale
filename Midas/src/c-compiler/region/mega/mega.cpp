@@ -12,6 +12,7 @@
 #include <function/expressions/shared/elements.h>
 #include <function/expressions/shared/string.h>
 #include "mega.h"
+#include <sstream>
 
 LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState) {
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V1) {
@@ -150,18 +151,21 @@ Mega::Mega(GlobalState* globalState_) :
 }
 
 Ref Mega::constructKnownSizeArray(FunctionState *functionState, LLVMBuilderRef builder, Reference *referenceM, KnownSizeArrayT *referendM, const std::vector<Ref> &membersLE) {
-  return ::constructKnownSizeArray(
-      globalState, functionState, builder, referenceM, referendM, membersLE, &referendStructs,
-      [this, functionState, referenceM, referendM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(),
-            functionState,
-            innerBuilder,
-            referenceM->referend,
-            referendM->rawArray->mutability,
-            controlBlockPtrLE,
-            referendM->name->name);
-      });
+  auto resultRef =
+      ::constructKnownSizeArray(
+          globalState, functionState, builder, referenceM, referendM, membersLE, &referendStructs,
+          [this, functionState, referenceM, referendM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(),
+                functionState,
+                innerBuilder,
+                referenceM->referend,
+                referendM->rawArray->mutability,
+                controlBlockPtrLE,
+                referendM->name->name);
+          });
+  alias(FL(), functionState, builder, referenceM, resultRef);
+  return resultRef;
 }
 
 WrapperPtrLE Mega::mallocStr(
@@ -185,13 +189,16 @@ Ref Mega::allocate(
     const std::vector<Ref>& membersLE) {
   auto structReferend = dynamic_cast<StructReferend*>(desiredReference->referend);
   auto structM = globalState->program->getStruct(structReferend->fullName);
-  return innerAllocate(
-      FL(), globalState, functionState, builder, desiredReference, &referendStructs, membersLE, Weakability::WEAKABLE,
-      [this, functionState, desiredReference, structM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(), functionState, innerBuilder, desiredReference->referend, structM->mutability,
-            controlBlockPtrLE, structM->name->name);
-      });
+  auto resultRef =
+      innerAllocate(
+          FL(), globalState, functionState, builder, desiredReference, &referendStructs, membersLE, Weakability::WEAKABLE,
+          [this, functionState, desiredReference, structM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(), functionState, innerBuilder, desiredReference->referend, structM->mutability,
+                controlBlockPtrLE, structM->name->name);
+          });
+  alias(FL(), functionState, builder, desiredReference, resultRef);
+  return resultRef;
 }
 
 void Mega::alias(
@@ -204,6 +211,8 @@ void Mega::alias(
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
+      assert(false);
+      break;
     case RegionOverride::NAIVE_RC: {
       if (dynamic_cast<Int *>(sourceRnd) ||
           dynamic_cast<Bool *>(sourceRnd) ||
@@ -215,8 +224,9 @@ void Mega::alias(
           dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
           dynamic_cast<Str *>(sourceRnd)) {
         if (sourceRef->ownership == Ownership::OWN) {
-          // We might be loading a member as an own if we're destructuring.
-          // Don't adjust the RC, since we're only moving it.
+          // This can happen if we just allocated something. It's RC is already zero, and we want to
+          // bump it to 1 for the owning reference.
+          adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
         } else if (sourceRef->ownership == Ownership::BORROW) {
           adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
         } else if (sourceRef->ownership == Ownership::WEAK) {
@@ -1443,6 +1453,8 @@ void Mega::fillControlBlock(
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
+      assert(false);
+      break;
     case RegionOverride::NAIVE_RC: {
       regularFillControlBlock(
           from, globalState, functionState, &referendStructs, builder, referendM, mutability, controlBlockPtrLE,
@@ -1720,20 +1732,23 @@ Ref Mega::constructUnknownSizeArrayCountedStruct(
     const std::string& typeName) {
   auto usaWrapperPtrLT =
       referendStructs.getUnknownSizeArrayWrapperStruct(unknownSizeArrayT);
-  return ::constructUnknownSizeArrayCountedStruct(
-       globalState, functionState, blockState, builder, &referendStructs, usaMT, unknownSizeArrayT, generatorType, generatorMethod,
-       generatorRef, usaWrapperPtrLT, usaElementLT, sizeRef, typeName,
-      [this, functionState, unknownSizeArrayT, usaMT, typeName](
-          LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(),
-            functionState,
-            innerBuilder,
-            unknownSizeArrayT,
-            unknownSizeArrayT->rawArray->mutability,
-            controlBlockPtrLE,
-            typeName);
-      });
+  auto resultRef =
+      ::constructUnknownSizeArrayCountedStruct(
+           globalState, functionState, blockState, builder, &referendStructs, usaMT, unknownSizeArrayT, generatorType, generatorMethod,
+           generatorRef, usaWrapperPtrLT, usaElementLT, sizeRef, typeName,
+          [this, functionState, unknownSizeArrayT, usaMT, typeName](
+              LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(),
+                functionState,
+                innerBuilder,
+                unknownSizeArrayT,
+                unknownSizeArrayT->rawArray->mutability,
+                controlBlockPtrLE,
+                typeName);
+          });
+  alias(FL(), functionState, builder, usaMT, resultRef);
+  return resultRef;
 }
 
 Ref Mega::loadMember(
@@ -1836,11 +1851,30 @@ void Mega::checkInlineStructType(
 
 
 std::string Mega::getRefNameC(Reference* refMT) {
-  assert(false); // impl
+  if (refMT->ownership == Ownership::SHARE) {
+    return defaultImmutables.getRefNameC(refMT);
+  } else if (auto structRefMT = dynamic_cast<StructReferend*>(refMT->referend)) {
+    auto structMT = globalState->program->getStruct(structRefMT->fullName);
+    auto baseName = globalState->program->getExportedName(structRefMT->fullName);
+    if (structMT->mutability == Mutability::MUTABLE) {
+      assert(refMT->location != Location::INLINE);
+      return baseName + "Ref";
+    } else {
+      if (refMT->location == Location::INLINE) {
+        return baseName + "Inl";
+      } else {
+        return baseName + "Ref";
+      }
+    }
+  } else if (auto interfaceMT = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+    return globalState->program->getExportedName(interfaceMT->fullName) + "Ref";
+  } else {
+    assert(false);
+  }
 }
 
 void Mega::generateStructDefsC(
-    std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) {
+    std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* structDefM) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
       assert(false);
@@ -1854,14 +1888,21 @@ void Mega::generateStructDefsC(
     case RegionOverride::RESILIENT_V2:
     case RegionOverride::RESILIENT_V3:
     case RegionOverride::RESILIENT_LIMIT:
-      // generate this from the control block?
-//      return "uint64_t unused1; void* unused2;";
-      assert(false); // impl
+      if (structDefM->mutability == Mutability::IMMUTABLE) {
+        return defaultImmutables.generateStructDefsC(cByExportedName, structDefM);
+      } else {
+        auto baseName = globalState->program->getExportedName(structDefM->referend->fullName);
+        auto refTypeName = baseName + "Ref";
+        std::stringstream s;
+        s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused1; } " << refTypeName << ";" << std::endl;
+        cByExportedName->insert(std::make_pair(baseName, s.str()));
+      }
+      break;
   }
 }
 
 void Mega::generateInterfaceDefsC(
-    std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) {
+    std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* interfaceDefM) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
       assert(false);
@@ -1876,8 +1917,196 @@ void Mega::generateInterfaceDefsC(
     case RegionOverride::RESILIENT_V2:
     case RegionOverride::RESILIENT_V3:
     case RegionOverride::RESILIENT_LIMIT:
-      // generate this from the control block?
-//      return "uint64_t unused1; void* unused2; void* unused3;";
-      assert(false); // impl
+      if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
+        defaultImmutables.generateInterfaceDefsC(cByExportedName, interfaceDefM);
+      } else {
+        auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
+        std::stringstream s;
+        s << "typedef struct " << name << "Ref { uint64_t unused0; void* unused1; void* unused2; } " << name << ";";
+        cByExportedName->insert(std::make_pair(name, s.str()));
+      }
+      break;
   }
+}
+
+LLVMTypeRef Mega::getExternalType(Reference* refMT) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      assert(false);
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.getExternalType(refMT);
+      } else {
+        if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+          assert(false); // impl
+        } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+          assert(false); // impl
+        } else {
+          std::cerr << "Invalid type for extern!" << std::endl;
+          assert(false);
+        }
+      }
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.getExternalType(refMT);
+      } else {
+        if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+          assert(false); // impl
+        } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+          assert(false); // impl
+        } else {
+          std::cerr << "Invalid type for extern!" << std::endl;
+          assert(false);
+        }
+      }
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.getExternalType(refMT);
+      } else {
+        if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+          return weakRefStructs.getStructWeakRefStruct(structReferend);
+        } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+          assert(false); // impl
+        } else {
+          std::cerr << "Invalid type for extern!" << std::endl;
+          assert(false);
+        }
+      }
+      assert(false);
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  assert(false);
+}
+
+Ref Mega::internalify(FunctionState *functionState, LLVMBuilderRef builder, Reference *refMT, LLVMValueRef ref) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      assert(false);
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.internalify(functionState, builder, refMT, ref);
+      } else {
+        assert(false);
+      }
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.internalify(functionState, builder, refMT, ref);
+      } else {
+        assert(false);
+      }
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.internalify(functionState, builder, refMT, ref);
+      } else {
+        assert(false);
+      }
+      assert(false);
+      break;
+    default:
+      assert(false);
+      break;
+  }
+
+  assert(false);
+}
+
+LLVMValueRef Mega::externalify(
+    FunctionState* functionState, LLVMBuilderRef builder, Reference* refMT, Ref ref) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      assert(false);
+    case RegionOverride::NAIVE_RC:
+    case RegionOverride::FAST:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.externalify(functionState, builder, refMT, ref);
+      } else {
+        assert(false); // impl
+      }
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.externalify(functionState, builder, refMT, ref);
+      } else {
+        assert(false); // impl
+      }
+      assert(false);
+      break;
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      if (refMT->ownership == Ownership::SHARE) {
+        return defaultImmutables.externalify(functionState, builder, refMT, ref);
+      } else {
+        if (globalState->opt->regionOverride == RegionOverride::NAIVE_RC) {
+          std::cerr
+              << "Naive-rc can't call externs with mutables safely yet. (Naive-rc is an experimental region only for use in perf comparisons)"
+              << std::endl;
+          exit(1);
+        }
+
+        if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+          assert(refMT->location != Location::INLINE);
+          // The outside world gets generational references, even to owning things.
+          // So, we need to make an owning generational ref.
+          auto borrowRefMT =
+              globalState->metalCache.getReference(
+                  Ownership::BORROW, Location::YONDER, structReferend);
+
+          switch (refMT->ownership) {
+            case Ownership::OWN: {
+              auto wrapperPtrLE =
+                  referendStructs.makeWrapperPtr(
+                      FL(), functionState, builder, refMT,
+                      checkValidReference(FL(), functionState, builder, refMT, ref));
+              auto weakRefLE =
+                  hgmWeaks.assembleStructWeakRef(
+                      functionState, builder, refMT, borrowRefMT, structReferend, wrapperPtrLE);
+              // All this rigamarole is to get the LLVMValueRef of the above weakRefLE.
+              return checkValidReference(
+                  FL(), functionState, builder, borrowRefMT,
+                  wrap(functionState->defaultRegion, borrowRefMT, weakRefLE));
+              break;
+            }
+            case Ownership::BORROW:
+            case Ownership::WEAK:
+              return checkValidReference(FL(), functionState, builder, refMT, ref);
+            default:
+              assert(false);
+          }
+        } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+          assert(false); // impl
+        } else {
+          std::cerr << "Invalid type for extern!" << std::endl;
+          assert(false);
+        }
+      }
+      assert(false);
+      break;
+    default:
+      assert(false);
+      break;
+  }
+
+  assert(false);
 }

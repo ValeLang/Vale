@@ -53,7 +53,7 @@ void Assist::alias(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRef,
-    Ref expr) {
+    Ref ref) {
   auto sourceRnd = sourceRef->referend;
 
   if (dynamic_cast<Int *>(sourceRnd) ||
@@ -68,16 +68,16 @@ void Assist::alias(
     if (sourceRef->ownership == Ownership::OWN) {
       // This can happen if we just allocated something. It's RC is already zero, and we want to
       // bump it to 1 for the owning reference.
-      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
+      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, ref, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::BORROW) {
-      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
+      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, ref, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
-      aliasWeakRef(from, functionState, builder, sourceRef, expr);
+      aliasWeakRef(from, functionState, builder, sourceRef, ref);
     } else if (sourceRef->ownership == Ownership::SHARE) {
       if (sourceRef->location == Location::INLINE) {
         // Do nothing, we can just let inline structs disappear
       } else {
-        adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
+        adjustStrongRc(from, globalState, functionState, &referendStructs, builder, ref, sourceRef, 1);
       }
     } else
       assert(false);
@@ -99,8 +99,8 @@ void Assist::dealias(
   if (sourceMT->ownership == Ownership::SHARE) {
     defaultImmutables.discard(from, globalState, functionState, blockState, builder, sourceMT, sourceRef);
   } else if (sourceMT->ownership == Ownership::OWN) {
-    // We can't discard owns, they must be destructured.
-    assert(false);
+    // This can happen if we're sending an owning reference to the outside world, see DEPAR.
+    adjustStrongRc(from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
   } else if (sourceMT->ownership == Ownership::BORROW) {
     adjustStrongRc(from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
   } else if (sourceMT->ownership == Ownership::WEAK) {
@@ -910,7 +910,16 @@ Ref Assist::internalify(FunctionState *functionState, LLVMBuilderRef builder, Re
   if (refMT->ownership == Ownership::SHARE) {
     return defaultImmutables.internalify(functionState, builder, refMT, ref);
   } else {
-    assert(false);
+    if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+      assert(refMT->location != Location::INLINE);
+
+      return wrap(functionState->defaultRegion, refMT, ref);
+    } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+      return wrap(functionState->defaultRegion, refMT, ref);
+    } else {
+      std::cerr << "Invalid type for extern!" << std::endl;
+      assert(false);
+    }
   }
 
   assert(false);

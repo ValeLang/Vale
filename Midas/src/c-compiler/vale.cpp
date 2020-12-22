@@ -688,7 +688,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       std::cerr << "Couldn't make file: " << filepath << std::endl;
       exit(1);
     }
-    std::cout << "Writing " << filepath;
+    std::cout << "Writing " << filepath << std::endl;
     out << c;
   }
 }

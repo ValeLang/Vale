@@ -810,6 +810,21 @@ class ValeTest(unittest.TestCase):
     def test_naiverc_externstrlen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externstrlen.vale", PATH_TO_SAMPLES + "programs/externs/externstrlen.c"], "naive-rc", 11)
 
+    def test_assist_extretmutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "assist", 42)
+    def test_unsafefast_extretmutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "unsafe-fast", 42)
+    # def test_resilientv0_extretmutstruct(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "resilient-v0", 42)
+    def test_resilientv1_extretmutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "resilient-v1", 42)
+    def test_resilientv2_extretmutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "resilient-v2", 42)
+    def test_resilientv3_extretmutstruct(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "resilient-v3", 42)
+    # def test_naiverc_extretmutstruct(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/extretmutstruct.vale", PATH_TO_SAMPLES + "programs/externs/extretmutstruct.c"], "naive-rc", 42)
+
     def test_assist_strlen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/strings/strlen.vale"], "assist", 11)
     def test_unsafefast_strlen(self) -> None:

@@ -3,6 +3,6 @@ fn do(callable) int {
   callable()
 }
 
-fn main() int {
+fn main() int export {
   do({ 42 })
 }

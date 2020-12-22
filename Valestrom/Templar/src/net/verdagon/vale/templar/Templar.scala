@@ -1,6 +1,5 @@
 package net.verdagon.vale.templar;
 
-import com.jprofiler.api.probe.embedded.Split
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.hinputs.Hinputs

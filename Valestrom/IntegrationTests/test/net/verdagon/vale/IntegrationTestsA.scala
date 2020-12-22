@@ -18,12 +18,12 @@ import scala.util.Try
 
 class IntegrationTestsA extends FunSuite with Matchers {
   test("Simple program returning an int") {
-    val compile = Compilation("fn main() int {3}")
+    val compile = Compilation("fn main() int export {3}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("Hardcoding negative numbers") {
-    val compile = Compilation("fn main() int {-3}")
+    val compile = Compilation("fn main() int export {-3}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(-3)
   }
 
@@ -33,7 +33,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests adding two numbers") {
-    val compile = Compilation("fn main() int { +(2, 3) }")
+    val compile = Compilation("fn main() int export { +(2, 3) }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
@@ -43,7 +43,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests inline adding") {
-    val compile = Compilation("fn main() int { 2 + 3 }")
+    val compile = Compilation("fn main() int export { 2 + 3 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
@@ -53,24 +53,24 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests inline adding more") {
-    val compile = Compilation("fn main() int { 2 + 3 + 4 + 5 + 6 }")
+    val compile = Compilation("fn main() int export { 2 + 3 + 4 + 5 + 6 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(20)
   }
 
   test("Simple lambda") {
-    val compile = Compilation("fn main() int {{7}()}")
+    val compile = Compilation("fn main() int export {{7}()}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   test("Lambda with one magic arg") {
-    val compile = Compilation("fn main() int {{_}(3)}")
+    val compile = Compilation("fn main() int export {{_}(3)}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = Compilation("fn main() int {(a int){ +(a,a)}(3)}");
+    val compile = Compilation("fn main() int export {(a int){ +(a,a)}(3)}");
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
@@ -80,7 +80,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test block") {
-    val compile = Compilation("fn main() int {true; 200; = 300;}")
+    val compile = Compilation("fn main() int export {true; 200; = 300;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(300)
   }
 
@@ -88,7 +88,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn ~<T>(a T, b T) T { a }
-        |fn main() int {true ~ false; 2 ~ 2; = 3 ~ 3;}
+        |fn main() int export {true ~ false; 2 ~ 2; = 3 ~ 3;}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
@@ -99,7 +99,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test returning a local mutable var") {
-    val compile = Compilation("fn main() int {a! = 3; mut a = 4; = a;}")
+    val compile = Compilation("fn main() int export {a! = 3; mut a = 4; = a;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
@@ -107,7 +107,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn do(callable) infer-ret {callable()}
-        |fn main() int {do({ 3 })}
+        |fn main() int export {do({ 3 })}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
@@ -123,7 +123,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |impl<T> MyInterface<T> for SomeStruct<T>;
         |
         |fn main(a SomeStruct<int>) {
-        |  doAThing<int>(^a);
+        |  doAThing<int>(a);
         |}
       """.stripMargin)
     val hamuts = compile.getHamuts()
@@ -144,7 +144,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct MyStruct { a int; }
-        |fn main() int { ms = MyStruct(7); = ms.a; }
+        |fn main() int export { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
@@ -153,7 +153,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct MyStruct { a int; }
-        |fn main() bool {
+        |fn main() bool export {
         |  a = MyStruct(7);
         |  = &a === &a;
         |}
@@ -165,7 +165,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct MyStruct { a int; }
-        |fn main() bool {
+        |fn main() bool export {
         |  a = MyStruct(7);
         |  b = MyStruct(7);
         |  = &a === &b;
@@ -176,7 +176,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("mut swapping locals") {
     val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   // Known failure 2020-08-20
@@ -210,9 +210,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |
-        |fn main() int {
+        |fn main() int export {
         |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
-        |  = sum(list);
+        |  = sum(&list);
         |}
         |
         |""".stripMargin)
@@ -234,7 +234,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct MySome<T> rules(T Ref) { value T; }
-        |fn main() int {
+        |fn main() int export {
         |  MySome<int>(4).value
         |}
       """.stripMargin)
@@ -250,7 +250,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  values [<imm> N * T];
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  v = Vec<3, int>([3, 4, 5]);
         |  = v.values.2;
         |}
@@ -296,9 +296,9 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  = 9;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |	x MyOption<int> = MySome<int>();
-        |	= doSomething(^x);
+        |	= doSomething(x);
         |}
       """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
@@ -365,7 +365,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct Moo imm {
         |  x float;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  7
         |}
       """.stripMargin)
@@ -389,7 +389,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  Some(9)
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  a = doIt();
         |  = 3;
         |}
@@ -482,7 +482,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //        |fn func(moo Moo impl IMoo) int { 73 }
 //        |fn func(moo &Moo impl IMoo) int { 42 }
 //        |
-//        |fn main() int {
+//        |fn main() int export {
 //        |  func(&Moo())
 //        |}
 //        |""".stripMargin)
@@ -520,8 +520,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
     // The extern we make should have the name we expect
     vassert(hamuts.externs.exists(_.fullName.readableName == "sqrt"))
 
-    // We also made an internal function that contains an extern call, it should have a different name.
-    val externSqrt = hamuts.lookupFunction("sqrt_1")
+    // We also made an internal function that contains an extern call
+    val externSqrt = hamuts.lookupFunction("sqrt")
     vassert(externSqrt.isExtern)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
@@ -544,7 +544,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn get<T>(virtual opt &Opt<T>) int abstract;
         |fn get<T>(opt &None<T> impl Opt<T>) int { 42 }
         |
-        |fn main() int {
+        |fn main() int export {
         |  opt Opt<int> = None<int>();
         |  = opt.get();
         |}
@@ -580,7 +580,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  }
         |  ret foo(a) + 1;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  ret bork(&Moo());
         |}
         |""".stripMargin)
@@ -596,15 +596,15 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn foo(a Moo) int { 41 }
         |fn bork(a Moo) int {
         |  if (false) {
-        |    ret foo(^a);
+        |    ret foo(a);
         |  } else if (false) {
-        |    ret foo(^a);
+        |    ret foo(a);
         |  } else {
         |    // continue
         |  }
         |  ret 42;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  ret bork(Moo());
         |}
         |""".stripMargin)

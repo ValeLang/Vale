@@ -1,9 +1,9 @@
 
 struct Marine { hp int; }
 
-fn main() int {
+fn main() int export {
   m = Marine(7);
   b = &m;
-  drop(^m);
+  drop(m);
   = b.hp;
 }

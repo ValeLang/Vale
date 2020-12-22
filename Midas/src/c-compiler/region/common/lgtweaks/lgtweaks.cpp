@@ -16,13 +16,15 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
 
 LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
+    IWeakRefStructsSource* weakRefStructsSource,
+    Referend* referend,
     WeakFatPtrLE weakRefLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
-  assert(LLVMTypeOf(headerLE) == globalState->region->getWeakRefHeaderStruct());
+  assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(referend));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
 }
 
@@ -76,11 +78,13 @@ LLVMTypeRef makeLgtEntryStruct(GlobalState* globalState) {
 
 static LLVMValueRef makeLgtiHeader(
     GlobalState* globalState,
+    IWeakRefStructsSource* weakRefStructsSource,
     LLVMBuilderRef builder,
+    Referend* referend,
     LLVMValueRef lgtiLE,
     LLVMValueRef targetGenLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
-  auto headerLE = LLVMGetUndef(globalState->region->getWeakRefHeaderStruct());
+  auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(referend));
   headerLE = LLVMBuildInsertValue(builder, headerLE, lgtiLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "headerWithLgti");
   headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
   return headerLE;
@@ -121,6 +125,7 @@ LLVMValueRef LgtWeaks::getActualGenFromLGT(
 static LLVMValueRef getLgtiFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
@@ -134,7 +139,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            globalState->region->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
+            structs->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
             "lgtiPtr");
     return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
   }
@@ -227,13 +232,13 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
                   functionState, builder, sourceStructTypeM, sourceRefLE)));
 
   auto interfaceRefLT =
-      globalState->region->getWeakRefStructsSource()->getInterfaceWeakRefStruct(
+      weakRefStructsSource->getInterfaceWeakRefStruct(
           targetInterfaceReferendM);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, sourceRefLE);
 
   auto innerRefLE =
       makeInterfaceRefStruct(
-          globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM, controlBlockPtr);
+          globalState, functionState, builder, referendStructsSource, sourceStructReferendM, targetInterfaceReferendM, controlBlockPtr);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetInterfaceTypeM, interfaceRefLT, headerLE, innerRefLE);
@@ -254,13 +259,13 @@ WeakFatPtrLE LgtWeaks::assembleInterfaceWeakRef(
   auto controlBlockPtrLE =
       referendStructsSource->getControlBlockPtr(
           FL(), functionState, builder, interfaceReferendM, sourceInterfaceFatPtrLE);
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, sourceType,
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType,
       controlBlockPtrLE);
   auto currentGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto headerLE = makeLgtiHeader(globalState, builder, lgtiLE, currentGenLE);
+  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, interfaceReferendM, lgtiLE, currentGenLE);
 
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getInterfaceWeakRefStruct(interfaceReferendM);
+      weakRefStructsSource->getInterfaceWeakRefStruct(interfaceReferendM);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetType, weakRefStructLT, headerLE, sourceInterfaceFatPtrLE.refLE);
@@ -279,12 +284,12 @@ WeakFatPtrLE LgtWeaks::assembleStructWeakRef(
   auto controlBlockPtrLE =
       referendStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, structTypeM, objPtrLE);
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, structTypeM, controlBlockPtrLE);
   buildFlare(FL(), globalState, functionState, builder, lgtiLE);
   auto currentGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto headerLE = makeLgtiHeader(globalState, builder, lgtiLE, currentGenLE);
+  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, structReferendM, lgtiLE, currentGenLE);
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getStructWeakRefStruct(structReferendM);
+      weakRefStructsSource->getStructWeakRefStruct(structReferendM);
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
@@ -311,12 +316,12 @@ WeakFatPtrLE LgtWeaks::assembleUnknownSizeArrayWeakRef(
   auto controlBlockPtrLE =
       referendStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, sourceType, sourceRefLE);
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, sourceType, controlBlockPtrLE);
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType, controlBlockPtrLE);
   auto targetGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto headerLE = makeLgtiHeader(globalState, builder, lgtiLE, targetGenLE);
+  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, unknownSizeArrayMT, lgtiLE, targetGenLE);
 
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
+      weakRefStructsSource->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetUSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
@@ -410,7 +415,7 @@ void LgtWeaks::innerNoteWeakableDestroyed(
     LLVMBuilderRef builder,
     Reference* concreteRefM,
     ControlBlockPtrLE controlBlockPtrLE) {
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, concreteRefM,
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, concreteRefM,
       controlBlockPtrLE);
   auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
   adjustCounter(globalState, builder, ptrToActualGenLE, 1);
@@ -457,7 +462,7 @@ LLVMValueRef LgtWeaks::getIsAliveFromWeakFatPtr(
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else {
     // Get target generation from the ref
-    auto targetGenLE = getTargetGenFromWeakRef(builder, weakFatPtrLE);
+    auto targetGenLE = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->referend, weakFatPtrLE);
 
     // Get actual generation from the table
     auto lgtiLE = getLgtiFromWeakRef(builder, weakFatPtrLE);
@@ -504,6 +509,7 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
 LLVMValueRef LgtWeaks::fillWeakableControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Referend* referendM,
     LLVMValueRef controlBlockLE) {
   auto geniLE = getNewLgti(functionState, builder);
@@ -511,7 +517,7 @@ LLVMValueRef LgtWeaks::fillWeakableControlBlock(
       builder,
       controlBlockLE,
       geniLE,
-      globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::LGTI),
+      structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::LGTI),
       "controlBlockWithLgti");
 }
 
@@ -569,7 +575,7 @@ void LgtWeaks::buildCheckWeakRef(
   buildCheckLgti(builder, lgtiLE);
   // We check that the generation is <= to what's in the actual object.
   auto actualGen = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto targetGen = getTargetGenFromWeakRef(builder, weakFatPtrLE);
+  auto targetGen = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->referend, weakFatPtrLE);
   buildCheckGen(globalState, functionState, builder, targetGen, actualGen);
 
   // This will also run for objects which have since died, which is fine.

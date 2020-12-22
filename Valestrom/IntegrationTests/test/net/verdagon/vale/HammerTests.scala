@@ -13,7 +13,7 @@ class HammerTests extends FunSuite with Matchers {
 
   test("Simple main") {
     val compile = Compilation(
-      "fn main() int {3}")
+      "fn main() int export {3}")
     val hamuts = compile.getHamuts()
 
     vassert(hamuts.getAllUserFunctions.size == 1)
@@ -78,7 +78,7 @@ class HammerTests extends FunSuite with Matchers {
   test("Tests stripping things after panic") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  __panic();
         |  a = 42;
         |  = a;

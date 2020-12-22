@@ -84,6 +84,7 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      IReferendStructsSource* structs,
       Referend* referendM,
       LLVMValueRef controlBlockLE);
 

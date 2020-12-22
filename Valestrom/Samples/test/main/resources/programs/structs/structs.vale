@@ -3,4 +3,4 @@ struct MyStruct { a int; }
 
 struct OtherStruct { b MyStruct; }
 
-fn main() int { ms = OtherStruct(MyStruct(11)); = ms.b.a; }
+fn main() int export { ms = OtherStruct(MyStruct(11)); = ms.b.a; }

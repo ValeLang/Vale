@@ -86,7 +86,7 @@ fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
 
   = if (offsetAfterBegin < 0) {
       r Opt<StrSlice> = None<StrSlice>();
-      = ^r;
+      = r;
     } else {
       r Opt<StrSlice> =
           Some<StrSlice>(
@@ -94,7 +94,7 @@ fn find(haystack StrSlice, needle StrSlice) Opt<StrSlice> {
                   haystack.string,
                   haystack.begin + offsetAfterBegin,
                   haystack.begin + offsetAfterBegin + needle.len()));
-      = ^r;
+      = r;
     }
 }
 
@@ -115,7 +115,7 @@ fn splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
   maybeOffsetAfterBegin = find(haystack, needle);
   = if (maybeOffsetAfterBegin.isEmpty()) {
       r Opt<SplitResult> = None<SplitResult>();
-      = ^r;
+      = r;
     } else {
       offsetAfterBegin = maybeOffsetAfterBegin.get();
       r Opt<SplitResult> =
@@ -129,7 +129,7 @@ fn splitOnce(haystack StrSlice, needle StrSlice) Opt<SplitResult> {
                       haystack.string,
                       offsetAfterBegin.begin + needle.len(),
                       haystack.end)));
-      = ^r;
+      = r;
     }
 }
 
@@ -291,7 +291,6 @@ fn fromAscii(code int) str {
 }
 
 
-
 fn isWhitespace(s str) bool { isWhitespace(s.slice()) }
 fn isWhitespace(s! StrSlice) bool {
   while (len(s) > 0) {
@@ -335,3 +334,4 @@ fn rtrimnl(s! StrSlice) StrSlice {
 
 fn trimnl(s str) StrSlice { trimnl(s.slice()) }
 fn trimnl(s! StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }
+

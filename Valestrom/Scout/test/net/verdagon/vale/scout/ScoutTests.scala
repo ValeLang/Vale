@@ -32,7 +32,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Lookup +") {
-    val program1 = compile("fn main() int { +(3, 4) }")
+    val program1 = compile("fn main() int export { +(3, 4) }")
     val main = program1.lookupFunction("main")
     
     val CodeBody1(BodySE(_, _, block)) = main.body
@@ -55,7 +55,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Lambda") {
-    val program1 = compile("fn main() int { {_ + _}(4, 6) }")
+    val program1 = compile("fn main() int export { {_ + _}(4, 6) }")
 
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(expr)))) = program1.lookupFunction("main").body
     val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _, _,_, _, _, _)), _) = expr
@@ -143,12 +143,12 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Method call") {
-    val program1 = compile("fn main() int { x = 4; = x.shout(); }")
+    val program1 = compile("fn main() int export { x = 4; = x.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LocalLoadSE(_,name, BorrowP))))) => {
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LendSE(_, LocalLoadSE(_,name, BorrowP), BorrowP))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -157,7 +157,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Moving method call") {
-    val program1 = compile("fn main() int { x = 4; = x^.shout(); }")
+    val program1 = compile("fn main() int export { x = 4; = x^.shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBody1(BodySE(_, _, block)) = main.body
@@ -171,7 +171,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val program1 =
       compile(
-        """fn main() int {
+        """fn main() int export {
           |  {_};
           |  (a){a};
           |}
@@ -279,7 +279,7 @@ class ScoutTests extends FunSuite with Matchers {
 
   test("Reports when mutating nonexistant local") {
     val err = compileForError(
-      """fn main() int {
+      """fn main() int export {
         |  mut a = a + 1;
         |}
         |""".stripMargin)

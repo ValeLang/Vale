@@ -1,16 +1,16 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 # Compile into VIR, since it will be the same for every region.
-python3.8 ../valec.py ../vstl/list.vale ../vstl/hashmap.vale ../vstl/hashset.vale src/*.vale --gen-heap --region-override unsafe-fast
+python3 ../valec.py ../vstl/list.vale ../vstl/hashmap.vale ../vstl/hashset.vale src/*.vale --gen-heap --region-override unsafe-fast
 
 # First, compile the various binaries with all the regions.
-python3.8 ../valec.py build.vir --gen-heap --region-override unsafe-fast -o benchmarkRL-unsafefast
-python3.8 ../valec.py build.vir --gen-heap --region-override assist -o benchmarkRL-assist
-python3.8 ../valec.py build.vir --gen-heap --region-override naive-rc -o benchmarkRL-naiverc
-python3.8 ../valec.py build.vir --gen-heap --region-override resilient-v1 -o benchmarkRL-resilientv1
-python3.8 ../valec.py build.vir --gen-heap --region-override resilient-v1 --elide-checks-for-known-live -o benchmarkRL-resilientv1ecfkl
-python3.8 ../valec.py build.vir --gen-heap --region-override resilient-v3 -o benchmarkRL-resilientv3
-python3.8 ../valec.py build.vir --gen-heap --region-override resilient-v3 --elide-checks-for-known-live -o benchmarkRL-resilientv3ecfkl
+python3 ../valec.py build.vir --gen-heap --region-override unsafe-fast -o benchmarkRL-unsafefast
+python3 ../valec.py build.vir --gen-heap --region-override assist -o benchmarkRL-assist
+python3 ../valec.py build.vir --gen-heap --region-override naive-rc -o benchmarkRL-naiverc
+python3 ../valec.py build.vir --gen-heap --region-override resilient-v1 -o benchmarkRL-resilientv1
+python3 ../valec.py build.vir --gen-heap --region-override resilient-v1 --elide-checks-for-known-live -o benchmarkRL-resilientv1ecfkl
+python3 ../valec.py build.vir --gen-heap --region-override resilient-v3 -o benchmarkRL-resilientv3
+python3 ../valec.py build.vir --gen-heap --region-override resilient-v3 --elide-checks-for-known-live -o benchmarkRL-resilientv3ecfkl
 # Note: other valid regions are resilient-v0, resilient-v1, resilient-v2, and resilient-limit
 
 # Now, begin the benchmarking!

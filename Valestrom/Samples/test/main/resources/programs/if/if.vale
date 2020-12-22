@@ -1,4 +1,4 @@
-fn main() int {
+fn main() int export {
   = if (true) {
       42
     } else {

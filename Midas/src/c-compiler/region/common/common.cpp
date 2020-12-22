@@ -50,24 +50,23 @@ LLVMValueRef upcastThinPtr(
           FL(), functionState, builder, sourceStructTypeM, sourceRefLE);
   auto interfaceRefLE =
       makeInterfaceRefStruct(
-          globalState, functionState, builder, sourceStructReferendM, targetInterfaceReferendM,
+          globalState, functionState, builder, referendStructsSource, sourceStructReferendM, targetInterfaceReferendM,
           controlBlockPtrLE);
   return interfaceRefLE;
 }
 
-LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referend) {
+LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend) {
   if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
     assert(false); // impl
   } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
     auto unknownSizeArrayCountedStructLT =
-        globalState->region->getReferendStructsSource()->getUnknownSizeArrayWrapperStruct(usaMT);
+        structs->getUnknownSizeArrayWrapperStruct(usaMT);
     return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
-    auto countedStructL = globalState->region->getReferendStructsSource()->getWrapperStruct(structReferend);
+    auto countedStructL = structs->getWrapperStruct(structReferend);
     return LLVMPointerType(countedStructL, 0);
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
-    auto interfaceRefStructL =
-        globalState->region->getReferendStructsSource()->getInterfaceRefStruct(interfaceReferend);
+    auto interfaceRefStructL = structs->getInterfaceRefStruct(interfaceReferend);
     return interfaceRefStructL;
   } else {
     std::cerr << "Unimplemented type: " << typeid(*referend).name() << std::endl;
@@ -76,15 +75,15 @@ LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referen
   }
 }
 
-LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend) {
+LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend) {
   if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
     assert(false); // impl
   } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
-    return globalState->region->getWeakRefStructsSource()->getUnknownSizeArrayWeakRefStruct(usaMT);
+    return weakRefStructs->getUnknownSizeArrayWeakRefStruct(usaMT);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
-    return globalState->region->getWeakRefStructsSource()->getStructWeakRefStruct(structReferend);
+    return weakRefStructs->getStructWeakRefStruct(structReferend);
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
-    return globalState->region->getWeakRefStructsSource()->getInterfaceWeakRefStruct(interfaceReferend);
+    return weakRefStructs->getInterfaceWeakRefStruct(interfaceReferend);
   } else {
     assert(false);
   }
@@ -134,6 +133,7 @@ LLVMValueRef fillControlBlockCensusFields(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     LLVMValueRef newControlBlockLE,
@@ -145,14 +145,14 @@ LLVMValueRef fillControlBlockCensusFields(
             builder,
             newControlBlockLE,
             objIdLE,
-            globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
+            structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
             "strControlBlockWithObjId");
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,
             newControlBlockLE,
             globalState->getOrMakeStringConstant(typeName),
-            globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
+            structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
             "strControlBlockWithTypeStr");
     buildFlare(from, globalState, functionState, builder, "Allocating ", typeName, " ", objIdLE);
   }
@@ -162,19 +162,17 @@ LLVMValueRef fillControlBlockCensusFields(
 LLVMValueRef insertStrongRc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Referend* referendM,
     LLVMValueRef newControlBlockLE) {
   return LLVMBuildInsertValue(
       builder,
       newControlBlockLE,
-      // Start at 1, 0 would mean it's dead.
-      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 1, false),
-      globalState->region->getControlBlock(referendM)->getMemberIndex(
-          ControlBlockMember::STRONG_RC),
+      // Start RC at 0, see SRCAZ.
+      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 0, false),
+      structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
       "controlBlockWithRc");
 }
-
-
 
 Ref loadElementFromKSAWithoutUpgradeInner(
     GlobalState* globalState,
@@ -214,13 +212,12 @@ LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
     ControlBlockPtrLE controlBlockPtrLE) {
 
-  auto interfaceRefLT =
-      globalState->region->getReferendStructsSource()->getInterfaceRefStruct(
-          targetInterfaceReferendM);
+  auto interfaceRefLT = structs->getInterfaceRefStruct(targetInterfaceReferendM);
 
   auto interfaceRefLE = LLVMGetUndef(interfaceRefLT);
   interfaceRefLE =
@@ -299,8 +296,7 @@ void innerDeallocateYonder(
     auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, refMT, refLE);
     if (dynamic_cast<InterfaceReferend*>(refMT->referend) == nullptr) {
       buildFlare(FL(), globalState, functionState, builder,
-          "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE,
-          "\n");
+          "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE, "\n");
     }
   }
 
@@ -1349,26 +1345,27 @@ void regularFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName,
     WrcWeaks* wrcWeaks) {
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->region->getControlBlock(referendM)->getStruct());
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(referendM)->getStruct());
 
   newControlBlockLE =
       fillControlBlockCensusFields(
-          from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+          from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
 
   if (mutability == Mutability::IMMUTABLE) {
     newControlBlockLE =
-        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
   } else {
     newControlBlockLE =
-        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
     if (globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
-      newControlBlockLE = wrcWeaks->fillWeakableControlBlock(functionState, builder, referendM,
+      newControlBlockLE = wrcWeaks->fillWeakableControlBlock(functionState, builder, structs, referendM,
           newControlBlockLE);
     }
   }
@@ -1382,6 +1379,7 @@ void gmFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
@@ -1389,15 +1387,15 @@ void gmFillControlBlock(
     const std::string& typeName,
     HybridGenerationalMemory* hgmWeaks) {
 
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(globalState->region->getControlBlock(referendM)->getStruct());
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(referendM)->getStruct());
 
   newControlBlockLE =
       fillControlBlockCensusFields(
-          from, globalState, functionState, builder, referendM, newControlBlockLE, typeName);
+          from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
 
   if (mutability == Mutability::IMMUTABLE) {
     newControlBlockLE =
-        insertStrongRc(globalState, builder, referendM, newControlBlockLE);
+        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
   } else {
     newControlBlockLE = hgmWeaks->fillWeakableControlBlock(functionState, builder, referendM,
         newControlBlockLE);

@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <functional>
+#include <string>
 
 //#include "metal/ast.h"
 //#include "metal/instructions.h"

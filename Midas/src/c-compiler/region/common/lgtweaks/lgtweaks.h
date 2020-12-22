@@ -111,6 +111,7 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
+      IReferendStructsSource* structs,
       Referend* referendM,
       LLVMValueRef controlBlockLE);
 
@@ -133,6 +134,8 @@ public:
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
+      IWeakRefStructsSource* weakRefStructsSource,
+      Referend* referend,
       WeakFatPtrLE weakRefLE);
 
   LLVMValueRef getLgtiFromWeakRef(

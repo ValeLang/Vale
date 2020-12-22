@@ -276,13 +276,13 @@ void ReferendStructs::declareKnownSizeArray(
     KnownSizeArrayT* knownSizeArrayMT) {
 
   auto countedStruct = LLVMStructCreateNamed(globalState->context, knownSizeArrayMT->name->name.c_str());
-  knownSizeArrayWrapperStructs.emplace(knownSizeArrayMT->name->name, countedStruct).first;
+  knownSizeArrayWrapperStructs.emplace(knownSizeArrayMT->name->name, countedStruct);
 }
 
 void ReferendStructs::declareUnknownSizeArray(
     UnknownSizeArrayT* unknownSizeArrayMT) {
   auto countedStruct = LLVMStructCreateNamed(globalState->context, (unknownSizeArrayMT->name->name + "rc").c_str());
-  unknownSizeArrayWrapperStructs.emplace(unknownSizeArrayMT->name->name, countedStruct).first;
+  unknownSizeArrayWrapperStructs.emplace(unknownSizeArrayMT->name->name, countedStruct);
 }
 
 void ReferendStructs::translateUnknownSizeArray(
@@ -647,6 +647,76 @@ LLVMValueRef ReferendStructs::getVoidPtrFromInterfacePtr(
       "objAsVoidPtr");
 }
 
+LLVMValueRef ReferendStructs::getObjIdFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    ControlBlockPtrLE controlBlockPtr) {
+  assert(globalState->opt->census);
+  return LLVMBuildLoad(
+      builder,
+      LLVMBuildStructGEP(
+          builder,
+          controlBlockPtr.refLE,
+          getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
+          "objIdPtr"),
+      "objId");
+}
+
+LLVMValueRef ReferendStructs::getStrongRcFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE structExpr) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+      break;
+    case RegionOverride::FAST:
+      assert(refM->ownership == Ownership::SHARE);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      assert(refM->ownership == Ownership::SHARE);
+      break;
+    default:
+      assert(false);
+  }
+
+  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(builder, refM, structExpr);
+  return LLVMBuildLoad(builder, rcPtrLE, "rc");
+}
+
+// See CRCISFAORC for why we don't take in a mutability.
+LLVMValueRef ReferendStructs::getStrongRcPtrFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE controlBlockPtr) {
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+    case RegionOverride::NAIVE_RC:
+      break;
+    case RegionOverride::FAST:
+      assert(refM->ownership == Ownership::SHARE);
+      break;
+    case RegionOverride::RESILIENT_V0:
+    case RegionOverride::RESILIENT_V1:
+    case RegionOverride::RESILIENT_V2:
+    case RegionOverride::RESILIENT_V3:
+    case RegionOverride::RESILIENT_LIMIT:
+      assert(refM->ownership == Ownership::SHARE);
+      break;
+    default:
+      assert(false);
+  }
+
+  return LLVMBuildStructGEP(
+      builder,
+      controlBlockPtr.refLE,
+      getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::STRONG_RC),
+      "rcPtr");
+}
 
 
 
@@ -912,4 +982,29 @@ LLVMValueRef WeakableReferendStructs::getVoidPtrFromInterfacePtr(
     InterfaceFatPtrLE virtualArgLE) {
   return referendStructs.getVoidPtrFromInterfacePtr(
       functionState, builder, virtualParamMT, virtualArgLE);
+}
+
+LLVMValueRef WeakableReferendStructs::getObjIdFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    ControlBlockPtrLE controlBlockPtr) {
+  return referendStructs.getObjIdFromControlBlockPtr(builder, referendM, controlBlockPtr);
+}
+
+// See CRCISFAORC for why we don't take in a mutability.
+// Strong means owning or borrow or shared; things that control the lifetime.
+LLVMValueRef WeakableReferendStructs::getStrongRcPtrFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE controlBlockPtr) {
+  return referendStructs.getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
+}
+
+// See CRCISFAORC for why we don't take in a mutability.
+// Strong means owning or borrow or shared; things that control the lifetime.
+LLVMValueRef WeakableReferendStructs::getStrongRcFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE controlBlockPtr) {
+  return referendStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
 }

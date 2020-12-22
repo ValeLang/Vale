@@ -499,7 +499,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
           struuct["weakable"] ? Weakability::WEAKABLE : Weakability::NON_WEAKABLE);
 
   auto structName = result->name;
-  if (structName->name == std::string("Tup0")) {
+  if (structName->name == std::string("Tup0_0")) {
     cache->emptyTupleStruct =
         makeIfNotPresent(
             &cache->structReferends,
@@ -590,5 +590,13 @@ Program* readProgram(MetalCache* cache, const json& program) {
       readArrayIntoMap<Referend*, Prototype*>(
           cache,
           program["immDestructorsByReferend"],
-          readReferendAndPrototypeEntry));
+          readReferendAndPrototypeEntry),
+      readArrayIntoMap<Name*, std::string>(
+          cache,
+          program["exportedNameByFullName"],
+          [](MetalCache* cache, json j){
+            auto fullName = readName(cache, j["fullName"]);
+            std::string exportedName = j["exportedName"];
+            return std::make_pair(fullName, exportedName);
+          }));
 }

@@ -1,5 +1,5 @@
 
-fn main() int {
+fn main() int export {
   playerRow! = 137;
 
   if (false) {

@@ -13,7 +13,7 @@ fn len<T>(virtual opt &MyOption<T>) int abstract;
 fn len<T>(opt &MyNone<T> impl MyOption<T>) int { 0 }
 fn len<T>(opt &MySome<T> impl MyOption<T>) int { 1 }
 
-fn main() int {
+fn main() int export {
   myOpt MyOption<int> = MySome<int>(4);
-  = len(myOpt);
+  = len(&myOpt);
 }

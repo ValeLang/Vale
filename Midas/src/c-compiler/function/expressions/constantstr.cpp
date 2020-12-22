@@ -13,5 +13,7 @@ Ref translateConstantStr(
     ConstantStr* constantStr) {
   auto strWrapperPtrLE =
       buildConstantVStr(globalState, functionState, builder, constantStr->value);
-  return wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
+  auto resultRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
+  functionState->defaultRegion->alias(FL(), functionState, builder, globalState->metalCache.strRef, resultRef);
+  return resultRef;
 }

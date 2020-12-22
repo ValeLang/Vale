@@ -135,7 +135,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Hardcoding negative numbers") {
-    val compile = Compilation("fn main() int {-3}")
+    val compile = Compilation("fn main() int export {-3}")
     val main = compile.getTemputs().lookupFunction("main")
     main.only({ case IntLiteral2(-3) => true })
   }
@@ -150,7 +150,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Tests adding two numbers") {
-    val compile = Compilation("fn main() int { +(2, 3) }")
+    val compile = Compilation("fn main() int export { +(2, 3) }")
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
     main.only({ case IntLiteral2(2) => true })
@@ -165,7 +165,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Recursion") {
-    val compile = Compilation("fn main() int{main()}")
+    val compile = Compilation("fn main() int export{main()}")
     val temputs = compile.getTemputs()
 
     // Make sure it inferred the param type and return type correctly
@@ -173,7 +173,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Simple lambda") {
-    val compile = Compilation("fn main() int {{7}()}")
+    val compile = Compilation("fn main() int export {{7}()}")
     val temputs = compile.getTemputs()
 
     // Make sure it inferred the param type and return type correctly
@@ -182,7 +182,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Lambda with one magic arg") {
-    val compile = Compilation("fn main() int {{_}(3)}")
+    val compile = Compilation("fn main() int export {{_}(3)}")
     val temputs = compile.getTemputs()
 
     // Make sure it inferred the param type and return type correctly
@@ -196,7 +196,7 @@ class TemplarTests extends FunSuite with Matchers {
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = Compilation("fn main() int {(a int){+(a,a)}(3)}");
+    val compile = Compilation("fn main() int export {(a int){+(a,a)}(3)}");
     val temputs = compile.getTemputs()
 
     val lambda = temputs.lookupLambdaIn("main");
@@ -222,7 +222,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn ~<T>(a T, b T)T{a}
-        |fn main() int {true ~ false; 2 ~ 2; = 3 ~ 3;}
+        |fn main() int export {true ~ false; 2 ~ 2; = 3 ~ 3;}
       """.stripMargin)
     val temputs = compile.getTemputs()
 
@@ -241,7 +241,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn do(callable) infer-ret {callable()}
-        |fn main() int {do({ 3 })}
+        |fn main() int export {do({ 3 })}
       """.stripMargin)
     val temputs = compile.getTemputs()
 
@@ -253,7 +253,7 @@ class TemplarTests extends FunSuite with Matchers {
       """struct Muta { }
         |
         |fn destructor(m ^Muta) {
-        |  Muta() = ^m;
+        |  Muta() = m;
         |}
         |
         |fn main() {
@@ -301,7 +301,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct MyStruct { a int; }
-        |fn main() int { ms = MyStruct(7); = ms.a; }
+        |fn main() int export { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
     val temputs = compile.getTemputs()
 
@@ -448,7 +448,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct MySome<T> rules(T Ref) { value T; }
-        |fn main() int {
+        |fn main() int export {
         |  MySome<int>(4).value
         |}
         |""".stripMargin
@@ -537,7 +537,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  z int;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |	 Vec3i(x, y, z) = Vec3i(3, 4, 5);
         |  = y;
         |}
@@ -566,7 +566,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  z int;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  v = Vec3i(3, 4, 5);
         |	 (x, y, z) = &v;
         |  = y;
@@ -600,9 +600,9 @@ class TemplarTests extends FunSuite with Matchers {
         |  = 9;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |	x MyOption<int> = MySome<int>();
-        |	= doSomething(^x);
+        |	= doSomething(x);
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -679,9 +679,9 @@ class TemplarTests extends FunSuite with Matchers {
   test("Test array length") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  a = Array<mut, int>(11, &IFunction1<imm, int, int>({_}));
-        |  = len(a);
+        |  = len(&a);
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
@@ -690,7 +690,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Test return") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  ret 7;
         |}
       """.stripMargin)
@@ -702,7 +702,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Test return from inside if") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  if (true) {
         |    ret 7;
         |  } else {
@@ -721,7 +721,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Test return from inside if destroys locals") {
     val compile = Compilation(
       """struct Marine { hp int; }
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(5);
         |  x =
         |    if (true) {
@@ -746,26 +746,6 @@ class TemplarTests extends FunSuite with Matchers {
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("programs/genericvirtuals/templatedinterface.vale"))
-    val temputs = compile.getTemputs()
-  }
-
-  // Intentional failure 2020-11-27
-  test("Returning from both sides of if, but unstackifying different locals") {
-    val compile = Compilation.multiple(
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        """
-          |fn bork(b int) {}
-          |fn main(b int) int {
-          |  if (true) {
-          |    ret 42;
-          |  } else {
-          |    bork(b^);
-          |    __panic();
-          |  }
-          |}
-          |""".stripMargin))
     val temputs = compile.getTemputs()
   }
 
@@ -862,7 +842,7 @@ class TemplarTests extends FunSuite with Matchers {
 
   test("Reports when reading nonexistant local") {
     val compile = Compilation(
-      """fn main() int {
+      """fn main() int export {
         |  moo
         |}
         |""".stripMargin)
@@ -881,10 +861,10 @@ class TemplarTests extends FunSuite with Matchers {
         |  weapon! Weapon;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(Weapon(7));
         |  newWeapon = Weapon(10);
-        |  mut m.weapon = ^newWeapon;
+        |  mut m.weapon = newWeapon;
         |  mut newWeapon.ammo = 11;
         |  = 42;
         |}
@@ -901,7 +881,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  ammo! int;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  weapon = Weapon(10);
         |  = weapon[42];
         |}
@@ -926,7 +906,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn moo(a int, b bool, s str) int { a }
-        |fn main() int {
+        |fn main() int export {
         |  moo(42, true, "hello", false)
         |}
         |""".stripMargin)
@@ -945,7 +925,7 @@ class TemplarTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct Vec3 { x float; y float; z float; }
-        |fn main() int {
+        |fn main() int export {
         |  v = Vec3(3.0, 4.0, 5.0);
         |  mut v.x = 10.0;
         |}

@@ -9,7 +9,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("Function then struct") {
     val program = compileProgram(
       """
-        |fn main() int {}
+        |fn main() int export {}
         |
         |struct mork { }
         |""".stripMargin)
@@ -34,9 +34,9 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
     val program = compileProgram("fn foo() { ... }")
     program.topLevelThings(0) match {
       case TopLevelFunctionP(
-        FunctionP(_,
-          _,
-          Some(BlockPE(_,List(VoidPE(_)))))) =>
+      FunctionP(_,
+      _,
+      Some(BlockPE(_,List(VoidPE(_)))))) =>
     }
   }
 }

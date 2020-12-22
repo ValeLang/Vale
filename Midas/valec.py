@@ -12,7 +12,7 @@ import os.path
 from pathlib import PurePath
 from os import path
 from subprocess import PIPE
-from typing import Dict, Any, List, Callable
+from typing import Dict, Any, List, Callable, Optional
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
@@ -28,29 +28,35 @@ class ValeCompiler:
             [
                 "java",
                 "-cp",
-                str(self.valestrom_path / "Valestrom.jar"),
+                str(self.valestrom_path / "Valestrom.jar"), # + ":" \
+                #+ str((self.valestrom_path / "lift-json_2.12-3.3.0-RC1.jar")),
                 "net.verdagon.vale.driver.Driver",
                 "build"
-            ] + valestrom_options + list(map(lambda x : str(x), vale_files))
+            ] + valestrom_options + list(str(x) for x in vale_files)
         )
 
     def valec(self,
-              vir_file: str,
+              vir_file: PurePath,
               o_files_dir: str,
               midas_options: List[str]) -> subprocess.CompletedProcess:
         return procrun(
-            [str(self.valec_path), "--verify", "--output-dir", o_files_dir, vir_file] + midas_options)
+            [str(self.valec_path), "--verify", "--output-dir", o_files_dir, str(vir_file)] + midas_options)
 
     def clang(self,
-              o_files: List[str],
-              exe_file: str) -> subprocess.CompletedProcess:
+              o_files: List[PurePath],
+              o_files_dir: PurePath,
+              exe_file: PurePath,
+              include_path: Optional[PurePath]) -> subprocess.CompletedProcess:
         if self.windows:
-            return procrun(["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + exe_file] + o_files)
+            args = ["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file)] + list(str(x) for x in o_files)
+            if include_path is not None:
+                args.append("-I" + str(include_path))
+            return procrun(args)
         else:
-            return procrun(["clang-7", "-O3", "-lm", "-o", exe_file] + o_files)
-
-    def exec(self, exe_file: str) -> subprocess.CompletedProcess:
-        return procrun([f"./{exe_file}"])
+            args = ["clang", "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
+            if include_path is not None:
+                args.append("-I" + str(include_path))
+            return procrun(args)
 
     def compile_and_execute(
         self, args: str) -> subprocess.CompletedProcess:
@@ -73,13 +79,13 @@ class ValeCompiler:
             self.valestrom_path = cwd
 
         if len(os.environ.get('VALESTD_PATH', '')) > 0:
-            self.valestd_path = PurePath(os.environ.get('VALESTD_PATH', ''))
-        elif path.exists(cwd / "src/valestd"):
-            self.valestd_path = cwd / "src/valestd"
-        elif path.exists(cwd / "runtime"):
-            self.valestd_path = cwd / "runtime"
+            self.builtins_path = PurePath(os.environ.get('VALESTD_PATH', ''))
+        elif path.exists(cwd / "src/builtins"):
+            self.builtins_path = cwd / "src/builtins"
+        elif path.exists(cwd / "builtins"):
+            self.builtins_path = cwd / "builtins"
         else:
-            self.valestd_path = cwd
+            self.builtins_path = cwd
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
         self.valec_path: PurePath = cwd
@@ -138,8 +144,10 @@ class ValeCompiler:
         # args = parser.parse_args()
 
         build_dir = PurePath(f".")
+        exports_dir = PurePath(f".")
         exe_file = ("main.exe" if self.windows else "a.out")
         parseds_output_dir = None
+        add_exports_include_path = False
 
         valestrom_options = []
         midas_options = []
@@ -189,6 +197,18 @@ class ValeCompiler:
             build_dir = PurePath(val)
             midas_options.append("--output-dir")
             midas_options.append(val)
+        if "--exports-dir" in args:
+            ind = args.index("--exports-dir")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            exports_dir = PurePath(val)
+            midas_options.append("--exports-dir")
+            midas_options.append(val)
+        if "--add-exports-include-path" in args:
+            ind = args.index("--add-exports-include-path")
+            del args[ind]
+            add_exports_include_path = True
         if "-o" in args:
             ind = args.index("-o")
             del args[ind]
@@ -222,10 +242,9 @@ class ValeCompiler:
         vir_file = None
         if len(user_valestrom_files) > 0 and len(user_vir_files) == 0:
             # Add in the default vale files
-            user_valestrom_files = (
+            valestrom_files = (
                 user_valestrom_files +
-                glob.glob(str(cwd / "vstl/*utils.vale")) +
-                [str(cwd / "vstl/strings.vale"), str(cwd / "vstl/opt.vale")])
+                list(PurePath(x) for x in glob.glob(str(self.builtins_path / "*.vale"))))
 
             if build_dir != PurePath("."):
                 if os.path.exists(build_dir):
@@ -240,7 +259,7 @@ class ValeCompiler:
                 valestrom_options.append("-op")
                 valestrom_options.append(str(parseds_output_dir))
 
-            proc = self.valestrom(user_valestrom_files, valestrom_options)
+            proc = self.valestrom(valestrom_files, valestrom_options)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode == 0:
@@ -250,7 +269,7 @@ class ValeCompiler:
                 print(proc.stdout + "\n" + proc.stderr)
                 sys.exit(22)
             else:
-                print(f"Internal error while compiling {user_valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
+                print(f"Internal error while compiling {valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
                 sys.exit(proc.returncode)
         elif len(user_vir_files) > 0 and len(user_valestrom_files) == 0:
             if len(user_vir_files) > 1:
@@ -269,7 +288,7 @@ class ValeCompiler:
             print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
             sys.exit(1)
 
-        c_files = user_c_files.copy() + glob.glob(str(self.valestd_path / "*.c")) + [str(cwd / "vstl/strings.c"), str(cwd / "vstl/mainargs.c")]
+        c_files = user_c_files.copy() + glob.glob(str(self.builtins_path / "*.c"))
 
         # Get .o or .obj
         o_files = glob.glob(str(vir_file.with_suffix(".o"))) + glob.glob(str(vir_file.with_suffix(".obj")))
@@ -282,7 +301,11 @@ class ValeCompiler:
 
 
         clang_inputs = o_files + c_files
-        proc = self.clang([str(n) for n in clang_inputs], str(build_dir / exe_file))
+        proc = self.clang(
+            [str(n) for n in clang_inputs],
+            build_dir,
+            build_dir / exe_file,
+            exports_dir if add_exports_include_path else None)
         # print(proc.stdout)
         # print(proc.stderr)
         if proc.returncode != 0:

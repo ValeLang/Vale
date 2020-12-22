@@ -14,7 +14,7 @@ fn doCivicDance(toyota Toyota impl Car) int {
   = 7;
 }
 
-fn main() int {
+fn main() int export {
   x Car = Toyota();
-  = doCivicDance(^x);
+  = doCivicDance(x);
 }

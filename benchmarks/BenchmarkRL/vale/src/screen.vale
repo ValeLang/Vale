@@ -57,7 +57,7 @@ struct StrBox {
                 mut y = y + 1;
             }
 
-            cells.add(q^);
+            cells.add(q);
 
             mut x = x + 1;
         }
@@ -65,7 +65,7 @@ struct StrBox {
         ret Screen(
             width,
             height,
-            cells^,
+            cells,
             "");
     }
 

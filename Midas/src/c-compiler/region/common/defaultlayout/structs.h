@@ -122,6 +122,25 @@ public:
       LLVMBuilderRef builder,
       Reference* virtualParamMT,
       InterfaceFatPtrLE virtualArgLE) = 0;
+
+  virtual LLVMValueRef getObjIdFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      ControlBlockPtrLE controlBlockPtr) = 0;
+
+  // See CRCISFAORC for why we don't take in a mutability.
+  // Strong means owning or borrow or shared; things that control the lifetime.
+  virtual LLVMValueRef getStrongRcPtrFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) = 0;
+
+  // See CRCISFAORC for why we don't take in a mutability.
+  // Strong means owning or borrow or shared; things that control the lifetime.
+  virtual LLVMValueRef getStrongRcFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) = 0;
 };
 
 
@@ -133,6 +152,12 @@ public:
   virtual LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT *usaMT) = 0;
   virtual LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend *interfaceReferend) = 0;
   virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
+
+  virtual LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) = 0;
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  virtual LLVMTypeRef getWeakVoidRefStruct(Referend* referend) = 0;
 };
 
 
@@ -168,12 +193,17 @@ public:
   void translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
   void translateKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT, LLVMTypeRef elementLT) override;
 
+  LLVMValueRef getObjIdFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    ControlBlockPtrLE controlBlockPtr) override;
+
   WrapperPtrLE makeWrapperPtr(
-      AreaAndFileAndLine checkerAFL,
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* referenceM,
-      LLVMValueRef ptrLE) override;
+    AreaAndFileAndLine checkerAFL,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* referenceM,
+    LLVMValueRef ptrLE) override;
 
   InterfaceFatPtrLE makeInterfaceFatPtr(
       AreaAndFileAndLine checkerAFL,
@@ -238,6 +268,20 @@ public:
       // This will be a pointer if a mutable struct, or a fat ref if an interface.
       LLVMValueRef ref,
       Reference* referenceM) override;
+
+  // See CRCISFAORC for why we don't take in a mutability.
+  // Strong means owning or borrow or shared; things that control the lifetime.
+  LLVMValueRef getStrongRcPtrFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  // See CRCISFAORC for why we don't take in a mutability.
+  // Strong means owning or borrow or shared; things that control the lifetime.
+  LLVMValueRef getStrongRcFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
 
   ControlBlockPtrLE getControlBlockPtrWithoutChecking(
       AreaAndFileAndLine from,
@@ -456,6 +500,36 @@ public:
       Reference* virtualParamMT,
       InterfaceFatPtrLE virtualArgLE) override;
 
+  LLVMValueRef getObjIdFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  // See CRCISFAORC for why we don't take in a mutability.
+  // Strong means owning or borrow or shared; things that control the lifetime.
+  LLVMValueRef getStrongRcPtrFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  // See CRCISFAORC for why we don't take in a mutability.
+  // Strong means owning or borrow or shared; things that control the lifetime.
+  LLVMValueRef getStrongRcFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override {
+    return weakRefHeaderStructL;
+  }
+  // This is a weak ref to a void*. When we're calling an interface method on a weak,
+  // we have no idea who the receiver is. They'll receive this struct as the correctly
+  // typed flavor of it (from structWeakRefStructs).
+  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override {
+    return weakVoidRefStructL;
+  }
+
+private:
   GlobalState* globalState;
 
   ReferendStructs referendStructs;

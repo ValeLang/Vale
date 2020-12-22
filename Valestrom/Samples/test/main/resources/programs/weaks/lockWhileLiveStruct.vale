@@ -1,12 +1,11 @@
 struct Muta weakable { hp int; }
-fn main() int {
+fn main() int export {
   ownMuta = Muta(7);
   weakMuta = &&ownMuta;
   maybeBorrowMuta = lock(weakMuta);
   = if (maybeBorrowMuta.isEmpty()) {
-      drop(maybeBorrowMuta^);
       = 73;
     } else {
-      maybeBorrowMuta^.get().hp
+      maybeBorrowMuta.get().hp
     }
 }

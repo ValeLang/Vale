@@ -6,16 +6,17 @@
 
 // These are exposed by the compiled vale .obj/.o, they're
 // the start of a Vale native API.
-typedef struct ValeStr ValeStr;
-ValeStr* vale_newstr(int64_t length);
-char* vale_getstrchars(ValeStr* str);
-int64_t vale_getstrnumbytes(ValeStr* str);
+typedef struct ValeStr {
+  uint64_t length;
+  char* chars;
+} ValeStr;
+ValeStr* ValeStrNew(int64_t length);
 
 
 
 // Aborts on failure, beware!
 ValeStr* readFileAsString(ValeStr* filenameVStr) {
-  char* filename = vale_getstrchars(filenameVStr);
+  char* filename = filenameVStr->chars;
 
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
@@ -43,8 +44,8 @@ ValeStr* readFileAsString(ValeStr* filenameVStr) {
     exit(1);
   }
 
-  ValeStr* result = vale_newstr(lSize);
-  strncpy(vale_getstrchars(result), buffer, lSize);
+  ValeStr* result = ValeStrNew(lSize);
+  strncpy(result->chars, buffer, lSize);
 
   fclose(fp);
   free(buffer);
@@ -53,9 +54,9 @@ ValeStr* readFileAsString(ValeStr* filenameVStr) {
 }
 
 void writeStringToFile(ValeStr* filenameVStr, ValeStr* contentsVStr) {
-  char *filename = vale_getstrchars(filenameVStr);
-  char* contents = vale_getstrchars(contentsVStr);
-  int contentsLen = vale_getstrnumbytes(contentsVStr);
+  char *filename = filenameVStr->chars;
+  char* contents = contentsVStr->chars;
+  int contentsLen = contentsVStr->length;
 
   //printf("contents len: %d\n", contentsLen);
 
@@ -65,10 +66,12 @@ void writeStringToFile(ValeStr* filenameVStr, ValeStr* contentsVStr) {
     exit(1);
   }
 
-  if (1 != fwrite(contents, contentsLen, sizeof(char), fp)) {
-    fclose(fp);
-    fputs("Failed to write file", stderr);
-    exit(1);
+  if (contentsLen > 0) {
+    if (1 != fwrite(contents, contentsLen, 1, fp)) {
+      fclose(fp);
+      fputs("Failed to write file", stderr);
+      exit(1);
+    }
   }
 
   fclose(fp);

@@ -1,5 +1,5 @@
 fn sqrt(x float) float extern;
 
-fn main() int {
+fn main() int export {
   int(sqrt(float(16)))
 }

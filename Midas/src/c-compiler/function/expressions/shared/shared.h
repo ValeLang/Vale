@@ -51,6 +51,7 @@ LLVMValueRef adjustStrongRc(
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE exprLE);
@@ -63,6 +64,13 @@ void buildAssert(
     LLVMValueRef conditionLE,
     const std::string& failMessage);
 
+void buildAssertIntEq(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef aLE,
+    LLVMValueRef bLE,
+    const std::string& failMessage);
 
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, const std::string& first);
 void buildPrint(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef exprLE);
@@ -179,7 +187,7 @@ inline LLVMValueRef ptrToVoidPtrLE(GlobalState* globalState, LLVMBuilderRef buil
 }
 
 inline LLVMValueRef ptrToIntLE(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef ptrLE) {
-  return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "ptrAsI64");
+  return LLVMBuildPointerCast(builder, ptrLE, LLVMInt64TypeInContext(globalState->context), "asI64");
 }
 
 #endif

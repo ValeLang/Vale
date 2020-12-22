@@ -58,7 +58,7 @@ Level {
         mut y = y + 1;
       }
 
-      walkabilities.add(^thisCol);
+      walkabilities.add(thisCol);
 
       mut x = x + 1;
     }
@@ -67,12 +67,12 @@ Level {
 
     // Do a couple generations of cellular automata to smooth out the noisiness to get some
     // caverns and rooms forming.
-    mut walkabilities = smooth_level(max_width, max_height, walkabilities);
-    mut walkabilities = smooth_level(max_width, max_height, walkabilities);
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
+    mut walkabilities = smooth_level(max_width, max_height, &walkabilities);
 
     // The caverns and rooms from the above process are probably disjoint and we can't get
     // from one to the other. Here, we dig tunnels between them until they're connected.
-    connect_all_rooms(rand, walkabilities, false);
+    connect_all_rooms(&rand, &walkabilities, false);
 
     // Now, assemble the above walkabilities 2D bool array into a legit 2D tile array.
     mut x = 0;
@@ -133,7 +133,7 @@ Level {
         mut x = x + 1;
     }
 
-    ret level^;
+    ret level;
 }
 
 // Does cellular automata on the 2D walkabilities array.
@@ -152,7 +152,7 @@ List<List<bool>> {
         thisCol.add(false);
         mut y = y + 1;
       }
-      new_walkabilities.add(^thisCol);
+      new_walkabilities.add(thisCol);
       mut x = x + 1;
     }
 
@@ -192,21 +192,21 @@ List<List<bool>> {
 
 
     // swap method here?
-    ret new_walkabilities^;
+    ret new_walkabilities;
 }
 
 fn connect_all_rooms(
     rand &!LCGRand,
     walkabilities &!List<List<bool>>,
     consider_corners_adjacent bool) void {
-    rooms = identify_rooms(walkabilities, consider_corners_adjacent);
-    connect_rooms(rand, rooms);
+    rooms = identify_rooms(&walkabilities, consider_corners_adjacent);
+    connect_rooms(&rand, &rooms);
 
     i! = 0;
     while (i < rooms.len()) {
         new_room = rooms.get(i);
 
-        each new_room (loc){
+        each (new_room) (loc){
             walkabilities.get(loc.x).set(loc.y, true);
         }
 
@@ -239,7 +239,7 @@ List<HashSet<Location, LocationHasher, LocationEquator>> {
                             spark_location);
                     new_room_index = rooms.len();
                     connected_locations_clone = connected_locations.toArray();
-                    rooms.add(connected_locations^); // DIFFERENCE clones
+                    rooms.add(connected_locations); // DIFFERENCE clones
 
                     i! = 0;
                     while (i < connected_locations_clone.len()) {
@@ -257,7 +257,7 @@ List<HashSet<Location, LocationHasher, LocationEquator>> {
         mut x = x + 1;
     }
 
-    ret rooms^;
+    ret rooms;
 }
 
 fn find_all_connected_locations(
@@ -300,7 +300,7 @@ HashSet<Location, LocationHasher, LocationEquator> {
         }
     }
 
-    ret connected_with_explored_neighbors^;
+    ret connected_with_explored_neighbors;
 }
 
 fn connect_rooms(
@@ -346,7 +346,7 @@ fn connect_rooms(
             HashSet<int, IntHasher, IntEquator>(
                 IntHasher(), IntEquator());
         room_indices_in_region.add(room_index);
-        room_indices_by_region_num.add(region, room_indices_in_region^);
+        room_indices_by_region_num.add(region, room_indices_in_region);
         regions.add(region);
 
         mut room_index = room_index + 1;
@@ -367,18 +367,18 @@ fn connect_rooms(
             region_b = distinct_regions_arr[1];
 
             region_a_room_index =
-                get_hash_set_random_nth(rand, &room_indices_by_region_num.get(region_a).get()).get();
+                get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_a)^.get()).get();
             region_a_room = &rooms.get(region_a_room_index);
-            region_a_location = get_hash_set_random_nth(rand, region_a_room).get();
+            region_a_location = get_hash_set_random_nth(&rand, &region_a_room).get();
 
             room_indices_by_region_num.get(region_b);
-            room_indices_by_region_num.get(region_b).get();
-            room_indices_by_region_num.get(region_b).get().len();
+            room_indices_by_region_num.get(region_b)^.get();
+            room_indices_by_region_num.get(region_b)^.get().len();
 
             region_b_room_index =
-                get_hash_set_random_nth(rand, &room_indices_by_region_num.get(region_b).get()).get();
+                get_hash_set_random_nth(&rand, &room_indices_by_region_num.get(region_b)^.get()).get();
             region_b_room = &rooms.get(region_b_room_index);
-            region_b_location = get_hash_set_random_nth(rand, region_b_room).get();
+            region_b_location = get_hash_set_random_nth(&rand, &region_b_room).get();
 
             // Now lets drive from region_a_location to region_b_location, and see what happens on the
             // way there.
@@ -428,7 +428,7 @@ fn connect_rooms(
             rooms.add(
                 HashSet<Location, LocationHasher, LocationEquator>(
                     &path.toArray<mut>(), LocationHasher(), LocationEquator()));
-            each (path) (path_location){
+            each (&path) (path_location){
                 room_index_by_location.add(path_location, new_room_index);
             }
             region_by_room_index.add(new_room_index, combined_region);
@@ -449,8 +449,8 @@ fn connect_rooms(
             path_adjacent_regions =
                 HashSet<int, IntHasher, IntEquator>(
                     IntHasher(), IntEquator());
-            each (path_adjacent_locations) (path_adjacent_location){
-                if (room_index_by_location has path_adjacent_location) {
+            each (&path_adjacent_locations) (path_adjacent_location){
+                if (&room_index_by_location has path_adjacent_location) {
                     room_index = room_index_by_location.get(path_adjacent_location).get();
                     region = region_by_room_index.get(room_index).get();
                     // DIFFERENCE we check if its already there
@@ -464,10 +464,10 @@ fn connect_rooms(
                 HashSet<int, IntHasher, IntEquator>(
                     IntHasher(), IntEquator());
             room_indices_in_combined_region.add(new_room_index);
-            each (path_adjacent_regions) (path_adjacent_region){
+            each (&path_adjacent_regions) (path_adjacent_region){
                 // Otherwise the new room is already part of this region
                 if (path_adjacent_region != combined_region) {
-                    each (room_indices_by_region_num.get(path_adjacent_region).get()) (path_adjacent_room_index){
+                    each (room_indices_by_region_num.get(path_adjacent_region)^.get()) (path_adjacent_room_index){
                         // DIFFERENCE we're calling update here
                         region_by_room_index.update(path_adjacent_room_index, combined_region);
                         room_indices_in_combined_region.add(path_adjacent_room_index);
@@ -476,7 +476,7 @@ fn connect_rooms(
                 }
             }
             // DIFFERENCE they had a clone?
-            room_indices_by_region_num.add(combined_region, room_indices_in_combined_region^);
+            room_indices_by_region_num.add(combined_region, room_indices_in_combined_region);
 
             // room_indices_by_region_num.insert(combined_region, room_indices_in_combined_region);
         } else {
@@ -493,7 +493,7 @@ fn get_hash_set_random_nth<T, H, E>(
 Opt<T> {
     if (set.isEmpty()) {
         result Opt<T> = None<T>();
-        ret ^result;
+        ret result;
     }
     keys = set.toArray();
     ret Some(keys[rand.next() mod keys.len()]);
@@ -520,7 +520,7 @@ List<Location> {
         mut i = i + 1;
     }
 
-    ret ^result;
+    ret result;
 }
 
 fn get_adjacent_walkable_locations(
@@ -546,5 +546,5 @@ List<Location> {
 
         mut i = i + 1;
     }
-    ret ^result;
+    ret result;
 }

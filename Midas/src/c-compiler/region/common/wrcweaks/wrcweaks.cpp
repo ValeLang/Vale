@@ -14,10 +14,11 @@ constexpr uint32_t WRC_ALIVE_BIT = 0x80000000;
 constexpr uint32_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
 
 static LLVMValueRef makeWrciHeader(
-    GlobalState* globalState,
     LLVMBuilderRef builder,
+    IWeakRefStructsSource* weakRefStructs,
+    Referend* referend,
     LLVMValueRef wrciLE) {
-  auto headerLE = LLVMGetUndef(globalState->region->getWeakRefHeaderStruct());
+  auto headerLE = LLVMGetUndef(weakRefStructs->getWeakRefHeaderStruct(referend));
   return LLVMBuildInsertValue(builder, headerLE, wrciLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI, "header");
 }
 
@@ -78,6 +79,7 @@ void WrcWeaks::maybeReleaseWrc(
 static LLVMValueRef getWrciFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
@@ -91,7 +93,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            globalState->region->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::WRCI),
+            structs->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::WRCI),
             "wrciPtr");
     return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
   }
@@ -191,13 +193,13 @@ WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
                   functionState, builder, sourceStructTypeM, sourceWeakStructFatPtrLE)));
 
   auto interfaceRefLT =
-      globalState->region->getWeakRefStructsSource()->getInterfaceWeakRefStruct(targetInterfaceReferendM);
+      weakRefStructsSource->getInterfaceWeakRefStruct(targetInterfaceReferendM);
   auto wrciLE = getWrciFromWeakRef(builder, sourceWeakStructFatPtrLE);
-  auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
+  auto headerLE = makeWrciHeader(builder, weakRefStructsSource, targetInterfaceReferendM, wrciLE);
 
   auto innerRefLE =
       makeInterfaceRefStruct(
-          globalState, functionState, builder, sourceStructReferendM,
+          globalState, functionState, builder, referendStructsSource, sourceStructReferendM,
           targetInterfaceReferendM,
           controlBlockPtr);
 
@@ -223,13 +225,13 @@ WeakFatPtrLE WrcWeaks::assembleInterfaceWeakRef(
   auto controlBlockPtrLE =
       referendStructsSource->getControlBlockPtr(
           FL(), functionState, builder, interfaceReferendM, sourceInterfaceFatPtrLE);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceType,
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType,
       controlBlockPtrLE);
-  auto headerLE = LLVMGetUndef(globalState->region->getWeakRefHeaderStruct());
+  auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(interfaceReferendM));
   headerLE = LLVMBuildInsertValue(builder, headerLE, wrciLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI, "header");
 
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getInterfaceWeakRefStruct(interfaceReferendM);
+      weakRefStructsSource->getInterfaceWeakRefStruct(interfaceReferendM);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetType, weakRefStructLT, headerLE, sourceInterfaceFatPtrLE.refLE);
@@ -251,11 +253,11 @@ WeakFatPtrLE WrcWeaks::assembleStructWeakRef(
   } else assert(false);
 
   auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, structTypeM, controlBlockPtrLE);
-  auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, referendStructsSource, structTypeM, controlBlockPtrLE);
+  auto headerLE = makeWrciHeader(builder, weakRefStructsSource, structReferendM, wrciLE);
 
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getStructWeakRefStruct(structReferendM);
+      weakRefStructsSource->getStructWeakRefStruct(structReferendM);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
@@ -269,11 +271,11 @@ WeakFatPtrLE WrcWeaks::assembleKnownSizeArrayWeakRef(
     Reference* targetKSAWeakRefMT,
     WrapperPtrLE objPtrLE) {
   auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceKSAMT, objPtrLE);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceKSAMT, controlBlockPtrLE);
-  auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, referendStructsSource, sourceKSAMT, controlBlockPtrLE);
+  auto headerLE = makeWrciHeader(builder, weakRefStructsSource, knownSizeArrayMT, wrciLE);
 
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT);
+      weakRefStructsSource->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetKSAWeakRefMT, weakRefStructLT, headerLE, objPtrLE.refLE);
@@ -287,11 +289,11 @@ WeakFatPtrLE WrcWeaks::assembleUnknownSizeArrayWeakRef(
     Reference* targetUSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceType, sourceRefLE);
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, sourceType, controlBlockPtrLE);
-  auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType, controlBlockPtrLE);
+  auto headerLE = makeWrciHeader(builder, weakRefStructsSource, unknownSizeArrayMT, wrciLE);
 
   auto weakRefStructLT =
-      globalState->region->getWeakRefStructsSource()->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
+      weakRefStructsSource->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetUSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
@@ -376,7 +378,7 @@ void WrcWeaks::innerNoteWeakableDestroyed(
     LLVMBuilderRef builder,
     Reference* concreteRefM,
     ControlBlockPtrLE controlBlockPtrLE) {
-  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, concreteRefM,
+  auto wrciLE = getWrciFromControlBlockPtr(globalState, builder, referendStructsSource, concreteRefM,
       controlBlockPtrLE);
 
   //  LLVMBuildCall(builder, globalState->noteWeakableDestroyed, &wrciLE, 1, "");
@@ -504,6 +506,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
 LLVMValueRef WrcWeaks::fillWeakableControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Referend* referendM,
     LLVMValueRef controlBlockLE) {
   auto wrciLE = getNewWrci(functionState, builder);
@@ -511,7 +514,7 @@ LLVMValueRef WrcWeaks::fillWeakableControlBlock(
       builder,
       controlBlockLE,
       wrciLE,
-      globalState->region->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::WRCI),
+      structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::WRCI),
       "weakableControlBlockWithWrci");
 }
 
@@ -535,7 +538,7 @@ WeakFatPtrLE WrcWeaks::weakInterfaceRefToWeakStructRef(
       referendStructsSource->getControlBlockPtrWithoutChecking(
           FL(), functionState, builder, weakInterfaceRefMT->referend, interfaceRefLE);
 
-  auto headerLE = makeWrciHeader(globalState, builder, wrciLE);
+  auto headerLE = makeWrciHeader(builder, weakRefStructsSource, weakInterfaceRefMT->referend, wrciLE);
 
   // Now, reassemble a weak void* ref to the struct.
   auto weakVoidStructRefLE =

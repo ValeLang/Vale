@@ -8,7 +8,7 @@ import net.verdagon.vale.driver.Compilation
 
 class TupleTests extends FunSuite with Matchers {
   test("Simple tuple with one int") {
-    val compile = Compilation("fn main() int { [9].0 }")
+    val compile = Compilation("fn main() int export { [9].0 }")
 
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").header.returnType.referend shouldEqual Int2()
@@ -19,7 +19,7 @@ class TupleTests extends FunSuite with Matchers {
   }
 
   test("Tuple with two things") {
-    val compile = Compilation("fn main() bool { [9, true].1 }")
+    val compile = Compilation("fn main() bool export { [9, true].1 }")
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
 

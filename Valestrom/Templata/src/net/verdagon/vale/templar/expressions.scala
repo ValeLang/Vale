@@ -335,7 +335,7 @@ case class TupleE2(
 // This is used after panics or other never-returning things, to signal that a certain
 // variable should be considered gone. See AUMAP.
 // This can also be used if theres anything after a panic in a block, like
-//   fn main() int {
+//   fn main() int export {
 //     __panic();
 //     println("hi");
 //   }

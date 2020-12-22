@@ -30,9 +30,9 @@ LLVMValueRef upcastThinPtr(
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM);
 
-LLVMTypeRef translateReferenceSimple(GlobalState* globalState, Referend* referend);
+LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend);
 
-LLVMTypeRef translateWeakReference(GlobalState* globalState, Referend* referend);
+LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend);
 
 
 
@@ -55,6 +55,7 @@ LLVMValueRef fillControlBlockCensusFields(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     LLVMValueRef newControlBlockLE,
@@ -63,6 +64,7 @@ LLVMValueRef fillControlBlockCensusFields(
 LLVMValueRef insertStrongRc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     Referend* referendM,
     LLVMValueRef newControlBlockLE);
 
@@ -86,6 +88,7 @@ LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
+    IReferendStructsSource* structs,
     StructReferend* sourceStructReferendM,
     InterfaceReferend* targetInterfaceReferendM,
     ControlBlockPtrLE controlBlockPtrLE);
@@ -408,6 +411,7 @@ void regularFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,
@@ -419,6 +423,7 @@ void gmFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
     Mutability mutability,

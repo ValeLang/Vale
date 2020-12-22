@@ -4,9 +4,11 @@
 
 // These are exposed by the compiled vale .obj/.o, they're
 // the start of a Vale native API.
-typedef struct ValeStr ValeStr;
-ValeStr* vale_newstr(char* source, int64_t begin, int64_t length);
-char* vale_getstrchars(ValeStr* str);
+typedef struct ValeStr {
+  uint64_t length;
+  char* chars;
+} ValeStr;
+ValeStr* ValeStrNew(char* source, int64_t begin, int64_t length);
 
 
 #define TRUE 1
@@ -15,11 +17,11 @@ char* vale_getstrchars(ValeStr* str);
 int64_t vstr_indexOf(
     ValeStr* haystackContainerStr, int64_t haystackBegin, int64_t haystackEnd,
     ValeStr* needleContainerStr, int64_t needleBegin, int64_t needleEnd) {
-  char* haystackContainerChars = vale_getstrchars(haystackContainerStr);
+  char* haystackContainerChars = haystackContainerStr->chars;
   char* haystack = haystackContainerChars + haystackBegin;
   int64_t haystackLen = haystackEnd - haystackBegin;
 
-  char* needleContainerChars = vale_getstrchars(needleContainerStr);
+  char* needleContainerChars = needleContainerStr->chars;
   char* needle = needleContainerChars + needleBegin;
   int64_t needleLen = needleEnd - needleBegin;
 
@@ -37,14 +39,14 @@ ValeStr* vstr_substring(
     int64_t begin,
     int64_t length) {
   // printf("calling getstrchars\n");
-  char* strChars = vale_getstrchars(str);
+  char* strChars = str->chars;
 
   // printf("in substring, %d %d %d %d\n", haystackBegin, haystackEnd, beginInHaystack, endInHaystack);
 
   vassert(begin >= 0);
   vassert(length >= 0);
 
-  return vale_newstr(strChars, begin, length);
+  return ValeStrNew(strChars, begin, length);
 }
 
 char vstr_eq(
@@ -54,11 +56,11 @@ char vstr_eq(
     ValeStr* bContainerStr,
     int64_t bBegin,
     int64_t bEnd) {
-  char* aContainerChars = vale_getstrchars(aContainerStr);
+  char* aContainerChars = aContainerStr->chars;
   char* a = aContainerChars + aBegin;
   int64_t aLen = aEnd - aBegin;
 
-  char* bContainerChars = vale_getstrchars(bContainerStr);
+  char* bContainerChars = bContainerStr->chars;
   char* b = bContainerChars + bBegin;
   int64_t bLen = bEnd - bBegin;
 
@@ -82,11 +84,11 @@ int64_t vstr_cmp(
     ValeStr* bContainerStr,
     int64_t bBegin,
     int64_t bEnd) {
-  char* aContainerChars = vale_getstrchars(aContainerStr);
+  char* aContainerChars = aContainerStr->chars;
   char* a = aContainerChars + aBegin;
   int64_t aLen = aEnd - aBegin;
 
-  char* bContainerChars = vale_getstrchars(bContainerStr);
+  char* bContainerChars = bContainerStr->chars;
   char* b = bContainerChars + bBegin;
   int64_t bLen = bEnd - bBegin;
 

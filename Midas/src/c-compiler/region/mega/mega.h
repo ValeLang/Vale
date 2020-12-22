@@ -58,7 +58,7 @@ public:
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM);
+      InterfaceReferend* targetInterfaceReferendM) override;
 
 
   void translateKnownSizeArray(
@@ -215,6 +215,12 @@ public:
       Reference* targetType,
       Ref sourceRef) override;
 
+  void checkInlineStructType(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref refLE) override;
+
   void aliasWeakRef(
       AreaAndFileAndLine from,
       FunctionState* functionState,
@@ -300,7 +306,6 @@ public:
       Reference* generatorType,
       Prototype* generatorMethod,
       Ref generatorRef,
-      LLVMTypeRef usaWrapperPtrLT,
       LLVMTypeRef usaElementLT,
       Ref sizeRef,
       const std::string& typeName) override;
@@ -328,27 +333,27 @@ public:
 //    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
 //  }
   // TODO get rid of these once refactor is done
-  ControlBlock* getControlBlock(Referend* referend) override {
-    return referendStructs.getControlBlock(referend);
-  }
-  IReferendStructsSource* getReferendStructsSource() override {
-    return &referendStructs;
-  }
-  IWeakRefStructsSource* getWeakRefStructsSource() override {
-    return &weakRefStructs;
-  }
+//  ControlBlock* getControlBlock(Referend* referend) override {
+//    return referendStructs.getControlBlock(referend);
+//  }
+//  IReferendStructsSource* getReferendStructsSource() override {
+//    return &referendStructs;
+//  }
+//  IWeakRefStructsSource* getWeakRefStructsSource() override {
+//    return &weakRefStructs;
+//  }
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     return referendStructs.getStringBytesPtr(functionState, builder, ref);
   }
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     return referendStructs.getStringLen(functionState, builder, ref);
   }
-  LLVMTypeRef getWeakRefHeaderStruct() override {
-    return mutWeakableStructs.weakRefHeaderStructL;
-  }
-  LLVMTypeRef getWeakVoidRefStruct() override {
-    return mutWeakableStructs.weakVoidRefStructL;
-  }
+//  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override {
+//    return mutWeakableStructs.getWeakRefHeaderStruct(referend);
+//  }
+//  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override {
+//    return mutWeakableStructs.getWeakVoidRefStruct(referend);
+//  }
   void fillControlBlock(
       AreaAndFileAndLine from,
       FunctionState* functionState,
@@ -358,8 +363,27 @@ public:
       ControlBlockPtrLE controlBlockPtrLE,
       const std::string& typeName);
 
+
+  std::string getRefNameC(
+      Reference* refMT) override;
+  void generateStructDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;
+  void generateInterfaceDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
+
+  LLVMValueRef externalify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref ref) override;
+
+  LLVMTypeRef getExternalType(Reference* refMT) override;
+
+  Ref internalify(FunctionState *functionState, LLVMBuilderRef builder, Reference *refMT, LLVMValueRef ref) override;
+
 private:
   LLVMTypeRef translateInterfaceMethodToFunctionType(
+      InterfaceReferend* referend,
       InterfaceMethod* method);
 
 

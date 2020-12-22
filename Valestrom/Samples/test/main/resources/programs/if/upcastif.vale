@@ -8,7 +8,7 @@ fn moo(virtual this &I) int abstract;
 fn moo(a &A impl I) int { 73 }
 fn moo(b &B impl I) int { 42 }
 
-fn main() int {
+fn main() int export {
   myVar I = if (false) { A() } else { B() };
-  = moo(myVar);
+  = moo(&myVar);
 }

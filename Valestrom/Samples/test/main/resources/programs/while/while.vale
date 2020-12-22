@@ -1,4 +1,4 @@
-fn main() int {
+fn main() int export {
   a! int = 1;
   while (a < 42) {
     mut a = a + 1;

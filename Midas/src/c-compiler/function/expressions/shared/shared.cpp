@@ -92,7 +92,7 @@ LLVMValueRef adjustStrongRc(
 
   auto controlBlockPtrLE =
       referendStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
-  auto rcPtrLE = getStrongRcPtrFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE);
+  auto rcPtrLE = referendStructsSource->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(globalState, builder, rcPtrLE, amount);
 //  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
@@ -101,6 +101,7 @@ LLVMValueRef adjustStrongRc(
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
+    IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {
@@ -123,7 +124,7 @@ LLVMValueRef strongRcIsZero(
       assert(false);
   }
 
-  return isZeroLE(builder, getStrongRcFromControlBlockPtr(globalState, builder, refM, controlBlockPtrLE));
+  return isZeroLE(builder, structs->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE));
 }
 
 
@@ -144,7 +145,7 @@ void buildPrint(
   if (LLVMTypeOf(exprLE) == LLVMInt64TypeInContext(globalState->context)) {
     LLVMBuildCall(builder, globalState->printInt, &exprLE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
-    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64ToPrint");
+    auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
     LLVMBuildCall(builder, globalState->printInt, &i64LE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
     LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
@@ -184,6 +185,29 @@ void buildAssert(
   buildIf(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
       [globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
+        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+      });
+}
+
+// We'll assert if conditionLE is false.
+void buildAssertIntEq(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef aLE,
+    LLVMValueRef bLE,
+    const std::string& failMessage) {
+  auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, aLE, bLE, "assertCondition");
+  buildIf(
+      globalState, functionState, builder, isZeroLE(builder, conditionLE),
+      [globalState, functionState, failMessage, aLE, bLE](LLVMBuilderRef thenBuilder) {
+        buildPrint(globalState, thenBuilder, "Assertion failed! Expected ");
+        buildPrint(globalState, thenBuilder, aLE);
+        buildPrint(globalState, thenBuilder, " to equal ");
+        buildPrint(globalState, thenBuilder, bLE);
+        buildPrint(globalState, thenBuilder, ".\n");
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");

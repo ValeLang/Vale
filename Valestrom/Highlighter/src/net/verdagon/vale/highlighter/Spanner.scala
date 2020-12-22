@@ -162,7 +162,7 @@ object Spanner {
       case StrLiteralPE(range, _) => makeSpan(Str, range, List())
       case BoolLiteralPE(range, _) => makeSpan(Bool, range, List())
       case VoidPE(range) => makeSpan(W, range, List())
-      case MagicParamLookupPE(range, targetOwnership) => {
+      case MagicParamLookupPE(range) => {
         makeSpan(
           MagicParam,
           range,
@@ -180,7 +180,7 @@ object Spanner {
           range,
           List(forPattern(pattern), forExpression(expr)))
       }
-      case LookupPE(StringP(range, _), templateArgs, targetOwnership) => {
+      case LookupPE(StringP(range, _), templateArgs) => {
         makeSpan(Lookup, range, List())
       }
       case SequencePE(range, elements) => {
@@ -189,13 +189,13 @@ object Spanner {
       case MutatePE(range, mutatee, expr) => {
         makeSpan(Mut, range, List(forExpression(mutatee), forExpression(expr)))
       }
-      case DotPE(range, left, operatorRange, _, targetOwnership, member) => {
+      case DotPE(range, left, operatorRange, _, member) => {
         makeSpan(
           MemberAccess,
           range,
           List(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, List()))
       }
-      case OwnershippedPE(range, expr, targetOwnership) => {
+      case LendPE(range, expr, targetOwnership) => {
         makeSpan(
           Lend,
           range,
@@ -207,7 +207,7 @@ object Spanner {
         val allSpans = (callableSpan :: argSpans)
         makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, callableExpr, operatorRange, _, LookupPE(StringP(methodNameRange, _), maybeTemplateArgs, targetOwnership), argExprs) => {
+      case MethodCallPE(range, callableExpr, operatorRange, _, _, LookupPE(StringP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val methodSpan = makeSpan(CallLookup, methodNameRange, List())
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)
@@ -215,7 +215,7 @@ object Spanner {
         val allSpans = (callableSpan :: makeSpan(MemberAccess, operatorRange) :: methodSpan :: (maybeTemplateArgsSpan ++ argSpans))
         makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(StringP(nameRange, _), maybeTemplateArgs, targetOwnership), argExprs) => {
+      case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(StringP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
         val inlSpan = inlRange.toList.map(x => makeSpan(Inl, x.range, List()))
         val opSpan = makeSpan(MemberAccess, operatorRange)
         val callableSpan = makeSpan(CallLookup, nameRange, List())
@@ -226,7 +226,7 @@ object Spanner {
             .sortWith(_.range.begin < _.range.begin)
         makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, None, operatorRange, _, callableExpr, argExprs) => {
+      case FunctionCallPE(range, None, operatorRange, _, callableExpr, argExprs, _) => {
         val callableSpan = forExpression(callableExpr)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (callableSpan :: argSpans).sortWith(_.range.begin < _.range.begin)

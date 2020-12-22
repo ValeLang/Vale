@@ -1,7 +1,7 @@
 
 struct Bork {}
 
-fn main() int {
+fn main() int export {
   originalIndex = 9;
 
   i! = 1;

@@ -53,7 +53,7 @@ class StructTests extends FunSuite with Matchers {
         |  hp int;
         |  ammo int;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(4, 7);
         |  Marine(hp, ammo) = m;
         |  = ammo;
@@ -70,7 +70,7 @@ class StructTests extends FunSuite with Matchers {
         |  hp int;
         |  ammo int;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  m = Marine(4, 7);
         |  destruct m;
         |  = 9;
@@ -188,7 +188,7 @@ class StructTests extends FunSuite with Matchers {
         |fn get<T>(opt &None<T> impl Opt<T>) &T { __panic() }
         |fn get<T>(opt &Some<T> impl Opt<T>) &T { opt.value }
         |
-        |fn main() int {
+        |fn main() int export {
         |  m Opt<int> = None<int>();
         |  = m.get();
         |}
@@ -207,7 +207,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = Compilation(
       """fn get<T>(a &T) &T { a }
         |
-        |fn main() int {
+        |fn main() int export {
         |  = get(6);
         |}
       """.stripMargin)

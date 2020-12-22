@@ -7,6 +7,6 @@ fn Marine() Marine {
   this.hp = 10;
   this.cool = true;
 }
-fn main() int {
+fn main() int export {
   Marine().hp
 }

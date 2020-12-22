@@ -212,7 +212,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("Mutating as statement") {
-    val program = compile(CombinatorParsers.topLevelFunction, "fn main() int { mut x = 6; }")
+    val program = compile(CombinatorParsers.topLevelFunction, "fn main() int export { mut x = 6; }")
     program shouldHave {
       case MutatePE(_,LookupPE(StringP(_, "x"), None),IntLiteralPE(_, 6)) =>
     }

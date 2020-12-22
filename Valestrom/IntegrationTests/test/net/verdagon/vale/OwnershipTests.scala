@@ -17,7 +17,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |struct Muta { hp int; }
-        |fn main() int {
+        |fn main() int export {
         |  = (&Muta(9)).hp;
         |}
       """.stripMargin)
@@ -68,7 +68,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |  Muta(hp) = m;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  = (Muta(10)).hp;
         |}
       """.stripMargin +
@@ -160,7 +160,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |  Muta(hp) = m;
         |}
         |
-        |fn main() int {
+        |fn main() int export {
         |  a = Muta(10);
         |  = a.hp;
         |}
@@ -182,7 +182,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |struct Wizard {
         |  wand ^Wand;
         |}
-        |fn main() int {
+        |fn main() int export {
         |  = Wizard(Wand(10)).wand.charges;
         |}
       """.stripMargin)
@@ -235,7 +235,7 @@ class OwnershipTests extends FunSuite with Matchers {
   test("Unstackifies local vars") {
     val compile = Compilation(
       """
-        |fn main() int {
+        |fn main() int export {
         |  i! = 0;
         |  = i;
         |}
@@ -257,7 +257,7 @@ class OwnershipTests extends FunSuite with Matchers {
 //    val compile = Compilation(
 //      """
 //        |struct Muta { }
-//        |fn main() int {
+//        |fn main() int export {
 //        |  a = Muta();
 //        |  b = a;
 //        |  = __varrc(&b);
@@ -274,7 +274,7 @@ class OwnershipTests extends FunSuite with Matchers {
 //        |struct MutaB {
 //        |  a &MutaA;
 //        |}
-//        |fn main() int {
+//        |fn main() int export {
 //        |  a = MutaA();
 //        |  b = MutaB(&a);
 //        |  c = a;

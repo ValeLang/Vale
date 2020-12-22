@@ -66,8 +66,9 @@ void Assist::alias(
       dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
       dynamic_cast<Str *>(sourceRnd)) {
     if (sourceRef->ownership == Ownership::OWN) {
-      // We might be loading a member as an own if we're destructuring.
-      // Don't adjust the RC, since we're only moving it.
+      // This can happen if we just allocated something. It's RC is already zero, and we want to
+      // bump it to 1 for the owning reference.
+      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::BORROW) {
       adjustStrongRc(from, globalState, functionState, &referendStructs, builder, expr, sourceRef, 1);
     } else if (sourceRef->ownership == Ownership::WEAK) {
@@ -306,8 +307,8 @@ void Assist::noteWeakableDestroyed(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {
-  auto rcIsZeroLE = strongRcIsZero(globalState, &referendStructs, builder, refM, controlBlockPtrLE);
-  buildAssert(globalState, functionState, builder, rcIsZeroLE,
+  auto rc = referendStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE);
+  buildAssertIntEq(globalState, functionState, builder, rc, constI32LE(globalState, 0),
       "Tried to free concrete that had nonzero RC!");
 
   if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
@@ -441,31 +442,36 @@ LLVMValueRef Assist::getStringBytesPtr(FunctionState* functionState, LLVMBuilder
 }
 
 Ref Assist::constructKnownSizeArray(FunctionState *functionState, LLVMBuilderRef builder, Reference *referenceM, KnownSizeArrayT *referendM, const std::vector<Ref> &membersLE) {
-  return ::constructKnownSizeArray(
-      globalState, functionState, builder, referenceM, referendM, membersLE, &referendStructs,
-      [this, functionState, referenceM, referendM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(),
-            functionState,
-            innerBuilder,
-            referenceM->referend,
-            referendM->rawArray->mutability,
-            controlBlockPtrLE,
-            referendM->name->name);
-      });
+  auto resultRef =
+      ::constructKnownSizeArray(
+          globalState, functionState, builder, referenceM, referendM, membersLE, &referendStructs,
+          [this, functionState, referenceM, referendM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(),
+                functionState,
+                innerBuilder,
+                referenceM->referend,
+                referendM->rawArray->mutability,
+                controlBlockPtrLE,
+                referendM->name->name);
+          });
+  adjustStrongRc(FL(), globalState, functionState, &referendStructs, builder, resultRef, referenceM, 1);
+  return resultRef;
 }
 
 WrapperPtrLE Assist::mallocStr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE) {
-  return ::mallocStr(
-      globalState, functionState, builder, lengthLE, &referendStructs,
-      [this, functionState](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(), functionState, innerBuilder, globalState->metalCache.str,
-            Mutability::IMMUTABLE, controlBlockPtrLE, "Str");
-      });
+  auto resultRef =
+      ::mallocStr(
+          globalState, functionState, builder, lengthLE, &referendStructs,
+          [this, functionState](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(), functionState, innerBuilder, globalState->metalCache.str,
+                Mutability::IMMUTABLE, controlBlockPtrLE, "Str");
+          });
+  return resultRef;
 }
 
 Ref Assist::allocate(
@@ -476,13 +482,16 @@ Ref Assist::allocate(
     const std::vector<Ref>& membersLE) {
   auto structReferend = dynamic_cast<StructReferend*>(desiredReference->referend);
   auto structM = globalState->program->getStruct(structReferend->fullName);
-  return innerAllocate(
-      FL(), globalState, functionState, builder, desiredReference, &referendStructs, membersLE, Weakability::WEAKABLE,
-      [this, functionState, desiredReference, structM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(), functionState, innerBuilder, desiredReference->referend, structM->mutability,
-            controlBlockPtrLE, structM->name->name);
-      });
+  auto resultRef =
+      innerAllocate(
+          FL(), globalState, functionState, builder, desiredReference, &referendStructs, membersLE, Weakability::WEAKABLE,
+          [this, functionState, desiredReference, structM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(), functionState, innerBuilder, desiredReference->referend, structM->mutability,
+                controlBlockPtrLE, structM->name->name);
+          });
+  alias(FL(), functionState, builder, desiredReference, resultRef);
+  return resultRef;
 }
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
@@ -781,20 +790,23 @@ Ref Assist::constructUnknownSizeArrayCountedStruct(
     const std::string& typeName) {
   auto usaWrapperPtrLT =
       referendStructs.getUnknownSizeArrayWrapperStruct(unknownSizeArrayT);
-  return ::constructUnknownSizeArrayCountedStruct(
-      globalState, functionState, blockState, builder, &referendStructs, usaMT, unknownSizeArrayT, generatorType, generatorMethod,
-      generatorRef, usaWrapperPtrLT, usaElementLT, sizeRef, typeName,
-      [this, functionState, unknownSizeArrayT, usaMT, typeName](
-          LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
-        fillControlBlock(
-            FL(),
-            functionState,
-            innerBuilder,
-            unknownSizeArrayT,
-            unknownSizeArrayT->rawArray->mutability,
-            controlBlockPtrLE,
-            typeName);
-      });
+  auto resultRef =
+      ::constructUnknownSizeArrayCountedStruct(
+          globalState, functionState, blockState, builder, &referendStructs, usaMT, unknownSizeArrayT, generatorType, generatorMethod,
+          generatorRef, usaWrapperPtrLT, usaElementLT, sizeRef, typeName,
+          [this, functionState, unknownSizeArrayT, usaMT, typeName](
+              LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+            fillControlBlock(
+                FL(),
+                functionState,
+                innerBuilder,
+                unknownSizeArrayT,
+                unknownSizeArrayT->rawArray->mutability,
+                controlBlockPtrLE,
+                typeName);
+          });
+  adjustStrongRc(FL(), globalState, functionState, &referendStructs, builder, resultRef, usaMT, 1);
+  return resultRef;
 }
 
 void Assist::checkInlineStructType(
@@ -816,22 +828,6 @@ void Assist::generateStructDefsC(std::unordered_map<std::string, std::string>* c
     auto refTypeName = baseName + "Ref";
     std::stringstream s;
     s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
-
-//    for (auto member : structDefM->members) {
-//      // Getter
-//      {
-//        auto getterName = refTypeName + "_get_" + member->name;
-//        s << "extern " << getRefNameC(member->type) << " " << getterName;
-//        s << "(" << refTypeName << " ref" << ");" << std::endl;
-//      }
-//
-//      // Setter
-//      if (member->variability == Variability::VARYING) {
-//        s << "void " << refTypeName << "_set_" << member->name;
-//        s << "(" << refTypeName << " ref" << ", " << getRefNameC(member->type) << " value);" << std::endl;
-//      }
-//    }
-
     cByExportedName->insert(std::make_pair(baseName, s.str()));
   }
 }
@@ -868,4 +864,54 @@ std::string Assist::getRefNameC(Reference* refMT) {
   } else {
     assert(false);
   }
+}
+
+LLVMTypeRef Assist::getExternalType(
+    Reference* refMT) {
+  if (refMT->ownership == Ownership::SHARE) {
+    return defaultImmutables.getExternalType(refMT);
+  } else {
+    if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+      if (refMT->location == Location::INLINE) {
+        assert(false); // what do we do in this case? malloc an owning thing and send it in?
+        // perhaps just disallow sending inl owns?
+      }
+      return LLVMPointerType(referendStructs.getWrapperStruct(structReferend), 0);
+    } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+      return LLVMPointerType(referendStructs.getInterfaceRefStruct(interfaceReferend), 0);
+    } else {
+      std::cerr << "Invalid type for extern!" << std::endl;
+      assert(false);
+    }
+  }
+  assert(false);
+}
+
+LLVMValueRef Assist::externalify(FunctionState *functionState, LLVMBuilderRef builder, Reference *refMT, Ref ref) {
+  if (refMT->ownership == Ownership::SHARE) {
+    return defaultImmutables.externalify(functionState, builder, refMT, ref);
+  } else {
+    if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
+      assert(refMT->location != Location::INLINE);
+
+      return checkValidReference(FL(), functionState, builder, refMT, ref);
+    } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
+      return checkValidReference(FL(), functionState, builder, refMT, ref);
+    } else {
+      std::cerr << "Invalid type for extern!" << std::endl;
+      assert(false);
+    }
+  }
+
+  assert(false);
+}
+
+Ref Assist::internalify(FunctionState *functionState, LLVMBuilderRef builder, Reference *refMT, LLVMValueRef ref) {
+  if (refMT->ownership == Ownership::SHARE) {
+    return defaultImmutables.internalify(functionState, builder, refMT, ref);
+  } else {
+    assert(false);
+  }
+
+  assert(false);
 }

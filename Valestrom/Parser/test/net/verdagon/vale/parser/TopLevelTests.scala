@@ -9,7 +9,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("Function then struct") {
     val program = compileProgram(
       """
-        |fn main() int {}
+        |fn main() int export {}
         |
         |struct mork { }
         |""".stripMargin)

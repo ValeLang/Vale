@@ -178,7 +178,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   def statement: Parser[IExpressionPE] = {
     // bracedBlock is at the end because we want to be able to parse "{print(_)}(4);" as an expression.
     // debt: "block" is here temporarily because we get ambiguities in this case:
-    //   fn main() int { {_ + _}(4 + 5) }
+    //   fn main() int export { {_ + _}(4 + 5) }
     // because it mistakenly successfully parses {_ + _} then dies on the next part.
     (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(StringP(Range(begin, end), "..."), None) }) |
     (mutate <~ optWhite <~ ";") |

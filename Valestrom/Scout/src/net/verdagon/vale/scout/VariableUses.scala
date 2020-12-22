@@ -70,7 +70,7 @@ case class VariableUses(uses: List[VariableUse]) {
     }
   }
   // Turns all Used into MaybeUsed. For example:
-  //   fn main() int {
+  //   fn main() int export {
   //     m = Marine();
   //     someFunction({ doThings(m); });
   //     ...
@@ -81,7 +81,7 @@ case class VariableUses(uses: List[VariableUse]) {
   //
   // Note: we even consider a lambda to *maybe* have happened even if it's
   // immediately called, like:
-  //   fn main() int {
+  //   fn main() int export {
   //     m = Marine();
   //     { doThings(m); }();
   //     ...

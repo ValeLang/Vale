@@ -82,7 +82,12 @@ object NameHammer {
   ): FullNameH = {
     val newNameParts = fullName2.steps.map(step => VonHammer.translateName(hinputs, hamuts, step))
     val readableName = getReadableName(fullName2.last)
-    val id = hamuts.getNameId(readableName, newNameParts)
+    val id =
+      if (fullName2.last.isInstanceOf[ExternFunctionName2]) {
+        -1
+      } else {
+        hamuts.getNameId(readableName, newNameParts)
+      }
     FullNameH(readableName, id, newNameParts)
   }
 

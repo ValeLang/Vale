@@ -27,7 +27,7 @@ fn printNextValue(opt *MySome impl MyOption) void {
 }
 
 
-fn main() int {
+fn main() int export {
  	list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
  	printValues(list);
  	= 0;

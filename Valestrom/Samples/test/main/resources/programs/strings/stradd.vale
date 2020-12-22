@@ -1,5 +1,5 @@
 
-fn main() int {
+fn main() int export {
   a = "Glory to the ";
   b = "Lizard People";
   combined = a + b;

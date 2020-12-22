@@ -191,6 +191,29 @@ void buildAssert(
       });
 }
 
+// We'll assert if conditionLE is false.
+void buildAssertIntEq(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef aLE,
+    LLVMValueRef bLE,
+    const std::string& failMessage) {
+  auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, aLE, bLE, "assertCondition");
+  buildIf(
+      globalState, functionState, builder, isZeroLE(builder, conditionLE),
+      [globalState, functionState, failMessage, aLE, bLE](LLVMBuilderRef thenBuilder) {
+        buildPrint(globalState, thenBuilder, "Assertion failed! Expected ");
+        buildPrint(globalState, thenBuilder, aLE);
+        buildPrint(globalState, thenBuilder, " to equal ");
+        buildPrint(globalState, thenBuilder, bLE);
+        buildPrint(globalState, thenBuilder, ".\n");
+        buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+      });
+}
+
 Ref buildInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,

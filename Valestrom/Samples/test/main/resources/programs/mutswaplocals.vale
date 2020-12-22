@@ -1,6 +1,6 @@
 struct Ship { }
 
-fn main() int {
+fn main() int export {
   a! = Ship();
   b! = Ship();
 

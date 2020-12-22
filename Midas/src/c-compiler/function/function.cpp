@@ -11,25 +11,33 @@ LLVMValueRef declareFunction(
     IRegion* region,
     Function* functionM) {
 
-  auto paramTypesL = translateTypes(globalState, region, functionM->prototype->params);
-  auto returnTypeL = region->translateType(functionM->prototype->returnType);
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+  auto valeParamTypesL = translateTypes(globalState, region, functionM->prototype->params);
+  auto valeReturnTypeL = region->translateType(functionM->prototype->returnType);
+  LLVMTypeRef valeFunctionTypeL =
+      LLVMFunctionType(valeReturnTypeL, valeParamTypesL.data(), valeParamTypesL.size(), 0);
 
   auto valeFunctionNameL = functionM->prototype->name->name;
 
-  LLVMValueRef valeFunctionL = LLVMAddFunction(globalState->mod, valeFunctionNameL.c_str(), functionTypeL);
+  LLVMValueRef valeFunctionL = LLVMAddFunction(globalState->mod, valeFunctionNameL.c_str(), valeFunctionTypeL);
 
   assert(globalState->functions.count(functionM->prototype->name->name) == 0);
   globalState->functions.emplace(functionM->prototype->name->name, valeFunctionL);
 
   if (globalState->program->isExported(functionM->prototype->name)) {
+    std::vector<LLVMTypeRef> exportParamTypesL;
+    for (auto valeRefMT : functionM->prototype->params) {
+      exportParamTypesL.push_back(region->getExternalType(valeRefMT));
+    }
+    auto exportReturnTypeL = region->getExternalType(functionM->prototype->returnType);
+    LLVMTypeRef exportFunctionTypeL =
+        LLVMFunctionType(exportReturnTypeL, exportParamTypesL.data(), exportParamTypesL.size(), 0);
+
     auto exportName = globalState->program->getExportedName(functionM->prototype->name);
     // The full name should end in _0, _1, etc. The exported name shouldnt.
     assert(exportName != functionM->prototype->name->name);
     // This is a thunk function that correctly aliases the objects that come in from the
     // outside world, and dealiases the object that we're returning to the outside world.
-    LLVMValueRef exportFunctionL = LLVMAddFunction(globalState->mod, exportName.c_str(), functionTypeL);
+    LLVMValueRef exportFunctionL = LLVMAddFunction(globalState->mod, exportName.c_str(), exportFunctionTypeL);
 
     LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, exportFunctionL, "entry");
     LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
@@ -39,15 +47,14 @@ LLVMValueRef declareFunction(
     // should be fine.
     LLVMBuilderRef localsBuilder = builder;
 
-    FunctionState functionState(exportName, globalState->region, exportFunctionL, returnTypeL, localsBuilder);
+    FunctionState functionState(exportName, globalState->region, exportFunctionL, exportReturnTypeL, localsBuilder);
     BlockState initialBlockState(nullptr);
 
     std::vector<Ref> argsToActualFunction;
 
     for (int i = 0; i < functionM->prototype->params.size(); i++) {
       auto uncheckedArgLE = LLVMGetParam(exportFunctionL, i);
-      auto argRef = wrap(globalState->region, functionM->prototype->params[i], uncheckedArgLE);
-      functionState.defaultRegion->checkValidReference(FL(), &functionState, builder, functionM->prototype->params[i], argRef);
+      auto argRef = functionState.defaultRegion->internalify(&functionState, builder, functionM->prototype->params[i], uncheckedArgLE);
       functionState.defaultRegion->alias(FL(), &functionState, builder, functionM->prototype->params[i], argRef);
       // Alias when receiving from the outside world, see DEPAR.
       argsToActualFunction.push_back(argRef);
@@ -55,8 +62,8 @@ LLVMValueRef declareFunction(
 
     auto returnRef = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
     auto returnRefLE =
-        globalState->region->checkValidReference(
-            FL(), &functionState, builder, functionM->prototype->returnType, returnRef);
+        globalState->region->externalify(
+            &functionState, builder, functionM->prototype->returnType, returnRef);
     // Dealias before sending into the outside world, see DEPAR.
     functionState.defaultRegion->dealias(
         FL(), &functionState, &initialBlockState, builder, functionM->prototype->returnType, returnRef);

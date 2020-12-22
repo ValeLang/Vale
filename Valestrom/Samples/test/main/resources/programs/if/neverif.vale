@@ -1,4 +1,4 @@
-fn main() int {
+fn main() int export {
   if (true) {
     ret 42;
   } else {

@@ -1,5 +1,5 @@
 
-fn main() int {
+fn main() int export {
   while (true) {
     if (true) {
       ret 42;

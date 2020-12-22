@@ -8,14 +8,12 @@ trait IExpressionPE {
 
 case class VoidPE(range: Range) extends IExpressionPE {}
 
-case class OwnershippedPE(range: Range, expr: IExpressionPE, targetOwnership: OwnershipP) extends IExpressionPE {
+case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: OwnershipP) extends IExpressionPE {
   targetOwnership match {
     case WeakP =>
     case BorrowP =>
   }
 }
-
-case class MovePE(range: Range, expr: IExpressionPE) extends IExpressionPE
 
 case class AndPE(range: Range, left: BlockPE, right: BlockPE) extends IExpressionPE
 
@@ -53,7 +51,6 @@ case class DotPE(
   left: IExpressionPE,
   operatorRange: Range,
   isMapAccess: Boolean,
-  targetOwnership: OwnershipP,
   member: StringP) extends IExpressionPE
 
 case class IndexPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE
@@ -64,36 +61,31 @@ case class FunctionCallPE(
   operatorRange: Range,
   isMapCall: Boolean,
   callableExpr: IExpressionPE,
-  argExprs: List[IExpressionPE]
+  argExprs: List[IExpressionPE],
+  // If we're calling a lambda or some other callable struct,
+  // the 'this' ptr parameter might want a certain ownership,
+  // so the user might specify that.
+  targetOwnershipForCallable: OwnershipP
 ) extends IExpressionPE
 
 case class MethodCallPE(
   range: Range,
   callableExpr: IExpressionPE,
   operatorRange: Range,
+  callableTargetOwnership: OwnershipP,
   isMapCall: Boolean,
   methodLookup: LookupPE,
   argExprs: List[IExpressionPE]
 ) extends IExpressionPE
 
 case class TemplateArgsP(range: Range, args: List[ITemplexPT])
-// Function lookups and local lookups are combined into the same thing because
-// we can't tell whether something's a function or a local until we get to the scout.
 case class LookupPE(
   name: StringP,
-  templateArgs: Option[TemplateArgsP],
-  targetOwnership: OwnershipP,
+  templateArgs: Option[TemplateArgsP]
 ) extends IExpressionPE {
   override def range: Range = name.range
-
-  if (templateArgs.nonEmpty) {
-    vassert(targetOwnership == BorrowP)
-  }
 }
-case class MagicParamLookupPE(
-  range: Range,
-  targetOwnership: OwnershipP
-) extends IExpressionPE
+case class MagicParamLookupPE(range: Range) extends IExpressionPE
 
 case class LambdaPE(
   // Just here for syntax highlighting so far
@@ -103,11 +95,11 @@ case class LambdaPE(
   override def range: Range = function.range
 }
 
-case class ShortcallPE(range: Range, argExprs: List[IExpressionPE]) extends IExpressionPE
-
 case class BlockPE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE {
   // Every element should have at least one expression, because a block will
   // return the last expression's result as its result.
   // Even empty blocks aren't empty, they have a void() at the end.
   vassert(elements.size >= 1)
 }
+
+case class ShortcallPE(range: Range, argExprs: List[IExpressionPE]) extends IExpressionPE

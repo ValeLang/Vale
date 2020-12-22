@@ -134,6 +134,8 @@ public:
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
+      IWeakRefStructsSource* weakRefStructsSource,
+      Referend* referend,
       WeakFatPtrLE weakRefLE);
 
   GlobalState* globalState;

@@ -133,6 +133,20 @@ public:
       Reference* virtualParamMT,
       InterfaceFatPtrLE virtualArgLE) override;
 
+  LLVMValueRef getObjIdFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Referend* referendM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  LLVMValueRef getStrongRcPtrFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
+
+  LLVMValueRef getStrongRcFromControlBlockPtr(
+      LLVMBuilderRef builder,
+      Reference* refM,
+      ControlBlockPtrLE controlBlockPtr) override;
 
 private:
   GlobalState* globalState;
@@ -151,6 +165,8 @@ public:
   LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) override;
   LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) override;
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
+  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override;
+  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override;
 
 private:
   GetWeakRefStructsSource getWeakRefStructsSource;

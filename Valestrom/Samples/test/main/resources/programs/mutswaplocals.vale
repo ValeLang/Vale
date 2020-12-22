@@ -1,14 +1,11 @@
 struct Ship { }
 
-fn main() int {
+fn main() int export {
   a! = Ship();
   b! = Ship();
 
   Ship() = (mut b = (mut a = (mut b = Ship())));
-  print("goin for it");
-  Ship() = ^a;
-  print("did new a");
-  Ship() = ^b;
-  print("did new b");
-  ret 7;
+  Ship() = a;
+  Ship() = b;
+  ret 42;
 }

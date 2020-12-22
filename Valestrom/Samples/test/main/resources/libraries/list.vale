@@ -16,12 +16,12 @@ fn add<E>(list &List<E>, newElement E) {
               = (mut list.array[index] = None<E>());
             } else {
               result Opt<E> = None<E>();
-              = ^result;
+              = result;
             }
         }));
-    mut list.array = ^newArray;
+    mut list.array = newArray;
   }
-  mut list.array[list.size] = Some<E>(^newElement);
+  mut list.array[list.size] = Some<E>(newElement);
   mut list.size = list.size + 1;
 }
 fn get<E>(list &List<E>, index int) &E {
@@ -29,7 +29,7 @@ fn get<E>(list &List<E>, index int) &E {
   = a[index].get();
 }
 fn set<E>(list &List<E>, index int, value E) void {
-  mut list.array[index] = Some(^value);
+  mut list.array[index] = Some(value);
 }
 fn toArray<M, E>(list &List<E>) Array<M, E> rules(M Mutability) {
   Array<M, E>(list.len(), &IFunction1<mut, int, E>((i){ list.get(i) }))
@@ -44,7 +44,7 @@ fn toList<E>(arr &Array<_, E>) List<E> {
 
 fn each<E, F>(list &List<E>, func F) void {
   i! = 0;
-  l = len(list);
+  l = len(&list);
   while (i < l) {
     func(list.get(i));
     mut i = i + 1;
@@ -53,7 +53,7 @@ fn each<E, F>(list &List<E>, func F) void {
 
 fn contains<E>(list &List<E>, element E) bool {
   i! = 0;
-  l = len(list);
+  l = len(&list);
   while (i < l) {
     if (list.get(i) == element) {
       ret true;

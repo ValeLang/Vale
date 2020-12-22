@@ -1,5 +1,5 @@
 
-fn main() int {
+fn main() int export {
   print("'");
   = 42;
 }

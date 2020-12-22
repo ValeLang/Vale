@@ -4,9 +4,9 @@ interface IUnit weakable { fn getHp(virtual self &IUnit) int; }
 impl IUnit for Muta;
 fn getHp(self &Muta impl IUnit) int { self.hp }
 
-fn main() int {
+fn main() int export {
   ownMuta = Muta(7);
   weakUnit &&IUnit = &&(&ownMuta);
   maybeBorrowUnit = lock(weakUnit);
-  = maybeBorrowUnit^.get().getHp();
+  = maybeBorrowUnit.get().getHp();
 }

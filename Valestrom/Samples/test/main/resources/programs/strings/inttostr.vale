@@ -1,4 +1,4 @@
 
-fn main() int {
-  = if (str(10) == "10") { 42 } else { 73 }
+fn main() int export {
+  len(str(1337))
 }

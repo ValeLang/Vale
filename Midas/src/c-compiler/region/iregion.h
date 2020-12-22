@@ -9,11 +9,6 @@
 
 class FunctionState;
 class BlockState;
-class GlobalState;
-// TODO remove once refactor is done
-class ControlBlock;
-class IReferendStructsSource;
-class IWeakRefStructsSource;
 
 class IRegion {
 public:
@@ -155,6 +150,13 @@ public:
   virtual void translateStruct(
       StructDefinition* structM) = 0;
 
+  virtual std::string getRefNameC(
+      Reference* refMT) = 0;
+  virtual void generateStructDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) = 0;
+  virtual void generateInterfaceDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) = 0;
+
   virtual void declareStruct(
       StructDefinition* structM) = 0;
 
@@ -276,7 +278,6 @@ public:
       Reference* generatorType,
       Prototype* generatorMethod,
       Ref generatorRef,
-      LLVMTypeRef usaWrapperPtrLT,
       LLVMTypeRef usaElementLT,
       Ref sizeRef,
       const std::string& typeName) = 0;
@@ -284,15 +285,12 @@ public:
   virtual LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
   virtual LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) = 0;
 
-  // TODO Get rid of these once refactor is done
-//  virtual InterfaceFatPtrLE makeInterfaceFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
-//  virtual ControlBlockPtrLE makeControlBlockPtr(Referend* referendM_, LLVMValueRef ptrLE) = 0;
-//  virtual WrapperPtrLE makeWrapperPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
-  virtual ControlBlock* getControlBlock(Referend* referend) = 0;
-  virtual IReferendStructsSource* getReferendStructsSource() = 0;
-  virtual IWeakRefStructsSource* getWeakRefStructsSource() = 0;
-  virtual LLVMTypeRef getWeakRefHeaderStruct() = 0;
-  virtual LLVMTypeRef getWeakVoidRefStruct() = 0;
+  virtual void checkInlineStructType(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref refLE) = 0;
+
   virtual Ref upgradeLoadResultToRefWithTargetOwnership(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -300,22 +298,25 @@ public:
       Reference* targetType,
       Ref sourceRef) = 0;
 
+  virtual LLVMTypeRef getExternalType(
+      Reference* refMT) = 0;
+  virtual LLVMValueRef externalify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      Ref ref) = 0;
+  virtual Ref internalify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* refMT,
+      LLVMValueRef ref) = 0;
+
+
+  // Get rid of this
   virtual WrapperPtrLE mallocStr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       LLVMValueRef lengthLE) = 0;
-
-//  virtual LLVMValueRef mallocKnownSize(
-//      FunctionState* functionState,
-//      LLVMBuilderRef builder,
-//      Location location,
-//      LLVMTypeRef referendLT) = 0;
-
-//  virtual LLVMValueRef mallocUnknownSizeArray(
-//      LLVMBuilderRef builder,
-//      LLVMTypeRef usaWrapperLT,
-//      LLVMTypeRef usaElementLT,
-//      LLVMValueRef lengthLE) = 0;
 };
 
 #endif

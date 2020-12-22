@@ -29,6 +29,7 @@
 #include <region/assist/assist.h>
 #include <region/mega/mega.h>
 #include <function/expressions/shared/string.h>
+#include <sstream>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -62,7 +63,7 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_newstr", functionTypeL);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_newstr", functionTypeL);
 
   LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
   LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
@@ -73,6 +74,7 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
   LLVMBuilderRef localsBuilder = builder;
 
   FunctionState functionState("vale_newstr", globalState->region, functionL, returnTypeL, localsBuilder);
+  BlockState childBlockState(nullptr);
 
   auto lengthLE = LLVMGetParam(functionL, 0);
   buildAssert(
@@ -97,6 +99,9 @@ LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
       globalState->region->checkValidReference(
           FL(), &functionState, builder, globalState->metalCache.strRef, strRef);
 
+  // Note the lack of an alias() call to increment the string's RC from 0 to 1.
+  // This is because the users of this function increment that themselves.
+
   LLVMBuildRet(builder, resultStrPtrLE);
 
   LLVMDisposeBuilder(builder);
@@ -118,7 +123,7 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrchars", functionTypeL);
+  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_getstrchars", functionTypeL);
   LLVMSetLinkage(functionL, LLVMExternalLinkage);
 
   LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
@@ -129,7 +134,7 @@ LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
   // should be fine.
   LLVMBuilderRef localsBuilder = builder;
 
-  FunctionState functionState("vale_getstrchars", globalState->region, functionL, returnTypeL, localsBuilder);
+  FunctionState functionState("__vale_getstrchars", globalState->region, functionL, returnTypeL, localsBuilder);
 
   auto strRefLE = LLVMGetParam(functionL, 0);
 
@@ -293,8 +298,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   std::ifstream instream(filename);
   std::string str(std::istreambuf_iterator<char>{instream}, {});
+  if (str.size() == 0) {
+    std::cerr << "Nothing found in " << filename << std::endl;
+    exit(1);
+  }
 
-  assert(str.size() > 0);
   auto programJ = json::parse(str.c_str());
   auto program = readProgram(&globalState->metalCache, programJ);
 
@@ -498,7 +506,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto function = p.second;
     LLVMValueRef entryFunctionL = declareFunction(globalState, defaultRegion, function);
-    if (function->prototype->name->name == "main") {
+    if (program->isExported(function->prototype->name) && program->getExportedName(function->prototype->name) == "main") {
       mainM = function->prototype;
       mainL = entryFunctionL;
     }
@@ -643,6 +651,53 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     assert(false);
   }
   LLVMDisposeBuilder(entryBuilder);
+
+  auto cByExportedName = std::unordered_map<std::string, std::string>();
+  for (auto p : program->structs) {
+    auto structM = p.second;
+    if (globalState->program->isExported(structM->name)) {
+      defaultRegion->generateStructDefsC(&cByExportedName, structM);
+    }
+  }
+  for (auto p : program->interfaces) {
+    auto interfaceM = p.second;
+    if (globalState->program->isExported(interfaceM->name)) {
+      defaultRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+    }
+  }
+  for (auto p : program->functions) {
+    auto functionM = p.second;
+    if (functionM->prototype->name != mainM->name &&
+        globalState->program->isExported(functionM->prototype->name)) {
+      auto exportedName = program->getExportedName(functionM->prototype->name);
+      std::stringstream s;
+      s << "extern " << defaultRegion->getRefNameC(functionM->prototype->returnType) << " ";
+      s << exportedName << "(";
+      for (int i = 0; i < functionM->prototype->params.size(); i++) {
+        if (i > 0) {
+          s << ", ";
+        }
+        s << defaultRegion->getRefNameC(functionM->prototype->params[i]) << " param" << i;
+      }
+      s << ");" << std::endl;
+      cByExportedName.insert(std::make_pair(exportedName, s.str()));
+    }
+  }
+  for (auto p : cByExportedName) {
+    auto exportedName = p.first;
+    auto c = p.second;
+    std::string filepath = "";
+    if (!globalState->opt->exportsDir.empty()) {
+      filepath = globalState->opt->exportsDir + "/" + exportedName + ".h";
+    }
+    std::ofstream out(filepath, std::ofstream::out);
+    if (!out) {
+      std::cerr << "Couldn't make file: " << filepath << std::endl;
+      exit(1);
+    }
+    std::cout << "Writing " << filepath << std::endl;
+    out << c;
+  }
 }
 
 void createModule(GlobalState *globalState) {

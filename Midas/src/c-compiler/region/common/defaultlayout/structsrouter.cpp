@@ -187,7 +187,26 @@ LLVMValueRef ReferendStructsRouter::getVoidPtrFromInterfacePtr(
   return getReferendStructsSource(virtualParamMT->referend)->getVoidPtrFromInterfacePtr(functionState, builder, virtualParamMT, virtualArgLE);
 }
 
+LLVMValueRef ReferendStructsRouter::getObjIdFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Referend* referendM,
+    ControlBlockPtrLE controlBlockPtr) {
+  return getReferendStructsSource(referendM)->getObjIdFromControlBlockPtr(builder, referendM, controlBlockPtr);
+}
 
+LLVMValueRef ReferendStructsRouter::getStrongRcPtrFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE controlBlockPtr) {
+  return getReferendStructsSource(refM->referend)->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
+}
+
+LLVMValueRef ReferendStructsRouter::getStrongRcFromControlBlockPtr(
+    LLVMBuilderRef builder,
+    Reference* refM,
+    ControlBlockPtrLE controlBlockPtr) {
+  return getReferendStructsSource(refM->referend)->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
+}
 
 
 LLVMTypeRef WeakRefStructsRouter::getStructWeakRefStruct(StructReferend* structReferend) {
@@ -204,4 +223,11 @@ LLVMTypeRef WeakRefStructsRouter::getInterfaceWeakRefStruct(InterfaceReferend* i
 }
 WeakFatPtrLE WeakRefStructsRouter::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
   return getWeakRefStructsSource(referenceM_->referend)->makeWeakFatPtr(referenceM_, ptrLE);
+}
+
+LLVMTypeRef WeakRefStructsRouter::getWeakRefHeaderStruct(Referend* referend) {
+  return getWeakRefStructsSource(referend)->getWeakRefHeaderStruct(referend);
+}
+LLVMTypeRef WeakRefStructsRouter::getWeakVoidRefStruct(Referend* referend) {
+  return getWeakRefStructsSource(referend)->getWeakVoidRefStruct(referend);
 }

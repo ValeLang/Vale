@@ -24,7 +24,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRef,
-      Ref expr) override;
+      Ref ref) override;
 
   void dealias(
       AreaAndFileAndLine from,

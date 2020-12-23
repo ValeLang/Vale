@@ -363,7 +363,10 @@ object Spanner {
   }
 
   def forRulex(rulex: IRulexPR): Span = {
-    vimpl()
+    makeSpan(
+      Rules,
+      rulex.range,
+      List())
   }
 
   def forIdentifyingRunes(r: IdentifyingRunesP): Span = {

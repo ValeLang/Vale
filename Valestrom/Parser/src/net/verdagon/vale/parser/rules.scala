@@ -2,7 +2,9 @@ package net.verdagon.vale.parser
 
 import scala.collection.immutable.List
 
-sealed trait IRulexPR
+sealed trait IRulexPR {
+  def range: Range
+}
 case class EqualsPR(range: Range, left: IRulexPR, right: IRulexPR) extends IRulexPR
 case class OrPR(range: Range, possibilities: List[IRulexPR]) extends IRulexPR
 case class DotPR(range: Range, container: IRulexPR, memberName: StringP) extends IRulexPR
@@ -14,7 +16,9 @@ case class ComponentsPR(
   components: List[IRulexPR]
 ) extends IRulexPR
 case class TypedPR(range: Range, rune: Option[StringP], tyype: ITypePR) extends IRulexPR
-case class TemplexPR(templex: ITemplexPT) extends IRulexPR
+case class TemplexPR(templex: ITemplexPT) extends IRulexPR {
+  def range = templex.range
+}
 // This is for built-in parser functions, such as exists() or isBaseOf() etc.
 case class CallPR(range: Range, name: StringP, args: List[IRulexPR]) extends IRulexPR
 case class ResolveSignaturePR(range: Range, nameStrRule: IRulexPR, argsPackRule: PackPR) extends IRulexPR

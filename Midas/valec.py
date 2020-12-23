@@ -36,11 +36,11 @@ class ValeCompiler:
         )
 
     def valec(self,
-              vir_file: PurePath,
+              vast_file: PurePath,
               o_files_dir: str,
               midas_options: List[str]) -> subprocess.CompletedProcess:
         return procrun(
-            [str(self.valec_path), "--verify", "--output-dir", o_files_dir, str(vir_file)] + midas_options)
+            [str(self.valec_path), "--verify", "--output-dir", o_files_dir, str(vast_file)] + midas_options)
 
     def clang(self,
               o_files: List[PurePath],
@@ -223,7 +223,7 @@ class ValeCompiler:
             parseds_output_dir = val
 
         user_valestrom_files = []
-        user_vir_files = []
+        user_vast_files = []
         user_c_files = []
 
         for arg in args:
@@ -231,16 +231,16 @@ class ValeCompiler:
                 user_valestrom_files.append(PurePath(arg))
             elif arg.endswith(".vpr"):
                 user_valestrom_files.append(PurePath(arg))
-            elif arg.endswith(".vir"):
-                user_vir_files.append(PurePath(arg))
+            elif arg.endswith(".vast"):
+                user_vast_files.append(PurePath(arg))
             elif arg.endswith(".c"):
                 user_c_files.append(PurePath(arg))
             else:
                 print("Unrecognized input: " + arg)
                 sys.exit(22)
 
-        vir_file = None
-        if len(user_valestrom_files) > 0 and len(user_vir_files) == 0:
+        vast_file = None
+        if len(user_valestrom_files) > 0 and len(user_vast_files) == 0:
             # Add in the default vale files
             valestrom_files = (
                 user_valestrom_files +
@@ -251,9 +251,9 @@ class ValeCompiler:
                     shutil.rmtree(build_dir)
                 os.makedirs(build_dir)
 
-            output_vir_file = build_dir / "build.vir"
+            output_vast_file = build_dir / "build.vast"
             valestrom_options.append("-o")
-            valestrom_options.append(str(output_vir_file))
+            valestrom_options.append(str(output_vast_file))
 
             if parseds_output_dir != None:
                 valestrom_options.append("-op")
@@ -263,7 +263,7 @@ class ValeCompiler:
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode == 0:
-                vir_file = output_vir_file
+                vast_file = output_vast_file
                 pass
             elif proc.returncode == 22:
                 print(proc.stdout + "\n" + proc.stderr)
@@ -271,27 +271,27 @@ class ValeCompiler:
             else:
                 print(f"Internal error while compiling {valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
                 sys.exit(proc.returncode)
-        elif len(user_vir_files) > 0 and len(user_valestrom_files) == 0:
-            if len(user_vir_files) > 1:
-                print("Can't have more than one VIR file!")
+        elif len(user_vast_files) > 0 and len(user_valestrom_files) == 0:
+            if len(user_vast_files) > 1:
+                print("Can't have more than one VAST file!")
                 sys.exit(1)
-            vir_file = user_vir_files[0]
+            vast_file = user_vast_files[0]
         else:
-            print(f"Specify at least one .vale file, or exactly one .vir file (but not both)")
+            print(f"Specify at least one .vale file, or exactly one .vast file (but not both)")
             sys.exit(1)
 
 
-        proc = self.valec(str(vir_file), str(build_dir), midas_options)
+        proc = self.valec(str(vast_file), str(build_dir), midas_options)
         # print(proc.stdout)
         # print(proc.stderr)
         if proc.returncode != 0:
-            print(f"valec couldn't compile {vir_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
+            print(f"valec couldn't compile {vast_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
             sys.exit(1)
 
         c_files = user_c_files.copy() + glob.glob(str(self.builtins_path / "*.c"))
 
         # Get .o or .obj
-        o_files = glob.glob(str(vir_file.with_suffix(".o"))) + glob.glob(str(vir_file.with_suffix(".obj")))
+        o_files = glob.glob(str(vast_file.with_suffix(".o"))) + glob.glob(str(vast_file.with_suffix(".obj")))
         if len(o_files) == 0:
             print("Internal error, no produced object files!")
             sys.exit(1)

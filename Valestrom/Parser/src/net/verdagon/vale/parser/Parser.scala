@@ -347,9 +347,14 @@ object Parser {
       return ParseFailure(BadStartOfIfCondition(iter.position))
     }
     val condition =
-      iter.consumeWithCombinator(CombinatorParsers.expression) match {
+      iter.consumeWithCombinator(CombinatorParsers.let) match {
         case Ok(result) => result
-        case Err(cpe) => return ParseFailure(BadIfCondition(iter.getPos(), cpe))
+        case Err(cpe) => {
+          iter.consumeWithCombinator(CombinatorParsers.expression) match {
+            case Ok(result) => result
+            case Err(cpe) => return ParseFailure(BadIfCondition(iter.getPos(), cpe))
+          }
+        }
       }
     val condEnd = iter.getPos()
     if (!iter.tryConsume("^\\)".r)) {

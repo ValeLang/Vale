@@ -60,7 +60,6 @@ class IfTests extends FunSuite with Matchers with Collector {
     }
   }
 
-
   test("19") {
     compile(CombinatorParsers.statement,
       "newLen = if (num == 0) { 1 } else { 2 };") shouldHave {

@@ -4,7 +4,9 @@ import scala.collection.immutable.List
 
 // See PVSBUFI
 
-sealed trait ITemplexPT
+sealed trait ITemplexPT {
+  def range: Range
+}
 
 case class AnonymousRunePT(range: Range) extends ITemplexPT
 case class BoolPT(range: Range, value: Boolean) extends ITemplexPT
@@ -19,7 +21,9 @@ case class IntPT(range: Range, value: Int) extends ITemplexPT
 case class LocationPT(range: Range, location: LocationP) extends ITemplexPT
 case class ManualSequencePT(range: Range, elements: List[ITemplexPT]) extends ITemplexPT
 case class MutabilityPT(range: Range, mutability: MutabilityP) extends ITemplexPT
-case class NameOrRunePT(name: StringP) extends ITemplexPT
+case class NameOrRunePT(name: StringP) extends ITemplexPT {
+  def range = name.range
+}
 case class NullablePT(range: Range, inner: ITemplexPT) extends ITemplexPT
 case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT
 case class OwnershipPT(range: Range, ownership: OwnershipP) extends ITemplexPT

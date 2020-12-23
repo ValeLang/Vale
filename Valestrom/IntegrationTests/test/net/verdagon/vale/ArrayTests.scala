@@ -5,7 +5,7 @@ import net.verdagon.vale.parser.ImmutableP
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
-import net.verdagon.von.{VonBool, VonInt}
+import net.verdagon.von.{VonBool, VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
@@ -382,6 +382,20 @@ class ArrayTests extends FunSuite with Matchers {
           |}
           |""".stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+  }
+
+
+  test("each on KSA") {
+    val compile = Compilation(
+      Samples.get("libraries/arrayutils.vale") +
+        """fn main() {
+          |  planets = ["Venus", "Earth", "Mars"];
+          |  each planets (planet){
+          |    print(planet);
+          |  }
+          |}
+          |""".stripMargin)
+    compile.evalForStdout(Vector()) shouldEqual "VenusEarthMars"
   }
 
 //  test("Destroy lambda with mutable captures") {

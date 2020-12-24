@@ -303,7 +303,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     exit(1);
   }
 
-  auto programJ = json::parse(str.c_str());
+  json programJ;
+  try {
+    programJ = json::parse(str.c_str());
+  }
+  catch (const nlohmann::detail::parse_error& error) {
+    std::cerr << "Error while parsing json: " << error.what() << std::endl;
+    exit(1);
+  }
   auto program = readProgram(&globalState->metalCache, programJ);
 
   assert(globalState->metalCache.emptyTupleStruct != nullptr);

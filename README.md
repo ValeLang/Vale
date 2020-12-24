@@ -10,6 +10,10 @@ See http://vale.dev/ for samples and more information on the language!
 
 ## Building and Running
 
+These are the instructions for building the compiler itself.
+
+If you just want to build and run Vale programs, go to the [downloads](https://vale.dev/downloads) page instead.
+
 ### Linux and OSX
 
 1: Download LLVM 11 from their [releases page](https://releases.llvm.org/download.html).
@@ -53,7 +57,9 @@ $ python3 valec.py test/tests/roguelike.vale
 
 ### Windows
 
-Compiling on windows is quite involved, come by the discord and we can walk you through it.
+We recommend using Mac or Linux instead, because they don't require building all of LLVM.
+
+Compiling on Windows is quite involved, come by the discord and we can walk you through it.
 
 
 # Notes

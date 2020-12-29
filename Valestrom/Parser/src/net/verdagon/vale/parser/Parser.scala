@@ -278,11 +278,11 @@ object Parser {
   }
 
   private def parseMut(iter: ParsingIterator): IParseResult[MutatePE] = {
+    val mutateBegin = iter.getPos()
     if (!iter.tryConsume("^mut".r)) {
       vwat()
     }
     iter.consumeWhitespace()
-    val mutateBegin = iter.getPos()
     val mutatee =
       iter.consumeWithCombinator(CombinatorParsers.expression) match {
         case Ok(result) => result

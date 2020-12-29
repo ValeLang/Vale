@@ -10,10 +10,10 @@ See http://vale.dev/ for samples and more information on the language!
 
 ## Building and Running
 
-If you just want to build and run Vale programs, go to the [downloads](https://vale.dev/downloads) page. Simply unzip the zip-file. You get the Vale compiler script valec.py, together with the rest of the Vale platform.
+If you just want to build and run Vale programs, go to the [downloads](https://vale.dev/downloads) page. Simply unzip the zip file. You get the Vale compiler script valec.py, together with the rest of the Vale platform.
 
 Here is a first Hello World program to get you started:
-Create a text file hello.vale with as content:
+create a text file hello.vale with as content:
 
 ```
 fn main() export {
@@ -40,8 +40,7 @@ These are the instructions for building the compiler itself.
 
 1: Getting the source code:
     git clone https://github.com/ValeLang/Vale
-
-    This will be placed in a `~/Vale` folder.
+   This will be placed in a ~/Vale folder.
 
 2: Download LLVM 11 from their [releases page](https://releases.llvm.org/download.html),
     for example: clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz
@@ -89,10 +88,12 @@ $ python3 -m unittest -f
 ```
 You should see an output like:
 
+```
 Using valec from .. Set GENPATH env var if this is incorrect
 ......................................................................................................................................................................................................................................................................................................................................................................
 ----------------------------------------------------------------------
 Ran 358 tests in 974.673s
+```
 
 ### Building from source on Windows
 

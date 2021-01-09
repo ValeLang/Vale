@@ -91,7 +91,17 @@ object Driver {
 
   def build(opts: Options, sources: List[String]): Result[Option[ProgramH], String] = {
     vassert(opts.inputFiles.size == sources.size)
-    val filepathsAndSources = opts.inputFiles.zip(sources) :+ ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
+    val filepathsAndSources =
+        opts.inputFiles.zip(sources) ++
+          List(
+            ("builtins/arrayutils.vale", Samples.get("builtins/arrayutils.vale")),
+            ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale")),
+            ("builtins/castutils.vale", Samples.get("builtins/castutils.vale")),
+            ("builtins/file.vale", Samples.get("builtins/file.vale")),
+            ("builtins/opt.vale", Samples.get("builtins/opt.vale")),
+            ("builtins/printutils.vale", Samples.get("builtins/printutils.vale")),
+            ("builtins/strings.vale", Samples.get("builtins/strings.vale")),
+            ("builtins/utils.vale", Samples.get("builtins/utils.vale")))
 
     val debugOut =
       if (opts.verbose) {

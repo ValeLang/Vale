@@ -1,11 +1,13 @@
 <Project>
  <PropertyGroup>
    <!-- LLVM's directory. -->
-   <LLVMProjectDir>D:\llvm-project</LLVMProjectDir>
+   <LLVMProjectDir>D:\llvm11\llvm-project</LLVMProjectDir>
    <!-- LLVM's generated visual studio project's build directory. -->
-   <LLVMBuiltDir>D:\llvm-project\vsbuild\Release</LLVMBuiltDir>
+   <LLVMBuiltDir>D:\llvm11\llvm-project\build\Release</LLVMBuiltDir>
    <!-- LLVM's generated visual studio project's directory. -->
-   <LLVMVSProjDir>D:\llvm-project\vsbuild</LLVMVSProjDir>
+   <LLVMVSProjDir>D:\llvm11\llvm-project\build</LLVMVSProjDir>
+   <!-- LLVM's include directory. -->
+   <LLVMVSProjDir>D:\llvm11\llvm-project\llvm\include\llvm-c</LLVMVSProjDir>
    
    <!-- Debugging command line arguments, so we dont have to go to that annoying
    property page (right click project -> Properties -> Configuration Properties ->

@@ -64,9 +64,6 @@ class ValeCompiler:
 
         cwd = PurePath(os.path.dirname(os.path.realpath(__file__)))
 
-
-
-
         if len(os.environ.get('VALESTROM_PATH', '')) > 0:
             self.valestrom_path = PurePath(os.environ.get('VALESTROM_PATH', ''))
         elif path.exists(cwd / "Valestrom.jar"):
@@ -77,7 +74,6 @@ class ValeCompiler:
             self.valestrom_path = cwd / "../Valestrom/out/artifacts/Valestrom_jar"
         else:
             self.valestrom_path = cwd
-        print("Valestrom path: " + str(self.valestrom_path))
 
         if len(os.environ.get('VALESTD_PATH', '')) > 0:
             self.builtins_path = PurePath(os.environ.get('VALESTD_PATH', ''))
@@ -87,7 +83,6 @@ class ValeCompiler:
             self.builtins_path = cwd / "builtins"
         else:
             self.builtins_path = cwd
-        print("Builtins path: " + str(self.builtins_path))
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
         self.valec_path: PurePath = cwd
@@ -96,26 +91,19 @@ class ValeCompiler:
             self.valec_path = PurePath(os.environ.get('VALEC_PATH', ''))
         elif shutil.which("valec") != None:
             self.valec_path = PurePath(shutil.which("valec"))
-            print(f"No VALEC_PATH in env, assuming the one in {self.valec_path}", file=sys.stderr)
         elif path.exists(cwd / "valec"):
             self.valec_path = cwd / "valec"
-            print("No VALEC_PATH in env, assuming the one in current directory.", file=sys.stderr)
         elif path.exists(cwd / "Midas.exe"):
             self.valec_path = cwd / "Midas.exe"
-            print("No VALEC_PATH in env, assuming the one in current directory.", file=sys.stderr)
         elif path.exists(cwd / "cmake-build-debug/valec"):
             self.valec_path = cwd / "cmake-build-debug/valec"
-            print("No VALEC_PATH in env, assuming the one in cmake-build-debug.", file=sys.stderr)
         elif path.exists(cwd / "x64/Debug/Midas.exe"):
             self.valec_path = cwd / "x64/Debug/Midas.exe"
-            print("No VALEC_PATH in env, assuming the one in x64/Debug.", file=sys.stderr)
         elif path.exists(cwd / "x64/Release/Midas.exe"):
             self.valec_path = cwd / "x64/Release/Midas.exe"
-            print("No VALEC_PATH in env, assuming the one in x64/Release.", file=sys.stderr)
         else:
             print("No VALEC_PATH in env, and couldn't find one nearby, aborting!", file=sys.stderr)
             sys.exit(1)
-        print("valec path: " + str(self.valec_path))
 
         self.windows = platform.system() == 'Windows'
 
@@ -150,6 +138,8 @@ class ValeCompiler:
         exe_file = ("main.exe" if self.windows else "a.out")
         parseds_output_dir = None
         add_exports_include_path = False
+
+
 
         valestrom_options = []
         midas_options = []
@@ -227,6 +217,28 @@ class ValeCompiler:
         user_valestrom_files = []
         user_vast_files = []
         user_c_files = []
+
+        if len(args) == 0:
+            print("Must supply a command, such as 'help', 'build`, 'run'.")
+            sys.exit(22)
+
+        if (args[0] == "help" or args[0] == "--help"):
+            if len(args) < 2:
+                with open('valec-help.txt', 'r') as f:
+                  print(f.read())
+            elif args[1] == "build":
+                with open('valec-help-build.txt', 'r') as f:
+                    print(f.read())
+            elif args[1] == "run":
+                with open('valec-help-run.txt', 'r') as f:
+                    print(f.read())
+            elif args[1] == "paths":
+                print("Valestrom path: " + str(self.valestrom_path))
+                print("Builtins path: " + str(self.builtins_path))
+                print("valec path: " + str(self.valec_path))
+            else:
+                print("Unknown subcommand: " + args[1])
+            sys.exit(0)
 
         for arg in args:
             if arg.endswith(".vale"):

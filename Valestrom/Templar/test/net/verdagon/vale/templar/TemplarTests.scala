@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
-import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
+import net.verdagon.vale.scout.{CodeLocationS, CodeVarNameS, ProgramS, RangeS, Scout, VariableNameAlreadyExists}
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -980,81 +980,81 @@ class TemplarTests extends FunSuite with Matchers {
 
     val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
 
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CouldntFindTypeT(RangeS.testZero, "Spaceship")).length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntFindTypeT(RangeS.testZero, "Spaceship")).nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         RangeS.testZero,
         ScoutExpectedFunctionFailure(GlobalFunctionFamilyNameA(""), List(), Map(), Map(), Map())))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CannotSubscriptT(
         RangeS.testZero,
         fireflyKind))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindIdentifierToLoadT(
         RangeS.testZero,
         "spaceship"))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindMemberT(
         RangeS.testZero,
         "hp"))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       BodyResultDoesntMatch(
         RangeS.testZero,
         FunctionNameA("myFunc", CodeLocationS.zero), fireflyCoord, serenityCoord))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForReturnT(
         RangeS.testZero,
         fireflyCoord, serenityCoord))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForMutateT(
         RangeS.testZero,
         fireflyCoord, serenityCoord))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForMutateT(
         RangeS.testZero,
         fireflyCoord, serenityCoord))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMoveOutOfMemberT(
         RangeS.testZero,
         CodeVarName2("hp")))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateUnstackifiedLocal(
         RangeS.testZero,
         CodeVarName2("firefly")))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS(CodeLocationS(0, 10), CodeLocationS(0, 15)),
         Signature2(FullName2(List(), FunctionName2("myFunc", List(), List())))))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind,
         FullName2(List(), CodeVarName2("bork"))))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(
         RangeS.testZero))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       IfConditionIsntBoolean(
         RangeS.testZero, fireflyCoord))
-      .length > 0
-    TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       WhileConditionIsntBoolean(
         RangeS.testZero, fireflyCoord))
-      .length > 0
+      .nonEmpty)
   }
 }

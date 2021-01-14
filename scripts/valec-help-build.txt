@@ -1,0 +1,33 @@
+
+USAGE:
+    python3 valec.py build [options] [source files]
+
+Compiles a .vale program into an executable.
+
+Source files can be either .vale, .vast, or .c files.
+
+OPTIONS:
+    --output-dir
+        Specifies an output directory to write AST, LLVM, and executable to.
+    -o
+        Specifies executable name.
+    --llvmir
+        Outputs LLVM IR to build.ll
+    -op
+        Specifies a directory to write parsing results to.
+    --region-override [region spec]
+        Makes all code in the program use the given region spec.
+        Possible region specs:
+            assist: Detect when constraint references become dangling.
+            unsafe: No safety measures, maximum speed.
+            resilient-v3: Use generational references.
+        Default is assist.
+    --census
+        Adds additional memory safety checking, used to debug the
+        compiler itself.
+    --verbose
+        Prints additional details for compile errors.
+    --exports-dir
+        Specifies a directory to output C header files for exports.
+    --add-exports-include-path
+        When compiling C files, adds the exports dir to their include path.

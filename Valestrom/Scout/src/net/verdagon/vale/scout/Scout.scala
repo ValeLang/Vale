@@ -16,6 +16,7 @@ case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompile
 case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
 case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
+case class VariableNameAlreadyExists(range: RangeS, name: IVarNameS) extends ICompileErrorS
 
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
 

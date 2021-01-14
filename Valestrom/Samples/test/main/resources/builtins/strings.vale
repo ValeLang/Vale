@@ -334,4 +334,3 @@ fn rtrimnl(s! StrSlice) StrSlice {
 
 fn trimnl(s str) StrSlice { trimnl(s.slice()) }
 fn trimnl(s! StrSlice) StrSlice { ltrimnl(rtrimnl(s)) }
-

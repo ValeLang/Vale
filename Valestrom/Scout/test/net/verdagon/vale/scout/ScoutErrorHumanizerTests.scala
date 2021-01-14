@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{Err, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
-class ScoutTests extends FunSuite with Matchers {
+class ScoutErrorHumanizerTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
@@ -336,14 +336,5 @@ class ScoutTests extends FunSuite with Matchers {
       case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
       case _ => vfail()
     }
-  }
-
-
-  test("Humanize errors") {
-    val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
-
-    vassert(ScoutErrorHumanizer.humanize(filenamesAndSources,
-      VariableNameAlreadyExists(RangeS.testZero, CodeVarNameS("Spaceship")))
-      .nonEmpty)
   }
 }

@@ -13,8 +13,8 @@ typedef struct ValeStr {
 extern ValeStr* ValeStrNew(int64_t length);
 
 
-extern int64_t __main_num_args;
-extern char** __main_args;
+int64_t __main_num_args;
+char** __main_args;
 int64_t numMainArgs() {
   return __main_num_args;
 }

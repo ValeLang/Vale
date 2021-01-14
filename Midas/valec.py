@@ -77,6 +77,7 @@ class ValeCompiler:
             self.valestrom_path = cwd / "../Valestrom/out/artifacts/Valestrom_jar"
         else:
             self.valestrom_path = cwd
+        print("Valestrom path: " + str(self.valestrom_path))
 
         if len(os.environ.get('VALESTD_PATH', '')) > 0:
             self.builtins_path = PurePath(os.environ.get('VALESTD_PATH', ''))
@@ -86,6 +87,7 @@ class ValeCompiler:
             self.builtins_path = cwd / "builtins"
         else:
             self.builtins_path = cwd
+        print("Builtins path: " + str(self.builtins_path))
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
         self.valec_path: PurePath = cwd

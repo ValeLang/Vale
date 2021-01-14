@@ -324,6 +324,15 @@ object ExpressionScout {
         val localRunes = allRunes -- knowableRunesFromAbove
 
         val declarationsFromPattern = VariableDeclarations(PatternScout.getParameterCaptures(patternS))
+
+        val nameConflictVarNames =
+          stackFrame1.locals.vars.map(_.name).intersect(declarationsFromPattern.vars.map(_.name))
+        nameConflictVarNames.headOption match {
+          case None =>
+          case Some(nameConflictVarName) => {
+            throw CompileErrorExceptionS(VariableNameAlreadyExists(evalRange(range), nameConflictVarName))
+          }
+        }
         (stackFrame1 ++ declarationsFromPattern, NormalResult(evalRange(range), LetSE(evalRange(range), rulesS, allUnknownRunes, localRunes, patternS, expr1)), selfUses, childUses)
       }
       case MutatePE(mutateRange, destinationExprPE, sourceExprPE) => {

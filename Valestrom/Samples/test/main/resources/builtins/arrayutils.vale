@@ -33,10 +33,21 @@ fn has<E>(seq &[<_> _ * E], elem E) bool {
   has(seq, elem, ==)
 }
 
-fn Arr<M, F>(n int, generator &F) Array<M, T>
-rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+// fn Arr<M, F>(n int, generator &F) Array<M, T>
+// rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+// {
+//   Array<M>(n, &IFunction1<mut, int, T>(generator))
+// }
+
+fn MakeArray<F>(n int, generator &F) Array<mut, T>
+rules(T Ref, Prot("__call", (&F, int), T))
 {
-  Array<M>(n, &IFunction1<mut, int, T>(generator))
+  Array<mut>(n, &IFunction1<mut, int, T>(generator))
+}
+fn MakeImmArray<F>(n int, generator &F) Array<imm, T>
+rules(T Ref, Prot("__call", (&F, int), T))
+{
+  Array<imm>(n, &IFunction1<mut, int, T>(generator))
 }
 
 fn each<M, N, T, F>(arr &[<M> N * T], func F) void {
@@ -58,7 +69,16 @@ fn each<M, T, F>(arr &Array<M, T>, func F) void {
 }
 
 fn indices<>(arr &Array<_, _>) Array<imm, int> {
-  Arr<imm>(len(arr), {_})
+  MakeImmArray(len(arr), {_})
+}
+
+fn eachI<F>(arr &[<_> _ * _], func F) void {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(i, arr[i]);
+    mut i = i + 1;
+  }
 }
 
 fn eachI<F>(arr &[<_> _ * _], func F) void {

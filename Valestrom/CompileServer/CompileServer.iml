@@ -14,5 +14,6 @@
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="library" name="com.google.cloud.functions:functions-framework-api:1.0.1" level="project" />
     <orderEntry type="module" module-name="Vivem" />
+    <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
   </component>
 </module>

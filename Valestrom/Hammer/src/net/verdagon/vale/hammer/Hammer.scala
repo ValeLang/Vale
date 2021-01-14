@@ -199,7 +199,8 @@ object Hammer {
       hamuts.inner.knownSizeArrays,
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
-      exportedNameByFullName)
+      exportedNameByFullName,
+      List())
   }
 
   def exportName(hamuts: HamutsBox, fullName2: FullName2[IName2], fullNameH: FullNameH) = {

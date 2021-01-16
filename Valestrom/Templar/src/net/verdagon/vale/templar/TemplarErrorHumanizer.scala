@@ -31,9 +31,9 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Argument function return type doesn't match interface method param"
       }
-      case CantMutateUnstackifiedLocal(range, name) => {
+      case CantUseUnstackifiedLocal(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
-          ": Can't mutate local that was already moved (" + name + ")"
+          ": Can't use local that was already moved (" + name + ")"
       }
       case CannotSubscriptT(range, tyype) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +

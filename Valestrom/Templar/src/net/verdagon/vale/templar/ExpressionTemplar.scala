@@ -189,7 +189,7 @@ class ExpressionTemplar(
       }
       case Some(rlv @ ReferenceLocalVariable2(varId, variability, reference)) => {
         if (fate.unstackifieds.contains(varId)) {
-          throw CompileErrorExceptionT(CantMutateUnstackifiedLocal(range, varId.last))
+          throw CompileErrorExceptionT(CantUseUnstackifiedLocal(range, varId.last))
         }
         Some(LocalLookup2(range, rlv, reference, variability))
       }

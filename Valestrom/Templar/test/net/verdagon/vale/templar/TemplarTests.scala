@@ -871,7 +871,30 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemplarError() match {
-      case CantMutateUnstackifiedLocal(_, CodeVarName2("newWeapon")) =>
+      case CantUseUnstackifiedLocal(_, CodeVarName2("newWeapon")) =>
+    }
+  }
+
+  test("Reports when reading after moving") {
+    val compile = TemplarCompilation(
+      """
+        |struct Weapon {
+        |  ammo! int;
+        |}
+        |struct Marine {
+        |  weapon! Weapon;
+        |}
+        |
+        |fn main() int export {
+        |  m = Marine(Weapon(7));
+        |  newWeapon = Weapon(10);
+        |  mut m.weapon = newWeapon;
+        |  println(newWeapon.ammo);
+        |  = 42;
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CantUseUnstackifiedLocal(_, CodeVarName2("newWeapon")) =>
     }
   }
 
@@ -1029,7 +1052,7 @@ class TemplarTests extends FunSuite with Matchers {
         CodeVarName2("hp")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantMutateUnstackifiedLocal(
+      CantUseUnstackifiedLocal(
         RangeS.testZero,
         CodeVarName2("firefly")))
       .nonEmpty)

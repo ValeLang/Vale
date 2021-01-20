@@ -228,10 +228,10 @@ object Driver {
       val opts = parseOpts(Options(List(), None, None, None, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputFiles.nonEmpty, "No input files!", InputException)
-      vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
 
       opts.mode.get match {
         case "highlight" => {
+          vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
           vcheck(opts.inputFiles.size == 1, "Must have exactly 1 input file for highlighting", InputException)
           val code = readCode(opts.inputFiles.head)
           val (parsed, commentRanges) =
@@ -255,6 +255,7 @@ object Driver {
           }
         }
         case "build" => {
+          vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
           buildAndOutput(opts)
         }
         case "run" => {
@@ -299,10 +300,6 @@ object Driver {
             }
           println("Program result: " + result)
           println()
-          val programV = VonHammer.vonifyProgram(program)
-          val json = new VonPrinter(JsonSyntax, 120).print(programV)
-          println("Writing to file " + opts.outputVirFilepath.get)
-          writeFile(opts.outputVirFilepath.get, json)
         }
       }
     } catch {

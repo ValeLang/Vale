@@ -101,6 +101,7 @@ class VirtualTests extends FunSuite with Matchers {
       List(
         Samples.get("libraries/opt.vale"),
         Samples.get("libraries/list.vale"),
+        Samples.get("builtins/strings.vale"),
         """
           |interface SectionMember {}
           |struct Header {}

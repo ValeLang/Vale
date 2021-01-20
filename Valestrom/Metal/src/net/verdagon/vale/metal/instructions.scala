@@ -265,6 +265,7 @@ case class MemberLoadH(
     val location =
       (targetOwnership, expectedMemberType.location) match {
         case (BorrowH, _) => YonderH
+        case (WeakH, _) => YonderH
         case (OwnH, location) => location
         case (ShareH, location) => location
       }

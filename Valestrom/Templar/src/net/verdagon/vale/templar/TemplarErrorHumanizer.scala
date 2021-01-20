@@ -126,6 +126,10 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": If condition should be a bool, but was: " + actualType
       }
+      case CantImplStruct(range, struct) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Can't extend a struct: (" + struct + ")"
+      }
       case InferAstronomerError(err) => {
         AstronomerErrorHumanizer.humanize(filenamesAndSources, err)
       }

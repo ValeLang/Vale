@@ -112,7 +112,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def eachOrEachI: Parser[FunctionCallPE] = {
-    pos ~ (pstr("eachI") | pstr("each")) ~! (white ~> expressionLevel5 <~ white) ~ lambda ~ pos ^^ {
+    pos ~ (pstr("eachI") | pstr("each")) ~! (white ~> expressionLevel9 <~ white) ~ lambda ~ pos ^^ {
       case begin ~ eachI ~ collection ~ lam ~ end => {
         FunctionCallPE(Range(begin, end), None, Range(begin, begin), false, LookupPE(eachI, None), List(collection, lam), BorrowP)
       }

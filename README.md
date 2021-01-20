@@ -10,7 +10,7 @@ See http://vale.dev/ for samples and more information on the language!
 
 ## Building and Running
 
-If you just want to build and run Vale programs, go to the [downloads](https://vale.dev/downloads) page. Simply unzip the zip file. You get the Vale compiler script valec.py, together with the rest of the Vale platform.
+If you just want to build and run Vale programs, go to the [downloads](https://vale.dev/download) page. Simply unzip the zip file. You get the Vale compiler script valec.py, together with the rest of the Vale platform.
 
 Here is a first Hello World program to get you started:
 create a text file hello.vale with as content:

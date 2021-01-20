@@ -81,15 +81,6 @@ fn eachI<F>(arr &[<_> _ * _], func F) void {
   }
 }
 
-fn eachI<F>(arr &[<_> _ * _], func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(i, arr[i]);
-    mut i = i + 1;
-  }
-}
-
 fn eachI<F>(arr &Array<_, _>, func F) void {
   i! = 0;
   l = len(&arr);

@@ -414,6 +414,17 @@ class PatternTemplar(
               case (((innerPattern, member), index)) => {
                 val memberCoord = member.tyype.expectReferenceMember().reference
                 val resultOwnership = if (memberCoord.ownership == Share) Share else Borrow
+
+                val index = structDef2.members.indexWhere(_.name == member.name)
+                val ownershipInClosureStruct = structDef2.members(index).tyype.reference.ownership
+                val coerceToOwnership =
+                  ownershipInClosureStruct match {
+                    case Own => Borrow
+                    case Borrow => Borrow
+                    case Weak => Weak
+                    case Share => Share
+                  }
+
                 val loadExpr =
                   SoftLoad2(
                     ReferenceMemberLookup2(
@@ -421,7 +432,8 @@ class PatternTemplar(
                       SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), structOwnership),
                       structDef2.fullName.addStep(structDef2.members(index).name),
                       memberCoord,
-                      member.variability),
+                      member.variability,
+                      coerceToOwnership),
                     resultOwnership)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }

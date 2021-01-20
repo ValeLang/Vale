@@ -21,6 +21,10 @@ object TemplexScout {
           NameST(Scout.evalRange(env.file, range), CodeTypeNameS(nameOrRune))
         }
       }
+      case InlinePT(range, inner) => {
+        // Ignore the inl, not supported yet.
+        translateTemplex(env, inner)
+      }
       case ManualSequencePT(range,members) => ManualSequenceST(evalRange(range), members.map(translateTemplex(env, _)))
       case IntPT(range,num) => IntST(evalRange(range), num)
       case MutabilityPT(range,mutability) => MutabilityST(evalRange(range), mutability)

@@ -350,6 +350,9 @@ class ValeCompiler:
                 sys.exit(1)
 
             print("Compiled to " + str(self.build_dir / exe_file))
+        else:
+            print("Unknown subcommand, specify `build`, `run`, etc. Use `help` for more.")
+            sys.exit(1)
 
 if __name__ == '__main__':
     ValeCompiler().compile_and_execute(sys.argv[1:])

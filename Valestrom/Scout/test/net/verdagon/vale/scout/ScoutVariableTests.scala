@@ -12,7 +12,8 @@ class ScoutVariableTests extends FunSuite with Matchers {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
         Scout.scoutProgram(List(program0)) match {
-          case null => vimpl() // TODO impl errors
+          case Ok(_) => vfail("Expected an error")
+          case Err(e) => e
         }
       }
     }
@@ -42,10 +43,9 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  // Intentional failure 2020-08-20
   test("Reports defining same-name variable") {
     compileProgramForError("fn main() { x = 4; x = 5; }") match {
-      case null =>
+      case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
     }
   }
 

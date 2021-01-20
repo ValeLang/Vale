@@ -584,7 +584,7 @@ class TemplarTests extends FunSuite with Matchers {
     main.only({
       case ReferenceMemberLookup2(_,
         SoftLoad2(LocalLookup2(_, _, Coord(_,StructRef2(_)), Final), Borrow),
-        FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Int2()),Final) =>
+        FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Int2()),Final, Share) =>
     })
   }
 
@@ -996,6 +996,41 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Lock weak member") {
+    val compile = TemplarCompilation.multiple(
+      List(
+        Samples.get("libraries/opt.vale"),
+        Samples.get("libraries/printutils.vale"),
+        Samples.get("libraries/castutils.vale"),
+        """
+          |struct Base {
+          |  name str;
+          |}
+          |struct Spaceship {
+          |  name str;
+          |  origin &&Base;
+          |}
+          |fn printShipBase(ship &Spaceship) {
+          |  maybeOrigin = lock(ship.origin); «14»«15»
+          |  if (not maybeOrigin.isEmpty()) { «16»
+          |    o = maybeOrigin.get();
+          |    println("Ship base: " + o.name);
+          |  } else {
+          |    println("Ship base unknown!");
+          |  }
+          |}
+          |fn main() export {
+          |  base = Base("Zion");
+          |  ship = Spaceship("Neb", &&base);
+          |  printShipBase(&ship);
+          |  base^.drop(); // Destroys base.
+          |  printShipBase(&ship);
+          |}
+          |""".stripMargin))
+
+    compile.getTemputs()
+  }
+
   test("Humanize errors") {
     val fireflyKind = StructRef2(FullName2(List(), CitizenName2("Firefly", List())))
     val fireflyCoord = Coord(Own, fireflyKind)
@@ -1079,6 +1114,10 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       WhileConditionIsntBoolean(
         RangeS.testZero, fireflyCoord))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantImplStruct(
+        RangeS.testZero, fireflyKind))
       .nonEmpty)
   }
 }

@@ -26,6 +26,7 @@ case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends IC
 case class IfConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class WhileConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT
+case class CantImplStruct(range: RangeS, parent: StructRef2) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test
 
 case class RangedInternalErrorT(range: RangeS, message: String) extends ICompileErrorT

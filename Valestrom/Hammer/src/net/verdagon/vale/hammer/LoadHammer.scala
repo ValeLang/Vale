@@ -335,7 +335,7 @@ object LoadHammer {
     val member2 = structDef2.members(memberIndex)
 
     val variability = member2.variability
-    vassert(variability == Varying) // curious
+    vassert(variability == Varying, "Expected varying for member " + memberName) // curious
 
     val boxedType2 = member2.tyype.expectAddressMember().reference
 

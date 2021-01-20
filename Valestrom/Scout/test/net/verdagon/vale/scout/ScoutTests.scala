@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
+import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{Err, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
@@ -34,7 +34,7 @@ class ScoutTests extends FunSuite with Matchers {
   test("Lookup +") {
     val program1 = compile("fn main() int export { +(3, 4) }")
     val main = program1.lookupFunction("main")
-    
+
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
       case BlockSE(_, _, List(FunctionCallSE(_, OutsideLoadSE(_, "+"), _))) =>
@@ -48,17 +48,19 @@ class ScoutTests extends FunSuite with Matchers {
     val memberRune = MemberRuneS(0)
     imoo.rules match {
       case List(
-        EqualsSR(_, TypedSR(_, memberRune, CoordTypeSR), TemplexSR(NameST(_, CodeTypeNameS("int")))),
-        EqualsSR(_, TemplexSR(RuneST(_, ImplicitRuneS(_, _))), TemplexSR(MutabilityST(_, MutableP)))) =>
+      EqualsSR(_, TypedSR(_, memberRune, CoordTypeSR), TemplexSR(NameST(_, CodeTypeNameS("int")))),
+      EqualsSR(_, TemplexSR(RuneST(_, ImplicitRuneS(_, _))), TemplexSR(MutabilityST(_, MutableP)))) =>
     }
-    imoo.members match { case List(StructMemberS(_, "x",FinalP,memberRune)) => }
+    imoo.members match {
+      case List(StructMemberS(_, "x", FinalP, memberRune)) =>
+    }
   }
 
   test("Lambda") {
     val program1 = compile("fn main() int export { {_ + _}(4, 6) }")
 
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, FunctionSE(lambda @ FunctionS(_, _, _, _, _, _, _, _,_, _, _, _)), _) = expr
+    val FunctionCallSE(_, FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
         vassert(mp1 != mp2)
@@ -67,7 +69,7 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Interface") {
-    val program1 = compile("interface IMoo { fn blork(a bool)void; }")
+    val program1 = compile("interface IMoo { fn blork(virtual this &IMoo, a bool)void; }")
     val imoo = program1.lookupInterface("IMoo")
 
     imoo.rules match {
@@ -75,38 +77,52 @@ class ScoutTests extends FunSuite with Matchers {
     }
 
     val blork = imoo.internalMethods.head
-    blork.name match { case FunctionNameS("blork", _) => }
+    blork.name match {
+      case FunctionNameS("blork", _) =>
+    }
 
-    val (paramRune, retRune) =
+    val (actualThisParamRune, actualBoolParamRune, retRune) =
       blork.templateRules match {
         case List(
-          EqualsSR(_,
-            TypedSR(_, actualParamRune, CoordTypeSR),
-            TemplexSR(NameST(_, CodeTypeNameS("bool")))),
-          EqualsSR(_,
-            TypedSR(_, actualRetRune, CoordTypeSR),
-            TemplexSR(NameST(_, CodeTypeNameS("void"))))) => {
-          actualParamRune match {
+        EqualsSR(_,
+        TypedSR(_, actualThisParamRune, CoordTypeSR),
+        TemplexSR(OwnershippedST(_, BorrowP, NameST(_, CodeTypeNameS("IMoo"))))),
+        EqualsSR(_,
+        TypedSR(_, actualBoolParamRune, CoordTypeSR),
+        TemplexSR(NameST(_, CodeTypeNameS("bool")))),
+        EqualsSR(_,
+        TypedSR(_, actualRetRune, CoordTypeSR),
+        TemplexSR(NameST(_, CodeTypeNameS("void"))))) => {
+          actualThisParamRune match {
             case ImplicitRuneS(_, 0) =>
           }
-          actualRetRune match {
+          actualBoolParamRune match {
             case ImplicitRuneS(_, 1) =>
           }
-          (actualParamRune, actualRetRune)
+          actualRetRune match {
+            case ImplicitRuneS(_, 2) =>
+          }
+          (actualThisParamRune, actualBoolParamRune, actualRetRune)
         }
       }
 
     RuleSUtils.getDistinctOrderedRunesForRulexes(blork.templateRules) shouldEqual
-      List(paramRune, retRune)
+      List(actualThisParamRune, actualBoolParamRune, retRune)
 
     blork.params match {
       case List(
-        ParameterS(
-          AtomSP(_,
-            CaptureS(CodeVarNameS("a"),FinalP),
-            None,
-            ImplicitRuneS(_, 0),
-            None))) =>
+      ParameterS(
+      AtomSP(_,
+      CaptureS(CodeVarNameS("this"), FinalP),
+      Some(AbstractSP),
+      ImplicitRuneS(_, 0),
+      None)),
+      ParameterS(
+      AtomSP(_,
+      CaptureS(CodeVarNameS("a"), FinalP),
+      None,
+      ImplicitRuneS(_, 1),
+      None))) =>
     }
 
     // Yes, even though the user didnt specify any. See CCAUIR.
@@ -118,24 +134,24 @@ class ScoutTests extends FunSuite with Matchers {
     val impl = program1.impls.head
     val structRune =
       impl.structKindRune match {
-        case ir0 @ ImplicitRuneS(_, 0) => ir0
+        case ir0@ImplicitRuneS(_, 0) => ir0
       }
     val interfaceRune =
       impl.interfaceKindRune match {
-        case ir0 @ ImplicitRuneS(_, 1) => ir0
+        case ir0@ImplicitRuneS(_, 1) => ir0
       }
     impl.rulesFromStructDirection match {
       case List(
-          EqualsSR(_, TypedSR(_, a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo")))),
-          EqualsSR(_, TypedSR(_, b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo"))))) => {
+      EqualsSR(_, TypedSR(_, a, KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo")))),
+      EqualsSR(_, TypedSR(_, b, KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo"))))) => {
         vassert(a == structRune)
         vassert(b == interfaceRune)
       }
     }
     impl.rulesFromInterfaceDirection match {
       case List(
-      EqualsSR(_, TypedSR(_, b,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo")))),
-      EqualsSR(_, TypedSR(_, a,KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo"))))) => {
+      EqualsSR(_, TypedSR(_, b, KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("IMoo")))),
+      EqualsSR(_, TypedSR(_, a, KindTypeSR), TemplexSR(NameST(_, CodeTypeNameS("Moo"))))) => {
         vassert(a == structRune)
         vassert(b == interfaceRune)
       }
@@ -148,7 +164,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LendSE(_, LocalLoadSE(_,name, BorrowP), BorrowP))))) => {
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LendSE(_, LocalLoadSE(_, name, BorrowP), BorrowP))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -162,7 +178,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LocalLoadSE(_,_, OwnP))))) =>
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout"), List(LocalLoadSE(_, _, OwnP))))) =>
     }
   }
 
@@ -181,10 +197,10 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     val BlockSE(_, _, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
     lambda1.params match {
-      case List(_, ParameterS(AtomSP(_,CaptureS(MagicParamNameS(_),FinalP),None,MagicParamRuneS(_),None))) =>
+      case List(_, ParameterS(AtomSP(_, CaptureS(MagicParamNameS(_), FinalP), None, MagicParamRuneS(_), None))) =>
     }
     lambda2.params match {
-      case List(_, ParameterS(AtomSP(_,CaptureS(CodeVarNameS("a"),FinalP),None,ImplicitRuneS(_, _),None))) =>
+      case List(_, ParameterS(AtomSP(_, CaptureS(CodeVarNameS("a"), FinalP), None, ImplicitRuneS(_, _), None))) =>
     }
   }
 
@@ -201,27 +217,27 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
       case BlockSE(_,
-        List(
-          LocalVariable1(ConstructingMemberNameS("x"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed),
-          LocalVariable1(ConstructingMemberNameS("y"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed)),
-        List(
-          LetSE(_,
-            _,
-            _,
-            _,
-            AtomSP(_,CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
-            IntLiteralSE(_, 4)),
-          LetSE(_,
-            _,
-            _,
-            _,
-            AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
-            BoolLiteralSE(_, true)),
-          FunctionCallSE(_,
-            OutsideLoadSE(_, "MyStruct"),
-            List(
-              LocalLoadSE(_,ConstructingMemberNameS("x"),OwnP),
-              LocalLoadSE(_,ConstructingMemberNameS("y"),OwnP))))) =>
+      List(
+      LocalVariable1(ConstructingMemberNameS("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+      LocalVariable1(ConstructingMemberNameS("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      List(
+      LetSE(_,
+      _,
+      _,
+      _,
+      AtomSP(_, CaptureS(ConstructingMemberNameS("x"), FinalP), None, _, None),
+      IntLiteralSE(_, 4)),
+      LetSE(_,
+      _,
+      _,
+      _,
+      AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
+      BoolLiteralSE(_, true)),
+      FunctionCallSE(_,
+      OutsideLoadSE(_, "MyStruct"),
+      List(
+      LocalLoadSE(_, ConstructingMemberNameS("x"), OwnP),
+      LocalLoadSE(_, ConstructingMemberNameS("y"), OwnP))))) =>
     }
   }
 
@@ -237,21 +253,21 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
       case BlockSE(_,
-        List(
-          LocalVariable1(ConstructingMemberNameS("x"),FinalP,Used,Used,NotUsed,NotUsed,NotUsed,NotUsed),
-          LocalVariable1(ConstructingMemberNameS("y"),FinalP,NotUsed,Used,NotUsed,NotUsed,NotUsed,NotUsed)),
-        List(
-          LetSE(_, _,_,_,
-            AtomSP(_,CaptureS(ConstructingMemberNameS("x"),FinalP),None,_,None),
-            IntLiteralSE(_, 4)),
-          LetSE(_, _,_,_,
-            AtomSP(_,CaptureS(ConstructingMemberNameS("y"),FinalP),None,_,None),
-            LendSE(_, LocalLoadSE(_,ConstructingMemberNameS("x"),BorrowP), BorrowP)),
-          FunctionCallSE(_,
-            OutsideLoadSE(_, "MyStruct"),
-            List(
-              LocalLoadSE(_,ConstructingMemberNameS("x"),OwnP),
-              LocalLoadSE(_,ConstructingMemberNameS("y"),OwnP))))) =>
+      List(
+      LocalVariable1(ConstructingMemberNameS("x"), FinalP, Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+      LocalVariable1(ConstructingMemberNameS("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      List(
+      LetSE(_, _, _, _,
+      AtomSP(_, CaptureS(ConstructingMemberNameS("x"), FinalP), None, _, None),
+      IntLiteralSE(_, 4)),
+      LetSE(_, _, _, _,
+      AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
+      LendSE(_, LocalLoadSE(_, ConstructingMemberNameS("x"), BorrowP), BorrowP)),
+      FunctionCallSE(_,
+      OutsideLoadSE(_, "MyStruct"),
+      List(
+      LocalLoadSE(_, ConstructingMemberNameS("x"), OwnP),
+      LocalLoadSE(_, ConstructingMemberNameS("y"), OwnP))))) =>
     }
 
   }
@@ -265,15 +281,15 @@ class ScoutTests extends FunSuite with Matchers {
     val main = program1.lookupFunction("moo")
     main.body match {
       case CodeBody1(
-        BodySE(_,
-          List(),
-          BlockSE(_,
-            List(LocalVariable1(CodeVarNameS("this"),FinalP,Used,NotUsed,NotUsed,NotUsed,NotUsed,NotUsed)),
-            List(
-              FunctionCallSE(_,
-                OutsideLoadSE(_, "println"),
-                List(DotSE(_, LocalLoadSE(_,CodeVarNameS("this"),BorrowP),"x",true))),
-              VoidSE(_))))) =>
+      BodySE(_,
+      List(),
+      BlockSE(_,
+      List(LocalVariable1(CodeVarNameS("this"), FinalP, Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
+      List(
+      FunctionCallSE(_,
+      OutsideLoadSE(_, "println"),
+      List(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), BorrowP), "x", true))),
+      VoidSE(_))))) =>
     }
   }
 
@@ -338,12 +354,11 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
-
-  test("Humanize errors") {
-    val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
-
-    vassert(ScoutErrorHumanizer.humanize(filenamesAndSources,
-      VariableNameAlreadyExists(RangeS.testZero, CodeVarNameS("Spaceship")))
-      .nonEmpty)
+  test("Reports when interface method doesnt have self") {
+    val err = compileForError("interface IMoo { fn blork(a bool)void; }")
+    err match {
+      case InterfaceMethodNeedsSelf(_) =>
+      case _ => vfail()
+    }
   }
 }

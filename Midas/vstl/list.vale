@@ -109,7 +109,9 @@ fn split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
   while (true) {
     maybeFirstAndRest = haystack.splitOnce(needle);
     if (maybeFirstAndRest.isEmpty()) {
-      result.add(haystack);
+      if (haystack.len() > 0) {
+        result.add(haystack);
+      }
       ret result;
     }
     (first, rest) = maybeFirstAndRest.get();

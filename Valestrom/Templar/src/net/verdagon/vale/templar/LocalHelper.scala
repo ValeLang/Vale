@@ -6,7 +6,7 @@ import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnviron
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{vassert, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -117,12 +117,17 @@ class LocalHelper(
   def softLoad(fate: FunctionEnvironmentBox, loadRange: RangeS, a: AddressExpression2, specifiedTargetOwnership: Ownership):
   (ReferenceExpression2) = {
     specifiedTargetOwnership match {
+      case Share => {
+        SoftLoad2(a, Share)
+      }
       case Borrow => {
         val actualTargetOwnership =
           a.resultRegister.reference.ownership match {
             case Own => Borrow
             case Borrow => Borrow // it's fine if they accidentally borrow a borrow ref
-            case Weak => throw CompileErrorExceptionT(RangedInternalErrorT(loadRange, "Can't borrow a weak local, must lock()"))
+            case Weak => {
+              throw CompileErrorExceptionT(RangedInternalErrorT(loadRange, "Can't borrow a weak, must lock()"))
+            }
             case Share => Share
           }
         (SoftLoad2(a, actualTargetOwnership))
@@ -143,7 +148,7 @@ class LocalHelper(
             val localVar =
               a match {
                 case LocalLookup2(_, lv, _, _) => lv
-                case AddressMemberLookup2(_, _, name, _, _) => {
+                case AddressMemberLookup2(_, _, name, _, _, _) => {
                   throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
                 }
               }

@@ -495,28 +495,26 @@ case class ArrayLength2(arrayExpr: ReferenceExpression2) extends ReferenceExpres
 }
 
 case class ReferenceMemberLookup2(
-  range: RangeS,
+    range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
     reference: Coord,
-  variability: Variability) extends AddressExpression2 {
+    variability: Variability,
+    coerceToOwnership: Ownership) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(reference)
-
-  override def coerceToOwnership: Ownership = Borrow
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ structExpr.all(func) ++ reference.all(func)
   }
 }
 case class AddressMemberLookup2(
-  range: RangeS,
+    range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
     resultType2: Coord,
-  variability: Variability) extends AddressExpression2 {
+    variability: Variability,
+    coerceToOwnership: Ownership) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(resultType2)
-
-  override def coerceToOwnership: Ownership = Borrow
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ structExpr.all(func) ++ resultType2.all(func)

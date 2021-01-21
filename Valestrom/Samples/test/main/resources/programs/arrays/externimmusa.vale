@@ -9,6 +9,6 @@
 fn sumBytes(arr Array<imm, int>) int extern;
 
 fn main() int export {
-  a = Arr<imm>(5, {_});
+  a = MakeImmArray(5, {_});
   = sumBytes(a);
 }

@@ -222,15 +222,6 @@ public:
       Ref indexRef,
       Reference* targetType) = 0;
 
-  virtual Ref loadElementFromKSAWithoutUpgrade(
-      FunctionState* functionState,
-      LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
-      Ref arrayRef,
-      bool arrayRefKnownLive,
-      Ref indexRef) = 0;
-
   virtual Ref loadElementFromUSAWithUpgrade(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -312,11 +303,20 @@ public:
       LLVMValueRef ref) = 0;
 
 
-  // Get rid of this
+  // Get rid of these
   virtual WrapperPtrLE mallocStr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       LLVMValueRef lengthLE) = 0;
+  // and the other withoutupgrade things maybe
+  virtual Ref loadElementFromKSAWithoutUpgrade(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* ksaRefMT,
+      KnownSizeArrayT* ksaMT,
+      Ref arrayRef,
+      bool arrayRefKnownLive,
+      Ref indexRef) = 0;
 };
 
 #endif

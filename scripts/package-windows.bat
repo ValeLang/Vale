@@ -7,7 +7,7 @@ echo d | xcopy /s /e /y ..\Valestrom\Samples\test\main\resources\programs ..\rel
 echo d | xcopy /s /e /y ..\Valestrom\Samples\test\main\resources\libraries ..\release-windows\samples\libraries
 echo d | xcopy /s /e /y ..\benchmarks\BenchmarkRL\vale ..\release-windows\BenchmarkRL
 echo d | xcopy /s /e /y ..\Midas\src\builtins ..\release-windows\builtins
-copy ..\Midas\vstl\* ..\release-windows\vstl
+echo d | xcopy /s /e /y ..\Midas\vstl ..\release-windows\vstl
 copy ..\Midas\valec.py ..\release-windows\valec.py
 copy releaseREADME.txt ..\release-windows\README.txt
 copy valec-help* ..\release-windows

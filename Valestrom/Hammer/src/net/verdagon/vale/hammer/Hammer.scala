@@ -191,6 +191,25 @@ object Hammer {
     val exportedNameByFullName = hamuts.fullNameByExportedName.map(_.swap)
     vassert(exportedNameByFullName.size == hamuts.fullNameByExportedName.size)
 
+    // This is the list of all regions, and all referends in them, so we can inform
+    // Midas which referends are in which regions, so it doesn't have to figure it
+    // out itself.
+    val regions = {
+      // For now, we're adding all referends to all regions. We can someday
+      // use less memory by recursively figuring out which referends can possibly
+      // be used where.
+      val allReferends =
+        (hamuts.interfaceDefs.map(_._2.getRef) ++
+          hamuts.structDefs.map(_.getRef) ++
+          hamuts.inner.knownSizeArrays ++
+          hamuts.inner.unknownSizeArrays)
+          .toList
+      List(
+        RegionH("unsafe", allReferends),
+        RegionH("assist", allReferends),
+        RegionH("resilient", allReferends))
+    }
+
     ProgramH(
       hamuts.interfaceDefs.values.toList,
       hamuts.structDefs,
@@ -200,7 +219,7 @@ object Hammer {
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
       exportedNameByFullName,
-      List())
+      regions)
   }
 
   def exportName(hamuts: HamutsBox, fullName2: FullName2[IName2], fullNameH: FullNameH) = {

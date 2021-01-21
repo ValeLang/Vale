@@ -27,14 +27,12 @@ class ValeCompiler:
                   valestrom_options: List[str]) -> subprocess.CompletedProcess:
 
         # Add in the default vale files
-        valestrom_files = (
-                user_valestrom_files +
-                list(PurePath(x) for x in glob.glob(str(self.builtins_path / "*.vale"))))
+        valestrom_files = user_valestrom_files
 
         if self.build_dir != PurePath("."):
-            if os.path.exists(build_dir):
-                shutil.rmtree(build_dir)
-            os.makedirs(build_dir)
+            if os.path.exists(self.build_dir):
+                shutil.rmtree(self.build_dir)
+            os.makedirs(self.build_dir)
 
         valestrom_options.append("-o")
         valestrom_options.append(str(self.output_vast_file))

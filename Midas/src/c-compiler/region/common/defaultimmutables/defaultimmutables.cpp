@@ -325,10 +325,7 @@ LLVMTypeRef DefaultImmutables::getExternalType(
     auto structLIter = externalStructLByReferend.find(globalState->metalCache.str);
     assert(structLIter != externalStructLByReferend.end());
     auto structL = structLIter->second;
-
-
-    assert(false); // impl
-    return nullptr;
+    return LLVMPointerType(structL, 0);
   } else if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
     assert(false); // impl
     return nullptr;

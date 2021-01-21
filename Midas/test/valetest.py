@@ -28,6 +28,7 @@ class ValeTest(unittest.TestCase):
         return procrun(
             ["python3",
              f"{self.GENPATH}/valec.py",
+             "build",
              "--verify",
              "--llvmir",
              "--census",

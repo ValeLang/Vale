@@ -662,6 +662,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto cByExportedName = std::unordered_map<std::string, std::string>();
   for (auto p : program->structs) {
     auto structM = p.second;
+    // can we think of this in terms of regions? it's kind of like we're
+    // generating some stuff for the outside to point inside.
     if (globalState->program->isExported(structM->name)) {
       defaultRegion->generateStructDefsC(&cByExportedName, structM);
     }

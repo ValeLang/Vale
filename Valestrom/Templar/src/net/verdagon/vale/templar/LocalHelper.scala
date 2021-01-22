@@ -1,12 +1,13 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.LocalVariableA
+import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, OwnP, OwnershipP, UseP, WeakP}
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
-import net.verdagon.vale.{vassert, vfail, vimpl}
+import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -102,62 +103,81 @@ class LocalHelper(
     localVar
   }
 
-  def maybeSoftLoad(
-    fate: FunctionEnvironmentBox,
-    range: RangeS,
-    expr2: Expression2,
-    targetOwnership: Ownership):
-  (ReferenceExpression2) = {
+  def maybeBorrowSoftLoad(
+      temputs: Temputs,
+      expr2: Expression2):
+  ReferenceExpression2 = {
     expr2 match {
-      case e : ReferenceExpression2 => (e)
-      case e : AddressExpression2 => softLoad(fate, range, e, targetOwnership)
+      case e : ReferenceExpression2 => e
+      case e : AddressExpression2 => borrowSoftLoad(temputs, e)
     }
   }
 
-  def softLoad(fate: FunctionEnvironmentBox, loadRange: RangeS, a: AddressExpression2, specifiedTargetOwnership: Ownership):
-  (ReferenceExpression2) = {
-    specifiedTargetOwnership match {
+//  def maybeSoftLoad(
+//    fate: FunctionEnvironmentBox,
+//    range: RangeS,
+//    expr2: Expression2,
+//    specifiedTargetOwnership: Option[Ownership]):
+//  (ReferenceExpression2) = {
+//    expr2 match {
+//      case e : ReferenceExpression2 => (e)
+//      case e : AddressExpression2 => softLoad(fate, range, e, specifiedTargetOwnership)
+//    }
+//  }
+
+  def softLoad(
+      fate: FunctionEnvironmentBox,
+      loadRange: RangeS,
+      a: AddressExpression2,
+      loadAsP: LoadAsP):
+  ReferenceExpression2 = {
+    a.resultRegister.reference.ownership match {
       case Share => {
         SoftLoad2(a, Share)
       }
-      case Borrow => {
-        val actualTargetOwnership =
-          a.resultRegister.reference.ownership match {
-            case Own => Borrow
-            case Borrow => Borrow // it's fine if they accidentally borrow a borrow ref
-            case Weak => {
-              throw CompileErrorExceptionT(RangedInternalErrorT(loadRange, "Can't borrow a weak, must lock()"))
+      case Own => {
+        loadAsP match {
+          case UseP => {
+            a match {
+              case LocalLookup2(_, lv, _, _) => {
+                fate.markLocalUnstackified(lv.id)
+                Unlet2(lv)
+              }
+              case l @ UnknownSizeArrayLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow)
+              case l @ ArraySequenceLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow)
+              case l @ ReferenceMemberLookup2(_,_, _, _, _) => SoftLoad2(l, Borrow)
+              case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow)
             }
-            case Share => Share
           }
-        (SoftLoad2(a, actualTargetOwnership))
+          case MoveP => {
+            a match {
+              case LocalLookup2(_, lv, _, _) => {
+                fate.markLocalUnstackified(lv.id)
+                Unlet2(lv)
+              }
+              case ReferenceMemberLookup2(_,_, name, _, _) => {
+                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
+              }
+              case AddressMemberLookup2(_, _, name, _, _) => {
+                throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
+              }
+            }
+          }
+          case LendBorrowP => SoftLoad2(a, Borrow)
+          case LendWeakP => SoftLoad2(a, Weak)
+        }
+      }
+      case Borrow => {
+        loadAsP match {
+          case MoveP => vfail()
+          case LendBorrowP | UseP => SoftLoad2(a, Borrow)
+          case LendWeakP => SoftLoad2(a, Weak)
+        }
       }
       case Weak => {
-        val actualTargetOwnership =
-          a.resultRegister.reference.ownership match {
-            case Own => Weak
-            case Borrow => Weak // it's fine if they weak a borrow ref
-            case Weak => Weak // it's fine if they accidentally weak a borrow ref
-            case Share => Share
-          }
-        (SoftLoad2(a, actualTargetOwnership))
-      }
-      case Own => {
-        a.resultRegister.reference.ownership match {
-          case Own => {
-            val localVar =
-              a match {
-                case LocalLookup2(_, lv, _, _) => lv
-                case AddressMemberLookup2(_, _, name, _, _, _) => {
-                  throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
-                }
-              }
-            fate.markLocalUnstackified(localVar.id)
-            (Unlet2(localVar))
-          }
-          case Borrow | Share | Weak => {
-            (SoftLoad2(a, a.resultRegister.reference.ownership))
-          }
+        loadAsP match {
+          case LendBorrowP | MoveP => vfail()
+          case UseP | LendWeakP => SoftLoad2(a, Weak)
         }
       }
     }
@@ -165,8 +185,7 @@ class LocalHelper(
 
   def borrowSoftLoad(temputs: Temputs, expr2: AddressExpression2):
   ReferenceExpression2 = {
-    val ownership =
-      getBorrowOwnership(temputs, expr2.resultRegister.reference.referend)
+    val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.referend)
     SoftLoad2(expr2, ownership)
   }
 

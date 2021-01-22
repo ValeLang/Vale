@@ -37,7 +37,7 @@ class IfTests extends FunSuite with Matchers with Collector {
     compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
       case IfPE(_,
       BlockPE(_, List(BoolLiteralPE(_, true))),
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doBlarks"), None), List(LendPE(_,LookupPE(StringP(_, "x"), None), BorrowP)), BorrowP))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doBlarks"), None), List(LendPE(_,LookupPE(StringP(_, "x"), None), LendBorrowP)), LendBorrowP))),
       BlockPE(_, List(VoidPE(_)))) =>
     }
   }
@@ -67,7 +67,7 @@ class IfTests extends FunSuite with Matchers with Collector {
       None,
       PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "newLen")), FinalP)), None, None, None),
       IfPE(_,
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), BorrowP))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), LendBorrowP))),
       BlockPE(_, List(IntLiteralPE(_, 1))),
       BlockPE(_, List(IntLiteralPE(_, 2))))) =>
     }

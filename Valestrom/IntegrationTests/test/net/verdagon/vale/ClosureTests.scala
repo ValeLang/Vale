@@ -141,7 +141,7 @@ class ClosureTests extends FunSuite with Matchers {
     // Make sure we're doing a referencememberlookup, since it's a reference member
     // in the closure struct.
     lambda.only({
-      case ReferenceMemberLookup2(_,_, FullName2(_, CodeVarName2("x")), _, _, _) =>
+      case ReferenceMemberLookup2(_,_, FullName2(_, CodeVarName2("x")), _, _) =>
     })
 
     // Make sure there's a function that takes in the closured vars struct, and returns an int
@@ -193,7 +193,7 @@ class ClosureTests extends FunSuite with Matchers {
     val lambda = temputs.lookupLambdaIn("main")
     lambda.only({
       case Mutate2(
-        AddressMemberLookup2(_,_,FullName2(List(FunctionName2("main",List(),List()), LambdaCitizenName2(_)),CodeVarName2("x")),Coord(Share,Int2()), _, _),
+        AddressMemberLookup2(_,_,FullName2(List(FunctionName2("main",List(),List()), LambdaCitizenName2(_)),CodeVarName2("x")),Coord(Share,Int2()), _),
         _) =>
     })
 

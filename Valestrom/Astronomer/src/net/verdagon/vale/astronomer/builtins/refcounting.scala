@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, OwnP, ShareP}
+import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, OwnP, ShareP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
@@ -38,14 +38,14 @@ object RefCounting {
             List(
               CheckRefCountAE(
                 RangeS.internal(-35),
-                LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP),
+                LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), UseP),
                 VariableRefCount,
                 FunctionCallAE(
                   RangeS.internal(-42),
                   // We add 1 because that "obj" is also a borrow ref
                   OutsideLoadAE(RangeS.internal(-38),"+"),
                   List(
-                    LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP),
+                    LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP),
                     IntLiteralAE(RangeS.internal(-35), 1)))),
               VoidAE(RangeS.internal(-35)))))))
 
@@ -79,6 +79,6 @@ object RefCounting {
           BlockAE(
             RangeS.internal(-35),
             List(
-              CheckRefCountAE(RangeS.internal(-35), LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), OwnP), MemberRefCount, LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), OwnP)),
+              CheckRefCountAE(RangeS.internal(-35), LocalLoadAE(RangeS.internal(-35), CodeVarNameA("obj"), UseP), MemberRefCount, LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP)),
               VoidAE(RangeS.internal(-35)))))))
 }

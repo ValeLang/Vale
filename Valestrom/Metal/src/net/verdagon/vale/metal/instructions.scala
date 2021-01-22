@@ -215,6 +215,8 @@ case class LocalLoadH(
   // Name of the local variable, for debug purposes.
   localName: FullNameH
 ) extends ExpressionH[ReferendH] {
+  vassert(targetOwnership != OwnH) // must unstackify to get an owning reference
+
   override def resultType: ReferenceH[ReferendH] = {
     val location =
       (targetOwnership, local.typeH.location) match {

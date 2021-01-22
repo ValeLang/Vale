@@ -8,10 +8,10 @@ trait IExpressionPE {
 
 case class VoidPE(range: Range) extends IExpressionPE {}
 
-case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: OwnershipP) extends IExpressionPE {
+case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: LoadAsP) extends IExpressionPE {
   targetOwnership match {
-    case WeakP =>
-    case BorrowP =>
+    case LendWeakP =>
+    case LendBorrowP =>
   }
 }
 
@@ -65,14 +65,14 @@ case class FunctionCallPE(
   // If we're calling a lambda or some other callable struct,
   // the 'this' ptr parameter might want a certain ownership,
   // so the user might specify that.
-  targetOwnershipForCallable: OwnershipP
+  targetOwnershipForCallable: LoadAsP
 ) extends IExpressionPE
 
 case class MethodCallPE(
   range: Range,
   callableExpr: IExpressionPE,
   operatorRange: Range,
-  callableTargetOwnership: OwnershipP,
+  callableTargetOwnership: LoadAsP,
   isMapCall: Boolean,
   methodLookup: LookupPE,
   argExprs: List[IExpressionPE]

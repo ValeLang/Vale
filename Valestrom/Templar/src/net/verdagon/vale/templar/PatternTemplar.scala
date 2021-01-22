@@ -3,7 +3,7 @@ package net.verdagon.vale.templar;
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.CaptureP
+import net.verdagon.vale.parser.{CaptureP, MoveP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.templar.env._
@@ -149,7 +149,7 @@ class PatternTemplar(
         // This will mark the variable as moved
         val localLookupExpr =
           localHelper.softLoad(
-            fate, range, LocalLookup2(range, export, inputExpr.resultRegister.reference, Final), Own)
+            fate, range, LocalLookup2(range, export, inputExpr.resultRegister.reference, Final), UseP)
 
         expectedCoord.referend match {
           case StructRef2(_) => {
@@ -413,7 +413,6 @@ class PatternTemplar(
             .flatMap({
               case (((innerPattern, member), index)) => {
                 val memberCoord = member.tyype.expectReferenceMember().reference
-                val resultOwnership = if (memberCoord.ownership == Share) Share else Borrow
 
                 val index = structDef2.members.indexWhere(_.name == member.name)
                 val ownershipInClosureStruct = structDef2.members(index).tyype.reference.ownership
@@ -432,9 +431,8 @@ class PatternTemplar(
                       SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), structOwnership),
                       structDef2.fullName.addStep(structDef2.members(index).name),
                       memberCoord,
-                      member.variability,
-                      coerceToOwnership),
-                    resultOwnership)
+                      member.variability),
+                    coerceToOwnership)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
             })

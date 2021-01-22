@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{BorrowP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
 import net.verdagon.vale.vassert
@@ -28,10 +28,10 @@ case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpression
 case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
 
-case class LendSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: OwnershipP) extends IExpressionSE {
+case class LendSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: LoadAsP) extends IExpressionSE {
   targetOwnership match {
-    case WeakP =>
-    case BorrowP =>
+    case LendWeakP =>
+    case LendBorrowP =>
   }
 }
 
@@ -141,7 +141,7 @@ case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1
 
 case class TemplateSpecifiedLookupSE(range: RangeS, name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
 
-case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
+case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP) extends IExpressionSE
 // Loads a non-local. In well formed code, this will be a function, but the user also likely
 // tried to access a variable they forgot to declare.
 case class OutsideLoadSE(range: RangeS, name: String) extends IExpressionSE

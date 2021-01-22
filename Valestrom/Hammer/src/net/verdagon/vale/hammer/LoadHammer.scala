@@ -311,6 +311,8 @@ object LoadHammer {
     loadBoxNode
   }
 
+  // In this, we're basically taking an addressible lookup, in other words,
+  // a reference to a box.
   def translateMemberAddress(
       hinputs: Hinputs,
       hamuts: HamutsBox,
@@ -354,7 +356,10 @@ object LoadHammer {
       MemberLoadH(
         structResultLine.expectStructAccess(),
         memberIndex,
-        m.BorrowH,
+        // Boxes are either owned or borrowed. We only own boxes from locals,
+        // and we're loading from a struct here, so we're getting a borrow to the
+        // box from the struct.
+        BorrowH,
         expectedStructBoxMemberType,
         NameHammer.translateFullName(hinputs, hamuts, memberName))
 

@@ -68,7 +68,7 @@ object ExpressionScout {
                 case _ => vwat()
               }, None),
             constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), Range.zero, false, StringP(rangeAtEnd, n))),
-            BorrowP)
+            LendBorrowP)
 
         val (stackFrameAfterConstructing, NormalResult(_, constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, constructorCallP)
@@ -144,7 +144,7 @@ object ExpressionScout {
       }
       case ReturnPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
+          scoutExpressionAndCoerce(stackFrame0, innerPE, UseP)
         (stackFrame1, NormalResult(evalRange(range), ReturnSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
       case IntLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), IntLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
@@ -154,13 +154,13 @@ object ExpressionScout {
 
       case MethodCallPE(range, container, operatorRange, targetOwnership, isMapCall, memberLookup, methodArgs) => {
         val maybeLendContainer =
-          if (targetOwnership == BorrowP)
-            LendPE(Range(range.begin, range.begin), container, BorrowP)
+          if (targetOwnership == LendBorrowP)
+            LendPE(Range(range.begin, range.begin), container, LendBorrowP)
           else
             container
         // Correct method calls like anExpr.bork(4) from FunctionCall(Dot(anExpr, bork), List(4))
         // to FunctionCall(bork, List(anExpr, 4))
-        val newExprP = FunctionCallPE(range, None, operatorRange, isMapCall, memberLookup, maybeLendContainer :: methodArgs, OwnP)
+        val newExprP = FunctionCallPE(range, None, operatorRange, isMapCall, memberLookup, maybeLendContainer :: methodArgs, MoveP)
         // Try again, with this new transformed expression.
         scoutExpression(stackFrame0, newExprP)
       }
@@ -191,7 +191,7 @@ object ExpressionScout {
       }
       case DestructPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, innerPE, OwnP)
+          scoutExpressionAndCoerce(stackFrame0, innerPE, UseP)
         (stackFrame1, NormalResult(evalRange(range), DestructSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
       case LookupPE(StringP(range, templateName), Some(TemplateArgsP(_, templateArgs))) => {
@@ -299,7 +299,7 @@ object ExpressionScout {
       case let @ LetPE(range, rulesP, patternP, exprPE) => {
         val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)
         val (stackFrame1, expr1, selfUses, childUses) =
-          scoutExpressionAndCoerce(stackFrame0, exprPE, OwnP);
+          scoutExpressionAndCoerce(stackFrame0, exprPE, UseP);
 
         val letFullName = LetNameS(codeLocation)
 
@@ -337,7 +337,7 @@ object ExpressionScout {
       }
       case MutatePE(mutateRange, destinationExprPE, sourceExprPE) => {
         val (stackFrame1, sourceExpr1, sourceInnerSelfUses, sourceChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, sourceExprPE, OwnP);
+          scoutExpressionAndCoerce(stackFrame0, sourceExprPE, UseP);
         val (stackFrame2, destinationResult1, destinationSelfUses, destinationChildUses) =
           scoutExpression(stackFrame1, destinationExprPE);
         val (mutateExpr1, sourceSelfUses) =
@@ -366,16 +366,16 @@ object ExpressionScout {
           }
           case _ => {
             val (stackFrame1, containerExpr, selfUses, childUses) =
-              scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
+              scoutExpressionAndCoerce(stackFrame0, containerExprPE, LendBorrowP);
             (stackFrame1, NormalResult(evalRange(rangeP), DotSE(evalRange(rangeP), containerExpr, memberName, true)), selfUses, childUses)
           }
         }
       }
       case IndexPE(range, containerExprPE, List(indexExprPE)) => {
         val (stackFrame1, containerExpr1, containerSelfUses, containerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, containerExprPE, BorrowP);
+          scoutExpressionAndCoerce(stackFrame0, containerExprPE, LendBorrowP);
         val (stackFrame2, indexExpr1, indexSelfUses, indexChildUses) =
-          scoutExpressionAndCoerce(stackFrame1, indexExprPE, OwnP);
+          scoutExpressionAndCoerce(stackFrame1, indexExprPE, UseP);
         val dot1 = DotCallSE(evalRange(range), containerExpr1, indexExpr1)
         (stackFrame2, NormalResult(evalRange(range), dot1), containerSelfUses.thenMerge(indexSelfUses), containerChildUses.thenMerge(indexChildUses))
       }
@@ -384,7 +384,7 @@ object ExpressionScout {
 
   // If we load an immutable with targetOwnershipIfLookupResult = Own or Borrow, it will just be Share.
   def scoutExpressionAndCoerce(
-      stackFramePE: StackFrame,  exprPE: IExpressionPE, targetOwnershipIfLookupResult: OwnershipP):
+      stackFramePE: StackFrame,  exprPE: IExpressionPE, targetOwnershipIfLookupResult: LoadAsP):
   (StackFrame, IExpressionSE, VariableUses, VariableUses) = {
     val (namesFromInsideFirst, firstResult1, firstInnerSelfUses, firstChildUses) =
       scoutExpression(stackFramePE, exprPE);
@@ -393,8 +393,8 @@ object ExpressionScout {
         case LocalLookupResult(range, name) => {
           val uses =
             targetOwnershipIfLookupResult match {
-              case BorrowP => firstInnerSelfUses.markBorrowed(name)
-              case WeakP => firstInnerSelfUses.markBorrowed(name)
+              case LendBorrowP => firstInnerSelfUses.markBorrowed(name)
+              case LendWeakP => firstInnerSelfUses.markBorrowed(name)
               case _ => firstInnerSelfUses.markMoved(name)
             }
           (LocalLoadSE(range, name, targetOwnershipIfLookupResult), uses)
@@ -418,7 +418,7 @@ object ExpressionScout {
       case Nil => (stackFramePE, Nil, noVariableUses, noVariableUses)
       case firstPE :: restPE => {
         val (stackFrame1, firstExpr1, firstSelfUses, firstChildUses) =
-          scoutExpressionAndCoerce(stackFramePE, firstPE, OwnP)
+          scoutExpressionAndCoerce(stackFramePE, firstPE, UseP)
         val (finalStackFrame, rest1, restSelfUses, restChildUses) =
           scoutElementsAsExpressions(stackFrame1, restPE);
         (finalStackFrame, firstExpr1 :: rest1, firstSelfUses.thenMerge(restSelfUses), firstChildUses.thenMerge(restChildUses))

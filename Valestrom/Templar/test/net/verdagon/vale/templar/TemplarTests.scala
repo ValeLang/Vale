@@ -584,7 +584,7 @@ class TemplarTests extends FunSuite with Matchers {
     main.only({
       case ReferenceMemberLookup2(_,
         SoftLoad2(LocalLookup2(_, _, Coord(_,StructRef2(_)), Final), Borrow),
-        FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Int2()),Final, Share) =>
+        FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Int2()),Final) =>
     })
   }
 

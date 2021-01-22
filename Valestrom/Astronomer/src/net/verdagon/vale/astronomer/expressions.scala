@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{BorrowP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RangeS, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
@@ -26,10 +26,10 @@ case class ExprMutateAE(range: RangeS, mutatee: IExpressionAE, expr: IExpression
 case class GlobalMutateAE(range: RangeS, name: IImpreciseNameStepA, expr: IExpressionAE) extends IExpressionAE
 case class LocalMutateAE(range: RangeS, name: IVarNameA, expr: IExpressionAE) extends IExpressionAE
 
-case class LendAE(range: RangeS, innerExpr1: IExpressionAE, targetOwnership: OwnershipP) extends IExpressionAE {
+case class LendAE(range: RangeS, innerExpr1: IExpressionAE, targetOwnership: LoadAsP) extends IExpressionAE {
   targetOwnership match {
-    case WeakP =>
-    case BorrowP =>
+    case LendWeakP =>
+    case LendBorrowP =>
   }
 }
 case class LockWeakAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressionAE
@@ -129,7 +129,7 @@ case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1
 case class TemplateSpecifiedLookupAE(range: RangeS, name: String, templateArgs: List[ITemplexS]) extends IExpressionAE
 case class RuneLookupAE(range: RangeS, rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
 
-case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: OwnershipP) extends IExpressionAE
+case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: LoadAsP) extends IExpressionAE
 case class OutsideLoadAE(range: RangeS, name: String) extends IExpressionAE
 
 case class UnletAE(range: RangeS, name: String) extends IExpressionAE

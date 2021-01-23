@@ -36,3 +36,6 @@ unmanagedJars in Compile += (baseDirectory.value / "lib" / "scala-parser-combina
 
 (unmanagedResourceDirectories) in Compile := Seq(
     baseDirectory.value / "Samples" / "test" / "main" / "resources")
+
+assemblyJarName in assembly := "Valestrom.jar"
+assemblyOutputPath in assembly := (baseDirectory.value / "Valestrom.jar")

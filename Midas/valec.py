@@ -115,6 +115,8 @@ class ValeCompiler:
             self.valec_path = cwd / "Midas.exe"
         elif path.exists(cwd / "cmake-build-debug/valec"):
             self.valec_path = cwd / "cmake-build-debug/valec"
+        elif path.exists(cwd / "build/valec"):
+            self.valec_path = cwd / "build/valec"
         elif path.exists(cwd / "x64/Debug/Midas.exe"):
             self.valec_path = cwd / "x64/Debug/Midas.exe"
         elif path.exists(cwd / "x64/Release/Midas.exe"):

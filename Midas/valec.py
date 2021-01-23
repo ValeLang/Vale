@@ -86,6 +86,8 @@ class ValeCompiler:
             self.valestrom_path = cwd
         elif path.exists(cwd / "test/Valestrom.jar"):
             self.valestrom_path = cwd / "test"
+        elif path.exists(cwd / "../Valestrom/Valestrom.jar"):
+            self.valestrom_path = cwd / "../Valestrom/Valestrom.jar"
         elif path.exists(cwd / "../Valestrom/out/artifacts/Valestrom_jar/Valestrom.jar"):
             self.valestrom_path = cwd / "../Valestrom/out/artifacts/Valestrom_jar"
         else:

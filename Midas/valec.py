@@ -69,7 +69,7 @@ class ValeCompiler:
                 args.append("-I" + str(include_path))
             return procrun(args)
         else:
-            args = ["clang", "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
+            args = ["clang-ll", "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)

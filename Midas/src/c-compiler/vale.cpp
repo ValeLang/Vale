@@ -354,12 +354,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   globalState->numMainArgs =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__main_num_args");
+  LLVMSetLinkage(globalState->numMainArgs, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->numMainArgs, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   auto mainArgsLT =
       LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), 0);
   globalState->mainArgs =
       LLVMAddGlobal(globalState->mod, mainArgsLT, "__main_args");
+  LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->mainArgs, LLVMConstNull(mainArgsLT));
 
   globalState->liveHeapObjCounter =

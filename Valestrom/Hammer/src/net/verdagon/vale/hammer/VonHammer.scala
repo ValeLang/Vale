@@ -729,13 +729,14 @@ object VonHammer {
   }
 
   def vonifyVariableId(id: VariableIdH): IVonData = {
-    val VariableIdH(number, maybeName) = id
+    val VariableIdH(number, height, maybeName) = id
 
     VonObject(
       "VariableId",
       None,
       Vector(
         VonMember("number", VonInt(number)),
+        VonMember("height", VonInt(number)),
         VonMember(
           "optName",
           vonifyOptional[FullNameH](maybeName, x => VonStr(x.toReadableString())))))

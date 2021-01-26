@@ -120,6 +120,10 @@ class ValeCompiler:
             self.valec_path = cwd / "build/valec"
         elif path.exists(cwd / "build/valec.exe"):
             self.valec_path = cwd / "build/valec.exe"
+        elif path.exists(cwd / "build/Debug/valec.exe"):
+            self.valec_path = cwd / "build/Debug/valec.exe"
+        elif path.exists(cwd / "build/Release/valec.exe"):
+            self.valec_path = cwd / "build/Release/valec.exe"
         elif path.exists(cwd / "x64/Debug/valec.exe"):
             self.valec_path = cwd / "x64/Debug/valec.exe"
         elif path.exists(cwd / "x64/Release/valec.exe"):

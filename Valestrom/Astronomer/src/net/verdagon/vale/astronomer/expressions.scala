@@ -1,10 +1,10 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RangeS, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vpass, vwat}
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
@@ -30,6 +30,7 @@ case class LendAE(range: RangeS, innerExpr1: IExpressionAE, targetOwnership: Loa
   targetOwnership match {
     case LendWeakP =>
     case LendBorrowP =>
+    case MoveP =>
   }
 }
 case class LockWeakAE(range: RangeS, innerExpr1: IExpressionAE) extends IExpressionAE
@@ -126,11 +127,13 @@ case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1
 
 //case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0
 
-case class TemplateSpecifiedLookupAE(range: RangeS, name: String, templateArgs: List[ITemplexS]) extends IExpressionAE
+case class TemplateSpecifiedLookupAE(range: RangeS, name: String, templateArgs: List[ITemplexS], targetOwnership: LoadAsP) extends IExpressionAE
 case class RuneLookupAE(range: RangeS, rune: IRuneA, tyype: ITemplataType) extends IExpressionAE
 
 case class LocalLoadAE(range: RangeS, name: IVarNameA, targetOwnership: LoadAsP) extends IExpressionAE
-case class OutsideLoadAE(range: RangeS, name: String) extends IExpressionAE
+case class OutsideLoadAE(range: RangeS, name: String, targetOwnership: LoadAsP) extends IExpressionAE {
+  vpass()
+}
 
 case class UnletAE(range: RangeS, name: String) extends IExpressionAE
 

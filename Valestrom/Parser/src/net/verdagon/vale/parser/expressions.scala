@@ -70,9 +70,9 @@ case class FunctionCallPE(
 
 case class MethodCallPE(
   range: Range,
-  callableExpr: IExpressionPE,
+  subjectExpr: IExpressionPE,
   operatorRange: Range,
-  callableTargetOwnership: LoadAsP,
+  subjectTargetOwnership: LoadAsP,
   isMapCall: Boolean,
   methodLookup: LookupPE,
   argExprs: List[IExpressionPE]

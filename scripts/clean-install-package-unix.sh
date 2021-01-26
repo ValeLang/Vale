@@ -39,7 +39,7 @@ cd build
 make
 cd ..
 
-python3 -m unittest -f
+python3 -m unittest -f -k assist
 
 cd ../scripts
 ./package-unix.sh

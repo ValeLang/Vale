@@ -1,7 +1,7 @@
 if exist "..\release-windows" rmdir /S /Q "..\release-windows"
 mkdir "..\release-windows"
 mkdir "..\release-windows\samples"
-copy ..\Valestrom.jar ..\release-windows\Valestrom.jar
+copy ..\Valestrom\Valestrom.jar ..\release-windows\Valestrom.jar
 
 echo d | xcopy /s /e /y ..\Valestrom\Samples\test\main\resources\programs ..\release-windows\samples
 echo d | xcopy /s /e /y ..\Valestrom\Samples\test\main\resources\libraries ..\release-windows\samples\libraries

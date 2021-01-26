@@ -48,6 +48,15 @@ object Conversions {
     }
   }
 
+  def evaluateMaybeOwnership(maybeOwnership: Option[OwnershipP]): Option[Ownership] = {
+    maybeOwnership.map({
+      case OwnP => Own
+      case BorrowP => Borrow
+      case WeakP => Weak
+      case ShareP => Share
+    })
+  }
+
   def evaluateRefCountCategory(refCountCategory: s.RefCountCategory): t.RefCountCategory = {
     refCountCategory match {
       case s.MemberRefCount => t.MemberRefCount

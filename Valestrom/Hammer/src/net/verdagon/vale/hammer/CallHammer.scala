@@ -207,11 +207,13 @@ object CallHammer {
     val (thenBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, thenLocals, thenBlock2);
     val thenResultCoord = thenBlockH.resultType
+    parentLocals.setNextLocalIdNumber(thenLocals.nextLocalIdNumber)
 
     val elseLocals = LocalsBox(parentLocals.snapshot)
     val (elseBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, elseLocals, elseBlock2);
     val elseResultCoord = elseBlockH.resultType
+    parentLocals.setNextLocalIdNumber(elseLocals.nextLocalIdNumber)
 
     val commonSupertypeH =
       TypeHammer.translateReference(hinputs, hamuts, if2.resultRegister.reference)

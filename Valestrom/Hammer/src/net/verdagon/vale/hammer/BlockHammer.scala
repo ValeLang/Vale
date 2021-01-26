@@ -57,6 +57,7 @@ object BlockHammer {
         // ...which were unstackified by the block.
         .intersect(blockLocals.unstackifiedVars)
     unstackifiedLocalsFromParent.foreach(parentLocals.markUnstackified)
+    parentLocals.setNextLocalIdNumber(blockLocals.nextLocalIdNumber)
 
     val resultType = exprH.resultType
 //    start here, we're returning locals and thats not optimal

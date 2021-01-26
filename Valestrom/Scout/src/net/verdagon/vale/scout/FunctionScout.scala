@@ -507,9 +507,19 @@ object FunctionScout {
         attrsP,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
-        paramsP,
+        maybeParamsP,
         FunctionReturnP(retRange, maybeInferRet, maybeRetType)),
       None) = functionP;
+
+    maybeParamsP match {
+      case None =>
+      case Some(paramsP) => {
+        if (!paramsP.patterns.exists(_.virtuality == Some(AbstractP))) {
+          throw CompileErrorExceptionS(InterfaceMethodNeedsSelf(Scout.evalRange(interfaceEnv.file, range)))
+        }
+      }
+    }
+
     val codeLocation = Scout.evalPos(interfaceEnv.file, range.begin)
     val funcName = FunctionNameS(codeName, codeLocation)
     val userSpecifiedIdentifyingRunes: List[IRuneS] =
@@ -522,16 +532,23 @@ object FunctionScout {
 
     val userRulesS = RuleScout.translateRulexes(interfaceEnv, rate, interfaceEnv.allUserDeclaredRunes(), templateRulesP.toList.flatMap(_.rules))
 
-    val functionEnv = FunctionEnvironment(interfaceEnv.file, funcName, Some(interfaceEnv), userSpecifiedIdentifyingRunes.toSet, paramsP.size)
+    val functionEnv = FunctionEnvironment(interfaceEnv.file, funcName, Some(interfaceEnv), userSpecifiedIdentifyingRunes.toSet, maybeParamsP.size)
     val myStackFrame = StackFrame(interfaceEnv.file, funcName, functionEnv, None, noDeclarations)
     val (implicitRulesFromParams, patternsS) =
-      PatternScout.scoutPatterns(myStackFrame, rate, paramsP.toList.flatMap(_.patterns))
+      PatternScout.scoutPatterns(myStackFrame, rate, maybeParamsP.toList.flatMap(_.patterns))
 
     val paramsS = patternsS.map(ParameterS)
 
     val (implicitRulesFromRet, maybeReturnRune) =
       (maybeInferRet, maybeRetType) match {
-        case (_, None) => {
+        case (None, None) => {
+          // If nothing's present, assume void
+          val rangeS = Scout.evalRange(myStackFrame.file, retRange)
+          val rune = rate.newImplicitRune()
+          val rule = EqualsSR(rangeS, TemplexSR(NameST(rangeS, CodeTypeNameS("void"))), TypedSR(rangeS, rune, CoordTypeSR))
+          (List(rule), Some(rune))
+        }
+        case (Some(_), None) => {
           throw CompileErrorExceptionS(RangedInternalErrorS(Scout.evalRange(myStackFrame.file, range), "Can't infer the return type of an interface method!"))
         }
         case (None, Some(retTypePT)) => {

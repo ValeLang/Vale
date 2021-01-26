@@ -240,4 +240,41 @@ class WeakTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
+  test("Weak yonder member") {
+    val compile = Compilation.multiple(
+      List(
+        Samples.get("libraries/opt.vale"),
+        Samples.get("builtins/printutils.vale"),
+        Samples.get("builtins/castutils.vale"),
+        """
+          |struct Base {
+          |  hp int;
+          |}
+          |struct Spaceship {
+          |  origin &&Base;
+          |}
+          |fn main() int export {
+          |  base = Base(73);
+          |  ship = Spaceship(&&base);
+          |
+          |  base^.drop(); // Destroys base.
+          |
+          |  maybeOrigin = lock(ship.origin); «14»«15»
+          |  if (not maybeOrigin.isEmpty()) { «16»
+          |    o = maybeOrigin.get();
+          |    ret o.hp;
+          |  } else {
+          |    ret 42;
+          |  }
+          |}
+          |""".stripMargin))
+
+    val main = compile.getTemputs().lookupFunction("main")
+
+    val hamuts = compile.getHamuts()
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+
 }

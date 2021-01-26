@@ -112,16 +112,18 @@ class ValeCompiler:
             self.valec_path = PurePath(shutil.which("valec"))
         elif path.exists(cwd / "valec"):
             self.valec_path = cwd / "valec"
-        elif path.exists(cwd / "Midas.exe"):
-            self.valec_path = cwd / "Midas.exe"
+        elif path.exists(cwd / "valec.exe"):
+            self.valec_path = cwd / "valec.exe"
         elif path.exists(cwd / "cmake-build-debug/valec"):
             self.valec_path = cwd / "cmake-build-debug/valec"
         elif path.exists(cwd / "build/valec"):
             self.valec_path = cwd / "build/valec"
-        elif path.exists(cwd / "x64/Debug/Midas.exe"):
-            self.valec_path = cwd / "x64/Debug/Midas.exe"
-        elif path.exists(cwd / "x64/Release/Midas.exe"):
-            self.valec_path = cwd / "x64/Release/Midas.exe"
+        elif path.exists(cwd / "build/valec.exe"):
+            self.valec_path = cwd / "build/valec.exe"
+        elif path.exists(cwd / "x64/Debug/valec.exe"):
+            self.valec_path = cwd / "x64/Debug/valec.exe"
+        elif path.exists(cwd / "x64/Release/valec.exe"):
+            self.valec_path = cwd / "x64/Release/valec.exe"
         else:
             print("No VALEC_PATH in env, and couldn't find one nearby, aborting!", file=sys.stderr)
             sys.exit(1)

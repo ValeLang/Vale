@@ -1,5 +1,6 @@
 import unittest
 import subprocess
+import platform
 import os.path
 import os
 import sys
@@ -25,8 +26,9 @@ class ValeTest(unittest.TestCase):
               exe_name: str,
               region_override: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
+        python = "python" if self.windows else "python3"
         return procrun(
-            ["python3",
+            [python,
              f"{self.GENPATH}/valec.py",
              "build",
              "--verify",
@@ -53,6 +55,7 @@ class ValeTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.GENPATH: str = type(self).GENPATH
+        self.windows = platform.system() == 'Windows'
 
     def compile_and_execute(
             self, in_filepaths: List[str], region_override: str) -> subprocess.CompletedProcess:

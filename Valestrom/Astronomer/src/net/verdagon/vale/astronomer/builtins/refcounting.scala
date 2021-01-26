@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, OwnP, ShareP, UseP}
+import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, LendBorrowP, OwnP, ShareP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
@@ -43,7 +43,7 @@ object RefCounting {
                 FunctionCallAE(
                   RangeS.internal(-42),
                   // We add 1 because that "obj" is also a borrow ref
-                  OutsideLoadAE(RangeS.internal(-38),"+"),
+                  OutsideLoadAE(RangeS.internal(-38),"+", LendBorrowP),
                   List(
                     LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP),
                     IntLiteralAE(RangeS.internal(-35), 1)))),

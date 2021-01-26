@@ -11,5 +11,5 @@ echo d | xcopy /s /e /y ..\Midas\vstl ..\release-windows\vstl
 copy ..\Midas\valec.py ..\release-windows\valec.py
 copy releaseREADME.txt ..\release-windows\README.txt
 copy valec-help* ..\release-windows
-copy ..\Midas\x64\Release\Midas.exe ..\release-windows\Midas.exe
-copy ..\Midas\x64\Release\LLVM-C.dll ..\release-windows\LLVM-C.dll
+copy ..\Midas\build\Debug\valec.exe ..\release-windows\valec.exe
+copy ..\Midas\LLVM-C.dll ..\release-windows\LLVM-C.dll

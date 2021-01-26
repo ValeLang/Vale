@@ -54,6 +54,7 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Array list with optionals") {
     val compile = Compilation(
       Samples.get("libraries/utils.vale") +
+      Samples.get("builtins/strings.vale") +
       Samples.get("libraries/castutils.vale") +
       Samples.get("libraries/printutils.vale") +
       Samples.get("libraries/opt.vale") +
@@ -83,6 +84,7 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Array list zero-constructor") {
     val compile = Compilation(
       Samples.get("libraries/utils.vale") +
+      Samples.get("builtins/strings.vale") +
         Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
       Samples.get("libraries/opt.vale") +
@@ -106,6 +108,10 @@ class ArrayListTest extends FunSuite with Matchers {
       List(
         Samples.get("libraries/opt.vale"),
         Samples.get("libraries/list.vale"),
+        Samples.get("libraries/utils.vale"),
+        Samples.get("libraries/printutils.vale"),
+        Samples.get("libraries/castutils.vale"),
+        Samples.get("builtins/strings.vale"),
         """
           |
           |fn main() int export {
@@ -123,6 +129,7 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Array list set") {
     val compile = Compilation(
       Samples.get("libraries/utils.vale") +
+      Samples.get("builtins/strings.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("libraries/castutils.vale") +
       Samples.get("libraries/opt.vale") +
@@ -145,6 +152,7 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Array list with optionals with mutable element") {
     val compile = Compilation(
       Samples.get("libraries/utils.vale") +
+      Samples.get("builtins/strings.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("libraries/castutils.vale") +
       Samples.get("libraries/opt.vale") +
@@ -222,6 +230,7 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Remove from middle") {
     val compile = Compilation(
       Samples.get("libraries/utils.vale") +
+      Samples.get("builtins/strings.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/opt.vale") +
@@ -253,6 +262,7 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Remove from beginning") {
     val compile = Compilation(
       Samples.get("libraries/utils.vale") +
+      Samples.get("builtins/strings.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/opt.vale") +

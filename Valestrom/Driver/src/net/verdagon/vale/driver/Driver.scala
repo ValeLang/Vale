@@ -91,7 +91,17 @@ object Driver {
 
   def build(opts: Options, sources: List[String]): Result[Option[ProgramH], String] = {
     vassert(opts.inputFiles.size == sources.size)
-    val filepathsAndSources = opts.inputFiles.zip(sources) :+ ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
+    val filepathsAndSources =
+        opts.inputFiles.zip(sources) ++
+          List(
+            ("builtins/arrayutils.vale", Samples.get("builtins/arrayutils.vale")),
+            ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale")),
+            ("builtins/castutils.vale", Samples.get("builtins/castutils.vale")),
+            ("builtins/file.vale", Samples.get("builtins/file.vale")),
+            ("builtins/opt.vale", Samples.get("builtins/opt.vale")),
+            ("builtins/printutils.vale", Samples.get("builtins/printutils.vale")),
+            ("builtins/strings.vale", Samples.get("builtins/strings.vale")),
+            ("builtins/utils.vale", Samples.get("builtins/utils.vale")))
 
     val debugOut =
       if (opts.verbose) {
@@ -218,10 +228,10 @@ object Driver {
       val opts = parseOpts(Options(List(), None, None, None, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputFiles.nonEmpty, "No input files!", InputException)
-      vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
 
       opts.mode.get match {
         case "highlight" => {
+          vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
           vcheck(opts.inputFiles.size == 1, "Must have exactly 1 input file for highlighting", InputException)
           val code = readCode(opts.inputFiles.head)
           val (parsed, commentRanges) =
@@ -245,6 +255,7 @@ object Driver {
           }
         }
         case "build" => {
+          vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
           buildAndOutput(opts)
         }
         case "run" => {
@@ -289,10 +300,6 @@ object Driver {
             }
           println("Program result: " + result)
           println()
-          val programV = VonHammer.vonifyProgram(program)
-          val json = new VonPrinter(JsonSyntax, 120).print(programV)
-          println("Writing to file " + opts.outputVirFilepath.get)
-          writeFile(opts.outputVirFilepath.get, json)
         }
       }
     } catch {

@@ -2,64 +2,29 @@
 
 Compiler for the Vale programming language.
 
+
 ## Vale
 
-Vale is the fast, safe, and easy programming language. It uses single ownership with constraint references for memory safety without garbage collection, and an emphasis on modern, readable syntax.
+Vale is the fast, fearless, and flexible programming language. It aims to be as fast as Rust, while being as easy as Java, as safe as Javascript.
 
 See http://vale.dev/ for samples and more information on the language!
 
+
 ## Building and Running
 
-These are the instructions for building the compiler itself.
+For instructions for building the compiler itself, see:
 
-If you just want to build and run Vale programs, go to the [downloads](https://vale.dev/downloads) page instead.
+ * [Building the Vale Compiler (Linux)](build-linux.md)
+ * [Building the Vale Compiler (Mac)](build-mac.md)
+ * [Building the Vale Compiler (Windows)](build-windows.md)
 
-### Linux and OSX
 
-1: Download LLVM 11 from their [releases page](https://releases.llvm.org/download.html).
+If you just want to build and run Vale programs, go to the [download](https://vale.dev/download) page instead.
 
-2: Unzip it into any directory, for example `~/llvm11`.
 
-3: Set LDFLAGS, CPPFLAGS, PATH env vars:
+## Guide
 
-```
-$ export LDFLAGS="-L~/llvm11/lib -Wl,-rpath,~/llvm11/lib"
-$ export CPPFLAGS="-I~/llvm11/include"
-$ export PATH=~/llvm11/bin:$PATH
-```
-
-4: Change directory:
-
-```
-$ cd Midas
-```
-
-5: Generate the build files, and use it to build Midas:
-
-```
-$ cmake -B cmake-build-debug
-$ cd cmake-build-debug
-$ make
-```
-
-6: Run tests:
-
-```
-$ cd ../test
-$ python3 -m unittest -f
-```
-
-5. Run compiler:
-
-```
-$ python3 valec.py test/tests/roguelike.vale
-```
-
-### Windows
-
-We recommend using Mac or Linux instead, because they don't require building all of LLVM.
-
-Compiling on Windows is quite involved, come by the discord and we can walk you through it.
+See [the Guide](https://vale.dev/guide/introduction) for how to use Vale.
 
 
 # Notes

@@ -214,4 +214,16 @@ class ClosureTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
+  test("Read from inside a closure inside a closure") {
+    val compile = Compilation(
+      """
+        |fn main() int {
+        |  x = 42;
+        |  = { { x }() }();
+        |}
+        |""".stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
 }

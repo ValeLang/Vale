@@ -91,7 +91,7 @@ public:
         continue;
       // localId came from the child block. Make sure the child unstackified it.
       if (unstackifiedLocalIds.count(localId) == 0) {
-        std::cerr << "Un-unstackified local: " << localId->number
+        std::cerr << "Un-unstackified local: " << localId->height
             << localId->maybeName << std::endl;
         assert(false);
       }

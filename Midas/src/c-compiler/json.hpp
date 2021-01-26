@@ -20298,6 +20298,7 @@ namespace nlohmann
       if (JSON_HEDLEY_LIKELY(is_object()))
       {
         if (m_value.object->find(key) == m_value.object->end()) {
+          std::cerr << "Couldn't find key: " << key << std::endl;
           JSON_ASSERT(m_value.object->find(key) != m_value.object->end());
         }
         return m_value.object->find(key)->second;

@@ -19,3 +19,9 @@ void __vprintBool(int8_t x) {
     printf("false");
   }
 }
+
+int64_t stdinReadInt() {
+  int64_t x = 0;
+  scanf("%ld", &x);
+  return x;
+}

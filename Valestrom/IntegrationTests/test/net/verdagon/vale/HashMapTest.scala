@@ -9,37 +9,41 @@ import net.verdagon.vale.driver.Compilation
 
 class HashMapTest extends FunSuite with Matchers {
   test("Hash map update") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
-          |fn main() int export {
-          |  m = HashMap<int, int>({_}, ==);
-          |  m.add(0, 100);
-          |  m.add(4, 101);
-          |  m.add(8, 102);
-          |  m.add(12, 103);
-          |  m.update(8, 108);
-          |  = m.get(8).get();
-          |}
-      """.stripMargin)
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
+              |fn main() int export {
+              |  m = HashMap<int, int>({_}, ==);
+              |  m.add(0, 100);
+              |  m.add(4, 101);
+              |  m.add(8, 102);
+              |  m.add(12, 103);
+              |  m.update(8, 108);
+              |  = m.get(8).get();
+              |}
+              |""".stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(108)
   }
 
   test("Hash map collisions") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-      Samples.get("libraries/opt.vale") +
-      Samples.get("libraries/list.vale") +
-      Samples.get("libraries/hashmap.vale") +
-      Samples.get("libraries/utils.vale") +
-      """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
         |fn main() int export {
         |  m = HashMap<int, int>({_}, ==);
         |  m.add(0, 100);
@@ -69,20 +73,22 @@ class HashMapTest extends FunSuite with Matchers {
         |  vassert(m.get(1337).isEmpty(), "expected nothing at 1337!");
         |  = m.get(44).get();
         |}
-      """.stripMargin)
+      """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(111)
   }
 
   test("Hash map with functors") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-      Samples.get("libraries/opt.vale") +
-      Samples.get("libraries/list.vale") +
-      Samples.get("libraries/hashmap.vale") +
-      Samples.get("libraries/utils.vale") +
-      """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
         |fn add42(map &HashMap<int, int, IntHasher, IntEquator>) {
         |  map.add(42, 100);
         |}
@@ -92,21 +98,22 @@ class HashMapTest extends FunSuite with Matchers {
         |  add42(&m);
         |  = m.get(42).get();
         |}
-      """.stripMargin)
+      """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(100)
   }
 
   test("Hash map with struct as key") {
-    val compile = Compilation.multiple(
+    val compile = new Compilation(
       List(
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/opt.vale") +
-          Samples.get("libraries/list.vale") +
-          Samples.get("libraries/hashmap.vale") +
-          Samples.get("libraries/utils.vale"),
-        """
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |struct Location imm {
           |  groupX int;
           |  groupY int;
@@ -132,20 +139,22 @@ class HashMapTest extends FunSuite with Matchers {
           |  m.add(Location(4, 5, 6), 100);
           |  = m.get(Location(4, 5, 6)).get();
           |}
-        """.stripMargin))
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(100)
   }
 
   test("Hash map has") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-      Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |fn main() int export {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 100);
@@ -161,20 +170,22 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(12));
           |  = 111;
           |}
-        """.stripMargin)
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(111)
   }
 
   test("Hash map keys") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-      Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |fn main() int export {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 100);
@@ -189,20 +200,22 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[3], 12);
           |  = 1337;
           |}
-        """.stripMargin)
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map values") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |fn main() int export {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 100);
@@ -217,20 +230,22 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[3], 103);
           |  = 1337;
           |}
-        """.stripMargin)
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map with mutable values") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-      Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |struct Plane {}
           |
           |fn main() int export {
@@ -247,20 +262,22 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(not m.has(12));
           |  = 1337;
           |}
-        """.stripMargin)
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map remove") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-      Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |fn main() int export {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 100);
@@ -277,20 +294,22 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(not m.has(4));
           |  = 1337;
           |}
-        """.stripMargin)
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map remove 2") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/opt.vale") +
-        Samples.get("libraries/list.vale") +
-        Samples.get("libraries/hashmap.vale") +
-        Samples.get("libraries/utils.vale") +
-        """
+    val compile = new Compilation(
+      List(
+        ("libraries/castutils.vale" -> Samples.get("libraries/castutils.vale")),
+        ("libraries/printutils.vale" -> Samples.get("libraries/printutils.vale")),
+        ("builtins/strings.vale" -> Samples.get("builtins/strings.vale")),
+        ("libraries/opt.vale" -> Samples.get("libraries/opt.vale")),
+        ("libraries/list.vale" -> Samples.get("libraries/list.vale")),
+        ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
+        ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
+        ("in.vale" -> """
           |fn main() int export {
           |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
           |  m.add(0, 0);
@@ -308,7 +327,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(values[2], 4, "wat");
           |  = 1337;
           |}
-        """.stripMargin)
+        """.stripMargin)))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }

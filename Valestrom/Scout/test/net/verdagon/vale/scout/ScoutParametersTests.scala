@@ -38,39 +38,25 @@ class ScoutParametersTests extends FunSuite with Matchers {
     val main = program1.lookupFunction("main")
     val List(param) = main.params
 
-    val tCoordRune =
+    val tCoordRuneFromParams =
       param match {
         case ParameterS(
           AtomSP(_,
             CaptureS(CodeVarNameS("moo"),FinalP),
             None,
-            tcr @ ImplicitRuneS(_, 1),
+            tcr @ ImplicitRuneS(_,_),
             None)) => tcr
       }
 
-    main.templateRules match {
-      case List(
-        TypedSR(_, ImplicitRuneS(_, 0),KindTypeSR),
-        TypedSR(_, CodeRuneS("T"),CoordTypeSR),
-        TypedSR(_, ImplicitRuneS(_, 1),CoordTypeSR),
-        ComponentsSR(_,
-          TypedSR(_, CodeRuneS("T"),CoordTypeSR),
-          List(
-            TemplexSR(OwnershipST(_, OwnP)),
-            TemplexSR(RuneST(_, ImplicitRuneS(_, 0))))),
-        ComponentsSR(_,
-          TypedSR(_, ImplicitRuneS(_, 1),CoordTypeSR),
-          List(
-            TemplexSR(OwnershipST(_, BorrowP)),
-            TemplexSR(RuneST(_, ImplicitRuneS(_, 0)))))) =>
-    }
+    val tCoordRuneFromRules =
+      main.templateRules match {
+        case List(
+          EqualsSR(_,
+            TypedSR(_,tcr @ ImplicitRuneS(_,_),CoordTypeSR),
+            TemplexSR(OwnershippedST(_,BorrowP,RuneST(_,CodeRuneS("T")))))) => tcr
+      }
 
-    RuleSUtils.getDistinctOrderedRunesForRulexes(main.templateRules) match {
-      case List(
-        ImplicitRuneS(_, 0),
-          CodeRuneS("T"),
-          ImplicitRuneS(_, 1)) =>
-    }
+    tCoordRuneFromParams shouldEqual tCoordRuneFromRules
   }
 
   test("Anonymous typed param") {

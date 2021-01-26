@@ -53,6 +53,13 @@ fn each<E, F>(list &List<E>, func F) void {
   }
 }
 
+fn map<E, F>(list &List<E>, func F) List<T>
+rules(T Ref, Prot("__call", (&F, E), T)) {
+  result = List<T>();
+  list.each({ result.add((func)(_)); });
+  ret result;
+}
+
 fn contains<E>(list &List<E>, element E) bool {
   i! = 0;
   l = len(&list);
@@ -102,7 +109,9 @@ fn split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
   while (true) {
     maybeFirstAndRest = haystack.splitOnce(needle);
     if (maybeFirstAndRest.isEmpty()) {
-      result.add(haystack);
+      if (haystack.len() > 0) {
+        result.add(haystack);
+      }
       ret result;
     }
     (first, rest) = maybeFirstAndRest.get();
@@ -111,4 +120,11 @@ fn split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
   }
 
   panic("unreachable");
+}
+
+
+fn join(list &List<str>) str {
+  combined! = "";
+  list.each({ mut combined = combined + _; });
+  ret combined;
 }

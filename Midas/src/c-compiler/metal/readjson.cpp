@@ -217,6 +217,7 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
   assert(variable["__type"] == "VariableId");
 
   int number = variable["number"];
+  int height = variable["height"];
   std::string maybeName;
   if (variable["optName"]["__type"] == "Some") {
     maybeName = variable["optName"]["value"];
@@ -225,7 +226,7 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
   return makeIfNotPresent(
       &cache->variableIds[number],
       maybeName,
-      [&](){ return new VariableId(number, maybeName); });
+      [&](){ return new VariableId(number, height, maybeName); });
 }
 
 Local* readLocal(MetalCache* cache, const json& local) {

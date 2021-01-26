@@ -700,12 +700,15 @@ public:
 class VariableId {
 public:
     int number;
+    int height;
     std::string maybeName;
 
     VariableId(
         int number_,
+        int height_,
     std::string maybeName_) :
     number(number_),
+    height(height_),
     maybeName(maybeName_) {}
 };
 

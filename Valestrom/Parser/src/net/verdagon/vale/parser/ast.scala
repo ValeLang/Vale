@@ -132,6 +132,20 @@ case object BorrowP extends OwnershipP
 case object WeakP extends OwnershipP
 case object ShareP extends OwnershipP
 
+// This represents how to load something.
+// If something's a Share, then nothing will happen,
+// so this only applies to mutables.
+sealed trait LoadAsP
+// This means we want to move it. Thisll become a OwnP or ShareP.
+case object MoveP extends LoadAsP
+// This means we want to use it, but don't want to own it. This will
+// probably become a BorrowP or ShareP.
+case object LendBorrowP extends LoadAsP
+// This means we want to get a weak reference to it. Thisll become a WeakP.
+case object LendWeakP extends LoadAsP
+// This represents unspecified. It basically means, use whatever ownership already there.
+case object UseP extends LoadAsP
+
 sealed trait PermissionP
 case object ReadonlyP extends PermissionP
 case object ReadwriteP extends PermissionP

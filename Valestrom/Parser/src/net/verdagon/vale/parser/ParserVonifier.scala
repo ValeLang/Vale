@@ -645,6 +645,14 @@ object ParserVonifier {
     }
   }
 
+  def vonifyLoadAs(thing: LoadAsP): VonObject = {
+    thing match {
+      case MoveP => VonObject("Own", None, Vector())
+      case LendBorrowP => VonObject("LendConstraint", None, Vector())
+      case LendWeakP => VonObject("LendWeak", None, Vector())
+    }
+  }
+
   def vonifyBlock(thing: BlockPE): VonObject = {
     val BlockPE(range, elements) = thing
     VonObject(
@@ -695,7 +703,7 @@ object ParserVonifier {
             VonMember("isMapCall", VonBool(isMapCall)),
             VonMember("callableExpr", vonifyExpression(callableExpr)),
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
-            VonMember("callableTargetOwnership", vonifyOwnership(callableTargetOwnership))))
+            VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
       }
       case IfPE(range, condition, thenBody, elseBody) => {
         VonObject(
@@ -731,7 +739,7 @@ object ParserVonifier {
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("inner", vonifyExpression(inner)),
-            VonMember("targetOwnership", vonifyOwnership(targetOwnership))))
+            VonMember("targetOwnership", vonifyLoadAs(targetOwnership))))
       }
       case LetPE(range, templateRules, pattern, source) => {
         VonObject(
@@ -762,7 +770,7 @@ object ParserVonifier {
             VonMember("callableExpr", vonifyExpression(callableExpr)),
             VonMember("method", vonifyExpression(methodLookup)),
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
-            VonMember("callableTargetOwnership", vonifyOwnership(callableTargetOwnership))))
+            VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
       }
       case MutatePE(range, mutatee, expr) => {
         VonObject(

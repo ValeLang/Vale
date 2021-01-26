@@ -25,6 +25,7 @@ case class CantMutateFinalMember(range: RangeS, structRef2: StructRef2, memberNa
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT
 case class IfConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class WhileConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
+case class CantMoveFromGlobal(range: RangeS, name: String) extends ICompileErrorT
 case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT
 case class CantImplStruct(range: RangeS, parent: StructRef2) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test

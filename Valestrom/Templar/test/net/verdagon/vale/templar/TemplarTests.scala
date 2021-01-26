@@ -165,6 +165,24 @@ class TemplarTests extends FunSuite with Matchers {
     })
   }
 
+  test("Constraint reference") {
+    val compile = TemplarCompilation(
+      """
+        |struct Moo {}
+        |fn main() void export {
+        |  m = Moo();
+        |  b = &m;
+        |}
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+    val main = temputs.lookupFunction("main")
+    val tyype =
+      main.body.only({
+        case LetNormal2(ReferenceLocalVariable2(FullName2(_, CodeVarName2("b")), _, tyype), _) => tyype
+      })
+    tyype.ownership shouldEqual Borrow
+  }
+
   test("Recursion") {
     val compile = TemplarCompilation("fn main() int export{main()}")
     val temputs = compile.getTemputs()

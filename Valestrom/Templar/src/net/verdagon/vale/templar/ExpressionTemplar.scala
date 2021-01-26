@@ -351,7 +351,8 @@ class ExpressionTemplar(
           val CoordTemplata(paramCoord) = paramCoordTemplata
           (ArgLookup2(index, paramCoord), Set())
         }
-        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS), argsExprs1) => {
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -364,14 +365,30 @@ class ExpressionTemplar(
               argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS), argsExprs1) => {
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
+          val (argsExprs2, returnsFromArgs) =
+            evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
+          val callExpr2 =
+            callTemplar.evaluatePrefixCall(
+              temputs,
+              fate,
+              range,
+              newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name)),
+              templateArgTemplexesS,
+              argsExprs2)
+          (callExpr2, returnsFromArgs)
+        }
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
             callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), templateArgTemplexesS, argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallAE(range, OutsideLoadAE(_, name), argsPackExpr1) => {
+        case FunctionCallAE(range, OutsideLoadAE(_, name, callableTargetOwnership), argsPackExpr1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
@@ -399,7 +416,10 @@ class ExpressionTemplar(
             innerExpr2.resultRegister.underlyingReference.ownership match {
               case Own => {
                 loadAsP match {
-                  case MoveP => vcurious() // Can we even coerce to an owning reference?
+                  case MoveP => {
+                    // this can happen if we put a ^ on an owning reference. No harm, let it go.
+                    innerExpr2
+                  }
                   case LendBorrowP => localHelper.makeTemporaryLocal(temputs, fate, innerExpr2)
                   case LendWeakP => weakAlias(temputs, localHelper.makeTemporaryLocal(temputs, fate, innerExpr2))
                   case UseP => vcurious()
@@ -491,7 +511,7 @@ class ExpressionTemplar(
             }
           (lookupExpr1, Set())
         }
-        case OutsideLoadAE(range, name) => {
+        case OutsideLoadAE(range, name, targetOwnership) => {
           // Note, we don't get here if we're about to call something with this, that's handled
           // by a different case.
 
@@ -503,6 +523,9 @@ class ExpressionTemplar(
               case List(BooleanTemplata(value)) => BoolLiteral2(value)
               case List(IntegerTemplata(value)) => IntLiteral2(value)
               case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplata(_, _) => case ExternFunctionTemplata(_) => }).size == templatas.size => {
+                if (targetOwnership == MoveP) {
+                  throw CompileErrorExceptionT(CantMoveFromGlobal(range, "Can't move from globals. Name: " + name))
+                }
                 newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name))
               }
               case things if things.size > 1 => {
@@ -576,7 +599,7 @@ class ExpressionTemplar(
             evaluateAndCoerceToReferenceExpression(temputs, fate, numExpr1);
           (CheckRefCount2(refExpr2, Conversions.evaluateRefCountCategory(category), numExpr2), returnsFromRef ++ returnsFromNum)
         }
-        case TemplateSpecifiedLookupAE(range, name, templateArgs1) => {
+        case TemplateSpecifiedLookupAE(range, name, templateArgs1, targetOwnership) => {
           // So far, we only allow these when they're immediately called like functions
           vfail("unimplemented")
         }

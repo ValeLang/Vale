@@ -654,6 +654,8 @@ case class VariableIdH(
   // Just to uniquify VariableIdH instances. No two variables in a FunctionH will have
   // the same number.
   number: Int,
+  // Where the variable is relative to the stack frame's beginning.
+  height: Int,
   // Just for debugging purposes
   name: Option[FullNameH]) {
 }

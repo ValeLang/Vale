@@ -33,6 +33,7 @@ case object Num extends IClass
 case object Str extends IClass
 case object Bool extends IClass
 case object Typ extends IClass
+case object Destruct extends IClass
 case object Call extends IClass
 case object Ret extends IClass
 case object If extends IClass
@@ -122,6 +123,7 @@ object Spanner {
   def forFunctionAttribute(functionAttributeP: IFunctionAttributeP): Span = {
     functionAttributeP match {
       case ExternAttributeP(range) => makeSpan(Ext, range)
+      case ExportAttributeP(range) => makeSpan(Ext, range)
       case AbstractAttributeP(range) => makeSpan(Abst, range)
       case PureAttributeP(range) => makeSpan(Pure, range)
     }
@@ -188,6 +190,9 @@ object Spanner {
       }
       case MutatePE(range, mutatee, expr) => {
         makeSpan(Mut, range, List(forExpression(mutatee), forExpression(expr)))
+      }
+      case DestructPE(range, expr) => {
+        makeSpan(Destruct, range, List(forExpression(expr)))
       }
       case DotPE(range, left, operatorRange, _, member) => {
         makeSpan(

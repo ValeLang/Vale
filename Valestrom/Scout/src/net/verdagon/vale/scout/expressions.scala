@@ -1,9 +1,9 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{BorrowP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vpass}
 
 // patternId is a unique number, can be used to make temporary variables that wont
 // collide with other things
@@ -28,10 +28,11 @@ case class ExprMutateSE(range: RangeS, mutatee: IExpressionSE, expr: IExpression
 case class GlobalMutateSE(range: RangeS, name: ImpreciseCodeVarNameS, expr: IExpressionSE) extends IExpressionSE
 case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) extends IExpressionSE
 
-case class LendSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: OwnershipP) extends IExpressionSE {
+case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: LoadAsP) extends IExpressionSE {
   targetOwnership match {
-    case WeakP =>
-    case BorrowP =>
+    case LendWeakP =>
+    case LendBorrowP =>
+    case MoveP =>
   }
 }
 
@@ -139,12 +140,12 @@ case class FunctionCallSE(range: RangeS, callableExpr: IExpressionSE, argsExprs1
 
 //case class MethodCall0(callableExpr: Expression0, objectExpr: Expression0, argsExpr: Pack0) extends Expression0
 
-case class TemplateSpecifiedLookupSE(range: RangeS, name: String, templateArgs: List[ITemplexS]) extends IExpressionSE
-
-case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: OwnershipP) extends IExpressionSE
+case class LocalLoadSE(range: RangeS, name: IVarNameS, targetOwnership: LoadAsP) extends IExpressionSE {
+  vpass()
+}
 // Loads a non-local. In well formed code, this will be a function, but the user also likely
 // tried to access a variable they forgot to declare.
-case class OutsideLoadSE(range: RangeS, name: String) extends IExpressionSE
+case class OutsideLoadSE(range: RangeS, name: String, maybeTemplateArgs: Option[List[ITemplexS]], targetOwnership: LoadAsP) extends IExpressionSE
 case class RuneLookupSE(range: RangeS, rune: IRuneS) extends IExpressionSE
 
 case class UnletSE(range: RangeS, name: String) extends IExpressionSE

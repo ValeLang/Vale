@@ -11,7 +11,15 @@ object ProgramH {
     StructRefH(FullNameH("Tup0", 0, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
   def emptyTupleStructType = ReferenceH(ShareH, InlineH, emptyTupleStructRef)
+
+  val mainRegionName = "main"
+  val externRegionName = "host"
 }
+
+case class RegionH(
+  name: String,
+  referends: List[ReferendH])
+
 
 case class ProgramH(
     // All the interfaces in the program.
@@ -29,7 +37,10 @@ case class ProgramH(
     // which should be called when we drop a reference to an immutable object.
     immDestructorsByKind: Map[ReferendH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    exportedNameByFullName: Map[FullNameH, String]) {
+    exportedNameByFullName: Map[FullNameH, String],
+    // All the regions and their referends. There will always be one in here
+    // since every program has at least one region.
+    regions: List[RegionH]) {
 
   // These are convenience functions for the tests to look up various functions.
   def externFunctions = functions.filter(_.isExtern)

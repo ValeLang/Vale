@@ -1,0 +1,20 @@
+
+fn println(s str) void {
+  print(s + "\n");
+}
+
+fn println(i int) void {
+  print(str(i) + "\n");
+}
+
+fn println(b bool) void {
+  print(str(b) + "\n");
+}
+
+fn print(i int) void {
+  print(str(i));
+}
+
+fn print(b bool) void {
+  print(str(b));
+}

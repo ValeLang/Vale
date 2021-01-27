@@ -69,11 +69,23 @@
 
 
 fn main() int export {
+  width =
+    if (numMainArgs() >= 2) {
+      maybeWidthAsInt = int(getMainArg(1).slice());
+      = if (maybeWidthAsInt.isEmpty()) {
+          panic("First arg should be a number!");
+        } else {
+          = maybeWidthAsInt.get();
+        }
+    } else {
+      = 150;
+    };
+  height = width;
   seed = 44; // DIFFERENCE
   benchmark_rl(
     seed,
-    400,
-    400,
+    width,
+    height,
     10,
     false,
     100);

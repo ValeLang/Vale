@@ -77,7 +77,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
           FunctionCallPE(_,None,_, false,
             LookupPE(StringP(_, "Wizard"), None),
             List(IntLiteralPE(_,8)),
-            BorrowP),
+            LendBorrowP),
         _, false,
         StringP(_, "charges")) =>
     }
@@ -141,7 +141,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
                 FunctionReturnP(_, None, None)),
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
-        BorrowP) =>
+        LendBorrowP) =>
     }
   }
 
@@ -150,7 +150,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
       case FunctionCallPE(_,None,_, false,
       LookupPE(StringP(_, "eachI"), None),
         List(
-          LendPE(_,LookupPE(StringP(_, "row"), None), BorrowP),
+          LendPE(_,LookupPE(StringP(_, "row"), None), LendBorrowP),
           LambdaPE(_,
             FunctionP(_,
               FunctionHeaderP(
@@ -162,17 +162,17 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                       PatternPP(_,_,Some(CaptureP(_,LocalNameP(StringP(_, "cell")),FinalP)),None,None,None)))),
                 FunctionReturnP(_, None, None)),
               Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
-        BorrowP) =>
+      LendBorrowP) =>
     }
   }
 
   test("Test block's trailing void presence") {
     compile(CombinatorParsers.filledBody, "{ moo() }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "moo"), None), List(), BorrowP))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "moo"), None), List(), LendBorrowP))) =>
     }
 
     compile(CombinatorParsers.filledBody, "{ moo(); }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "moo"), None), List(), BorrowP), VoidPE(_))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "moo"), None), List(), LendBorrowP), VoidPE(_))) =>
     }
   }
 
@@ -181,7 +181,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     compile(
       CombinatorParsers.blockExprs,
       "= doThings(a);") shouldHave {
-      case List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), BorrowP)) =>
+      case List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), LendBorrowP)) =>
     }
   }
 
@@ -215,7 +215,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
       """.stripMargin) shouldHave {
       case List(
       LetPE(_,None, PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "a")), FinalP)), None, None, None), IntLiteralPE(_, 2)),
-      FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), BorrowP)) =>
+      FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doThings"), None), List(LookupPE(StringP(_, "a"), None)), LendBorrowP)) =>
     }
   }
 

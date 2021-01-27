@@ -1,5 +1,6 @@
 import unittest
 import subprocess
+import platform
 import os.path
 import os
 import sys
@@ -25,9 +26,11 @@ class ValeTest(unittest.TestCase):
               exe_name: str,
               region_override: str) -> subprocess.CompletedProcess:
         assert self.GENPATH
+        python = "python" if self.windows else "python3"
         return procrun(
-            ["python3",
+            [python,
              f"{self.GENPATH}/valec.py",
+             "build",
              "--verify",
              "--llvmir",
              "--census",
@@ -52,6 +55,7 @@ class ValeTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.GENPATH: str = type(self).GENPATH
+        self.windows = platform.system() == 'Windows'
 
     def compile_and_execute(
             self, in_filepaths: List[str], region_override: str) -> subprocess.CompletedProcess:
@@ -361,6 +365,21 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/immusa.vale"], "resilient-v3", 3)
     def test_naiverc_immusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/immusa.vale"], "naive-rc", 3)
+
+    # def test_assist_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "assist", 15)
+    # def test_unsafefast_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "unsafe-fast", 15)
+    # def test_resilientv0_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "resilient-v0", 15)
+    # def test_resilientv1_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "resilient-v1", 15)
+    # def test_resilientv2_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "resilient-v2", 15)
+    # def test_resilientv3_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "resilient-v3", 15)
+    # def test_naiverc_externimmusa(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/externimmusa.vale", PATH_TO_SAMPLES + "programs/arrays/externimmusa.c"], "naive-rc", 15)
 
     def test_assist_immusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/immusalen.vale"], "assist", 5)

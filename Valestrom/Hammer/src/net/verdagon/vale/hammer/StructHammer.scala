@@ -33,6 +33,24 @@ object StructHammer {
     }
   }
 
+  def translateInterfaceMethods(
+      hinputs: Hinputs,
+      hamuts: HamutsBox,
+      interfaceRef2: InterfaceRef2) = {
+
+    val edgeBlueprint = hinputs.edgeBlueprintsByInterface(interfaceRef2);
+
+    val methodsH =
+      edgeBlueprint.superFamilyRootBanners.map(superFamilyRootBanner => {
+        val header = hinputs.lookupFunction(superFamilyRootBanner.toSignature).get.header
+        val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, header.toPrototype)
+        val virtualParamIndex = header.params.indexWhere(_.virtuality.nonEmpty)
+        InterfaceMethodH(prototypeH, virtualParamIndex)
+      })
+
+    methodsH
+  }
+
   def translateInterfaceRef(
     hinputs: Hinputs,
     hamuts: HamutsBox,
@@ -48,15 +66,7 @@ object StructHammer {
         val interfaceDef2 = hinputs.lookupInterface(interfaceRef2);
 
 
-        val edgeBlueprint = hinputs.edgeBlueprintsByInterface(interfaceRef2);
-
-        val methodsH =
-          edgeBlueprint.superFamilyRootBanners.map(superFamilyRootBanner => {
-            val header = hinputs.lookupFunction(superFamilyRootBanner.toSignature).get.header
-            val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, header.toPrototype)
-            val virtualParamIndex = header.params.indexWhere(_.virtuality.nonEmpty)
-            InterfaceMethodH(prototypeH, virtualParamIndex)
-          })
+        val methodsH = translateInterfaceMethods(hinputs, hamuts, interfaceRef2)
 
         val export = interfaceDef2.attributes.contains(Export2)
 
@@ -194,9 +204,7 @@ object StructHammer {
       case Nil => Nil
       case headEdge2 :: tailEdges2 => {
         val interfaceRef2 = headEdge2.interface
-        val (interfaceRefH) = StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceRef2)
-        val interfaceDefH = hamuts.interfaceDefs(interfaceRef2)
-        val (headEdgeH) = translateEdge(hinputs, hamuts, structRefH, interfaceDefH, headEdge2)
+        val (headEdgeH) = translateEdge(hinputs, hamuts, structRefH, interfaceRef2, headEdge2)
         val (tailEdgesH) = translateEdgesForStruct(hinputs, hamuts, structRefH, tailEdges2)
         (headEdgeH :: tailEdgesH)
       }
@@ -204,11 +212,13 @@ object StructHammer {
   }
 
 
-  private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructRefH, interfaceDefH: InterfaceDefinitionH, edge2: Edge2):
+  private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructRefH, interfaceRef2: InterfaceRef2, edge2: Edge2):
   (EdgeH) = {
-    val interfacePrototypesH = interfaceDefH.methods;
+    // Purposefully not trying to translate the entire struct here, because we might hit a circular dependency
+    val interfaceRefH = translateInterfaceRef(hinputs, hamuts, interfaceRef2)
+    val interfacePrototypesH = translateInterfaceMethods(hinputs, hamuts, interfaceRef2)
     val (prototypesH) = FunctionHammer.translatePrototypes(hinputs, hamuts, edge2.methods)
     val structPrototypesByInterfacePrototype = ListMap[InterfaceMethodH, PrototypeH](interfacePrototypesH.zip(prototypesH) : _*)
-    (EdgeH(structRefH, interfaceDefH.getRef, structPrototypesByInterfacePrototype))
+    (EdgeH(structRefH, interfaceRefH, structPrototypesByInterfacePrototype))
   }
 }

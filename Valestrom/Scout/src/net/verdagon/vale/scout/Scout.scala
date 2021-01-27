@@ -16,6 +16,8 @@ case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompile
 case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
 case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
+case class VariableNameAlreadyExists(range: RangeS, name: IVarNameS) extends ICompileErrorS
+case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS
 
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
 
@@ -232,8 +234,14 @@ object Scout {
     val isTemplate = knowableValueRunes != allRunes
 
     val membersS =
-      members.zip(memberRunes).map({ case (StructMemberP(range, StringP(_, name), variability, _), memberRune) =>
-        StructMemberS(Scout.evalRange(structEnv.file, range), name, variability, memberRune)
+      members.zip(memberRunes).flatMap({
+        case (StructMemberP(range, StringP(_, name), variability, _), memberRune) => {
+          List(StructMemberS(Scout.evalRange(structEnv.file, range), name, variability, memberRune))
+        }
+        case (StructMethodP(_), memberRune) => {
+          // Implement struct methods one day
+          List()
+        }
       })
 
     val maybePredictedType =

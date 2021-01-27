@@ -31,9 +31,9 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Argument function return type doesn't match interface method param"
       }
-      case CantMutateUnstackifiedLocal(range, name) => {
+      case CantUseUnstackifiedLocal(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
-          ": Can't mutate local that was already moved (" + name + ")"
+          ": Can't use local that was already moved (" + name + ")"
       }
       case CannotSubscriptT(range, tyype) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -125,6 +125,10 @@ object TemplarErrorHumanizer {
       case WhileConditionIsntBoolean(range, actualType) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": If condition should be a bool, but was: " + actualType
+      }
+      case CantImplStruct(range, struct) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Can't extend a struct: (" + struct + ")"
       }
       case InferAstronomerError(err) => {
         AstronomerErrorHumanizer.humanize(filenamesAndSources, err)

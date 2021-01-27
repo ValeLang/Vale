@@ -67,10 +67,20 @@ class StringTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonStr("bl\"4rg")
   }
 
-  // Intentional failure 2020.09.26
   test("Slice a slice") {
-    val compile = Compilation(Samples.get("programs/strings/complex/strlen.vale"))
+    val compile = Compilation.multiple(
+      List(
+        Samples.get("builtins/strings.vale"),
+        Samples.get("builtins/castutils.vale"),
+        Samples.get("libraries/opt.vale"),
+        Samples.get("libraries/utils.vale"),
+        Samples.get("libraries/printutils.vale"),
+        """
+          |fn main() int {
+          |  "hello".slice().slice(1, 4).len()
+          |}
+          |""".stripMargin))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(11)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 }

@@ -2,7 +2,6 @@
   <artifact type="jar" name="Valestrom:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/Valestrom_jar</output-path>
     <root id="archive" name="Valestrom.jar">
-      <element id="library" level="project" name="net.liftweb:lift-json_2.12:3.3.0-RC1" />
       <element id="module-output" name="Driver" />
       <element id="module-output" name="Astronomer" />
       <element id="module-output" name="Utils" />

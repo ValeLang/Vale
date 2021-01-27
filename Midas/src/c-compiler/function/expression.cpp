@@ -259,9 +259,11 @@ Ref translateExpressionInner(
           auto elementRef =
               functionState->defaultRegion->loadElementFromKSAWithoutUpgrade(
                   functionState, bodyBuilder, arrayType, arrayReferend, arrayRef, arrayKnownLive, indexRef);
-          functionState->defaultRegion->checkValidReference(FL(), functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementRef);
+          functionState->defaultRegion->checkValidReference(
+              FL(), functionState, bodyBuilder, arrayReferend->rawArray->elementType, elementRef);
           std::vector<Ref> argExprRefs = { consumerRef, elementRef };
-          buildInterfaceCall(globalState, functionState, bodyBuilder, consumerMethod, argExprRefs, 0, 0);
+          buildInterfaceCall(
+              globalState, functionState, bodyBuilder, consumerMethod, argExprRefs, 0, 0);
         });
 
     if (arrayType->ownership == Ownership::OWN) {

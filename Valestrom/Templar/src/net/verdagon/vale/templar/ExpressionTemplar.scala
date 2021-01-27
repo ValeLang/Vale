@@ -93,16 +93,16 @@ class ExpressionTemplar(
     }
   }
 
-  private def evaluateLookup(
+  private def evaluateLookupForLoad(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
     name: IVarName2,
-    targetOwnership: OwnershipP):
+    targetOwnership: LoadAsP):
   (Option[Expression2]) = {
     evaluateAddressibleLookup(temputs, fate, range, name) match {
       case Some(x) => {
-        val thing = localHelper.softLoad(fate, range, x, Conversions.evaluateOwnership(targetOwnership))
+        val thing = localHelper.softLoad(fate, range, x, targetOwnership)
         (Some(thing))
       }
       case None => {
@@ -115,7 +115,7 @@ class ExpressionTemplar(
     }
   }
 
-  private def evaluateAddressibleLookup(
+  private def evaluateAddressibleLookupForMutate(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
@@ -146,6 +146,12 @@ class ExpressionTemplar(
 //        val index =
 //          closuredVarsStructDef.members.indexWhere(_.name == varName)
 //        vassert(index >= 0)
+
+        val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
+        vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
+
+        val index = closuredVarsStructDef.members.indexWhere(_.name == id.last)
+        val ownershipInClosureStruct = closuredVarsStructDef.members(index).tyype.reference.ownership
         val lookup = AddressMemberLookup2(range, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
@@ -189,7 +195,7 @@ class ExpressionTemplar(
       }
       case Some(rlv @ ReferenceLocalVariable2(varId, variability, reference)) => {
         if (fate.unstackifieds.contains(varId)) {
-          throw CompileErrorExceptionT(CantMutateUnstackifiedLocal(range, varId.last))
+          throw CompileErrorExceptionT(CantUseUnstackifiedLocal(range, varId.last))
         }
         Some(LocalLookup2(range, rlv, reference, variability))
       }
@@ -198,6 +204,7 @@ class ExpressionTemplar(
         val ownership = if (mutability == Mutable) Borrow else Share
         val closuredVarsStructRefRef = Coord(ownership, closuredVarsStructRef)
         val closureParamVarName2 = fate.fullName.addStep(ClosureParamName2())
+
         val borrowExpr =
           localHelper.borrowSoftLoad(
             temputs,
@@ -208,6 +215,9 @@ class ExpressionTemplar(
               variability))
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
         vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == id))
+
+        val index = closuredVarsStructDef.members.indexWhere(_.name == id.last)
+        val ownershipInClosureStruct = closuredVarsStructDef.members(index).tyype.reference.ownership
         val lookup = AddressMemberLookup2(range, borrowExpr, id, tyype, variability)
         Some(lookup)
       }
@@ -216,6 +226,9 @@ class ExpressionTemplar(
         val ownership = if (mutability == Mutable) Borrow else Share
         val closuredVarsStructRefCoord = Coord(ownership, closuredVarsStructRef)
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
+        vassert(closuredVarsStructDef.members.exists(member => closuredVarsStructRef.fullName.addStep(member.name) == varName))
+        val index = closuredVarsStructDef.members.indexWhere(_.name == varName.last)
+
         val borrowExpr =
           localHelper.borrowSoftLoad(
             temputs,
@@ -224,14 +237,11 @@ class ExpressionTemplar(
               ReferenceLocalVariable2(fate.fullName.addStep(ClosureParamName2()), Final, closuredVarsStructRefCoord),
               closuredVarsStructRefCoord,
               Final))
-//        val index = closuredVarsStructDef.members.indexWhere(_.name == varName)
+
+        val ownershipInClosureStruct = closuredVarsStructDef.members(index).tyype.reference.ownership
         val lookup =
           ReferenceMemberLookup2(
-            range,
-            borrowExpr,
-            varName,
-            tyype,
-            variability)
+            range, borrowExpr, varName, tyype, variability)
         Some(lookup)
       }
       case None => None
@@ -261,8 +271,10 @@ class ExpressionTemplar(
               vassert(reference.referend == lookup.resultRegister.reference.referend)
               // Closures never contain owning references.
               // If we're capturing an own, then on the inside of the closure
-              // it's a borrow. See "Captured own is borrow" test for more.
-              localHelper.softLoad(fate, range, lookup, Borrow)
+              // it's a borrow or a weak. See "Captured own is borrow" test for more.
+
+              vassert(reference.ownership != Own)
+              localHelper.borrowSoftLoad(temputs, lookup)
             }
             case AddressMemberType2(reference) => {
               vassert(reference == lookup.resultRegister.reference)
@@ -300,7 +312,7 @@ class ExpressionTemplar(
   (ReferenceExpression2) = {
     expr2 match {
       case r : ReferenceExpression2 => (r)
-      case a : AddressExpression2 => localHelper.softLoad(fate, a.range, a, a.coerceToOwnership)
+      case a : AddressExpression2 => localHelper.softLoad(fate, a.range, a, UseP)
     }
   }
 
@@ -339,7 +351,8 @@ class ExpressionTemplar(
           val CoordTemplata(paramCoord) = paramCoordTemplata
           (ArgLookup2(index, paramCoord), Set())
         }
-        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS), argsExprs1) => {
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -352,14 +365,30 @@ class ExpressionTemplar(
               argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS), argsExprs1) => {
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
+          val (argsExprs2, returnsFromArgs) =
+            evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
+          val callExpr2 =
+            callTemplar.evaluatePrefixCall(
+              temputs,
+              fate,
+              range,
+              newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name)),
+              templateArgTemplexesS,
+              argsExprs2)
+          (callExpr2, returnsFromArgs)
+        }
+        case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
             callTemplar.evaluateNamedPrefixCall(temputs, fate, range, GlobalFunctionFamilyNameA(name), templateArgTemplexesS, argsExprs2)
           (callExpr2, returnsFromArgs)
         }
-        case FunctionCallAE(range, OutsideLoadAE(_, name), argsPackExpr1) => {
+        case FunctionCallAE(range, OutsideLoadAE(_, name, callableTargetOwnership), argsPackExpr1) => {
+          vassert(callableTargetOwnership == LendBorrowP)
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
@@ -370,7 +399,7 @@ class ExpressionTemplar(
           val (undecayedCallableExpr2, returnsFromCallable) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, callableExpr1);
           val decayedCallableExpr2 =
-            localHelper.maybeSoftLoad(fate, range, undecayedCallableExpr2, Borrow)
+            localHelper.maybeBorrowSoftLoad(temputs, undecayedCallableExpr2)
           val decayedCallableReferenceExpr2 =
             coerceToReferenceExpression(fate, decayedCallableExpr2)
           val (argsExprs2, returnsFromArgs) =
@@ -380,44 +409,50 @@ class ExpressionTemplar(
           (functionPointerCall2, returnsFromCallable ++ returnsFromArgs)
         }
 
-        case LendAE(range, innerExpr1, targetOwnership) => {
+        case LendAE(range, innerExpr1, loadAsP) => {
           val (innerExpr2, returnsFromInner) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
           val resultExpr2 =
             innerExpr2.resultRegister.underlyingReference.ownership match {
               case Own => {
-                targetOwnership match {
-                  case OwnP => vcurious() // Can we even coerce to an owning reference?
-                  case BorrowP => localHelper.makeTemporaryLocal(temputs, fate, innerExpr2)
-                  case WeakP => weakAlias(temputs, localHelper.makeTemporaryLocal(temputs, fate, innerExpr2))
-                  case ShareP => vfail()
+                loadAsP match {
+                  case MoveP => {
+                    // this can happen if we put a ^ on an owning reference. No harm, let it go.
+                    innerExpr2
+                  }
+                  case LendBorrowP => localHelper.makeTemporaryLocal(temputs, fate, innerExpr2)
+                  case LendWeakP => weakAlias(temputs, localHelper.makeTemporaryLocal(temputs, fate, innerExpr2))
+                  case UseP => vcurious()
                 }
               }
               case Borrow => {
-                targetOwnership match {
-                  case OwnP => vcurious() // Can we even coerce to an owning reference?
-                  case BorrowP => innerExpr2
-                  case WeakP => weakAlias(temputs, innerExpr2)
-                  case ShareP => vfail()
+                loadAsP match {
+                  case MoveP => vcurious() // Can we even coerce to an owning reference?
+                  case LendBorrowP => innerExpr2
+                  case LendWeakP => weakAlias(temputs, innerExpr2)
+                  case UseP => innerExpr2
                 }
               }
               case Weak => {
-                targetOwnership match {
-                  case OwnP => vcurious() // Can we even coerce to an owning reference?
-                  case BorrowP => vfail() // Need to call lock() to do this
-                  case WeakP => innerExpr2
-                  case ShareP => vfail()
+                loadAsP match {
+                  case MoveP => vcurious() // Can we even coerce to an owning reference?
+                  case LendBorrowP => vfail() // Need to call lock() to do this
+                  case LendWeakP => innerExpr2
+                  case UseP => innerExpr2
                 }
               }
               case Share => {
-                targetOwnership match {
-                  case OwnP => vcurious() // Can we even coerce to an owning reference?
-                  case BorrowP => {
+                loadAsP match {
+                  case MoveP => {
+                    // Allow this, we can do ^ on a share ref, itll just give us a share ref.
+                    innerExpr2
+                  }
+                  case LendBorrowP => {
                     // Allow this, we can do & on a share ref, itll just give us a share ref.
                     innerExpr2
                   }
-                  case WeakP => vfail()
-                  case ShareP => innerExpr2
+                  case LendWeakP => vfail()
+                  case UseP => innerExpr2
                 }
               }
             }
@@ -470,13 +505,13 @@ class ExpressionTemplar(
         case LocalLoadAE(range, nameA, targetOwnership) => {
           val name = NameTranslator.translateVarNameStep(nameA)
           val lookupExpr1 =
-            evaluateLookup(temputs, fate, range, name, targetOwnership) match {
+            evaluateLookupForLoad(temputs, fate, range, name, targetOwnership) match {
               case (None) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldnt find " + name))
               case (Some(x)) => (x)
             }
           (lookupExpr1, Set())
         }
-        case OutsideLoadAE(range, name) => {
+        case OutsideLoadAE(range, name, targetOwnership) => {
           // Note, we don't get here if we're about to call something with this, that's handled
           // by a different case.
 
@@ -488,6 +523,9 @@ class ExpressionTemplar(
               case List(BooleanTemplata(value)) => BoolLiteral2(value)
               case List(IntegerTemplata(value)) => IntLiteral2(value)
               case templatas if templatas.nonEmpty && templatas.collect({ case FunctionTemplata(_, _) => case ExternFunctionTemplata(_) => }).size == templatas.size => {
+                if (targetOwnership == MoveP) {
+                  throw CompileErrorExceptionT(CantMoveFromGlobal(range, "Can't move from globals. Name: " + name))
+                }
                 newGlobalFunctionGroupExpression(fate, GlobalFunctionFamilyNameA(name))
               }
               case things if things.size > 1 => {
@@ -503,7 +541,7 @@ class ExpressionTemplar(
         }
         case LocalMutateAE(range, name, sourceExpr1) => {
           val destinationExpr2 =
-            evaluateAddressibleLookup(temputs, fate, range, name) match {
+            evaluateAddressibleLookupForMutate(temputs, fate, range, name) match {
               case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldnt find " + name))
               case Some(x) => x
             }
@@ -561,7 +599,7 @@ class ExpressionTemplar(
             evaluateAndCoerceToReferenceExpression(temputs, fate, numExpr1);
           (CheckRefCount2(refExpr2, Conversions.evaluateRefCountCategory(category), numExpr2), returnsFromRef ++ returnsFromNum)
         }
-        case TemplateSpecifiedLookupAE(range, name, templateArgs1) => {
+        case TemplateSpecifiedLookupAE(range, name, templateArgs1, targetOwnership) => {
           // So far, we only allow these when they're immediately called like functions
           vfail("unimplemented")
         }
@@ -590,9 +628,14 @@ class ExpressionTemplar(
               case at@TupleT2(members, understruct) => {
                 indexExpr2 match {
                   case IntLiteral2(index) => {
-                    var understructDef = temputs.lookupStruct(understruct);
-                    val memberType = understructDef.members(index).tyype
+                    val understructDef = temputs.lookupStruct(understruct);
                     val memberName = understructDef.fullName.addStep(understructDef.members(index).name)
+                    val memberType = understructDef.members(index).tyype
+
+                    vassert(understructDef.members.exists(member => understructDef.fullName.addStep(member.name) == memberName))
+
+                    val ownershipInClosureStruct = understructDef.members(index).tyype.reference.ownership
+
                     ReferenceMemberLookup2(range, containerExpr2, memberName, memberType.reference, Final)
                   }
                   case _ => vimpl("impl random access of structs' members")
@@ -623,6 +666,13 @@ class ExpressionTemplar(
                   }
                 val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                 val memberType = structMember.tyype.expectReferenceMember().reference;
+
+
+                vassert(structDef.members.exists(member => structDef.fullName.addStep(member.name) == memberFullName))
+
+                val index = structDef.members.indexWhere(_.name == memberFullName.last)
+                val ownershipInClosureStruct = structDef.members(index).tyype.reference.ownership
+
                 ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, structMember.variability)
               }
               case TupleT2(_, structRef) => {
@@ -631,6 +681,13 @@ class ExpressionTemplar(
                     val (structMember, memberIndex) = vassertSome(structDef.getMemberAndIndex(memberName))
                     val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                     val memberType = structMember.tyype.expectReferenceMember().reference;
+
+
+                    vassert(structDef.members.exists(member => structDef.fullName.addStep(member.name) == memberFullName))
+
+                    val index = structDef.members.indexWhere(_.name == memberFullName.last)
+                    val ownershipInClosureStruct = structDef.members(index).tyype.reference.ownership
+
                     ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, structMember.variability)
                   }
                 }
@@ -947,7 +1004,10 @@ class ExpressionTemplar(
                   case _ => vfail()
                   }))
               }
-              case _ => vfail()
+              case interfaceRef @ InterfaceRef2(_) => {
+                dropHelper.drop(fate, temputs, innerExpr2)
+              }
+              case _ => vfail("Can't destruct type: " + innerExpr2.referend)
             }
           (destroy2, returnsFromArrayExpr)
         }

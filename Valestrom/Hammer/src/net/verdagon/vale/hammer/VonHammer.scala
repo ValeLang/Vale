@@ -11,7 +11,7 @@ import net.verdagon.von._
 
 object VonHammer {
   def vonifyProgram(program: ProgramH): IVonData = {
-    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, exportedNameByFullName) = program
+    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, exportedNameByFullName, regions) = program
 
     VonObject(
       "Program",
@@ -47,7 +47,26 @@ object VonHammer {
                 Vector(
                   VonMember("fullName", VonStr(fullName.toReadableString)),
                   VonMember("exportedName", VonStr(exportedName))))
-            })))))
+            }))),
+        VonMember(
+          "regions",
+          VonArray(
+            None,
+            regions.map(vonifyRegion).toVector))))
+  }
+
+  def vonifyRegion(region: RegionH): IVonData = {
+    val RegionH(name, referends) = region
+
+    VonObject(
+      "Region",
+      None,
+      Vector(
+        VonMember(
+          "referends",
+          VonArray(
+            None,
+            referends.map(vonifyKind).toVector))))
   }
 
   def vonifyStructRef(ref: StructRefH): IVonData = {
@@ -710,13 +729,14 @@ object VonHammer {
   }
 
   def vonifyVariableId(id: VariableIdH): IVonData = {
-    val VariableIdH(number, maybeName) = id
+    val VariableIdH(number, height, maybeName) = id
 
     VonObject(
       "VariableId",
       None,
       Vector(
         VonMember("number", VonInt(number)),
+        VonMember("height", VonInt(number)),
         VonMember(
           "optName",
           vonifyOptional[FullNameH](maybeName, x => VonStr(x.toReadableString())))))

@@ -17,7 +17,6 @@ object ParseErrorHumanizer {
       case StatementAfterResult(pos) => humanizePos(filenamesAndSources, file, pos) + ": result statement must be last in the block, but instead found:\n" + nextThingAndRestOfLine(filenamesAndSources, file, pos) + "\n"
       case StatementAfterReturn(pos) => humanizePos(filenamesAndSources, file, pos) + ": return statement must be last in the block, but instead found:\n" + nextThingAndRestOfLine(filenamesAndSources, file, pos) + "\n"
       case BadExpressionEnd(pos) => humanizePos(filenamesAndSources, file, pos) + ": expected `;` or `}` after expression, but found:\n" + nextThingAndRestOfLine(filenamesAndSources, file, pos) + "\n"
-      case BadFunctionBodyError(pos) => humanizePos(filenamesAndSources, file, pos) + ": Bad function body, expected { or ;"
       case BadStartOfWhileCondition(pos) => humanizePos(filenamesAndSources, file, pos) + ": Bad start of while condition, expected ("
       case BadEndOfWhileCondition(pos) => humanizePos(filenamesAndSources, file, pos) + ": Bad end of while condition, expected )"
       case BadStartOfWhileBody(pos) => humanizePos(filenamesAndSources, file, pos) + ": Bad start of while body, expected {"

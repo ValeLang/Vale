@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.env.{ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vwat}
+import net.verdagon.vale.{vassert, vfail, vpass, vwat}
 
 trait IRegister2 extends Queriable2 {
   def expectReference(): ReferenceRegister2 = {
@@ -45,15 +45,13 @@ trait ReferenceExpression2 extends Expression2 {
   override def resultRegister: ReferenceRegister2
   override def referend = resultRegister.reference.referend
 }
+// This is an Expression2 because we sometimes take an address and throw it
+// directly into a struct (closures!), which can have addressible members.
 trait AddressExpression2 extends Expression2 {
   override def resultRegister: AddressRegister2
   override def referend = resultRegister.reference.referend
 
   def range: RangeS
-
-  // Whether to move-load or borrow-load or weak-load from this expression, if coerced
-  // into a reference.
-  def coerceToOwnership: Ownership
 
   // Whether or not we can change where this address points to
   def variability: Variability
@@ -420,8 +418,6 @@ case class LocalLookup2(
 ) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(reference)
 
-  override def coerceToOwnership: Ownership = Own
-
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
@@ -463,8 +459,6 @@ case class ArraySequenceLookup2(
 
   override def resultRegister = AddressRegister2(arrayType.array.memberType)
 
-  override def coerceToOwnership: Ownership = Borrow
-
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
   }
@@ -480,8 +474,6 @@ case class UnknownSizeArrayLookup2(
 
   override def resultRegister = AddressRegister2(arrayType.array.memberType)
 
-  override def coerceToOwnership: Ownership = Borrow
-
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func) ++ indexExpr.all(func) ++ arrayType.all(func)
   }
@@ -495,28 +487,24 @@ case class ArrayLength2(arrayExpr: ReferenceExpression2) extends ReferenceExpres
 }
 
 case class ReferenceMemberLookup2(
-  range: RangeS,
+    range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
     reference: Coord,
-  variability: Variability) extends AddressExpression2 {
+    variability: Variability) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(reference)
-
-  override def coerceToOwnership: Ownership = Borrow
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ structExpr.all(func) ++ reference.all(func)
   }
 }
 case class AddressMemberLookup2(
-  range: RangeS,
+    range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
     resultType2: Coord,
-  variability: Variability) extends AddressExpression2 {
+    variability: Variability) extends AddressExpression2 {
   override def resultRegister = AddressRegister2(resultType2)
-
-  override def coerceToOwnership: Ownership = Borrow
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ structExpr.all(func) ++ resultType2.all(func)
@@ -620,6 +608,8 @@ case class Construct2(
     structRef: StructRef2,
     resultReference: Coord,
     args: List[Expression2]) extends ReferenceExpression2 {
+  vpass()
+
   override def resultRegister = ReferenceRegister2(resultReference)
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -737,6 +727,7 @@ case class StructToInterfaceUpcast2(innerExpr: ReferenceExpression2, targetInter
 case class SoftLoad2(expr: AddressExpression2, targetOwnership: Ownership) extends ReferenceExpression2 {
 
   vassert((targetOwnership == Share) == (expr.resultRegister.reference.ownership == Share))
+  vassert(targetOwnership != Own) // need to unstackify or destroy to get an owning reference
 
   override def resultRegister: ReferenceRegister2 = {
     ReferenceRegister2(Coord(targetOwnership, expr.resultRegister.reference.referend))

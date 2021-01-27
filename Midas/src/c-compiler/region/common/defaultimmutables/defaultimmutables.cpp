@@ -321,6 +321,11 @@ LLVMTypeRef DefaultImmutables::getExternalType(
     return nullptr;
   } else if (refMT == globalState->metalCache.emptyTupleStructRef) {
     return LLVMVoidTypeInContext(globalState->context);
+  } else if (auto usa = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
+    auto structLIter = externalStructLByReferend.find(globalState->metalCache.str);
+    assert(structLIter != externalStructLByReferend.end());
+    auto structL = structLIter->second;
+    return LLVMPointerType(structL, 0);
   } else if (auto structReferend = dynamic_cast<StructReferend*>(refMT->referend)) {
     assert(false); // impl
     return nullptr;
@@ -481,6 +486,40 @@ Ref DefaultImmutables::internalify(FunctionState *functionState, LLVMBuilderRef 
     LLVMBuildCall(builder, globalState->free, &extStrI8PtrLE, 1, "");
 
     return wrap(functionState->defaultRegion, globalState->metalCache.strRef, vstrPtrLE);
+  } else if (auto usa = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
+    assert(false);
+//    start here, perhaps make an external struct for all USAs.
+//        itll be like the string one except with the number of elements rather than the total
+//        number of bytes. or maybe it can have both?
+//    auto externalStructLIter = externalStructLByReferend.find(globalState->metalCache.str);
+//    assert(externalStructLIter != externalStructLByReferend.end());
+//    auto externalStructL = externalStructLIter->second;
+//
+//    assert(LLVMTypeOf(refLE) == LLVMPointerType(externalStructL, 0));
+//    auto extStrPtrLE = refLE;
+//
+//    auto extStrLenPtrLE = LLVMBuildStructGEP(builder, extStrPtrLE, 0, "extStrLenPtr");
+//    auto extStrLenLE = LLVMBuildLoad(builder, extStrLenPtrLE, "extStrLen");
+//
+//    auto extStrCharsPtrPtrLE = LLVMBuildStructGEP(builder, extStrPtrLE, 1, "extStrCharsPtr");
+//    auto extStrCharsPtrLE = LLVMBuildLoad(builder, extStrCharsPtrPtrLE, "extStrChars");
+//
+//    auto vstrPtrLE = LLVMBuildCall(builder, globalState->newVStr, &extStrLenLE, 1, "vstrPtr");
+//    auto vstrCharsPtrLE = LLVMBuildCall(builder, globalState->getStrCharsFunc, &vstrPtrLE, 1, "vstrCharsPtr");
+//
+//    std::vector<LLVMValueRef> strncpyArgs = { vstrCharsPtrLE, extStrCharsPtrLE, extStrLenLE };
+//    LLVMBuildCall(builder, globalState->strncpy, strncpyArgs.data(), strncpyArgs.size(), "");
+//
+//    // Free the thing C gave us.
+//    auto extStrI8PtrLE =
+//        LLVMBuildPointerCast(
+//            builder,
+//            extStrPtrLE,
+//            LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
+//            "extStrPtrLE");
+//    LLVMBuildCall(builder, globalState->free, &extStrI8PtrLE, 1, "");
+//
+//    return wrap(functionState->defaultRegion, globalState->metalCache.strRef, vstrPtrLE);
   } else if (refMT == globalState->metalCache.neverRef) {
     assert(false); // How can we hand a never into something?
   } else if (refMT == globalState->metalCache.emptyTupleStructRef) {

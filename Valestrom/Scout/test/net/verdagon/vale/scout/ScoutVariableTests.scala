@@ -12,7 +12,8 @@ class ScoutVariableTests extends FunSuite with Matchers {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
         Scout.scoutProgram(List(program0)) match {
-          case null => vimpl() // TODO impl errors
+          case Ok(_) => vfail("Expected an error")
+          case Err(e) => e
         }
       }
     }
@@ -42,10 +43,9 @@ class ScoutVariableTests extends FunSuite with Matchers {
     }
   }
 
-  // Intentional failure 2020-08-20
   test("Reports defining same-name variable") {
     compileProgramForError("fn main() { x = 4; x = 5; }") match {
-      case null =>
+      case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
     }
   }
 
@@ -587,7 +587,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
       mainBlock.exprs.collect({
-        case FunctionCallSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _) => innerBody.block
+        case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _), _) => innerBody.block
       }).head
     lamBlock.locals.head match {
       case LocalVariable1(name, FinalP,NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) => {
@@ -612,7 +612,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     // borrow it whenever we try to access a closure variable?
     val lamBlock =
     mainBlock.exprs.collect({
-      case FunctionCallSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _) => innerBody.block
+      case FunctionCallSE(_, OwnershippedSE(_, FunctionSE(FunctionS(_, _, _, _, _, _, _, _, _, _, _, CodeBody1(innerBody))), _), _) => innerBody.block
     }).head
     val locals = lamBlock.locals
     locals.find(_.varName == ClosureParamNameS()).get match {

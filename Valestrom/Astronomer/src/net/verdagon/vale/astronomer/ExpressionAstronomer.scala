@@ -69,7 +69,7 @@ object ExpressionAstronomer {
         val exprA = translateExpression(env, astrouts, exprS)
         LocalMutateAE(range, Astronomer.translateVarNameStep(nameS), exprA)
       }
-      case LendSE(range, innerExprS, targetOwnership) => {
+      case OwnershippedSE(range, innerExprS, targetOwnership) => {
         val innerExprA = translateExpression(env, astrouts, innerExprS)
         LendAE(range, innerExprA, targetOwnership)
       }
@@ -133,15 +133,15 @@ object ExpressionAstronomer {
         val argsExprsA = argsExprsS.map(translateExpression(env, astrouts, _))
         FunctionCallAE(rangeS, callableExprA, argsExprsA)
       }
-      case TemplateSpecifiedLookupSE(range, name, templateArgsS) => {
+      case LocalLoadSE(range, name, targetOwnership) => {
+        LocalLoadAE(range, Astronomer.translateVarNameStep(name), targetOwnership)
+      }
+      case OutsideLoadSE(range, name, None, targetOwnership) => {
+        OutsideLoadAE(range, name, targetOwnership)
+      }
+      case OutsideLoadSE(range, name, Some(templateArgsS), targetOwnership) => {
         // We don't translate the templexes, we can't until we know what the template expects.
-        TemplateSpecifiedLookupAE(range, name, templateArgsS)
-      }
-      case LocalLoadSE(range, name, borrow) => {
-        LocalLoadAE(range, Astronomer.translateVarNameStep(name), borrow)
-      }
-      case OutsideLoadSE(range, name) => {
-        OutsideLoadAE(range, name)
+        TemplateSpecifiedLookupAE(range, name, templateArgsS, targetOwnership)
       }
       case UnletSE(range, name) => UnletAE(range, name)
     }

@@ -64,4 +64,4 @@ cd ../scripts
 
 cd ../release-unix
 
-zip ValeCompiler.zip *
+zip -r ValeCompiler.zip *

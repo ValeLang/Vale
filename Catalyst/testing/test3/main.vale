@@ -1,0 +1,19 @@
+struct Engine {
+  fuel__ut int;
+}
+struct Spaceship {
+  engine Engine;
+  wings int;
+}
+
+// test 3
+// returned object (engine) tied to lifetime of argument (spaceship)
+
+fn getEngine(s &Spaceship) &Engine {
+  ret s.engine; // not knownLive (yet)
+}
+fn main() export {
+  s = Spaceship(Engine(10), 4);
+  e = getEngine(&s);
+  println(e.fuel__ut); //knownLive
+}

@@ -1,0 +1,3 @@
+ - Arrays
+ - More thorough tests
+ - Get test paths instead of hardcoding

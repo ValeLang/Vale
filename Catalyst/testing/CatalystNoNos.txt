@@ -1,0 +1,2 @@
+Liveness checks that Catalyst cannot eliminate
+- object destroyed in "then" block and used in "else" block 

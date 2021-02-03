@@ -7,3 +7,7 @@ Valestrom/lib/lift-json_2.12-3.3.0-RC1.jar
 Valestrom/lib/scala-library-2.12.8.jar
 Valestrom/lib/scala-reflect-2.12.8.jar
 Valestrom/lib/scala-xml_2.12-1.0.6.jar
+Catalyst/catalyst/.*
+Catalyst/.*
+Catalyst/catalyst/target/
+Catalyst/testing/test*/out/

@@ -1,0 +1,16 @@
+struct Engine {
+  fuel__ut int;
+}
+struct Spaceship {
+  engine Engine;
+  wings int;
+}
+
+// test 2
+// member access owning ref
+
+fn main() export {
+  ship = Spaceship(Engine(2), 7);
+  println(ship.wings); //knownLive
+  println(ship.engine.fuel__ut); //knownLive
+}

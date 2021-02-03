@@ -14,8 +14,8 @@ See http://vale.dev/ for samples and more information on the language!
 
 For instructions for building the compiler itself, see:
 
- * [Building the Vale Compiler (Linux)](build-linux.md)
- * [Building the Vale Compiler (Mac)](build-mac.md)
+ * [Building the Vale Compiler (Linux)](build-linux.sh)
+ * [Building the Vale Compiler (Mac)](build-mac.sh)
  * [Building the Vale Compiler (Windows)](build-windows.md)
 
 If you just want to build and run Vale programs, go to the [download](https://vale.dev/download) page instead.

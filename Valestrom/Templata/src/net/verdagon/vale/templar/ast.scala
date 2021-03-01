@@ -28,6 +28,15 @@ case class Impl2(
   }
 }
 
+case class ExportAs2(
+  tyype: Kind,
+  exportedName: String
+) extends Queriable2 {
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    tyype.all(func)
+  }
+}
+
 case class InterfaceEdgeBlueprint(
   interface: InterfaceRef2,
   superFamilyRootBanners: List[FunctionBanner2])

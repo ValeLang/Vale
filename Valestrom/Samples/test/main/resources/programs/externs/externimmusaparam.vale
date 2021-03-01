@@ -1,0 +1,8 @@
+export Array<imm, int> as ImmIntArray;
+
+fn sumBytes(arr Array<imm, int>) int extern;
+
+fn main() int export {
+  a = MakeImmArray(5, {_});
+  = sumBytes(a);
+}

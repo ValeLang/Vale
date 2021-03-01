@@ -226,4 +226,20 @@ class ClosureTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
+  test("Mutable lambda") {
+    val compile =
+      Compilation(
+        Samples.get("programs/lambdas/lambdamut.vale"))
+
+    val temputs = compile.getTemputs()
+    val closureStruct =
+      temputs.structs.find(struct => {
+        struct.fullName.last match {
+          case LambdaCitizenName2(_) => true
+          case _ => false
+        }
+      }).get
+    vassert(closureStruct.mutability == Mutable)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
 }

@@ -89,7 +89,7 @@ LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSour
   }
 }
 
-Ref loadInnerInnerStructMember(
+LoadResult loadInnerInnerStructMember(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef innerStructPtrLE,
@@ -104,7 +104,7 @@ Ref loadInnerInnerStructMember(
           LLVMBuildStructGEP(
               builder, innerStructPtrLE, memberIndex, memberName.c_str()),
           memberName.c_str());
-  return wrap(globalState->region, expectedType, result);
+  return LoadResult{wrap(globalState->getRegion(expectedType), expectedType, result)};
 }
 
 void storeInnerInnerStructMember(
@@ -124,7 +124,7 @@ LLVMValueRef getItablePtrFromInterfacePtr(
     Reference* virtualParamMT,
     InterfaceFatPtrLE virtualArgLE) {
   buildFlare(FL(), globalState, functionState, builder);
-  assert(LLVMTypeOf(virtualArgLE.refLE) == functionState->defaultRegion->translateType(virtualParamMT));
+  assert(LLVMTypeOf(virtualArgLE.refLE) == globalState->getRegion(virtualParamMT)->translateType(virtualParamMT));
   return getTablePtrFromInterfaceRef(builder, virtualArgLE);
 }
 
@@ -168,29 +168,30 @@ LLVMValueRef insertStrongRc(
   return LLVMBuildInsertValue(
       builder,
       newControlBlockLE,
-      // Start RC at 0, see SRCAZ.
-      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 0, false),
+      // Start RC at 1, see SRCAZ.
+      LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 1, false),
       structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::STRONG_RC),
       "controlBlockWithRc");
 }
 
-Ref loadElementFromKSAWithoutUpgradeInner(
+LoadResult loadElementFromKSAInner(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* ksaRefMT,
     KnownSizeArrayT* ksaMT,
+    int size,
+    Reference* elementType,
     Ref indexRef,
     LLVMValueRef arrayElementsPtrLE) {
   auto sizeRef =
       wrap(
-          functionState->defaultRegion,
-          globalState->metalCache.intRef,
-          LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ksaMT->size, false));
-  return loadElementWithoutUpgrade(
-      globalState, functionState, builder, ksaRefMT,
-      ksaMT->rawArray->elementType,
-      sizeRef, arrayElementsPtrLE, ksaMT->rawArray->mutability, indexRef);
+          globalState->getRegion(globalState->metalCache->intRef),
+          globalState->metalCache->intRef,
+          LLVMConstInt(LLVMInt64TypeInContext(globalState->context), size, false));
+  buildFlare(FL(), globalState, functionState, builder);
+  return loadElement(
+      globalState, functionState, builder, arrayElementsPtrLE, elementType, sizeRef, indexRef);
 }
 
 // Checks that the generation is <= to the actual one.
@@ -289,11 +290,14 @@ void innerDeallocateYonder(
     IReferendStructsSource* referendStrutsSource,
     LLVMBuilderRef builder,
     Reference* refMT,
-    Ref refLE) {
+    Ref ref) {
   if (globalState->opt->census) {
-    auto ptrLE = functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
-        refMT, refLE);
-    auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, refMT, refLE);
+    auto ptrLE =
+        globalState->getRegion(refMT)
+            ->checkValidReference(FL(), functionState, builder, refMT, ref);
+    auto objIdLE =
+        globalState->getRegion(refMT)
+            ->getCensusObjectId(FL(), functionState, builder, refMT, ref);
     if (dynamic_cast<InterfaceReferend*>(refMT->referend) == nullptr) {
       buildFlare(FL(), globalState, functionState, builder,
           "Deallocating object &", ptrToIntLE(globalState, builder, ptrLE), " obj id ", objIdLE, "\n");
@@ -301,10 +305,10 @@ void innerDeallocateYonder(
   }
 
   auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder,
-      refLE, refMT);
+      ref, refMT);
 
-  functionState->defaultRegion->noteWeakableDestroyed(functionState, builder, refMT,
-      controlBlockPtrLE);
+  globalState->getRegion(refMT)
+      ->noteWeakableDestroyed(functionState, builder, refMT, controlBlockPtrLE);
 
   if (globalState->opt->census) {
     LLVMValueRef resultAsVoidPtrLE =
@@ -328,55 +332,76 @@ void innerDeallocate(
     IReferendStructsSource* referendStrutsSource,
     LLVMBuilderRef builder,
     Reference* refMT,
-    Ref refLE) {
+    Ref ref) {
   if (refMT->ownership == Ownership::SHARE) {
     if (refMT->location == Location::INLINE) {
       // Do nothing, it's inline!
     } else {
-      return innerDeallocateYonder(from, globalState, functionState, referendStrutsSource, builder, refMT, refLE);
+      return innerDeallocateYonder(from, globalState, functionState, referendStrutsSource, builder, refMT, ref);
     }
   } else {
     if (refMT->location == Location::INLINE) {
       assert(false); // implement
     } else {
-      return innerDeallocateYonder(from, globalState, functionState, referendStrutsSource, builder, refMT, refLE);
+      return innerDeallocateYonder(from, globalState, functionState, referendStrutsSource, builder, refMT, ref);
     }
+  }
+}
+
+void fillKnownSizeArray(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Ref ksaRef,
+    const std::vector<Ref>& elementRefs) {
+
+  for (int i = 0; i < elementRefs.size(); i++) {
+    globalState->getRegion(ksaRefMT)->initializeElementInKSA(
+        functionState, builder, ksaRefMT, ksaMT, ksaRef, true, globalState->constI64(i), elementRefs[i]);
   }
 }
 
 void fillUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
-    BlockState* blockState,
     LLVMBuilderRef builder,
+    Reference* usaRefMT,
     UnknownSizeArrayT* usaMT,
+    Reference* elementType,
     Reference* generatorType,
     Prototype* generatorMethod,
     Ref generatorLE,
     Ref sizeLE,
-    LLVMValueRef usaElementsPtrLE) {
+    Ref usaRef) {
 
-  foreachArrayElement(
+  buildFlare(FL(), globalState, functionState, builder);
+  intRangeLoop(
       globalState, functionState, builder, sizeLE,
-      [globalState, functionState, usaMT, generatorMethod, generatorType, usaElementsPtrLE, generatorLE](Ref indexRef, LLVMBuilderRef bodyBuilder) {
-        functionState->defaultRegion->alias(
+      [globalState, functionState, usaRefMT, usaMT, generatorMethod, generatorType, usaRef, generatorLE](
+          Ref indexRef, LLVMBuilderRef bodyBuilder) {
+        globalState->getRegion(generatorType)->alias(
             AFL("ConstructUSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
-
-        auto indexLE =
-            globalState->region->checkValidReference(FL(),
-                functionState, bodyBuilder, globalState->metalCache.intRef, indexRef);
-        std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0), indexLE };
-
-        auto elementPtrLE =
-            LLVMBuildGEP(
-                bodyBuilder, usaElementsPtrLE, indices.data(), indices.size(), "elementPtr");
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
-        auto elementRef = buildInterfaceCall(globalState, functionState, bodyBuilder, generatorMethod, argExprsLE, 0, 0);
-        auto elementLE =
-            globalState->region->checkValidReference(FL(), functionState, bodyBuilder, usaMT->rawArray->elementType, elementRef);
-        LLVMBuildStore(bodyBuilder, elementLE, elementPtrLE);
+
+//        auto virtualArgRefMT = functionType->params[virtualParamIndex];
+//        auto virtualArgRef = argsLE[virtualParamIndex];
+        buildFlare(FL(), globalState, functionState, bodyBuilder);
+        auto methodFunctionPtrLE =
+            globalState->getRegion(generatorType)
+                ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, generatorType, generatorLE, 0);
+        buildFlare(FL(), globalState, functionState, bodyBuilder);
+        auto elementRef =
+            buildInterfaceCall(
+                globalState, functionState, bodyBuilder, generatorMethod, methodFunctionPtrLE, argExprsLE, 0);
+        buildFlare(FL(), globalState, functionState, bodyBuilder);
+        globalState->getRegion(usaMT)->initializeElementInUSA(
+            functionState, bodyBuilder, usaRefMT, usaMT, usaRef, true, indexRef, elementRef);
+        buildFlare(FL(), globalState, functionState, bodyBuilder);
       });
+  buildFlare(FL(), globalState, functionState, builder);
 }
 
 std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref) {
@@ -401,6 +426,7 @@ WrapperPtrLE mallocStr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE,
+    LLVMValueRef sourceCharsPtrLE,
     IReferendStructsSource* referendStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
   // The +1 is for the null terminator at the end, for C compatibility.
@@ -428,7 +454,7 @@ WrapperPtrLE mallocStr(
 
   auto newStrWrapperPtrLE =
       referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, globalState->metalCache.strRef,
+          FL(), functionState, builder, globalState->metalCache->strRef,
           LLVMBuildBitCast(
               builder,
               destCharPtrLE,
@@ -437,12 +463,16 @@ WrapperPtrLE mallocStr(
 
   fillControlBlock(
       builder,
-      referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache.strRef, newStrWrapperPtrLE));
+      referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache->strRef, newStrWrapperPtrLE));
   LLVMBuildStore(builder, LLVMBuildZExt(builder, lengthLE, LLVMInt64TypeInContext(globalState->context), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
   // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
   auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, newStrWrapperPtrLE);
-  LLVMBuildStore(builder, constI8LE(globalState, 0), charsBeginPtr);
+
+
+  std::vector<LLVMValueRef> strncpyArgsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
+  LLVMBuildCall(builder, globalState->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
+
   auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
   LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
 
@@ -497,15 +527,12 @@ void fillInnerStruct(
   for (int i = 0; i < membersLE.size(); i++) {
     auto memberRef = membersLE[i];
     auto memberType = structM->members[i]->type;
-
     auto memberName = structM->members[i]->name;
-    if (structM->members[i]->type->referend == globalState->metalCache.innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", memberName, ": ", memberRef);
-    }
     auto ptrLE =
         LLVMBuildStructGEP(builder, innerStructPtrLE, i, memberName.c_str());
     auto memberLE =
-        globalState->region->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRef);
+        globalState->getRegion(memberType)
+            ->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRef);
     LLVMBuildStore(builder, memberLE, ptrLE);
   }
 }
@@ -528,7 +555,7 @@ Ref constructWrappedStruct(
       referendStructsSource->makeWrapperPtr(
           FL(), functionState, builder, structTypeM,
           ptrLE);
-//  globalState->region->fillControlBlock(
+//  globalState->getRegion(refHere)->fillControlBlock(
 //      from,
 //      functionState, builder,
 //      structTypeM->referend,
@@ -543,10 +570,12 @@ Ref constructWrappedStruct(
       builder, structM, membersLE,
       referendStructsSource->getStructContentsPtr(builder, structTypeM->referend, newStructWrapperPtrLE));
 
-  auto refLE = wrap(functionState->defaultRegion, structTypeM, newStructWrapperPtrLE.refLE);
+  auto refLE = wrap(globalState->getRegion(structTypeM), structTypeM, newStructWrapperPtrLE.refLE);
 
   if (globalState->opt->census) {
-    auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, structTypeM, refLE);
+    auto objIdLE =
+        globalState->getRegion(structTypeM)
+            ->getCensusObjectId(FL(), functionState, builder, structTypeM, refLE);
     buildFlare(
         FL(), globalState, functionState, builder,
         "Allocated object ", structM->name->name, " &", ptrToIntLE(globalState, builder, ptrLE),
@@ -568,11 +597,12 @@ LLVMValueRef constructInnerStruct(
   // time.
   LLVMValueRef structValueBeingInitialized = LLVMGetUndef(valStructL);
   for (int i = 0; i < memberRefs.size(); i++) {
-    if (structM->members[i]->type->referend == globalState->metalCache.innt) {
+    if (structM->members[i]->type->referend == globalState->metalCache->innt) {
       buildFlare(FL(), globalState, functionState, builder, "Initialized member ", i, ": ", memberRefs[i]);
     }
     auto memberLE =
-        globalState->region->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRefs[i]);
+        globalState->getRegion(structM->members[i]->type)
+            ->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRefs[i]);
     auto memberName = structM->members[i]->name;
     // Every time we fill in a field, it actually makes a new entire
     // struct value, and gives us a LLVMValueRef for the new value.
@@ -595,7 +625,7 @@ Ref innerAllocate(
     LLVMBuilderRef builder,
     Reference* desiredReference,
     IReferendStructsSource* referendStructs,
-    const std::vector<Ref>& membersLE,
+    const std::vector<Ref>& memberRefs,
     Weakability effectiveWeakability,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
   auto structReferend = dynamic_cast<StructReferend*>(desiredReference->referend);
@@ -606,7 +636,7 @@ Ref innerAllocate(
       auto countedStructL = referendStructs->getWrapperStruct(structReferend);
       return constructWrappedStruct(
           globalState, functionState, referendStructs, builder, countedStructL, desiredReference,
-          structM, effectiveWeakability, membersLE, fillControlBlock);
+          structM, effectiveWeakability, memberRefs, fillControlBlock);
     }
     case Mutability::IMMUTABLE: {
       if (desiredReference->location == Location::INLINE) {
@@ -614,14 +644,14 @@ Ref innerAllocate(
             referendStructs->getInnerStruct(structReferend);
         auto innerStructLE =
             constructInnerStruct(
-                globalState, functionState, builder, structM, valStructL, membersLE);
-        return wrap(globalState->region, desiredReference, innerStructLE);
+                globalState, functionState, builder, structM, valStructL, memberRefs);
+        return wrap(globalState->getRegion(desiredReference), desiredReference, innerStructLE);
       } else {
         auto countedStructL =
             referendStructs->getWrapperStruct(structReferend);
         return constructWrappedStruct(
             globalState, functionState, referendStructs, builder, countedStructL, desiredReference,
-            structM, effectiveWeakability, membersLE, fillControlBlock);
+            structM, effectiveWeakability, memberRefs, fillControlBlock);
       }
     }
     default:
@@ -643,11 +673,11 @@ Ref transmuteWeakRef(
   auto sourceWeakFatPtrLE =
       weakRefStructs->makeWeakFatPtr(
           sourceWeakRefMT,
-          globalState->region->checkValidReference(
+          globalState->getRegion(sourceWeakRefMT)->checkValidReference(
               FL(), functionState, builder, sourceWeakRefMT, sourceWeakRef));
   auto sourceWeakFatPtrRawLE = sourceWeakFatPtrLE.refLE;
   auto targetWeakFatPtrLE = weakRefStructs->makeWeakFatPtr(targetWeakRefMT, sourceWeakFatPtrRawLE);
-  auto targetWeakRef = wrap(globalState->region, targetWeakRefMT, targetWeakFatPtrLE);
+  auto targetWeakRef = wrap(globalState->getRegion(targetWeakRefMT), targetWeakRefMT, targetWeakFatPtrLE);
   return targetWeakRef;
 }
 
@@ -690,6 +720,7 @@ LLVMValueRef mallocUnknownSizeArray(
 
 // Transmutes a ptr of one ownership (such as own) to another ownership (such as borrow).
 Ref transmutePtr(
+    GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
@@ -697,8 +728,9 @@ Ref transmutePtr(
     Ref sourceRef) {
   // The WrapperPtrLE constructors here will make sure that its a safe and valid transmutation.
   auto sourcePtrRawLE =
-      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
-  auto targetWeakRef = wrap(functionState->defaultRegion, targetRefMT, sourcePtrRawLE);
+      globalState->getRegion(sourceRefMT)
+          ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef);
+  auto targetWeakRef = wrap(globalState->getRegion(targetRefMT), targetRefMT, sourcePtrRawLE);
   return targetWeakRef;
 }
 
@@ -710,7 +742,7 @@ Ref getUnknownSizeArrayLength(
     WrapperPtrLE arrayRefLE) {
   auto lengthPtrLE = getUnknownSizeArrayLengthPtr(globalState, builder, arrayRefLE);
   auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "usaLen");
-  return wrap(functionState->defaultRegion, globalState->metalCache.intRef, intLE);
+  return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, intLE);
 }
 
 ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState) {
@@ -810,7 +842,9 @@ Ref resilientThing(
     IWeakRefStructsSource* weakRefStructs) {
   return buildIfElse(
       globalState, functionState, builder, isAliveLE,
-      resultOptTypeL, resultOptTypeM, resultOptTypeM,
+      resultOptTypeL,
+      resultOptTypeM,
+      resultOptTypeM,
       [globalState, functionState, constraintRefM, weakRefStructs, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
         // TODO extract more of this common code out?
         // The incoming "constraint" ref is actually already a week ref, so just return it
@@ -888,31 +922,6 @@ ControlBlock makeResilientV2WeakableControlBlock(GlobalState* globalState) {
 //      makeResilientV2WeakableControlBlock(globalState));
 //}
 
-void fillKnownSizeArray(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* elementMT,
-    LLVMValueRef arrayLE,
-    const std::vector<Ref>& elementsLE) {
-
-  for (int i = 0; i < elementsLE.size(); i++) {
-    auto memberName = std::string("element") + std::to_string(i);
-    LLVMValueRef indices[2] = {
-        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
-        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), i, false),
-    };
-    auto elementLE = globalState->region->checkValidReference(FL(), functionState, builder, elementMT, elementsLE[i]);
-    // Every time we fill in a field, it actually makes a new entire
-    // struct value, and gives us a LLVMValueRef for the new value.
-    // So, `structValueBeingInitialized` contains the latest one.
-    LLVMBuildStore(
-        builder,
-        elementLE,
-        LLVMBuildGEP(builder, arrayLE, indices, 2, memberName.c_str()));
-  }
-}
-
 // Returns a LLVMValueRef for a ref to the string object.
 // The caller should then use getStringBytesPtr to then fill the string's contents.
 Ref constructKnownSizeArray(
@@ -921,7 +930,6 @@ Ref constructKnownSizeArray(
     LLVMBuilderRef builder,
     Reference* refM,
     KnownSizeArrayT* ksaMT,
-    const std::vector<Ref>& membersLE,
     IReferendStructsSource* referendStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
 
@@ -934,14 +942,7 @@ Ref constructKnownSizeArray(
   fillControlBlock(
       builder,
       referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, refM, newStructLE));
-  fillKnownSizeArray(
-      globalState,
-      functionState,
-      builder,
-      ksaMT->rawArray->elementType,
-      getKnownSizeArrayContentsPtr(builder, newStructLE),
-      membersLE);
-  return wrap(globalState->region, refM, newStructLE.refLE);
+  return wrap(globalState->getRegion(refM), refM, newStructLE.refLE);
 }
 
 
@@ -964,7 +965,7 @@ void regularCheckValidReference(
     // Nothing to do, there's no control block or ref counts or anything.
   } else if (refM->location == Location::YONDER) {
     auto controlBlockPtrLE =
-        referendStructs->getControlBlockPtr(FL(), functionState, builder, refLE, refM);
+        referendStructs->getControlBlockPtr(checkerAFL, functionState, builder, refLE, refM);
 
     // We dont check ref count >0 because imm destructors receive with rc=0.
     //      auto rcLE = getRcFromControlBlockPtr(globalState, builder, controlBlockPtrLE);
@@ -977,38 +978,41 @@ void regularCheckValidReference(
     assert(false);
 }
 
-Ref regularLoadElementFromUSAWithoutUpgrade(
+LoadResult regularLoadElementFromUSAWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
     Reference* usaRefMT,
     UnknownSizeArrayT* usaMT,
+    Mutability mutability,
+    Reference* elementType,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(
           FL(), functionState, builder, usaRefMT,
-          globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
+          globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
   auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
   auto arrayElementsPtrLE =
       getUnknownSizeArrayContentsPtr(builder,
           referendStructs->makeWrapperPtr(
               FL(), functionState, builder, usaRefMT,
-              globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef)));
-  return loadElementWithoutUpgrade(
-      globalState, functionState, builder, usaRefMT,
-      usaMT->rawArray->elementType,
-      sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+              globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef)));
+  buildFlare(FL(), globalState, functionState, builder);
+  return loadElement(
+      globalState, functionState, builder, arrayElementsPtrLE, elementType, sizeRef, indexRef);
 }
 
-Ref resilientLoadElementFromUSAWithoutUpgrade(
+LoadResult resilientLoadElementFromUSAWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
     Reference* usaRefMT,
+    Mutability mutability,
+    Reference* elementType,
     UnknownSizeArrayT* usaMT,
     Ref arrayRef,
     bool arrayKnownLive,
@@ -1019,31 +1023,30 @@ Ref resilientLoadElementFromUSAWithoutUpgrade(
       auto wrapperPtrLE =
           referendStructs->makeWrapperPtr(
               FL(), functionState, builder, usaRefMT,
-              globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
+              globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
       auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
       auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
           referendStructs->makeWrapperPtr(
               FL(), functionState, builder, usaRefMT,
-              globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT,
+              globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT,
                   arrayRef)));
-      return loadElementWithoutUpgrade(
-          globalState, functionState, builder, usaRefMT,
-          usaMT->rawArray->elementType,
-          sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+      buildFlare(FL(), globalState, functionState, builder);
+      return loadElement(
+          globalState, functionState, builder, arrayElementsPtrLE, elementType, sizeRef, indexRef);
     }
     case Ownership::BORROW: {
       auto wrapperPtrLE =
-          globalState->region->lockWeakRef(
+          globalState->getRegion(usaRefMT)->lockWeakRef(
               FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
       auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
       auto arrayElementsPtrLE =
           getUnknownSizeArrayContentsPtr(
               builder,
-              globalState->region->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive));
-      return loadElementWithoutUpgrade(
-          globalState, functionState, builder, usaRefMT,
-          usaMT->rawArray->elementType,
-          sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef);
+              globalState->getRegion(usaRefMT)->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive));
+      buildFlare(FL(), globalState, functionState, builder);
+      return loadElement(
+          globalState, functionState, builder, arrayElementsPtrLE, elementType,
+          sizeRef, indexRef);
     }
     case Ownership::WEAK:
       assert(false); // VIR never loads from a weak ref
@@ -1052,99 +1055,42 @@ Ref resilientLoadElementFromUSAWithoutUpgrade(
   }
 }
 
-Ref regularStoreElementInUSA(
+Ref regularStoreElementInKSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Mutability mutability,
+    Reference* elementType,
+    int size,
     Ref arrayRef,
     Ref indexRef,
     Ref elementRef) {
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, usaRefMT,
-          globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
-  auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
+          FL(), functionState, builder, ksaRefMT,
+          globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef));
   auto arrayElementsPtrLE =
-      getUnknownSizeArrayContentsPtr(builder,
+      getKnownSizeArrayContentsPtr(
+          builder,
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, usaRefMT,
-              globalState->region->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef)));
-  return storeElement(
-      globalState, functionState, builder, usaRefMT,
-      usaMT->rawArray->elementType,
-      sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef, elementRef);
+              FL(), functionState, builder, ksaRefMT,
+              globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+  return swapElement(
+      globalState, functionState, builder, ksaRefMT->location,
+      elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
 }
 
-Ref resilientStoreElementInUSA(
+Ref constructUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,
-    LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
-    Ref arrayRef,
-    bool arrayKnownLive,
-    Ref indexRef,
-    Ref elementRef,
-    std::function<WrapperPtrLE()> lockWeakRef) {
-
-  switch (usaRefMT->ownership) {
-    case Ownership::SHARE:
-    case Ownership::OWN: {
-      auto wrapperPtrLE =
-          referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, usaRefMT,
-              globalState->region->checkValidReference(
-                  FL(), functionState, builder, usaRefMT, arrayRef));
-      auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
-      auto arrayElementsPtrLE =
-          getUnknownSizeArrayContentsPtr(
-              builder,
-              referendStructs->makeWrapperPtr(
-                  FL(),
-                  functionState,
-                  builder,
-                  usaRefMT,
-                  globalState->region->checkValidReference(
-                      FL(), functionState, builder, usaRefMT, arrayRef)));
-      assert(false); // uhhhhh why arent we doing anything with the arrayElementsPtrLE
-      break;
-    }
-    case Ownership::BORROW: {
-      auto wrapperPtrLE = lockWeakRef();
-      auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
-      auto arrayElementsPtrLE =
-          getUnknownSizeArrayContentsPtr(
-              builder,
-              globalState->region->lockWeakRef(
-                  FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive));
-
-      return storeElement(
-          globalState, functionState, builder, usaRefMT,
-          usaMT->rawArray->elementType,
-          sizeRef, arrayElementsPtrLE, usaMT->rawArray->mutability, indexRef, elementRef);
-    }
-    case Ownership::WEAK:
-      assert(false); // VIR never loads from a weak ref
-    default:
-      assert(false);
-  }
-}
-
-Ref constructUnknownSizeArrayCountedStruct(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    BlockState* blockState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
     Reference* usaMT,
+    Reference* elementType,
     UnknownSizeArrayT* unknownSizeArrayT,
-    Reference* generatorType,
-    Prototype* generatorMethod,
-    Ref generatorRef,
     LLVMTypeRef usaWrapperPtrLT,
     LLVMTypeRef usaElementLT,
     Ref sizeRef,
@@ -1153,8 +1099,8 @@ Ref constructUnknownSizeArrayCountedStruct(
   buildFlare(FL(), globalState, functionState, builder, "Constructing USA!");
 
   auto sizeLE =
-      globalState->region->checkValidReference(FL(),
-          functionState, builder, globalState->metalCache.intRef, sizeRef);
+      globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(FL(),
+          functionState, builder, globalState->metalCache->intRef, sizeRef);
   auto ptrLE = mallocUnknownSizeArray(globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
   auto usaWrapperPtrLE =
       referendStructs->makeWrapperPtr(FL(), functionState, builder, usaMT, ptrLE);
@@ -1162,21 +1108,12 @@ Ref constructUnknownSizeArrayCountedStruct(
       builder,
       referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, usaMT, usaWrapperPtrLE));
   LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(globalState, builder, usaWrapperPtrLE));
-  fillUnknownSizeArray(
-      globalState,
-      functionState,
-      blockState,
-      builder,
-      unknownSizeArrayT,
-      generatorType,
-      generatorMethod,
-      generatorRef,
-      sizeRef,
-      getUnknownSizeArrayContentsPtr(builder, usaWrapperPtrLE));
-  auto refLE = wrap(functionState->defaultRegion, usaMT, usaWrapperPtrLE.refLE);
+  auto refLE = wrap(globalState->getRegion(usaMT), usaMT, usaWrapperPtrLE.refLE);
 
   if (globalState->opt->census) {
-    auto objIdLE = functionState->defaultRegion->getCensusObjectId(FL(), functionState, builder, usaMT, refLE);
+    auto objIdLE =
+        globalState->getRegion(usaMT)
+            ->getCensusObjectId(FL(), functionState, builder, usaMT, refLE);
     auto addrIntLE = ptrToIntLE(globalState, builder, ptrLE);
     buildFlare(
         FL(), globalState, functionState, builder,
@@ -1186,7 +1123,7 @@ Ref constructUnknownSizeArrayCountedStruct(
   return refLE;
 }
 
-Ref regularLoadMember(
+LoadResult regularLoadMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -1199,11 +1136,12 @@ Ref regularLoadMember(
     const std::string& memberName) {
 
   if (structRefMT->location == Location::INLINE) {
-    auto structRefLE = globalState->region->checkValidReference(FL(), functionState, builder,
+    auto structRefLE = globalState->getRegion(structRefMT)->checkValidReference(FL(), functionState, builder,
         structRefMT, structRef);
-    return wrap(globalState->region, expectedMemberType,
+    return LoadResult{
+      wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
         LLVMBuildExtractValue(
-            builder, structRefLE, memberIndex, memberName.c_str()));
+            builder, structRefLE, memberIndex, memberName.c_str()))};
   } else {
     switch (structRefMT->ownership) {
       case Ownership::OWN:
@@ -1220,7 +1158,7 @@ Ref regularLoadMember(
   }
 }
 
-Ref resilientLoadWeakMember(
+LoadResult resilientLoadWeakMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -1232,7 +1170,7 @@ Ref resilientLoadWeakMember(
     Reference* expectedMemberType,
     const std::string& memberName) {
   auto wrapperPtrLE =
-      globalState->region->lockWeakRef(
+      globalState->getRegion(structRefMT)->lockWeakRef(
           FL(), functionState, builder, structRefMT, structRef, structKnownLive);
   auto innerStructPtrLE = referendStructs->getStructContentsPtr(builder,
       structRefMT->referend, wrapperPtrLE);
@@ -1253,14 +1191,14 @@ Ref upcastStrong(
   auto sourceStructWrapperPtrLE =
       referendStructs->makeWrapperPtr(
           FL(), functionState, builder, sourceStructMT,
-          globalState->region->checkValidReference(FL(),
+          globalState->getRegion(sourceStructMT)->checkValidReference(FL(),
               functionState, builder, sourceStructMT, sourceRefLE));
   auto resultInterfaceFatPtrLE =
       upcastThinPtr(
           globalState, functionState, referendStructs, builder, sourceStructMT,
           sourceStructReferendM,
           sourceStructWrapperPtrLE, targetInterfaceTypeM, targetInterfaceReferendM);
-  return wrap(functionState->defaultRegion, targetInterfaceTypeM, resultInterfaceFatPtrLE);
+  return wrap(globalState->getRegion(targetInterfaceTypeM), targetInterfaceTypeM, resultInterfaceFatPtrLE);
 }
 
 Ref upcastWeak(
@@ -1276,9 +1214,9 @@ Ref upcastWeak(
   auto sourceWeakStructFatPtrLE =
       weakRefStructs->makeWeakFatPtr(
           sourceStructMT,
-          globalState->region->checkValidReference(FL(),
+          globalState->getRegion(sourceStructMT)->checkValidReference(FL(),
               functionState, builder, sourceStructMT, sourceRefLE));
-  return functionState->defaultRegion->upcastWeak(
+  return globalState->getRegion(sourceStructMT)->upcastWeak(
       functionState,
       builder,
       sourceWeakStructFatPtrLE,
@@ -1288,12 +1226,15 @@ Ref upcastWeak(
       targetInterfaceTypeM);
 }
 
-Ref regularLoadElementFromKSAWithoutUpgrade(
+LoadResult regularloadElementFromKSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* ksaRefMT,
     KnownSizeArrayT* ksaMT,
+    Reference* elementType,
+    int arraySize,
+    Mutability mutability,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef,
@@ -1303,16 +1244,21 @@ Ref regularLoadElementFromKSAWithoutUpgrade(
           builder,
           referendStructs->makeWrapperPtr(
               FL(), functionState, builder, ksaRefMT,
-              globalState->region->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
-  return loadElementFromKSAWithoutUpgradeInner(globalState, functionState, builder, ksaRefMT, ksaMT, indexRef, arrayElementsPtrLE);
+              globalState->getRegion(ksaRefMT)
+                  ->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+  return loadElementFromKSAInner(
+      globalState, functionState, builder, ksaRefMT, ksaMT, arraySize, elementType, indexRef, arrayElementsPtrLE);
 }
 
-Ref resilientLoadElementFromKSAWithoutUpgrade(
+LoadResult resilientloadElementFromKSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* ksaRefMT,
     KnownSizeArrayT* ksaMT,
+    int size,
+    Mutability mutability,
+    Reference* elementType,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef,
@@ -1325,14 +1271,16 @@ Ref resilientLoadElementFromKSAWithoutUpgrade(
               builder,
               referendStructs->makeWrapperPtr(
                   FL(), functionState, builder, ksaRefMT,
-                  globalState->region->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
-      return loadElementFromKSAWithoutUpgradeInner(globalState, functionState, builder, ksaRefMT, ksaMT, indexRef, arrayElementsPtrLE);
+                  globalState->getRegion(ksaRefMT)
+                      ->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+      return loadElementFromKSAInner(
+          globalState, functionState, builder, ksaRefMT, ksaMT, size, elementType, indexRef, arrayElementsPtrLE);
     }
     case Ownership::BORROW: {
       LLVMValueRef arrayElementsPtrLE =
           getKnownSizeArrayContentsPtr(
-              builder, globalState->region->lockWeakRef(FL(), functionState, builder, ksaRefMT, arrayRef, arrayKnownLive));
-      return loadElementFromKSAWithoutUpgradeInner(globalState, functionState, builder, ksaRefMT, ksaMT, indexRef, arrayElementsPtrLE);
+              builder, globalState->getRegion(ksaRefMT)->lockWeakRef(FL(), functionState, builder, ksaRefMT, arrayRef, arrayKnownLive));
+      return loadElementFromKSAInner(globalState, functionState, builder, ksaRefMT, ksaMT, size, elementType, indexRef, arrayElementsPtrLE);
     }
     case Ownership::WEAK:
       assert(false); // VIR never loads from a weak ref
@@ -1348,7 +1296,6 @@ void regularFillControlBlock(
     IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
-    Mutability mutability,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName,
     WrcWeaks* wrcWeaks) {
@@ -1358,17 +1305,13 @@ void regularFillControlBlock(
       fillControlBlockCensusFields(
           from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
 
-  if (mutability == Mutability::IMMUTABLE) {
-    newControlBlockLE =
-        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
-  } else {
-    newControlBlockLE =
-        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
-    if (globalState->program->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
-      newControlBlockLE = wrcWeaks->fillWeakableControlBlock(functionState, builder, structs, referendM,
-          newControlBlockLE);
-    }
+  newControlBlockLE =
+      insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
+  if (globalState->getReferendWeakability(referendM) == Weakability::WEAKABLE) {
+    newControlBlockLE = wrcWeaks->fillWeakableControlBlock(functionState, builder, structs, referendM,
+        newControlBlockLE);
   }
+
   LLVMBuildStore(
       builder,
       newControlBlockLE,
@@ -1382,7 +1325,6 @@ void gmFillControlBlock(
     IReferendStructsSource* structs,
     LLVMBuilderRef builder,
     Referend* referendM,
-    Mutability mutability,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName,
     HybridGenerationalMemory* hgmWeaks) {
@@ -1392,14 +1334,8 @@ void gmFillControlBlock(
   newControlBlockLE =
       fillControlBlockCensusFields(
           from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
-
-  if (mutability == Mutability::IMMUTABLE) {
-    newControlBlockLE =
-        insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
-  } else {
-    newControlBlockLE = hgmWeaks->fillWeakableControlBlock(functionState, builder, referendM,
-        newControlBlockLE);
-  }
+  newControlBlockLE = hgmWeaks->fillWeakableControlBlock(functionState, builder, referendM,
+      newControlBlockLE);
   LLVMBuildStore(
       builder,
       newControlBlockLE,
@@ -1416,12 +1352,12 @@ Ref getUnknownSizeArrayLengthStrong(
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(
           FL(), functionState, builder, usaRefMT,
-          globalState->region->checkValidReference(
+          globalState->getRegion(usaRefMT)->checkValidReference(
               FL(), functionState, builder, usaRefMT, arrayRef));
   return ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
 }
 
-Ref regularLoadStrongMember(
+LoadResult regularLoadStrongMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -1435,8 +1371,8 @@ Ref regularLoadStrongMember(
 
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(FL(), functionState, builder, structRefMT,
-          globalState->region->checkValidReference(FL(), functionState, builder,
-              structRefMT, structRef));
+          globalState->getRegion(structRefMT)
+              ->checkValidReference(FL(), functionState, builder, structRefMT, structRef));
   auto innerStructPtrLE = referendStructs->getStructContentsPtr(builder,
       structRefMT->referend, wrapperPtrLE);
 
@@ -1455,7 +1391,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeStrongInterfaceRef(
     Reference* virtualParamMT,
     Ref virtualArgRef) {
   auto virtualArgLE =
-      globalState->region->checkValidReference(
+      globalState->getRegion(virtualParamMT)->checkValidReference(
           FL(), functionState, builder, virtualParamMT, virtualArgRef);
   LLVMValueRef itablePtrLE = nullptr;
   LLVMValueRef newVirtualArgLE = nullptr;
@@ -1464,10 +1400,14 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeStrongInterfaceRef(
           FL(), functionState, builder, virtualParamMT, virtualArgLE);
   itablePtrLE = getItablePtrFromInterfacePtr(globalState, functionState, builder,
       virtualParamMT, virtualArgInterfaceFatPtrLE);
+  buildFlare(FL(), globalState, functionState, builder);
   auto objVoidPtrLE =
       referendStructs->getVoidPtrFromInterfacePtr(
           functionState, builder, virtualParamMT, virtualArgInterfaceFatPtrLE);
   newVirtualArgLE = objVoidPtrLE;
+
+  buildFlare(FL(), globalState, functionState, builder, "itablePtrLE ", ptrToIntLE(globalState, builder, itablePtrLE));
+
   return std::make_tuple(itablePtrLE, newVirtualArgLE);
 }
 
@@ -1484,7 +1424,8 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeWeakInterfaceRef(
   LLVMValueRef itablePtrLE = nullptr;
   LLVMValueRef newVirtualArgLE = nullptr;
   auto virtualArgLE =
-      globalState->region->checkValidReference(FL(), functionState, builder, virtualParamMT, virtualArgRef);
+      globalState->getRegion(virtualParamMT)
+          ->checkValidReference(FL(), functionState, builder, virtualParamMT, virtualArgRef);
   auto weakFatPtrLE = weakRefStructs->makeWeakFatPtr(virtualParamMT, virtualArgLE);
   // Disassemble the weak interface ref.
   auto interfaceRefLE =
@@ -1512,10 +1453,10 @@ Ref regularWeakAlias(
     auto objPtrLE =
         referendStructs->makeWrapperPtr(
             FL(), functionState, builder, sourceRefMT,
-            globalState->region->checkValidReference(FL(), functionState, builder, sourceRefMT,
-                sourceRef));
+            globalState->getRegion(sourceRefMT)
+                ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef));
     return wrap(
-        globalState->region,
+        globalState->getRegion(targetRefMT),
         targetRefMT,
         wrcWeaks->assembleStructWeakRef(
             functionState, builder,
@@ -1524,10 +1465,10 @@ Ref regularWeakAlias(
     auto objPtrLE =
         referendStructs->makeInterfaceFatPtr(
             FL(), functionState, builder, sourceRefMT,
-            globalState->region->checkValidReference(FL(), functionState, builder, sourceRefMT,
-                sourceRef));
+            globalState->getRegion(sourceRefMT)
+                ->checkValidReference(FL(), functionState, builder, sourceRefMT, sourceRef));
     return wrap(
-        globalState->region,
+        globalState->getRegion(targetRefMT),
         targetRefMT,
         wrcWeaks->assembleInterfaceWeakRef(
             functionState, builder,
@@ -1553,12 +1494,15 @@ Ref regularInnerLockWeak(
     FatWeaks* fatWeaks) {
   return buildIfElse(
       globalState, functionState, builder, isAliveLE,
-      resultOptTypeL, resultOptTypeM, resultOptTypeM,
+      resultOptTypeL,
+      resultOptTypeM,
+      resultOptTypeM,
       [globalState, functionState, fatWeaks, weakRefStructsSource, constraintRefM, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
         auto weakFatPtrLE =
             weakRefStructsSource->makeWeakFatPtr(
                 sourceWeakRefMT,
-                globalState->region->checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
+                globalState->getRegion(sourceWeakRefMT)
+                    ->checkValidReference(FL(), functionState, thenBuilder, sourceWeakRefMT, sourceWeakRefLE));
         auto constraintRefLE =
             fatWeaks->getInnerRefFromWeakRef(
                 functionState,
@@ -1566,7 +1510,7 @@ Ref regularInnerLockWeak(
                 sourceWeakRefMT,
                 weakFatPtrLE);
         auto constraintRef =
-            wrap(globalState->region, constraintRefM, constraintRefLE);
+            wrap(globalState->getRegion(constraintRefM), constraintRefM, constraintRefLE);
         return buildThen(thenBuilder, constraintRef);
       },
       buildElse);
@@ -1587,7 +1531,7 @@ void storeMemberStrong(
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(
           FL(), functionState, builder, structRefMT,
-          globalState->region->checkValidReference(
+          globalState->getRegion(structRefMT)->checkValidReference(
               FL(), functionState, builder, structRefMT, structRef));
   innerStructPtrLE = referendStructs->getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
   storeInnerInnerStructMember(builder, innerStructPtrLE, memberIndex, memberName, newValueLE);
@@ -1606,8 +1550,39 @@ void storeMemberWeak(
     LLVMValueRef newValueLE) {
   LLVMValueRef innerStructPtrLE = nullptr;
   auto wrapperPtrLE =
-      globalState->region->lockWeakRef(
+      globalState->getRegion(structRefMT)->lockWeakRef(
           FL(), functionState, builder, structRefMT, structRef, structKnownLive);
   innerStructPtrLE = referendStructs->getStructContentsPtr(builder, structRefMT->referend, wrapperPtrLE);
   storeInnerInnerStructMember(builder, innerStructPtrLE, memberIndex, memberName, newValueLE);
 }
+
+LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* virtualParamMT,
+    Ref virtualArgRef,
+    int indexInEdge) {
+  LLVMValueRef itablePtrLE = nullptr;
+  LLVMValueRef newVirtualArgLE = nullptr;
+  std::tie(itablePtrLE, newVirtualArgLE) =
+      globalState->getRegion(virtualParamMT)
+          ->explodeInterfaceRef(
+              functionState, builder, virtualParamMT, virtualArgRef);
+  buildFlare(FL(), globalState, functionState, builder);
+
+  auto interfaceMT = dynamic_cast<InterfaceReferend*>(virtualParamMT->referend);
+  assert(interfaceMT);
+//  int indexInEdge = 0;
+//  InterfaceMethod* method = nullptr;
+//  std::tie(indexInEdge, method) = globalState->getInterfaceMethod(interfaceMT, prototype);
+
+  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
+  buildFlare(FL(), globalState, functionState, builder, "index in edge: ", indexInEdge);
+  auto funcPtrPtrLE = LLVMBuildStructGEP(builder, itablePtrLE, indexInEdge, "methodPtrPtr");
+
+  auto resultLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
+  buildFlare(FL(), globalState, functionState, builder, "method ptr: ", ptrToIntLE(globalState, builder, resultLE));
+  return resultLE;
+}
+

@@ -8,9 +8,6 @@
 #include <region/common/common.h>
 #include "lgtweaks.h"
 
-constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_GEN = 0;
-constexpr int LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE = 1;
-
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
 
@@ -57,23 +54,8 @@ void LgtWeaks::buildCheckLgti(
       assert(false);
       break;
   }
-  LLVMBuildCall(builder, checkLgti, &lgtiLE, 1, "");
-}
-
-LLVMTypeRef makeLgtEntryStruct(GlobalState* globalState) {
-  auto lgtEntryStructL = LLVMStructCreateNamed(globalState->context, "__LgtEntry");
-
-  std::vector<LLVMTypeRef> memberTypesL;
-
-  assert(LGT_ENTRY_MEMBER_INDEX_FOR_GEN == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
-
-  assert(LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE == memberTypesL.size());
-  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
-
-  LLVMStructSetBody(lgtEntryStructL, memberTypesL.data(), memberTypesL.size(), false);
-
-  return lgtEntryStructL;
+  std::vector<LLVMValueRef> args = { lgtTablePtrLE, lgtiLE };
+  LLVMBuildCall(builder, globalState->checkLgti, args.data(), args.size(), "");
 }
 
 static LLVMValueRef makeLgtiHeader(
@@ -95,7 +77,7 @@ LLVMValueRef LgtWeaks::getLGTEntryGenPtr(
     LLVMBuilderRef builder,
     LLVMValueRef lgtiLE) {
   auto genEntriesPtrLE =
-      LLVMBuildLoad(builder, lgtEntriesArrayPtr, "lgtEntriesArrayPtr");
+      LLVMBuildLoad(builder, getLgtEntriesArrayPtr(builder), "lgtEntriesArrayPtr");
   auto ptrToLGTEntryLE =
       LLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
@@ -107,7 +89,7 @@ LLVMValueRef LgtWeaks::getLGTEntryNextFreePtr(
     LLVMBuilderRef builder,
     LLVMValueRef lgtiLE) {
   auto genEntriesPtrLE =
-      LLVMBuildLoad(builder, lgtEntriesArrayPtr, "genEntriesArrayPtr");
+      LLVMBuildLoad(builder, getLgtEntriesArrayPtr(builder), "genEntriesArrayPtr");
   auto ptrToLGTEntryLE =
       LLVMBuildGEP(builder, genEntriesPtrLE, &lgtiLE, 1, "ptrToLGTEntry");
   auto ptrToLGTEntryGenLE =
@@ -163,21 +145,18 @@ LgtWeaks::LgtWeaks(
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  lgtEntryStructL = makeLgtEntryStruct(globalState);
 
-
-  expandLgt = addExtern(globalState->mod, "__expandLgt", LLVMVoidTypeInContext(globalState->context), {});
-  checkLgti = addExtern(globalState->mod, "__checkLgti", LLVMVoidTypeInContext(globalState->context), {int32LT});
-  getNumLiveLgtEntries = addExtern(globalState->mod, "__getNumLiveLgtEntries", int32LT, {});
-
-  lgtCapacityPtr = LLVMAddGlobal(globalState->mod, LLVMInt32TypeInContext(globalState->context), "__lgt_capacity");
-  LLVMSetLinkage(lgtCapacityPtr, LLVMExternalLinkage);
-
-  lgtFirstFreeLgtiPtr = LLVMAddGlobal(globalState->mod, LLVMInt32TypeInContext(globalState->context), "__lgt_firstFree");
-  LLVMSetLinkage(lgtFirstFreeLgtiPtr, LLVMExternalLinkage);
-
-  lgtEntriesArrayPtr = LLVMAddGlobal(globalState->mod, LLVMPointerType(lgtEntryStructL, 0), "__lgt_entries");
-  LLVMSetLinkage(lgtEntriesArrayPtr, LLVMExternalLinkage);
+  lgtTablePtrLE = LLVMAddGlobal(globalState->mod, globalState->lgtTableStructLT, "__lgt_table");
+  LLVMSetLinkage(lgtTablePtrLE, LLVMExternalLinkage);
+  std::vector<LLVMValueRef> wrcTableMembers = {
+      constI32LE(globalState, 0),
+      constI32LE(globalState, 0),
+      LLVMConstNull(globalState->lgtEntryStructLT)
+  };
+  LLVMSetInitializer(
+      lgtTablePtrLE,
+      LLVMConstNamedStruct(
+          globalState->lgtTableStructLT, wrcTableMembers.data(), wrcTableMembers.size()));
 
   if (globalState->opt->census) {
     LLVMValueRef args[3] = {
@@ -185,7 +164,7 @@ LgtWeaks::LgtWeaks(
         LLVMBuildZExt(
             globalState->valeMainBuilder,
             LLVMBuildCall(
-                globalState->valeMainBuilder, getNumLiveLgtEntries, nullptr, 0, "numLgtEntries"),
+                globalState->valeMainBuilder, globalState->getNumLiveLgtEntries, &lgtTablePtrLE, 1, "numLgtEntries"),
             LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
@@ -376,7 +355,7 @@ LLVMValueRef LgtWeaks::getNewLgti(
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
 
   // uint64_t resultLgti = __lgt_firstFree;
-  auto resultLgtiLE = LLVMBuildLoad(builder, lgtFirstFreeLgtiPtr, "resultLgti");
+  auto resultLgtiLE = LLVMBuildLoad(builder, getLgtFirstFreeLgtiPtr(builder), "resultLgti");
 
   // if (resultLgti == __lgt_capacity) {
   //   __expandLgtTable();
@@ -386,14 +365,14 @@ LLVMValueRef LgtWeaks::getNewLgti(
           builder,
           LLVMIntEQ,
           resultLgtiLE,
-          LLVMBuildLoad(builder, lgtCapacityPtr, "lgtCapacity"),
+          LLVMBuildLoad(builder, getLgtCapacityPtr(builder), "lgtCapacity"),
           "atCapacity");
   buildIf(
       globalState, functionState,
       builder,
       atCapacityLE,
       [this](LLVMBuilderRef thenBuilder) {
-        LLVMBuildCall(thenBuilder, expandLgt, nullptr, 0, "");
+        LLVMBuildCall(thenBuilder, globalState->expandLgt, &lgtTablePtrLE, 1, "");
       });
 
   // __LGT_Entry* lgtEntryPtr = &__lgt_entries[resultLgti];
@@ -405,7 +384,7 @@ LLVMValueRef LgtWeaks::getNewLgti(
       // lgtEntryPtr->nextFree
       LLVMBuildLoad(builder, lgtNextFreePtrLE, ""),
       // __lgt_firstFree
-      lgtFirstFreeLgtiPtr);
+      getLgtFirstFreeLgtiPtr(builder));
 
   return resultLgtiLE;
 }
@@ -425,10 +404,10 @@ void LgtWeaks::innerNoteWeakableDestroyed(
   LLVMBuildStore(
       builder,
       LLVMBuildLoad(
-          builder, lgtFirstFreeLgtiPtr, "firstFreeLgti"),
+          builder, getLgtFirstFreeLgtiPtr(builder), "firstFreeLgti"),
       ptrToLgtEntryNextFreeLE);
   // __lgt_firstFree = lgti;
-  LLVMBuildStore(builder, lgtiLE, lgtFirstFreeLgtiPtr);
+  LLVMBuildStore(builder, lgtiLE, getLgtFirstFreeLgtiPtr(builder));
 }
 
 
@@ -494,15 +473,15 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
   if (knownLive && elideChecksForKnownLive) {
     // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
-    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   } else {
     auto weakFatPtrLE =
         weakRefStructsSource->makeWeakFatPtr(
             weakRefM,
-            globalState->region->checkValidReference(FL(), functionState, builder, weakRefM,
-                weakRef));
+            globalState->getRegion(weakRefM)
+                ->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE, knownLive);
-    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   }
 }
 
@@ -596,39 +575,39 @@ Ref LgtWeaks::assembleWeakRef(
     Ref sourceRef) {
   // Now we need to package it up into a weak ref.
   if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceInterfaceFatPtrLE = referendStructsSource->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleKnownSizeArrayWeakRef(
             functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleUnknownSizeArrayWeakRef(
             functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }
 
 
-LLVMTypeRef LgtWeaks::makeWeakRefHeaderStruct(GlobalState* globalState) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
+LLVMTypeRef LgtWeaks::makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId) {
+  assert(regionId == globalState->metalCache->resilientV1RegionId);
   auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
 
   std::vector<LLVMTypeRef> memberTypesL;
@@ -646,4 +625,14 @@ LLVMTypeRef LgtWeaks::makeWeakRefHeaderStruct(GlobalState* globalState) {
           LLVMABISizeOfType(globalState->dataLayout, LLVMInt64TypeInContext(globalState->context)));
 
   return genRefStructL;
+}
+
+LLVMValueRef LgtWeaks::getLgtCapacityPtr(LLVMBuilderRef builder) {
+  return LLVMBuildStructGEP(builder, lgtTablePtrLE, 0, "wrcCapacityPtr");
+}
+LLVMValueRef LgtWeaks::getLgtFirstFreeLgtiPtr(LLVMBuilderRef builder) {
+  return LLVMBuildStructGEP(builder, lgtTablePtrLE, 1, "wrcFirstFree");
+}
+LLVMValueRef LgtWeaks::getLgtEntriesArrayPtr(LLVMBuilderRef builder) {
+  return LLVMBuildStructGEP(builder, lgtTablePtrLE, 2, "entries");
 }

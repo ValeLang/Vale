@@ -164,6 +164,16 @@ object CombinatorParsers
     }
   }
 
+  private[parser] def export: Parser[ExportAsP] = {
+    pos ~ ("export" ~> white ~>
+      (templex <~ white <~ "as" <~ white) ~
+      (exprIdentifier <~ optWhite <~ ";")) ~ pos ^^ {
+      case begin ~ (tyype ~ name) ~ end => {
+        ExportAsP(Range(begin, end), tyype, name)
+      }
+    }
+  }
+
 //  private[parser] def topLevelThing: Parser[ITopLevelThing] = {
 //    struct ^^ TopLevelStruct |
 //    topLevelFunction ^^ TopLevelFunction |

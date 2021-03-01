@@ -6,7 +6,6 @@
 #include "globalstate.h"
 #include "function/function.h"
 #include <region/common/fatweaks/fatweaks.h>
-#include <region/common/referendptrmaker.h>
 
 class HybridGenerationalMemory {
 public:
@@ -129,7 +128,7 @@ public:
       Reference* weakRefM,
       Ref weakRef);
 
-  static LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState);
+  static LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId);
 
 private:
   LLVMValueRef getTargetGenFromWeakRef(
@@ -138,7 +137,7 @@ private:
       Referend* referend,
       WeakFatPtrLE weakRefLE);
 
-  GlobalState* globalState;
+  GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
   IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;

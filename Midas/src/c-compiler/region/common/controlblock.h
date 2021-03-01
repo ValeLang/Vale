@@ -51,7 +51,7 @@ public:
   }
 
 private:
-  GlobalState* globalState;
+  GlobalState* globalState = nullptr;
   std::vector<ControlBlockMember> members;
   LLVMTypeRef structL;
   bool built;

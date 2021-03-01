@@ -20,19 +20,21 @@ Ref translateLocalLoad(
   auto localType = local->type;
   auto targetOwnership = localLoad->targetOwnership;
   auto targetLocation = targetOwnership == Ownership::SHARE ? localType->location : Location::YONDER;
-  auto resultType = globalState->metalCache.getReference(targetOwnership, targetLocation, localType->referend);
+  auto resultType =
+      globalState->metalCache->getReference(
+          targetOwnership, targetLocation, localType->referend);
 
   auto localAddr = blockState->getLocalAddr(localId);
 
   auto sourceLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
 
-  auto sourceRef = wrap(functionState->defaultRegion, localType, sourceLE);
-  functionState->defaultRegion->checkValidReference(FL(), functionState, builder, localType, sourceRef);
+  auto sourceRef = wrap(globalState->getRegion(localType), localType, sourceLE);
+  globalState->getRegion(localType)->checkValidReference(FL(), functionState, builder, localType, sourceRef);
 
-  auto resultRefLE =
-      functionState->defaultRegion->upgradeLoadResultToRefWithTargetOwnership(
-          functionState, builder, localType, resultType, sourceRef);
-  functionState->defaultRegion->alias(FL(), functionState, builder, resultType, resultRefLE);
+  auto resultRef =
+      globalState->getRegion(localType)->upgradeLoadResultToRefWithTargetOwnership(
+          functionState, builder, localType, resultType, LoadResult{sourceRef});
+  globalState->getRegion(resultType)->alias(FL(), functionState, builder, resultType, resultRef);
 
-  return resultRefLE;
+  return resultRef;
 }

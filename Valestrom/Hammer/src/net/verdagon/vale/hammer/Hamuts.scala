@@ -4,7 +4,7 @@ import net.verdagon.vale.metal._
 import net.verdagon.vale.templar.{FullName2, IName2}
 import net.verdagon.vale.templar.templata.Prototype2
 import net.verdagon.vale.templar.types.{InterfaceRef2, PackT2, StructRef2}
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vimpl}
 import net.verdagon.von.IVonData
 
 
@@ -39,12 +39,12 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addInterface(interfaceRef2, interfaceDefH)
   }
 
-  def addKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): Unit = {
-    inner = inner.addKnownSizeArray(knownSizeArrayTH)
+  def addKnownSizeArray(knownSizeArrayDefinitionTH: KnownSizeArrayDefinitionTH): Unit = {
+    inner = inner.addKnownSizeArray(knownSizeArrayDefinitionTH)
   }
 
-  def addUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): Unit = {
-    inner = inner.addUnknownSizeArray(unknownSizeArrayTH)
+  def addUnknownSizeArray(unknownSizeArrayDefinitionTH: UnknownSizeArrayDefinitionTH): Unit = {
+    inner = inner.addUnknownSizeArray(unknownSizeArrayDefinitionTH)
   }
 
   def forwardDeclareFunction(functionRef2: Prototype2, functionRefH: FunctionRefH): Unit = {
@@ -64,6 +64,13 @@ case class HamutsBox(var inner: Hamuts) {
     inner = newInner
     id
   }
+
+  def getKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): KnownSizeArrayDefinitionTH = {
+    inner.getKnownSizeArray(knownSizeArrayTH)
+  }
+  def getUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): UnknownSizeArrayDefinitionTH = {
+    inner.getUnknownSizeArray(unknownSizeArrayTH)
+  }
 }
 
 case class Hamuts(
@@ -72,8 +79,8 @@ case class Hamuts(
     structRefsByRef2: Map[StructRef2, StructRefH],
     structDefsByRef2: Map[StructRef2, StructDefinitionH],
     structDefs: List[StructDefinitionH],
-    knownSizeArrays: List[KnownSizeArrayTH],
-    unknownSizeArrays: List[UnknownSizeArrayTH],
+    knownSizeArrays: List[KnownSizeArrayDefinitionTH],
+    unknownSizeArrays: List[UnknownSizeArrayDefinitionTH],
     interfaceRefs: Map[InterfaceRef2, InterfaceRefH],
     interfaceDefs: Map[InterfaceRef2, InterfaceDefinitionH],
     functionRefs: Map[Prototype2, FunctionRefH],
@@ -204,14 +211,14 @@ case class Hamuts(
       functionDefs)
   }
 
-  def addKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): Hamuts = {
+  def addKnownSizeArray(knownSizeArrayDefinitionTH: KnownSizeArrayDefinitionTH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
       fullNameByExportedName,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays :+ knownSizeArrayTH,
+      knownSizeArrays :+ knownSizeArrayDefinitionTH,
       unknownSizeArrays,
       interfaceRefs,
       interfaceDefs,
@@ -219,7 +226,7 @@ case class Hamuts(
       functionDefs)
   }
 
-  def addUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): Hamuts = {
+  def addUnknownSizeArray(unknownSizeArrayDefinitionTH: UnknownSizeArrayDefinitionTH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
       fullNameByExportedName,
@@ -227,7 +234,7 @@ case class Hamuts(
       structDefsByRef2,
       structDefs,
       knownSizeArrays,
-      unknownSizeArrays :+ unknownSizeArrayTH,
+      unknownSizeArrays :+ unknownSizeArrayDefinitionTH,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -265,6 +272,13 @@ case class Hamuts(
         functionRefs,
         functionDefs)
     (newHamuts, id)
+  }
+
+  def getKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): KnownSizeArrayDefinitionTH = {
+    knownSizeArrays.find(_.name == knownSizeArrayTH.name).get
+  }
+  def getUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): UnknownSizeArrayDefinitionTH = {
+    unknownSizeArrays.find(_.name == unknownSizeArrayTH.name).get
   }
 
 }

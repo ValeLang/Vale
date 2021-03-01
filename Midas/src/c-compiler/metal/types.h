@@ -63,6 +63,13 @@ enum class Variability {
     VARYING
 };
 
+struct RegionId {
+  std::string id;
+
+  RegionId(std::string id_) :
+      id(id_) {}
+};
+
 // Interned
 class Reference {
 public:
@@ -99,26 +106,42 @@ public:
 
 class Int : public Referend {
 public:
+  RegionId* regionId;
+
+  Int(RegionId* regionId_) :
+      regionId(regionId_) {}
 };
 
 class Bool : public Referend {
 public:
+  RegionId* regionId;
+
+  Bool(RegionId* regionId_) :
+      regionId(regionId_) {}
 };
 
 class Str : public Referend {
 public:
-};
+  RegionId* regionId;
 
-class Void : public Referend {
-public:
+  Str(RegionId* regionId_) :
+      regionId(regionId_) {}
 };
 
 class Float : public Referend {
 public:
+  RegionId* regionId;
+
+  Float(RegionId* regionId_) :
+      regionId(regionId_) {}
 };
 
 class Never : public Referend {
 public:
+  RegionId* regionId;
+
+  Never(RegionId* regionId_) :
+      regionId(regionId_) {}
 };
 
 class InterfaceReferend : public Referend {
@@ -137,18 +160,20 @@ public:
 
     StructReferend(Name* fullName_) :
         fullName(fullName_) {}
-
 };
 
 // Interned
 class RawArrayT {
 public:
+  RegionId* regionId;
   Mutability mutability;
-  Reference* elementType;
+  Reference *elementType;
 
   RawArrayT(
+      RegionId* regionId_,
       Mutability mutability_,
       Reference* elementType_) :
+      regionId(regionId_),
       mutability(mutability_),
       elementType(elementType_) {}
 };
@@ -157,14 +182,27 @@ public:
 class KnownSizeArrayT : public Referend {
 public:
   Name* name;
+
+  KnownSizeArrayT(
+      Name* name_) :
+      name(name_) {}
+
+};
+
+class KnownSizeArrayDefinitionT {
+public:
+  Name* name;
+  KnownSizeArrayT* referend;
   int size;
   RawArrayT* rawArray;
 
-  KnownSizeArrayT(
+  KnownSizeArrayDefinitionT(
       Name* name_,
+      KnownSizeArrayT* referend_,
       int size_,
       RawArrayT* rawArray_) :
       name(name_),
+      referend(referend_),
       size(size_),
       rawArray(rawArray_) {}
 
@@ -176,12 +214,25 @@ public:
 class UnknownSizeArrayT : public Referend {
 public:
   Name* name;
-  RawArrayT* rawArray;
 
   UnknownSizeArrayT(
+      Name* name_) :
+      name(name_) {}
+
+};
+
+class UnknownSizeArrayDefinitionT {
+public:
+  Name* name;
+  UnknownSizeArrayT* referend;
+  RawArrayT* rawArray;
+
+  UnknownSizeArrayDefinitionT(
       Name* name_,
+      UnknownSizeArrayT* referend_,
       RawArrayT* rawArray_) :
       name(name_),
+      referend(referend_),
       rawArray(rawArray_) {}
 
 };

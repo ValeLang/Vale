@@ -16,7 +16,7 @@ Ref translateCall(
   argsLE.reserve(call->argExprs.size());
   for (int i = 0; i < call->argExprs.size(); i++) {
     auto argLE = translateExpression(globalState, functionState, blockState, builder, call->argExprs[i]);
-    functionState->defaultRegion->checkValidReference(FL(), functionState, builder, call->function->params[i], argLE);
+    globalState->getRegion(call->function->params[i])->checkValidReference(FL(), functionState, builder, call->function->params[i], argLE);
     argsLE.push_back(argLE);
   }
 

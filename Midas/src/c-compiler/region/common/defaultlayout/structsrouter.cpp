@@ -1,5 +1,5 @@
 
-#include <region/common/defaultimmutables/defaultimmutables.h>
+#include <region/rcimm/rcimm.h>
 #include "structsrouter.h"
 
 ReferendStructsRouter::ReferendStructsRouter(
@@ -30,10 +30,10 @@ LLVMTypeRef ReferendStructsRouter::getInterfaceTableStruct(InterfaceReferend* in
   return getReferendStructsSource(interfaceReferend)->getInterfaceTableStruct(interfaceReferend);
 }
 LLVMTypeRef ReferendStructsRouter::getStringWrapperStruct() {
-  return getReferendStructsSource(globalState->metalCache.str)->getStringWrapperStruct();
+  return getReferendStructsSource(globalState->metalCache->str)->getStringWrapperStruct();
 }
-void ReferendStructsRouter::translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) {
-  return getReferendStructsSource(structM->referend)->translateStruct(structM, membersLT);
+void ReferendStructsRouter::defineStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) {
+  return getReferendStructsSource(structM->referend)->defineStruct(structM, membersLT);
 }
 void ReferendStructsRouter::declareStruct(StructDefinition* structM) {
   return getReferendStructsSource(structM->referend)->declareStruct(structM);
@@ -41,29 +41,29 @@ void ReferendStructsRouter::declareStruct(StructDefinition* structM) {
 void ReferendStructsRouter::declareEdge(Edge* edge) {
   return getReferendStructsSource(edge->structName)->declareEdge(edge);
 }
-void ReferendStructsRouter::translateEdge(
+void ReferendStructsRouter::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
     std::vector<LLVMValueRef> functions) {
-  return getReferendStructsSource(edge->structName)->translateEdge(edge, interfaceFunctionsLT, functions);
+  return getReferendStructsSource(edge->structName)->defineEdge(edge, interfaceFunctionsLT, functions);
 }
 void ReferendStructsRouter::declareInterface(InterfaceDefinition* interfaceM) {
   return getReferendStructsSource(interfaceM->referend)->declareInterface(interfaceM);
 }
-void ReferendStructsRouter::translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
-  return getReferendStructsSource(interface->referend)->translateInterface(interface, interfaceMethodTypesL);
+void ReferendStructsRouter::defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
+  return getReferendStructsSource(interface->referend)->defineInterface(interface, interfaceMethodTypesL);
 }
-void ReferendStructsRouter::declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) {
-  return getReferendStructsSource(knownSizeArrayMT)->declareKnownSizeArray(knownSizeArrayMT);
+void ReferendStructsRouter::declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) {
+  return getReferendStructsSource(knownSizeArrayMT->referend)->declareKnownSizeArray(knownSizeArrayMT);
 }
-void ReferendStructsRouter::declareUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT) {
-  return getReferendStructsSource(unknownSizeArrayMT)->declareUnknownSizeArray(unknownSizeArrayMT);
+void ReferendStructsRouter::declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) {
+  return getReferendStructsSource(unknownSizeArrayMT->referend)->declareUnknownSizeArray(unknownSizeArrayMT);
 }
-void ReferendStructsRouter::translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) {
-  return getReferendStructsSource(unknownSizeArrayMT)->translateUnknownSizeArray(unknownSizeArrayMT, elementLT);
+void ReferendStructsRouter::defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) {
+  return getReferendStructsSource(unknownSizeArrayMT->referend)->defineUnknownSizeArray(unknownSizeArrayMT, elementLT);
 }
-void ReferendStructsRouter::translateKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT, LLVMTypeRef elementLT) {
-  return getReferendStructsSource(knownSizeArrayMT)->translateKnownSizeArray(knownSizeArrayMT, elementLT);
+void ReferendStructsRouter::defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) {
+  return getReferendStructsSource(knownSizeArrayMT->referend)->defineKnownSizeArray(knownSizeArrayMT, elementLT);
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getConcreteControlBlockPtr(
@@ -115,12 +115,12 @@ InterfaceFatPtrLE ReferendStructsRouter::makeInterfaceFatPtrWithoutChecking(
 LLVMValueRef ReferendStructsRouter::getStringBytesPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Ref ref) {
-  return getReferendStructsSource(globalState->metalCache.str)->getStringBytesPtr(functionState, builder, ref);
+    WrapperPtrLE ptrLE) {
+  return getReferendStructsSource(globalState->metalCache->str)->getStringBytesPtr(functionState, builder, ptrLE);
 }
 
-LLVMValueRef ReferendStructsRouter::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
-  return getReferendStructsSource(globalState->metalCache.str)->getStringLen(functionState, builder, ref);
+LLVMValueRef ReferendStructsRouter::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
+  return getReferendStructsSource(globalState->metalCache->str)->getStringLen(functionState, builder, ptrLE);
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getControlBlockPtr(

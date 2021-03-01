@@ -11,9 +11,8 @@ Ref translateConstantStr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     ConstantStr* constantStr) {
-  auto strWrapperPtrLE =
+  auto strRef =
       buildConstantVStr(globalState, functionState, builder, constantStr->value);
-  auto resultRef = wrap(functionState->defaultRegion, globalState->metalCache.strRef, strWrapperPtrLE);
-  functionState->defaultRegion->alias(FL(), functionState, builder, globalState->metalCache.strRef, resultRef);
-  return resultRef;
+  // Dont need to alias here, see SRCAO
+  return strRef;
 }

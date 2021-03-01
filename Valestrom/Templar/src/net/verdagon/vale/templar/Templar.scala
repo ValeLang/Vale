@@ -401,7 +401,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
   def evaluate(program: ProgramA): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
-        val ProgramA(structsA, interfacesA, impls1, functions1) = program;
+        val ProgramA(structsA, interfacesA, impls1, functions1, exportsA) = program;
 
         val env0 =
           NamespaceEnvironment(
@@ -499,6 +499,18 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           }
         })
 
+        exportsA.foreach({ case ExportAsA(range, exportedName, rules, typeByRune, typeRuneA) =>
+          val typeRuneT = NameTranslator.translateRune(typeRuneA)
+          val templataByRune =
+            inferTemplar.inferOrdinaryRules(env11, temputs, rules, typeByRune, Set(typeRuneA))
+          val referend =
+            templataByRune.get(typeRuneT) match {
+              case Some(KindTemplata(referend)) => referend
+              case _ => vfail()
+            }
+          temputs.addExport(referend, exportedName)
+        })
+
         profiler.newProfile("StampOverridesUntilSettledProbe", "", () => {
 //          Split.enter(classOf[ValeSplitProbe], "stamp needed overrides")
           stampNeededOverridesUntilSettled(env11, temputs)
@@ -567,6 +579,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             reachableStructs.toList,
             Program2.emptyTupleStructRef,
             reachableFunctions.toList,
+            temputs.getExports,
             temputs.getExternPrototypes,
             edgeBlueprintsByInterface,
             edges)

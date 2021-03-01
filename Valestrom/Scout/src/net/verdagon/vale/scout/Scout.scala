@@ -94,14 +94,16 @@ object Scout {
           val interfacesS = topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(file, _));
           val implsS = topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(file, _))
           val functionsS = topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(file, _))
-          ProgramS(structsS, interfacesS, implsS, functionsS)
+          val exportsS = topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(file, _))
+          ProgramS(structsS, interfacesS, implsS, functionsS, exportsS)
         })
       val programS =
         ProgramS(
           programsS.flatMap(_.structs),
           programsS.flatMap(_.interfaces),
           programsS.flatMap(_.impls),
-          programsS.flatMap(_.implementedFunctions))
+          programsS.flatMap(_.implementedFunctions),
+          programsS.flatMap(_.exports))
       Ok(programS)
     } catch {
       case CompileErrorExceptionS(err) => Err(err)
@@ -183,6 +185,17 @@ object Scout {
       isTemplate,
       structRune,
       interfaceRune)
+  }
+
+  private def scoutExportAs(file: Int, exportAsP: ExportAsP): ExportAsS = {
+    val ExportAsP(range, templexP, exportedName) = exportAsP
+
+    val pos = Scout.evalPos(file, range.begin)
+    val exportName = ExportAsNameS(pos)
+    val exportEnv = Environment(file, None, exportName, Set())
+    val templexS = TemplexScout.translateTemplex(exportEnv, templexP)
+
+    ExportAsS(Scout.evalRange(file, range), exportName, templexS, exportedName.str)
   }
 
   private def scoutStruct(file: Int, head: StructP): StructS = {

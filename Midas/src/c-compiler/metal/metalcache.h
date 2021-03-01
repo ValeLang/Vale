@@ -29,7 +29,7 @@ namespace std {
 }
 
 template<typename K, typename V, typename H, typename E, typename F>
-V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeElement) {
+V& makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeElement) {
   auto iter = map->find(key);
   if (iter == map->end()) {
     auto p = map->emplace(key, makeElement());
@@ -39,6 +39,9 @@ V makeIfNotPresent(std::unordered_map<K, V, H, E>* map, const K& key, F&& makeEl
 }
 
 struct HashRefVec {
+  AddressHasher<Reference*> hasher;
+  HashRefVec(AddressHasher<Reference*> hasher_) : hasher(hasher_) {}
+
   size_t operator()(const std::vector<Reference *> &refs) const {
     size_t result = 1337;
     for (auto el : refs) {
@@ -63,39 +66,120 @@ struct RefVecEquals {
 
 class MetalCache {
 public:
-  MetalCache() {
+  explicit MetalCache(AddressNumberer* addressNumberer_) :
+      addressNumberer(addressNumberer_),
+      structReferends(0, addressNumberer->makeHasher<Name*>()),
+      interfaceReferends(0, addressNumberer->makeHasher<Name*>()),
+      ints(0, addressNumberer->makeHasher<RegionId*>()),
+      bools(0, addressNumberer->makeHasher<RegionId*>()),
+      strs(0, addressNumberer->makeHasher<RegionId*>()),
+      floats(0, addressNumberer->makeHasher<RegionId*>()),
+      nevers(0, addressNumberer->makeHasher<RegionId*>()),
+      rawArrays(0, addressNumberer->makeHasher<Reference*>()),
+      unknownSizeArrays(0, addressNumberer->makeHasher<Name*>()),
+      knownSizeArrays(0, addressNumberer->makeHasher<Name*>()),
+      unconvertedReferences(0, addressNumberer->makeHasher<Referend*>()),
+      prototypes(0, addressNumberer->makeHasher<Name*>()),
+      interfaceMethods(0, addressNumberer->makeHasher<Prototype*>()),
+      locals(0, addressNumberer->makeHasher<VariableId*>()) {
+    rcImmRegionId = getRegionId("rcimm");
+    linearRegionId = getRegionId("linear");
+    unsafeRegionId = getRegionId("unsafe");
+    assistRegionId = getRegionId("assist");
+    naiveRcRegionId = getRegionId("naiverc");
+    resilientV3RegionId = getRegionId("resilientv3");
+    resilientV2RegionId = getRegionId("resilientv2");
+    resilientV1RegionId = getRegionId("resilientv1");
+
+    innt = getInt(rcImmRegionId);
     intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
-    floatRef = getReference(Ownership::SHARE, Location::INLINE, flooat);
+    boool = getBool(rcImmRegionId);
     boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
+    flooat = getFloat(rcImmRegionId);
+    floatRef = getReference(Ownership::SHARE, Location::INLINE, flooat);
+    str = getStr(rcImmRegionId);
     strRef = getReference(Ownership::SHARE, Location::YONDER, str);
+    never = getNever(rcImmRegionId);
     neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
+//    regionReferend = getStructReferend(getName("__Region"));
   }
 
-  Int* innt = new Int();
-  Reference* intRef = nullptr;
-  Bool* boool = new Bool();
-  Reference* boolRef = nullptr;
-  Float* flooat = new Float();
-  Reference* floatRef = nullptr;
-  Str* str = new Str();
-  Reference* strRef = nullptr;
-  Never* never = new Never();
-  Reference* neverRef = nullptr;
-  StructReferend* emptyTupleStruct = nullptr;
-  Reference* emptyTupleStructRef = nullptr;
+  Int* getInt(RegionId* regionId) {
+    return makeIfNotPresent(
+        &ints,
+        regionId,
+        [&](){ return new Int(regionId); });
+  }
 
-  std::unordered_map<Name*, StructReferend*> structReferends;
-  std::unordered_map<Name*, InterfaceReferend*> interfaceReferends;
-  std::unordered_map<std::string, Name*> names;
+  Bool* getBool(RegionId* regionId) {
+    return makeIfNotPresent(
+        &bools,
+        regionId,
+        [&](){ return new Bool(regionId); });
+  }
 
-  // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
-  std::unordered_map<Reference*, std::unordered_map<Mutability, RawArrayT*>> rawArrays;
-  std::unordered_map<Name*, UnknownSizeArrayT*> unknownSizeArrays;
-  std::unordered_map<Name*, KnownSizeArrayT*> knownSizeArrays;
-  std::unordered_map<Referend*, std::unordered_map<Ownership, std::unordered_map<Location, Reference*>>> unconvertedReferences;
-  std::unordered_map<Name*, std::unordered_map<Reference*, std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>>> prototypes;
-  std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
-  std::unordered_map<VariableId*, std::unordered_map<Reference*, Local*>> locals;
+  Str* getStr(RegionId* regionId) {
+    return makeIfNotPresent(
+        &strs,
+        regionId,
+        [&](){ return new Str(regionId); });
+  }
+
+  Float* getFloat(RegionId* regionId) {
+    return makeIfNotPresent(
+        &floats,
+        regionId,
+        [&](){ return new Float(regionId); });
+  }
+
+  Never* getNever(RegionId* regionId) {
+    return makeIfNotPresent(
+        &nevers,
+        regionId,
+        [&](){ return new Never(regionId); });
+  }
+
+  StructReferend* getStructReferend(Name* structName) {
+    return makeIfNotPresent(
+        &structReferends,
+        structName,
+        [&]() { return new StructReferend(structName); });
+  }
+
+  InterfaceReferend* getInterfaceReferend(Name* structName) {
+    return makeIfNotPresent(
+        &interfaceReferends,
+        structName,
+        [&]() { return new InterfaceReferend(structName); });
+  }
+
+  UnknownSizeArrayT* getUnknownSizeArray(Name* name) {
+    return makeIfNotPresent(
+        &unknownSizeArrays,
+        name,
+        [&](){ return new UnknownSizeArrayT(name); });
+  }
+
+  KnownSizeArrayT* getKnownSizeArray(Name* name) {
+    return makeIfNotPresent(
+        &knownSizeArrays,
+        name,
+        [&](){ return new KnownSizeArrayT(name); });
+  }
+
+  Name* getName(std::string nameStr) {
+    return makeIfNotPresent(
+        &names,
+        nameStr,
+        [&](){ return new Name(nameStr); });
+  }
+
+  RegionId* getRegionId(std::string nameStr) {
+    return makeIfNotPresent(
+        &regionIds,
+        nameStr,
+        [&](){ return new RegionId(nameStr); });
+  }
 
   Reference* getReference(Ownership ownership, Location location, Referend* referend) {
     return makeIfNotPresent<Location, Reference*>(
@@ -103,6 +187,110 @@ public:
         location,
         [&](){ return new Reference(ownership, location, referend); });
   }
+
+  Prototype* getPrototype(Name* name, Reference* returnType, std::vector<Reference*> paramTypes) {
+    return makeIfNotPresent(
+        &makeIfNotPresent(
+            &makeIfNotPresent(
+                &prototypes,
+                name,
+                [&](){ return PrototypeByParamListByReturnTypeMap(0, AddressHasher<Reference*>(addressNumberer)); }),
+            returnType,
+            [&](){ return PrototypeByParamListMap(0, HashRefVec(addressNumberer)); }),
+        paramTypes,
+        [&](){ return new Prototype(name, paramTypes, returnType); });
+  }
+
+  InterfaceMethod* getInterfaceMethod(Prototype* prototype, int virtualParamIndex) {
+    return makeIfNotPresent(
+        &interfaceMethods[prototype],
+        virtualParamIndex,
+        [&](){ return new InterfaceMethod(prototype, virtualParamIndex); });
+  }
+
+  AddressNumberer* addressNumberer;
+
+  std::unordered_map<std::string, RegionId*> regionIds;
+  std::unordered_map<Name*, StructReferend*, AddressHasher<Name*>> structReferends;
+  std::unordered_map<Name*, InterfaceReferend*, AddressHasher<Name*>> interfaceReferends;
+  std::unordered_map<std::string, Name*> names;
+
+  std::unordered_map<RegionId*, Int*, AddressHasher<RegionId*>> ints;
+  std::unordered_map<RegionId*, Bool*, AddressHasher<RegionId*>> bools;
+  std::unordered_map<RegionId*, Str*, AddressHasher<RegionId*>> strs;
+  std::unordered_map<RegionId*, Float*, AddressHasher<RegionId*>> floats;
+  std::unordered_map<RegionId*, Never*, AddressHasher<RegionId*>> nevers;
+
+  // This is conceptually a map<[Reference*, Mutability], RawArrayT*>.
+  std::unordered_map<
+      Reference*,
+      std::unordered_map<
+          RegionId*,
+          std::unordered_map<
+              Mutability,
+              RawArrayT*>,
+          AddressHasher<RegionId*>>,
+      AddressHasher<Reference*>> rawArrays;
+  std::unordered_map<Name*, UnknownSizeArrayT*, AddressHasher<Name*>> unknownSizeArrays;
+  std::unordered_map<Name*, KnownSizeArrayT*, AddressHasher<Name*>> knownSizeArrays;
+  std::unordered_map<
+      Referend*,
+      std::unordered_map<
+          Ownership,
+          std::unordered_map<
+              Location,
+              Reference*>>,
+      AddressHasher<Referend*>> unconvertedReferences;
+
+
+  using PrototypeByParamListMap =
+      std::unordered_map<std::vector<Reference*>, Prototype*, HashRefVec, RefVecEquals>;
+  using PrototypeByParamListByReturnTypeMap =
+      std::unordered_map<Reference*, PrototypeByParamListMap, AddressHasher<Reference*>>;
+  using PrototypeByParamListByReturnTypeByNameMap =
+      std::unordered_map<Name*, PrototypeByParamListByReturnTypeMap, AddressHasher<Name*>>;
+  PrototypeByParamListByReturnTypeByNameMap prototypes;
+
+  std::unordered_map<Prototype*, std::unordered_map<int, InterfaceMethod*>, AddressHasher<Prototype*>> interfaceMethods;
+
+  std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
+  using LocalByReferenceMap = std::unordered_map<Reference*, Local*, AddressHasher<Reference*>>;
+  using LocalByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByReferenceMap, AddressHasher<VariableId*>>;
+  LocalByReferenceByVariableIdMap locals;
+
+  RegionId* rcImmRegionId = nullptr;
+  RegionId* linearRegionId = nullptr;
+  RegionId* unsafeRegionId = nullptr;
+  RegionId* naiveRcRegionId = nullptr;
+  RegionId* resilientV3RegionId = nullptr;
+  RegionId* resilientV2RegionId = nullptr;
+  RegionId* resilientV1RegionId = nullptr;
+  RegionId* assistRegionId = nullptr;
+  // This is temporary, until we can get valestrom to properly fill in coords' regions
+  RegionId* mutRegionId = nullptr;
+
+//  I8* i8 = new I8();
+//  Reference* i8Ref = nullptr;
+  Int* innt = nullptr;
+  Reference* intRef = nullptr;
+  Bool* boool = nullptr;
+  Reference* boolRef = nullptr;
+  Float* flooat = nullptr;
+  Reference* floatRef = nullptr;
+  Str* str = nullptr;
+  Reference* strRef = nullptr;
+  Never* never = nullptr;
+  Reference* neverRef = nullptr;
+  StructReferend* emptyTupleStruct = nullptr;
+  Reference* emptyTupleStructRef = nullptr;
+  // This is a central referend that holds a region's data.
+  // These will hold for example the bump pointer for an arena region,
+  // or a free list pointer for HGM.
+  // We hand these in to methods like allocate, deallocate, etc.
+  // Right now we just use it to hold the bump pointer for linear regions.
+  // Otherwise, for now, we're just handing in Nevers.
+//  StructReferend* regionReferend = nullptr;
 };
+
 
 #endif

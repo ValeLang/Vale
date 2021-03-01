@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.{vassert, vcheck, vcurious, vwat}
+import net.verdagon.vale.{vassert, vcheck, vcurious, vpass, vwat}
 
 import scala.collection.immutable.List
 
@@ -41,6 +41,7 @@ case class FunctionNameS(name: String, codeLocation: CodeLocationS) extends IFun
 case class TopLevelCitizenDeclarationNameS(name: String, codeLocation: CodeLocationS) extends INameS
 case class LambdaStructNameS(lambdaName: LambdaNameS) extends INameS
 case class ImplNameS(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameS
+case class ExportAsNameS(codeLocation: CodeLocationS) extends INameS
 case class LetNameS(codeLocation: CodeLocationS) extends INameS
 case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class ClosureParamNameS() extends IVarNameS
@@ -60,7 +61,9 @@ case class ConstructingMemberNameS(name: String) extends IVarNameS
 // prefixes and names like __implicit_0, __paramRune_0, etc.
 sealed trait IRuneS
 case class CodeRuneS(name: String) extends IRuneS
-case class ImplicitRuneS(containerName: INameS, name: Int) extends IRuneS
+case class ImplicitRuneS(containerName: INameS, name: Int) extends IRuneS {
+  vpass()
+}
 case class LetImplicitRuneS(codeLocationS: CodeLocationS, name: Int) extends IRuneS
 case class MagicParamRuneS(codeLocationS: CodeLocationS) extends IRuneS
 case class MemberRuneS(memberIndex: Int) extends IRuneS

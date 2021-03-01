@@ -185,15 +185,21 @@ class StructTemplar(
 
       val isTemplate = interfaceA.tyype != KindTemplataType
 
+      val templateParams =
+        (interfaceA.tyype match {
+          case KindTemplataType => List()
+          case TemplateTemplataType(params, KindTemplataType) => params
+        }) ++
+          interfaceA.internalMethods.map(meth => CoordTemplataType)
+      val functionType =
+        if (templateParams.isEmpty) FunctionTemplataType else TemplateTemplataType(templateParams, FunctionTemplataType)
+
       val TopLevelCitizenDeclarationNameA(name, codeLocation) = interfaceA.name
       FunctionA(
         interfaceA.range,
         FunctionNameA(name, codeLocation),
         List(UserFunctionA),
-        interfaceA.tyype match {
-          case KindTemplataType => FunctionTemplataType
-          case TemplateTemplataType(params, KindTemplataType) => TemplateTemplataType(params, FunctionTemplataType)
-        },
+        functionType,
         interfaceA.knowableRunes ++ functorRunes ++ (if (isTemplate) List() else List(AnonymousSubstructParentInterfaceRuneA())),
         identifyingRunes,
         interfaceA.localRunes ++ functorRunes ++ List(AnonymousSubstructParentInterfaceRuneA()),

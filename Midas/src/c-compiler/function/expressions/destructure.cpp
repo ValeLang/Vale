@@ -19,7 +19,7 @@ Ref translateDestructure(
   auto structRef =
       translateExpression(
           globalState, functionState, blockState, builder, destructureM->structExpr);
-  functionState->defaultRegion->checkValidReference(FL(),
+  globalState->getRegion(destructureM->structType)->checkValidReference(FL(),
       functionState, builder, destructureM->structType, structRef);
 
   auto structReferend =
@@ -32,7 +32,7 @@ Ref translateDestructure(
     auto memberName = structM->members[i]->name;
     auto memberType = structM->members[i]->type;
     auto memberLE =
-        functionState->defaultRegion->loadMember(
+        globalState->getRegion(destructureM->structType)->loadMember(
             functionState, builder, destructureM->structType, structRef, true, i, memberType, memberType, memberName);
     makeHammerLocal(
         globalState,
@@ -44,11 +44,11 @@ Ref translateDestructure(
   }
 
   if (destructureM->structType->ownership == Ownership::OWN) {
-    functionState->defaultRegion->discardOwningRef(FL(), functionState, blockState, builder, destructureM->structType, structRef);
+    globalState->getRegion(destructureM->structType)->discardOwningRef(FL(), functionState, blockState, builder, destructureM->structType, structRef);
   } else if (destructureM->structType->ownership == Ownership::SHARE) {
     // We dont decrement anything here, we're only here because we already hit zero.
 
-    functionState->defaultRegion->deallocate(
+    globalState->getRegion(destructureM->structType)->deallocate(
         AFL("Destroy freeing"), functionState, builder,
         destructureM->structType, structRef);
   } else {
@@ -57,5 +57,5 @@ Ref translateDestructure(
 
   buildFlare(FL(), globalState, functionState, builder);
 
-  return makeEmptyTupleRef(globalState, functionState, builder);
+  return makeEmptyTupleRef(globalState);
 }

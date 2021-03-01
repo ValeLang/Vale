@@ -1,4 +1,5 @@
 #include <iostream>
+#include <region/common/common.h>
 #include "region/common/controlblock.h"
 #include "function/expressions/shared/elements.h"
 
@@ -19,14 +20,16 @@ Ref translateNewArrayFromValues(
   auto elementsLE =
       translateExpressions(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
+  auto ksaDefM = globalState->program->getKnownSizeArray(newArrayFromValues->arrayReferend->name);
   for (auto elementLE : elementsLE) {
-    functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
-        newArrayFromValues->arrayReferend->rawArray->elementType, elementLE);
+    globalState->getRegion(ksaDefM->rawArray->elementType)
+        ->checkValidReference(
+            FL(), functionState, builder, ksaDefM->rawArray->elementType, elementLE);
   }
 
   auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT*>(newArrayFromValues->arrayRefType->referend);
 
-  switch (newArrayFromValues->arrayReferend->rawArray->mutability) {
+  switch (ksaDefM->rawArray->mutability) {
 //    case Mutability::MUTABLE: {
 //      auto countedArrayL = globalState->getWrapperStruct(structReferend->fullName);
 //      return constructWrappedStruct(
@@ -42,13 +45,21 @@ Ref translateNewArrayFromValues(
       } else {
         // If we get here, arrayLT is a pointer to our counted struct.
         auto resultLE =
-            functionState->defaultRegion->constructKnownSizeArray(
+            globalState->getRegion(newArrayFromValues->arrayRefType)->constructKnownSizeArray(
+                makeEmptyTupleRef(globalState),
                 functionState,
                 builder,
                 newArrayFromValues->arrayRefType,
-                newArrayFromValues->arrayReferend,
-                elementsLE);
-        functionState->defaultRegion->checkValidReference(FL(), functionState, builder,
+                newArrayFromValues->arrayReferend);
+        fillKnownSizeArray(
+            globalState,
+            functionState,
+            builder,
+            newArrayFromValues->arrayRefType,
+            knownSizeArrayMT,
+            resultLE,
+            elementsLE);
+        globalState->getRegion(newArrayFromValues->arrayRefType)->checkValidReference(FL(), functionState, builder,
             newArrayFromValues->arrayRefType, resultLE);
         return resultLE;
       }

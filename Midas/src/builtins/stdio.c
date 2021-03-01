@@ -9,7 +9,7 @@ void __vprintCStr(const char* str) {
 }
 
 void __vprintI64(int64_t x) {
-  printf("%ld", x);
+  printf("%lld", x);
 }
 
 void __vprintBool(int8_t x) {
@@ -22,6 +22,6 @@ void __vprintBool(int8_t x) {
 
 int64_t stdinReadInt() {
   int64_t x = 0;
-  scanf("%ld", &x);
+  scanf("%lld", &x);
   return x;
 }

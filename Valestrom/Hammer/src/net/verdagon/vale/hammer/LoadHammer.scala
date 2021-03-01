@@ -72,12 +72,26 @@ object LoadHammer {
 
     vassert(targetOwnership == BorrowH || targetOwnership == ShareH)
 
+    val usa = hamuts.getUnknownSizeArray(arrayAccess.resultType.kind)
+    val expectedElementType = usa.rawArray.elementType
+    val resultType = {
+      val location =
+        (targetOwnership, expectedElementType.location) match {
+          case (BorrowH, _) => YonderH
+          case (OwnH, location) => location
+          case (ShareH, location) => location
+        }
+      ReferenceH(targetOwnership, location, expectedElementType.kind)
+    }
+
     // We're storing into a regular reference element of an array.
     val loadedNodeH =
         UnknownSizeArrayLoadH(
           arrayAccess,
           indexAccess,
-          targetOwnership)
+          targetOwnership,
+          expectedElementType,
+          resultType)
 
     (loadedNodeH, arrayDeferreds ++ indexDeferreds)
   }
@@ -103,12 +117,27 @@ object LoadHammer {
 
     vassert(targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
 
+    val ksa = hamuts.getKnownSizeArray(arrayAccess.resultType.kind)
+    val expectedElementType = ksa.rawArray.elementType
+    val resultType = {
+      val location =
+        (targetOwnership, expectedElementType.location) match {
+          case (BorrowH, _) => YonderH
+          case (OwnH, location) => location
+          case (ShareH, location) => location
+        }
+      ReferenceH(targetOwnership, location, expectedElementType.kind)
+    }
+
     // We're storing into a regular reference element of an array.
     val loadedNodeH =
         KnownSizeArrayLoadH(
           arrayAccess,
           indexAccess,
-          targetOwnership)
+          targetOwnership,
+          expectedElementType,
+          ksa.size,
+          resultType)
 
     (loadedNodeH, arrayDeferreds ++ indexDeferreds)
   }

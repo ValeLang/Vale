@@ -1,0 +1,8 @@
+export [3 * int] as ImmIntArray;
+
+fn sumBytes(arr [3 * int]) int extern;
+
+fn main() int export {
+  a = [13, 14, 15];
+  = sumBytes(a);
+}

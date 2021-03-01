@@ -285,7 +285,9 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     Reference* weakRefM,
     WeakFatPtrLE weakFatPtrLE,
     bool knownLive) {
-  if (limitMode || (knownLive && elideChecksForKnownLive)) {
+  if (limitMode) {
+    return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
+  } else if (knownLive && elideChecksForKnownLive) {
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else {
     // Get target generation from the ref
@@ -301,12 +303,12 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     auto actualGenLE = getGenerationFromControlBlockPtr(globalState, builder, referendStructsSource, weakRefM->referend,
         controlBlockPtrLE);
 
-    return LLVMBuildICmp(
-        builder,
-        LLVMIntEQ,
-        actualGenLE,
-        targetGenLE,
-        "genLive");
+    auto isLiveLE = LLVMBuildICmp(builder, LLVMIntEQ, actualGenLE, targetGenLE, "isLive");
+    if (knownLive && !elideChecksForKnownLive) {
+      buildAssertWithExitCode(globalState, functionState, builder, isLiveLE, 116, "knownLive is true, but object is dead!");
+    }
+
+    return isLiveLE;
   }
 }
 
@@ -319,7 +321,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
   if (limitMode || (knownLive && elideChecksForKnownLive)) {
     // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
-    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   } else {
     assert(
         weakRefM->ownership == Ownership::BORROW ||
@@ -328,10 +330,11 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
     auto weakFatPtrLE =
         weakRefStructsSource->makeWeakFatPtr(
             weakRefM,
-            globalState->region->checkValidReference(
-                FL(), functionState, builder, weakRefM, weakRef));
+            globalState->getRegion(weakRefM)
+                ->checkValidReference(
+                    FL(), functionState, builder, weakRefM, weakRef));
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, weakRefM, weakFatPtrLE, knownLive);
-    return wrap(functionState->defaultRegion, globalState->metalCache.boolRef, isAliveLE);
+    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
   }
 }
 
@@ -422,41 +425,45 @@ Ref HybridGenerationalMemory::assembleWeakRef(
     Ref sourceRef) {
   // Now we need to package it up into a weak ref.
   if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE =
+        globalState->getRegion(sourceType)
+            ->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceInterfaceFatPtrLE = referendStructsSource->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleKnownSizeArrayWeakRef(
             functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
-    auto sourceRefLE = globalState->region->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
+    auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleUnknownSizeArrayWeakRef(
             functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);
-    return wrap(functionState->defaultRegion, targetType, resultLE);
+    return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }
 
 
-LLVMTypeRef HybridGenerationalMemory::makeWeakRefHeaderStruct(GlobalState* globalState) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
+LLVMTypeRef HybridGenerationalMemory::makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId) {
+  assert(regionId == globalState->metalCache->resilientV2RegionId ||
+             regionId == globalState->metalCache->resilientV3RegionId);
+//  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
+//      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+//      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
   auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
 
   std::vector<LLVMTypeRef> memberTypesL;

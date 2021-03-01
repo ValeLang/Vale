@@ -41,7 +41,7 @@ LLVMValueRef getLenFromStrWrapperPtr(
   return LLVMBuildLoad(builder, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE), "len");
 }
 
-WrapperPtrLE buildConstantVStr(
+Ref buildConstantVStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -49,19 +49,20 @@ WrapperPtrLE buildConstantVStr(
 
   auto lengthLE = constI64LE(globalState, contents.length());
 
-  auto strWrapperPtrLE = functionState->defaultRegion->mallocStr(functionState, builder, lengthLE);
+  auto strRef =
+      globalState->getRegion(globalState->metalCache->strRef)
+          ->mallocStr(
+              makeEmptyTupleRef(globalState),
+              functionState, builder, lengthLE,
+              globalState->getOrMakeStringConstant(contents));
+//
+//  // Fill the chars
+//  std::vector<LLVMValueRef> argsLE = {
+//      globalState->getRegion(globalState->metalCache->strRef)->getStringBytesPtr(functionState, builder, strRef),
+//      ,
+//      lengthLE
+//  };
+//  LLVMBuildCall(builder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
 
-  // Set the length
-  LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
-  // Fill the chars
-  std::vector<LLVMValueRef> argsLE = {
-      getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE),
-      globalState->getOrMakeStringConstant(contents),
-      lengthLE
-  };
-  LLVMBuildCall(builder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
-
-  buildFlare(FL(), globalState, functionState, builder, "making chars ptr: ", getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE));
-
-  return strWrapperPtrLE;
+  return strRef;
 }

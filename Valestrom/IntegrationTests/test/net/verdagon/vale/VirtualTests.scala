@@ -5,6 +5,8 @@ import net.verdagon.vale.templar.templata.{Abstract2, Signature2}
 import net.verdagon.vale.templar.types._
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.vivem.IntV
+import net.verdagon.von.VonInt
 
 class VirtualTests extends FunSuite with Matchers {
 
@@ -110,6 +112,37 @@ class VirtualTests extends FunSuite with Matchers {
           |fn collectHeaders2(header &List<&Header>, this &Header impl SectionMember) { }
         """.stripMargin))
     val temputs = compile.getHamuts()
+  }
+
+  test("Open interface constructors") {
+    val compile = Compilation.multiple(
+      List(
+        """
+          |interface Bipedal {
+          |  fn hop(virtual s &Bipedal) int;
+          |  fn skip(virtual s &Bipedal) int;
+          |}
+          |
+          |struct Human {  }
+          |fn hop(s &Human impl Bipedal) int { 7 }
+          |fn skip(s &Human impl Bipedal) int { 9 }
+          |impl Bipedal for Human;
+          |
+          |fn hopscotch(s &Bipedal) int {
+          |  s.hop();
+          |  s.skip();
+          |  = s.hop();
+          |}
+          |
+          |fn main() export int {
+          |   x = Bipedal({ 3 }, { 5 });
+          |  // x is an unnamed substruct which implements Bipedal.
+          |
+          |  = hopscotch(&x);
+          |}
+        """.stripMargin))
+    val temputs = compile.getHamuts()
+    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
 

@@ -32,8 +32,8 @@ Ref translateConstruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* desiredReference,
-    const std::vector<Ref>& membersLE);
+    Reference* desiredStructMT,
+    const std::vector<Ref>& memberRefs);
 
 Ref translateCall(
     GlobalState* globalState,
@@ -55,6 +55,13 @@ Ref translateExternCall(
     BlockState* blockState,
     LLVMBuilderRef builder,
     ExternCall* expr);
+
+Ref buildExternCall(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Prototype* prototype,
+    const std::vector<Ref>& args);
 
 Ref translateIf(
     GlobalState* globalState,

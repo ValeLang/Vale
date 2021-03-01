@@ -44,7 +44,7 @@ public:
       LLVMValueRef headerLE);
 
 private:
-  GlobalState* globalState;
+  GlobalState* globalState = nullptr;
   IWeakRefStructsSource* weakRefStructsSource;
 };
 

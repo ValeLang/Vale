@@ -5,7 +5,6 @@
 #include <globalstate.h>
 #include <function/function.h>
 #include <region/common/fatweaks/fatweaks.h>
-#include <region/common/referendptrmaker.h>
 
 class WrcWeaks {
 public:
@@ -148,14 +147,17 @@ private:
       LLVMBuilderRef builder,
       LLVMValueRef wrciLE);
 
+  LLVMValueRef getWrcCapacityPtr(LLVMBuilderRef builder);
+  LLVMValueRef getWrcFirstFreeWrciPtr(LLVMBuilderRef builder);
+  LLVMValueRef getWrcEntriesArrayPtr(LLVMBuilderRef builder);
 
-  GlobalState* globalState;
+
+  GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
   IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 
-  LLVMValueRef expandWrcTable = nullptr, checkWrci = nullptr, getNumWrcs = nullptr;
-  LLVMValueRef wrcCapacityPtr = nullptr, wrcFirstFreeWrciPtr = nullptr, wrcEntriesArrayPtr = nullptr;
+  LLVMValueRef wrcTablePtrLE = nullptr;
 };
 
 #endif

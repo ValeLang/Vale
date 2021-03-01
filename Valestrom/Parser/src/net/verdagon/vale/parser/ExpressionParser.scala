@@ -345,7 +345,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
           MethodCallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) MoveP else LendBorrowP, mapCall.nonEmpty, name, args)
         }
       }) |
-      (pos ~ opt("^") ~ pos ~ packExpr ~ pos ^^ {
+      ((pos <~ optWhite) ~ opt("^") ~ pos ~ packExpr ~ pos ^^ {
         case begin ~ moveContainer ~ opEnd ~ pack ~ end => {
           CallStep(Range(begin, end), Range(begin, opEnd), if (moveContainer.nonEmpty) MoveP else LendBorrowP, false, pack)
         }

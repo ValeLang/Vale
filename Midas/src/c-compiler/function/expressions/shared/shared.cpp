@@ -5,6 +5,8 @@
 
 #include "translatetype.h"
 #include "region/common/controlblock.h"
+#include "region/linear/linear.h"
+#include "region/rcimm/rcimm.h"
 #include "utils/branch.h"
 
 // A "Never" is something that should never be read.
@@ -18,14 +20,14 @@ LLVMTypeRef makeNeverType(GlobalState* globalState) {
   return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
 }
 
-LLVMValueRef makeEmptyTuple(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder) {
-  return LLVMGetUndef(
-      functionState->defaultRegion->translateType(globalState->metalCache.emptyTupleStructRef));
+LLVMValueRef makeEmptyTuple(GlobalState* globalState) {
+  return LLVMGetUndef(globalState->rcImm->translateType(globalState->metalCache->emptyTupleStructRef));
 }
 
-Ref makeEmptyTupleRef(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder) {
-  auto emptyTupleLE = makeEmptyTuple(globalState, functionState, builder);
-  return wrap(functionState->defaultRegion, globalState->metalCache.emptyTupleStructRef, emptyTupleLE);
+Ref makeEmptyTupleRef(GlobalState* globalState) {
+  auto emptyTupleLE = makeEmptyTuple(globalState);
+  auto refMT = globalState->metalCache->emptyTupleStructRef;
+  return wrap(globalState->rcImm, refMT, emptyTupleLE);
 }
 
 LLVMValueRef makeMidasLocal(
@@ -34,11 +36,7 @@ LLVMValueRef makeMidasLocal(
     LLVMTypeRef typeL,
     const std::string& name,
     LLVMValueRef valueToStore) {
-  auto localAddr =
-      LLVMBuildAlloca(
-          functionState->localsBuilder,
-          typeL,
-          name.c_str());
+  auto localAddr = LLVMBuildAlloca(functionState->localsBuilder, typeL, name.c_str());
   LLVMBuildStore(builder, valueToStore, localAddr);
   return localAddr;
 }
@@ -51,12 +49,13 @@ void makeHammerLocal(
     Local* local,
     Ref refToStore) {
   auto toStoreLE =
-      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, local->type, refToStore);
+      globalState->getRegion(local->type)
+          ->checkValidReference(FL(), functionState, builder, local->type, refToStore);
   auto localAddr =
       makeMidasLocal(
           functionState,
           builder,
-          functionState->defaultRegion->translateType(local->type),
+          globalState->getRegion(local->type)->translateType(local->type),
           local->id->maybeName.c_str(),
           toStoreLE);
   blockState->addLocal(local->id, localAddr);
@@ -182,11 +181,21 @@ void buildAssert(
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
     const std::string& failMessage) {
+  buildAssertWithExitCode(globalState, functionState, builder, conditionLE, 1, failMessage);
+}
+
+void buildAssertWithExitCode(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    int exitCode,
+    const std::string& failMessage) {
   buildIf(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
-      [globalState, functionState, failMessage](LLVMBuilderRef thenBuilder) {
+      [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), exitCode, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
 }
@@ -219,40 +228,51 @@ Ref buildInterfaceCall(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
+    LLVMValueRef methodFunctionPtrLE,
     std::vector<Ref> argRefs,
-    int virtualParamIndex,
-    int indexInEdge) {
+    int virtualParamIndex) {
   auto virtualParamMT = prototype->params[virtualParamIndex];
+
+  auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(virtualParamMT->referend);
+  assert(interfaceReferendM);
+//  int indexInEdge = globalState->getInterfaceMethod(interfaceReferendM, prototype);
+
   auto virtualArgRef = argRefs[virtualParamIndex];
-  auto virtualArgLE =
-      functionState->defaultRegion->checkValidReference(FL(), functionState, builder, virtualParamMT, virtualArgRef);
 
   LLVMValueRef itablePtrLE = nullptr;
   LLVMValueRef newVirtualArgLE = nullptr;
   std::tie(itablePtrLE, newVirtualArgLE) =
-      functionState->defaultRegion->explodeInterfaceRef(
-          functionState, builder, virtualParamMT, virtualArgRef);
+      globalState->getRegion(virtualParamMT)
+          ->explodeInterfaceRef(
+              functionState, builder, virtualParamMT, virtualArgRef);
+  buildFlare(FL(), globalState, functionState, builder);
 
   // We can't represent these arguments as refs, because this new virtual arg is a void*, and we
   // can't represent that as a ref.
   std::vector<LLVMValueRef> argsLE;
   for (int i = 0; i < argRefs.size(); i++) {
     argsLE.push_back(
-        functionState->defaultRegion->checkValidReference(FL(),
-            functionState, builder, prototype->params[i], argRefs[i]));
+        globalState->getRegion(prototype->params[i])
+            ->checkValidReference(FL(),
+                functionState, builder, prototype->params[i], argRefs[i]));
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
-  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
-  auto funcPtrPtrLE =
-      LLVMBuildStructGEP(
-          builder, itablePtrLE, indexInEdge, "methodPtrPtr");
+  buildFlare(FL(), globalState, functionState, builder, interfaceReferendM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
 
-  auto funcPtrLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
+//  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
+//  auto funcPtrPtrLE =
+//      LLVMBuildStructGEP(
+//          builder, itablePtrLE, indexInEdge, "methodPtrPtr");
+
+//  auto funcPtrLE = LLVMBuildLoad(builder, funcPtrPtrLE, "methodPtr");
+
+
 
   auto resultLE =
-      LLVMBuildCall(builder, funcPtrLE, argsLE.data(), argsLE.size(), "");
-  return wrap(functionState->defaultRegion, prototype->returnType, resultLE);
+      LLVMBuildCall(builder, methodFunctionPtrLE, argsLE.data(), argsLE.size(), "");
+  buildFlare(FL(), globalState, functionState, builder);
+  return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
 }
 
 LLVMValueRef makeConstExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMValueRef constExpr) {
@@ -274,6 +294,16 @@ void buildAssertCensusContains(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildPointerCast(
             builder, ptrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
+
+    auto isNullLE = LLVMBuildIsNull(builder, resultAsVoidPtrLE, "isNull");
+    buildIf(globalState, functionState, builder, isNullLE,
+            [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
+              buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
+              buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
+              auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+              LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+            });
+
     auto isRegisteredIntLE =
         LLVMBuildCall(
             builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
@@ -298,9 +328,7 @@ Ref buildCall(
     LLVMBuilderRef builder,
     Prototype* prototype,
     std::vector<Ref> argRefs) {
-  auto funcIter = globalState->functions.find(prototype->name->name);
-  assert(funcIter != globalState->functions.end());
-  auto funcL = funcIter->second;
+  auto funcL = globalState->lookupFunction(prototype);
 
   buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
   buildFlare(FL(), globalState, functionState, builder, "Calling function ", prototype->name->name);
@@ -308,19 +336,25 @@ Ref buildCall(
   std::vector<LLVMValueRef> argsLE;
   for (int i = 0; i < argRefs.size(); i++) {
     argsLE.push_back(
-        functionState->defaultRegion->checkValidReference(FL(),
-            functionState, builder, prototype->params[i], argRefs[i]));
+        globalState->getRegion(prototype->params[i])
+            ->checkValidReference(FL(),
+                functionState, builder, prototype->params[i], argRefs[i]));
   }
 
-  auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
-  auto resultRef = wrap(functionState->defaultRegion, prototype->returnType, resultLE);
-  functionState->defaultRegion->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
+  buildFlare(FL(), globalState, functionState, builder, "Doing call");
 
-  if (prototype->returnType->referend == globalState->metalCache.never) {
+  auto resultLE = LLVMBuildCall(builder, funcL, argsLE.data(), argsLE.size(), "");
+
+  buildFlare(FL(), globalState, functionState, builder, "Done with call");
+
+  auto resultRef = wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
+  globalState->getRegion(prototype->returnType)->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
+
+  if (prototype->returnType->referend == globalState->metalCache->never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
-    return wrap(functionState->defaultRegion, globalState->metalCache.neverRef, globalState->neverPtr);
+    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
   } else {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);

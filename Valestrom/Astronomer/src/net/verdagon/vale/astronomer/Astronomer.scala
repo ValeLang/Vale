@@ -3,7 +3,7 @@ package net.verdagon.vale.astronomer
 import net.verdagon.vale.astronomer.builtins._
 import net.verdagon.vale.astronomer.ruletyper._
 import net.verdagon.vale.parser.{CaptureP, ImmutableP, MutabilityP, MutableP}
-import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.scout.{ExportS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
@@ -428,6 +428,22 @@ object Astronomer {
       translateRune(interfaceKindRuneS))
   }
 
+  def translateExport(astrouts: AstroutsBox, env: Environment, exportS: ExportAsS): ExportAsA = {
+    val ExportAsS(range, exportName, templexS, exportedName) = exportS
+
+    val runeS = ImplicitRuneS(exportName, 0)
+    val runeA = translateRune(runeS)
+    val rulesS = List(EqualsSR(range, TypedSR(range, runeS, KindTypeSR), TemplexSR(templexS)))
+
+    val (conclusions, rulesA) =
+      makeRuleTyper().solve(astrouts, env, rulesS, range, List(), Some(Set(runeA))) match {
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (c, RuleTyperSolveSuccess(r)) => (c, r)
+      }
+
+    ExportAsA(range, exportedName, rulesA, conclusions.typeByRune, runeA)
+  }
+
   def translateParameter(env: Environment, paramS: ParameterS): ParameterA = {
     val ParameterS(atomS) = paramS
     ParameterA(translateAtom(env, atomS))
@@ -604,6 +620,7 @@ object Astronomer {
       case ClosureParamNameS() => ClosureParamNameA()
       case MagicParamNameS(codeLocation) => MagicParamNameA(codeLocation)
       case CodeVarNameS(name) => CodeVarNameA(name)
+      case ExportAsNameS(codeLocation) => ExportAsNameA(codeLocation)
     }
   }
 
@@ -650,7 +667,7 @@ object Astronomer {
       suppliedFunctions: List[FunctionA],
       suppliedInterfaces: List[InterfaceA]):
   ProgramA = {
-    val ProgramS(structsS, interfacesS, implsS, functionsS) = programS
+    val ProgramS(structsS, interfacesS, implsS, functionsS, exportsS) = programS
 
     val astrouts = AstroutsBox(Astrouts(Map(), Map(), Map(), Map()))
 
@@ -665,9 +682,11 @@ object Astronomer {
 
     val functionsA = functionsS.map(translateFunction(astrouts, env, _))
 
+    val exportsA = exportsS.map(translateExport(astrouts, env, _))
+
     val _ = astrouts
 
-    ProgramA(structsA, suppliedInterfaces ++ interfacesA, implsA, suppliedFunctions ++ functionsA)
+    ProgramA(structsA, suppliedInterfaces ++ interfacesA, implsA, suppliedFunctions ++ functionsA, exportsA)
   }
 
 
@@ -692,14 +711,15 @@ object Astronomer {
     try {
       val suppliedFunctions = wrapperFunctions
       val suppliedInterfaces = List(IFunction1.interface)
-      val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS) =
+      val ProgramA(originalStructs, originalInterfaces, originalImpls, originalImplementedFunctionsS, originalExports) =
         Astronomer.translateProgram(programS, primitives, suppliedFunctions, suppliedInterfaces)
       val programA =
         ProgramA(
           originalStructs,
           originalInterfaces,
           originalImpls,
-          originalImplementedFunctionsS)
+          originalImplementedFunctionsS,
+          originalExports)
       Left(programA)
     } catch {
       case CompileErrorExceptionA(err) => {

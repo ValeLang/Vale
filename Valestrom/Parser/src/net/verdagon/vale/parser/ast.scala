@@ -31,6 +31,7 @@ case class TopLevelFunctionP(function: FunctionP) extends ITopLevelThingP
 case class TopLevelStructP(struct: StructP) extends ITopLevelThingP
 case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP
 case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP
+case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP
 
 case class ImplP(
   range: Range,
@@ -38,6 +39,11 @@ case class ImplP(
   rules: Option[TemplateRulesP],
   struct: ITemplexPT,
   interface: ITemplexPT)
+
+case class ExportAsP(
+  range: Range,
+  struct: ITemplexPT,
+  exportedName: StringP)
 
 sealed trait ICitizenAttributeP
 case class ExportP(range: Range) extends ICitizenAttributeP

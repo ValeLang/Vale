@@ -39,4 +39,19 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       Some(BlockPE(_,List(VoidPE(_)))))) =>
     }
   }
+
+  test("exporting int") {
+    val program = compileProgram("export int as NumberThing;")
+    program.topLevelThings(0) match {
+      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(StringP(_,"int")),StringP(_,"NumberThing"))) =>
+
+    }
+  }
+
+  test("exporting array") {
+    val program = compileProgram("export Array<mut, int> as IntArray;")
+    program.topLevelThings(0) match {
+      case TopLevelExportAsP(ExportAsP(_,_,StringP(_,"IntArray"))) =>
+    }
+  }
 }

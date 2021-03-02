@@ -325,11 +325,11 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     }
   }
 
-  // See https://github.com/ValeLang/Vale/issues/108
-  test("Calling with space") {
-    compile(CombinatorParsers.expression,
-      """len (cached_dims)""") shouldHave {
-      case FunctionCallPE(_,_,_,_,LookupPE(StringP(_,"len"),None),List(LookupPE(StringP(_,"cached_dims"),None)),_) =>
-    }
-  }
+//  // See https://github.com/ValeLang/Vale/issues/108
+//  test("Calling with space") {
+//    compile(CombinatorParsers.expression,
+//      """len (cached_dims)""") shouldHave {
+//      case FunctionCallPE(_,_,_,_,LookupPE(StringP(_,"len"),None),List(LookupPE(StringP(_,"cached_dims"),None)),_) =>
+//    }
+//  }
 }

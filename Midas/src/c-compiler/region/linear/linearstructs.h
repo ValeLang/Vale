@@ -1,6 +1,7 @@
 #ifndef REGION_COMMON_LINEAR_LINEARSTRUCTS_H_
 #define REGION_COMMON_LINEAR_LINEARSTRUCTS_H_
 
+#include <algorithm>
 #include <llvm-c/Types.h>
 #include <globalstate.h>
 #include <iostream>

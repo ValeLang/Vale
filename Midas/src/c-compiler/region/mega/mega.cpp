@@ -184,6 +184,7 @@ Ref Mega::mallocStr(
     LLVMValueRef lengthLE,
     LLVMValueRef sourceCharsPtrLE) {
   assert(false);
+  exit(1);
 }
 
 Ref Mega::allocate(
@@ -2118,6 +2119,7 @@ Ref Mega::receiveUnencryptedAlienReference(
     Reference* targetRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 Ref Mega::encryptAndSendFamiliarReference(
@@ -2227,6 +2229,7 @@ Ref Mega::deinitializeElementFromKSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   assert(false);
+  exit(1);
 }
 
 Weakability Mega::getReferendWeakability(Referend* referend) {

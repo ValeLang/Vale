@@ -178,6 +178,7 @@ Ref Linear::lockWeak(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   assert(false);
+  exit(1);
 }
 
 LLVMTypeRef Linear::translateType(Reference* referenceM) {
@@ -250,6 +251,7 @@ Ref Linear::upcastWeak(
     InterfaceReferend* targetInterfaceReferendM,
     Reference* targetInterfaceTypeM) {
   assert(false);
+  exit(1);
 }
 
 void Linear::declareKnownSizeArray(
@@ -435,6 +437,7 @@ void Linear::defineInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
 Ref Linear::weakAlias(
     FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 void Linear::discardOwningRef(
@@ -529,6 +532,7 @@ Ref Linear::getIsAliveFromWeakRef(
     Ref weakRef,
     bool knownLive) {
   assert(false);
+  exit(1);
 }
 
 LLVMValueRef Linear::getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
@@ -549,6 +553,7 @@ Ref Linear::allocate(
   // but Linear needs to allocate memory for the struct before it can serialize its members,
   // see MAPOWM.
   assert(false);
+  exit(1);
 }
 
 Ref Linear::innerAllocate(
@@ -620,6 +625,7 @@ WrapperPtrLE Linear::lockWeakRef(
     Ref weakRefLE,
     bool weakRefKnownLive) {
   assert(false);
+  exit(1);
 }
 
 Ref Linear::getUnknownSizeArrayLength(
@@ -739,6 +745,7 @@ Ref Linear::storeElementInUSA(
     Ref indexRef,
     Ref elementRef) {
   assert(false);
+  exit(1);
 }
 
 void Linear::deallocate(
@@ -1285,6 +1292,7 @@ Ref Linear::receiveAndDecryptFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 Ref Linear::encryptAndSendFamiliarReference(
@@ -1293,6 +1301,7 @@ Ref Linear::encryptAndSendFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 InterfaceMethod* Linear::getSerializeInterfaceMethod(Referend* valeReferend) {
@@ -1719,6 +1728,7 @@ Ref Linear::deinitializeElementFromUSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   assert(false);
+  exit(1);
 }
 
 void Linear::initializeElementInKSA(
@@ -1760,6 +1770,7 @@ Ref Linear::deinitializeElementFromKSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   assert(false);
+  exit(1);
 }
 
 Weakability Linear::getReferendWeakability(Referend* referend) {

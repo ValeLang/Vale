@@ -432,6 +432,7 @@ Ref Assist::mallocStr(
     LLVMValueRef lengthLE,
     LLVMValueRef sourceCharsPtrLE) {
   assert(false);
+  exit(1);
 }
 
 Ref Assist::allocate(
@@ -867,6 +868,7 @@ Ref Assist::receiveUnencryptedAlienReference(
     Reference* targetRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 Ref Assist::encryptAndSendFamiliarReference(
@@ -934,6 +936,7 @@ Ref Assist::deinitializeElementFromKSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   assert(false);
+  exit(1);
 }
 
 Weakability Assist::getReferendWeakability(Referend* referend) {

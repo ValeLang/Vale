@@ -103,6 +103,7 @@ Ref RCImm::lockWeak(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   assert(false);
+  exit(1);
 }
 
 LLVMTypeRef RCImm::translateType(Reference* referenceM) {
@@ -143,6 +144,7 @@ Ref RCImm::upcastWeak(
     InterfaceReferend* targetInterfaceReferendM,
     Reference* targetInterfaceTypeM) {
   assert(false);
+  exit(1);
 }
 
 void RCImm::declareStruct(
@@ -263,6 +265,7 @@ void RCImm::defineEdge(Edge* edge) {
 Ref RCImm::weakAlias(
     FunctionState* functionState, LLVMBuilderRef builder, Reference* sourceRefMT, Reference* targetRefMT, Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 void RCImm::discardOwningRef(
@@ -352,6 +355,7 @@ Ref RCImm::getIsAliveFromWeakRef(
     Ref weakRef,
     bool knownLive) {
   assert(false);
+  exit(1);
 }
 
 LLVMValueRef RCImm::getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
@@ -406,6 +410,7 @@ WrapperPtrLE RCImm::lockWeakRef(
     Ref weakRefLE,
     bool weakRefKnownLive) {
   assert(false);
+  exit(1);
 }
 
 Ref RCImm::constructKnownSizeArray(
@@ -545,6 +550,7 @@ Ref RCImm::storeElementInUSA(
     Ref indexRef,
     Ref elementRef) {
   assert(false);
+  exit(1);
 }
 
 void RCImm::initializeElementInUSA(
@@ -827,6 +833,7 @@ void RCImm::checkValidReference(
 
 std::string RCImm::getRefNameC(Reference* sourceMT) {
   assert(false);
+  exit(1);
 }
 
 void RCImm::generateStructDefsC(
@@ -918,6 +925,7 @@ Ref RCImm::receiveAndDecryptFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 Ref RCImm::encryptAndSendFamiliarReference(
@@ -926,6 +934,7 @@ Ref RCImm::encryptAndSendFamiliarReference(
     Reference* sourceRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 void RCImm::initializeElementInKSA(
@@ -953,6 +962,7 @@ Ref RCImm::deinitializeElementFromKSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   assert(false);
+  exit(1);
 }
 
 Weakability RCImm::getReferendWeakability(Referend* referend) {

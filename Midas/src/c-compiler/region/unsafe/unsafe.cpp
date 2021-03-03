@@ -77,6 +77,7 @@ Ref Unsafe::mallocStr(
     LLVMValueRef lengthLE,
     LLVMValueRef sourceCharsPtrLE) {
   assert(false);
+  exit(1);
 }
 
 Ref Unsafe::allocate(
@@ -837,6 +838,7 @@ Ref Unsafe::receiveUnencryptedAlienReference(
     Reference* targetRefMT,
     Ref sourceRef) {
   assert(false);
+  exit(1);
 }
 
 Ref Unsafe::encryptAndSendFamiliarReference(
@@ -902,6 +904,7 @@ Ref Unsafe::deinitializeElementFromKSA(
     bool arrayRefKnownLive,
     Ref indexRef) {
   assert(false);
+  exit(1);
 }
 
 Weakability Unsafe::getReferendWeakability(Referend* referend) {

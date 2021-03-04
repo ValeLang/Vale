@@ -79,7 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)src\c-compiler;$(LLVMIncludeDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)src\c-compiler;$(LLVMIncludeDir1);$(LLVMIncludeDir2);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(LLVMBuiltDir)\lib;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)src\c-compiler;$(SourcePath)</SourcePath>
   </PropertyGroup>
@@ -175,6 +175,7 @@
   <ItemGroup>
     <ClInclude Include="src\c-compiler\error.h" />
     <ClInclude Include="src\c-compiler\fileio.h" />
+    <ClInclude Include="src\c-compiler\function\boundary.h" />
     <ClInclude Include="src\c-compiler\function\expression.h" />
     <ClInclude Include="src\c-compiler\function\expressions\expressions.h" />
     <ClInclude Include="src\c-compiler\function\expressions\shared\afl.h" />
@@ -196,7 +197,6 @@
     <ClInclude Include="src\c-compiler\region\assist\assist.h" />
     <ClInclude Include="src\c-compiler\region\common\common.h" />
     <ClInclude Include="src\c-compiler\region\common\controlblock.h" />
-    <ClInclude Include="src\c-compiler\region\common\defaultimmutables\defaultimmutables.h" />
     <ClInclude Include="src\c-compiler\region\common\defaultlayout\structs.h" />
     <ClInclude Include="src\c-compiler\region\common\defaultlayout\structsrouter.h" />
     <ClInclude Include="src\c-compiler\region\common\fatweaks\fatweaks.h" />
@@ -206,7 +206,11 @@
     <ClInclude Include="src\c-compiler\region\common\primitives.h" />
     <ClInclude Include="src\c-compiler\region\common\wrcweaks\wrcweaks.h" />
     <ClInclude Include="src\c-compiler\region\iregion.h" />
+    <ClInclude Include="src\c-compiler\region\linear\linear.h" />
+    <ClInclude Include="src\c-compiler\region\linear\linearstructs.h" />
     <ClInclude Include="src\c-compiler\region\mega\mega.h" />
+    <ClInclude Include="src\c-compiler\region\rcimm\rcimm.h" />
+    <ClInclude Include="src\c-compiler\region\unsafe\unsafe.h" />
     <ClInclude Include="src\c-compiler\translatetype.h" />
     <ClInclude Include="src\c-compiler\utils\branch.h" />
     <ClInclude Include="src\c-compiler\utils\counters.h" />
@@ -214,6 +218,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\c-compiler\fileio.cpp" />
+    <ClCompile Include="src\c-compiler\function\boundary.cpp" />
     <ClCompile Include="src\c-compiler\function\expression.cpp" />
     <ClCompile Include="src\c-compiler\function\expressions\block.cpp" />
     <ClCompile Include="src\c-compiler\function\expressions\call.cpp" />
@@ -242,7 +247,6 @@
     <ClCompile Include="src\c-compiler\region\assist\assist.cpp" />
     <ClCompile Include="src\c-compiler\region\common\common.cpp" />
     <ClCompile Include="src\c-compiler\region\common\controlblock.cpp" />
-    <ClCompile Include="src\c-compiler\region\common\defaultimmutables\defaultimmutables.cpp" />
     <ClCompile Include="src\c-compiler\region\common\defaultlayout\structs.cpp" />
     <ClCompile Include="src\c-compiler\region\common\defaultlayout\structsrouter.cpp" />
     <ClCompile Include="src\c-compiler\region\common\fatweaks\fatweaks.cpp" />
@@ -250,8 +254,12 @@
     <ClCompile Include="src\c-compiler\region\common\hgm\hgm.cpp" />
     <ClCompile Include="src\c-compiler\region\common\lgtweaks\lgtweaks.cpp" />
     <ClCompile Include="src\c-compiler\region\common\wrcweaks\wrcweaks.cpp" />
+    <ClCompile Include="src\c-compiler\region\linear\linear.cpp" />
+    <ClCompile Include="src\c-compiler\region\linear\linearstructs.cpp" />
     <ClCompile Include="src\c-compiler\region\mega\mega.cpp" />
+    <ClCompile Include="src\c-compiler\region\rcimm\rcimm.cpp" />
     <ClCompile Include="src\c-compiler\region\regions.cpp" />
+    <ClCompile Include="src\c-compiler\region\unsafe\unsafe.cpp" />
     <ClCompile Include="src\c-compiler\translatetype.cpp" />
     <ClCompile Include="src\c-compiler\utils\branch.cpp" />
     <ClCompile Include="src\c-compiler\utils\counters.cpp" />

@@ -1,17 +1,8 @@
 <Project>
  <PropertyGroup>
-   <!-- LLVM's directory. -->
-   <LLVMProjectDir>D:\llvm11\llvm-project</LLVMProjectDir>
-   <!-- LLVM's generated visual studio project's build directory. -->
-   <LLVMBuiltDir>D:\llvm11\llvm-project\build\Release</LLVMBuiltDir>
-   <!-- LLVM's generated visual studio project's directory. -->
-   <LLVMVSProjDir>D:\llvm11\llvm-project\build</LLVMVSProjDir>
-   <!-- LLVM's include directory. -->
-   <LLVMVSProjDir>D:\llvm11\llvm-project\llvm\include\llvm-c</LLVMVSProjDir>
-   
-   <!-- Debugging command line arguments, so we dont have to go to that annoying
-   property page (right click project -> Properties -> Configuration Properties ->
-   Debugging -> Command Arguments) all the time. -->
-   <ValeDebugArgs>D:\addret.vale --cpu=x86-64 -o D:\</ValeDebugArgs>
+   <LLVMBuiltDir>C:\Users\Valerian\llvm11\Debug</LLVMBuiltDir>
+   <LLVMIncludeDir1>C:\Users\Valerian\llvm11\include</LLVMIncludeDir1>
+   <LLVMIncludeDir2>C:\Users\Valerian\llvm-project-llvmorg-11.0.1\llvm\include</LLVMIncludeDir2>
+   <LLVMLibraryDir>C:\Users\Valerian\llvm\Debug\lib</LLVMLibraryDir>
  </PropertyGroup>
 </Project>

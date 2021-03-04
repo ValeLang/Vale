@@ -90,6 +90,7 @@ packages
 valec
 test/test_build
 test/Driver.jar
+LLVM-C.dll
 
 # python
 __pycache__

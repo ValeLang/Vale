@@ -218,7 +218,8 @@ void buildAssertIntEq(
         buildPrint(globalState, thenBuilder, bLE);
         buildPrint(globalState, thenBuilder, ".\n");
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
-        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+        // See MPESC for status codes
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
         LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
       });
 }
@@ -300,7 +301,8 @@ void buildAssertCensusContains(
             [globalState, checkerAFL, ptrLE](LLVMBuilderRef thenBuilder) {
               buildPrintAreaAndFileAndLine(globalState, thenBuilder, checkerAFL);
               buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
-              auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+              // See MPESC for status codes
+              auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
               LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
             });
 
@@ -316,7 +318,8 @@ void buildAssertCensusContains(
           buildPrint(globalState, thenBuilder, "Object &");
           buildPrint(globalState, thenBuilder, ptrToIntLE(globalState, thenBuilder, ptrLE));
           buildPrint(globalState, thenBuilder, " not registered with census, exiting!\n");
-          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255, false);
+          // See MPESC for status codes
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
           LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
         });
   }

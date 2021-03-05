@@ -243,8 +243,8 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
             buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
             buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
             buildPrint(globalState, thenBuilder, "Exiting!\n");
-            auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 255,
-                false);
+            // See MPESC for status codes
+            auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
             LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
           }
         });
@@ -305,7 +305,8 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
 
     auto isLiveLE = LLVMBuildICmp(builder, LLVMIntEQ, actualGenLE, targetGenLE, "isLive");
     if (knownLive && !elideChecksForKnownLive) {
-      buildAssertWithExitCode(globalState, functionState, builder, isLiveLE, 116, "knownLive is true, but object is dead!");
+      // See MPESC for status codes
+      buildAssertWithExitCode(globalState, functionState, builder, isLiveLE, 14, "knownLive is true, but object is dead!");
     }
 
     return isLiveLE;

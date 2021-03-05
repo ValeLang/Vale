@@ -268,8 +268,9 @@ void defineFunctionBody(
   LLVMBuilderRef bodyTopLevelBuilder = LLVMCreateBuilderInContext(globalState->context);
   LLVMPositionBuilderAtEnd(bodyTopLevelBuilder, firstBlockL);
 
+  auto retType = globalState->getRegion(prototype->returnType)->translateType(prototype->returnType);
   FunctionState functionState(
-      prototype->name->name, functionL, LLVMGetReturnType(LLVMTypeOf(functionL)), localsBuilder);
+      prototype->name->name, functionL, retType, localsBuilder);
 
   definer(&functionState, bodyTopLevelBuilder);
 

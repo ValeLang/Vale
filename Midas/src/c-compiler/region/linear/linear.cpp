@@ -1114,7 +1114,7 @@ Ref Linear::topLevelSerialize(
   auto nullLT = LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
   // This is an arbitrary number, 0xFFFFFFFF * 1000000, which is 4294967296000000 or 0xF424000000000.
   // If we see it somewhere in a bug, all the 0s might be a hint to search for it and find it here.
-  auto dryRunCounterBeginLE = constI64LE(globalState, 0xFFFFFFFFUL * 1000000UL);
+  auto dryRunCounterBeginLE = constI64LE(globalState, 0xFFFFFFFFULL * 1000000ULL);
   // We'll keep subtracting from this (similar to how a program stack works) and the final address
   // will be subtracted from this number to find the needed size.
 

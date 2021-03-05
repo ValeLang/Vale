@@ -68,7 +68,8 @@ Ref buildExternCall(
     // VivemExterns.addFloatFloat
     assert(false);
   } else if (prototype->name->name == "__panic") {
-    auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8TypeInContext(globalState->context), 255);
+    // See MPESC for status codes
+    auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8TypeInContext(globalState->context), 1);
     LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);

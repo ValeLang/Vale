@@ -26,9 +26,9 @@ If you just want to build and run Vale programs, go to the [download](https://va
 See [the Guide](https://vale.dev/guide/introduction) for how to use Vale.
 
 
-## More examples
+## Vale code examples
 
-A number of working examples grouped by functionality can be found [here](https://github.com/Ivo-Balbaert/Vale_Examples.)
+A number of working examples grouped by functionality can be found [here](https://github.com/Ivo-Balbaert/Vale_Examples)
 
 
 ## Editor plugins

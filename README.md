@@ -33,7 +33,7 @@ A number of working examples grouped by functionality can be found [here](https:
 
 ## Editor plugins
 
-[VSCode plugin](https://github.com/Ivo-Balbaert/vscode-vale).
+[VSCode plugin](https://github.com/pacifio/vale-lang): Syntax-highlighting and basic autocompletion.
 
 
 # Notes

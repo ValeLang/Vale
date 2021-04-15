@@ -83,15 +83,18 @@ class Stackify : public Expression {
 public:
   Expression* sourceExpr;
   Local* local;
+  bool knownLive;
   std::string maybeName;
 
   Stackify(
       Expression* sourceExpr_,
       Local* local_,
+      bool knownLive_,
       std::string maybeName_) :
     sourceExpr(sourceExpr_),
     local(local_),
-    maybeName(maybeName_){}
+    knownLive(knownLive_),
+    maybeName(maybeName_) {}
 };
 
 
@@ -110,16 +113,19 @@ public:
   Reference* structType;
   std::vector<Reference*> localTypes;
   std::vector<Local*> localIndices;
+  std::vector<bool> localsKnownLives;
 
   Destroy(
       Expression* structExpr_,
       Reference* structType_,
       std::vector<Reference*> localTypes_,
-      std::vector<Local*> localIndices_) :
+      std::vector<Local*> localIndices_,
+      std::vector<bool> localsKnownLives_) :
       structExpr(structExpr_),
       structType(structType_),
       localTypes(localTypes_),
-      localIndices(localIndices_) {}
+      localIndices(localIndices_),
+      localsKnownLives(localsKnownLives_) {}
 };
 
 
@@ -155,14 +161,17 @@ public:
   Local* local;
   Expression* sourceExpr;
   std::string localName;
+  bool knownLive;
 
   LocalStore(
       Local* local_,
       Expression* sourceExpr_,
-      std::string localName_) :
+      std::string localName_,
+      bool knownLive_) :
       local(local_),
       sourceExpr(sourceExpr_),
-      localName(localName_) {}
+      localName(localName_),
+      knownLive(knownLive_) {}
 };
 
 
@@ -335,6 +344,7 @@ public:
   Referend* indexReferend;
   Reference* resultType;
   Ownership targetOwnership;
+  Reference* arrayElementType;
 
   UnknownSizeArrayLoad(
       Expression* arrayExpr_,
@@ -345,7 +355,8 @@ public:
       Reference* indexType_,
       Referend* indexReferend_,
       Reference* resultType_,
-      Ownership targetOwnership_) :
+      Ownership targetOwnership_,
+      Reference* arrayElementType_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
@@ -354,7 +365,8 @@ public:
     indexType(indexType_),
     indexReferend(indexReferend_),
     resultType(resultType_),
-    targetOwnership(targetOwnership_) {}
+    targetOwnership(targetOwnership_),
+    arrayElementType(arrayElementType_) {}
 };
 
 
@@ -367,6 +379,8 @@ public:
   Expression* indexExpr;
   Reference* resultType;
   Ownership targetOwnership;
+  Reference* arrayElementType;
+  int arraySize;
 
   KnownSizeArrayLoad(
       Expression* arrayExpr_,
@@ -375,14 +389,18 @@ public:
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* resultType_,
-      Ownership targetOwnership_) :
+      Ownership targetOwnership_,
+      Reference* arrayElementType_,
+      int arraySize_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
     arrayKnownLive(arrayKnownLive_),
     indexExpr(indexExpr_),
     resultType(resultType_),
-    targetOwnership(targetOwnership_) {}
+    targetOwnership(targetOwnership_),
+    arrayElementType(arrayElementType_),
+    arraySize(arraySize_) {}
 };
 
 
@@ -510,6 +528,7 @@ public:
   Prototype* generatorMethod;
   bool generatorKnownLive;
   Reference* arrayRefType;
+  Reference* elementType;
 
   ConstructUnknownSizeArray(
       Expression* sizeExpr_,
@@ -520,7 +539,8 @@ public:
       InterfaceReferend* generatorReferend_,
       Prototype* generatorMethod_,
       bool generatorKnownLive_,
-      Reference* arrayRefType_) :
+      Reference* arrayRefType_,
+      Reference* elementType_) :
     sizeExpr(sizeExpr_),
     sizeType(sizeType_),
     sizeReferend(sizeReferend_),
@@ -529,7 +549,8 @@ public:
     generatorReferend(generatorReferend_),
     generatorMethod(generatorMethod_),
     generatorKnownLive(generatorKnownLive_),
-    arrayRefType(arrayRefType_) {}
+    arrayRefType(arrayRefType_),
+    elementType(elementType_) {}
 };
 
 class DestroyKnownSizeArrayIntoFunction : public Expression {
@@ -541,6 +562,8 @@ public:
   Reference* consumerType;
   Prototype* consumerMethod;
   bool consumerKnownLive;
+  Reference* elementType;
+  int arraySize;
 
   DestroyKnownSizeArrayIntoFunction(
       Expression* arrayExpr_,
@@ -549,14 +572,18 @@ public:
       Expression* consumerExpr_,
       Reference* consumerType_,
       Prototype* consumerMethod_,
-      bool consumerKnownLive_) :
+      bool consumerKnownLive_,
+      Reference* elementType_,
+      int arraySize_) :
     arrayExpr(arrayExpr_),
     arrayType(arrayType_),
     arrayReferend(arrayReferend_),
     consumerExpr(consumerExpr_),
     consumerType(consumerType_),
     consumerMethod(consumerMethod_),
-    consumerKnownLive(consumerKnownLive_) {}
+    consumerKnownLive(consumerKnownLive_),
+    elementType(elementType_),
+    arraySize(arraySize_) {}
 };
 
 class DestroyKnownSizeArrayIntoLocals : public Expression {
@@ -681,35 +708,6 @@ public:
     noneReferend(noneReferend_),
     resultOptType(resultOptType_),
     resultOptReferend(resultOptReferend_) {}
-};
-
-// Interned
-class Local {
-public:
-    VariableId* id;
-    Reference* type;
-
-    Local(
-        VariableId* id_,
-        Reference* type_) :
-    id(id_),
-    type(type_) {}
-};
-
-// Interned
-class VariableId {
-public:
-    int number;
-    int height;
-    std::string maybeName;
-
-    VariableId(
-        int number_,
-        int height_,
-    std::string maybeName_) :
-    number(number_),
-    height(height_),
-    maybeName(maybeName_) {}
 };
 
 #endif

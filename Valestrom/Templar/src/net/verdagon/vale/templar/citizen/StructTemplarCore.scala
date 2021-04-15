@@ -307,8 +307,23 @@ class StructTemplarCore(
     functionA: FunctionA,
     members: List[StructMember2]):
   (StructRef2, Mutability, FunctionTemplata) = {
-    val mutability =
-      StructTemplar.getCompoundTypeMutability(members.map(_.tyype.reference))
+    val isMutable =
+      members.exists({ case StructMember2(name, variability, tyype) =>
+        if (variability == Varying) {
+          true
+        } else {
+          tyype match {
+            case AddressMemberType2(reference) => true
+            case ReferenceMemberType2(reference) => {
+              reference.ownership match {
+                case Own | Borrow | Weak => true
+                case Share => false
+              }
+            }
+          }
+        }
+      })
+    val mutability = if (isMutable) Mutable else Immutable
 
     val nearName = LambdaCitizenName2(NameTranslator.translateCodeLocation(name.codeLocation))
     val fullName = containingFunctionEnv.fullName.addStep(nearName)

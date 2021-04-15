@@ -11,17 +11,6 @@
 #include "globalstate.h"
 #include "function/function.h"
 
-Ref loadElementWithoutUpgrade(
-    GlobalState* globalState,
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* arrayRefM,
-    Reference* elementRefM,
-    Ref sizeLE,
-    LLVMValueRef arrayPtrLE,
-    Mutability mutability,
-    Ref indexLE);
-
 //Ref loadElementWithUpgrade(
 //    GlobalState* globalState,
 //    FunctionState* functionState,
@@ -35,27 +24,47 @@ Ref loadElementWithoutUpgrade(
 //    Ref indexLE,
 //    Reference* resultRefM);
 
-Ref storeElement(
+void initializeElement(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* arrayRefM,
+    Location location,
     Reference* elementRefM,
     Ref sizeLE,
     LLVMValueRef arrayPtrLE,
-    Mutability mutability,
+    Ref indexLE,
+    Ref sourceLE);
+
+Ref swapElement(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Location location,
+    Reference* elementRefM,
+    Ref sizeLE,
+    LLVMValueRef arrayPtrLE,
     Ref indexLE,
     Ref sourceLE);
 
 
 
-LLVMValueRef loadInnerArrayMember(
+LoadResult loadElement(
     GlobalState* globalState,
+    FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef elemsPtrLE,
-    LLVMValueRef indexLE);
+    Reference* elementRefM,
+    Ref sizeRef,
+    Ref indexRef);
 
-void foreachArrayElement(
+void intRangeLoop(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Ref sizeRef,
+    std::function<void(Ref, LLVMBuilderRef)> iterationBuilder);
+
+void intRangeLoopReverse(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -74,5 +83,13 @@ LLVMValueRef getUnknownSizeArrayLengthPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     WrapperPtrLE unknownSizeArrayWrapperPtrLE);
+
+void storeInnerArrayMember(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef elemsPtrLE,
+    LLVMValueRef indexLE,
+    LLVMValueRef sourceLE);
 
 #endif

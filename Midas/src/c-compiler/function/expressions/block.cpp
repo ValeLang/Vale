@@ -14,12 +14,12 @@ Ref translateBlock(
     LLVMBuilderRef builder,
     Block* block) {
 
-  BlockState childBlockState(parentBlockState);
+  BlockState childBlockState(globalState->addressNumberer, parentBlockState);
 
   auto resultLE =
       translateExpression(globalState, functionState, &childBlockState, builder, block->inner);
 
-  if (block->innerType->referend != globalState->metalCache.never) {
+  if (block->innerType->referend != globalState->metalCache->never) {
     childBlockState.checkAllIntroducedLocalsWereUnstackified();
 
     auto childUnstackifiedParentLocalIds =

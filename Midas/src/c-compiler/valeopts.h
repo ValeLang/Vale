@@ -9,11 +9,12 @@
 enum class RegionOverride {
   ASSIST,
   NAIVE_RC,
-  RESILIENT_V0,
-  RESILIENT_V1,
-  RESILIENT_V2,
+//  RESILIENT_V0,
+//  RESILIENT_V1,
+//  RESILIENT_V2,
   RESILIENT_V3,
-  RESILIENT_LIMIT,
+  RESILIENT_V4,
+//  RESILIENT_LIMIT,
   FAST
 };
 
@@ -46,6 +47,7 @@ struct ValeOptions {
     bool flares = false;    // Enable flare output
     bool genHeap = false;    // Enables generational heap
     bool elideChecksForKnownLive = false;    // Enables generational heap
+    bool overrideKnownLiveTrue = false;    // Enables generational heap
     bool printMemOverhead = false;    // Enables generational heap
 
     RegionOverride regionOverride = RegionOverride::ASSIST;

@@ -1,0 +1,14 @@
+struct Result export {
+  a str;
+  b int;
+}
+fn makeResult(a str, b int) Result export {
+  Result(a, b)
+}
+
+fn runExtCommand() Result extern;
+
+fn main() int export {
+  res = runExtCommand();
+  ret len(res.a) + res.b;
+}

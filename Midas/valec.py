@@ -70,6 +70,7 @@ class ValeCompiler:
             return procrun(args)
         else:
             clang = "clang-11" if shutil.which("clang-11") is not None else "clang"
+            # "-fsanitize=address", "-fno-omit-frame-pointer", "-g",
             args = [clang, "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
@@ -194,6 +195,9 @@ class ValeCompiler:
         if "--elide-checks-for-known-live" in args:
             args.remove("--elide-checks-for-known-live")
             midas_options.append("--elide-checks-for-known-live")
+        if "--override-known-live-true" in args:
+            args.remove("--override-known-live-true")
+            midas_options.append("--override-known-live-true")
         if "--region-override" in args:
             ind = args.index("--region-override")
             del args[ind]
@@ -249,13 +253,13 @@ class ValeCompiler:
 
         if args[0] == "help" or args[0] == "--help":
             if len(args) < 2:
-                with open('valec-help.txt', 'r') as f:
-                  print(f.read())
+                with open(str(self.valestrom_path / "valec-help.txt"), 'r') as f:
+                    print(f.read())
             elif args[1] == "build":
-                with open('valec-help-build.txt', 'r') as f:
+                with open(str(self.valestrom_path / "valec-help-build.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "run":
-                with open('valec-help-run.txt', 'r') as f:
+                with open(str(self.valestrom_path / "valec-help-run.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "paths":
                 print("Valestrom path: " + str(self.valestrom_path))

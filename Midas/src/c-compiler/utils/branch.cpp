@@ -137,6 +137,71 @@ LLVMValueRef buildSimpleIfElse(
   return phi;
 }
 
+void buildVoidIfElse(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    std::function<void(LLVMBuilderRef)> buildThen,
+    std::function<void(LLVMBuilderRef)> buildElse) {
+
+  // We already are in the "current" block (which is what `builder` is
+  // pointing at currently), but we're about to make three more: "then",
+  // "else", and "afterward".
+  //              .-----> then -----.
+  //  current ---:                   :---> afterward
+  //              '-----> else -----'
+  // Right now, the `builder` is pointed at the "current" block.
+  // After we're done, we'll change it to point at the "afterward" block, so
+  // that subsequent instructions (after the If) can keep using the same
+  // builder, but they'll be adding to the "afterward" block we're making
+  // here.
+
+  LLVMBasicBlockRef thenStartBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context,
+          functionState->containingFuncL,
+          functionState->nextBlockName().c_str());
+  LLVMBuilderRef thenBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
+  // Now, we fill in the "then" block.
+  buildThen(thenBlockBuilder);
+
+
+  LLVMBasicBlockRef elseStartBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context,
+          functionState->containingFuncL,
+          functionState->nextBlockName().c_str());
+  LLVMBuilderRef elseBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
+  LLVMPositionBuilderAtEnd(elseBlockBuilder, elseStartBlockL);
+  // Now, we fill in the "else" block.
+  buildElse(elseBlockBuilder);
+
+  LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, elseStartBlockL);
+
+  LLVMBasicBlockRef afterwardBlockL =
+      LLVMAppendBasicBlockInContext(globalState->context,
+          functionState->containingFuncL,
+          functionState->nextBlockName().c_str());
+  // Instruction to jump to the afterward block.
+  LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
+  LLVMDisposeBuilder(thenBlockBuilder);
+
+  // Instruction to jump to the afterward block.
+  LLVMBuildBr(elseBlockBuilder, afterwardBlockL);
+  LLVMDisposeBuilder(elseBlockBuilder);
+
+  // Like explained above, here we're re-pointing the `builder` to point at
+  // the afterward block, so that subsequent instructions (after the If) can
+  // keep using the same builder, but they'll be adding to the "afterward"
+  // block we're making here.
+  LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
+
+  // We're done with the "current" block, and also the "then" and "else"
+  // blocks, nobody else will write to them now.
+  // We re-pointed the `builder` to point at the "afterward" block, and
+  // subsequent instructions after the if will keep adding to that.
+}
+
 Ref buildIfElse(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -168,7 +233,9 @@ Ref buildIfElse(
   LLVMPositionBuilderAtEnd(thenBlockBuilder, thenStartBlockL);
   // Now, we fill in the "then" block.
   auto thenResultRef = buildThen(thenBlockBuilder);
-  auto thenResultLE = globalState->region->checkValidReference(FL(), functionState, thenBlockBuilder, thenResultMT, thenResultRef);
+  auto thenResultLE =
+      globalState->getRegion(thenResultMT)
+          ->checkValidReference(FL(), functionState, thenBlockBuilder, thenResultMT, thenResultRef);
   // A builder can point to different blocks, so get the latest one so we can
   // pull from it for the phi.
   auto thenFinalBlockL = LLVMGetInsertBlock(thenBlockBuilder);
@@ -182,18 +249,20 @@ Ref buildIfElse(
   LLVMPositionBuilderAtEnd(elseBlockBuilder, elseStartBlockL);
   // Now, we fill in the "else" block.
   auto elseResultRef = buildElse(elseBlockBuilder);
-  auto elseResultLE = globalState->region->checkValidReference(FL(), functionState, elseBlockBuilder, elseResultMT, elseResultRef);
+  auto elseResultLE =
+      globalState->getRegion(elseResultMT)
+          ->checkValidReference(FL(), functionState, elseBlockBuilder, elseResultMT, elseResultRef);
   // A builder can point to different blocks, so get the latest one so we can
   // pull from it for the phi.
   auto elseFinalBlockL = LLVMGetInsertBlock(elseBlockBuilder);
 
-  auto conditionLE = globalState->region->checkValidReference(FL(), functionState, builder, globalState->metalCache.boolRef, conditionRef);
+  auto conditionLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, conditionRef);
   LLVMBuildCondBr(builder, conditionLE, thenStartBlockL, elseStartBlockL);
 
-  if (thenResultMT == globalState->metalCache.neverRef && elseResultMT == globalState->metalCache.neverRef) {
+  if (thenResultMT == globalState->metalCache->neverRef && elseResultMT == globalState->metalCache->neverRef) {
     // Bail early, even though builder is still pointing at the preceding block. Nobody should use
     // it, since nothing can happen after a never.
-    return wrap(globalState->region, globalState->metalCache.neverRef, globalState->neverPtr);
+    return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
 //    assert(false); // impl
   }
 
@@ -201,12 +270,12 @@ Ref buildIfElse(
       LLVMAppendBasicBlockInContext(globalState->context,
           functionState->containingFuncL,
           functionState->nextBlockName().c_str());
-  if (thenResultMT != globalState->metalCache.neverRef) {
+  if (thenResultMT != globalState->metalCache->neverRef) {
     // Instruction to jump to the afterward block.
     LLVMBuildBr(thenBlockBuilder, afterwardBlockL);
   }
   LLVMDisposeBuilder(thenBlockBuilder);
-  if (elseResultMT != globalState->metalCache.neverRef) {
+  if (elseResultMT != globalState->metalCache->neverRef) {
     // Instruction to jump to the afterward block.
     LLVMBuildBr(elseBlockBuilder, afterwardBlockL);
   }
@@ -218,9 +287,9 @@ Ref buildIfElse(
   LLVMPositionBuilderAtEnd(builder, afterwardBlockL);
 
 
-  if (thenResultMT == globalState->metalCache.neverRef) {
+  if (thenResultMT == globalState->metalCache->neverRef) {
     return elseResultRef;
-  } else if (elseResultMT == globalState->metalCache.neverRef) {
+  } else if (elseResultMT == globalState->metalCache->neverRef) {
     return thenResultRef;
   } else {
     // Now, we fill in the afterward block, to receive the result value of the
@@ -235,7 +304,7 @@ Ref buildIfElse(
     // We re-pointed the `builder` to point at the "afterward" block, and
     // subsequent instructions after the if will keep adding to that.
 
-    return wrap(functionState->defaultRegion, thenResultMT, phi);
+    return wrap(globalState->getRegion(thenResultMT), thenResultMT, phi);
   }
 }
 
@@ -271,7 +340,7 @@ void buildWhile(
   LLVMBuildBr(builder, bodyStartBlockL);
 
   auto continueRef = buildBody(bodyBlockBuilder);
-  auto continueLE = globalState->region->checkValidReference(FL(), functionState, builder, globalState->metalCache.boolRef, continueRef);
+  auto continueLE = globalState->getRegion(globalState->metalCache->boolRef)->checkValidReference(FL(), functionState, builder, globalState->metalCache->boolRef, continueRef);
 
   LLVMBasicBlockRef afterwardBlockL =
       LLVMAppendBasicBlockInContext(globalState->context,
@@ -301,21 +370,21 @@ void buildWhile(
             bodyBuilder,
             conditionLE,
             LLVMInt1TypeInContext(globalState->context),
-            globalState->metalCache.boolRef,
-            globalState->metalCache.boolRef,
+            globalState->metalCache->boolRef,
+            globalState->metalCache->boolRef,
             [globalState, functionState, buildBody](LLVMBuilderRef thenBlockBuilder) {
               buildBody(thenBlockBuilder);
               // Return true, so the while loop will keep executing.
               return wrap(
-                  functionState->defaultRegion,
-                  globalState->metalCache.boolRef,
+                  globalState->getRegion(globalState->metalCache->boolRef),
+                  globalState->metalCache->boolRef,
                   makeConstIntExpr(functionState, thenBlockBuilder, LLVMInt1TypeInContext(globalState->context), 1));
             },
             [globalState, functionState](LLVMBuilderRef elseBlockBuilder) -> Ref {
               // Return false, so the while loop will stop executing.
               return wrap(
-                  functionState->defaultRegion,
-                  globalState->metalCache.boolRef,
+                  globalState->getRegion(globalState->metalCache->boolRef),
+                  globalState->metalCache->boolRef,
                   makeConstIntExpr(functionState, elseBlockBuilder, LLVMInt1TypeInContext(globalState->context), 0));
             });
       });

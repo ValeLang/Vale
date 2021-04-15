@@ -21,15 +21,22 @@
 #include "metal/readjson.h"
 #include "error.h"
 #include "translatetype.h"
+#include "midasfunctions.h"
 
 #include <cstring>
 #include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
 #include <region/assist/assist.h>
-#include <region/mega/mega.h>
+#include <region/resilientv3/resilientv3.h>
+#include <region/unsafe/unsafe.h>
 #include <function/expressions/shared/string.h>
 #include <sstream>
+#include <region/linear/linear.h>
+#include <function/expressions/shared/members.h>
+#include <function/expressions/expressions.h>
+#include <region/naiverc/naiverc.h>
+#include <region/resilientv4/resilientv4.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -49,154 +56,146 @@ std::string genFreeName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
 }
 
-LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
-//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  auto int1LT = LLVMInt1TypeInContext(globalState->context);
-  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-  auto voidPtrLT = LLVMPointerType(int8LT, 0);
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-
-  std::vector<LLVMTypeRef> paramTypesL = { int64LT };
-  auto returnTypeL = globalState->region->translateType(globalState->metalCache.strRef);
-
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_newstr", functionTypeL);
-
-  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMPositionBuilderAtEnd(builder, block);
-  // This is unusual because normally we have a separate localsBuilder which points to a separate
-  // block at the beginning. This is a simple function which should require no locals, so this
-  // should be fine.
-  LLVMBuilderRef localsBuilder = builder;
-
-  FunctionState functionState("vale_newstr", globalState->region, functionL, returnTypeL, localsBuilder);
-  BlockState childBlockState(nullptr);
-
-  auto lengthLE = LLVMGetParam(functionL, 0);
-  buildAssert(
-      globalState, &functionState, builder,
-      LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(globalState, 0), "nonneg"),
-      "Can't have negative length string!");
-
-  // This will allocate lengthLE + 1
-  auto strWrapperPtrLE = globalState->region->mallocStr(&functionState, builder, lengthLE);
-
-  // Set the length
-  LLVMBuildStore(builder, lengthLE, getLenPtrFromStrWrapperPtr(builder, strWrapperPtrLE));
-
-  // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
-  auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, strWrapperPtrLE);
-  LLVMBuildStore(builder, constI8LE(globalState, 0), charsBeginPtr);
-  auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
-  LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
-
-  auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strWrapperPtrLE);
-  auto resultStrPtrLE =
-      globalState->region->checkValidReference(
-          FL(), &functionState, builder, globalState->metalCache.strRef, strRef);
-
-  // Note the lack of an alias() call to increment the string's RC from 0 to 1.
-  // This is because the users of this function increment that themselves.
-
-  LLVMBuildRet(builder, resultStrPtrLE);
-
-  LLVMDisposeBuilder(builder);
-
-  return functionL;
-}
-
-LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
-//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  auto int1LT = LLVMInt1TypeInContext(globalState->context);
-  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-  auto voidPtrLT = LLVMPointerType(int8LT, 0);
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-
-  std::vector<LLVMTypeRef> paramTypesL = { globalState->region->translateType(globalState->metalCache.strRef) };
-  auto returnTypeL = int8PtrLT;
-
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_getstrchars", functionTypeL);
-  LLVMSetLinkage(functionL, LLVMExternalLinkage);
-
-  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMPositionBuilderAtEnd(builder, block);
-  // This is unusual because normally we have a separate localsBuilder which points to a separate
-  // block at the beginning. This is a simple function which should require no locals, so this
-  // should be fine.
-  LLVMBuilderRef localsBuilder = builder;
-
-  FunctionState functionState("__vale_getstrchars", globalState->region, functionL, returnTypeL, localsBuilder);
-
-  auto strRefLE = LLVMGetParam(functionL, 0);
-
-  auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strRefLE);
-
-  LLVMBuildRet(builder, globalState->region->getStringBytesPtr(&functionState, builder, strRef));
-
-  LLVMDisposeBuilder(builder);
-
-  return functionL;
-}
-
-LLVMValueRef makeGetStrNumBytesFunc(GlobalState* globalState) {
-//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  auto int1LT = LLVMInt1TypeInContext(globalState->context);
-  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-  auto voidPtrLT = LLVMPointerType(int8LT, 0);
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-
-  std::vector<LLVMTypeRef> paramTypesL = { globalState->region->translateType(globalState->metalCache.strRef) };
-  auto returnTypeL = int64LT;
-
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrnumbytes", functionTypeL);
-  LLVMSetLinkage(functionL, LLVMExternalLinkage);
-
-  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
-  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMPositionBuilderAtEnd(builder, block);
-  // This is unusual because normally we have a separate localsBuilder which points to a separate
-  // block at the beginning. This is a simple function which should require no locals, so this
-  // should be fine.
-  LLVMBuilderRef localsBuilder = builder;
-
-  FunctionState functionState("vale_getstrnumbytes", globalState->region, functionL, returnTypeL, localsBuilder);
-
-  auto strRefLE = LLVMGetParam(functionL, 0);
-
-  auto strRef = wrap(globalState->region, globalState->metalCache.strRef, strRefLE);
-
-  LLVMBuildRet(builder, globalState->region->getStringLen(&functionState, builder, strRef));
-
-  LLVMDisposeBuilder(builder);
-
-  return functionL;
-}
-
-void initInternalFuncs(GlobalState* globalState) {
-  globalState->newVStr = makeNewStrFunc(globalState);
-  globalState->getStrCharsFunc = makeGetStrCharsFunc(globalState);
-  globalState->getStrNumBytesFunc = makeGetStrNumBytesFunc(globalState);
-}
-
+//LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
+////  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+//
+//  std::vector<LLVMTypeRef> paramTypesL = { int64LT };
+//  auto returnTypeL = globalState->rcImm->translateType(globalState->metalCache->strRef);
+//
+//  LLVMTypeRef functionTypeL =
+//      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+//  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_newstr", functionTypeL);
+//
+//  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
+//  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
+//  LLVMPositionBuilderAtEnd(builder, block);
+//  // This is unusual because normally we have a separate localsBuilder which points to a separate
+//  // block at the beginning. This is a simple function which should require no locals, so this
+//  // should be fine.
+//  LLVMBuilderRef localsBuilder = builder;
+//
+//  FunctionState functionState("vale_newstr", functionL, returnTypeL, localsBuilder);
+//  BlockState childBlockState(globalState->addressNumberer, nullptr);
+//
+//  auto lengthLE = LLVMGetParam(functionL, 0);
+//  buildAssert(
+//      globalState, &functionState, builder,
+//      LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(globalState, 0), "nonneg"),
+//      "Can't have negative length string!");
+//
+//  // This will allocate lengthLE + 1
+//  auto strRef =
+//      globalState->getRegion(globalState->metalCache->strRef)
+//          ->mallocStr(
+//              makeEmptyTupleRef(globalState, globalState->getRegion(globalState->metalCache->emptyTupleStructRef), builder),
+//              &functionState, builder, lengthLE);
+//
+//  auto resultStrPtrLE =
+//      globalState->getRegion(globalState->metalCache->strRef)
+//          ->checkValidReference(
+//              FL(), &functionState, builder, globalState->metalCache->strRef, strRef);
+//
+//  // Note the lack of an alias() call to increment the string's RC from 0 to 1.
+//  // This is because the users of this function increment that themselves.
+//
+//  LLVMBuildRet(builder, resultStrPtrLE);
+//
+//  LLVMDisposeBuilder(builder);
+//
+//  return functionL;
+//}
+//
+//LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
+////  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+//
+//  std::vector<LLVMTypeRef> paramTypesL = {
+//      globalState->getRegion(globalState->metalCache->strRef)
+//          ->translateType(globalState->metalCache->strRef)
+//  };
+//  auto returnTypeL = int8PtrLT;
+//
+//  LLVMTypeRef functionTypeL =
+//      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+//  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_getstrchars", functionTypeL);
+//  LLVMSetLinkage(functionL, LLVMExternalLinkage);
+//
+//  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
+//  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
+//  LLVMPositionBuilderAtEnd(builder, block);
+//  // This is unusual because normally we have a separate localsBuilder which points to a separate
+//  // block at the beginning. This is a simple function which should require no locals, so this
+//  // should be fine.
+//  LLVMBuilderRef localsBuilder = builder;
+//
+//  FunctionState functionState("__vale_getstrchars", functionL, returnTypeL, localsBuilder);
+//
+//  auto strRefLE = LLVMGetParam(functionL, 0);
+//
+//  auto strRef = wrap(globalState->getRegion(globalState->metalCache->strRef), globalState->metalCache->strRef, strRefLE);
+//
+//  LLVMBuildRet(builder, globalState->getRegion(globalState->metalCache->strRef)->getStringBytesPtr(&functionState, builder, strRef));
+//
+//  LLVMDisposeBuilder(builder);
+//
+//  return functionL;
+//}
+//
+//LLVMValueRef makeGetStrNumBytesFunc(GlobalState* globalState) {
+////  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
+//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
+//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
+//
+//  std::vector<LLVMTypeRef> paramTypesL = { globalState->getRegion(globalState->metalCache->strRef)->translateType(globalState->metalCache->strRef) };
+//  auto returnTypeL = int64LT;
+//
+//  LLVMTypeRef functionTypeL =
+//      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
+//  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrnumbytes", functionTypeL);
+//  LLVMSetLinkage(functionL, LLVMExternalLinkage);
+//
+//  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
+//  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
+//  LLVMPositionBuilderAtEnd(builder, block);
+//  // This is unusual because normally we have a separate localsBuilder which points to a separate
+//  // block at the beginning. This is a simple function which should require no locals, so this
+//  // should be fine.
+//  LLVMBuilderRef localsBuilder = builder;
+//
+//  FunctionState functionState("vale_getstrnumbytes", functionL, returnTypeL, localsBuilder);
+//
+//  auto strRefLE = LLVMGetParam(functionL, 0);
+//
+//  auto strRef = wrap(globalState->getRegion(globalState->metalCache->strRef), globalState->metalCache->strRef, strRefLE);
+//
+//  LLVMBuildRet(builder, globalState->getRegion(globalState->metalCache->strRef)->getStringLen(&functionState, builder, strRef));
+//
+//  LLVMDisposeBuilder(builder);
+//
+//  return functionL;
+//}
 
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int1LT = LLVMInt1TypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
@@ -211,6 +210,8 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->malloc = addExtern(globalState->mod, "malloc", int8PtrLT, {int64LT});
   globalState->free = addExtern(globalState->mod, "free", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
 
+  globalState->initTwinPages = addExtern(globalState->mod, "__vale_initTwinPages", LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), {});
+
   globalState->exit = addExtern(globalState->mod, "exit", LLVMVoidTypeInContext(globalState->context), {int8LT});
   globalState->assert = addExtern(globalState->mod, "__vassert", LLVMVoidTypeInContext(globalState->context), {int1LT, int8PtrLT});
   globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", LLVMVoidTypeInContext(globalState->context),
@@ -224,6 +225,86 @@ void initInternalExterns(GlobalState* globalState) {
 //  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", LLVMVoidTypeInContext(globalState->context),
 //      {int64LT, int8PtrLT, int64LT});
   globalState->strlen = addExtern(globalState->mod, "strlen", int64LT, {int8PtrLT});
+
+  {
+    globalState->wrcTableStructLT = LLVMStructCreateNamed(globalState->context, "__WRCTable");
+    std::vector<LLVMTypeRef> memberTypesL;
+    memberTypesL.push_back(int32LT);
+    memberTypesL.push_back(int32LT);
+    memberTypesL.push_back(int32PtrLT);
+    LLVMStructSetBody(
+        globalState->wrcTableStructLT, memberTypesL.data(), memberTypesL.size(), false);
+  }
+
+  {
+    globalState->lgtEntryStructLT = LLVMStructCreateNamed(globalState->context, "__LgtEntry");
+
+    std::vector<LLVMTypeRef> memberTypesL;
+
+    assert(LGT_ENTRY_MEMBER_INDEX_FOR_GEN == memberTypesL.size());
+    memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
+
+    assert(LGT_ENTRY_MEMBER_INDEX_FOR_NEXT_FREE == memberTypesL.size());
+    memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
+
+    LLVMStructSetBody(globalState->lgtEntryStructLT, memberTypesL.data(), memberTypesL.size(), false);
+  }
+
+  {
+    globalState->lgtTableStructLT = LLVMStructCreateNamed(globalState->context, "__LgtTable");
+    std::vector<LLVMTypeRef> memberTypesL;
+    memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
+    memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
+    memberTypesL.push_back(LLVMPointerType(globalState->lgtEntryStructLT, 0));
+    LLVMStructSetBody(globalState->lgtTableStructLT, memberTypesL.data(), memberTypesL.size(), false);
+  }
+
+
+  globalState->expandWrcTable =
+      addExtern(
+          globalState->mod, "__expandWrcTable",
+          LLVMVoidTypeInContext(globalState->context),
+          {
+              LLVMPointerType(globalState->wrcTableStructLT, 0)
+          });
+  globalState->checkWrci =
+      addExtern(
+          globalState->mod, "__checkWrc",
+          LLVMVoidTypeInContext(globalState->context),
+          {
+              LLVMPointerType(globalState->wrcTableStructLT, 0),
+              int32LT
+          });
+  globalState->getNumWrcs =
+      addExtern(
+          globalState->mod, "__getNumWrcs",
+          int32LT,
+          {
+              LLVMPointerType(globalState->wrcTableStructLT, 0),
+          });
+
+  globalState->expandLgt =
+      addExtern(
+          globalState->mod, "__expandLgt",
+          LLVMVoidTypeInContext(globalState->context),
+          {
+              LLVMPointerType(globalState->lgtTableStructLT, 0),
+          });
+  globalState->checkLgti =
+      addExtern(
+          globalState->mod, "__checkLgti",
+          LLVMVoidTypeInContext(globalState->context),
+          {
+              LLVMPointerType(globalState->lgtTableStructLT, 0),
+              int32LT
+          });
+  globalState->getNumLiveLgtEntries =
+      addExtern(
+          globalState->mod, "__getNumLiveLgtEntries",
+          int32LT,
+          {
+              LLVMPointerType(globalState->lgtTableStructLT, 0),
+          });
 }
 
 
@@ -243,10 +324,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //  globalState->opt->genHeap = true;
 
 
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
+  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
     if (!globalState->opt->genHeap) {
-      std::cerr << "Error: using resilient v2/v3 without generational heap, overriding generational heap to true!" << std::endl;
+      std::cerr << "Error: using resilient without generational heap, overriding generational heap to true!" << std::endl;
       globalState->opt->genHeap = true;
     }
   }
@@ -259,23 +340,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;
       break;
-    case RegionOverride::RESILIENT_V0:
-      std::cout << "Region override: resilient-v0" << std::endl;
-      break;
     case RegionOverride::FAST:
       std::cout << "Region override: fast" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V1:
-      std::cout << "Region override: resilient-v1" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V2:
-      std::cout << "Region override: resilient-v2" << std::endl;
       break;
     case RegionOverride::RESILIENT_V3:
       std::cout << "Region override: resilient-v3" << std::endl;
       break;
-    case RegionOverride::RESILIENT_LIMIT:
-      std::cout << "Region override: resilient-limit" << std::endl;
+    case RegionOverride::RESILIENT_V4:
+      std::cout << "Region override: resilient-v4" << std::endl;
       break;
     default:
       assert(false);
@@ -303,6 +375,31 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     exit(1);
   }
 
+
+  AddressNumberer addressNumberer;
+  MetalCache metalCache(&addressNumberer);
+  globalState->metalCache = &metalCache;
+
+  switch (globalState->opt->regionOverride) {
+    case RegionOverride::ASSIST:
+      metalCache.mutRegionId = metalCache.assistRegionId;
+      break;
+    case RegionOverride::FAST:
+      metalCache.mutRegionId = metalCache.unsafeRegionId;
+      break;
+    case RegionOverride::NAIVE_RC:
+      metalCache.mutRegionId = metalCache.naiveRcRegionId;
+      break;
+    case RegionOverride::RESILIENT_V3:
+      metalCache.mutRegionId = metalCache.resilientV3RegionId;
+      break;
+    case RegionOverride::RESILIENT_V4:
+      metalCache.mutRegionId = metalCache.resilientV4RegionId;
+      break;
+    default:
+      assert(false);
+  }
+
   json programJ;
   try {
     programJ = json::parse(str.c_str());
@@ -311,10 +408,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     std::cerr << "Error while parsing json: " << error.what() << std::endl;
     exit(1);
   }
-  auto program = readProgram(&globalState->metalCache, programJ);
+  auto program = readProgram(&metalCache, programJ);
 
-  assert(globalState->metalCache.emptyTupleStruct != nullptr);
-  assert(globalState->metalCache.emptyTupleStructRef != nullptr);
+  assert(globalState->metalCache->emptyTupleStruct != nullptr);
+  assert(globalState->metalCache->emptyTupleStructRef != nullptr);
 
 
   // Start making the entry function. We make it up here because we want its
@@ -334,7 +431,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
   LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
   LLVMBuilderRef entryBuilder = LLVMCreateBuilderInContext(globalState->context);
-  globalState->valeMainBuilder = entryBuilder;
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
@@ -349,6 +445,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
 
   globalState->program = program;
+
+  globalState->serializeName = globalState->metalCache->getName("__vale_serialize");
+  globalState->serializeThunkName = globalState->metalCache->getName("__vale_serialize_thunk");
+  globalState->unserializeName = globalState->metalCache->getName("__vale_unserialize");
+  globalState->unserializeThunkName = globalState->metalCache->getName("__vale_unserialize_thunk");
+
 
   globalState->stringConstantBuilder = entryBuilder;
 
@@ -406,34 +508,40 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   initInternalExterns(globalState);
 
-//  Assist assistRegion(globalState);
-//  Mega megaRegion(globalState);
-  IRegion* defaultRegion = nullptr;
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::ASSIST:
-      defaultRegion = new Assist(globalState);
-      break;
-    case RegionOverride::NAIVE_RC:
-    case RegionOverride::FAST:
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
-      defaultRegion = new Mega(globalState);
-      break;
-    default:
-      assert(false);
-  }
-  globalState->region = defaultRegion;
+  RCImm rcImm(globalState);
+  globalState->rcImm = &rcImm;
+  globalState->regions.emplace(globalState->rcImm->getRegionId(), globalState->rcImm);
+  Assist assistRegion(globalState);
+  globalState->assistRegion = &assistRegion;
+  globalState->regions.emplace(globalState->assistRegion->getRegionId(), globalState->assistRegion);
+  NaiveRC naiveRcRegion(globalState, globalState->metalCache->naiveRcRegionId);
+  globalState->naiveRcRegion = &naiveRcRegion;
+  globalState->regions.emplace(globalState->naiveRcRegion->getRegionId(), globalState->naiveRcRegion);
+  Unsafe unsafeRegion(globalState);
+  globalState->unsafeRegion = &unsafeRegion;
+  globalState->regions.emplace(globalState->unsafeRegion->getRegionId(), globalState->unsafeRegion);
+  Linear linearRegion(globalState);
+  globalState->linearRegion = &linearRegion;
+  globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
+  ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
+  globalState->resilientV3Region = &resilientV3Region;
+  globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
+  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
+  globalState->resilientV4Region = &resilientV4Region;
+  globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
 
-//  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+//  Mega megaRegion(globalState);
+  globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
+
+  auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  globalState->strncpy =
-      addExtern(globalState->mod, "strncpy", LLVMVoidTypeInContext(globalState->context),
-          {int8PtrLT, int8PtrLT, int64LT});
+  globalState->strncpy = addExtern(globalState->mod, "strncpy", voidLT, {int8PtrLT, int8PtrLT, int64LT});
+  globalState->memcpy = addExtern(globalState->mod, "memcpy", int8PtrLT, {int8PtrLT, int8PtrLT, int64LT});
+  globalState->memset = addExtern(globalState->mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
 //  globalState->eqStr =
 //      addExtern(globalState->mod, "__veqStr", int8LT,
 //          {int8PtrLT, int8PtrLT});
@@ -441,64 +549,206 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //      addExtern(globalState->mod, "__vprintStr", LLVMVoidTypeInContext(globalState->context),
 //          {int8PtrLT});
 
-  initInternalFuncs(globalState);
+  assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
 
-  assert(LLVMTypeOf(globalState->neverPtr) == defaultRegion->translateType(globalState->metalCache.neverRef));
+  auto mainSetupFuncName = globalState->metalCache->getName("__Vale_mainSetup");
+  auto mainSetupFuncProto =
+      globalState->metalCache->getPrototype(mainSetupFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, mainSetupFuncProto, mainSetupFuncName->name,
+      [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder);
+        for (auto i : globalState->regions) {
+          buildFlare(FL(), globalState, functionState, builder);
+          i.second->mainSetup(functionState, builder);
+          buildFlare(FL(), globalState, functionState, builder);
+        }
+        buildFlare(FL(), globalState, functionState, builder);
+        LLVMBuildRet(builder, constI64LE(globalState, 0));
+      });
+  LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    defaultRegion->declareStruct(structM);
+    globalState->getRegion(structM->regionId)->declareStruct(structM);
+    if (structM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareStruct(structM);
+    }
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    defaultRegion->declareInterface(interfaceM);
+    globalState->getRegion(interfaceM->regionId)->declareInterface(interfaceM);
+    if (interfaceM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareInterface(interfaceM);
+    }
   }
 
   for (auto p : program->knownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion->declareKnownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareKnownSizeArray(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareKnownSizeArray(arrayM);
+    }
   }
 
   for (auto p : program->unknownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion->declareUnknownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareUnknownSizeArray(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareUnknownSizeArray(arrayM);
+    }
   }
 
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
-    defaultRegion->translateStruct(structM);
+    globalState->getRegion(structM->regionId)->declareStructExtraFunctions(structM);
+    if (structM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareStructExtraFunctions(structM);
+    }
   }
 
   for (auto p : program->interfaces) {
     auto name = p.first;
     auto interfaceM = p.second;
-    defaultRegion->translateInterface(interfaceM);
+    globalState->getRegion(interfaceM->regionId)->declareInterfaceExtraFunctions(interfaceM);
+    if (interfaceM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareInterfaceExtraFunctions(interfaceM);
+    }
   }
 
   for (auto p : program->knownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion->translateKnownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareKnownSizeArrayExtraFunctions(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareKnownSizeArrayExtraFunctions(arrayM);
+    }
   }
 
   for (auto p : program->unknownSizeArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    defaultRegion->translateUnknownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareUnknownSizeArrayExtraFunctions(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->declareUnknownSizeArrayExtraFunctions(arrayM);
+    }
   }
 
+  // This is here before any defines because:
+  // 1. It has to be before we define any extra functions for structs etc because the linear
+  //    region's extra functions need to know all the substructs for interfaces so it can number
+  //    them, which is used in supporting its interface calling.
+  // 2. Everything else is declared here too and it seems consistent
   for (auto p : program->structs) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      defaultRegion->declareEdge(e);
+      globalState->getRegion(structM->regionId)->declareEdge(e);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->declareEdge(e);
+      }
     }
+  }
+
+  for (auto p : program->structs) {
+    auto name = p.first;
+    auto structM = p.second;
+    assert(name == structM->name->name);
+    globalState->getRegion(structM->regionId)->defineStruct(structM);
+    if (structM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineStruct(structM);
+    }
+  }
+
+  // This must be before we start defining extra functions, because some of them might rely
+  // on knowing the interface tables' layouts to make interface calls.
+  for (auto p : program->interfaces) {
+    auto name = p.first;
+    auto interfaceM = p.second;
+    globalState->getRegion(interfaceM->regionId)->defineInterface(interfaceM);
+    if (interfaceM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineInterface(interfaceM);
+    }
+  }
+
+  for (auto p : program->knownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    globalState->getRegion(arrayM->rawArray->regionId)->defineKnownSizeArray(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineKnownSizeArray(arrayM);
+    }
+  }
+
+  for (auto p : program->unknownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    globalState->getRegion(arrayM->rawArray->regionId)->defineUnknownSizeArray(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineUnknownSizeArray(arrayM);
+    }
+  }
+
+//  initInternalFuncs(globalState);
+
+  // This has to come after we declare all the other structs, because we
+  // add functions for all the known structs and interfaces.
+  // It also has to be after we *define* them, because they want to access members.
+  // But it has to be before we translate interfaces, because thats when we manifest
+  // the itable layouts.
+  for (auto region : globalState->regions) {
+    region.second->declareExtraFunctions();
+  }
+
+  for (auto p : program->structs) {
+    auto name = p.first;
+    auto structM = p.second;
+    assert(name == structM->name->name);
+    globalState->getRegion(structM->regionId)->defineStructExtraFunctions(structM);
+    if (structM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineStructExtraFunctions(structM);
+    }
+  }
+
+  for (auto p : program->knownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    globalState->getRegion(arrayM->rawArray->regionId)->defineKnownSizeArrayExtraFunctions(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineKnownSizeArrayExtraFunctions(arrayM);
+    }
+  }
+
+  for (auto p : program->unknownSizeArrays) {
+    auto name = p.first;
+    auto arrayM = p.second;
+    globalState->getRegion(arrayM->rawArray->regionId)->defineUnknownSizeArrayExtraFunctions(arrayM);
+    if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineUnknownSizeArrayExtraFunctions(arrayM);
+    }
+  }
+
+  // This keeps us from accidentally adding interfaces and interface methods after we've
+  // started compiling interfaces.
+  globalState->interfacesOpen = false;
+
+  for (auto p : program->interfaces) {
+    auto name = p.first;
+    auto interfaceM = p.second;
+    globalState->getRegion(interfaceM->regionId)->defineInterfaceExtraFunctions(interfaceM);
+    if (interfaceM->mutability == Mutability::IMMUTABLE) {
+      globalState->linearRegion->defineInterfaceExtraFunctions(interfaceM);
+    }
+  }
+
+  for (auto region : globalState->regions) {
+    region.second->defineExtraFunctions();
   }
 
   for (auto p : program->externs) {
@@ -508,20 +758,38 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
 
+  bool mainExported = false;
+  bool mainExtern = program->externs.find("main") != program->externs.end();
   Prototype* mainM = nullptr;
   LLVMValueRef mainL = nullptr;
-  int numFuncs = program->functions.size();
+  if (!mainExtern) {
+    int numFuncs = program->functions.size();
+    for (auto p : program->functions) {
+      auto name = p.first;
+      auto function = p.second;
+      LLVMValueRef entryFunctionL = declareFunction(globalState, function);
+      bool isExportedMain = program->isExported(function->prototype->name) &&
+                            program->getExportedName(function->prototype->name) == "main";
+      bool isExternMain = program->externs.find(function->prototype->name->name) != program->externs.end() &&
+                          function->prototype->name->name == "main";
+      if (isExportedMain || isExternMain) {
+        mainExported = isExportedMain;
+        mainExtern = isExternMain;
+        mainM = function->prototype;
+        mainL = entryFunctionL;
+      }
+    }
+    if (mainL == nullptr || mainM == nullptr) {
+      std::cerr << "Couldn't find main function! (Did you forget to export it?)" << std::endl;
+      exit(1);
+    }
+  }
+
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    LLVMValueRef entryFunctionL = declareFunction(globalState, defaultRegion, function);
-    if (program->isExported(function->prototype->name) && program->getExportedName(function->prototype->name) == "main") {
-      mainM = function->prototype;
-      mainL = entryFunctionL;
-    }
+    translateFunction(globalState, function);
   }
-  assert(mainL != nullptr);
-  assert(mainM != nullptr);
 
   // We translate the edges after the functions are declared because the
   // functions have to exist for the itables to point to them.
@@ -529,14 +797,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
-      defaultRegion->translateEdge(e);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->rcImm->defineEdge(e);
+        globalState->linearRegion->defineEdge(e);
+      } else {
+        globalState->mutRegion->defineEdge(e);
+      }
     }
-  }
-
-  for (auto p : program->functions) {
-    auto name = p.first;
-    auto function = p.second;
-    translateFunction(globalState, defaultRegion, function);
   }
 
   LLVMBuildStore(
@@ -626,6 +893,19 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMValueRef mainResult =
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
+  auto mainCleanupFuncName = globalState->metalCache->getName("__Vale_mainCleanup");
+  auto mainCleanupFuncProto =
+      globalState->metalCache->getPrototype(mainCleanupFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, mainCleanupFuncProto, mainCleanupFuncName->name,
+      [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
+        for (auto i : globalState->regions) {
+          i.second->mainCleanup(functionState, builder);
+        }
+        LLVMBuildRet(builder, constI64LE(globalState, 0));
+      });
+  LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainCleanupFuncProto), nullptr, 0, "");
+
   if (globalState->opt->printMemOverhead) {
     buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
     buildPrint(globalState, entryBuilder, LLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
@@ -650,11 +930,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
   }
 
-  if (mainM->returnType->referend == globalState->metalCache.emptyTupleStruct) {
+  if (mainM->returnType->referend == globalState->metalCache->emptyTupleStruct) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
-  } else if (mainM->returnType->referend == globalState->metalCache.innt) {
+  } else if (mainM->returnType->referend == globalState->metalCache->innt) {
     LLVMBuildRet(entryBuilder, mainResult);
-  } else if (mainM->returnType->referend == globalState->metalCache.never) {
+  } else if (mainM->returnType->referend == globalState->metalCache->never) {
     LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
   } else {
     assert(false);
@@ -667,13 +947,34 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     // can we think of this in terms of regions? it's kind of like we're
     // generating some stuff for the outside to point inside.
     if (globalState->program->isExported(structM->name)) {
-      defaultRegion->generateStructDefsC(&cByExportedName, structM);
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateStructDefsC(&cByExportedName, structM);
+      } else {
+        globalState->mutRegion->generateStructDefsC(&cByExportedName, structM);
+      }
+    }
+  }
+  for (auto p : program->unknownSizeArrays) {
+    auto usaDefM = p.second;
+    // can we think of this in terms of regions? it's kind of like we're
+    // generating some stuff for the outside to point inside.
+    if (globalState->program->isExported(usaDefM->name)) {
+      if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
+      } else {
+        globalState->mutRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
+      }
     }
   }
   for (auto p : program->interfaces) {
     auto interfaceM = p.second;
     if (globalState->program->isExported(interfaceM->name)) {
-      defaultRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+
+      if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+      } else {
+        globalState->mutRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+      }
     }
   }
   for (auto p : program->functions) {
@@ -682,13 +983,15 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
         globalState->program->isExported(functionM->prototype->name)) {
       auto exportedName = program->getExportedName(functionM->prototype->name);
       std::stringstream s;
-      s << "extern " << defaultRegion->getRefNameC(functionM->prototype->returnType) << " ";
+      auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
+      s << "extern " << globalState->getRegion(externReturnType)->getRefNameC(externReturnType) << " ";
       s << exportedName << "(";
       for (int i = 0; i < functionM->prototype->params.size(); i++) {
         if (i > 0) {
           s << ", ";
         }
-        s << defaultRegion->getRefNameC(functionM->prototype->params[i]) << " param" << i;
+        auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
+        s << globalState->getRegion(hostParamRefMT)->getRefNameC(hostParamRefMT) << " param" << i;
       }
       s << ");" << std::endl;
       cByExportedName.insert(std::make_pair(exportedName, s.str()));
@@ -699,11 +1002,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto c = p.second;
     std::string filepath = "";
     if (!globalState->opt->exportsDir.empty()) {
-      filepath = globalState->opt->exportsDir + "/" + exportedName + ".h";
+      filepath = globalState->opt->exportsDir + "/";
     }
+    filepath += exportedName + ".h";
     std::ofstream out(filepath, std::ofstream::out);
     if (!out) {
-      std::cerr << "Couldn't make file: " << filepath << std::endl;
+//      char err[256] = { 0 };
+//      strerror_s(err, sizeof(err), errno);
+      std::cerr << "Couldn't make file '" << filepath/* << "': " << err*/ << std::endl;
       exit(1);
     }
     std::cout << "Writing " << filepath << std::endl;
@@ -781,7 +1087,7 @@ void generateOutput(
     LLVMModuleRef mod,
     const char *triple,
     LLVMTargetMachineRef machine) {
-  char *err;
+  char *err = nullptr;
 
   LLVMSetTarget(mod, triple);
   LLVMTargetDataRef dataref = LLVMCreateTargetDataLayout(machine);
@@ -840,10 +1146,10 @@ void generateModule(GlobalState *globalState) {
   // Verify generated IR
   if (globalState->opt->verify) {
     char *error = NULL;
-    LLVMVerifyModule(globalState->mod, LLVMAbortProcessAction, &error);
+    LLVMVerifyModule(globalState->mod, LLVMReturnStatusAction, &error);
     if (error) {
       if (*error)
-        errorExit(ExitCode::VerifyFailed, "Module verification failed:\n%s", error);
+        errorExit(ExitCode::VerifyFailed, "Module verification failed:\n", error);
       LLVMDisposeMessage(error);
     }
   }
@@ -931,7 +1237,8 @@ int main(int argc, char **argv) {
   valeOptions.srcDirAndNameNoExt = std::string(valeOptions.srcDir + valeOptions.srcNameNoExt);
 
   // We set up generation early because we need target info, e.g.: pointer size
-  GlobalState globalState;
+  AddressNumberer addressNumberer;
+  GlobalState globalState(&addressNumberer);
   setup(&globalState, &valeOptions);
 
   // Parse source file, do semantic analysis, and generate code

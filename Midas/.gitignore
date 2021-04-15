@@ -26,7 +26,6 @@ Directory.Build.props
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
 *.so
 *.so.*
 *.dylib
@@ -91,6 +90,7 @@ packages
 valec
 test/test_build
 test/Driver.jar
+LLVM-C.dll
 
 # python
 __pycache__

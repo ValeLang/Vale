@@ -14,7 +14,8 @@ case class ProgramA(
     structs: List[StructA],
     interfaces: List[InterfaceA],
     impls: List[ImplA],
-    functions: List[FunctionA]) {
+    functions: List[FunctionA],
+    exports: List[ExportAsA]) {
   def lookupFunction(name: INameA) = {
     val matches = functions.filter(_.name == name)
     vassert(matches.size == 1)
@@ -87,6 +88,13 @@ case class ImplA(
     localRunes: Set[IRuneA],
     structKindRune: IRuneA,
     interfaceKindRune: IRuneA)
+
+case class ExportAsA(
+    range: RangeS,
+    exportedName: String,
+    rules: List[IRulexAR],
+    typeByRune: Map[IRuneA, ITemplataType],
+    typeRune: IRuneA)
 
 //case class AliasA(
 //  codeLocation: CodeLocation,

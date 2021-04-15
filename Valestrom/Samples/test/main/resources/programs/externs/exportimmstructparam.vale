@@ -1,0 +1,15 @@
+
+struct Flamscrankle export imm {
+  a int;
+  c int;
+}
+
+fn expFunc(flam Flamscrankle) int export {
+  flam.a + flam.c
+}
+
+fn extFunc(flam Flamscrankle) int extern;
+
+fn main() int export {
+  = extFunc(Flamscrankle(7, 35));
+}

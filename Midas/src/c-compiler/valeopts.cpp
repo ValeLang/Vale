@@ -45,6 +45,7 @@ enum
     OPT_FLARES,
     OPT_GEN_HEAP,
     OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE,
+    OPT_OVERRIDE_KNOWN_LIVE_TRUE,
     OPT_PRINT_MEM_OVERHEAD,
     OPT_CENSUS,
     OPT_REGION_OVERRIDE,
@@ -89,6 +90,7 @@ static opt_arg_t args[] =
     { "flares", '\0', OPT_ARG_OPTIONAL, OPT_FLARES },
     { "gen-heap", '\0', OPT_ARG_OPTIONAL, OPT_GEN_HEAP },
     { "elide-checks-for-known-live", '\0', OPT_ARG_OPTIONAL, OPT_ELIDE_CHECKS_FOR_KNOWN_LIVE },
+    { "override-known-live-true", '\0', OPT_ARG_NONE, OPT_OVERRIDE_KNOWN_LIVE_TRUE },
     { "print-mem-overhead", '\0', OPT_ARG_OPTIONAL, OPT_PRINT_MEM_OVERHEAD },
     { "census", '\0', OPT_ARG_OPTIONAL, OPT_CENSUS },
     { "region-override", '\0', OPT_ARG_REQUIRED, OPT_REGION_OVERRIDE },
@@ -190,6 +192,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     opt->flares = false;
     opt->genHeap = false;
     opt->elideChecksForKnownLive = false;
+    opt->overrideKnownLiveTrue = false;
     opt->census = false;
 
     while ((id = optNext(&s)) != -1) {
@@ -252,6 +255,11 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             break;
           }
 
+          case OPT_OVERRIDE_KNOWN_LIVE_TRUE: {
+            opt->overrideKnownLiveTrue = true;
+            break;
+          }
+
           case OPT_PRINT_MEM_OVERHEAD: {
             if (!s.arg_val) {
               opt->printMemOverhead = true;
@@ -281,16 +289,18 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             opt->regionOverride = RegionOverride::ASSIST;
           } else if (s.arg_val == std::string("naive-rc")) {
             opt->regionOverride = RegionOverride::NAIVE_RC;
-          } else if (s.arg_val == std::string("resilient-v0")) {
-            opt->regionOverride = RegionOverride::RESILIENT_V0;
-          } else if (s.arg_val == std::string("resilient-v1")) {
-            opt->regionOverride = RegionOverride::RESILIENT_V1;
-          } else if (s.arg_val == std::string("resilient-v2")) {
-            opt->regionOverride = RegionOverride::RESILIENT_V2;
+//          } else if (s.arg_val == std::string("resilient-v0")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V0;
+//          } else if (s.arg_val == std::string("resilient-v1")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V1;
+//          } else if (s.arg_val == std::string("resilient-v2")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_V2;
           } else if (s.arg_val == std::string("resilient-v3")) {
             opt->regionOverride = RegionOverride::RESILIENT_V3;
-          } else if (s.arg_val == std::string("resilient-limit")) {
-            opt->regionOverride = RegionOverride::RESILIENT_LIMIT;
+          } else if (s.arg_val == std::string("resilient-v4")) {
+            opt->regionOverride = RegionOverride::RESILIENT_V4;
+//          } else if (s.arg_val == std::string("resilient-limit")) {
+//            opt->regionOverride = RegionOverride::RESILIENT_LIMIT;
           } else assert(false);
           break;
         }

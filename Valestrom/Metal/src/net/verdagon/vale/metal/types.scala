@@ -66,14 +66,14 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
   // points at a known size array.
   def expectKnownSizeArrayReference() = {
     kind match {
-      case atH @ KnownSizeArrayTH(_, _, _) => ReferenceH[KnownSizeArrayTH](ownership, location, atH)
+      case atH @ KnownSizeArrayTH(_) => ReferenceH[KnownSizeArrayTH](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unknown size array.
   def expectUnknownSizeArrayReference() = {
     kind match {
-      case atH @ UnknownSizeArrayTH(_, _) => ReferenceH[UnknownSizeArrayTH](ownership, location, atH)
+      case atH @ UnknownSizeArrayTH(_) => ReferenceH[UnknownSizeArrayTH](ownership, location, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
@@ -122,18 +122,34 @@ case class StructRefH(
 case class KnownSizeArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
+) extends ReferendH
+
+// An array whose size is known at compile time, and therefore doesn't need to
+// carry around its size at runtime.
+case class KnownSizeArrayDefinitionTH(
+  // This is useful for naming the Midas struct that wraps this array and its ref count.
+  name: FullNameH,
   // The size of the array.
   size: Int,
   // The underlying array.
   rawArray: RawArrayTH
-) extends ReferendH
+) {
+  def referend = KnownSizeArrayTH(name)
+}
 
 case class UnknownSizeArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
+) extends ReferendH
+
+case class UnknownSizeArrayDefinitionTH(
+  // This is useful for naming the Midas struct that wraps this array and its ref count.
+  name: FullNameH,
   // The underlying array.
   rawArray: RawArrayTH
-) extends ReferendH
+) {
+  def referend = UnknownSizeArrayTH(name)
+}
 
 // This is not a referend, but instead has the common fields of UnknownSizeArrayTH/KnownSizeArrayTH,
 // and lets us handle their code similarly.

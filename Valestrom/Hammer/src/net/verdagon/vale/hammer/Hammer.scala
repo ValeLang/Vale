@@ -3,9 +3,8 @@ package net.verdagon.vale.hammer
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.parser.VariabilityP
-import net.verdagon.vale.templar.{CitizenName2, ExternFunctionName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2}
+import net.verdagon.vale.templar.{CitizenName2, ExportAs2, ExternFunctionName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, types => t}
 import net.verdagon.vale.{vassert, vfail}
-import net.verdagon.vale.templar.{types => t}
 
 case class FunctionRefH(prototype: PrototypeH) {
   //  def functionType = prototype.functionType
@@ -86,7 +85,9 @@ case class Locals(
     val newLocalIdNumber = nextLocalIdNumber
     val varIdNameH = NameHammer.translateFullName(hinputs, hamuts, varId2)
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, Some(varIdNameH))
-    val newLocal = Local(newLocalId, variability, tyype)
+    // Temporary until catalyst fills in stuff here
+    val keepAlive = newLocalId.name.map(_.readableName).getOrElse("").endsWith("__tether");
+    val newLocal = Local(newLocalId, variability, tyype, keepAlive)
     val newLocals =
       Locals(
         templarLocals + (varId2 -> newLocalId),
@@ -103,7 +104,7 @@ case class Locals(
     val newLocalHeight = locals.size
     val newLocalIdNumber = nextLocalIdNumber
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, None)
-    val newLocal = Local(newLocalId, variability, tyype)
+    val newLocal = Local(newLocalId, variability, tyype, false)
     val newLocals =
       Locals(
         templarLocals,
@@ -145,6 +146,7 @@ object Hammer {
       structs,
       emptyPackStructRef,
       functions,
+      exports,
       externPrototypes2,
       edgeBlueprintsByInterface,
       edges) = hinputs
@@ -178,6 +180,18 @@ object Hammer {
     FunctionHammer.translateFunctions(hinputs, hamuts, userFunctions)
     FunctionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
+    exports.foreach({ case ExportAs2(tyype, exportedName) =>
+      val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
+      val nameH =
+        kindH match {
+          case UnknownSizeArrayTH(name) => name
+          case KnownSizeArrayTH(name) => name
+          case StructRefH(name) => name
+          case InterfaceRefH(name) => name
+        }
+      hamuts.addExport(nameH, exportedName)
+    })
+
     val immDestructors2 =
       functions.filter(function => {
         function.header.fullName match {
@@ -201,25 +215,6 @@ object Hammer {
     val exportedNameByFullName = hamuts.fullNameByExportedName.map(_.swap)
     vassert(exportedNameByFullName.size == hamuts.fullNameByExportedName.size)
 
-    // This is the list of all regions, and all referends in them, so we can inform
-    // Midas which referends are in which regions, so it doesn't have to figure it
-    // out itself.
-    val regions = {
-      // For now, we're adding all referends to all regions. We can someday
-      // use less memory by recursively figuring out which referends can possibly
-      // be used where.
-      val allReferends =
-        (hamuts.interfaceDefs.map(_._2.getRef) ++
-          hamuts.structDefs.map(_.getRef) ++
-          hamuts.inner.knownSizeArrays ++
-          hamuts.inner.unknownSizeArrays)
-          .toList
-      List(
-        RegionH("unsafe", allReferends),
-        RegionH("assist", allReferends),
-        RegionH("resilient", allReferends))
-    }
-
     ProgramH(
       hamuts.interfaceDefs.values.toList,
       hamuts.structDefs,
@@ -229,7 +224,7 @@ object Hammer {
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
       exportedNameByFullName,
-      regions)
+      List())
   }
 
   def exportName(hamuts: HamutsBox, fullName2: FullName2[IName2], fullNameH: FullNameH) = {

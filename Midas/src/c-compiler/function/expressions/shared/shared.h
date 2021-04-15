@@ -16,11 +16,8 @@
 
 LLVMTypeRef makeNeverType(GlobalState* globalState);
 
-LLVMValueRef makeEmptyTuple(
-    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
-
-Ref makeEmptyTupleRef(
-    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder);
+LLVMValueRef makeEmptyTuple(GlobalState* globalState);
+Ref makeEmptyTupleRef(GlobalState* globalState);
 
 LLVMValueRef makeMidasLocal(
     FunctionState* functionState,
@@ -35,7 +32,8 @@ void makeHammerLocal(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
-    Ref valueToStore);
+    Ref valueToStore,
+    bool knownLive);
 
 
 // Returns the new RC
@@ -62,6 +60,14 @@ void buildAssert(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef conditionLE,
+    const std::string& failMessage);
+
+void buildAssertWithExitCode(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    LLVMValueRef conditionLE,
+    int exitCode,
     const std::string& failMessage);
 
 void buildAssertIntEq(
@@ -133,14 +139,20 @@ inline void buildFlare(
   }
 }
 
+LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    InterfaceMethod* method,
+    LLVMValueRef itablePtrLE);
+
 Ref buildInterfaceCall(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Prototype* prototype,
+    LLVMValueRef methodFunctionPtrLE,
     std::vector<Ref> argRefs,
-    int virtualParamIndex,
-    int indexInEdge);
+    int virtualParamIndex);
 
 
 LLVMValueRef makeConstIntExpr(FunctionState* functionState, LLVMBuilderRef builder, LLVMTypeRef type, int value);
@@ -152,8 +164,12 @@ inline LLVMValueRef constI8LE(GlobalState* globalState, int n) {
   return LLVMConstInt(LLVMInt8TypeInContext(globalState->context), n, false);
 }
 
-inline LLVMValueRef constI64LE(GlobalState* globalState, int n) {
+inline LLVMValueRef constI64LE(GlobalState* globalState, int64_t n) {
   return LLVMConstInt(LLVMInt64TypeInContext(globalState->context), n, false);
+}
+
+inline LLVMValueRef constI1LE(GlobalState* globalState, bool b) {
+  return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), b, false);
 }
 
 inline LLVMValueRef constI32LE(GlobalState* globalState, int n) {

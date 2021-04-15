@@ -99,6 +99,7 @@ object NameTranslator {
       case LambdaStructNameA(LambdaNameA(codeLocation)) => LambdaCitizenName2(NameTranslator.translateCodeLocation(codeLocation))
       case ImplNameA(subCitizenHumanName, codeLocation) => ImplDeclareName2(subCitizenHumanName, translateCodeLocation(codeLocation))
       case LetNameA(codeLocation) => LetName2(translateCodeLocation(codeLocation))
+      case ExportAsNameA(codeLocation) => ExportAsName2(translateCodeLocation(codeLocation))
       case UnnamedLocalNameA(codeLocation) => UnnamedLocalName2(translateCodeLocation(codeLocation))
       case ClosureParamNameA() => ClosureParamName2()
       case MagicParamNameA(codeLocation) => MagicParamName2(translateCodeLocation(codeLocation))

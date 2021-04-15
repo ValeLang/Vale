@@ -25,19 +25,19 @@ public:
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getStringWrapperStruct() override;
 
-  void translateStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
-  void declareStruct(StructDefinition* structM) override;
+  void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) override;
+  void declareStruct(StructReferend* structM) override;
   void declareEdge(Edge* edge) override;
-  void translateEdge(
+  void defineEdge(
       Edge* edge,
       std::vector<LLVMTypeRef> interfaceFunctionsLT,
       std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interfaceM) override;
-  void translateInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
-  void declareKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT) override;
-  void declareUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT) override;
-  void translateUnknownSizeArray(UnknownSizeArrayT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
-  void translateKnownSizeArray(KnownSizeArrayT* knownSizeArrayMT, LLVMTypeRef elementLT) override;
+  void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
+  void declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) override;
+  void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) override;
+  void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
+  void defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) override;
 
   ControlBlockPtrLE getConcreteControlBlockPtr(
       AreaAndFileAndLine from,
@@ -77,10 +77,10 @@ public:
   LLVMValueRef getStringBytesPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Ref ref) override;
+      WrapperPtrLE ptrLE) override;
 
   LLVMValueRef getStringLen(
-      FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
+      FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) override;
 
 
   ControlBlockPtrLE getControlBlockPtr(
@@ -149,7 +149,7 @@ public:
       ControlBlockPtrLE controlBlockPtr) override;
 
 private:
-  GlobalState* globalState;
+  GlobalState* globalState = nullptr;
   GetReferendStructsSource getReferendStructsSource;
 };
 

@@ -62,9 +62,9 @@ struct Ref {
 private:
   // This is private to keep us from just grabbing this to hand in to checkValidReference.
   // We should instead always pipe through the code the actual expected type.
-  Reference* const refM;
+  Reference* refM;
 
-  LLVMValueRef const refLE;
+  LLVMValueRef refLE;
 
   friend std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref);
   friend std::tuple<Reference*, LLVMValueRef> hgmGetRefInnardsForChecking(Ref ref);
@@ -81,6 +81,14 @@ Ref wrap(IRegion* region, Reference* refM, LLVMValueRef exprLE);
 Ref wrap(IRegion* region, Reference* refM, WrapperPtrLE exprLE);
 Ref wrap(IRegion* region, Reference* refM, InterfaceFatPtrLE exprLE);
 Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE exprLE);
+
+LLVMValueRef checkValidInternalReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref ref);
 
 
 #endif

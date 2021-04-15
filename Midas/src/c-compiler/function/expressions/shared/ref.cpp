@@ -25,3 +25,13 @@ Ref wrap(IRegion* region, Reference* refM, WeakFatPtrLE weakFatPtrLE) {
   assert(LLVMTypeOf(weakFatPtrLE.refLE) == region->translateType(refM));
   return Ref(refM, weakFatPtrLE.refLE);
 }
+
+LLVMValueRef checkValidInternalReference(
+    AreaAndFileAndLine checkerAFL,
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refM,
+    Ref ref) {
+  return globalState->getRegion(refM)->checkValidReference(checkerAFL, functionState, builder, refM, ref);
+}

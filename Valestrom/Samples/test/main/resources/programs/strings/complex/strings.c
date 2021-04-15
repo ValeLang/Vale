@@ -6,7 +6,7 @@
 // the start of a Vale native API.
 typedef struct ValeStr {
   uint64_t length;
-  char* chars;
+  char chars[0];
 } ValeStr;
 ValeStr* ValeStrNew(char* source, int64_t begin, int64_t length);
 

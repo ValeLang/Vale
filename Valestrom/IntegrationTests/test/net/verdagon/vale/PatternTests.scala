@@ -67,4 +67,35 @@ class PatternTests extends FunSuite with Matchers {
     temputs.functions.head.header.returnType == Coord(Share, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
+
+  // Intentional failure 2021.02.28, we never implemented pattern destructuring
+  test("Test imm struct param destructure") {
+    // Checks that the 5 made it into y, and it was an int
+    val compile = Compilation(
+      """
+        |
+        |struct Vec3 { x int; y int; z int; } fn main() { refuelB(Vec3(1, 2, 3), 2); }
+        |// Using above Vec3
+        |
+        |// Without destructuring:
+        |fn refuelA(
+        |    vec Vec3,
+        |    len int) {
+        |  Vec3(
+        |      vec.x * len,
+        |      vec.y * len,
+        |      vec.z * len)
+        |}
+        |
+        |// With destructuring:
+        |fn refuelB(
+        |    Vec3(x, y, z),
+        |    len int) {
+        |  Vec3(x * len, y * len, z * len)
+        |}
+        |""".stripMargin)
+    val temputs = compile.getTemputs()
+    temputs.functions.head.header.returnType == Coord(Share, Int2())
+    compile.evalForReferend(Vector()) shouldEqual VonInt(8)
+  }
 }

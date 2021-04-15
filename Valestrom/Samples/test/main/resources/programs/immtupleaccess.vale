@@ -1,0 +1,4 @@
+fn main() int export {
+  t = [true, 42];
+  = t.1;
+}

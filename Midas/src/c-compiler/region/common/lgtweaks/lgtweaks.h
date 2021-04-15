@@ -6,7 +6,6 @@
 #include <globalstate.h>
 #include <function/function.h>
 #include <region/common/fatweaks/fatweaks.h>
-#include <region/common/referendptrmaker.h>
 
 class LgtWeaks {
 public:
@@ -129,7 +128,10 @@ public:
       Ref weakRef);
 
 
-  static LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState);
+  static LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId);
+
+  void mainSetup(FunctionState* functionState, LLVMBuilderRef builder);
+  void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder);
 
 private:
   LLVMValueRef getTargetGenFromWeakRef(
@@ -164,16 +166,18 @@ private:
       LLVMBuilderRef builder,
       LLVMValueRef lgtiLE);
 
-  GlobalState* globalState;
+  GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
   IReferendStructsSource* referendStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
   bool elideChecksForKnownLive;
 
-  LLVMTypeRef lgtEntryStructL = nullptr; // contains generation and next free
+  LLVMValueRef lgtTablePtrLE = nullptr;
 
-  LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
-  LLVMValueRef lgtCapacityPtr = nullptr, lgtFirstFreeLgtiPtr = nullptr, lgtEntriesArrayPtr = nullptr;
+  LLVMValueRef getLgtCapacityPtr(LLVMBuilderRef builder);
+  LLVMValueRef getLgtFirstFreeLgtiPtr(LLVMBuilderRef builder);
+  LLVMValueRef getLgtEntriesArrayPtr(LLVMBuilderRef builder);
+
 };
 
 #endif

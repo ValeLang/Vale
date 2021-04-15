@@ -1,15 +1,14 @@
 package net.verdagon.vale
 
 import java.io.FileNotFoundException
-
 import net.verdagon.vale.templar._
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, StructInstanceV}
-import net.verdagon.von.{VonBool, VonFloat, VonInt}
+import net.verdagon.von.{VonBool, VonFloat, VonInt, VonObject}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.hammer.VonHammer
-import net.verdagon.vale.metal.YonderH
+import net.verdagon.vale.metal.{FullNameH, IntH, YonderH}
 import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Share, Str2}
 
@@ -176,6 +175,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("mut swapping locals") {
     val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("imm tuple access") {
+    val compile = Compilation(Samples.get("programs/immtupleaccess.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
@@ -609,5 +613,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("exporting array") {
+    val compilation = Compilation("export Array<mut, int> as IntArray;")
+    val hamuts = compilation.getHamuts()
+    val (fullNameH, exportedName) = hamuts.exportedNameByFullName.head
+    exportedName shouldEqual "IntArray"
+    val usa = hamuts.unknownSizeArrays.find(_.name == fullNameH).get
+    usa.rawArray.elementType.kind shouldEqual IntH()
   }
 }

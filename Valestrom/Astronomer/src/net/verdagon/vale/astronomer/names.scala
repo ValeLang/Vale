@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.scout.CodeLocationS
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vpass}
 
 //// An absolute name is one where we know *exactly* where it's defined; if parser and scout
 //// put their brains together they could know exactly where the thing is.
@@ -35,6 +35,7 @@ case class ClosureParamNameA() extends IVarNameA
 case class ConstructingMemberNameA(name: String) extends IVarNameA
 case class AnonymousSubstructMemberNameA(index: Int) extends IVarNameA
 case class MagicParamNameA(codeLocation: CodeLocationS) extends IVarNameA
+case class ExportAsNameA(codeLocation: CodeLocationS) extends IVarNameA
 case class CodeVarNameA(name: String) extends IVarNameA
 // Only made by templar, see if we can take these out
 case class ConstructorNameA(tlcd: TopLevelCitizenDeclarationNameA) extends IFunctionDeclarationNameA

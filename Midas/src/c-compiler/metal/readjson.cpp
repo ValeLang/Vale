@@ -233,14 +233,18 @@ Local* readLocal(MetalCache* cache, const json& local) {
   assert(local["__type"] == "Local");
   auto varId = readVariableId(cache, local["id"]);
   auto ref = readReference(cache, local["type"]);
+  bool keepAlive = local["keepAlive"];
 
   return makeIfNotPresent(
       &makeIfNotPresent(
-          &cache->locals,
-          varId,
-          [&](){ return MetalCache::LocalByReferenceMap(0, cache->addressNumberer->makeHasher<Reference*>()); }),
-      ref,
-      [&](){ return new Local(varId, ref); });
+          &makeIfNotPresent(
+              &cache->locals,
+              varId,
+              [&](){ return MetalCache::LocalByKeepAliveByReferenceMap (0, cache->addressNumberer->makeHasher<Reference*>()); }),
+          ref,
+          [&](){ return MetalCache::LocalByKeepAliveMap(); }),
+      keepAlive,
+      [&](){ return new Local(varId, ref, keepAlive); });
 }
 
 Expression* readExpression(MetalCache* cache, const json& expression) {
@@ -260,12 +264,14 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new Stackify(
         readExpression(cache, expression["sourceExpr"]),
         readLocal(cache, expression["local"]),
+        expression["knownLive"],
         "");
   } else if (type == "LocalStore") {
     return new LocalStore(
         readLocal(cache, expression["local"]),
         readExpression(cache, expression["sourceExpr"]),
-        expression["localName"]);
+        expression["localName"],
+        expression["knownLive"]);
   } else if (type == "MemberStore") {
     return new MemberStore(
         readExpression(cache, expression["structExpr"]),
@@ -333,7 +339,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["structExpr"]),
         readReference(cache, expression["structType"]),
         readArray(cache, expression["localTypes"], readReference),
-        readArray(cache, expression["localIndices"], readLocal));
+        readArray(cache, expression["localIndices"], readLocal),
+        readArray(cache, expression["localsKnownLives"], [](MetalCache*, const json& j) -> bool { return j; }));
   } else if (type == "MemberLoad") {
     return new MemberLoad(
         readExpression(cache, expression["structExpr"]),

@@ -63,7 +63,7 @@ public:
   LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;
   LLVMValueRef malloc = nullptr, free = nullptr, assert = nullptr, exit = nullptr,
       assertI64Eq = nullptr, printCStr = nullptr,
-      getch = nullptr, printInt = nullptr,
+      getch = nullptr, printInt = nullptr, initTwinPages = nullptr,
       strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr;
 
 
@@ -75,6 +75,7 @@ public:
 
   LLVMValueRef strncpy = nullptr;
   LLVMValueRef memcpy = nullptr;
+  LLVMValueRef memset = nullptr;
 
   LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
@@ -215,16 +216,13 @@ public:
   Name* unserializeName = nullptr;
   Name* unserializeThunkName = nullptr;
 
-  LLVMBuilderRef valeMainBuilder = nullptr;
-
   RCImm* rcImm = nullptr;
   IRegion* mutRegion = nullptr;
   IRegion* unsafeRegion = nullptr;
   IRegion* assistRegion = nullptr;
   IRegion* naiveRcRegion = nullptr;
   IRegion* resilientV3Region = nullptr;
-  IRegion* resilientV2Region = nullptr;
-  IRegion* resilientV1Region = nullptr;
+  IRegion* resilientV4Region = nullptr;
   Linear* linearRegion = nullptr;
   std::unordered_map<RegionId*, IRegion*, AddressHasher<RegionId*>> regions;
 

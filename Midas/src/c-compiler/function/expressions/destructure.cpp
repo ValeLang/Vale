@@ -35,12 +35,7 @@ Ref translateDestructure(
         globalState->getRegion(destructureM->structType)->loadMember(
             functionState, builder, destructureM->structType, structRef, true, i, memberType, memberType, memberName);
     makeHammerLocal(
-        globalState,
-        functionState,
-        blockState,
-        builder,
-        destructureM->localIndices[i],
-        memberLE);
+        globalState, functionState, blockState, builder, destructureM->localIndices[i], memberLE, destructureM->localsKnownLives[i]);
   }
 
   if (destructureM->structType->ownership == Ownership::OWN) {

@@ -656,7 +656,10 @@ case class Local(
   variability: Variability,
 
   // The type of the reference this local variable has.
-  typeH: ReferenceH[ReferendH])
+  typeH: ReferenceH[ReferendH],
+
+  // Usually filled by catalyst, for Midas' benefit. Used in HGM.
+  keepAlive: Boolean)
 
 case class VariableIdH(
   // Just to uniquify VariableIdH instances. No two variables in a FunctionH will have

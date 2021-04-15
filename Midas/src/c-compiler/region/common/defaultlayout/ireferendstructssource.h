@@ -12,8 +12,8 @@ public:
   virtual LLVMTypeRef getStringWrapperStruct() = 0;
   virtual LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) = 0;
   virtual LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) = 0;
-  virtual void defineStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) = 0;
-  virtual void declareStruct(StructDefinition* structM) = 0;
+  virtual void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) = 0;
+  virtual void declareStruct(StructReferend* structM) = 0;
   virtual void declareEdge(Edge* edge) = 0;
   virtual void defineEdge(
       Edge* edge,

@@ -8,6 +8,7 @@
 #include <region/common/heap.h>
 #include <sstream>
 #include <function/expressions/shared/elements.h>
+#include <utils/counters.h>
 #include "assist.h"
 
 Assist::Assist(GlobalState* globalState_) :
@@ -44,6 +45,14 @@ RegionId* Assist::getRegionId() {
   return globalState->metalCache->assistRegionId;
 }
 
+void Assist::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
+  wrcWeaks.mainSetup(functionState, builder);
+}
+
+void Assist::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
+  wrcWeaks.mainCleanup(functionState, builder);
+}
+
 void Assist::alias(
     AreaAndFileAndLine from,
     FunctionState* functionState,
@@ -51,7 +60,7 @@ void Assist::alias(
     Reference* sourceRef,
     Ref ref) {
   auto sourceRnd = sourceRef->referend;
-
+  buildFlare(FL(), globalState, functionState, builder);
   if (dynamic_cast<Int *>(sourceRnd) ||
       dynamic_cast<Bool *>(sourceRnd) ||
       dynamic_cast<Float *>(sourceRnd)) {
@@ -78,10 +87,11 @@ void Assist::alias(
     } else
       assert(false);
   } else {
-    std::cerr << "Unimplemented type in acquireReference: "
+    std::cerr << "Unimplemented type in alias: "
         << typeid(*sourceRef->referend).name() << std::endl;
     assert(false);
   }
+  buildFlare(FL(), globalState, functionState, builder);
 }
 
 
@@ -189,7 +199,7 @@ void Assist::defineKnownSizeArray(
 void Assist::declareStruct(
     StructDefinition* structM) {
   globalState->regionIdByReferend.emplace(structM->referend, getRegionId());
-  referendStructs.declareStruct(structM);
+  referendStructs.declareStruct(structM->referend);
 }
 
 void Assist::defineStruct(
@@ -201,7 +211,7 @@ void Assist::defineStruct(
             ->translateType(structM->members[i]->type));
   }
   referendStructs.defineStruct(
-      structM,
+      structM->referend,
       innerStructMemberTypesL);
 }
 
@@ -254,7 +264,7 @@ void Assist::discardOwningRef(
       globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
   // No need to check the RC, we know we're freeing right now.
 
-  // Free it!
+  // Free it!v
   deallocate(AFL("discardOwningRef"), functionState, builder, sourceMT, sourceRef);
 }
 
@@ -264,8 +274,15 @@ void Assist::noteWeakableDestroyed(
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {
   auto rc = referendStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtrLE);
-  buildAssertIntEq(globalState, functionState, builder, rc, constI32LE(globalState, 0),
-      "Tried to free concrete that had nonzero RC!");
+  auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, rc, constI32LE(globalState, 0), "assertCondition");
+  buildIf(
+      globalState, functionState, builder, isZeroLE(builder, conditionLE),
+      [this](LLVMBuilderRef thenBuilder) {
+        buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");
+        // See MPESC for status codes
+        auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
+        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+      });
 
   if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
     auto structM = globalState->program->getStruct(structReferendM->fullName);
@@ -289,13 +306,16 @@ Ref Assist::loadMember(
     Reference* expectedMemberType,
     Reference* targetType,
     const std::string& memberName) {
+  buildFlare(FL(), globalState, functionState, builder);
   if (structRefMT->ownership == Ownership::SHARE) {
     assert(false);
   } else {
+    buildFlare(FL(), globalState, functionState, builder);
     auto unupgradedMemberLE =
         regularLoadMember(
             globalState, functionState, builder, &referendStructs, structRefMT, structRef,
             memberIndex, expectedMemberType, targetType, memberName);
+    buildFlare(FL(), globalState, functionState, builder);
     return upgradeLoadResultToRefWithTargetOwnership(
         functionState, builder, expectedMemberType, targetType, unupgradedMemberLE);
   }
@@ -572,8 +592,10 @@ Ref Assist::upgradeLoadResultToRefWithTargetOwnership(
 
   if (sourceOwnership == Ownership::SHARE) {
     if (sourceLocation == Location::INLINE) {
+      buildFlare(FL(), globalState, functionState, builder);
       return sourceRef;
     } else {
+      buildFlare(FL(), globalState, functionState, builder);
       return sourceRef;
     }
   } else if (sourceOwnership == Ownership::OWN) {
@@ -586,13 +608,17 @@ Ref Assist::upgradeLoadResultToRefWithTargetOwnership(
       // - Swapping from a local
       // - Swapping from an element
       // - Swapping from a member
+      buildFlare(FL(), globalState, functionState, builder);
       return sourceRef;
     } else if (targetOwnership == Ownership::BORROW) {
       auto resultRef = transmutePtr(globalState, functionState, builder, sourceType, targetType, sourceRef);
+      buildFlare(FL(), globalState, functionState, builder);
       checkValidReference(FL(),
           functionState, builder, targetType, resultRef);
+      buildFlare(FL(), globalState, functionState, builder);
       return resultRef;
     } else if (targetOwnership == Ownership::WEAK) {
+      buildFlare(FL(), globalState, functionState, builder);
       return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
     } else {
       assert(false);
@@ -603,16 +629,19 @@ Ref Assist::upgradeLoadResultToRefWithTargetOwnership(
     if (targetOwnership == Ownership::OWN) {
       assert(false); // Cant load an owning reference from a constraint ref local.
     } else if (targetOwnership == Ownership::BORROW) {
+      buildFlare(FL(), globalState, functionState, builder);
       return sourceRef;
     } else if (targetOwnership == Ownership::WEAK) {
       // Making a weak ref from a constraint ref local.
       assert(dynamic_cast<StructReferend *>(sourceType->referend) ||
           dynamic_cast<InterfaceReferend *>(sourceType->referend));
+      buildFlare(FL(), globalState, functionState, builder);
       return wrcWeaks.assembleWeakRef(functionState, builder, sourceType, targetType, sourceRef);
     } else {
       assert(false);
     }
   } else if (sourceOwnership == Ownership::WEAK) {
+    buildFlare(FL(), globalState, functionState, builder);
     assert(targetOwnership == Ownership::WEAK);
     return sourceRef;
   } else {
@@ -677,6 +706,7 @@ Ref Assist::storeElementInUSA(
           globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
   auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
   auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+  buildFlare(FL(), globalState, functionState, builder);
   return ::swapElement(
       globalState, functionState, builder, usaRefMT->location, usaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
@@ -958,4 +988,27 @@ LLVMValueRef Assist::getInterfaceMethodFunctionPtr(
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
       globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+}
+
+LLVMValueRef Assist::stackify(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Local* local,
+    Ref refToStore,
+    bool knownLive) {
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto typeLT = translateType(local->type);
+  return makeMidasLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
+}
+
+Ref Assist::unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  return loadLocal(functionState, builder, local, localAddr);
+}
+
+Ref Assist::loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  return normalLocalLoad(globalState, functionState, builder, local, localAddr);
+}
+
+Ref Assist::localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) {
+  return normalLocalStore(globalState, functionState, builder, local, localAddr, refToStore);
 }

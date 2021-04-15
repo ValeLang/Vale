@@ -86,6 +86,7 @@ void RCImm::dealias(
     LLVMBuilderRef builder,
     Reference* sourceMT,
     Ref sourceRef) {
+  buildFlare(FL(), globalState, functionState, builder);
   discard(from, globalState, functionState, builder, sourceMT, sourceRef);
 }
 
@@ -151,7 +152,7 @@ void RCImm::declareStruct(
     StructDefinition* structM) {
   globalState->regionIdByReferend.emplace(structM->referend, getRegionId());
 
-  referendStructs.declareStruct(structM);
+  referendStructs.declareStruct(structM->referend);
 }
 
 void RCImm::declareStructExtraFunctions(StructDefinition* structDefM) {
@@ -166,7 +167,7 @@ void RCImm::defineStruct(
         globalState->getRegion(structM->members[i]->type)
             ->translateType(structM->members[i]->type));
   }
-  referendStructs.defineStruct(structM, innerStructMemberTypesL);
+  referendStructs.defineStruct(structM->referend, innerStructMemberTypesL);
 }
 
 void RCImm::defineStructExtraFunctions(StructDefinition* structDefM) {
@@ -654,13 +655,34 @@ void RCImm::discard(
     LLVMBuilderRef builder,
     Reference* sourceMT,
     Ref sourceRef) {
+  buildFlare(FL(), globalState, functionState, builder);
   auto sourceRnd = sourceMT->referend;
+
+  buildFlare(FL(), globalState, functionState, builder, typeid(*sourceRnd).name());
 
   if (dynamic_cast<Int *>(sourceRnd) ||
       dynamic_cast<Bool *>(sourceRnd) ||
       dynamic_cast<Float *>(sourceRnd)) {
+    buildFlare(FL(), globalState, functionState, builder);
     // Do nothing for these, they're always inlined and copied.
+  } else if (dynamic_cast<Str *>(sourceRnd)) {
+    buildFlare(FL(), globalState, functionState, builder);
+    assert(sourceMT->ownership == Ownership::SHARE);
+    auto rcLE =
+        adjustStrongRc(
+            from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
+    buildFlare(from, globalState, functionState, builder, "Str RC: ", rcLE);
+    buildIf(
+        globalState, functionState,
+        builder,
+        isZeroLE(builder, rcLE),
+        [this, from, globalState, functionState, sourceRef, sourceMT](
+            LLVMBuilderRef thenBuilder) {
+          buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
+          innerDeallocate(from, globalState, functionState, &referendStructs, thenBuilder, sourceMT, sourceRef);
+        });
   } else if (auto interfaceRnd = dynamic_cast<InterfaceReferend *>(sourceRnd)) {
+    buildFlare(FL(), globalState, functionState, builder);
     assert(sourceMT->ownership == Ownership::SHARE);
     if (sourceMT->location == Location::INLINE) {
       assert(false); // impl
@@ -689,18 +711,26 @@ void RCImm::discard(
   } else if (dynamic_cast<StructReferend *>(sourceRnd) ||
       dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
       dynamic_cast<UnknownSizeArrayT *>(sourceRnd)) {
+    buildFlare(FL(), globalState, functionState, builder);
+    if (auto sr = dynamic_cast<StructReferend *>(sourceRnd)) {
+      buildFlare(FL(), globalState, functionState, builder, sr->fullName->name);
+    }
     assert(sourceMT->ownership == Ownership::SHARE);
     if (sourceMT->location == Location::INLINE) {
+      buildFlare(FL(), globalState, functionState, builder);
       // Do nothing, we can just let inline structs disappear
     } else {
+      buildFlare(FL(), globalState, functionState, builder);
       auto rcLE =
           adjustStrongRc(
               from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
+      buildFlare(FL(), globalState, functionState, builder, rcLE);
       buildIf(
           globalState, functionState,
           builder,
           isZeroLE(builder, rcLE),
           [from, globalState, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
+            buildFlare(FL(), globalState, functionState, thenBuilder);
             auto immDestructor = globalState->program->getImmDestructor(sourceMT->referend);
             auto funcL = globalState->getFunction(immDestructor->name);
 
@@ -711,25 +741,12 @@ void RCImm::discard(
             return LLVMBuildCall(thenBuilder, funcL, argExprsL.data(), argExprsL.size(), "");
           });
     }
-  } else if (dynamic_cast<Str *>(sourceRnd)) {
-    assert(sourceMT->ownership == Ownership::SHARE);
-    auto rcLE =
-        adjustStrongRc(
-            from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
-    buildIf(
-        globalState, functionState,
-        builder,
-        isZeroLE(builder, rcLE),
-        [this, from, globalState, functionState, sourceRef, sourceMT](
-            LLVMBuilderRef thenBuilder) {
-          buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
-          innerDeallocate(from, globalState, functionState, &referendStructs, thenBuilder, sourceMT, sourceRef);
-        });
   } else {
     std::cerr << "Unimplemented type in discard: "
         << typeid(*sourceMT->referend).name() << std::endl;
     assert(false);
   }
+  buildFlare(FL(), globalState, functionState, builder);
 }
 
 
@@ -892,6 +909,8 @@ Ref RCImm::receiveUnencryptedAlienReference(
         mallocStr(
             makeEmptyTupleRef(globalState), functionState, builder, strLenLE, strLenBytesPtrLE);
 
+    buildFlare(FL(), globalState, functionState, builder, "done storing");
+
     sourceRegion->dealias(FL(), functionState, builder, hostRefMT, sourceRef);
 
     return vstrRef;
@@ -948,8 +967,9 @@ void RCImm::initializeElementInKSA(
     Ref elementRef) {
   auto ksaDefM = globalState->program->getKnownSizeArray(ksaMT->name);
   auto elementType = ksaDefM->rawArray->elementType;
-  regularStoreElementInKSA(
-      globalState, functionState, builder, &referendStructs, ksaRefMT, ksaMT, Mutability::IMMUTABLE,
+  buildFlare(FL(), globalState, functionState, builder);
+  regularInitializeElementInKSA(
+      globalState, functionState, builder, &referendStructs, ksaRefMT,
       elementType, ksaDefM->size, ksaRef, indexRef, elementRef);
 }
 
@@ -1169,6 +1189,8 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
 
           auto strRef = mallocStr(makeEmptyTupleRef(globalState), functionState, builder, lengthLE, sourceBytesPtrLE);
 
+          buildFlare(FL(), globalState, functionState, builder, "done storing");
+
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, globalState->metalCache->strRef, strRef));
         } else if (auto valeUsaMT = dynamic_cast<UnknownSizeArrayT*>(valeObjectRefMT->referend)) {
           auto valeUsaRefMT = valeObjectRefMT;
@@ -1246,4 +1268,27 @@ LLVMValueRef RCImm::getInterfaceMethodFunctionPtr(
     int indexInEdge) {
   return getInterfaceMethodFunctionPtrFromItable(
       globalState, functionState, builder, virtualParamMT, virtualArgRef, indexInEdge);
+}
+
+LLVMValueRef RCImm::stackify(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Local* local,
+    Ref refToStore,
+    bool knownLive) {
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto typeLT = translateType(local->type);
+  return makeMidasLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
+}
+
+Ref RCImm::unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  return loadLocal(functionState, builder, local, localAddr);
+}
+
+Ref RCImm::loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  return normalLocalLoad(globalState, functionState, builder, local, localAddr);
+}
+
+Ref RCImm::localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) {
+  return normalLocalStore(globalState, functionState, builder, local, localAddr, refToStore);
 }

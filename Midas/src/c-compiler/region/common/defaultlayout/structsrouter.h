@@ -25,8 +25,8 @@ public:
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getStringWrapperStruct() override;
 
-  void defineStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
-  void declareStruct(StructDefinition* structM) override;
+  void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) override;
+  void declareStruct(StructReferend* structM) override;
   void declareEdge(Edge* edge) override;
   void defineEdge(
       Edge* edge,

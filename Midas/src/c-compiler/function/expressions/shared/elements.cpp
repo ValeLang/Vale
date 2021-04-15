@@ -143,6 +143,7 @@ Ref swapElement(
   auto sourceLE =
       globalState->getRegion(elementRefM)
           ->checkValidReference(FL(), functionState, builder, elementRefM, sourceRef);
+  buildFlare(FL(), globalState, functionState, builder);
   auto resultLE = loadElement(globalState, functionState, builder, arrayPtrLE, elementRefM, sizeRef, indexRef);
   storeInnerArrayMember(globalState, functionState, builder, arrayPtrLE, indexLE, sourceLE);
   return resultLE.move();

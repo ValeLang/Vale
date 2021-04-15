@@ -196,10 +196,10 @@ class ArrayTests extends FunSuite with Matchers {
   test("Arr helper with capture") {
     val compile = Compilation(
       """
-        |fn Arr<M, F>(n int, generator &F) Array<M, T>
-        |rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
+        |fn myFunc<F>(generator &F) T
+        |rules(T Ref, Prot("__call", (&F, int), T))
         |{
-        |  Array<M>(n, &IFunction1<mut, int, T>(generator))
+        |  myFunc(generator)
         |}
         |
         |struct IntBox {
@@ -209,10 +209,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  box = IntBox(7);
         |  lam = (col){ box.i };
-        |  board =
-        |      Arr<mut>(
-        |          3,
-        |          &lam);
+        |  board = myFunc(&lam);
         |  = board.1;
         |}
       """.stripMargin)

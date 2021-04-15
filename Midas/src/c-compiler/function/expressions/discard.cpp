@@ -25,6 +25,7 @@ Ref translateDiscard(
 
   globalState->getRegion(sourceResultType)
       ->checkValidReference(FL(), functionState, builder, sourceResultType, sourceRef);
+  buildFlare(FL(), globalState, functionState, builder, "discarding!");
   globalState->getRegion(sourceResultType)
       ->dealias(
           AFL(std::string("Discard ") + std::to_string((int)discardM->sourceResultType->ownership) + " " + typeid(*discardM->sourceResultType->referend).name() + " from " + typeid(*sourceExpr).name()),
@@ -32,5 +33,6 @@ Ref translateDiscard(
           builder,
           sourceResultType,
           sourceRef);
+  buildFlare(FL(), globalState, functionState, builder, "discarded!");
   return makeEmptyTupleRef(globalState);
 }

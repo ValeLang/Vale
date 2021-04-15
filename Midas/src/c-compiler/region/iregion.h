@@ -237,26 +237,6 @@ public:
       Reference* weakRefM,
       Ref weakRef,
       bool knownLive) = 0;
-//
-//  virtual Ref loadElementFromKSAWithUpgrade(
-//      FunctionState* functionState,
-//      LLVMBuilderRef builder,
-//      Reference* ksaRefMT,
-//      KnownSizeArrayT* ksaMT,
-//      Ref arrayRef,
-//      bool arrayRefKnownLive,
-//      Ref indexRef,
-//      Reference* targetType) = 0;
-//
-//  virtual Ref loadElementFromUSAWithUpgrade(
-//      FunctionState* functionState,
-//      LLVMBuilderRef builder,
-//      Reference* usaRefMT,
-//      UnknownSizeArrayT* usaMT,
-//      Ref arrayRef,
-//      bool arrayRefKnownLive,
-//      Ref indexRef,
-//      Reference* targetType) = 0;
 
   virtual LoadResult loadElementFromUSA(
       FunctionState* functionState,
@@ -401,6 +381,19 @@ public:
   virtual RegionId* getRegionId() = 0;
 
   virtual Weakability getReferendWeakability(Referend* referend) = 0;
+
+  virtual LLVMValueRef stackify(
+      FunctionState* functionState, LLVMBuilderRef builder, Local* local, Ref refToStore,
+      bool knownLive) = 0;
+
+  virtual Ref unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) = 0;
+
+  virtual Ref loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) = 0;
+
+  virtual Ref localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) = 0;
+
+  virtual void mainSetup(FunctionState* functionState, LLVMBuilderRef builder) = 0;
+  virtual void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) = 0;
 };
 
 #endif

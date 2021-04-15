@@ -28,13 +28,15 @@
 #include <llvm-c/Transforms/Utils.h>
 #include <llvm-c/Transforms/IPO.h>
 #include <region/assist/assist.h>
-#include <region/mega/mega.h>
+#include <region/resilientv3/resilientv3.h>
 #include <region/unsafe/unsafe.h>
 #include <function/expressions/shared/string.h>
 #include <sstream>
 #include <region/linear/linear.h>
 #include <function/expressions/shared/members.h>
 #include <function/expressions/expressions.h>
+#include <region/naiverc/naiverc.h>
+#include <region/resilientv4/resilientv4.h>
 
 #ifdef _WIN32
 #define asmext "asm"
@@ -208,6 +210,8 @@ void initInternalExterns(GlobalState* globalState) {
   globalState->malloc = addExtern(globalState->mod, "malloc", int8PtrLT, {int64LT});
   globalState->free = addExtern(globalState->mod, "free", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
 
+  globalState->initTwinPages = addExtern(globalState->mod, "__vale_initTwinPages", LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), {});
+
   globalState->exit = addExtern(globalState->mod, "exit", LLVMVoidTypeInContext(globalState->context), {int8LT});
   globalState->assert = addExtern(globalState->mod, "__vassert", LLVMVoidTypeInContext(globalState->context), {int1LT, int8PtrLT});
   globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", LLVMVoidTypeInContext(globalState->context),
@@ -320,10 +324,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //  globalState->opt->genHeap = true;
 
 
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
+  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
     if (!globalState->opt->genHeap) {
-      std::cerr << "Error: using resilient v2/v3 without generational heap, overriding generational heap to true!" << std::endl;
+      std::cerr << "Error: using resilient without generational heap, overriding generational heap to true!" << std::endl;
       globalState->opt->genHeap = true;
     }
   }
@@ -336,23 +340,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     case RegionOverride::NAIVE_RC:
       std::cout << "Region override: naive-rc" << std::endl;
       break;
-    case RegionOverride::RESILIENT_V0:
-      std::cout << "Region override: resilient-v0" << std::endl;
-      break;
     case RegionOverride::FAST:
       std::cout << "Region override: fast" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V1:
-      std::cout << "Region override: resilient-v1" << std::endl;
-      break;
-    case RegionOverride::RESILIENT_V2:
-      std::cout << "Region override: resilient-v2" << std::endl;
       break;
     case RegionOverride::RESILIENT_V3:
       std::cout << "Region override: resilient-v3" << std::endl;
       break;
-    case RegionOverride::RESILIENT_LIMIT:
-      std::cout << "Region override: resilient-limit" << std::endl;
+    case RegionOverride::RESILIENT_V4:
+      std::cout << "Region override: resilient-v4" << std::endl;
       break;
     default:
       assert(false);
@@ -398,15 +393,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     case RegionOverride::RESILIENT_V3:
       metalCache.mutRegionId = metalCache.resilientV3RegionId;
       break;
-    case RegionOverride::RESILIENT_V2:
-      metalCache.mutRegionId = metalCache.resilientV2RegionId;
-      break;
-    case RegionOverride::RESILIENT_V1:
-      metalCache.mutRegionId = metalCache.resilientV1RegionId;
-      break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_LIMIT:
-      assert(false);
+    case RegionOverride::RESILIENT_V4:
+      metalCache.mutRegionId = metalCache.resilientV4RegionId;
       break;
     default:
       assert(false);
@@ -443,7 +431,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
   LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
   LLVMBuilderRef entryBuilder = LLVMCreateBuilderInContext(globalState->context);
-  globalState->valeMainBuilder = entryBuilder;
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
@@ -527,7 +514,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   Assist assistRegion(globalState);
   globalState->assistRegion = &assistRegion;
   globalState->regions.emplace(globalState->assistRegion->getRegionId(), globalState->assistRegion);
-  Mega naiveRcRegion(globalState, globalState->metalCache->naiveRcRegionId);
+  NaiveRC naiveRcRegion(globalState, globalState->metalCache->naiveRcRegionId);
   globalState->naiveRcRegion = &naiveRcRegion;
   globalState->regions.emplace(globalState->naiveRcRegion->getRegionId(), globalState->naiveRcRegion);
   Unsafe unsafeRegion(globalState);
@@ -536,15 +523,12 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   Linear linearRegion(globalState);
   globalState->linearRegion = &linearRegion;
   globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
-  Mega resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
+  ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
   globalState->resilientV3Region = &resilientV3Region;
   globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
-  Mega resilientV2Region(globalState, globalState->metalCache->resilientV2RegionId);
-  globalState->resilientV2Region = &resilientV2Region;
-  globalState->regions.emplace(globalState->resilientV2Region->getRegionId(), globalState->resilientV2Region);
-  Mega resilientV1Region(globalState, globalState->metalCache->resilientV1RegionId);
-  globalState->resilientV1Region = &resilientV1Region;
-  globalState->regions.emplace(globalState->resilientV1Region->getRegionId(), globalState->resilientV1Region);
+  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
+  globalState->resilientV4Region = &resilientV4Region;
+  globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
 
 //  Mega megaRegion(globalState);
   globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
@@ -555,12 +539,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  globalState->strncpy =
-      addExtern(globalState->mod, "strncpy", voidLT,
-          {int8PtrLT, int8PtrLT, int64LT});
-  globalState->memcpy =
-      addExtern(globalState->mod, "memcpy", int8PtrLT,
-                {int8PtrLT, int8PtrLT, int64LT});
+  globalState->strncpy = addExtern(globalState->mod, "strncpy", voidLT, {int8PtrLT, int8PtrLT, int64LT});
+  globalState->memcpy = addExtern(globalState->mod, "memcpy", int8PtrLT, {int8PtrLT, int8PtrLT, int64LT});
+  globalState->memset = addExtern(globalState->mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
 //  globalState->eqStr =
 //      addExtern(globalState->mod, "__veqStr", int8LT,
 //          {int8PtrLT, int8PtrLT});
@@ -569,6 +550,23 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //          {int8PtrLT});
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
+
+  auto mainSetupFuncName = globalState->metalCache->getName("__Vale_mainSetup");
+  auto mainSetupFuncProto =
+      globalState->metalCache->getPrototype(mainSetupFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, mainSetupFuncProto, mainSetupFuncName->name,
+      [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder);
+        for (auto i : globalState->regions) {
+          buildFlare(FL(), globalState, functionState, builder);
+          i.second->mainSetup(functionState, builder);
+          buildFlare(FL(), globalState, functionState, builder);
+        }
+        buildFlare(FL(), globalState, functionState, builder);
+        LLVMBuildRet(builder, constI64LE(globalState, 0));
+      });
+  LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
 
   for (auto p : program->structs) {
     auto name = p.first;
@@ -760,20 +758,32 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
 
+  bool mainExported = false;
+  bool mainExtern = program->externs.find("main") != program->externs.end();
   Prototype* mainM = nullptr;
   LLVMValueRef mainL = nullptr;
-  int numFuncs = program->functions.size();
-  for (auto p : program->functions) {
-    auto name = p.first;
-    auto function = p.second;
-    LLVMValueRef entryFunctionL = declareFunction(globalState, function);
-    if (program->isExported(function->prototype->name) && program->getExportedName(function->prototype->name) == "main") {
-      mainM = function->prototype;
-      mainL = entryFunctionL;
+  if (!mainExtern) {
+    int numFuncs = program->functions.size();
+    for (auto p : program->functions) {
+      auto name = p.first;
+      auto function = p.second;
+      LLVMValueRef entryFunctionL = declareFunction(globalState, function);
+      bool isExportedMain = program->isExported(function->prototype->name) &&
+                            program->getExportedName(function->prototype->name) == "main";
+      bool isExternMain = program->externs.find(function->prototype->name->name) != program->externs.end() &&
+                          function->prototype->name->name == "main";
+      if (isExportedMain || isExternMain) {
+        mainExported = isExportedMain;
+        mainExtern = isExternMain;
+        mainM = function->prototype;
+        mainL = entryFunctionL;
+      }
+    }
+    if (mainL == nullptr || mainM == nullptr) {
+      std::cerr << "Couldn't find main function! (Did you forget to export it?)" << std::endl;
+      exit(1);
     }
   }
-  assert(mainL != nullptr);
-  assert(mainM != nullptr);
 
   for (auto p : program->functions) {
     auto name = p.first;
@@ -883,6 +893,19 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   LLVMValueRef mainResult =
       LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
+  auto mainCleanupFuncName = globalState->metalCache->getName("__Vale_mainCleanup");
+  auto mainCleanupFuncProto =
+      globalState->metalCache->getPrototype(mainCleanupFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, mainCleanupFuncProto, mainCleanupFuncName->name,
+      [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
+        for (auto i : globalState->regions) {
+          i.second->mainCleanup(functionState, builder);
+        }
+        LLVMBuildRet(builder, constI64LE(globalState, 0));
+      });
+  LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainCleanupFuncProto), nullptr, 0, "");
+
   if (globalState->opt->printMemOverhead) {
     buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
     buildPrint(globalState, entryBuilder, LLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
@@ -984,9 +1007,9 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     filepath += exportedName + ".h";
     std::ofstream out(filepath, std::ofstream::out);
     if (!out) {
-      char err[256] = { 0 };
-      strerror_s(err, sizeof(err), errno);
-      std::cerr << "Couldn't make file '" << filepath << "': " << err << std::endl;
+//      char err[256] = { 0 };
+//      strerror_s(err, sizeof(err), errno);
+      std::cerr << "Couldn't make file '" << filepath/* << "': " << err*/ << std::endl;
       exit(1);
     }
     std::cout << "Writing " << filepath << std::endl;
@@ -1064,7 +1087,7 @@ void generateOutput(
     LLVMModuleRef mod,
     const char *triple,
     LLVMTargetMachineRef machine) {
-  char *err;
+  char *err = nullptr;
 
   LLVMSetTarget(mod, triple);
   LLVMTargetDataRef dataref = LLVMCreateTargetDataLayout(machine);
@@ -1123,10 +1146,10 @@ void generateModule(GlobalState *globalState) {
   // Verify generated IR
   if (globalState->opt->verify) {
     char *error = NULL;
-    LLVMVerifyModule(globalState->mod, LLVMAbortProcessAction, &error);
+    LLVMVerifyModule(globalState->mod, LLVMReturnStatusAction, &error);
     if (error) {
       if (*error)
-        errorExit(ExitCode::VerifyFailed, "Module verification failed:\n%s", error);
+        errorExit(ExitCode::VerifyFailed, "Module verification failed:\n", error);
       LLVMDisposeMessage(error);
     }
   }

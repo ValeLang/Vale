@@ -187,7 +187,7 @@ LLVMTypeRef Linear::translateType(Reference* referenceM) {
     return LLVMInt64TypeInContext(globalState->context);
   } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
     assert(referenceM->ownership == Ownership::SHARE);
-    return LLVMInt1TypeInContext(globalState->context);
+    return LLVMInt8TypeInContext(globalState->context);
   } else if (dynamic_cast<Float*>(referenceM->referend) != nullptr) {
     assert(referenceM->ownership == Ownership::SHARE);
     return LLVMDoubleTypeInContext(globalState->context);
@@ -567,6 +567,7 @@ Ref Linear::innerAllocate(
   LLVMValueRef substructSizeIntLE =
       predictShallowSize(builder, hostStructRefMT->referend, constI64LE(globalState, 0));
   bumpDestinationOffset(functionState, builder, regionInstanceRef, substructSizeIntLE);
+  buildFlare(FL(), globalState, functionState, builder);
   auto destinationStructRef = getDestinationRef(functionState, builder, regionInstanceRef, hostStructRefMT);
 
   auto intMT = globalState->metalCache->intRef;
@@ -808,6 +809,7 @@ Ref Linear::innerConstructKnownSizeArray(
   auto valeKsaDefM = globalState->program->getKnownSizeArray(valeKsaMT->name);
   auto sizeLE = predictShallowSize(builder, hostKsaMT, constI64LE(globalState, valeKsaDefM->size));
   bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE);
+  buildFlare(FL(), globalState, functionState, builder);
 
   auto ksaRef = getDestinationRef(functionState, builder, regionInstanceRef, ksaRefMT);
   auto ksaPtrLE = checkValidReference(FL(), functionState, builder, ksaRefMT, ksaRef);
@@ -856,6 +858,7 @@ Ref Linear::innerConstructUnknownSizeArray(
 
   auto sizeLE = predictShallowSize(builder, usaMT, lenI64LE);
   bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE);
+  buildFlare(FL(), globalState, functionState, builder);
 
   auto usaRef = getDestinationRef(functionState, builder, regionInstanceRef, usaRefMT);
   auto usaPtrLE = checkValidReference(FL(), functionState, builder, usaRefMT, usaRef);
@@ -904,6 +907,9 @@ Ref Linear::innerMallocStr(
 
   auto sizeLE = predictShallowSize(builder, linearStr, lengthLE);
   bumpDestinationOffset(functionState, builder, regionInstanceRef, sizeLE);
+  buildFlare(FL(), globalState, functionState, builder);
+
+  buildFlare(FL(), globalState, functionState, builder, "bumping by size: ", lengthLE);
 
   auto strRef = getDestinationRef(functionState, builder, regionInstanceRef, linearStrRefMT);
   auto strPtrLE = checkValidReference(FL(), functionState, builder, linearStrRefMT, strRef);
@@ -920,11 +926,19 @@ Ref Linear::innerMallocStr(
 
         auto charsBeginPtr = getStringBytesPtr(functionState, thenBuilder, strRef);
 
+        buildFlare(FL(), globalState, functionState, thenBuilder);
+
         std::vector<LLVMValueRef> argsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
         LLVMBuildCall(thenBuilder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
 
+
         auto charsEndPtr = LLVMBuildGEP(thenBuilder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
+
+        buildFlare(FL(), globalState, functionState, thenBuilder, "storing at ", ptrToIntLE(globalState, thenBuilder, charsEndPtr));
+
         LLVMBuildStore(thenBuilder, constI8LE(globalState, 0), charsEndPtr);
+
+        buildFlare(FL(), globalState, functionState, thenBuilder, "done storing");
 
         return strRef;
       });
@@ -1131,11 +1145,13 @@ Ref Linear::topLevelSerialize(
 
   // Reserve some space for the beginning metadata block
   bumpDestinationOffset(functionState, builder, dryRunRegionInstanceRef, constI64LE(globalState, startMetadataSize));
+  buildFlare(FL(), globalState, functionState, builder);
 
   auto dryRunFinalOffsetLE = getDestinationOffset(builder, dryRunRegionInstancePtrLE);
   auto sizeIntLE = LLVMBuildSub(builder, dryRunCounterBeginLE, dryRunFinalOffsetLE, "size");
 
   LLVMValueRef bufferBeginPtrLE = callMalloc(globalState, builder, sizeIntLE);
+  buildFlare(FL(), globalState, functionState, builder, "malloced ", sizeIntLE, " got ptr ", ptrToIntLE(globalState, builder, bufferBeginPtrLE));
 
   auto initialRegionStructLE = LLVMGetUndef(regionLT);
   initialRegionStructLE = LLVMBuildInsertValue(builder, initialRegionStructLE, bufferBeginPtrLE, 0, "regionStruct");
@@ -1168,6 +1184,7 @@ Ref Linear::topLevelSerialize(
           "rootMetadataPtr");
 
   bumpDestinationOffset(functionState, builder, regionInstanceRef, constI64LE(globalState, startMetadataSize));
+  buildFlare(FL(), globalState, functionState, builder);
   auto startMetadataRef = getDestinationRef(functionState, builder, regionInstanceRef, startMetadataRefMT);
   auto startMetadataPtrLE = checkValidReference(FL(), functionState, builder, startMetadataRefMT, startMetadataRef);
   LLVMBuildStore(builder,
@@ -1246,7 +1263,8 @@ LLVMValueRef Linear::predictShallowSize(LLVMBuilderRef builder, Referend* refere
   } else if (referend == linearStr) {
     auto headerBytesLE =
         constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, structs.getStringStruct()));
-    return LLVMBuildAdd(builder, headerBytesLE, lenIntLE, "sum");
+    auto lenAndNullTermLE = LLVMBuildAdd(builder, lenIntLE, constI64LE(globalState, 1), "lenAndNullTerm");
+    return LLVMBuildAdd(builder, headerBytesLE, lenAndNullTermLE, "sum");
   } else if (auto hostUsaMT = dynamic_cast<UnknownSizeArrayT*>(referend)) {
     auto headerBytesLE =
         constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, structs.getUnknownSizeArrayStruct(hostUsaMT)));
@@ -1345,6 +1363,7 @@ void Linear::bumpDestinationOffset(
   destinationOffsetLE = hexRoundDown(globalState, builder, destinationOffsetLE);
   buildFlare(FL(), globalState, functionState, builder, "rounded: ", destinationOffsetLE);
   LLVMBuildStore(builder, destinationOffsetLE, destinationOffsetPtrLE);
+  buildFlare(FL(), globalState, functionState, builder);
 }
 
 void Linear::reserveRootMetadataBytesIfNeeded(
@@ -1357,6 +1376,7 @@ void Linear::reserveRootMetadataBytesIfNeeded(
       LLVMBuildStructGEP(builder, regionInstancePtrLE, 2, "rootMetadataBytesNeeded");
   auto rootMetadataBytesNeededLE = LLVMBuildLoad(builder, rootMetadataBytesNeededPtrLE, "rootMetadataBytesNeeded");
   bumpDestinationOffset(functionState, builder, regionInstanceRef, rootMetadataBytesNeededLE);
+  buildFlare(FL(), globalState, functionState, builder);
   // Reset it to zero, we only need it once. This will make the next calls not reserve it. See MAPOWN for more.
   LLVMBuildStore(builder, constI64LE(globalState, 0), rootMetadataBytesNeededPtrLE);
 }
@@ -1822,4 +1842,27 @@ LLVMValueRef Linear::getInterfaceMethodFunctionPtr(
   auto methodPtrPtrLE = LLVMBuildGEP(builder, fftablePtrLE, indices.data(), indices.size(), "methodPtrPtr");
   auto methodFuncPtr = LLVMBuildLoad(builder, methodPtrPtrLE, "methodFuncPtr");
   return methodFuncPtr;
+}
+
+LLVMValueRef Linear::stackify(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Local* local,
+    Ref refToStore,
+    bool knownLive) {
+  auto toStoreLE = checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  auto typeLT = translateType(local->type);
+  return makeMidasLocal(functionState, builder, typeLT, local->id->maybeName.c_str(), toStoreLE);
+}
+
+Ref Linear::unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  return loadLocal(functionState, builder, local, localAddr);
+}
+
+Ref Linear::loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  return normalLocalLoad(globalState, functionState, builder, local, localAddr);
+}
+
+Ref Linear::localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) {
+  return normalLocalStore(globalState, functionState, builder, local, localAddr, refToStore);
 }

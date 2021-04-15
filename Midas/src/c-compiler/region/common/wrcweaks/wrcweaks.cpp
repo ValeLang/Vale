@@ -26,16 +26,12 @@ void WrcWeaks::buildCheckWrc(
     LLVMBuilderRef builder,
     LLVMValueRef wrciLE) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V0:
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
       // fine, proceed
       break;
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       // These dont have WRCs
       assert(false);
       break;
@@ -53,7 +49,7 @@ void WrcWeaks::buildCheckWrc(
 LLVMValueRef WrcWeaks::getWrciFromWeakRef(
     LLVMBuilderRef builder,
     WeakFatPtrLE weakFatPtrLE) {
-  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
+//  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakFatPtrLE);
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_WRCI, "wrci");
 }
@@ -86,7 +82,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
     IReferendStructsSource* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
-  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
+//  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
 
   if (refM->ownership == Ownership::SHARE) {
     // Shares never have weak refs
@@ -138,19 +134,25 @@ WrcWeaks::WrcWeaks(GlobalState *globalState_, IReferendStructsSource* referendSt
       wrcTablePtrLE,
       LLVMConstNamedStruct(
           globalState->wrcTableStructLT, wrcTableMembers.data(), wrcTableMembers.size()));
+}
 
+void WrcWeaks::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
+
+}
+
+void WrcWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
   if (globalState->opt->census) {
     LLVMValueRef args[3] = {
         LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
-            globalState->valeMainBuilder,
+            builder,
             LLVMBuildCall(
-                globalState->valeMainBuilder, globalState->getNumWrcs, &wrcTablePtrLE, 1, "numWrcs"),
+                builder, globalState->getNumWrcs, &wrcTablePtrLE, 1, "numWrcs"),
             LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(globalState->valeMainBuilder, globalState->assertI64Eq, args, 3, "");
+    LLVMBuildCall(builder, globalState->assertI64Eq, args, 3, "");
   }
 }
 
@@ -176,15 +178,11 @@ WeakFatPtrLE WrcWeaks::weakStructPtrToWrciWeakInterfacePtr(
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::FAST:
-    case RegionOverride::RESILIENT_V0:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
       // continue
       break;
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(false);
       break;
     default:
@@ -228,12 +226,12 @@ WeakFatPtrLE WrcWeaks::assembleInterfaceWeakRef(
     Reference* targetType,
     InterfaceReferend* interfaceReferendM,
     InterfaceFatPtrLE sourceInterfaceFatPtrLE) {
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-    if (sourceType->ownership == Ownership::BORROW) {
-      assert(false); // curiosity, wouldnt we just return sourceRefLE?
-    }
-    assert(sourceType->ownership == Ownership::SHARE || sourceType->ownership == Ownership::OWN);
-  }
+//  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//    if (sourceType->ownership == Ownership::BORROW) {
+//      assert(false); // curiosity, wouldnt we just return sourceRefLE?
+//    }
+//    assert(sourceType->ownership == Ownership::SHARE || sourceType->ownership == Ownership::OWN);
+//  }
 
   auto controlBlockPtrLE =
       referendStructsSource->getControlBlockPtr(
@@ -257,9 +255,10 @@ WeakFatPtrLE WrcWeaks::assembleStructWeakRef(
     Reference* targetTypeM,
     StructReferend* structReferendM,
     WrapperPtrLE objPtrLE) {
-  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
-    assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
-  } else if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
+//  if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V0) {
+//    assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
+//  } else
+    if (globalState->opt->regionOverride == RegionOverride::ASSIST ||
       globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
       globalState->opt->regionOverride == RegionOverride::FAST) {
     assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE || structTypeM->ownership == Ownership::BORROW);
@@ -324,7 +323,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
       [this, from, functionState, weakFatPtrLE](LLVMBuilderRef thenBuilder) {
         buildPrintAreaAndFileAndLine(globalState, thenBuilder, from);
         buildPrint(globalState, thenBuilder, "Tried dereferencing dangling reference! ");
-        assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
+//        assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
         auto wrciLE = getWrciFromWeakRef(thenBuilder, weakFatPtrLE);
         buildPrint(globalState, thenBuilder, "Wrci: ");
         buildPrint(globalState, thenBuilder, wrciLE);
@@ -343,8 +342,7 @@ LLVMValueRef WrcWeaks::getNewWrci(
   assert(
       globalState->opt->regionOverride == RegionOverride::ASSIST ||
           globalState->opt->regionOverride == RegionOverride::NAIVE_RC ||
-          globalState->opt->regionOverride == RegionOverride::FAST ||
-          globalState->opt->regionOverride == RegionOverride::RESILIENT_V0);
+          globalState->opt->regionOverride == RegionOverride::FAST);
 
   // uint64_t resultWrci = __wrc_firstFree;
   auto resultWrciLE = LLVMBuildLoad(builder, getWrcFirstFreeWrciPtr(builder), "resultWrci");
@@ -493,11 +491,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
     Reference* weakRefM,
     Ref weakRef) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(
           weakRefM->ownership == Ownership::BORROW ||
               weakRefM->ownership == Ownership::WEAK);

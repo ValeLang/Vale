@@ -88,8 +88,7 @@ public:
     assistRegionId = getRegionId("assist");
     naiveRcRegionId = getRegionId("naiverc");
     resilientV3RegionId = getRegionId("resilientv3");
-    resilientV2RegionId = getRegionId("resilientv2");
-    resilientV1RegionId = getRegionId("resilientv1");
+    resilientV4RegionId = getRegionId("resilientv4");
 
     innt = getInt(rcImmRegionId);
     intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
@@ -254,17 +253,17 @@ public:
   std::unordered_map<Prototype*, std::unordered_map<int, InterfaceMethod*>, AddressHasher<Prototype*>> interfaceMethods;
 
   std::unordered_map<int, std::unordered_map<std::string, VariableId*>> variableIds;
-  using LocalByReferenceMap = std::unordered_map<Reference*, Local*, AddressHasher<Reference*>>;
-  using LocalByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByReferenceMap, AddressHasher<VariableId*>>;
-  LocalByReferenceByVariableIdMap locals;
+  using LocalByKeepAliveMap = std::unordered_map<bool, Local*>;
+  using LocalByKeepAliveByReferenceMap = std::unordered_map<Reference*, LocalByKeepAliveMap, AddressHasher<Reference*>>;
+  using LocalByKeepAliveByReferenceByVariableIdMap = std::unordered_map<VariableId*, LocalByKeepAliveByReferenceMap, AddressHasher<VariableId*>>;
+  LocalByKeepAliveByReferenceByVariableIdMap locals;
 
   RegionId* rcImmRegionId = nullptr;
   RegionId* linearRegionId = nullptr;
   RegionId* unsafeRegionId = nullptr;
   RegionId* naiveRcRegionId = nullptr;
   RegionId* resilientV3RegionId = nullptr;
-  RegionId* resilientV2RegionId = nullptr;
-  RegionId* resilientV1RegionId = nullptr;
+  RegionId* resilientV4RegionId = nullptr;
   RegionId* assistRegionId = nullptr;
   // This is temporary, until we can get valestrom to properly fill in coords' regions
   RegionId* mutRegionId = nullptr;

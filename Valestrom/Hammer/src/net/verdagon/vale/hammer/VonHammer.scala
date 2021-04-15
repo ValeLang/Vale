@@ -447,6 +447,7 @@ object VonHammer {
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
             VonMember("local", vonifyLocal(local)),
+            VonMember("knownLive", VonBool(false)),
             VonMember("optName", vonifyOptional[FullNameH](name, n => VonStr(n.toReadableString())))))
       }
       case UnstackifyH(local) => {
@@ -507,7 +508,10 @@ object VonHammer {
               VonArray(None, localTypes.map(localType => vonifyCoord(localType)).toVector)),
             VonMember(
               "localIndices",
-              VonArray(None, locals.map(local => vonifyLocal(local))))))
+              VonArray(None, locals.map(local => vonifyLocal(local)))),
+            VonMember(
+              "localsKnownLives",
+              VonArray(None, locals.map(local => VonBool(false))))))
       }
       case DestroyUnknownSizeArrayH(arrayExpr, consumerExpr, consumerMethod, arrayElementType) => {
         VonObject(
@@ -545,7 +549,8 @@ object VonHammer {
           Vector(
             VonMember("local", vonifyLocal(local)),
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),
-            VonMember("localName", VonStr(localName.toReadableString()))))
+            VonMember("localName", VonStr(localName.toReadableString())),
+            VonMember("knownLive", VonBool(false))))
       }
       case LocalLoadH(local, targetOwnership, localName) => {
         VonObject(
@@ -749,7 +754,7 @@ object VonHammer {
   }
 
   def vonifyLocal(local: Local): IVonData = {
-    val Local(id, variability, tyype) = local
+    val Local(id, variability, tyype, keepAlive) = local
 
     VonObject(
       "Local",
@@ -757,7 +762,8 @@ object VonHammer {
       Vector(
         VonMember("id", vonifyVariableId(id)),
         VonMember("variability", vonifyVariability(variability)),
-        VonMember("type", vonifyCoord(tyype))))
+        VonMember("type", vonifyCoord(tyype)),
+        VonMember("keepAlive", VonBool(keepAlive))))
   }
 
   def vonifyVariableId(id: VariableIdH): IVonData = {

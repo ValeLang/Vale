@@ -130,6 +130,9 @@ public:
 
   static LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId);
 
+  void mainSetup(FunctionState* functionState, LLVMBuilderRef builder);
+  void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder);
+
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,

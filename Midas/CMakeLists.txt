@@ -3,7 +3,7 @@ project(valec)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 
-find_package(LLVM 11 REQUIRED CONFIG)
+find_package(LLVM 11.1 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(
 	${LLVM_INCLUDE_DIRS}
@@ -79,7 +79,9 @@ add_executable(valec
 		src/c-compiler/region/common/hgm/hgm.cpp
 		src/c-compiler/region/common/fatweaks/fatweaks.cpp
 		src/c-compiler/region/assist/assist.cpp
-		src/c-compiler/region/mega/mega.cpp
+		src/c-compiler/region/resilientv3/resilientv3.cpp
+		src/c-compiler/region/resilientv4/resilientv4.cpp
+		src/c-compiler/region/naiverc/naiverc.cpp
 		src/c-compiler/region/unsafe/unsafe.cpp
 		src/c-compiler/region/linear/linear.cpp
 		src/c-compiler/region/linear/linearstructs.cpp

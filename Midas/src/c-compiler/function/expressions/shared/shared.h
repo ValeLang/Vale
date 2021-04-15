@@ -32,7 +32,8 @@ void makeHammerLocal(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
-    Ref valueToStore);
+    Ref valueToStore,
+    bool knownLive);
 
 
 // Returns the new RC

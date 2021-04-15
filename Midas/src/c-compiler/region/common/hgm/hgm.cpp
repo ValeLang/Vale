@@ -12,27 +12,375 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 
 HybridGenerationalMemory::HybridGenerationalMemory(
     GlobalState* globalState_,
+    ControlBlock* controlBlock_,
     IReferendStructsSource* referendStructsSource_,
     IWeakRefStructsSource* weakRefStructsSource_,
     bool elideChecksForKnownLive_,
-    bool limitMode_)
+    bool limitMode_,
+    StructReferend* anyMT_)
   : globalState(globalState_),
-    fatWeaks_(globalState_, weakRefStructsSource_),
+    controlBlock(controlBlock_),
+    fatWeaks(globalState_, weakRefStructsSource_),
     referendStructsSource(referendStructsSource_),
     weakRefStructsSource(weakRefStructsSource_),
     elideChecksForKnownLive(elideChecksForKnownLive_),
-    limitMode(limitMode_) {}
+    limitMode(limitMode_),
+    anyMT(anyMT_),
+    globalNullPtrPtrByReferend(0, globalState->makeAddressHasher<Referend*>()) {
+}
+
+void HybridGenerationalMemory::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
+  if (anyMT != globalState->metalCache->emptyTupleStruct) {
+    auto anyRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::YONDER, anyMT);
+    auto anyInlRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::INLINE, anyMT);
+    auto anyRefLT = globalState->getRegion(anyMT)->translateType(anyRefMT);
+    auto anyInlRefLT = globalState->getRegion(anyMT)->translateType(anyInlRefMT);
+
+    undeadCycleNodeLT = LLVMStructCreateNamed(globalState->context, "__ValeHGM_UndeadCycleNode");
+    std::vector<LLVMTypeRef> undeadCycleNodeMembers = {
+        LLVMPointerType(undeadCycleNodeLT, 0),
+        anyRefLT,
+    };
+    LLVMStructSetBody(undeadCycleNodeLT, undeadCycleNodeMembers.data(), undeadCycleNodeMembers.size(), false);
+
+    undeadCycleHeadNodePtrPtrLE =
+        LLVMAddGlobal(globalState->mod, LLVMPointerType(undeadCycleNodeLT, 0), "__ValeHGM_undeadCycleCurrent");
+    LLVMSetInitializer(undeadCycleHeadNodePtrPtrLE, LLVMConstNull(LLVMPointerType(undeadCycleNodeLT, 0)));
+
+    halfProtectedI8PtrPtrLE = LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "halfProtectedI8Ptr");
+    LLVMSetInitializer(halfProtectedI8PtrPtrLE, LLVMConstNull(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)));
+
+    auto setupFuncProto = makeMainSetupFunction();
+    auto setupFuncL = globalState->extraFunctions.find(setupFuncProto)->second;
+    LLVMBuildCall(builder, setupFuncL, nullptr, 0, "");
+
+    cleanupIterPrototype = makeCleanupIterFunction();
+  }
+}
+
+Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
+  auto anyRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::YONDER, anyMT);
+  auto anyInlRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::INLINE, anyMT);
+  auto anyRefLT = globalState->getRegion(anyMT)->translateType(anyRefMT);
+  auto anyInlRefLT = globalState->getRegion(anyMT)->translateType(anyInlRefMT);
+
+  auto setupFuncName = globalState->metalCache->getName("__ValeHGM_mainSetup");
+  auto setupFuncProto =
+      globalState->metalCache->getPrototype(setupFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, setupFuncProto, setupFuncName->name,
+      [this, anyRefMT, anyRefLT, anyInlRefLT](FunctionState *functionState, LLVMBuilderRef builder) {
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        auto protectedTwinPagePtrLE =
+            LLVMBuildCall(builder, globalState->initTwinPages, nullptr, 0, "protectedTwinPagePtr");
+        size_t numProtectedBytes = LLVMABISizeOfType(globalState->dataLayout, anyInlRefLT);
+        LLVMValueRef negativeNumProtectedBytesLE = constI64LE(globalState, -numProtectedBytes);
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        auto halfProtectedI8PtrLE =
+            LLVMBuildGEP(builder, protectedTwinPagePtrLE, &negativeNumProtectedBytesLE, 1, "");
+        LLVMBuildStore(builder, halfProtectedI8PtrLE, halfProtectedI8PtrPtrLE);
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        if (globalState->opt->census) {
+          std::cerr << "HGM half-protected block has no census fields!" << std::endl;
+          LLVMBuildCall(builder, globalState->censusAdd, &halfProtectedI8PtrLE, 1, "");
+        }
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        auto halfProtectedAnyObjWrapperPtrLE =
+            referendStructsSource->makeWrapperPtr(
+                FL(), functionState, builder, anyRefMT,
+                LLVMBuildPointerCast(builder, halfProtectedI8PtrLE, anyRefLT, "halfProtectedAnyObjPtr"));
+        auto halfProtectedObjControlBlockPtrLE =
+            referendStructsSource->getConcreteControlBlockPtr(
+                FL(), functionState, builder, anyRefMT, halfProtectedAnyObjWrapperPtrLE);
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        auto genMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::GENERATION);
+        auto genPtrLE =
+            LLVMBuildStructGEP(builder, halfProtectedObjControlBlockPtrLE.refLE, genMemberIndex, "genPtr");
+        auto genLT = LLVMIntTypeInContext(globalState->context, GENERATION_NUM_BITS);
+        auto intMaxLE = LLVMConstSExt(constI8LE(globalState, 0xFF), genLT);
+        LLVMBuildStore(builder, intMaxLE, genPtrLE);
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        auto tetherMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::TETHER_32B);
+        auto tetheredPtrLE = LLVMBuildStructGEP(
+            builder, halfProtectedObjControlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
+        auto isTetheredLE = constI32LE(globalState, 1);
+        LLVMBuildStore(builder, isTetheredLE, tetheredPtrLE);
+
+        buildFlare(FL(), globalState, functionState, builder);
+
+        auto undeadCycleHeadNodeI8PtrLE =
+            callMalloc(
+                globalState,
+                builder,
+                constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, undeadCycleNodeLT)));
+        auto undeadCycleHeadNodePtrLE =
+            LLVMBuildPointerCast(
+                builder, undeadCycleHeadNodeI8PtrLE, LLVMPointerType(undeadCycleNodeLT, 0),
+                "undeadCycleHeadNodePtr");
+        buildFlare(FL(), globalState, functionState, builder, "head: ", ptrToIntLE(globalState, builder, undeadCycleHeadNodeI8PtrLE));
+        // Make it point at itself for its next ptr
+        auto undeadCycleHeadNodeNextPtrPtrLE =
+            LLVMBuildStructGEP(builder, undeadCycleHeadNodePtrLE, 0, "nextPtrPtr");
+        LLVMBuildStore(builder, undeadCycleHeadNodePtrLE, undeadCycleHeadNodeNextPtrPtrLE);
+        buildFlare(FL(), globalState, functionState, builder, "next: ", ptrToIntLE(globalState, builder, undeadCycleHeadNodePtrLE));
+        // Point it at the half protected global, arbitrarily. Could use something else if we wanted to, but might as well.
+        auto undeadCycleHeadNodeObjPtrPtrLE =
+            LLVMBuildStructGEP(builder, undeadCycleHeadNodePtrLE, 1, "objPtrPtr");
+        LLVMBuildStore(builder, halfProtectedAnyObjWrapperPtrLE.refLE, undeadCycleHeadNodeObjPtrPtrLE);
+        buildFlare(FL(), globalState, functionState, builder, "obj: ", ptrToIntLE(globalState, builder, halfProtectedAnyObjWrapperPtrLE.refLE));
+
+        LLVMBuildStore(builder, undeadCycleHeadNodePtrLE, undeadCycleHeadNodePtrPtrLE);
+
+        // The caller is about to kill our builder, so we're making another one pointing at the same block.
+        setupBuilder = LLVMCreateBuilderInContext(globalState->context);
+        LLVMPositionBuilderAtEnd(setupBuilder, LLVMGetInsertBlock(builder));
+
+        buildFlare(FL(), globalState, functionState, builder);
+      });
+  return setupFuncProto;
+}
+
+void HybridGenerationalMemory::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
+  if (anyMT != globalState->metalCache->emptyTupleStruct) {
+    auto boolRefMT = globalState->metalCache->boolRef;
+    auto anyRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::YONDER, anyMT);
+
+    LLVMBuildRet(setupBuilder, constI64LE(globalState, 0));
+    LLVMDisposeBuilder(setupBuilder);
+
+    buildFlare(FL(), globalState, functionState, builder);
+    auto cleanupFuncProto = makeMainCleanupFunction();
+    auto setupFuncL = globalState->extraFunctions.find(cleanupFuncProto)->second;
+    buildFlare(FL(), globalState, functionState, builder);
+    LLVMBuildCall(builder, setupFuncL, nullptr, 0, "");
+    buildFlare(FL(), globalState, functionState, builder);
+  }
+}
+
+// Attempts to clean up the head's next node.
+// Returns 0 if there are none left, 1 if we cleaned one up, 2 if we couldn't clean one up.
+Prototype* HybridGenerationalMemory::makeCleanupLoopFunction() {
+  auto cleanupLoopFuncName = globalState->metalCache->getName("__ValeHGM_cleanupIter");
+  auto cleanupLoopFuncProto =
+      globalState->metalCache->getPrototype(cleanupLoopFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, cleanupLoopFuncProto, cleanupLoopFuncName->name,
+      [this](FunctionState *functionState, LLVMBuilderRef builder) {
+        buildWhile(globalState, functionState, builder,
+            [this, functionState](LLVMBuilderRef conditionBuilder) {
+              buildFlare(FL(), globalState, functionState, conditionBuilder);
+              auto undeadCycleHeadNodePtrLE =
+                  LLVMBuildLoad(conditionBuilder, undeadCycleHeadNodePtrPtrLE, "undeadCycleHeadNodePtr");
+              buildFlare(FL(), globalState, functionState, conditionBuilder, "head: ",
+                  ptrToIntLE(globalState, conditionBuilder, undeadCycleHeadNodePtrLE));
+              auto undeadCycleHeadNodeNextPtrPtrLE =
+                  LLVMBuildStructGEP(
+                      conditionBuilder, undeadCycleHeadNodePtrLE, 0, "undeadCycleHeadNodeNextPtrPtr");
+              buildFlare(FL(), globalState, functionState, conditionBuilder);
+              auto undeadCycleHeadNodeNextPtrLE =
+                  LLVMBuildLoad(conditionBuilder, undeadCycleHeadNodeNextPtrPtrLE, "undeadCycleHeadNodeNextPtr");
+              buildFlare(FL(), globalState, functionState, conditionBuilder, "next: ",
+                  ptrToIntLE(globalState, conditionBuilder, undeadCycleHeadNodeNextPtrLE));
+              auto undeadCycleNonEmptyDiffLE =
+                  LLVMBuildPtrDiff(
+                      conditionBuilder, undeadCycleHeadNodeNextPtrLE, undeadCycleHeadNodePtrLE, "undeadCycleNonEmptyDiff");
+              buildFlare(FL(), globalState, functionState, conditionBuilder, "diff: ", undeadCycleNonEmptyDiffLE);
+              auto undeadCycleEmptyLE =
+                  LLVMBuildICmp(
+                      conditionBuilder, LLVMIntNE, undeadCycleNonEmptyDiffLE, constI64LE(globalState, 0),
+                      "undeadCycleNonEmpty");
+              buildFlare(FL(), globalState, functionState, conditionBuilder);
+              auto undeadCycleNonEmptyRef =
+                  wrap(
+                      globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef,
+                      undeadCycleEmptyLE);
+              return undeadCycleNonEmptyRef;
+            },
+            [this, functionState](LLVMBuilderRef bodyBuilder) {
+              buildCall(globalState, functionState, bodyBuilder, cleanupIterPrototype, {});
+            });
+        LLVMBuildRet(builder, constI64LE(globalState, 0));
+      });
+  return cleanupLoopFuncProto;
+}
+
+// Attempts to clean up the head's next node.
+// Returns 0 if there are none left, 1 if we cleaned one up, 2 if we couldn't clean one up.
+Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
+  auto anyRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::YONDER, anyMT);
+
+  auto cleanupIterFuncName = globalState->metalCache->getName("__ValeHGM_cleanupIter");
+  auto cleanupIterFuncProto =
+      globalState->metalCache->getPrototype(cleanupIterFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, cleanupIterFuncProto, cleanupIterFuncName->name,
+      [this, anyRefMT](FunctionState *functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder, "In an iteration!");
+        auto undeadCycleHeadNodePtrLE =
+            LLVMBuildLoad(builder, undeadCycleHeadNodePtrPtrLE, "undeadCycleHeadNodePtr");
+        buildFlare(FL(), globalState, functionState, builder, "cycle head: ",
+            ptrToIntLE(globalState, builder, undeadCycleHeadNodePtrLE));
+
+        auto undeadCycleHeadNodeNextPtrPtrLE =
+            LLVMBuildStructGEP(
+                builder, undeadCycleHeadNodePtrLE, 0, "undeadCycleHeadNodeNextPtrPtr");
+        // This is the node that we might be removing.
+        auto undeadCycleNextNodePtrLE =
+            LLVMBuildLoad(builder, undeadCycleHeadNodeNextPtrPtrLE, "undeadCycleNextNodePtr");
+        buildFlare(FL(), globalState, functionState, builder, "cycle head next: ",
+            ptrToIntLE(globalState, builder, undeadCycleNextNodePtrLE));
+
+        auto undeadCycleNextNodeNextPtrPtrLE =
+            LLVMBuildStructGEP(
+                builder, undeadCycleNextNodePtrLE, 0, "undeadCycleNextNodeNextPtrPtr");
+        auto undeadCycleNextNodeNextPtrLE =
+            LLVMBuildLoad(builder, undeadCycleNextNodeNextPtrPtrLE, "undeadCycleNextNodeNextPtr");
+        buildFlare(FL(), globalState, functionState, builder, "cycle head next next: ",
+            ptrToIntLE(globalState, builder, undeadCycleNextNodeNextPtrLE));
+
+        // Now we'll get a pointer to its object.
+        auto undeadCycleNextNodeObjPtrPtrLE =
+            LLVMBuildStructGEP(
+                builder, undeadCycleNextNodePtrLE, 1, "undeadCycleNextNodeObjPtrPtr");
+        auto undeadCycleNextNodeObjPtrLE =
+            LLVMBuildLoad(builder, undeadCycleNextNodeObjPtrPtrLE, "undeadCycleNextNodeObjPtr");
+        buildFlare(FL(), globalState, functionState, builder, "cycle head next obj: ",
+            ptrToIntLE(globalState, builder, undeadCycleNextNodeObjPtrLE));
+
+        auto nextNodeObjWrapperPtrLE =
+            referendStructsSource->makeWrapperPtr(FL(), functionState, builder, anyRefMT, undeadCycleNextNodeObjPtrLE);
+        auto nextNodeObjRef = wrap(globalState->getRegion(anyMT), anyRefMT, nextNodeObjWrapperPtrLE);
+
+        auto controlBlock = referendStructsSource->getControlBlock(anyMT);
+        auto tetherMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::TETHER_32B);
+        auto controlBlockPtrLE =
+            referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, anyRefMT,
+                nextNodeObjWrapperPtrLE);
+        auto tetherPtrLE = LLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
+        auto tetherI32LE = LLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
+        auto isTetheredLE =
+            LLVMBuildTrunc(builder, tetherI32LE, LLVMInt1TypeInContext(globalState->context), "wasAlive");
+        auto isTetheredRef = wrap(
+            globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isTetheredLE);
+
+        buildFlare(FL(), globalState, functionState, builder, "is tethered: ", tetherI32LE);
+
+        auto resultIntRef =
+            buildIfElse(
+                globalState, functionState, builder,
+                isTetheredRef, LLVMInt64TypeInContext(globalState->context),
+                globalState->metalCache->intRef,
+                globalState->metalCache->intRef,
+                [this, undeadCycleNextNodePtrLE](LLVMBuilderRef thenBuilder) {
+                  // Make the next one the new head.
+                  LLVMBuildStore(thenBuilder, undeadCycleNextNodePtrLE, undeadCycleHeadNodePtrPtrLE);
+                  return globalState->constI64(0);
+                },
+                [this, functionState, nextNodeObjRef, nextNodeObjWrapperPtrLE, undeadCycleNextNodePtrLE,
+                 undeadCycleNextNodeNextPtrLE, undeadCycleHeadNodeNextPtrPtrLE, anyRefMT](LLVMBuilderRef elseBuilder) {
+                  // It's not tethered, so nuke it!
+                  buildFlare(FL(), globalState, functionState, elseBuilder, "deallocating! ", ptrToIntLE(globalState, elseBuilder, nextNodeObjWrapperPtrLE.refLE));
+                  innerDeallocate(FL(), globalState, functionState, referendStructsSource, elseBuilder, anyRefMT, nextNodeObjRef);
+                  buildFlare(FL(), globalState, functionState, elseBuilder);
+                  callFree(globalState, elseBuilder, undeadCycleNextNodePtrLE);
+                  buildFlare(FL(), globalState, functionState, elseBuilder);
+                  // Make the head node point somewhere else
+                  LLVMBuildStore(elseBuilder, undeadCycleNextNodeNextPtrLE, undeadCycleHeadNodeNextPtrPtrLE);
+                  buildFlare(FL(), globalState, functionState, elseBuilder);
+                  return globalState->constI64(1);
+                });
+
+        auto resultIntLE =
+            globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(
+                FL(), functionState, builder, globalState->metalCache->intRef, resultIntRef);
+        LLVMBuildRet(builder, resultIntLE);
+      });
+  return cleanupIterFuncProto;
+}
+
+Prototype* HybridGenerationalMemory::makeMainCleanupFunction() {
+  auto anyRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::YONDER, anyMT);
+  auto anyInlRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::INLINE, anyMT);
+  auto anyRefLT = globalState->getRegion(anyMT)->translateType(anyRefMT);
+  auto anyInlRefLT = globalState->getRegion(anyMT)->translateType(anyInlRefMT);
+  auto boolRefMT = globalState->metalCache->boolRef;
+
+  auto cleanupFuncName = globalState->metalCache->getName("__ValeHGM_mainCleanup");
+  auto cleanupFuncProto =
+      globalState->metalCache->getPrototype(cleanupFuncName, globalState->metalCache->intRef, {});
+  declareAndDefineExtraFunction(
+      globalState, cleanupFuncProto, cleanupFuncName->name,
+      [this, boolRefMT, anyRefMT](FunctionState *functionState, LLVMBuilderRef builder) {
+        buildFlare(FL(), globalState, functionState, builder);
+
+        buildCall(globalState, functionState, builder, makeCleanupLoopFunction(), {});
+        LLVMBuildRet(builder, constI64LE(globalState, 0));
+
+//        buildWhile(
+//            globalState, functionState, builder,
+//            [this, boolRefMT, functionState](LLVMBuilderRef conditionBuilder) {
+//              buildFlare(FL(), globalState, functionState, conditionBuilder);
+//              auto undeadCycleNodePtrLE =
+//                  LLVMBuildLoad(conditionBuilder, undeadCycleHeadNodePtrPtrLE, "undeadCycleNodePtr");
+//              buildFlare(FL(), globalState, functionState, conditionBuilder, "head: ", ptrToIntLE(globalState, conditionBuilder, undeadCycleNodePtrLE));
+//              auto undeadCycleNodeNextPtrPtrLE =
+//                  LLVMBuildStructGEP(
+//                      conditionBuilder, undeadCycleNodePtrLE, 0, "undeadCycleNodeNextPtrPtr");
+//              buildFlare(FL(), globalState, functionState, conditionBuilder);
+//              auto undeadCycleNodeNextPtrLE =
+//                  LLVMBuildLoad(conditionBuilder, undeadCycleNodeNextPtrPtrLE, "undeadCycleNodeNextPtr");
+//              buildFlare(FL(), globalState, functionState, conditionBuilder, "next: ", ptrToIntLE(globalState, conditionBuilder, undeadCycleNodeNextPtrLE));
+//              auto undeadCycleNonEmptyDiffLE =
+//                  LLVMBuildPtrDiff(
+//                      conditionBuilder, undeadCycleNodeNextPtrLE, undeadCycleNodePtrLE, "undeadCycleNonEmptyDiff");
+//              buildFlare(FL(), globalState, functionState, conditionBuilder, "diff: ", undeadCycleNonEmptyDiffLE);
+//              auto undeadCycleNonEmptyLE =
+//                  LLVMBuildICmp(
+//                      conditionBuilder, LLVMIntNE, undeadCycleNonEmptyDiffLE, constI64LE(globalState, 0),
+//                      "undeadCycleNonEmpty");
+//              buildFlare(FL(), globalState, functionState, conditionBuilder);
+//              return wrap(globalState->getRegion(boolRefMT), boolRefMT, undeadCycleNonEmptyLE);
+//            },
+//            [this, anyRefMT, functionState](LLVMBuilderRef bodyBuilder) {
+//              buildFlare(FL(), globalState, functionState, bodyBuilder);
+//              auto undeadCycleNodePtrLE = LLVMBuildLoad(bodyBuilder, undeadCycleHeadNodePtrPtrLE, "undeadCycleNodePtr");
+//              auto undeadCycleNodeObjPtrPtrLE =
+//                  LLVMBuildStructGEP(
+//                      bodyBuilder, undeadCycleNodePtrLE, 1, "undeadCycleNodeObjPtrPtr");
+//              auto undeadCycleNodeObjPtrLE =
+//                  LLVMBuildLoad(bodyBuilder, undeadCycleNodeObjPtrPtrLE, "undeadCycleNodeObjPtr");
+//              auto undeadCycleNodeObjRef = wrap(globalState->getRegion(anyMT), anyRefMT, undeadCycleNodeObjPtrLE);
+//              buildFlare(FL(), globalState, functionState, bodyBuilder);
+//              innerDeallocate(FL(), globalState, functionState, referendStructsSource, bodyBuilder, anyRefMT,
+//                  undeadCycleNodeObjRef);
+//              buildFlare(FL(), globalState, functionState, bodyBuilder);
+//            });
+//        buildFlare(FL(), globalState, functionState, builder);
+//        LLVMBuildRet(builder, constI64LE(globalState, 0));
+      });
+  return cleanupFuncProto;
+}
 
 LLVMValueRef HybridGenerationalMemory::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
     IWeakRefStructsSource* weakRefStructsSource,
     Referend* referend,
     WeakFatPtrLE weakRefLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
-  auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+             globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
+  auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, weakRefLE);
   assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(referend));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
 }
@@ -43,9 +391,8 @@ static LLVMValueRef makeGenHeader(
     LLVMBuilderRef builder,
     Referend* referend,
     LLVMValueRef targetGenLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+         globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(referend));
   headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
   return headerLE;
@@ -57,9 +404,8 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
     IReferendStructsSource* structs,
     Referend* referendM,
     ControlBlockPtrLE controlBlockPtr) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+             globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   assert(LLVMTypeOf(controlBlockPtr.refLE) == LLVMPointerType(structs->getControlBlock(referendM)->getStruct(), 0));
 
   auto genPtrLE =
@@ -81,14 +427,10 @@ WeakFatPtrLE HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
     InterfaceReferend* targetInterfaceReferendM,
     Reference* targetInterfaceTypeM) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       // continue
       break;
     case RegionOverride::FAST:
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
       assert(false);
@@ -105,19 +447,19 @@ WeakFatPtrLE HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
           FL(), functionState, builder, sourceStructTypeM,
           referendStructsSource->makeWrapperPtr(
               FL(), functionState, builder, sourceStructTypeM,
-              fatWeaks_.getInnerRefFromWeakRef(
+              fatWeaks.getInnerRefFromWeakRef(
                   functionState, builder, sourceStructTypeM, sourceRefLE)));
 
   auto interfaceRefLT =
       weakRefStructsSource->getInterfaceWeakRefStruct(
           targetInterfaceReferendM);
-  auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, sourceRefLE);
+  auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, sourceRefLE);
 
   auto objPtr =
       makeInterfaceRefStruct(
           globalState, functionState, builder, referendStructsSource, sourceStructReferendM, targetInterfaceReferendM, controlBlockPtr);
 
-  return fatWeaks_.assembleWeakFatPtr(
+  return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetInterfaceTypeM, interfaceRefLT, headerLE, objPtr);
 }
 
@@ -151,7 +493,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleInterfaceWeakRef(
 
   auto weakRefStructLT =
       weakRefStructsSource->getInterfaceWeakRefStruct(interfaceReferendM);
-  return fatWeaks_.assembleWeakFatPtr(
+  return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetType, weakRefStructLT, headerLE, sourceInterfaceFatPtrLE.refLE);
 }
 
@@ -162,7 +504,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
     Reference* targetTypeM,
     StructReferend* structReferendM,
     WrapperPtrLE objPtrLE) {
-  assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
+//  assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
   // curious, if its a borrow, do we just return sourceRefLE?
 
   auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
@@ -170,7 +512,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
   auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, structReferendM, currentGenLE);
   auto weakRefStructLT =
       weakRefStructsSource->getStructWeakRefStruct(structReferendM);
-  return fatWeaks_.assembleWeakFatPtr(
+  return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
 
@@ -211,7 +553,7 @@ WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(
 
   auto weakRefStructLT =
       weakRefStructsSource->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
-  return fatWeaks_.assembleWeakFatPtr(
+  return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetUSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
 
@@ -223,7 +565,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
     WeakFatPtrLE weakRefLE,
     bool knownLive) {
   auto fatPtrLE = weakRefLE;
-  auto innerLE = fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, fatPtrLE);
+  auto innerLE = fatWeaks.getInnerRefFromWeakRef(functionState, builder, refM, fatPtrLE);
 
   if (limitMode || (knownLive && elideChecksForKnownLive)) {
     // Do nothing
@@ -235,7 +577,8 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
     buildIf(
         globalState, functionState, builder, isZeroLE(builder, isAliveLE),
         [this, from, functionState, fatPtrLE](LLVMBuilderRef thenBuilder) {
-          if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3) {
+          if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+              globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
             auto ptrToWriteToLE = LLVMBuildLoad(thenBuilder, globalState->crashGlobal,
                 "crashGlobal");
             LLVMBuildStore(thenBuilder, constI64LE(globalState, 0), ptrToWriteToLE);
@@ -295,7 +638,7 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
 
     // Get actual generation from the table
     auto innerRefLE =
-        fatWeaks_.getInnerRefFromWeakRefWithoutCheck(functionState, builder, weakRefM,
+        fatWeaks.getInnerRefFromWeakRefWithoutCheck(functionState, builder, weakRefM,
             weakFatPtrLE);
     auto controlBlockPtrLE =
         referendStructsSource->getControlBlockPtrWithoutChecking(
@@ -306,7 +649,7 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     auto isLiveLE = LLVMBuildICmp(builder, LLVMIntEQ, actualGenLE, targetGenLE, "isLive");
     if (knownLive && !elideChecksForKnownLive) {
       // See MPESC for status codes
-      buildAssertWithExitCode(globalState, functionState, builder, isLiveLE, 14, "knownLive is true, but object is dead!");
+      buildAssertWithExitCode(globalState, functionState, builder, isLiveLE, 116, "knownLive is true, but object is dead!");
     }
 
     return isLiveLE;
@@ -354,14 +697,14 @@ WeakFatPtrLE HybridGenerationalMemory::weakInterfaceRefToWeakStructRef(
     LLVMBuilderRef builder,
     Reference* weakInterfaceRefMT,
     WeakFatPtrLE weakInterfaceFatPtrLE) {
-  auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakInterfaceFatPtrLE);
+  auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, weakInterfaceFatPtrLE);
 
   // The object might not exist, so skip the check.
   auto interfaceFatPtrLE =
       referendStructsSource->makeInterfaceFatPtrWithoutChecking(
           FL(), functionState, builder,
           weakInterfaceRefMT, // It's still conceptually weak even though its not in a weak pointer.
-          fatWeaks_.getInnerRefFromWeakRef(
+          fatWeaks.getInnerRefFromWeakRef(
               functionState,
               builder,
               weakInterfaceRefMT,
@@ -372,7 +715,7 @@ WeakFatPtrLE HybridGenerationalMemory::weakInterfaceRefToWeakStructRef(
 
   // Now, reassemble a weak void* ref to the struct.
   auto weakVoidStructRefLE =
-      fatWeaks_.assembleVoidStructWeakRef(builder, weakInterfaceRefMT, controlBlockPtrLE, headerLE);
+      fatWeaks.assembleVoidStructWeakRef(builder, weakInterfaceRefMT, controlBlockPtrLE, headerLE);
 
   return weakVoidStructRefLE;
 }
@@ -396,7 +739,7 @@ void HybridGenerationalMemory::buildCheckWeakRef(
     std::tie(actualRefM, refLE) = hgmGetRefInnardsForChecking(weakRef);
     auto weakFatPtrLE = weakRefStructsSource->makeWeakFatPtr(weakRefM, refLE);
     auto innerLE =
-        fatWeaks_.getInnerRefFromWeakRefWithoutCheck(
+        fatWeaks.getInnerRefFromWeakRefWithoutCheck(
             functionState, builder, weakRefM, weakFatPtrLE);
 
     auto controlBlockPtrLE =
@@ -460,8 +803,8 @@ Ref HybridGenerationalMemory::assembleWeakRef(
 
 
 LLVMTypeRef HybridGenerationalMemory::makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId) {
-  assert(regionId == globalState->metalCache->resilientV2RegionId ||
-             regionId == globalState->metalCache->resilientV3RegionId);
+  assert(regionId == globalState->metalCache->resilientV3RegionId ||
+             regionId == globalState->metalCache->resilientV4RegionId);
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
 //      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
 //      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
@@ -475,4 +818,76 @@ LLVMTypeRef HybridGenerationalMemory::makeWeakRefHeaderStruct(GlobalState* globa
   LLVMStructSetBody(genRefStructL, memberTypesL.data(), memberTypesL.size(), false);
 
   return genRefStructL;
+}
+
+WrapperPtrLE HybridGenerationalMemory::getHalfProtectedPtr(
+    FunctionState* functionState, LLVMBuilderRef builder, Reference* reference, LLVMTypeRef wrapperStructPtrLT) {
+  assert(LLVMGetTypeKind(wrapperStructPtrLT) == LLVMPointerTypeKind);
+  auto iter = globalNullPtrPtrByReferend.find(reference->referend);
+  if (iter == globalNullPtrPtrByReferend.end()) {
+    auto name = std::string("__ValeHGMNull__") + globalState->getReferendName(reference->referend)->name;
+    auto globalPtrLE = LLVMAddGlobal(globalState->mod, wrapperStructPtrLT, name.c_str());
+    // Should be overwritten just below
+    LLVMSetInitializer(globalPtrLE, LLVMConstNull(wrapperStructPtrLT));
+
+    auto castedNameL = std::string("castedHalfProtected_") + globalState->getReferendName(reference->referend)->name;
+    auto halfProtectedI8PtrLE = LLVMBuildLoad(setupBuilder, halfProtectedI8PtrPtrLE, "halfProtectedI8Ptr");
+    auto castedHalfProtectedPtrLE =
+        LLVMBuildPointerCast(setupBuilder, halfProtectedI8PtrLE, wrapperStructPtrLT, castedNameL.c_str());
+    LLVMBuildStore(setupBuilder, castedHalfProtectedPtrLE, globalPtrLE);
+
+    iter = globalNullPtrPtrByReferend.emplace(reference->referend, globalPtrLE).first;
+  }
+  auto halfProtectedPtrLE = LLVMBuildLoad(builder, iter->second, "halfProtectedPtr");
+  return referendStructsSource->makeWrapperPtr(FL(), functionState, builder, reference, halfProtectedPtrLE);
+}
+
+void HybridGenerationalMemory::addToUndeadCycle(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* refMT,
+    WrapperPtrLE uncastedObjWrapperPtrLE) {
+  buildFlare(FL(), globalState, functionState, builder, "Adding to undead cycle!");
+
+  auto anyRefMT = globalState->metalCache->getReference(Ownership::OWN, Location::YONDER, anyMT);
+  auto anyRefLT = globalState->getRegion(anyMT)->translateType(anyRefMT);
+
+  auto objAsAnyWrapperPtrLE =
+      referendStructsSource->makeWrapperPtr(
+          FL(), functionState, builder, anyRefMT,
+          LLVMBuildPointerCast(builder, uncastedObjWrapperPtrLE.refLE, anyRefLT, "objAsAnyWrapperPtr"));
+
+  auto undeadCycleHeadNodePtrLE =
+      LLVMBuildLoad(builder, undeadCycleHeadNodePtrPtrLE, "undeadCycleHeadNodePtr");
+  buildFlare(FL(), globalState, functionState, builder, "cycle head: ", ptrToIntLE(globalState, builder, undeadCycleHeadNodePtrLE));
+  auto undeadCycleHeadNodeNextPtrPtrLE =
+      LLVMBuildStructGEP(builder, undeadCycleHeadNodePtrLE, 0, "undeadCycleHeadNodeNextPtrPtr");
+  auto undeadCycleHeadNodeNextPtrLE =
+      LLVMBuildLoad(builder, undeadCycleHeadNodeNextPtrPtrLE, "undeadCycleHeadNodeNextPtr");
+  buildFlare(FL(), globalState, functionState, builder, "cycle head next: ", ptrToIntLE(globalState, builder, undeadCycleHeadNodeNextPtrLE));
+
+  // First, make the new node. Point it at the existing head's next node.
+  auto newNodeI8PtrLE =
+      callMalloc(
+          globalState,
+          builder,
+          constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, undeadCycleNodeLT)));
+  auto newNodePtrLE =
+      LLVMBuildPointerCast(
+          builder, newNodeI8PtrLE, LLVMPointerType(undeadCycleNodeLT, 0),
+          "newNodePtr");
+  buildFlare(FL(), globalState, functionState, builder, "new node: ", ptrToIntLE(globalState, builder, newNodePtrLE));
+  // Make it point at the existing head's next node.
+  auto newNodeNextPtrPtrLE =
+      LLVMBuildStructGEP(builder, newNodePtrLE, 0, "newNodeNextPtrPtr");
+  LLVMBuildStore(builder, undeadCycleHeadNodeNextPtrLE, newNodeNextPtrPtrLE);
+  buildFlare(FL(), globalState, functionState, builder, "new node's next is now: ", ptrToIntLE(globalState, builder, undeadCycleHeadNodeNextPtrLE));
+  // Point the obj field at the now undead object.
+  auto newNodeObjPtrPtrLE =
+      LLVMBuildStructGEP(builder, newNodePtrLE, 1, "newNodeObjPtrPtr");
+  LLVMBuildStore(builder, objAsAnyWrapperPtrLE.refLE, newNodeObjPtrPtrLE);
+
+  // The previous head will still be the head, but it will now point at our new node.
+  LLVMBuildStore(builder, newNodePtrLE, undeadCycleHeadNodeNextPtrPtrLE);
+  buildFlare(FL(), globalState, functionState, builder, "cycle head's next is now: ", ptrToIntLE(globalState, builder, newNodePtrLE));
 }

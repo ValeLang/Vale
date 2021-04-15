@@ -127,6 +127,10 @@ public:
 
   static LLVMTypeRef makeWeakRefHeaderStruct(GlobalState* globalState);
 
+
+  void mainSetup(FunctionState* functionState, LLVMBuilderRef builder);
+  void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder);
+
 private:
   void buildCheckWrc(
       LLVMBuilderRef builder,

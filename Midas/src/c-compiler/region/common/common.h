@@ -215,7 +215,7 @@ ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState);
 ControlBlock makeFastWeakableControlBlock(GlobalState* globalState);
 ControlBlock makeFastNonWeakableControlBlock(GlobalState* globalState);
 ControlBlock makeResilientV0WeakableControlBlock(GlobalState* globalState);
-Ref resilientThing(
+Ref resilientLockWeak(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -232,7 +232,7 @@ Ref resilientThing(
     LLVMTypeRef resultOptTypeL,
     IWeakRefStructsSource* weakRefStructs);
 ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState);
-ControlBlock makeResilientV2WeakableControlBlock(GlobalState* globalState);
+ControlBlock makeResilientV3WeakableControlBlock(GlobalState* globalState);
 ControlBlock makeMutNonWeakableControlBlock(GlobalState* globalState, RegionId* regionId);
 ControlBlock makeMutWeakableControlBlock(GlobalState* globalState, RegionId* regionId);
 void fillKnownSizeArray(
@@ -297,8 +297,18 @@ Ref regularStoreElementInKSA(
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
     Reference* usaRefMT,
-    KnownSizeArrayT* usaMT,
-    Mutability mutability,
+    Reference* elementType,
+    int size,
+    Ref arrayRef,
+    Ref indexRef,
+    Ref elementRef);
+
+void regularInitializeElementInKSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IReferendStructsSource* referendStructs,
+    Reference* ksaRefMT,
     Reference* elementType,
     int size,
     Ref arrayRef,
@@ -513,7 +523,7 @@ Ref regularInnerLockWeak(
 LLVMValueRef callFree(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    ControlBlockPtrLE controlBlockPtrLE);
+    LLVMValueRef ptrLE);
 
 
 LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
@@ -523,5 +533,22 @@ LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
     Reference* virtualParamMT,
     Ref virtualArgRef,
     int indexInEdge);
+
+void initializeElementInUSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IReferendStructsSource* referendStructs,
+    UnknownSizeArrayT* usaMT,
+    Reference* usaRefMT,
+    Ref usaRef,
+    Ref indexRef,
+    Ref elementRef);
+
+Ref normalLocalLoad(
+    GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr);
+
+Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore);
+
 
 #endif

@@ -34,6 +34,7 @@ public:
   ReferendStructs(GlobalState* globalState_, ControlBlock controlBlock_);
 
   ControlBlock* getControlBlock(Referend* referend) override;
+  ControlBlock* getControlBlock();
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
   LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) override;
@@ -41,8 +42,8 @@ public:
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getStringWrapperStruct() override;
-  void defineStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
-  void declareStruct(StructDefinition* structM) override;
+  void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) override;
+  void declareStruct(StructReferend* structM) override;
   void declareEdge(Edge* edge) override;
   void defineEdge(
       Edge* edge,
@@ -245,6 +246,7 @@ public:
       ControlBlock controlBlock,
       LLVMTypeRef weakRefHeaderStructL_);
 
+  ControlBlock* getControlBlock();
   ControlBlock* getControlBlock(Referend* referend) override;
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
@@ -253,8 +255,8 @@ public:
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
 
-  void defineStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) override;
-  void declareStruct(StructDefinition* structM) override;
+  void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) override;
+  void declareStruct(StructReferend* structM) override;
   void declareEdge(Edge* edge) override;
   void defineEdge(
       Edge* edge,

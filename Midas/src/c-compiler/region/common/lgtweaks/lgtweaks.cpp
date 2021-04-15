@@ -16,10 +16,8 @@ LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
     IWeakRefStructsSource* weakRefStructsSource,
     Referend* referend,
     WeakFatPtrLE weakRefLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT);
+  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
+         globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
   assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(referend));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
@@ -28,7 +26,7 @@ LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
 LLVMValueRef LgtWeaks::getLgtiFromWeakRef(
     LLVMBuilderRef builder,
     WeakFatPtrLE weakRefLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
+//  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "lgti");
 }
@@ -37,16 +35,9 @@ void LgtWeaks::buildCheckLgti(
     LLVMBuilderRef builder,
     LLVMValueRef lgtiLE) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V1:
-      // fine, proceed
-      break;
-    case RegionOverride::RESILIENT_V0:
     case RegionOverride::FAST:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
       // These dont have LGT
       assert(false);
       break;
@@ -65,7 +56,7 @@ static LLVMValueRef makeLgtiHeader(
     Referend* referend,
     LLVMValueRef lgtiLE,
     LLVMValueRef targetGenLE) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
+//  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
   auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(referend));
   headerLE = LLVMBuildInsertValue(builder, headerLE, lgtiLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "headerWithLgti");
   headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
@@ -110,7 +101,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
     IReferendStructsSource* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
+//  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
 
   if (refM->ownership == Ownership::SHARE) {
     // Shares never have weak refs
@@ -157,22 +148,28 @@ LgtWeaks::LgtWeaks(
       lgtTablePtrLE,
       LLVMConstNamedStruct(
           globalState->lgtTableStructLT, wrcTableMembers.data(), wrcTableMembers.size()));
+}
 
+void LgtWeaks::mainSetup(FunctionState* functionState, LLVMBuilderRef builder) {
+
+}
+
+void LgtWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) {
   if (globalState->opt->census) {
     LLVMValueRef args[3] = {
         LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
         LLVMBuildZExt(
-            globalState->valeMainBuilder,
+            builder,
             LLVMBuildCall(
-                globalState->valeMainBuilder, globalState->getNumLiveLgtEntries, &lgtTablePtrLE, 1, "numLgtEntries"),
+                builder, globalState->getNumLiveLgtEntries, &lgtTablePtrLE, 1, "numLgtEntries"),
             LLVMInt64TypeInContext(globalState->context),
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(globalState->valeMainBuilder, globalState->assertI64Eq, args, 3, "");
+    LLVMBuildCall(builder, globalState->assertI64Eq, args, 3, "");
   }
-
 }
+
 
 WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
     FunctionState* functionState,
@@ -183,16 +180,10 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
     InterfaceReferend* targetInterfaceReferendM,
     Reference* targetInterfaceTypeM) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V1:
-      // continue
-      break;
     case RegionOverride::FAST:
-    case RegionOverride::RESILIENT_V0:
     case RegionOverride::NAIVE_RC:
     case RegionOverride::ASSIST:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(false);
       break;
     default:
@@ -352,7 +343,7 @@ LLVMValueRef LgtWeaks::lockLgtiFatPtr(
 LLVMValueRef LgtWeaks::getNewLgti(
     FunctionState* functionState,
     LLVMBuilderRef builder) {
-  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
+//  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
 
   // uint64_t resultLgti = __lgt_firstFree;
   auto resultLgtiLE = LLVMBuildLoad(builder, getLgtFirstFreeLgtiPtr(builder), "resultLgti");
@@ -607,7 +598,7 @@ Ref LgtWeaks::assembleWeakRef(
 
 
 LLVMTypeRef LgtWeaks::makeWeakRefHeaderStruct(GlobalState* globalState, RegionId* regionId) {
-  assert(regionId == globalState->metalCache->resilientV1RegionId);
+//  assert(regionId == globalState->metalCache->resilientV1RegionId);
   auto genRefStructL = LLVMStructCreateNamed(globalState->context, "__GenRef");
 
   std::vector<LLVMTypeRef> memberTypesL;

@@ -33,11 +33,7 @@ LLVMValueRef upcastThinPtr(
           sourceStructTypeM->ownership == Ownership::BORROW);
       break;
     }
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT: {
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4: {
       assert(sourceStructTypeM->ownership == Ownership::SHARE ||
           sourceStructTypeM->ownership == Ownership::OWN);
       break;
@@ -263,12 +259,12 @@ LLVMValueRef getTablePtrFromInterfaceRef(
 LLVMValueRef callFree(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    ControlBlockPtrLE controlBlockPtrLE) {
+    LLVMValueRef ptrLE) {
   if (globalState->opt->genHeap) {
     auto concreteAsVoidPtrLE =
         LLVMBuildBitCast(
             builder,
-            controlBlockPtrLE.refLE,
+            ptrLE,
             LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteVoidPtrForFree");
     return LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
@@ -276,7 +272,7 @@ LLVMValueRef callFree(
     auto concreteAsCharPtrLE =
         LLVMBuildBitCast(
             builder,
-            controlBlockPtrLE.refLE,
+            ptrLE,
             LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteCharPtrForFree");
     return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
@@ -287,7 +283,7 @@ void innerDeallocateYonder(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* referendStrutsSource,
+    IReferendStructsSource* referendStructsSource,
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
@@ -304,7 +300,7 @@ void innerDeallocateYonder(
     }
   }
 
-  auto controlBlockPtrLE = referendStrutsSource->getControlBlockPtr(from, functionState, builder,
+  auto controlBlockPtrLE = referendStructsSource->getControlBlockPtr(from, functionState, builder,
       ref, refMT);
 
   globalState->getRegion(refMT)
@@ -318,7 +314,7 @@ void innerDeallocateYonder(
         "");
   }
 
-  callFree(globalState, builder, controlBlockPtrLE);
+  callFree(globalState, builder, controlBlockPtrLE.refLE);
 
   if (globalState->opt->census) {
     adjustCounter(globalState, builder, globalState->liveHeapObjCounter, -1);
@@ -597,9 +593,6 @@ LLVMValueRef constructInnerStruct(
   // time.
   LLVMValueRef structValueBeingInitialized = LLVMGetUndef(valStructL);
   for (int i = 0; i < memberRefs.size(); i++) {
-    if (structM->members[i]->type->referend == globalState->metalCache->innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Initialized member ", i, ": ", memberRefs[i]);
-    }
     auto memberLE =
         globalState->getRegion(structM->members[i]->type)
             ->checkValidReference(FL(), functionState, builder, structM->members[i]->type, memberRefs[i]);
@@ -824,7 +817,7 @@ ControlBlock makeResilientV0WeakableControlBlock(GlobalState* globalState) {
   controlBlock.build();
   return controlBlock;
 }
-Ref resilientThing(
+Ref resilientLockWeak(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -872,18 +865,18 @@ ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState) {
   controlBlock.build();
   return controlBlock;
 }
-ControlBlock makeResilientV2WeakableControlBlock(GlobalState* globalState) {
-  ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
-  controlBlock.addMember(ControlBlockMember::GENERATION);
-  // This is where we put the size in the current generational heap, we can use it for something
-  // else until we get rid of that.
-  controlBlock.addMember(ControlBlockMember::UNUSED_32B);
-  if (globalState->opt->census) {
-    controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
-    controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
-  }
-  controlBlock.build();
-  return controlBlock;
+
+Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore) {
+  auto region = globalState->getRegion(local->type);
+  // We need to load the old ref *after* we evaluate the source expression,
+  // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
+  // See mutswaplocals.vale for test case.
+  auto oldRefLE = LLVMBuildLoad(builder, localAddr, local->id->maybeName.c_str());
+  auto oldRef = wrap(region, local->type, oldRefLE);
+  region->checkValidReference(FL(), functionState, builder, local->type, oldRef);
+  auto toStoreLE = region->checkValidReference(FL(), functionState, builder, local->type, refToStore);
+  LLVMBuildStore(builder, toStoreLE, localAddr);
+  return oldRef;
 }
 
 //StructsRouter makeAssistAndNaiveRCModeLayoutter(GlobalState* globalState) {
@@ -918,8 +911,8 @@ ControlBlock makeResilientV2WeakableControlBlock(GlobalState* globalState) {
 //  return StructsRouter(
 //      globalState,
 //      makeImmControlBlock(globalState),
-//      makeResilientV2WeakableControlBlock(globalState),
-//      makeResilientV2WeakableControlBlock(globalState));
+//      makeResilientV3WeakableControlBlock(globalState),
+//      makeResilientV3WeakableControlBlock(globalState));
 //}
 
 // Returns a LLVMValueRef for a ref to the string object.
@@ -1061,24 +1054,42 @@ Ref regularStoreElementInKSA(
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
     Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Mutability mutability,
     Reference* elementType,
     int size,
     Ref arrayRef,
     Ref indexRef,
     Ref elementRef) {
-  auto wrapperPtrLE =
-      referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, ksaRefMT,
-          globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef));
   auto arrayElementsPtrLE =
       getKnownSizeArrayContentsPtr(
           builder,
           referendStructs->makeWrapperPtr(
               FL(), functionState, builder, ksaRefMT,
               globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+  buildFlare(FL(), globalState, functionState, builder);
   return swapElement(
+      globalState, functionState, builder, ksaRefMT->location,
+      elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
+}
+
+void regularInitializeElementInKSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IReferendStructsSource* referendStructs,
+    Reference* ksaRefMT,
+    Reference* elementType,
+    int size,
+    Ref arrayRef,
+    Ref indexRef,
+    Ref elementRef) {
+  auto arrayElementsPtrLE =
+      getKnownSizeArrayContentsPtr(
+          builder,
+          referendStructs->makeWrapperPtr(
+              FL(), functionState, builder, ksaRefMT,
+              globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+  buildFlare(FL(), globalState, functionState, builder);
+  initializeElement(
       globalState, functionState, builder, ksaRefMT->location,
       elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
 }
@@ -1586,3 +1597,33 @@ LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
   return resultLE;
 }
 
+
+void initializeElementInUSA(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IReferendStructsSource* referendStructs,
+    UnknownSizeArrayT* usaMT,
+    Reference* usaRefMT,
+    Ref usaRef,
+    Ref indexRef,
+    Ref elementRef) {
+  auto usaDef = globalState->program->getUnknownSizeArray(usaMT->name);
+  auto arrayWrapperPtrLE =
+      referendStructs->makeWrapperPtr(
+          FL(), functionState, builder, usaRefMT,
+          globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, usaRef));
+  auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+  ::initializeElement(
+      globalState, functionState, builder, usaRefMT->location,
+      usaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+}
+
+Ref normalLocalLoad(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {
+  auto region = globalState->getRegion(local->type);
+  auto sourceLE = LLVMBuildLoad(builder, localAddr, local->id->maybeName.c_str());
+  auto sourceRef = wrap(region, local->type, sourceLE);
+  region->checkValidReference(FL(), functionState, builder, local->type, sourceRef);
+  return sourceRef;
+}

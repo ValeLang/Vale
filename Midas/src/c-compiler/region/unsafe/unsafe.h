@@ -450,6 +450,22 @@ public:
       Ref virtualArgRef,
       int indexInEdge) override;
 
+  LLVMValueRef stackify(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Local* local,
+      Ref refToStore,
+      bool knownLive) override;
+
+  Ref unstackify(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) override;
+
+  Ref loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) override;
+
+  Ref localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) override;
+
+  void mainSetup(FunctionState* functionState, LLVMBuilderRef builder) override;
+  void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) override;
+
 protected:
   GlobalState* globalState = nullptr;
 

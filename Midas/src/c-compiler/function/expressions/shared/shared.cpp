@@ -47,17 +47,9 @@ void makeHammerLocal(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Local* local,
-    Ref refToStore) {
-  auto toStoreLE =
-      globalState->getRegion(local->type)
-          ->checkValidReference(FL(), functionState, builder, local->type, refToStore);
-  auto localAddr =
-      makeMidasLocal(
-          functionState,
-          builder,
-          globalState->getRegion(local->type)->translateType(local->type),
-          local->id->maybeName.c_str(),
-          toStoreLE);
+    Ref refToStore,
+    bool knownLive) {
+  auto localAddr = globalState->getRegion(local->type)->stackify(functionState, builder, local, refToStore, knownLive);
   blockState->addLocal(local->id, localAddr);
 }
 
@@ -78,11 +70,7 @@ LLVMValueRef adjustStrongRc(
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -112,11 +100,7 @@ LLVMValueRef strongRcIsZero(
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:

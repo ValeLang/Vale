@@ -32,11 +32,11 @@ LLVMTypeRef ReferendStructsRouter::getInterfaceTableStruct(InterfaceReferend* in
 LLVMTypeRef ReferendStructsRouter::getStringWrapperStruct() {
   return getReferendStructsSource(globalState->metalCache->str)->getStringWrapperStruct();
 }
-void ReferendStructsRouter::defineStruct(StructDefinition* structM, std::vector<LLVMTypeRef> membersLT) {
-  return getReferendStructsSource(structM->referend)->defineStruct(structM, membersLT);
+void ReferendStructsRouter::defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) {
+  return getReferendStructsSource(structM)->defineStruct(structM, membersLT);
 }
-void ReferendStructsRouter::declareStruct(StructDefinition* structM) {
-  return getReferendStructsSource(structM->referend)->declareStruct(structM);
+void ReferendStructsRouter::declareStruct(StructReferend* structM) {
+  return getReferendStructsSource(structM)->declareStruct(structM);
 }
 void ReferendStructsRouter::declareEdge(Edge* edge) {
   return getReferendStructsSource(edge->structName)->declareEdge(edge);

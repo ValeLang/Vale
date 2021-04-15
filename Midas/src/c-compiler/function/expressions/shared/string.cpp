@@ -55,6 +55,9 @@ Ref buildConstantVStr(
               makeEmptyTupleRef(globalState),
               functionState, builder, lengthLE,
               globalState->getOrMakeStringConstant(contents));
+
+  buildFlare(FL(), globalState, functionState, builder, "done storing");
+
 //
 //  // Fill the chars
 //  std::vector<LLVMValueRef> argsLE = {

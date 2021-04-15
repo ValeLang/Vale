@@ -93,12 +93,13 @@ Ref translateExpressionInner(
     auto refToStore =
         translateExpression(
             globalState, functionState, blockState, builder, stackify->sourceExpr);
-    globalState->getRegion(stackify->local->type)->checkValidReference(FL(), functionState, builder, stackify->local->type, refToStore);
+    globalState->getRegion(stackify->local->type)
+        ->checkValidReference(FL(), functionState, builder, stackify->local->type, refToStore);
     if (stackify->local->type->referend == globalState->metalCache->innt) {
       buildFlare(FL(), globalState, functionState, builder, "Storing ", refToStore);
     }
     makeHammerLocal(
-        globalState, functionState, blockState, builder, stackify->local, refToStore);
+        globalState, functionState, blockState, builder, stackify->local, refToStore, stackify->knownLive);
     return makeEmptyTupleRef(globalState);
   } else if (auto localStore = dynamic_cast<LocalStore*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -116,19 +117,15 @@ Ref translateExpressionInner(
     // We need to load the old ref *after* we evaluate the source expression,
     // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
     // See mutswaplocals.vale for test case.
-    auto oldRefLE =
-        wrap(
-            globalState->getRegion(localStore->local->type),
-            localStore->local->type,
-            LLVMBuildLoad(builder, localAddr, localStore->localName.c_str()));
-    globalState->getRegion(localStore->local->type)->checkValidReference(FL(),
-        functionState, builder, localStore->local->type, oldRefLE);
+    auto oldRef =
+        globalState->getRegion(localStore->local->type)
+            ->localStore(functionState, builder, localStore->local, localAddr, refToStore, localStore->knownLive);
 
     auto toStoreLE =
         globalState->getRegion(localStore->local->type)->checkValidReference(FL(),
             functionState, builder, localStore->local->type, refToStore);
     LLVMBuildStore(builder, toStoreLE, localAddr);
-    return oldRefLE;
+    return oldRef;
   } else if (auto weakAlias = dynamic_cast<WeakAlias*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
 
@@ -155,9 +152,7 @@ Ref translateExpressionInner(
     // So, we just give what was in it. It's ironically identical to LocalLoad.
     auto localAddr = blockState->getLocalAddr(unstackify->local->id);
     blockState->markLocalUnstackified(unstackify->local->id);
-    auto resultLE = wrap(globalState->getRegion(unstackify->local->type), unstackify->local->type, LLVMBuildLoad(builder, localAddr, ""));
-    globalState->getRegion(unstackify->local->type)->checkValidReference(FL(), functionState, builder, unstackify->local->type, resultLE);
-    return resultLE;
+    return globalState->getRegion(unstackify->local->type)->unstackify(functionState, builder, unstackify->local, localAddr);
   } else if (auto argument = dynamic_cast<Argument*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " arg ", argument->argumentIndex);
     auto resultLE = LLVMGetParam(functionState->containingFuncL, argument->argumentIndex);

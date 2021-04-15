@@ -85,7 +85,9 @@ case class Locals(
     val newLocalIdNumber = nextLocalIdNumber
     val varIdNameH = NameHammer.translateFullName(hinputs, hamuts, varId2)
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, Some(varIdNameH))
-    val newLocal = Local(newLocalId, variability, tyype)
+    // Temporary until catalyst fills in stuff here
+    val keepAlive = newLocalId.name.map(_.readableName).getOrElse("").endsWith("__tether");
+    val newLocal = Local(newLocalId, variability, tyype, keepAlive)
     val newLocals =
       Locals(
         templarLocals + (varId2 -> newLocalId),
@@ -102,7 +104,7 @@ case class Locals(
     val newLocalHeight = locals.size
     val newLocalIdNumber = nextLocalIdNumber
     val newLocalId = VariableIdH(newLocalIdNumber, newLocalHeight, None)
-    val newLocal = Local(newLocalId, variability, tyype)
+    val newLocal = Local(newLocalId, variability, tyype, false)
     val newLocals =
       Locals(
         templarLocals,

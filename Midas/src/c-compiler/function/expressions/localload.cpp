@@ -26,10 +26,7 @@ Ref translateLocalLoad(
 
   auto localAddr = blockState->getLocalAddr(localId);
 
-  auto sourceLE = LLVMBuildLoad(builder, localAddr, localName.c_str());
-
-  auto sourceRef = wrap(globalState->getRegion(localType), localType, sourceLE);
-  globalState->getRegion(localType)->checkValidReference(FL(), functionState, builder, localType, sourceRef);
+  auto sourceRef = globalState->getRegion(localType)->loadLocal(functionState, builder, local, localAddr);
 
   auto resultRef =
       globalState->getRegion(localType)->upgradeLoadResultToRefWithTargetOwnership(

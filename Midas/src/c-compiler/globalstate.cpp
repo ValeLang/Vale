@@ -120,10 +120,8 @@ IRegion* GlobalState::getRegion(RegionId* regionId) {
     return naiveRcRegion;
   } else if (regionId == metalCache->resilientV3RegionId) {
     return resilientV3Region;
-  } else if (regionId == metalCache->resilientV2RegionId) {
-    return resilientV2Region;
-  } else if (regionId == metalCache->resilientV1RegionId) {
-    return resilientV1Region;
+  } else if (regionId == metalCache->resilientV4RegionId) {
+    return resilientV4Region;
   } else {
     assert(false);
   }

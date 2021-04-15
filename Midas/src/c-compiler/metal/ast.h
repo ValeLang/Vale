@@ -261,4 +261,36 @@ public:
       returnType(returnType_) {}
 };
 
+// Interned
+class VariableId {
+public:
+  int number;
+  int height;
+  std::string maybeName;
+
+  VariableId(
+      int number_,
+      int height_,
+      std::string maybeName_) :
+      number(number_),
+      height(height_),
+      maybeName(maybeName_) {}
+};
+
+// Interned
+class Local {
+public:
+  VariableId* id;
+  Reference* type;
+  bool keepAlive;
+
+  Local(
+      VariableId* id_,
+      Reference* type_,
+      bool keepAlive_) :
+      id(id_),
+      type(type_),
+      keepAlive(keepAlive_) {}
+};
+
 #endif

@@ -42,6 +42,9 @@ ReferendStructs::ReferendStructs(GlobalState* globalState_, ControlBlock control
   }
 }
 
+ControlBlock* ReferendStructs::getControlBlock() {
+  return &controlBlock;
+}
 ControlBlock* ReferendStructs::getControlBlock(Referend* referend) {
   return &controlBlock;
 }
@@ -104,6 +107,9 @@ WeakableReferendStructs::WeakableReferendStructs(
 ControlBlock* WeakableReferendStructs::getControlBlock(Referend* referend) {
   return referendStructs.getControlBlock(referend);
 }
+ControlBlock* WeakableReferendStructs::getControlBlock() {
+  return referendStructs.getControlBlock();
+}
 LLVMTypeRef WeakableReferendStructs::getInnerStruct(StructReferend* structReferend) {
   return referendStructs.getInnerStruct(structReferend);
 }
@@ -151,13 +157,13 @@ LLVMTypeRef WeakableReferendStructs::getInterfaceWeakRefStruct(InterfaceReferend
 
 
 void ReferendStructs::defineStruct(
-    StructDefinition* struuct,
+    StructReferend* structReferend,
     std::vector<LLVMTypeRef> membersLT) {
-  LLVMTypeRef valStructL = getInnerStruct(struuct->referend);
+  LLVMTypeRef valStructL = getInnerStruct(structReferend);
   LLVMStructSetBody(
       valStructL, membersLT.data(), membersLT.size(), false);
 
-  LLVMTypeRef wrapperStructL = getWrapperStruct(struuct->referend);
+  LLVMTypeRef wrapperStructL = getWrapperStruct(structReferend);
   std::vector<LLVMTypeRef> wrapperStructMemberTypesL;
 
   // First member is a ref counts struct. We don't include the int directly
@@ -171,19 +177,19 @@ void ReferendStructs::defineStruct(
       wrapperStructL, wrapperStructMemberTypesL.data(), wrapperStructMemberTypesL.size(), false);
 }
 
-void ReferendStructs::declareStruct(StructDefinition* structM) {
+void ReferendStructs::declareStruct(StructReferend* structM) {
 
   auto innerStructL =
       LLVMStructCreateNamed(
-          globalState->context, structM->name->name.c_str());
-  assert(innerStructs.count(structM->name->name) == 0);
-  innerStructs.emplace(structM->name->name, innerStructL);
+          globalState->context, structM->fullName->name.c_str());
+  assert(innerStructs.count(structM->fullName->name) == 0);
+  innerStructs.emplace(structM->fullName->name, innerStructL);
 
   auto wrapperStructL =
       LLVMStructCreateNamed(
-          globalState->context, (structM->name->name + "rc").c_str());
-  assert(wrapperStructs.count(structM->name->name) == 0);
-  wrapperStructs.emplace(structM->name->name, wrapperStructL);
+          globalState->context, (structM->fullName->name + "rc").c_str());
+  assert(wrapperStructs.count(structM->fullName->name) == 0);
+  wrapperStructs.emplace(structM->fullName->name, wrapperStructL);
 }
 
 
@@ -648,11 +654,7 @@ LLVMValueRef ReferendStructs::getStrongRcFromControlBlockPtr(
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -675,11 +677,7 @@ LLVMValueRef ReferendStructs::getStrongRcPtrFromControlBlockPtr(
     case RegionOverride::FAST:
       assert(refM->ownership == Ownership::SHARE);
       break;
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(refM->ownership == Ownership::SHARE);
       break;
     default:
@@ -697,29 +695,29 @@ LLVMValueRef ReferendStructs::getStrongRcPtrFromControlBlockPtr(
 
 
 void WeakableReferendStructs::defineStruct(
-    StructDefinition* struuct,
+    StructReferend* struuct,
     std::vector<LLVMTypeRef> membersLT) {
   assert(weakRefHeaderStructL);
 
   referendStructs.defineStruct(struuct, membersLT);
 
-  LLVMTypeRef wrapperStructL = getWrapperStruct(struuct->referend);
+  LLVMTypeRef wrapperStructL = getWrapperStruct(struuct);
 
-  auto structWeakRefStructL = getStructWeakRefStruct(struuct->referend);
+  auto structWeakRefStructL = getStructWeakRefStruct(struuct);
   std::vector<LLVMTypeRef> structWeakRefStructMemberTypesL;
   structWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
   structWeakRefStructMemberTypesL.push_back(LLVMPointerType(wrapperStructL, 0));
   LLVMStructSetBody(structWeakRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
 
-void WeakableReferendStructs::declareStruct(StructDefinition* structM) {
+void WeakableReferendStructs::declareStruct(StructReferend* structM) {
   referendStructs.declareStruct(structM);
 
   auto structWeakRefStructL =
       LLVMStructCreateNamed(
-          globalState->context, (structM->name->name + "w").c_str());
-  assert(structWeakRefStructs.count(structM->name->name) == 0);
-  structWeakRefStructs.emplace(structM->name->name, structWeakRefStructL);
+          globalState->context, (structM->fullName->name + "w").c_str());
+  assert(structWeakRefStructs.count(structM->fullName->name) == 0);
+  structWeakRefStructs.emplace(structM->fullName->name, structWeakRefStructL);
 }
 
 

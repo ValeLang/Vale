@@ -15,11 +15,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRef(
     Reference* weakRefM,
     WeakFatPtrLE weakFatPtrLE) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(
           weakRefM->ownership == Ownership::BORROW ||
               weakRefM->ownership == Ownership::WEAK);
@@ -48,11 +44,7 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
     Reference* weakRefM,
     WeakFatPtrLE weakRefLE) {
   switch (globalState->opt->regionOverride) {
-    case RegionOverride::RESILIENT_V0:
-    case RegionOverride::RESILIENT_V1:
-    case RegionOverride::RESILIENT_V2:
-    case RegionOverride::RESILIENT_V3:
-    case RegionOverride::RESILIENT_LIMIT:
+    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
       assert(
           weakRefM->ownership == Ownership::BORROW ||
               weakRefM->ownership == Ownership::WEAK);
@@ -70,9 +62,8 @@ LLVMValueRef FatWeaks::getInnerRefFromWeakRefWithoutCheck(
   assert(
   // Resilient V2/3 does this so it can reach into a dead object to see its generation,
   // which generational heap guarantees is unchanged.
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_V2 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
-      globalState->opt->regionOverride == RegionOverride::RESILIENT_LIMIT ||
+      globalState->opt->regionOverride == RegionOverride::RESILIENT_V4 ||
       // Census does this to get at a weak interface ref's itable, even for a dead object.
       globalState->opt->census);
   auto innerRefLE = LLVMBuildExtractValue(builder, weakRefLE.refLE, WEAK_REF_MEMBER_INDEX_FOR_OBJPTR, "");

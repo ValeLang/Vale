@@ -10,6 +10,8 @@
 class GlobalState;
 class FunctionState;
 
+constexpr int GENERATION_NUM_BITS = 32;
+
 enum class ControlBlockMember {
   UNUSED_32B,
   LGTI,
@@ -17,7 +19,10 @@ enum class ControlBlockMember {
   WRCI,
   STRONG_RC,
   CENSUS_TYPE_STR,
-  CENSUS_OBJ_ID
+  CENSUS_OBJ_ID,
+  // It's 32B because we put it in the spot where the generational heap puts its size,
+  // like we do with the UNUSED_32B elsewhere.
+  TETHER_32B,
 };
 
 class ControlBlock {

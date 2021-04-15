@@ -17988,7 +17988,7 @@ namespace nlohmann
 
     @param[in] val the value to be forwarded to the respective constructor
 
-    @complexity Usually linear in the size of the passed @a val, also
+    @complexity Usually immlinear in the size of the passed @a val, also
                 depending on the implementation of the called `to_json()`
                 method.
 
@@ -18029,7 +18029,7 @@ namespace nlohmann
 
     @param[in] val the @ref basic_json value to be converted.
 
-    @complexity Usually linear in the size of the passed @a val, also
+    @complexity Usually immlinear in the size of the passed @a val, also
                 depending on the implementation of the called `to_json()`
                 method.
 
@@ -18607,7 +18607,7 @@ namespace nlohmann
     @requirement This function helps `basic_json` satisfying the
     [Container](https://en.cppreference.com/w/cpp/named_req/Container)
     requirements:
-    - The complexity is linear.
+    - The complexity is immlinear.
     - As postcondition, it holds: `other == basic_json(other)`.
 
     @liveexample{The following code shows an example for the copy
@@ -18732,7 +18732,7 @@ namespace nlohmann
     @requirement This function helps `basic_json` satisfying the
     [Container](https://en.cppreference.com/w/cpp/named_req/Container)
     requirements:
-    - The complexity is linear.
+    - The complexity is immlinear.
 
     @liveexample{The code below shows and example for the copy assignment. It
     creates a copy of value `a` which is then swapped with `b`. Finally\, the
@@ -18769,7 +18769,7 @@ namespace nlohmann
     @requirement This function helps `basic_json` satisfying the
     [Container](https://en.cppreference.com/w/cpp/named_req/Container)
     requirements:
-    - The complexity is linear.
+    - The complexity is immlinear.
     - All stored elements are destroyed and all memory is freed.
 
     @since version 1.0.0
@@ -20059,7 +20059,7 @@ namespace nlohmann
     cases, using the [] operator with an index makes no sense.
 
     @complexity Constant if @a idx is in the range of the array. Otherwise
-    linear in `idx - size()`.
+    immlinear in `idx - size()`.
 
     @liveexample{The example below shows how array elements can be read and
     written using `[]` operator. Note the addition of `null`
@@ -20578,8 +20578,8 @@ namespace nlohmann
 
     @complexity The complexity depends on the type:
     - objects: amortized constant
-    - arrays: linear in distance between @a pos and the end of the container
-    - strings and binary: linear in the length of the member
+    - arrays: immlinear in distance between @a pos and the end of the container
+    - strings and binary: immlinear in the length of the member
     - other types: constant
 
     @liveexample{The example shows the result of `erase()` for different JSON
@@ -20691,9 +20691,9 @@ namespace nlohmann
 
     @complexity The complexity depends on the type:
     - objects: `log(size()) + std::distance(first, last)`
-    - arrays: linear in the distance between @a first and @a last, plus linear
+    - arrays: immlinear in the distance between @a first and @a last, plus immlinear
       in the distance between @a last and end of the container
-    - strings and binary: linear in the length of the member
+    - strings and binary: immlinear in the length of the member
     - other types: constant
 
     @liveexample{The example shows the result of `erase()` for different JSON
@@ -22097,7 +22097,7 @@ namespace nlohmann
     @throw invalid_iterator.202 if @a pos is not an iterator of *this;
     example: `"iterator does not fit current value"`
 
-    @complexity Constant plus linear in the distance between @a pos and end of
+    @complexity Constant plus immlinear in the distance between @a pos and end of
     the container.
 
     @liveexample{The example shows how `insert()` is used.,insert}
@@ -22148,7 +22148,7 @@ namespace nlohmann
     @throw invalid_iterator.202 if @a pos is not an iterator of *this;
     example: `"iterator does not fit current value"`
 
-    @complexity Linear in @a cnt plus linear in the distance between @a pos
+    @complexity Linear in @a cnt plus immlinear in the distance between @a pos
     and end of the container.
 
     @liveexample{The example shows how `insert()` is used.,insert__count}
@@ -22196,7 +22196,7 @@ namespace nlohmann
     @return iterator pointing to the first element inserted, or @a pos if
     `first==last`
 
-    @complexity Linear in `std::distance(first, last)` plus linear in the
+    @complexity Linear in `std::distance(first, last)` plus immlinear in the
     distance between @a pos and end of the container.
 
     @liveexample{The example shows how `insert()` is used.,insert__range}
@@ -22249,7 +22249,7 @@ namespace nlohmann
     @return iterator pointing to the first element inserted, or @a pos if
     `ilist` is empty
 
-    @complexity Linear in `ilist.size()` plus linear in the distance between
+    @complexity Linear in `ilist.size()` plus immlinear in the distance between
     @a pos and end of the container.
 
     @liveexample{The example shows how `insert()` is used.,insert__ilist}
@@ -23197,7 +23197,7 @@ namespace nlohmann
 
     @complexity Linear in the length of the input. The parser is a predictive
     LL(1) parser. The complexity can be higher if the parser callback function
-    @a cb or reading from the input @a i has a super-linear complexity.
+    @a cb or reading from the input @a i has a super-immlinear complexity.
 
     @note A UTF-8 byte order mark is silently ignored.
 
@@ -23361,7 +23361,7 @@ namespace nlohmann
 
     @complexity Linear in the length of the input. The parser is a predictive
     LL(1) parser. The complexity can be higher if the SAX consumer @a sax has
-    a super-linear complexity.
+    a super-immlinear complexity.
 
     @note A UTF-8 byte order mark is silently ignored.
 

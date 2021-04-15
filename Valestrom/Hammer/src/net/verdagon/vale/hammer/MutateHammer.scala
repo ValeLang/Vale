@@ -52,24 +52,29 @@ object MutateHammer {
   }
 
   private def translateMundaneUnknownSizeArrayMutate(
-                                                      hinputs: Hinputs,
-                                                      hamuts: HamutsBox,
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
-                                                      locals: LocalsBox,
-                                                      sourceExprResultLine: ExpressionH[ReferendH],
-                                                      arrayExpr2: ReferenceExpression2,
-                                                      indexExpr2: ReferenceExpression2
+    locals: LocalsBox,
+    sourceExprResultLine: ExpressionH[ReferendH],
+    arrayExpr2: ReferenceExpression2,
+    indexExpr2: ReferenceExpression2
   ): (ExpressionH[ReferendH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
+    val resultType =
+      hamuts.getUnknownSizeArray(
+        destinationResultLine.expectUnknownSizeArrayAccess().resultType.kind)
+        .rawArray.elementType
     // We're storing into a regular reference element of an array.
     val storeNode =
         UnknownSizeArrayStoreH(
           destinationResultLine.expectUnknownSizeArrayAccess(),
           indexExprResultLine.expectIntAccess(),
-          sourceExprResultLine)
+          sourceExprResultLine,
+          resultType)
 
     (storeNode, destinationDeferreds ++ indexDeferreds)
   }
@@ -87,12 +92,17 @@ object MutateHammer {
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
+    val resultType =
+      hamuts.getKnownSizeArray(
+        destinationResultLine.expectKnownSizeArrayAccess().resultType.kind)
+        .rawArray.elementType
     // We're storing into a regular reference element of an array.
     val storeNode =
         KnownSizeArrayStoreH(
           destinationResultLine.expectKnownSizeArrayAccess(),
           indexExprResultLine.expectIntAccess(),
-          sourceExprResultLine)
+          sourceExprResultLine,
+          resultType)
 
     (storeNode, destinationDeferreds ++ indexDeferreds)
   }

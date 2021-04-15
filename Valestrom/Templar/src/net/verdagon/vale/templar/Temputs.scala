@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, NamespaceEnvironment}
 import net.verdagon.vale.templar.templata.{Prototype2, Signature2}
-import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, KnownSizeArrayT2, Mutability, RawArrayT2, Share, StructDefinition2, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, RawArrayT2, Share, StructDefinition2, StructRef2, UnknownSizeArrayT2}
 import net.verdagon.vale.{vassert, vassertSome, vfail}
 
 import scala.collection.immutable.{List, Map}
@@ -45,6 +45,8 @@ case class Temputs() {
   private val envByInterfaceRef: mutable.HashMap[InterfaceRef2, NamespaceEnvironment[IName2]] = mutable.HashMap()
 
   private val impls: mutable.ArrayBuffer[Impl2] = mutable.ArrayBuffer()
+
+  private val exports: mutable.ArrayBuffer[ExportAs2] = mutable.ArrayBuffer()
 
   // Only PackTemplar can make a PackT2.
   private val packTypes: mutable.HashMap[List[Coord], StructRef2] = mutable.HashMap()
@@ -174,6 +176,10 @@ case class Temputs() {
     impls += Impl2(structRef2, interfaceRef2)
   }
 
+  def addExport(kind: Kind, exportedName: String): Unit = {
+    exports += ExportAs2(kind, exportedName)
+  }
+
   def addExternPrototype(prototype2: Prototype2): Unit = {
     prototype2.fullName.last match {
       case n @ ExternFunctionName2(_, _) => {
@@ -298,5 +304,8 @@ case class Temputs() {
   }
   def getExternPrototypes: List[Prototype2] = {
     externPrototypes.toList
+  }
+  def getExports: List[ExportAs2] = {
+    exports.toList
   }
 }

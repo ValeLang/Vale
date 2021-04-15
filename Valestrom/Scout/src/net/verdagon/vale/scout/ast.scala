@@ -40,7 +40,8 @@ case class ProgramS(
     structs: List[StructS],
     interfaces: List[InterfaceS],
     impls: List[ImplS],
-    implementedFunctions: List[FunctionS]) {
+    implementedFunctions: List[FunctionS],
+    exports: List[ExportAsS]) {
   def lookupFunction(name: String): FunctionS = {
     val matches =
       implementedFunctions
@@ -139,6 +140,12 @@ case class ImplS(
     isTemplate: Boolean,
     structKindRune: IRuneS,
     interfaceKindRune: IRuneS)
+
+case class ExportAsS(
+    range: RangeS,
+    exportName: ExportAsNameS,
+    templexS: ITemplexS,
+    exportedName: String)
 
 case class InterfaceS(
     range: RangeS,

@@ -1,0 +1,11 @@
+struct Carrier {
+  hp int;
+  interceptors int;
+}
+
+fn main() int export {
+  c = Carrier(73, 73);
+  b = &c;
+  drop(c);
+  ret b.interceptors;
+}

@@ -20,8 +20,8 @@ Ref translateIf(
       translateExpression(
           globalState, functionState, parentBlockState, builder, iff->conditionExpr);
 
-  BlockState thenBlockState(parentBlockState);
-  BlockState elseBlockState(parentBlockState);
+  BlockState thenBlockState(globalState->addressNumberer, parentBlockState);
+  BlockState elseBlockState(globalState->addressNumberer, parentBlockState);
 
   auto resultLE =
       buildIfElse(
@@ -29,7 +29,7 @@ Ref translateIf(
           functionState,
           builder,
           conditionExpr,
-          functionState->defaultRegion->translateType(iff->commonSupertype),
+          globalState->getRegion(iff->commonSupertype)->translateType(iff->commonSupertype),
           iff->thenResultType,
           iff->elseResultType,
           [globalState, functionState, &thenBlockState, iff](LLVMBuilderRef thenBlockBuilder) {
@@ -40,12 +40,13 @@ Ref translateIf(
             return translateExpression(
                 globalState, functionState, &elseBlockState, elseBlockBuilder, iff->elseExpr);
           });
-  functionState->defaultRegion->checkValidReference(
-      FL(), functionState, builder, iff->commonSupertype, resultLE);
+  globalState->getRegion(iff->commonSupertype)
+      ->checkValidReference(
+          FL(), functionState, builder, iff->commonSupertype, resultLE);
 
 
-  bool thenContinues = iff->thenResultType->referend != globalState->metalCache.never;
-  bool elseContinues = iff->elseResultType->referend != globalState->metalCache.never;
+  bool thenContinues = iff->thenResultType->referend != globalState->metalCache->never;
+  bool elseContinues = iff->elseResultType->referend != globalState->metalCache->never;
 
   auto thenUnstackifiedParentLocalIds = thenBlockState.getParentLocalIdsThatSelfUnstackified();
   auto elseUnstackifiedParentLocalIds = elseBlockState.getParentLocalIdsThatSelfUnstackified();

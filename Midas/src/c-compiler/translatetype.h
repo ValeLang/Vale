@@ -10,7 +10,6 @@
 
 std::vector<LLVMTypeRef> translateTypes(
     GlobalState* globalState,
-    IRegion* region,
     std::vector<Reference*> referencesM);
 
 
@@ -26,7 +25,10 @@ Mutability ownershipToMutability(Ownership ownership);
 
 LLVMTypeRef translatePrototypeToFunctionType(
     GlobalState* globalState,
-    IRegion* region,
     Prototype* prototype);
+
+LLVMTypeRef translateInterfaceMethodToFunctionType(
+    GlobalState* globalState,
+    InterfaceMethod* method);
 
 #endif

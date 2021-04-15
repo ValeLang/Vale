@@ -15,15 +15,17 @@
 class BlockState {
 private:
   const BlockState* maybeParentBlockState;
-  std::unordered_map<VariableId*, LLVMValueRef> localAddrByLocalId;
-  std::unordered_set<VariableId*> unstackifiedLocalIds;
+  std::unordered_map<VariableId*, LLVMValueRef, AddressHasher<VariableId*>> localAddrByLocalId;
+  std::unordered_set<VariableId*, AddressHasher<VariableId*>> unstackifiedLocalIds;
 
 public:
 //  LLVMBuilderRef builder;
 
   BlockState(const BlockState&) = delete;
 
-  BlockState(BlockState* maybeParentBlockState_) :
+  BlockState(AddressNumberer* addressNumberer, BlockState* maybeParentBlockState_) :
+      localAddrByLocalId(0, addressNumberer->makeHasher<VariableId*>()),
+      unstackifiedLocalIds(0, addressNumberer->makeHasher<VariableId*>()),
       maybeParentBlockState(maybeParentBlockState_) {
   }
 
@@ -125,16 +127,13 @@ public:
   LLVMBuilderRef localsBuilder;
   int nextBlockNumber = 1;
   int instructionDepthInAst = 0;
-  IRegion* defaultRegion;
 
   FunctionState(
       std::string containingFuncName_,
-      IRegion* defaultRegion_,
       LLVMValueRef containingFuncL_,
       LLVMTypeRef returnTypeL_,
       LLVMBuilderRef localsBuilder_) :
     containingFuncName(containingFuncName_),
-    defaultRegion(defaultRegion_),
     containingFuncL(containingFuncL_),
     returnTypeL(returnTypeL_),
     localsBuilder(localsBuilder_) {}
@@ -146,12 +145,10 @@ public:
 
 void translateFunction(
     GlobalState* globalState,
-    IRegion* region,
     Function* functionM);
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    IRegion* region,
     Function* functionM);
 
 LLVMValueRef declareExternFunction(
@@ -159,5 +156,22 @@ LLVMValueRef declareExternFunction(
     Prototype* prototypeM);
 
 //LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);
+
+
+void declareExtraFunction(
+    GlobalState* globalState,
+    Prototype* prototype,
+    std::string llvmName);
+
+void defineFunctionBody(
+    GlobalState* globalState,
+    Prototype* prototype,
+    std::function<void(FunctionState*, LLVMBuilderRef)> definer);
+
+void declareAndDefineExtraFunction(
+    GlobalState* globalState,
+    Prototype* prototype,
+    std::string llvmName,
+    std::function<void(FunctionState*, LLVMBuilderRef)> definer);
 
 #endif

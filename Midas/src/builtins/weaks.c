@@ -17,21 +17,23 @@
 // Makes us not reuse old WRCIs, useful for debugging.
 #define REUSE_RELEASED
 
-uint32_t __wrc_capacity = 0;
-uint32_t __wrc_firstFree = 0;
-uint32_t* __wrc_entries = NULL;
+typedef struct {
+  uint32_t capacity;
+  uint32_t firstFree;
+  uint32_t *entries;
+} __WRCTable;
 
-uint32_t __getNumWrcs() {
+uint32_t __getNumWrcs(__WRCTable* table) {
   uint32_t numFrees = 0;
-  for (uint32_t freeIndex = __wrc_firstFree; freeIndex != __wrc_capacity; freeIndex = __wrc_entries[freeIndex]) {
+  for (uint32_t freeIndex = table->firstFree; freeIndex != table->capacity; freeIndex = table->entries[freeIndex]) {
     numFrees++;
   }
-  return __wrc_capacity - numFrees;
+  return table->capacity - numFrees;
 }
 
-void __expandWrcTable() {
-  uint32_t *oldEntries = __wrc_entries;
-  int oldCapacity = __wrc_capacity;
+void __expandWrcTable(__WRCTable* table) {
+  uint32_t *oldEntries = table->entries;
+  int oldCapacity = table->capacity;
 
   int newCapacity = 0;
   uint32_t *newEntries = NULL;
@@ -60,7 +62,7 @@ void __expandWrcTable() {
       // Then we know there's no free things, we can just make the free list point to the
       // beginning of the new entries.
       // We would:
-      //   __wrc_firstFree = oldCapacity;
+      //   table->firstFree = oldCapacity;
       // but it's fortunately already pointing there!
     // #else
       // There might be free things. Luckily, the last in that list will point at the old end,
@@ -72,8 +74,8 @@ void __expandWrcTable() {
     // pointing at the beginning of our new free list.
   }
 
-  __wrc_capacity = newCapacity;
-  __wrc_entries = newEntries;
+  table->capacity = newCapacity;
+  table->entries = newEntries;
 
   if (oldCapacity > 0) {
     free(oldEntries);
@@ -81,8 +83,8 @@ void __expandWrcTable() {
 }
 
 // Warning: can have false positives, where it says something's valid when it's not.
-void __checkWrc(uint32_t wrcIndex) {
-  if (wrcIndex >= __wrc_capacity) {
+void __checkWrc(__WRCTable* table, uint32_t wrcIndex) {
+  if (wrcIndex >= table->capacity) {
     assert(0);
   }
 }
@@ -94,25 +96,26 @@ typedef struct {
   uint32_t nextFree; // If this is unused, that is
 } __LGTEntry;
 
+typedef struct {
+  uint32_t capacity;
+  uint32_t firstFree;
+  __LGTEntry* entries;
+} __LGTable;
 
-uint32_t __lgt_capacity = 0;
-uint32_t __lgt_firstFree = 0;
-__LGTEntry* __lgt_entries = NULL;
-
-uint32_t __getNumLiveLgtEntries() {
+uint32_t __getNumLiveLgtEntries(__LGTable* table) {
   uint32_t numFrees = 0;
   for (
-      uint32_t freeIndex = __lgt_firstFree;
-      freeIndex != __lgt_capacity;
-      freeIndex = (uint32_t)__lgt_entries[freeIndex].nextFree) {
+      uint32_t freeIndex = table->firstFree;
+      freeIndex != table->capacity;
+      freeIndex = (uint32_t)table->entries[freeIndex].nextFree) {
     numFrees++;
   }
-  return __lgt_capacity - numFrees;
+  return table->capacity - numFrees;
 }
 
-void __expandLgt() {
-  __LGTEntry *oldEntries = __lgt_entries;
-  int oldCapacity = __lgt_capacity;
+void __expandLgt(__LGTable* table) {
+  __LGTEntry *oldEntries = table->entries;
+  int oldCapacity = table->capacity;
 
   int newCapacity = 0;
   __LGTEntry *newEntries = NULL;
@@ -142,7 +145,7 @@ void __expandLgt() {
     // Then we know there's no free things, we can just make the free list point to the
     // beginning of the new entries.
     // We would:
-    //   __lgt_firstFree = oldCapacity;
+    //   table->firstFree = oldCapacity;
     // but it's fortunately already pointing there!
     // #else
     // There might be free things. Luckily, the last in that list will point at the old end,
@@ -154,8 +157,8 @@ void __expandLgt() {
     // pointing at the beginning of our new free list.
   }
 
-  __lgt_capacity = newCapacity;
-  __lgt_entries = newEntries;
+  table->capacity = newCapacity;
+  table->entries = newEntries;
 
   if (oldCapacity > 0) {
     free(oldEntries);
@@ -163,8 +166,8 @@ void __expandLgt() {
 }
 
 // Warning: can have false positives, where it says something's valid when it's not.
-void __checkLgti(uint32_t genIndex) {
-  if (genIndex >= __lgt_capacity) {
+void __checkLgti(__LGTable* table, uint32_t genIndex) {
+  if (genIndex >= table->capacity) {
     assert(0);
   }
 }

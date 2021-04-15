@@ -2,6 +2,7 @@
 #define VALE_AST_H_
 
 #include "types.h"
+#include "addresshasher.h"
 
 #include <llvm-c/Core.h>
 #include <llvm-c/DebugInfo.h>
@@ -43,26 +44,26 @@ class Program {
 public:
     std::unordered_map<std::string, InterfaceDefinition*> interfaces;
     std::unordered_map<std::string, StructDefinition*> structs;
-    std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays;
-    std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays;
+    std::unordered_map<std::string, KnownSizeArrayDefinitionT*> knownSizeArrays;
+    std::unordered_map<std::string, UnknownSizeArrayDefinitionT*> unknownSizeArrays;
     // Get rid of this; since there's no IDs anymore we can have a stable
     // hardcoded NameH("__Pack", Some(List()), None, None).
     StructReferend* emptyTupleStructRef;
     std::unordered_map<std::string, Prototype*> externs;
     std::unordered_map<std::string, Function*> functions;
-    std::unordered_map<Referend*, Prototype*> immDestructorsByKind;
-    std::unordered_map<Name*, std::string> exportedNameByFullName;
+    std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind;
+    std::unordered_map<Name*, std::string, AddressHasher<Name*>> exportedNameByFullName;
 
     Program(
         std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
         std::unordered_map<std::string, StructDefinition*> structs_,
-        std::unordered_map<std::string, KnownSizeArrayT*> knownSizeArrays_,
-        std::unordered_map<std::string, UnknownSizeArrayT*> unknownSizeArrays_,
+        std::unordered_map<std::string, KnownSizeArrayDefinitionT*> knownSizeArrays_,
+        std::unordered_map<std::string, UnknownSizeArrayDefinitionT*> unknownSizeArrays_,
         StructReferend* emptyTupleStructRef_,
         std::unordered_map<std::string, Prototype*> externs_,
         std::unordered_map<std::string, Function*> functions_,
-        std::unordered_map<Referend*, Prototype*> immDestructorsByKind_,
-        std::unordered_map<Name*, std::string> exportedNameByFullName_) :
+        std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind_,
+        std::unordered_map<Name*, std::string, AddressHasher<Name*>> exportedNameByFullName_) :
       interfaces(move(interfaces_)),
       structs(move(structs_)),
       knownSizeArrays(move(knownSizeArrays_)),
@@ -76,12 +77,25 @@ public:
 
   StructDefinition* getStruct(Name* name) {
     auto iter = structs.find(name->name);
-    assert(iter != structs.end());
+    if (iter == structs.end()) {
+      std::cerr << "Couldn't find struct: " << name->name << std::endl;
+      exit(1);
+    }
     return iter->second;
   }
   InterfaceDefinition* getInterface(Name* name) {
     auto iter = interfaces.find(name->name);
     assert(iter != interfaces.end());
+    return iter->second;
+  }
+  KnownSizeArrayDefinitionT* getKnownSizeArray(Name* name) {
+    auto iter = knownSizeArrays.find(name->name);
+    assert(iter != knownSizeArrays.end());
+    return iter->second;
+  }
+  UnknownSizeArrayDefinitionT* getUnknownSizeArray(Name* name) {
+    auto iter = unknownSizeArrays.find(name->name);
+    assert(iter != unknownSizeArrays.end());
     return iter->second;
   }
   Prototype* getImmDestructor(Referend* referend) {
@@ -101,8 +115,6 @@ public:
     }
     return exportedNameI->second;
   }
-  Weakability getReferendWeakability(Referend* referend);
-  Mutability getReferendMutability(Referend* referendM);
 };
 
 class InterfaceMethod {
@@ -138,6 +150,7 @@ class StructDefinition {
 public:
     Name* name;
     StructReferend* referend;
+    RegionId* regionId;
     Mutability mutability;
     std::vector<Edge*> edges;
     std::vector<StructMember*> members;
@@ -146,12 +159,14 @@ public:
     StructDefinition(
         Name* name_,
         StructReferend* referend_,
+        RegionId* regionId_,
         Mutability mutability_,
         std::vector<Edge*> edges_,
         std::vector<StructMember*> members_,
         Weakability weakable_) :
         name(name_),
         referend(referend_),
+        regionId(regionId_),
         mutability(mutability_),
         edges(edges_),
         members(members_),
@@ -169,14 +184,17 @@ public:
 
 class StructMember {
 public:
+    std::string fullName;
     std::string name;
     Variability variability;
     Reference* type;
 
     StructMember(
+        std::string fullName_,
         std::string name_,
         Variability variability_,
         Reference* type_) :
+        fullName(fullName_),
         name(name_),
         variability(variability_),
         type(type_) {}
@@ -187,6 +205,7 @@ class InterfaceDefinition {
 public:
     Name* name;
     InterfaceReferend* referend;
+    RegionId* regionId;
     Mutability mutability;
     std::vector<Name*> superInterfaces;
     std::vector<InterfaceMethod*> methods;
@@ -195,12 +214,14 @@ public:
     InterfaceDefinition(
         Name* name_,
         InterfaceReferend* referend_,
+        RegionId* regionId_,
         Mutability mutability_,
         const std::vector<Name*>& superInterfaces_,
         const std::vector<InterfaceMethod*>& methods_,
         Weakability weakable_) :
       name(name_),
       referend(referend_),
+      regionId(regionId_),
       mutability(mutability_),
       superInterfaces(superInterfaces_),
       methods(methods_),
@@ -238,6 +259,38 @@ public:
       name(name_),
       params(std::move(params_)),
       returnType(returnType_) {}
+};
+
+// Interned
+class VariableId {
+public:
+  int number;
+  int height;
+  std::string maybeName;
+
+  VariableId(
+      int number_,
+      int height_,
+      std::string maybeName_) :
+      number(number_),
+      height(height_),
+      maybeName(maybeName_) {}
+};
+
+// Interned
+class Local {
+public:
+  VariableId* id;
+  Reference* type;
+  bool keepAlive;
+
+  Local(
+      VariableId* id_,
+      Reference* type_,
+      bool keepAlive_) :
+      id(id_),
+      type(type_),
+      keepAlive(keepAlive_) {}
 };
 
 #endif

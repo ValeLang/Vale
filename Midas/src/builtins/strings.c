@@ -11,13 +11,12 @@
 // the start of a Vale native API.
 typedef struct ValeStr {
   uint64_t length;
-  char* chars;
+  char chars[0];
 } ValeStr;
 
 ValeStr* ValeStrNew(int64_t length) {
   ValeStr* result = (ValeStr*)malloc(sizeof(ValeStr) + length + 1);
   result->length = length;
-  result->chars = (char*)(result + 1);
   result->chars[0] = 0;
   result->chars[length] = 0;
   return result;

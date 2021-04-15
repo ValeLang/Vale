@@ -25,7 +25,7 @@ void ControlBlock::build() {
   auto int1LT = LLVMInt1TypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int32LT = LLVMIntTypeInContext(globalState->context, GENERATION_NUM_BITS);
   auto int64LT = LLVMInt64TypeInContext(globalState->context);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
   auto int64PtrLT = LLVMPointerType(int64LT, 0);
@@ -34,6 +34,9 @@ void ControlBlock::build() {
   for (auto member : members) {
     switch (member) {
       case ControlBlockMember::UNUSED_32B:
+        membersL.push_back(int32LT);
+        break;
+      case ControlBlockMember::TETHER_32B:
         membersL.push_back(int32LT);
         break;
       case ControlBlockMember::GENERATION:

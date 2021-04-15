@@ -30,8 +30,8 @@ case class ProgramH(
     externs: List[PrototypeH],
     // All of the user defined functions (and some from the compiler itself).
     functions: List[FunctionH],
-    knownSizeArrays: List[KnownSizeArrayTH],
-    unknownSizeArrays: List[UnknownSizeArrayTH],
+    knownSizeArrays: List[KnownSizeArrayDefinitionTH],
+    unknownSizeArrays: List[UnknownSizeArrayDefinitionTH],
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.

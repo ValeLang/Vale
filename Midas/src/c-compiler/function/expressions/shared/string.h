@@ -20,7 +20,7 @@ LLVMValueRef getLenFromStrWrapperPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE strWrapperPtrLE);
 
-WrapperPtrLE buildConstantVStr(
+Ref buildConstantVStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

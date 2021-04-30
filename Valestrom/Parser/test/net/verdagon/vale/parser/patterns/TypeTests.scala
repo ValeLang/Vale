@@ -83,8 +83,9 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         None,
         Some(
-          OwnershippedPT(_,
+          InterpretedPT(_,
             BorrowP,
+            ReadonlyP,
             RepeaterSequencePT(_,
               MutabilityPT(_,MutableP),
               IntPT(_,3),
@@ -98,8 +99,9 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         None,
         Some(
-          OwnershippedPT(_,
+          InterpretedPT(_,
             WeakP,
+            ReadonlyP,
             RepeaterSequencePT(_,
               AnonymousRunePT(_),
               IntPT(_,3),

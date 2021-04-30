@@ -209,6 +209,7 @@ object FunctionScout {
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS
       case ExternAttributeP(_) => ExternS
+      case PureAttributeP(_) => PureS
       case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
       case x => vimpl(x.toString)
     })
@@ -284,7 +285,7 @@ object FunctionScout {
         EqualsSR(
           closureParamRange,
           TypedSR(closureParamRange, closureParamTypeRune,CoordTypeSR),
-          TemplexSR(OwnershippedST(closureParamRange,BorrowP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
+          TemplexSR(InterpretedST(closureParamRange,BorrowP,ReadwriteP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
     val closureParamS =
       ParameterS(
         AtomSP(

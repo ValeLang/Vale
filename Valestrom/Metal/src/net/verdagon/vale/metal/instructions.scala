@@ -11,7 +11,7 @@ sealed trait ExpressionH[+T <: ReferendH] {
   // a certain type.
   def expectStructAccess(): ExpressionH[StructRefH] = {
     resultType match {
-      case ReferenceH(_, _, x @ StructRefH(_)) => {
+      case ReferenceH(_, _, _, x @ StructRefH(_)) => {
         this.asInstanceOf[ExpressionH[StructRefH]]
       }
       case _ => vfail()
@@ -19,35 +19,35 @@ sealed trait ExpressionH[+T <: ReferendH] {
   }
   def expectInterfaceAccess(): ExpressionH[InterfaceRefH] = {
     resultType match {
-      case ReferenceH(_, _, x @ InterfaceRefH(_)) => {
+      case ReferenceH(_, _, _, x @ InterfaceRefH(_)) => {
         this.asInstanceOf[ExpressionH[InterfaceRefH]]
       }
     }
   }
   def expectUnknownSizeArrayAccess(): ExpressionH[UnknownSizeArrayTH] = {
     resultType match {
-      case ReferenceH(_, _, x @ UnknownSizeArrayTH(_)) => {
+      case ReferenceH(_, _, _, x @ UnknownSizeArrayTH(_)) => {
         this.asInstanceOf[ExpressionH[UnknownSizeArrayTH]]
       }
     }
   }
   def expectKnownSizeArrayAccess(): ExpressionH[KnownSizeArrayTH] = {
     resultType match {
-      case ReferenceH(_, _, x @ KnownSizeArrayTH(_)) => {
+      case ReferenceH(_, _, _, x @ KnownSizeArrayTH(_)) => {
         this.asInstanceOf[ExpressionH[KnownSizeArrayTH]]
       }
     }
   }
   def expectIntAccess(): ExpressionH[IntH] = {
     resultType match {
-      case ReferenceH(_, _, x @ IntH()) => {
+      case ReferenceH(_, _, _, x @ IntH()) => {
         this.asInstanceOf[ExpressionH[IntH]]
       }
     }
   }
   def expectBoolAccess(): ExpressionH[BoolH] = {
     resultType match {
-      case ReferenceH(_, _, x @ BoolH()) => {
+      case ReferenceH(_, _, _, x @ BoolH()) => {
         this.asInstanceOf[ExpressionH[BoolH]]
       }
     }
@@ -59,7 +59,7 @@ case class ConstantI64H(
   // The value of the integer.
   value: Int
 ) extends ExpressionH[IntH] {
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH())
+  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH())
 }
 
 // Produces a boolean.
@@ -67,7 +67,7 @@ case class ConstantBoolH(
   // The value of the boolean.
   value: Boolean
 ) extends ExpressionH[BoolH] {
-  override def resultType: ReferenceH[BoolH] = ReferenceH(ShareH, InlineH, BoolH())
+  override def resultType: ReferenceH[BoolH] = ReferenceH(ShareH, InlineH, ReadonlyH, BoolH())
 }
 
 // Produces a string.
@@ -75,7 +75,7 @@ case class ConstantStrH(
   // The value of the string.
   value: String
 ) extends ExpressionH[StrH] {
-  override def resultType: ReferenceH[StrH] = ReferenceH(ShareH, YonderH, StrH())
+  override def resultType: ReferenceH[StrH] = ReferenceH(ShareH, YonderH, ReadonlyH, StrH())
 }
 
 // Produces a float.
@@ -83,7 +83,7 @@ case class ConstantF64H(
   // The value of the float.
   value: Float
 ) extends ExpressionH[FloatH] {
-  override def resultType: ReferenceH[FloatH] = ReferenceH(ShareH, InlineH, FloatH())
+  override def resultType: ReferenceH[FloatH] = ReferenceH(ShareH, InlineH, ReadonlyH, FloatH())
 }
 
 // Produces the value from an argument.
@@ -108,7 +108,7 @@ case class StackifyH(
   vassert(sourceExpr.resultType.kind == NeverH() ||
     sourceExpr.resultType == local.typeH)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
 }
 
 // Takes a value from a local variable on the stack, and produces it.
@@ -142,7 +142,7 @@ case class DestroyH(
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toList)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ReadonlyH, ProgramH.emptyTupleStructRef)
 }
 
 // Takes a struct from the given expressions, and destroys it.
@@ -162,7 +162,7 @@ case class DestroyKnownSizeArrayIntoLocalsH(
   vassert(localTypes.size == localIndices.size)
   vcurious(localTypes == localIndices.map(_.typeH).toList)
 
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 
 // Takes a struct reference from the "source" expressions, and makes an interface reference
@@ -174,7 +174,7 @@ case class StructToInterfaceUpcastH(
   targetInterfaceRef: InterfaceRefH
 ) extends ExpressionH[InterfaceRefH] {
   // The resulting type will have the same ownership as the source expressions had.
-  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterfaceRef)
+  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, sourceExpression.resultType.permission, targetInterfaceRef)
 }
 
 // Takes an interface reference from the "source" expressions, and makes another reference
@@ -186,7 +186,7 @@ case class InterfaceToInterfaceUpcastH(
   targetInterfaceRef: InterfaceRefH
 ) extends ExpressionH[InterfaceRefH] {
   // The resulting type will have the same ownership as the source expressions had.
-  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, targetInterfaceRef)
+  def resultType = ReferenceH(sourceExpression.resultType.ownership, sourceExpression.resultType.location, sourceExpression.resultType.permission, targetInterfaceRef)
 }
 
 // Takes a reference from the given "source" expressions, and puts it into an *existing*
@@ -208,10 +208,14 @@ case class LocalStoreH(
 case class LocalLoadH(
   // The existing local to load from.
   local: Local,
-  // The ownership of the reference to put into the expressions. This doesn't have to
-  // match the ownership of the reference from the local. For example, we might want
+  // The ownership of the resulting reference. This doesn't have to
+  // match the ownership of the source reference. For example, we might want
   // to load a constraint reference from an owning local.
   targetOwnership: OwnershipH,
+  // The permission of the resulting reference. This doesn't have to
+  // match the ownership of the source reference. For example, we might want
+  // to load a constraint reference from an owning local.
+  targetPermission: PermissionH,
   // Name of the local variable, for debug purposes.
   localName: FullNameH
 ) extends ExpressionH[ReferendH] {
@@ -225,7 +229,26 @@ case class LocalLoadH(
         case (OwnH, location) => location
         case (ShareH, location) => location
       }
-    ReferenceH(targetOwnership, location, local.typeH.kind)
+    ReferenceH(targetOwnership, location, targetPermission, local.typeH.kind)
+  }
+}
+
+// Turns a constraint ref into a weak ref.
+case class NarrowPermissionH(
+  // Expression containing the constraint reference to turn into a weak ref.
+  refExpression: ExpressionH[ReferendH],
+  // The permission of the resulting reference. This doesn't have to
+  // match the ownership of the source reference. For example, we might want
+  // to load a constraint reference from an owning local.
+  targetPermission: PermissionH,
+) extends ExpressionH[ReferendH] {
+  override def resultType: ReferenceH[ReferendH] = {
+    val ReferenceH(ownership, location, permission, kind) = refExpression.resultType
+    (permission, targetPermission) match {
+      case (ReadwriteH, ReadonlyH) =>
+      case _ => vwat()
+    }
+    ReferenceH(ownership, location, targetPermission, kind)
   }
 }
 
@@ -250,29 +273,26 @@ case class MemberLoadH(
   structExpression: ExpressionH[StructRefH],
   // Which member to read from, starting at 0.
   memberIndex: Int,
-  // The ownership to load as. For example, we might load a constraint reference from a
-  // owning Car reference member.
-  targetOwnership: OwnershipH,
+//  // The ownership to load as. For example, we might load a constraint reference from a
+//  // owning Car reference member.
+//  targetOwnership: OwnershipH,
+//  // The permission of the resulting reference. This doesn't have to
+//  // match the ownership of the source reference. For example, we might want
+//  // to load a constraint reference from an owning local.
+//  targetPermission: PermissionH,
   // The type we expect the member to be. This can easily be looked up, but is provided
   // here to be convenient for LLVM.
   expectedMemberType: ReferenceH[ReferendH],
-//  // The type of the resulting reference.
-//  resultType: ReferenceH[ReferendH],
+  // The type of the resulting reference.
+  resultType: ReferenceH[ReferendH],
   // Member's name, for debug purposes.
   memberName: FullNameH
 ) extends ExpressionH[ReferendH] {
-  vassert(resultType.ownership == targetOwnership)
+//  vassert(resultType.ownership == targetOwnership)
+//  vassert(resultType.permission == targetPermission)
 
-  override def resultType: ReferenceH[ReferendH] = {
-    val location =
-      (targetOwnership, expectedMemberType.location) match {
-        case (BorrowH, _) => YonderH
-        case (WeakH, _) => YonderH
-        case (OwnH, location) => location
-        case (ShareH, location) => location
-      }
-    ReferenceH(targetOwnership, location, expectedMemberType.kind)
-  }
+  if (resultType.ownership == BorrowH) vassert(resultType.location == YonderH)
+  if (resultType.ownership == WeakH) vassert(resultType.location == YonderH)
 }
 
 // Produces an array whose size is fixed and known at compile time, and puts it into
@@ -330,6 +350,10 @@ case class UnknownSizeArrayLoadH(
   // The ownership to load as. For example, we might load a constraint reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
+  // The permission of the resulting reference. This doesn't have to
+  // match the ownership of the source reference. For example, we might want
+  // to load a constraint reference from an owning local.
+  targetPermission: PermissionH,
   expectedElementType: ReferenceH[ReferendH],
   resultType: ReferenceH[ReferendH],
 ) extends ExpressionH[ReferendH] {
@@ -358,6 +382,10 @@ case class KnownSizeArrayLoadH(
   // The ownership to load as. For example, we might load a constraint reference from a
   // owning Car reference element.
   targetOwnership: OwnershipH,
+  // The permission of the resulting reference. This doesn't have to
+  // match the ownership of the source reference. For example, we might want
+  // to load a constraint reference from an owning local.
+  targetPermission: PermissionH,
   expectedElementType: ReferenceH[ReferendH],
   arraySize: Int,
   resultType: ReferenceH[ReferendH],
@@ -445,7 +473,7 @@ case class WhileH(
   // The block to run until it returns false.
   bodyBlock: ExpressionH[BoolH]
 ) extends ExpressionH[StructRefH] {
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 
 // A collection of instructions. The last one will be used as the block's result.
@@ -483,7 +511,7 @@ case class ReturnH(
   // The expressions to read from, whose value we'll return from the function.
   sourceExpression: ExpressionH[ReferendH]
 ) extends ExpressionH[NeverH] {
-  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, NeverH())
+  override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, ReadonlyH, NeverH())
 }
 
 // Constructs an unknown-size array, whose length is the integer from sizeExpression,
@@ -528,7 +556,7 @@ case class DestroyKnownSizeArrayIntoFunctionH(
   arrayElementType: ReferenceH[ReferendH],
   arraySize: Int
 ) extends ExpressionH[StructRefH] {
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 
 // Destroys an array previously created with ConstructUnknownSizeArrayH.
@@ -546,7 +574,7 @@ case class DestroyUnknownSizeArrayH(
   consumerMethod: PrototypeH,
   arrayElementType: ReferenceH[ReferendH],
 ) extends ExpressionH[StructRefH] {
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 
 // Creates a new struct instance.
@@ -564,7 +592,7 @@ case class ArrayLengthH(
   // Expression containing the array whose length we'll get.
   sourceExpression: ExpressionH[ReferendH],
 ) extends ExpressionH[IntH] {
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, IntH())
+  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH())
 }
 
 // Turns a constraint ref into a weak ref.
@@ -572,7 +600,7 @@ case class WeakAliasH(
   // Expression containing the constraint reference to turn into a weak ref.
   refExpression: ExpressionH[ReferendH],
 ) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refExpression.resultType.kind)
+  override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
 }
 
 // Checks if the given args are the same instance.
@@ -580,7 +608,7 @@ case class IsH(
   leftExpression: ExpressionH[ReferendH],
   rightExpression: ExpressionH[ReferendH],
 ) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = ReferenceH(ShareH, InlineH, BoolH())
+  override def resultType: ReferenceH[ReferendH] = ReferenceH(ShareH, InlineH, ReadonlyH, BoolH())
 }
 
 // Locks a weak ref to turn it into an optional of borrow ref.
@@ -627,7 +655,7 @@ case class DiscardH(sourceExpression: ExpressionH[ReferendH]) extends Expression
   sourceExpression.resultType.ownership match {
     case BorrowH | ShareH | WeakH =>
   }
-  override def resultType: ReferenceH[StructRefH] = ReferenceH(ShareH, InlineH, ProgramH.emptyTupleStructRef)
+  override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 
 trait IExpressionH {

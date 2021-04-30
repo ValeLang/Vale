@@ -49,11 +49,11 @@ case class Edge2(
 object Program2 {
   val emptyTupleStructRef = StructRef2(FullName2(List(), TupleName2(List())))
   val emptyTupleType: PackT2 = PackT2(List(), Program2.emptyTupleStructRef)
-  val emptyTupleReference: Coord = Coord(Share, emptyTupleType)
-  val emptyPackExpression: PackE2 = PackE2(List(), Coord(Share, Program2.emptyTupleType), Program2.emptyTupleType)
+  val emptyTupleReference: Coord = Coord(Share, Readonly, emptyTupleType)
+  val emptyPackExpression: PackE2 = PackE2(List(), Coord(Share, Readonly, Program2.emptyTupleType), Program2.emptyTupleType)
 
-  val intType = Coord(Share, Int2())
-  val boolType = Coord(Share, Bool2())
+  val intType = Coord(Share, Readonly, Int2())
+  val boolType = Coord(Share, Readonly, Bool2())
 }
 
 //trait Program2 {

@@ -15,13 +15,13 @@ object ExpressionVivem {
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
     val emptyPackStructDefH = vassertSome(programH.structs.find(_.getRef == emptyPackStructRefH))
-    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, emptyPackStructRefH), List())
+    val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List())
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), void)
     void
   }
 
   def makePrimitive(heap: Heap, callId: CallId, location: LocationH, referend: ReferendV) = {
-    val ref = heap.allocateTransient(ShareH, location, referend)
+    val ref = heap.allocateTransient(ShareH, location, ReadonlyH, referend)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), ref)
     ref
   }
@@ -44,6 +44,7 @@ object ExpressionVivem {
       RRReferend(targetInterfaceRef),
       sourceReference.ownership,
       sourceReference.location,
+      sourceReference.permission,
       sourceReference.num)
   }
 
@@ -282,7 +283,7 @@ object ExpressionVivem {
         vassert(weakRef.ownership == WeakH)
 
         if (heap.containsLiveObject(weakRef)) {
-          val expectedRef = ReferenceH(BorrowH, YonderH, sourceExpr.resultType.kind)
+          val expectedRef = ReferenceH(BorrowH, YonderH, sourceExpr.resultType.permission, sourceExpr.resultType.kind)
           val constraintRef = heap.alias(weakRef, sourceExpr.resultType, expectedRef)
 
           heap.vivemDout.println()
@@ -426,13 +427,25 @@ object ExpressionVivem {
 //        NodeContinue(exprId))
       }
 
-      case ll @ LocalLoadH(local, targetOwnership, name) => {
+      case ll @ LocalLoadH(local, targetOwnership, targetPermission, name) => {
         vassert(targetOwnership != OwnH) // should have been Unstackified instead
         val varAddress = heap.getVarAddress(expressionId.callId, local)
         val reference = heap.getReferenceFromLocal(varAddress, local.typeH, ll.resultType)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, reference.ownership), reference)
         heap.vivemDout.print(" *" + varAddress)
         NodeContinue(reference)
+      }
+
+      case ll @ NarrowPermissionH(sourceExpr, targetOwnership) => {
+        val sourceReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+
+        val permissionedReference = heap.alias(sourceReference, sourceExpr.resultType, ll.resultType)
+
+        NodeContinue(permissionedReference)
       }
 
       case UnstackifyH(local) => {
@@ -570,7 +583,7 @@ object ExpressionVivem {
         NodeContinue(arrayReference)
       }
 
-      case ml @ MemberLoadH(structExpr, memberIndex, targetOwnership, expectedMemberType, memberName) => {
+      case ml @ MemberLoadH(structExpr, memberIndex, expectedMemberType, resultType, memberName) => {
         val structReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), structExpr) match {
             case r @ NodeReturn(_) => return r
@@ -581,14 +594,14 @@ object ExpressionVivem {
 
         heap.vivemDout.print(" *" + address)
         val memberReference = heap.getReferenceFromStruct(address, expectedMemberType, ml.resultType)
-        vassert(targetOwnership != OwnH)
+        vassert(resultType.ownership != OwnH)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, memberReference.ownership), memberReference)
 
         discard(programH, heap, stdout, stdin, callId, structExpr.resultType, structReference)
         NodeContinue(memberReference)
       }
 
-      case usal @ UnknownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership, expectedElementType, resultType) => {
+      case usal @ UnknownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, resultType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -620,7 +633,7 @@ object ExpressionVivem {
         NodeContinue(source)
       }
 
-      case KnownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership, expectedElementType, arraySize, resultType) => {
+      case KnownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, arraySize, resultType) => {
         val arrayReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), arrayExpr) match {
             case r @ NodeReturn(_) => return r
@@ -723,7 +736,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (generator)")
 
-          val indexReference = heap.allocateTransient(ShareH, InlineH, IntV(i))
+          val indexReference = heap.allocateTransient(ShareH, InlineH, ReadonlyH, IntV(i))
 
           val generatorInterfaceDefH =
             programH.interfaces.find(_.getRef == generatorInterfaceExpr.resultType.kind).get
@@ -947,9 +960,9 @@ object ExpressionVivem {
         case other => vwat(other.toString)
       }
 
-    val ReferenceV(actualStruct, actualInterfaceKind, actualOwnership, actualLocation, allocNum) = interfaceReference
+    val ReferenceV(actualStruct, actualInterfaceKind, actualOwnership, actualLocation, actualPermission, allocNum) = interfaceReference
     vassert(actualInterfaceKind.hamut == interfaceRefH)
-    val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, actualLocation, allocNum)
+    val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, actualLocation, actualPermission, allocNum)
 
     val prototypeH = edge.structPrototypesByInterfaceMethod.values.toList(indexInEdge)
     val functionH = programH.functions.find(_.prototype == prototypeH).get;

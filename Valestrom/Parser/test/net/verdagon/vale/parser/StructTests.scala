@@ -22,7 +22,7 @@ class StructTests extends FunSuite with Matchers with Collector {
     compile(
       CombinatorParsers.structMember,
       "a *ListNode<T>;") shouldHave {
-      case StructMemberP(_, StringP(_, "a"), FinalP, OwnershippedPT(_,ShareP,CallPT(_,NameOrRunePT(StringP(_, "ListNode")), List(NameOrRunePT(StringP(_, "T")))))) =>
+      case StructMemberP(_, StringP(_, "a"), FinalP, InterpretedPT(_,ShareP,ReadonlyP,CallPT(_,NameOrRunePT(StringP(_, "ListNode")), List(NameOrRunePT(StringP(_, "T")))))) =>
     }
   }
 
@@ -36,13 +36,13 @@ class StructTests extends FunSuite with Matchers with Collector {
 
   test("Simple struct") {
     compile(CombinatorParsers.struct, "struct Moo { x &int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, InterpretedPT(_,BorrowP,ReadonlyP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 
   test("Struct with weak") {
     compile(CombinatorParsers.struct, "struct Moo { x &&int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,WeakP,NameOrRunePT(StringP(_, "int"))))))) =>
+      case StructP(_, StringP(_, "Moo"), List(), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, InterpretedPT(_,WeakP,ReadonlyP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 
@@ -54,7 +54,7 @@ class StructTests extends FunSuite with Matchers with Collector {
 
   test("Export struct") {
     compile(CombinatorParsers.struct, "struct Moo export { x &int; }") shouldHave {
-      case StructP(_, StringP(_, "Moo"), List(ExportP(_)), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, OwnershippedPT(_,BorrowP,NameOrRunePT(StringP(_, "int"))))))) =>
+      case StructP(_, StringP(_, "Moo"), List(ExportP(_)), MutableP, None, None, StructMembersP(_, List(StructMemberP(_, StringP(_, "x"), FinalP, InterpretedPT(_,BorrowP,ReadonlyP,NameOrRunePT(StringP(_, "int"))))))) =>
     }
   }
 

@@ -18,6 +18,7 @@ object Arrays {
         CodeRuneA("I"),
         CodeRuneA("ArrayMutability"),
         CodeRuneA("T"),
+        CodeRuneA("P"),
         CodeRuneA("Generator"),
         CodeRuneA("M"),
         CodeRuneA("R")),
@@ -25,6 +26,7 @@ object Arrays {
         CodeRuneA("ArrayMutability") -> MutabilityTemplataType,
         CodeRuneA("I") -> CoordTemplataType,
         CodeRuneA("T") -> CoordTemplataType,
+        CodeRuneA("P") -> PermissionTemplataType,
         CodeRuneA("Generator") -> CoordTemplataType,
         CodeRuneA("M") -> MutabilityTemplataType,
         CodeRuneA("R") -> CoordTemplataType),
@@ -44,6 +46,7 @@ object Arrays {
             CoordTemplataType,
             List(
               TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)),
+              TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("P"),PermissionTemplataType)),
               TemplexAR(
                 CallAT(RangeS.internal(-56),
                   NameAT(RangeS.internal(-56),CodeTypeNameA("IFunction1"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType), KindTemplataType)),

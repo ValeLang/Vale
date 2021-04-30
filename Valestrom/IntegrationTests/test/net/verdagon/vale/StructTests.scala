@@ -125,11 +125,11 @@ class StructTests extends FunSuite with Matchers {
         |  opt.value
         |}
         |
-        |fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, T, R>) Opt<R> abstract;
-        |fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
+        |fn map<T, R>(virtual opt &Opt<T>, func &!IFunction1<mut, T, R>) Opt<R> abstract;
+        |fn map<T, R>(opt &None<T> impl Opt<T>, func &!IFunction1<mut, T, R>) Opt<R> {
         |  None<R>()
         |}
-        |fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
+        |fn map<T, R>(opt &Some<T> impl Opt<T>, func &!IFunction1<mut, T, R>) Opt<R> {
         |  Some<R>(func(opt.value))
         |}
         |

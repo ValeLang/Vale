@@ -92,7 +92,7 @@ object Reachability {
     // that let go of a reference.
     if (interfaceDef.mutability == Immutable) {
       val destructorSignature =
-        Signature2(FullName2(List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, interfaceRef))), List(Coord(Share, interfaceRef)))))
+        Signature2(FullName2(List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, Readonly, interfaceRef))), List(Coord(Share, Readonly, interfaceRef)))))
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     interfaceDef.all({

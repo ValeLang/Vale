@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, LendBorrowP, OwnP, ShareP, UseP}
+import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, LendBorrowP, OwnP, ReadonlyP, ShareP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
@@ -27,7 +27,16 @@ object RefCounting {
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1418),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(RangeS.internal(-1419),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)), ComponentsAR(RangeS.internal(-79), CoordTemplataType, List(TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)), TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("TK"), KindTemplataType))))),
+        EqualsAR(
+          RangeS.internal(-1419),
+          TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)),
+          ComponentsAR(
+            RangeS.internal(-79),
+            CoordTemplataType,
+            List(
+              TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)),
+              TemplexAR(PermissionAT(RangeS.internal(-56),ReadonlyP)),
+              TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("TK"), KindTemplataType))))),
         EqualsAR(RangeS.internal(-1420),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
@@ -43,7 +52,7 @@ object RefCounting {
                 FunctionCallAE(
                   RangeS.internal(-42),
                   // We add 1 because that "obj" is also a borrow ref
-                  OutsideLoadAE(RangeS.internal(-38),"+", LendBorrowP),
+                  OutsideLoadAE(RangeS.internal(-38),"+", LendBorrowP(None)),
                   List(
                     LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP),
                     IntLiteralAE(RangeS.internal(-35), 1)))),

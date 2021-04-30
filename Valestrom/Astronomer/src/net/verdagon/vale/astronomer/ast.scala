@@ -169,6 +169,7 @@ sealed trait ICitizenAttributeA
 sealed trait IFunctionAttributeA
 case object ExternA extends IFunctionAttributeA with ICitizenAttributeA // For optimization later
 case object ExportA extends IFunctionAttributeA with ICitizenAttributeA
+case object PureA extends IFunctionAttributeA with ICitizenAttributeA
 case object UserFunctionA extends IFunctionAttributeA // Whether it was written by a human. Mostly for tests right now.
 
 

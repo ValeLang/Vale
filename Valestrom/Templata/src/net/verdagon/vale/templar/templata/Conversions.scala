@@ -21,7 +21,8 @@ object Conversions {
     permission match {
       case ReadonlyP => Readonly
       case ReadwriteP => Readwrite
-      case ExclusiveReadwriteP => ExclusiveReadwrite
+//      case ExclusiveNormalP => ExclusiveReadwrite
+      case _ => vimpl()
     }
   }
 
@@ -71,6 +72,14 @@ object Conversions {
       case Borrow => BorrowP
       case Weak => WeakP
       case Share => ShareP
+    }
+  }
+
+  def unevaluatePermission(permission: Permission): PermissionP = {
+    permission match {
+      case Readonly => ReadonlyP
+      case Readwrite => ReadwriteP
+//      case ExclusiveReadwrite => ExclusiveNormalP
     }
   }
 

@@ -498,13 +498,14 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("inner", vonifyTemplex(inner))))
       }
-      case OwnershippedPT(range, ownership, inner) => {
+      case InterpretedPT(range, ownership, permission, inner) => {
         VonObject(
-          "OwnershippedT",
+          "InterpretedT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("ownership", vonifyOwnership(ownership)),
+            VonMember("permission", vonifyPermission(permission)),
             VonMember("inner", vonifyTemplex(inner))))
       }
       case OwnershipPT(range, ownership) => {
@@ -514,15 +515,6 @@ object ParserVonifier {
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("ownership", vonifyOwnership(ownership))))
-      }
-      case PermissionedPT(range, permission, inner) => {
-        VonObject(
-          "PermissionedT",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("permission", vonifyPermission(permission)),
-            VonMember("inner", vonifyTemplex(inner))))
       }
       case PermissionPT(range, permission) => {
         VonObject(
@@ -617,8 +609,8 @@ object ParserVonifier {
   def vonifyPermission(thing: PermissionP): VonObject = {
     thing match {
       case ReadonlyP => VonObject("Readonly", None, Vector())
-      case ReadwriteP => VonObject("Readwrite", None, Vector())
-      case ExclusiveReadwriteP => VonObject("ExclusiveReadwrite", None, Vector())
+      case ReadonlyP => VonObject("Readwrite", None, Vector())
+      case ExclusiveNormalP => VonObject("ExclusiveReadwrite", None, Vector())
     }
   }
 
@@ -648,8 +640,18 @@ object ParserVonifier {
   def vonifyLoadAs(thing: LoadAsP): VonObject = {
     thing match {
       case MoveP => VonObject("Own", None, Vector())
-      case LendBorrowP => VonObject("LendConstraint", None, Vector())
-      case LendWeakP => VonObject("LendWeak", None, Vector())
+      case LendBorrowP(permission) => {
+        VonObject(
+          "LendConstraint", None,
+          Vector(
+            VonMember("permission", vonifyOptional(permission, vonifyPermission))))
+      }
+      case LendWeakP(permission) => {
+        VonObject(
+          "LendWeak", None,
+          Vector(
+            VonMember("permission", vonifyPermission(permission))))
+      }
     }
   }
 

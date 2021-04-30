@@ -25,10 +25,10 @@ case class NameOrRunePT(name: StringP) extends ITemplexPT {
   def range = name.range
 }
 case class NullablePT(range: Range, inner: ITemplexPT) extends ITemplexPT
-case class OwnershippedPT(range: Range, ownership: OwnershipP, inner: ITemplexPT) extends ITemplexPT
+case class InterpretedPT(range: Range, ownership: OwnershipP, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
 case class OwnershipPT(range: Range, ownership: OwnershipP) extends ITemplexPT
 case class PackPT(range: Range, members: List[ITemplexPT]) extends ITemplexPT
-case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
+//case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
 case class PermissionPT(range: Range, permission: PermissionP) extends ITemplexPT
 case class PrototypePT(range: Range, name: StringP, parameters: List[ITemplexPT], returnType: ITemplexPT) extends ITemplexPT
 case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT

@@ -8,10 +8,13 @@ trait IExpressionPE {
 
 case class VoidPE(range: Range) extends IExpressionPE {}
 
-case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: LoadAsP) extends IExpressionPE {
+case class LendPE(
+    range: Range,
+    expr: IExpressionPE,
+    targetOwnership: LoadAsP) extends IExpressionPE {
   targetOwnership match {
-    case LendWeakP =>
-    case LendBorrowP =>
+    case LendWeakP(_) =>
+    case LendBorrowP(_) =>
   }
 }
 

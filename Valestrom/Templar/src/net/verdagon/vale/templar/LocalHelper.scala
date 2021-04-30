@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.templata.Conversions
-import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
+import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Readonly, Readwrite, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
@@ -133,7 +133,7 @@ class LocalHelper(
   ReferenceExpression2 = {
     a.resultRegister.reference.ownership match {
       case Share => {
-        SoftLoad2(a, Share)
+        SoftLoad2(a, Share, Readonly)
       }
       case Own => {
         loadAsP match {
@@ -143,10 +143,11 @@ class LocalHelper(
                 fate.markLocalUnstackified(lv.id)
                 Unlet2(lv)
               }
-              case l @ UnknownSizeArrayLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow)
-              case l @ ArraySequenceLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow)
-              case l @ ReferenceMemberLookup2(_,_, _, _, _) => SoftLoad2(l, Borrow)
-              case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow)
+              // See CSHROOR for why these aren't just Readwrite.
+              case l @ UnknownSizeArrayLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
+              case l @ ArraySequenceLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
+              case l @ ReferenceMemberLookup2(_,_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
+              case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
             }
           }
           case MoveP => {
@@ -155,7 +156,7 @@ class LocalHelper(
                 fate.markLocalUnstackified(lv.id)
                 Unlet2(lv)
               }
-              case ReferenceMemberLookup2(_,_, name, _, _) => {
+              case ReferenceMemberLookup2(_,_, name, _, _, _) => {
                 throw CompileErrorExceptionT(CantMoveOutOfMemberT(loadRange, name.last))
               }
               case AddressMemberLookup2(_, _, name, _, _) => {
@@ -163,21 +164,27 @@ class LocalHelper(
               }
             }
           }
-          case LendBorrowP => SoftLoad2(a, Borrow)
-          case LendWeakP => SoftLoad2(a, Weak)
+          case LendBorrowP(None) => SoftLoad2(a, Borrow, a.resultRegister.reference.permission)
+          case LendBorrowP(Some(permission)) => SoftLoad2(a, Borrow, Conversions.evaluatePermission(permission))
+          case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
         }
       }
       case Borrow => {
         loadAsP match {
           case MoveP => vfail()
-          case LendBorrowP | UseP => SoftLoad2(a, Borrow)
-          case LendWeakP => SoftLoad2(a, Weak)
+          case UseP => SoftLoad2(a, Borrow, a.resultRegister.reference.permission)
+          case LendBorrowP(None) => SoftLoad2(a, Borrow, a.resultRegister.reference.permission)
+          case LendBorrowP(Some(permission)) => SoftLoad2(a, Borrow, Conversions.evaluatePermission(permission))
+          case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
         }
       }
       case Weak => {
         loadAsP match {
-          case LendBorrowP | MoveP => vfail()
-          case UseP | LendWeakP => SoftLoad2(a, Weak)
+          case UseP => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
+          case MoveP => vfail()
+          case LendBorrowP(None) => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
+          case LendBorrowP(Some(permission)) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
+          case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
         }
       }
     }
@@ -186,7 +193,7 @@ class LocalHelper(
   def borrowSoftLoad(temputs: Temputs, expr2: AddressExpression2):
   ReferenceExpression2 = {
     val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.referend)
-    SoftLoad2(expr2, ownership)
+    SoftLoad2(expr2, ownership, expr2.resultRegister.reference.permission)
   }
 
   def getBorrowOwnership(temputs: Temputs, referend: Kind):

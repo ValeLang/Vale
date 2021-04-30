@@ -64,8 +64,31 @@ case class LetAndLend2(
   vassert(variable.reference == expr.resultRegister.reference)
 
   override def resultRegister: ReferenceRegister2 = {
-    val Coord(ownership, kind) = expr.resultRegister.reference
-    ReferenceRegister2(Coord(if (ownership == Share) Share else Borrow, kind))
+    val Coord(ownership, permission, kind) = expr.resultRegister.reference
+    ReferenceRegister2(Coord(if (ownership == Share) Share else Borrow, permission, kind))
+  }
+
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ expr.all(func)
+  }
+}
+
+case class NarrowPermission2(
+    expr: ReferenceExpression2,
+    targetPermission: Permission
+) extends ReferenceExpression2 {
+  expr.resultRegister.reference.ownership match {
+    case Own => vfail() // This only works on non owning references
+    case Share => vfail() // Share only has readonly
+    case Borrow | Weak => // fine
+  }
+  // Only thing we support so far is Readwrite -> Readonly
+  vassert(expr.resultRegister.reference.permission == Readwrite)
+  vassert(targetPermission == Readonly)
+
+  override def resultRegister: ReferenceRegister2 = {
+    val Coord(ownership, permission, kind) = expr.resultRegister.reference
+    ReferenceRegister2(Coord(ownership, targetPermission, kind))
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -102,7 +125,7 @@ case class WeakAlias2(
   vassert(innerExpr.resultRegister.reference.ownership == Borrow)
 
   override def resultRegister: ReferenceRegister2 = {
-    ReferenceRegister2(Coord(Weak, innerExpr.referend))
+    ReferenceRegister2(Coord(Weak, innerExpr.resultRegister.reference.permission, innerExpr.referend))
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -114,7 +137,7 @@ case class LetNormal2(
     variable: ILocalVariable2,
     expr: ReferenceExpression2
 ) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   expr match {
     case Return2(_) => vwat()
@@ -146,7 +169,7 @@ case class Unlet2(variable: ILocalVariable2) extends ReferenceExpression2 {
 case class Discard2(
   expr: ReferenceExpression2
 ) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   expr.resultRegister.reference.ownership match {
     case Borrow =>
@@ -177,7 +200,7 @@ case class Defer2(
 
   override def resultRegister = ReferenceRegister2(innerExpr.resultRegister.reference)
 
-  vassert(deferredExpr.resultRegister.reference == Coord(Share, Void2()))
+  vassert(deferredExpr.resultRegister.reference == Coord(Share, Readonly, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func) ++ deferredExpr.all(func)
@@ -196,7 +219,7 @@ case class If2(
   private val thenResultCoord = thenCall.resultRegister.reference
   private val elseResultCoord = elseCall.resultRegister.reference
 
-  vassert(conditionResultCoord == Coord(Share, Bool2()))
+  vassert(conditionResultCoord == Coord(Share, Readonly, Bool2()))
   vassert(
     thenResultCoord.referend == Never2() ||
       elseResultCoord.referend == Never2() ||
@@ -228,7 +251,7 @@ case class If2(
 // The block is expected to return a boolean (false = stop, true = keep going).
 // The block will probably contain an If2(the condition, the body, false)
 case class While2(block: Block2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ block.all(func)
@@ -250,7 +273,7 @@ case class Mutate2(
 case class Return2(
   sourceExpr: ReferenceExpression2
 ) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Never2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Never2()))
 
   def getFinalExpr(expression2: Expression2): Unit = {
     expression2 match {
@@ -338,7 +361,7 @@ case class TupleE2(
 //     println("hi");
 //   }
 case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Never2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Never2()))
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ innerExpr.all(func)
   }
@@ -355,7 +378,7 @@ case class ArraySequenceE2(
 }
 
 case class ArraySize2(array: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Int2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Int2()))
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ array.all(func)
   }
@@ -364,14 +387,14 @@ case class ArraySize2(array: ReferenceExpression2) extends ReferenceExpression2 
 case class Is2(left: ReferenceExpression2, right: ReferenceExpression2) extends ReferenceExpression2 {
   vassert(left.resultRegister.reference == right.resultRegister.reference)
 
-  override def resultRegister = ReferenceRegister2(Coord(Share, Bool2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Bool2()))
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ left.all(func) ++ right.all(func)
   }
 }
 
 case class VoidLiteral2() extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
@@ -379,7 +402,7 @@ case class VoidLiteral2() extends ReferenceExpression2 {
 }
 
 case class IntLiteral2(value: Int) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Int2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Int2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
@@ -387,7 +410,7 @@ case class IntLiteral2(value: Int) extends ReferenceExpression2 {
 }
 
 case class BoolLiteral2(value: Boolean) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Bool2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Bool2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
@@ -395,7 +418,7 @@ case class BoolLiteral2(value: Boolean) extends ReferenceExpression2 {
 }
 
 case class StrLiteral2(value: String) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Str2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Str2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
@@ -403,7 +426,7 @@ case class StrLiteral2(value: String) extends ReferenceExpression2 {
 }
 
 case class FloatLiteral2(value: Float) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Float2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Float2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)
@@ -480,7 +503,7 @@ case class UnknownSizeArrayLookup2(
 }
 
 case class ArrayLength2(arrayExpr: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Int2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Int2()))
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayExpr.all(func)
   }
@@ -490,12 +513,24 @@ case class ReferenceMemberLookup2(
     range: RangeS,
     structExpr: ReferenceExpression2,
     memberName: FullName2[IVarName2],
-    reference: Coord,
+    memberReference: Coord,
+    // See RMLRMO for why we dont have a targetOwnership field here.
+    // See RMLHTP why we can have this here.
+    targetPermission: Permission,
     variability: Variability) extends AddressExpression2 {
-  override def resultRegister = AddressRegister2(reference)
+  override def resultRegister = {
+    if (structExpr.resultRegister.reference.permission == Readonly) {
+      vassert(targetPermission == Readonly)
+    }
+    if (targetPermission == Readwrite) {
+      vassert(structExpr.resultRegister.reference.permission == Readwrite)
+    }
+    // See RMLRMO why we just return the member type.
+    AddressRegister2(memberReference.copy(permission = targetPermission))
+  }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ structExpr.all(func) ++ reference.all(func)
+    List(this).collect(func) ++ structExpr.all(func) ++ memberName.all(func) ++ memberReference.all(func)
   }
 }
 case class AddressMemberLookup2(
@@ -626,7 +661,7 @@ case class ConstructArray2(
     generatorMethod: Prototype2
 ) extends ReferenceExpression2 {
   generator.referend match {
-    case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(_, CoordTemplata(Coord(Share, Int2())), _)))) =>
+    case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(_, CoordTemplata(Coord(Share, Readonly, Int2())), _)))) =>
     case _ => vfail("Generator has to be an IFunction1<_, Int, T>")
   }
 
@@ -634,6 +669,7 @@ case class ConstructArray2(
     ReferenceRegister2(
       Coord(
         if (arrayType.array.mutability == Mutable) Own else Share,
+        if (arrayType.array.mutability == Mutable) Readwrite else Readonly,
         arrayType))
   }
 
@@ -651,7 +687,7 @@ case class DestroyArraySequenceIntoFunction2(
     arrayType: KnownSizeArrayT2,
     consumer: ReferenceExpression2,
     consumerMethod: Prototype2) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
@@ -666,7 +702,7 @@ case class DestroyArraySequenceIntoLocals2(
   arraySeq: KnownSizeArrayT2,
   destinationReferenceVariables: List[ReferenceLocalVariable2]
 ) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   vassert(expr.referend == arraySeq)
   if (expr.resultRegister.reference.ownership == Borrow) {
@@ -684,7 +720,7 @@ case class DestroyUnknownSizeArray2(
     consumer: ReferenceExpression2,
     consumerMethod: Prototype2
 ) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ arrayExpr.all(func) ++ consumer.all(func)
@@ -698,6 +734,7 @@ case class InterfaceToInterfaceUpcast2(
     ReferenceRegister2(
       Coord(
         innerExpr.resultRegister.reference.ownership,
+        innerExpr.resultRegister.reference.permission,
         targetInterfaceRef))
   }
 
@@ -711,6 +748,7 @@ case class StructToInterfaceUpcast2(innerExpr: ReferenceExpression2, targetInter
     ReferenceRegister2(
       Coord(
         innerExpr.resultRegister.reference.ownership,
+        innerExpr.resultRegister.reference.permission,
         targetInterfaceRef))
   }
 
@@ -724,13 +762,24 @@ case class StructToInterfaceUpcast2(innerExpr: ReferenceExpression2, targetInter
 
 // If the source was an own and target is borrow, that's a lend
 
-case class SoftLoad2(expr: AddressExpression2, targetOwnership: Ownership) extends ReferenceExpression2 {
+case class SoftLoad2(
+    expr: AddressExpression2, targetOwnership: Ownership, targetPermission: Permission) extends ReferenceExpression2 {
 
   vassert((targetOwnership == Share) == (expr.resultRegister.reference.ownership == Share))
   vassert(targetOwnership != Own) // need to unstackify or destroy to get an owning reference
+  // This is just here to try the asserts inside Coord's constructor
+  Coord(targetOwnership, targetPermission, expr.resultRegister.reference.referend)
+
+  (expr.resultRegister.reference.permission, targetPermission) match {
+    case (Readonly, Readonly) =>
+    case (Readwrite, Readonly) =>
+    case (Readwrite, Readwrite) =>
+    case (Readonly, Readwrite) =>
+    case _ => vwat()
+  }
 
   override def resultRegister: ReferenceRegister2 = {
-    ReferenceRegister2(Coord(targetOwnership, expr.resultRegister.reference.referend))
+    ReferenceRegister2(Coord(targetOwnership, targetPermission, expr.resultRegister.reference.referend))
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -748,7 +797,7 @@ case class Destroy2(
     structRef2: StructRef2,
     destinationReferenceVariables: List[ReferenceLocalVariable2]
 ) extends ReferenceExpression2 {
-  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   if (expr.resultRegister.reference.ownership == Borrow) {
     vfail("wot")
@@ -777,7 +826,7 @@ case class CheckRefCount2(
     refExpr: ReferenceExpression2,
     category: types.RefCountCategory,
     numExpr: ReferenceExpression2) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceRegister2(Coord(Share, Void2()))
+  override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ refExpr.all(func) ++ numExpr.all(func)

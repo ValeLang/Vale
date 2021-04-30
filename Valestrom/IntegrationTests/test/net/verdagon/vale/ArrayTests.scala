@@ -79,7 +79,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn main() int export {
-        |  a = Array<imm, int>(10, &IFunction1<imm, int, int>({_}));
+        |  a = Array<imm, int>(10, &!IFunction1<imm, int, int>({_}));
         |  = a.3;
         |}
       """.stripMargin)
@@ -87,7 +87,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("Array")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Int2()), Immutable)), _, _, _) =>
+      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable)), _, _, _) =>
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
@@ -98,7 +98,7 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 7;
-        |  a = Array<imm, int>(10, &IFunction1<imm, int, int>({_ + x}));
+        |  a = Array<imm, int>(10, &!IFunction1<imm, int, int>({_ + x}));
         |  = a.3;
         |}
       """.stripMargin)
@@ -120,7 +120,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn main() int export {
-        |  a = Array<imm, int>(10, &IFunction1<imm, int, int>({_}));
+        |  a = Array<imm, int>(10, &!IFunction1<imm, int, int>({_}));
         |  i = 5;
         |  = a[i];
         |}
@@ -160,10 +160,10 @@ class ArrayTests extends FunSuite with Matchers {
         |  board =
         |      Array<mut, Array<mut, int>>(
         |          3,
-        |          &IFunction1<imm, int, Array<mut, int>>((row){
+        |          &!IFunction1<imm, int, Array<mut, int>>((row){
         |              Array<mut, int>(
         |                  3,
-        |                  &IFunction1<imm, int, int>((col){ row + col}))}));
+        |                  &!IFunction1<imm, int, int>((col){ row + col}))}));
         |  = board.1.2;
         |}
       """.stripMargin)
@@ -183,7 +183,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  board =
         |      Array<mut>(
         |          3,
-        |          &IFunction1<mut, int, int>(
+        |          &!IFunction1<mut, int, int>(
         |              (col){ box.i }));
         |  = board.1;
         |}
@@ -222,7 +222,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn main() int export {
-        |  arr = Array<mut, int>(3, &IFunction1<imm, int, int>((row){row}));
+        |  arr = Array<mut, int>(3, &!IFunction1<imm, int, int>((row){row}));
         |  mut arr[1] = 1337;
         |  = arr.1;
         |}
@@ -248,10 +248,10 @@ class ArrayTests extends FunSuite with Matchers {
       """
         |struct MyIntIdentity {}
         |impl IFunction1<mut, int, int> for MyIntIdentity;
-        |fn __call(this &MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
+        |fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
         |fn main() {
         |  m = MyIntIdentity();
-        |  arr = Array<mut, int>(10, &m);
+        |  arr = Array<mut, int>(10, &!m);
         |  lam = { println(arr.6); };
         |  (lam)();
         |}
@@ -269,10 +269,10 @@ class ArrayTests extends FunSuite with Matchers {
         |
         |struct GoblinMaker {}
         |impl IFunction1<mut, int, Goblin> for GoblinMaker;
-        |fn __call(this &GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
+        |fn __call(this &!GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { Goblin() }
         |fn main() int export {
         |  m = GoblinMaker();
-        |  arr = Array<mut, Goblin>(1, &m);
+        |  arr = Array<mut, Goblin>(1, &!m);
         |  mut arr.0 = Goblin();
         |  = 4;
         |}
@@ -287,7 +287,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       """
         |fn main() int export {
-        |  a = Array<mut, int>(11, &IFunction1<imm, int, int>({_}));
+        |  a = Array<mut, int>(11, &!IFunction1<imm, int, int>({_}));
         |  = len(&a);
         |}
       """.stripMargin)
@@ -300,7 +300,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  board = Array<mut, int>(5, IFunction1<imm, int, int>((x){x}));
         |  result =
-        |      Array<mut, int>(5, &IFunction1<mut, int, int>((i){
+        |      Array<mut, int>(5, &!IFunction1<mut, int, int>((i){
         |        board[i] + 2
         |      }));
         |  = result.2;
@@ -339,7 +339,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       """fn toArray<M, N, E>(seq &[<_> N * E]) Array<M, E>
         |rules(M Mutability) {
-        |  Array<M, E>(N, &IFunction1<imm, int, int>((i){ seq[i]}))
+        |  Array<M, E>(N, &!IFunction1<imm, int, int>((i){ seq[i]}))
         |}
         |fn main() int export {
         |  [6, 4, 3, 5, 2, 8].toArray<mut>()[3]
@@ -363,8 +363,8 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       Samples.get("libraries/arrayutils.vale") +
       """fn main() int export {
-        |  sum = 0;
-        |  [6, 60, 103].each(&IFunction1<mut, int, void>({ mut sum = sum + _; }));
+        |  sum! = 0;
+        |  [6, 60, 103].each(&!IFunction1<mut, int, void>({ mut sum = sum + _; }));
         |  = sum;
         |}
         |""".stripMargin)
@@ -400,10 +400,10 @@ class ArrayTests extends FunSuite with Matchers {
 //      Samples.get("generics/arrayutils.vale") +
 //        """
 //          |fn main() int export {
-//          |  list = Array<mut, int>(3, &IFunction1<mut, int, int>({_}));
+//          |  list = Array<mut, int>(3, &!IFunction1<mut, int, int>({_}));
 //          |  n = 7;
 //          |  newArray =
-//          |      Array<mut, int>(3, &IFunction1<mut, int, int>((index){
+//          |      Array<mut, int>(3, &!IFunction1<mut, int, int>((index){
 //          |        = if (index == 1) {
 //          |            = n;
 //          |          } else {

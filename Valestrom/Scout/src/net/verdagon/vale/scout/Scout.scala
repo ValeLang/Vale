@@ -150,14 +150,14 @@ object Scout {
         KindTypePR)
 
     interface match {
-      case OwnershippedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipInterfaceInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
     }
 
     struct match {
-      case OwnershippedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipStructInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
@@ -378,8 +378,8 @@ object Scout {
     templex match {
       case NullablePT(_, inner) => getHumanName(inner)
       case InlinePT(_, inner) => getHumanName(inner)
-      case PermissionedPT(_, permission, inner) => getHumanName(inner)
-      case OwnershippedPT(_, ownership, inner) => getHumanName(inner)
+//      case PermissionedPT(_, permission, inner) => getHumanName(inner)
+      case InterpretedPT(_, ownership, permission, inner) => getHumanName(inner)
       case AnonymousRunePT(_) => vwat()
       case NameOrRunePT(StringP(_, name)) => name
       case CallPT(_, template, args) => getHumanName(template)

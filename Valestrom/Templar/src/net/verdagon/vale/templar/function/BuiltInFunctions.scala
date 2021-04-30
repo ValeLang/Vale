@@ -34,23 +34,24 @@ object BuiltInFunctions {
           ParameterA(AtomAP(RangeS.internal(-1337), LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
         Some(CodeRuneA("I")),
         List(
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("T"), CoordTemplataType)),
+          EqualsAR(RangeS.internal(-9101),
+            TemplexAR(RuneAT(RangeS.internal(-9102),CodeRuneA("T"), CoordTemplataType)),
             ComponentsAR(
-              RangeS.internal(-91),
+              RangeS.internal(-9103),
               CoordTemplataType,
               List(
-                OrAR(RangeS.internal(-91),List(TemplexAR(OwnershipAT(RangeS.internal(-91),BorrowP)), TemplexAR(OwnershipAT(RangeS.internal(-91),ShareP)))),
+                OrAR(RangeS.internal(-9104),List(TemplexAR(OwnershipAT(RangeS.internal(-9105),BorrowP)), TemplexAR(OwnershipAT(RangeS.internal(-9106),ShareP)))),
+                TemplexAR(PermissionAT(RangeS.internal(-9107), ReadonlyP)),
                 TemplexAR(
-                  CallAT(RangeS.internal(-91),
-                    NameAT(RangeS.internal(-91),CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
+                  CallAT(RangeS.internal(-9108),
+                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
                     List(
-                      RuneAT(RangeS.internal(-91),CodeRuneA("XX"), MutabilityTemplataType),
-                      RuneAT(RangeS.internal(-91),CodeRuneA("__1"), CoordTemplataType)),
+                      RuneAT(RangeS.internal(-9110),CodeRuneA("XX"), MutabilityTemplataType),
+                      RuneAT(RangeS.internal(-9111),CodeRuneA("__1"), CoordTemplataType)),
                     KindTemplataType))))),
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("I"), CoordTemplataType)),
-            TemplexAR(NameAT(RangeS.internal(-91),CodeTypeNameA("int"), CoordTemplataType)))),
+          EqualsAR(RangeS.internal(-9112),
+            TemplexAR(RuneAT(RangeS.internal(-9113),CodeRuneA("I"), CoordTemplataType)),
+            TemplexAR(NameAT(RangeS.internal(-9114),CodeTypeNameA("int"), CoordTemplataType)))),
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
@@ -79,22 +80,23 @@ object BuiltInFunctions {
           ParameterA(AtomAP(RangeS.internal(-1338), LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("A"), None))),
         Some(CodeRuneA("I")),
         List(
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("A"), CoordTemplataType)),
+          EqualsAR(RangeS.internal(-9115),
+            TemplexAR(RuneAT(RangeS.internal(-9116),CodeRuneA("A"), CoordTemplataType)),
             ComponentsAR(
               RangeS.internal(-92),
               CoordTemplataType,
               List(
-                TemplexAR(OwnershipAT(RangeS.internal(-91),BorrowP)),
+                TemplexAR(OwnershipAT(RangeS.internal(-9117),BorrowP)),
+                TemplexAR(PermissionAT(RangeS.internal(-9117),ReadonlyP)),
                 TemplexAR(
-                  RepeaterSequenceAT(RangeS.internal(-91),
-                    RuneAT(RangeS.internal(-91),CodeRuneA("M"), MutabilityTemplataType),
-                    RuneAT(RangeS.internal(-91),CodeRuneA("N"), IntegerTemplataType),
-                    RuneAT(RangeS.internal(-91),CodeRuneA("T"), CoordTemplataType),
+                  RepeaterSequenceAT(RangeS.internal(-9118),
+                    RuneAT(RangeS.internal(-9119),CodeRuneA("M"), MutabilityTemplataType),
+                    RuneAT(RangeS.internal(-9120),CodeRuneA("N"), IntegerTemplataType),
+                    RuneAT(RangeS.internal(-9121),CodeRuneA("T"), CoordTemplataType),
                     KindTemplataType))))),
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("I"), CoordTemplataType)),
-            TemplexAR(NameAT(RangeS.internal(-91),CodeTypeNameA("int"), CoordTemplataType)))),
+          EqualsAR(RangeS.internal(-9122),
+            TemplexAR(RuneAT(RangeS.internal(-9123),CodeRuneA("I"), CoordTemplataType)),
+            TemplexAR(NameAT(RangeS.internal(-9124),CodeTypeNameA("int"), CoordTemplataType)))),
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
@@ -115,9 +117,9 @@ object BuiltInFunctions {
         List(),
         Some(CodeRuneA("N")),
         List(
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("N"), CoordTemplataType)),
-            TemplexAR(NameAT(RangeS.internal(-91),CodeTypeNameA("__Never"), CoordTemplataType)))),
+          EqualsAR(RangeS.internal(-9125),
+            TemplexAR(RuneAT(RangeS.internal(-9126),CodeRuneA("N"), CoordTemplataType)),
+            TemplexAR(NameAT(RangeS.internal(-9127),CodeTypeNameA("__Never"), CoordTemplataType)))),
         ExternBodyA),
       FunctionA(
         RangeS.internal(-63),
@@ -131,17 +133,17 @@ object BuiltInFunctions {
         List(ParameterA(AtomAP(RangeS.internal(-1350), LocalVariableA(CodeVarNameA("weakRef"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("WeakRune"), None))),
         Some(CodeRuneA("OptBorrowRune")),
         List(
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("OptBorrowRune"), CoordTemplataType)),
+          EqualsAR(RangeS.internal(-9128),
+            TemplexAR(RuneAT(RangeS.internal(-9129),CodeRuneA("OptBorrowRune"), CoordTemplataType)),
             TemplexAR(
-              CallAT(RangeS.internal(-91),
-                NameAT(RangeS.internal(-91),CodeTypeNameA("Opt"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
-                List(OwnershippedAT(RangeS.internal(-91),BorrowP, RuneAT(RangeS.internal(-91),CodeRuneA("OwningRune"), CoordTemplataType))),
+              CallAT(RangeS.internal(-9130),
+                NameAT(RangeS.internal(-9131),CodeTypeNameA("Opt"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
+                List(InterpretedAT(RangeS.internal(-9132),BorrowP,ReadonlyP, RuneAT(RangeS.internal(-9133),CodeRuneA("OwningRune"), CoordTemplataType))),
                 CoordTemplataType))),
-          EqualsAR(RangeS.internal(-91),
-            TemplexAR(RuneAT(RangeS.internal(-91),CodeRuneA("WeakRune"), CoordTemplataType)),
+          EqualsAR(RangeS.internal(-9134),
+            TemplexAR(RuneAT(RangeS.internal(-9135),CodeRuneA("WeakRune"), CoordTemplataType)),
             TemplexAR(
-              OwnershippedAT(RangeS.internal(-91),WeakP, RuneAT(RangeS.internal(-91),CodeRuneA("OwningRune"), CoordTemplataType))))),
+              InterpretedAT(RangeS.internal(-9136),WeakP,ReadonlyP, RuneAT(RangeS.internal(-9137),CodeRuneA("OwningRune"), CoordTemplataType))))),
         CodeBodyA(
           BodyAE(
             RangeS.internal(-62),
@@ -149,5 +151,5 @@ object BuiltInFunctions {
             BlockAE(
               RangeS.internal(-62),
               List(
-                LockWeakAE(RangeS.internal(-91), LocalLoadAE(RangeS.internal(-62),CodeVarNameA("weakRef"), LendWeakP))))))))
+                LockWeakAE(RangeS.internal(-9138), LocalLoadAE(RangeS.internal(-62),CodeVarNameA("weakRef"), LendWeakP(ReadonlyP)))))))))
 }

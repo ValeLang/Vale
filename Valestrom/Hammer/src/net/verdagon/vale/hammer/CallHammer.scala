@@ -214,7 +214,7 @@ object CallHammer {
 
     val (conditionBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
-    vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH,BoolH()))
+    vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH, ReadonlyH, BoolH()))
 
     val thenLocals = LocalsBox(parentLocals.snapshot)
     val (thenBlockH, List()) =
@@ -301,7 +301,7 @@ object CallHammer {
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
 
     val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val Coord(_, interfaceRef2 @ InterfaceRef2(_)) =
+    val Coord(_, _, interfaceRef2 @ InterfaceRef2(_)) =
       superFunctionHeader.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
       StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceRef2)

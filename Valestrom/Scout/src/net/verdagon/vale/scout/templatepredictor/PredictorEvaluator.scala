@@ -148,7 +148,7 @@ object PredictorEvaluator {
       case RuneST(_, rune) => {
         conclusions.knowableValueRunes.contains(rune)
       }
-      case OwnershippedST(_, _, kindRule) => evaluateTemplex(conclusions, kindRule)
+      case InterpretedST(_, _, _, kindRule) => evaluateTemplex(conclusions, kindRule)
       case CallST(_, templateRule, paramRules) => {
         val templateKnown = evaluateTemplex(conclusions, templateRule)
         val argsKnown = evaluateTemplexes(conclusions, paramRules)

@@ -8,5 +8,6 @@ fn spaceshipGetA(s &Spaceship) int export { s.a }
 fn spaceshipGetB(s &Spaceship) int export { s.b }
 
 fn main() int export {
-  sumSpaceshipFields(&Spaceship(37, 5))
+  ship = Spaceship(37, 5);
+  ret sumSpaceshipFields(&ship);
 }

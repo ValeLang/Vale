@@ -26,6 +26,16 @@ If you just want to build and run Vale programs, go to the [download](https://va
 See [the Guide](https://vale.dev/guide/introduction) for how to use Vale.
 
 
+## Vale code examples
+
+A number of working examples grouped by functionality can be found [here](https://github.com/Ivo-Balbaert/Vale_Examples)
+
+
+## Editor plugins
+
+[VSCode plugin](https://marketplace.visualstudio.com/items?itemName=pacifio.vale-lang): Syntax-highlighting and basic autocompletion.
+
+
 # Notes
 
 Vale started in January 2013, and back then we called it "VLang", though there's now another language with that name. We then called it GelLLVM, in honor of Gel, the first language to offer constraint references. Since then, we've settled on the name "Vale". Note that Vale and Vala are two different languages.

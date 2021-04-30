@@ -25,12 +25,14 @@ class SequenceTemplar(
       val mutability = StructTemplar.getCompoundTypeMutability(List(memberType))
       val arraySequenceType = arrayTemplar.makeArraySequenceType(env.snapshot, temputs, mutability, types2.size, memberType)
       val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
-      val finalExpr = ArraySequenceE2(exprs2, Coord(ownership, arraySequenceType), arraySequenceType)
+      val permission = if (arraySequenceType.array.mutability == Mutable) Readwrite else Readonly
+      val finalExpr = ArraySequenceE2(exprs2, Coord(ownership, permission, arraySequenceType), arraySequenceType)
       (finalExpr)
     } else {
       val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)
       val ownership = if (mutability == Mutable) Own else Share
-      val finalExpr = TupleE2(exprs2, Coord(ownership, tupleType2), tupleType2)
+      val permission = if (mutability == Mutable) Readwrite else Readonly
+      val finalExpr = TupleE2(exprs2, Coord(ownership, permission, tupleType2), tupleType2)
       (finalExpr)
     }
   }
@@ -51,6 +53,7 @@ class SequenceTemplar(
     val reference =
       Coord(
         if (mutability == Mutable) Own else Share,
+        if (mutability == Mutable) Readwrite else Readonly,
         structRef)
 
     val _ =

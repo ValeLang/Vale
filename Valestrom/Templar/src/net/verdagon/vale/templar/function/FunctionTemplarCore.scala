@@ -270,8 +270,9 @@ class FunctionTemplarCore(
   ):
   (FunctionHeader2) = {
     val ownership = if (structDef2.mutability == Mutable) Own else Share
+    val permission = if (structDef2.mutability == Mutable) Readwrite else Readonly
     val structRef2 = structDef2.getRef
-    val structType2 = Coord(ownership, structRef2)
+    val structType2 = Coord(ownership, permission, structRef2)
 
     val destructor2 =
       Function2(
@@ -279,7 +280,7 @@ class FunctionTemplarCore(
           env.fullName,
           List(),
           List(Parameter2(CodeVarName2("this"), Some(Override2(interfaceRef2)), structType2)),
-          Coord(Share, Void2()),
+          Coord(Share, Readonly, Void2()),
           maybeOriginFunction1),
         List(),
         Block2(

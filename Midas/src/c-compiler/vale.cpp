@@ -1007,9 +1007,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     filepath += exportedName + ".h";
     std::ofstream out(filepath, std::ofstream::out);
     if (!out) {
-//      char err[256] = { 0 };
-//      strerror_s(err, sizeof(err), errno);
-      std::cerr << "Couldn't make file '" << filepath/* << "': " << err*/ << std::endl;
+      std::cerr << "Couldn't make file '" << filepath << std::endl;
       exit(1);
     }
     std::cout << "Writing " << filepath << std::endl;

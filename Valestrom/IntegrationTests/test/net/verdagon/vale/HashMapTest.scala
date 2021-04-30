@@ -20,12 +20,12 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
               |fn main() int export {
-              |  m = HashMap<int, int>({_}, ==);
-              |  m.add(0, 100);
-              |  m.add(4, 101);
-              |  m.add(8, 102);
-              |  m.add(12, 103);
-              |  m.update(8, 108);
+              |  m = HashMap<int, int>(IntHasher(), IntEquator());
+              |  m!.add(0, 100);
+              |  m!.add(4, 101);
+              |  m!.add(8, 102);
+              |  m!.add(12, 103);
+              |  m!.update(8, 108);
               |  = m.get(8).get();
               |}
               |""".stripMargin)))
@@ -45,19 +45,19 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
         |fn main() int export {
-        |  m = HashMap<int, int>({_}, ==);
-        |  m.add(0, 100);
-        |  m.add(4, 101);
-        |  m.add(8, 102);
-        |  m.add(12, 103);
-        |  m.add(16, 104);
-        |  m.add(20, 105);
-        |  m.add(24, 106);
-        |  m.add(28, 107);
-        |  m.add(32, 108);
-        |  m.add(36, 109);
-        |  m.add(40, 110);
-        |  m.add(44, 111);
+        |  m = HashMap<int, int>(IntHasher(), IntEquator());
+        |  m!.add(0, 100);
+        |  m!.add(4, 101);
+        |  m!.add(8, 102);
+        |  m!.add(12, 103);
+        |  m!.add(16, 104);
+        |  m!.add(20, 105);
+        |  m!.add(24, 106);
+        |  m!.add(28, 107);
+        |  m!.add(32, 108);
+        |  m!.add(36, 109);
+        |  m!.add(40, 110);
+        |  m!.add(44, 111);
         |  vassertEq(m.get(0).get(), 100, "val at 0 not 100!");
         |  vassertEq(m.get(4).get(), 101, "val at 1 not 101!");
         |  vassertEq(m.get(8).get(), 102, "val at 2 not 102!");
@@ -89,13 +89,13 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/hashmap.vale" -> Samples.get("libraries/hashmap.vale")),
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
-        |fn add42(map &HashMap<int, int, IntHasher, IntEquator>) {
-        |  map.add(42, 100);
+        |fn add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
+        |  map!.add(42, 100);
         |}
         |
         |fn main() int export {
         |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
-        |  add42(&m);
+        |  add42(&!m);
         |  = m.get(42).get();
         |}
       """.stripMargin)))
@@ -122,7 +122,7 @@ class HashMapTest extends FunSuite with Matchers {
           |
           |struct LocationHasher { }
           |fn __call(this &LocationHasher, loc Location) int {
-          |  hash = 0;
+          |  hash! = 0;
           |  mut hash = 41 * hash + loc.groupX;
           |  mut hash = 41 * hash + loc.groupY;
           |  mut hash = 41 * hash + loc.indexInGroup;
@@ -136,7 +136,7 @@ class HashMapTest extends FunSuite with Matchers {
           |
           |fn main() int export {
           |  m = HashMap<Location, int>(LocationHasher(), LocationEquator());
-          |  m.add(Location(4, 5, 6), 100);
+          |  m!.add(Location(4, 5, 6), 100);
           |  = m.get(Location(4, 5, 6)).get();
           |}
         """.stripMargin)))
@@ -156,11 +156,11 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0, 100);
-          |  m.add(4, 101);
-          |  m.add(8, 102);
-          |  m.add(12, 103);
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 100);
+          |  m!.add(4, 101);
+          |  m!.add(8, 102);
+          |  m!.add(12, 103);
           |  vassert(m.has(0));
           |  vassert(not(m.has(1)));
           |  vassert(not(m.has(2)));
@@ -187,11 +187,11 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0, 100);
-          |  m.add(4, 101);
-          |  m.add(8, 102);
-          |  m.add(12, 103);
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 100);
+          |  m!.add(4, 101);
+          |  m!.add(8, 102);
+          |  m!.add(12, 103);
           |  k = m.keys();
           |  vassertEq(k.len(), 4);
           |  vassertEq(k[0], 0);
@@ -217,11 +217,11 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0, 100);
-          |  m.add(4, 101);
-          |  m.add(8, 102);
-          |  m.add(12, 103);
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 100);
+          |  m!.add(4, 101);
+          |  m!.add(8, 102);
+          |  m!.add(12, 103);
           |  k = m.values();
           |  vassertEq(k.len(), 4);
           |  vassertEq(k[0], 100);
@@ -249,16 +249,16 @@ class HashMapTest extends FunSuite with Matchers {
           |struct Plane {}
           |
           |fn main() int export {
-          |  m = HashMap<int, Plane>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0, Plane());
-          |  m.add(4, Plane());
-          |  m.add(8, Plane());
-          |  m.add(12, Plane());
+          |  m = HashMap<int, Plane>(IntHasher(), IntEquator());
+          |  m!.add(0, Plane());
+          |  m!.add(4, Plane());
+          |  m!.add(8, Plane());
+          |  m!.add(12, Plane());
           |  vassert(m.has(0));
           |  vassert(m.has(4));
           |  vassert(m.has(8));
           |  vassert(m.has(12));
-          |  m.remove(12);
+          |  m!.remove(12);
           |  vassert(not m.has(12));
           |  = 1337;
           |}
@@ -279,18 +279,18 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0, 100);
-          |  m.add(4, 101);
-          |  m.add(8, 102);
-          |  m.add(12, 103);
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 100);
+          |  m!.add(4, 101);
+          |  m!.add(8, 102);
+          |  m!.add(12, 103);
           |  vassert(m.has(8));
-          |  m.remove(8);
+          |  m!.remove(8);
           |  vassert(not m.has(8));
-          |  m.add(8, 102);
+          |  m!.add(8, 102);
           |  vassert(m.has(8));
           |  vassert(m.has(4));
-          |  m.remove(4);
+          |  m!.remove(4);
           |  vassert(not m.has(4));
           |  = 1337;
           |}
@@ -311,14 +311,14 @@ class HashMapTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashMap<int, int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0, 0);
-          |  m.add(1, 1);
-          |  m.add(2, 2);
-          |  m.add(3, 3);
-          |  m.remove(1);
-          |  m.remove(2);
-          |  m.add(4, 4);
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 0);
+          |  m!.add(1, 1);
+          |  m!.add(2, 2);
+          |  m!.add(3, 3);
+          |  m!.remove(1);
+          |  m!.remove(2);
+          |  m!.add(4, 4);
           |
           |  values = m.values();
           |  vassertEq(values.len(), 3, "wat");

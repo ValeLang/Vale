@@ -724,4 +724,13 @@ object Templar {
       }
     }
   }
+
+  def intersectPermission(a: Permission, b: Permission): Permission = {
+    (a, b) match {
+      case (Readonly, Readonly) => Readonly
+      case (Readonly, Readwrite) => Readonly
+      case (Readwrite, Readonly) => Readonly
+      case (Readwrite, Readwrite) => Readwrite
+    }
+  }
 }

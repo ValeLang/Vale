@@ -4,7 +4,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl, vwat, metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{Export2, Extern2, FunctionHeader2, IFunctionAttribute2, Prototype2, UserFunction2}
+import net.verdagon.vale.templar.templata.{Export2, Extern2, FunctionHeader2, IFunctionAttribute2, Prototype2, Pure2, UserFunction2}
 
 object FunctionHammer {
 
@@ -76,6 +76,7 @@ object FunctionHammer {
   def translateFunctionAttributes(attributes: List[IFunctionAttribute2]) = {
     attributes.map({
       case UserFunction2 => UserFunctionH
+      case Pure2 => PureH
       case Extern2 => vwat() // Should have been filtered out, hammer cares about extern directly
       case Export2 => vwat() // Should have been filtered out, hammer cares about export directly
       case x => vimpl(x.toString)

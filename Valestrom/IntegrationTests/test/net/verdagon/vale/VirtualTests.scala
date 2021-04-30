@@ -22,7 +22,7 @@ class VirtualTests extends FunSuite with Matchers {
       val temputs = compile.getTemputs()
 
       vassert(temputs.getAllUserFunctions.size == 2)
-      vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Int2()))
+      vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
 
       val doThing =
         vassertSome(
@@ -36,6 +36,7 @@ class VirtualTests extends FunSuite with Matchers {
                   List(
                     Coord(
                       Own,
+                      Readwrite,
                       InterfaceRef2(
                         FullName2(List(), CitizenName2("I", List()))))))))))
       vassert(doThing.header.params(0).virtuality.get == Abstract2)
@@ -53,7 +54,7 @@ class VirtualTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 2)
-    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Int2()))
+    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
 
 
     val doThing =
@@ -68,6 +69,7 @@ class VirtualTests extends FunSuite with Matchers {
                 List(
                   Coord(
                     Own,
+                    Readwrite,
                     InterfaceRef2(
                       FullName2(List(), CitizenName2("I", List()))))))))))
     vassert(doThing.header.params(0).virtuality.get == Abstract2)
@@ -86,14 +88,14 @@ class VirtualTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 1)
-    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Int2()))
+    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
 
 
     val doThing =
       vassertSome(
         temputs.lookupFunction(
           Signature2(
-            FullName2(List(CitizenName2("I",List())),FunctionName2("doThing",List(),List(Coord(Own,InterfaceRef2(FullName2(List(),CitizenName2("I",List()))))))))))
+            FullName2(List(CitizenName2("I",List())),FunctionName2("doThing",List(),List(Coord(Own,Readwrite,InterfaceRef2(FullName2(List(),CitizenName2("I",List()))))))))))
     vassert(doThing.header.params(0).virtuality.get == Abstract2)
   }
 

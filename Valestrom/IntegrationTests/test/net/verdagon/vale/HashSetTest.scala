@@ -19,7 +19,7 @@ class HashSetTest extends FunSuite with Matchers {
         ("in.vale" ->
           """
             |fn main() int export {
-            |  m = HashSet<int>([0, 4, 8, 12], IFunction1<mut, int, int>({_}), ==);
+            |  m = HashSet<int>([0, 4, 8, 12], IntHasher(), IntEquator());
             |  vassert(m.has(0));
             |  vassert(m.has(4));
             |  vassert(m.has(8));
@@ -45,7 +45,7 @@ class HashSetTest extends FunSuite with Matchers {
         ("in.vale" ->
           """
             |fn main() int export {
-            |  m = HashSet<int>([0, 4, 8, 12].toArray<imm>(), IFunction1<mut, int, int>({_}), ==);
+            |  m = HashSet<int>([0, 4, 8, 12].toArray<imm>(), IntHasher(), IntEquator());
             |  vassert(m.has(0));
             |  vassert(m.has(4));
             |  vassert(m.has(8));
@@ -70,11 +70,11 @@ class HashSetTest extends FunSuite with Matchers {
       ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
       ("in.vale" -> """
           |fn main() int export {
-          |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0);
-          |  m.add(4);
-          |  m.add(8);
-          |  m.add(12);
+          |  m = HashSet<int>(IntHasher(), IntEquator());
+          |  m!.add(0);
+          |  m!.add(4);
+          |  m!.add(8);
+          |  m!.add(12);
           |  vassert(m.has(0));
           |  vassert(not(m.has(1)));
           |  vassert(not(m.has(2)));
@@ -102,11 +102,11 @@ class HashSetTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0);
-          |  m.add(4);
-          |  m.add(8);
-          |  m.add(12);
+          |  m = HashSet<int>(IntHasher(), IntEquator());
+          |  m!.add(0);
+          |  m!.add(4);
+          |  m!.add(8);
+          |  m!.add(12);
           |  k = m.toArray();
           |  vassertEq(k.len(), 4);
           |  vassertEq(k[0], 0);
@@ -133,18 +133,18 @@ class HashSetTest extends FunSuite with Matchers {
         ("libraries/utils.vale" -> Samples.get("libraries/utils.vale")),
         ("in.vale" -> """
           |fn main() int export {
-          |  m = HashSet<int>(IFunction1<mut, int, int>({_}), ==);
-          |  m.add(0);
-          |  m.add(4);
-          |  m.add(8);
-          |  m.add(12);
+          |  m = HashSet<int>(IntHasher(), IntEquator());
+          |  m!.add(0);
+          |  m!.add(4);
+          |  m!.add(8);
+          |  m!.add(12);
           |  vassert(m.has(8));
-          |  m.remove(8);
+          |  m!.remove(8);
           |  vassert(not m.has(8));
-          |  m.add(8);
+          |  m!.add(8);
           |  vassert(m.has(8));
           |  vassert(m.has(4));
-          |  m.remove(4);
+          |  m!.remove(4);
           |  vassert(not m.has(4));
           |  = 1337;
           |}

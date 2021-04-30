@@ -111,7 +111,7 @@ case class FunctionBanner2(
   def getAbstractInterface: Option[InterfaceRef2] = {
     val abstractInterfaces =
       params.collect({
-        case Parameter2(_, Some(Abstract2), Coord(_, ir @ InterfaceRef2(_))) => ir
+        case Parameter2(_, Some(Abstract2), Coord(_, _, ir @ InterfaceRef2(_))) => ir
       })
     vassert(abstractInterfaces.size <= 1)
     abstractInterfaces.headOption
@@ -120,7 +120,7 @@ case class FunctionBanner2(
   def getOverride: Option[(StructRef2, InterfaceRef2)] = {
     val overrides =
       params.collect({
-        case Parameter2(_, Some(Override2(ir)), Coord(_, sr @ StructRef2(_))) => (sr, ir)
+        case Parameter2(_, Some(Override2(ir)), Coord(_, _, sr @ StructRef2(_))) => (sr, ir)
       })
     vassert(overrides.size <= 1)
     overrides.headOption
@@ -154,6 +154,7 @@ sealed trait IFunctionAttribute2
 sealed trait ICitizenAttribute2
 case object Extern2 extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
 case object Export2 extends IFunctionAttribute2 with ICitizenAttribute2
+case object Pure2 extends IFunctionAttribute2 with ICitizenAttribute2
 case object UserFunction2 extends IFunctionAttribute2 // Whether it was written by a human. Mostly for tests right now.
 
 case class FunctionHeader2(

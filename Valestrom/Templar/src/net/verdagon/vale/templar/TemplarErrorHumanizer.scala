@@ -67,6 +67,10 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find anything named `" + name + "`!"
       }
+      case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Parameter `" + name + "` should be readonly, because it's in a pure function."
+      }
       case CouldntFindTypeT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find any type named `" + name + "`!"

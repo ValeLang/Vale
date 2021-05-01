@@ -6,7 +6,7 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.{Astronomer, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
+import net.verdagon.vale.astronomer.{Astronomer, CodeVarNameA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
 import org.scalatest.{FunSuite, Matchers, _}
@@ -853,6 +853,18 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemplarError() match {
       case CouldntFindIdentifierToLoadT(_, "moo") =>
+    }
+  }
+
+  test("Reports when RW param in pure func") {
+    val compile = TemplarCompilation(
+      """struct Spaceship { }
+        |fn main(ship &!Spaceship) int pure {
+        |  7
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case NonReadonlyReferenceFoundInPureFunctionParameter(_, CodeVarName2("ship")) =>
     }
   }
 

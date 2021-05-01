@@ -395,6 +395,20 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForStdout(Vector()) shouldEqual "VenusEarthMars"
   }
 
+  test("Change mutability") {
+    val compile = Compilation.multiple(List(
+      Samples.get("libraries/arrayutils.vale"),
+      """
+        |fn main() str export {
+        |  a = Array<imm, str>(10, &!IFunction1<imm, int, str>({ str(_) }));
+        |  b = a.toArray<imm>();
+        |  = a.3;
+        |}
+      """.stripMargin))
+
+    compile.evalForReferend(Vector()) shouldEqual VonStr("3")
+  }
+
 //  test("Destroy lambda with mutable captures") {
 //    val compile = Compilation(
 //      Samples.get("generics/arrayutils.vale") +

@@ -303,6 +303,9 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["sourceType"]),
         readReferend(cache, expression["sourceReferend"]),
         readReference(cache, expression["resultType"]));
+  } else if (type == "NarrowPermission") {
+    return new NarrowPermission(
+        readExpression(cache, expression["sourceExpr"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),

@@ -852,7 +852,7 @@ class ExpressionTemplar(
               List(),
               true) match {
               case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => {
-                vimpl(seff.toString)
+                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find a __call to construct an array!\n" + seff.toString))
               }
               case ScoutExpectedFunctionSuccess(prototype) => prototype
             }

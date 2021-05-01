@@ -15,6 +15,7 @@ case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunction
   vpass()
 }
 case class CannotSubscriptT(range: RangeS, tyype: Kind) extends ICompileErrorT
+case class NonReadonlyReferenceFoundInPureFunctionParameter(range: RangeS, paramName: IVarName2) extends ICompileErrorT
 case class CouldntFindIdentifierToLoadT(range: RangeS, name: String) extends ICompileErrorT
 case class CouldntFindMemberT(range: RangeS, memberName: String) extends ICompileErrorT
 case class BodyResultDoesntMatch(range: RangeS, functionName: IFunctionDeclarationNameA, expectedReturnType: Coord, resultType: Coord) extends ICompileErrorT

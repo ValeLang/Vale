@@ -19,6 +19,10 @@ object TemplarErrorHumanizer {
       case RangedInternalErrorT(range, message) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) + " " + message
       }
+      case CantUseReadonlyReferenceAsReadwrite(range) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Can't make readonly reference into a readwrite one!"
+      }
       case CantMoveOutOfMemberT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
@@ -145,7 +149,7 @@ object TemplarErrorHumanizer {
     banner: FunctionBanner2):
   String = {
     banner.originFunction match {
-      case None => vimpl()
+      case None => "(internal)"
       case Some(x) => printableName(filenamesAndSources, x.name)
     }
   }

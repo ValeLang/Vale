@@ -237,6 +237,15 @@ public:
     memberName(memberName_) {}
 };
 
+class NarrowPermission : public Expression {
+public:
+  Expression* sourceExpr;
+
+  NarrowPermission(
+      Expression* sourceExpr_) :
+      sourceExpr(sourceExpr_) {}
+};
+
 
 class MemberLoad : public Expression {
 public:

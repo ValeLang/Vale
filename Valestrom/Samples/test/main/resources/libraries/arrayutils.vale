@@ -82,3 +82,9 @@ rules(A Ref(_, _, Array<_, _>)) {
     mut i = i + 1;
   }
 }
+
+fn toArray<M, T>(source &Array<_, T>) Array<M, &T> {
+  Array<M, &T>(
+    source.len(),
+    &!IFunction1<mut, int, T>((i){ source[i] }))
+}

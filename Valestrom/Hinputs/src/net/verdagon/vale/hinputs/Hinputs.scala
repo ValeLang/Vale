@@ -20,7 +20,10 @@ case class Hinputs(
   edges: List[Edge2]) {
 
   def lookupStruct(structRef: StructRef2): StructDefinition2 = {
-    structs.find(_.getRef == structRef).get
+    structs.find(_.getRef == structRef) match {
+      case None => vfail("Couldn't find struct: " + structRef)
+      case Some(s) => s
+    }
   }
   def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2 = {
     interfaces.find(_.getRef == interfaceRef).get

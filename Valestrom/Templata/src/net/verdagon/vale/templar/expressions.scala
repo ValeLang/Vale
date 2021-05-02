@@ -660,11 +660,6 @@ case class ConstructArray2(
     generator: ReferenceExpression2,
     generatorMethod: Prototype2
 ) extends ReferenceExpression2 {
-  generator.referend match {
-    case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(_, CoordTemplata(Coord(Share, Readonly, Int2())), _)))) =>
-    case _ => vfail("Generator has to be an IFunction1<_, Int, T>")
-  }
-
   override def resultRegister: ReferenceRegister2 = {
     ReferenceRegister2(
       Coord(

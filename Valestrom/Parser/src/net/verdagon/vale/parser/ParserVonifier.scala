@@ -610,7 +610,7 @@ object ParserVonifier {
     thing match {
       case ReadonlyP => VonObject("Readonly", None, Vector())
       case ReadonlyP => VonObject("Readwrite", None, Vector())
-      case ExclusiveNormalP => VonObject("ExclusiveReadwrite", None, Vector())
+      case ExclusiveReadwriteP => VonObject("ExclusiveReadwrite", None, Vector())
     }
   }
 

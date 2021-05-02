@@ -713,7 +713,7 @@ object ExpressionVivem {
         }
         NodeContinue(makeVoid(programH, heap, callId))
       }
-      case cac @ ConstructUnknownSizeArrayH(sizeExpr, generatorInterfaceExpr, generatorMethod, _, arrayRefType) => {
+      case cac @ ConstructUnknownSizeArrayH(sizeExpr, generatorExpr, generatorPrototype, _, arrayRefType) => {
         val sizeReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sizeExpr) match {
             case r @ NodeReturn(_) => return r
@@ -726,11 +726,13 @@ object ExpressionVivem {
           heap.addUninitializedArray(usaDef, arrayRefType, size)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
-        val generatorInterfaceRef =
-          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), generatorInterfaceExpr) match {
+        val generatorReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), generatorExpr) match {
             case r @ NodeReturn(_) => return r
             case NodeContinue(r) => r
           }
+
+        val generatorFunction = vassertSome(programH.functions.find(_.prototype == generatorPrototype))
 
         (0 until size).foreach(i => {
           heap.vivemDout.println()
@@ -738,32 +740,30 @@ object ExpressionVivem {
 
           val indexReference = heap.allocateTransient(ShareH, InlineH, ReadonlyH, IntV(i))
 
-          val generatorInterfaceDefH =
-            programH.interfaces.find(_.getRef == generatorInterfaceExpr.resultType.kind).get
 
-          // We're assuming here that theres only 1 method in the interface.
-          val indexInEdge = generatorInterfaceDefH.methods.indexWhere(_.prototypeH == generatorMethod)
-          vassert(indexInEdge >= 0)
-          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
-          // We're assuming that it takes self then the index int as arguments.
-          val virtualParamIndex = 0
+//          val generatorInterfaceDefH =
+//            programH.interfaces.find(_.getRef == generatorExpr.resultType.kind).get
+//
+//          // We're assuming here that theres only 1 method in the interface.
+//          val indexInEdge = generatorInterfaceDefH.methods.indexWhere(_.prototypeH == generatorMethod)
+//          vassert(indexInEdge >= 0)
+//          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
+//          // We're assuming that it takes self then the index int as arguments.
+//          val virtualParamIndex = 0
 
           heap.vivemDout.println()
 
           heap.vivemDout.println()
           heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (icall)")
 
-          val (functionH, (calleeCallId, retuurn)) =
-            executeInterfaceFunction(
+          val (calleeCallId, retuurn) =
+            FunctionVivem.executeFunction(
               programH,
               stdin,
               stdout,
               heap,
-              List(generatorInterfaceRef, indexReference),
-              virtualParamIndex,
-              generatorInterfaceExpr.resultType.kind,
-              indexInEdge,
-              generatorMethod)
+              Vector(generatorReference, indexReference),
+              generatorFunction)
 
           heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
 
@@ -772,10 +772,10 @@ object ExpressionVivem {
           // No need to increment or decrement, we're conceptually moving the return value
           // from the return slot to the array slot
           heap.initializeArrayElement(arrayReference, i, returnRef)
-          discard(programH, heap, stdout, stdin, callId, functionH.prototype.returnType, returnRef)
+          discard(programH, heap, stdout, stdin, callId, generatorFunction.prototype.returnType, returnRef)
         });
 
-        discard(programH, heap, stdout, stdin, callId, generatorInterfaceExpr.resultType, generatorInterfaceRef)
+        discard(programH, heap, stdout, stdin, callId, generatorExpr.resultType, generatorReference)
         discard(programH, heap, stdout, stdin, callId, sizeExpr.resultType, sizeReference)
 
         heap.vivemDout.print(" o" + arrayReference.num + "=")

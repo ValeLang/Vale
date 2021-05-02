@@ -1,0 +1,9 @@
+
+fn MakeArray<T, G>(n int, generator G) Array<mut, T>
+rules(
+  T Ref,
+  G Ref(share | borrow, _, _),
+  F Prot = Prot("__call", (G, int), T))
+{
+  __Array<mut, T, G, F>(n, generator)
+}

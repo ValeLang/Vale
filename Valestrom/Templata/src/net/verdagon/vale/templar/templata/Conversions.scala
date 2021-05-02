@@ -21,7 +21,7 @@ object Conversions {
     permission match {
       case ReadonlyP => Readonly
       case ReadwriteP => Readwrite
-//      case ExclusiveNormalP => ExclusiveReadwrite
+//      case ExclusiveReadwriteP => ExclusiveReadwrite
       case _ => vimpl()
     }
   }
@@ -79,7 +79,7 @@ object Conversions {
     permission match {
       case Readonly => ReadonlyP
       case Readwrite => ReadwriteP
-//      case ExclusiveReadwrite => ExclusiveNormalP
+//      case ExclusiveReadwrite => ExclusiveReadwriteP
     }
   }
 
@@ -96,6 +96,7 @@ object Conversions {
       case KindTemplataType => KindTypeSR
       case IntegerTemplataType => IntTypeSR
       case BooleanTemplataType => BoolTypeSR
+      case PrototypeTemplataType => PrototypeTypeSR
       case MutabilityTemplataType => MutabilityTypeSR
       case PermissionTemplataType => PermissionTypeSR
       case LocationTemplataType => LocationTypeSR

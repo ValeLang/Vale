@@ -92,21 +92,21 @@ class RulesEnumsTests extends FunSuite with Matchers with Collector {
   test("Permission") {
     compile(rulePR, "X") shouldHave { case TemplexPR(NameOrRunePT(StringP(_, "X"))) => }
     compile(rulePR, "X Permission") shouldHave { case TypedPR(_,Some(StringP(_, "X")),PermissionTypePR) => }
-    compile(rulePR, "X = rw") shouldHave { case EqualsPR(_,TemplexPR(NameOrRunePT(StringP(_, "X"))),TemplexPR(PermissionPT(_,ReadonlyP))) => }
+    compile(rulePR, "X = rw") shouldHave { case EqualsPR(_,TemplexPR(NameOrRunePT(StringP(_, "X"))),TemplexPR(PermissionPT(_,ReadwriteP))) => }
     compile(rulePR, "X Permission = rw") shouldHave {
       case EqualsPR(_,
           TypedPR(_,Some(StringP(_, "X")),PermissionTypePR),
-          TemplexPR(PermissionPT(_,ReadonlyP))) =>
+          TemplexPR(PermissionPT(_,ReadwriteP))) =>
     }
     compile(rulePR, "_ Permission") shouldHave { case TypedPR(_,None,PermissionTypePR) => }
-    compile(rulePR, "rw") shouldHave { case TemplexPR(PermissionPT(_,ReadonlyP)) => }
+    compile(rulePR, "rw") shouldHave { case TemplexPR(PermissionPT(_,ReadwriteP)) => }
     compile(rulePR, "_ Permission = xrw|rw|ro") shouldHave {
       case EqualsPR(_,
           TypedPR(_,None,PermissionTypePR),
           OrPR(_,
             List(
-              TemplexPR(PermissionPT(_,ExclusiveNormalP)),
-              TemplexPR(PermissionPT(_,ReadonlyP)),
+              TemplexPR(PermissionPT(_,ExclusiveReadwriteP)),
+              TemplexPR(PermissionPT(_,ReadwriteP)),
               TemplexPR(PermissionPT(_,ReadonlyP))))) =>
     }
   }

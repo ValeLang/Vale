@@ -731,13 +731,15 @@ class TemplarTests extends FunSuite with Matchers {
   }
 
   test("Test array length") {
-    val compile = TemplarCompilation(
+    val compile = TemplarCompilation.multiple(
+      List(
+        Samples.get("libraries/MakeArray.vale"),
       """
         |fn main() int export {
-        |  a = Array<mut, int>(11, &!IFunction1<imm, int, int>({_}));
+        |  a = MakeArray(11, {_});
         |  = len(&a);
         |}
-      """.stripMargin)
+      """.stripMargin))
     val temputs = compile.getTemputs()
   }
 

@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar;
 
-import net.verdagon.vale.astronomer._
+import net.verdagon.vale.astronomer.{PrototypeTemplataType, _}
 import net.verdagon.vale.astronomer.ruletyper.{IRuleTyperEvaluatorDelegate, RuleTyperEvaluator}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
@@ -811,10 +811,10 @@ class ExpressionTemplar(
         //          }
         //        (constructExpr2, returnsFromArgs)
         //      }
-        case ConstructArrayAE(range, elementCoordTemplex, sizeExpr1, generatorExpr1, arrayMutabilityP) => {
+        case ConstructArrayAE(range, mutabilityTemplex, elementCoordTemplex, generatorPrototypeTemplex, sizeExpr1, generatorExpr1) => {
+          val (MutabilityTemplata(arrayMutability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, mutabilityTemplex)
           val (CoordTemplata(elementCoord)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, elementCoordTemplex)
-
-          val arrayMutability = Conversions.evaluateMutability(arrayMutabilityP)
+          val (PrototypeTemplata(generatorPrototype)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, generatorPrototypeTemplex)
 
           val (sizeExpr2, returnsFromSize) =
             evaluate(temputs, fate, sizeExpr1);
@@ -822,18 +822,30 @@ class ExpressionTemplar(
           val (generatorExpr2, returnsFromGenerator) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, generatorExpr1);
 
-          val memberType2 =
-            generatorExpr2.referend match {
-              case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(MutabilityTemplata(_), CoordTemplata(Coord(Share, Readonly, Int2())), CoordTemplata(element))))) => element
-              case other => vwat(other.toString)
-            }
+//          val memberType2 =
+//            generatorExpr2.referend match {
+//              case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(MutabilityTemplata(_), CoordTemplata(Coord(Share, Readonly, Int2())), CoordTemplata(element))))) => element
+//              case other => vwat(other.toString)
+//            }
 
-          val isConvertible =
-            templataTemplar.isTypeTriviallyConvertible(temputs, memberType2, elementCoord)
-          if (!isConvertible) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, memberType2 + " cant convert to " + elementCoord))
+//          val isConvertible =
+//            templataTemplar.isTypeTriviallyConvertible(temputs, memberType2, elementCoord)
+//          if (!isConvertible) {
+//            throw CompileErrorExceptionT(RangedInternalErrorT(range, memberType2 + " cant convert to " + elementCoord))
+//          }
+
+          if (generatorPrototype.returnType != elementCoord) {
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator return type doesn't agree with array element type!"))
           }
-
+          if (generatorPrototype.paramTypes.size != 2) {
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in 2 args!"))
+          }
+          if (generatorPrototype.paramTypes(0) != generatorExpr2.resultRegister.reference) {
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator first param doesn't agree with generator expression's result!"))
+          }
+          if (generatorPrototype.paramTypes(1) != Coord(Share, Readonly, Int2())) {
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in an integer as its second param!"))
+          }
           if (arrayMutability == Immutable &&
             Templar.getMutability(temputs, elementCoord.referend) == Mutable) {
             throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't have an immutable array of mutable elements!"))
@@ -843,20 +855,7 @@ class ExpressionTemplar(
           val sizeRefExpr2 = coerceToReferenceExpression(fate, sizeExpr2)
           vassert(sizeRefExpr2.resultRegister.expectReference().reference == Coord(Share, Readonly, Int2()))
 
-          val generatorMethod2 =
-            overloadTemplar.scoutExpectedFunctionForPrototype(
-              fate.snapshot, temputs, range,
-              GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME),
-              List(),
-              List(ParamFilter(generatorExpr2.resultRegister.reference, None), ParamFilter(Coord(Share, Readonly, Int2()), None)),
-              List(),
-              true) match {
-              case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => {
-                throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't find a __call to construct an array!\n" + seff.toString))
-              }
-              case ScoutExpectedFunctionSuccess(prototype) => prototype
-            }
-
+          val generatorMethod2 = generatorPrototype
           val constructExpr2 =
             ConstructArray2(
               arrayType,

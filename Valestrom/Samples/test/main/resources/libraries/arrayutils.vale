@@ -1,8 +1,4 @@
 
-fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) Array<M, E> {
-  Array<M, E>(N, &!IFunction1<SM, int, E>((i){ seq[i]}))
-}
-
 fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
   i! = 0;
   while (i < arr.len()) {
@@ -53,7 +49,7 @@ rules(A Ref(_, _, [<M> N * T])) {
   }
 }
 
-fn eacIh<M, N, T, F>(arr A, func F) void
+fn eachI<M, N, T, F>(arr A, func F) void
 rules(A Ref(_, _, [<M> N * T])) {
   i! = 0;
   l = len(&arr);
@@ -81,10 +77,4 @@ rules(A Ref(_, _, Array<_, _>)) {
     func(i, arr[i]);
     mut i = i + 1;
   }
-}
-
-fn toArray<M, T>(source &Array<_, T>) Array<M, &T> {
-  Array<M, &T>(
-    source.len(),
-    &!IFunction1<mut, int, T>((i){ source[i] }))
 }

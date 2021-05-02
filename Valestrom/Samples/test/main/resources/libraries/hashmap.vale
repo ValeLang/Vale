@@ -19,7 +19,7 @@ fn HashMap<K, V, H, E>(hasher H, equator E, capacity int) HashMap<K, V, H, E> {
   HashMap<K, V>(
       hasher,
       equator,
-      Array<mut, Opt<HashMapNode<K, V>>>(
+      MakeArray(
         capacity,
         &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index){
           opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
@@ -51,7 +51,7 @@ fn add<K, V, H, E>(map &!HashMap<K, V, H, E>, key K, value V) void {
         if (map.table.len() == 0) { 2 }
         else { map.table.len() * 2 };
     newTable =
-        Array<mut, Opt<HashMapNode<K, V>>>(
+        MakeArray(
             newSize,
             &!IFunction1<mut, int, Opt<HashMapNode<K, V>>>((index){
               opt Opt<HashMapNode<K, V>> = None<HashMapNode<K, V>>();
@@ -146,7 +146,7 @@ fn keys<K, V, H, E>(self &HashMap<K, V, H, E>) Array<imm, K> {
     }
     mut index = index + 1;
   }
-  = list.toArray<imm>();
+  = list.toImmArray();
 }
 
 fn values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
@@ -159,7 +159,7 @@ fn values<K, V, H, E>(self &HashMap<K, V, H, E>) Array<mut, V> {
     }
     mut index = index + 1;
   }
-  = list.toArray<mut>();
+  = list.toArray();
 }
 
 fn innerRemove<K, V, H, E>(

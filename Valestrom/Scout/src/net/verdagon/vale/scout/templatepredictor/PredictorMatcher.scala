@@ -16,6 +16,7 @@ object PredictorMatcher {
       case MutabilityST(_, _) =>
       case PermissionST(_, _) =>
       case LocationST(_, _) =>
+      case StringST(_, _) =>
       case OwnershipST(_, _) =>
       case VariabilityST(_, _) =>
       case NameST(_, _) =>
@@ -32,6 +33,9 @@ object PredictorMatcher {
         matchAgainstTemplexSR(conclusions, elementRule)
       }
       case ManualSequenceST(_, elements) => {
+        elements.foreach(matchAgainstTemplexSR(conclusions, _))
+      }
+      case PackST(_, elements) => {
         elements.foreach(matchAgainstTemplexSR(conclusions, _))
       }
       case x => vimpl(x.toString)

@@ -79,9 +79,10 @@ case class BlockAE(
 case class ConstructArrayAE(
     range: RangeS,
     typeTemplex: ITemplexA,
+    mutabilityTemplex: ITemplexA,
+    generatorPrototypeTemplex: ITemplexA,
     sizeExpr: IExpressionAE,
-    generatorExpr: IExpressionAE,
-    mutability: MutabilityP) extends IExpressionAE
+    generatorExpr: IExpressionAE) extends IExpressionAE
 
 case class ArgLookupAE(range: RangeS, index: Int) extends IExpressionAE
 

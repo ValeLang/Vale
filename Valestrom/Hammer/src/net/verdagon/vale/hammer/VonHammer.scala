@@ -825,6 +825,13 @@ object VonHammer {
           Vector(
             VonMember("kind", vonifyKind(TypeHammer.translateKind(hinputs, hamuts, kind)))))
       }
+      case PrototypeTemplata(prototype) => {
+        VonObject(
+          "PrototypeTemplata",
+          None,
+          Vector(
+            VonMember("prototype", vonifyPrototype(FunctionHammer.translatePrototype(hinputs, hamuts, prototype)))))
+      }
       case ArrayTemplateTemplata() => VonObject("ArrayTemplateTemplata", None, Vector())
       case ft @ FunctionTemplata(env, functionA) => {
         VonObject(

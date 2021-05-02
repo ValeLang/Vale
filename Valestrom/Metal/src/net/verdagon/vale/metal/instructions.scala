@@ -525,7 +525,7 @@ case class ConstructUnknownSizeArrayH(
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  generatorExpression: ExpressionH[InterfaceRefH],
+  generatorExpression: ExpressionH[ReferendH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
 

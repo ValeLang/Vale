@@ -14,7 +14,7 @@ fn HashSet<K, H, E>(hasher H, equator E, capacity int) HashSet<K, H, E> {
   HashSet<K>(
       hasher,
       equator,
-      Array<mut, Opt<K>>(
+      MakeArray(
         capacity,
         &!IFunction1<mut, int, Opt<K>>((index){
           opt Opt<K> = None<K>();
@@ -64,7 +64,7 @@ fn add<K, H, E>(set &!HashSet<K, H, E>, key K) void {
         if (set.table.len() == 0) { 2 }
         else { set.table.len() * 2 };
     newTable =
-        Array<mut, Opt<K>>(
+        MakeArray(
             newSize,
             &!IFunction1<mut, int, Opt<K>>((index){
               opt Opt<K> = None<K>();
@@ -159,7 +159,7 @@ fn toArray<K, H, E>(self &HashSet<K, H, E>) Array<imm, K> {
     }
     mut index = index + 1;
   }
-  = list.toArray<imm>();
+  = list.toImmArray();
 }
 
 fn innerRemove<K, H, E>(

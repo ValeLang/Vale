@@ -51,6 +51,7 @@ object Reachability {
     val function = vassertSome(program.lookupFunction(calleeSignature))
     function.all({
       case FunctionCall2(calleePrototype, _) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case ConstructArray2(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case sr @ StructRef2(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceRef2(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
       case ksa @ KnownSizeArrayT2(_, _) => visitKnownSizeArray(program, edgeBlueprints, edges, reachables, ksa)

@@ -703,8 +703,7 @@ object Astronomer {
 
   val wrapperFunctions =
     List(
-      Arrays.makeArrayFunction(MutableP),
-      Arrays.makeArrayFunction(ImmutableP),
+      Arrays.makeArrayFunction(),
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 

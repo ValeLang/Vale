@@ -72,6 +72,7 @@ object TemplataNamer {
       case Str2() => "str"// "𝓈"
       case Void2() => "void" // "∅"
       case TupleT2(_, _) => "tup"
+      case Never2() => "never"
       case UnknownSizeArrayT2(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
       case KnownSizeArrayT2(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
       case PackT2(_, underlyingStruct) => {

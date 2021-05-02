@@ -22,7 +22,7 @@ tar xzf adoptopenjdk.tar.gz
 echo 'export PATH=~/jdk-11.0.10+9-jre/Contents/Home/bin:$PATH' >> ~/.zshrc
 
 # Install dependencies
-brew install llvm@11 sbt cmake clang-11
+brew install llvm@11 sbt cmake clang@11
 # Add vars to .zshrc (or .bashrc)
 echo 'export LLVM_DIR=/usr/local/Cellar/llvm/11.0.0_1/lib/cmake' >> ~/.zshrc
 echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> ~/.zshrc

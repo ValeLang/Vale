@@ -97,7 +97,6 @@ object Driver {
             ("builtins/arrayutils.vale", Samples.get("builtins/arrayutils.vale")),
             ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale")),
             ("builtins/castutils.vale", Samples.get("builtins/castutils.vale")),
-            ("builtins/file.vale", Samples.get("builtins/file.vale")),
             ("builtins/opt.vale", Samples.get("builtins/opt.vale")),
             ("builtins/printutils.vale", Samples.get("builtins/printutils.vale")),
             ("builtins/strings.vale", Samples.get("builtins/strings.vale")),

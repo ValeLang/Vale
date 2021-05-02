@@ -45,7 +45,7 @@ sbt assembly
 
 cd ../Midas
 
-cmake -D CMAKE_CXX_COMPILER=/usr/local/opt/llvm@11/bin/clang+ -B build
+cmake -D CMAKE_CXX_COMPILER=/usr/local/opt/llvm@11/bin/clang++ -B build
 
 cd build
 

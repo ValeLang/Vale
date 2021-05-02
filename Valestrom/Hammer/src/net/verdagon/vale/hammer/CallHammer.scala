@@ -102,7 +102,7 @@ object CallHammer {
     val constructArrayCallNode =
         ConstructUnknownSizeArrayH(
           sizeRegisterId.expectIntAccess(),
-          generatorRegisterId.expectInterfaceAccess(),
+          generatorRegisterId,
           generatorMethodH,
           elementType,
           arrayRefTypeH.expectUnknownSizeArrayReference())

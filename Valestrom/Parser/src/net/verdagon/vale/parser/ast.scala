@@ -157,7 +157,7 @@ case object UseP extends LoadAsP
 sealed trait PermissionP
 case object ReadonlyP extends PermissionP
 case object ReadwriteP extends PermissionP
-case object ExclusiveNormalP extends PermissionP
+case object ExclusiveReadwriteP extends PermissionP
 
 sealed trait LocationP
 case object InlineP extends LocationP

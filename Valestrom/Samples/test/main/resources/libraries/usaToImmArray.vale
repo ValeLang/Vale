@@ -1,0 +1,4 @@
+
+fn toImmArray<T>(source &Array<_, T>) Array<imm, &T> {
+  MakeImmArray(source.len(), &!{ source[_] })
+}

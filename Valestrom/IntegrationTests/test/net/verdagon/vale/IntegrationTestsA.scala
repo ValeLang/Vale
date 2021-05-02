@@ -452,27 +452,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
     vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Str2())))))))
   }
 
-  test("Test generic array func") {
-    // Make sure that functions that cant be called by main will not be included.
-
-    val compile = Compilation(
-      """
-        |fn Arr<M, F>(n int, generator &F) Array<M, T>
-        |rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
-        |{
-        |  Array<M>(n, &!IFunction1<mut, int, T>(generator))
-        |}
-        |
-        |fn main() str {
-        |  a = Arr<mut>(5, (_){"hi"});
-        |  = a.3;
-        |}
-        |""".stripMargin)
-    val temputs = compile.getTemputs()
-
-    compile.run(Vector())
-  }
-
 //  test("Test overloading between borrow and own") {
 //    val compile = Compilation(
 //      """

@@ -505,8 +505,8 @@ struct NormalP {}
 impl PermissionP for NormalP;
 struct NormalP {}
 impl PermissionP for NormalP;
-struct ExclusiveNormalP {}
-impl PermissionP for ExclusiveNormalP;
+struct ExclusiveReadwriteP {}
+impl PermissionP for ExclusiveReadwriteP;
 
 // Location says whether a reference contains the referend's location (yonder) or
 // contains the referend itself (inline).

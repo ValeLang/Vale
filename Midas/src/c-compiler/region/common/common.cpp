@@ -385,13 +385,9 @@ void fillUnknownSizeArray(
 //        auto virtualArgRefMT = functionType->params[virtualParamIndex];
 //        auto virtualArgRef = argsLE[virtualParamIndex];
         buildFlare(FL(), globalState, functionState, bodyBuilder);
-        auto methodFunctionPtrLE =
-            globalState->getRegion(generatorType)
-                ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, generatorType, generatorLE, 0);
-        buildFlare(FL(), globalState, functionState, bodyBuilder);
         auto elementRef =
-            buildInterfaceCall(
-                globalState, functionState, bodyBuilder, generatorMethod, methodFunctionPtrLE, argExprsLE, 0);
+            buildCall(
+                globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
         buildFlare(FL(), globalState, functionState, bodyBuilder);
         globalState->getRegion(usaMT)->initializeElementInUSA(
             functionState, bodyBuilder, usaRefMT, usaMT, usaRef, true, indexRef, elementRef);

@@ -516,6 +516,9 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       case (MutabilityTemplata(_), MutabilityTemplataType) => {
         (templata)
       }
+      case (PrototypeTemplata(_), PrototypeTemplataType) => {
+        (templata)
+      }
       case (KindTemplata(kind), CoordTemplataType) => {
         val mutability = delegate.getMutability(state, kind)
         val coerced =

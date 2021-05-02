@@ -5,6 +5,6 @@ impl IFunction1<mut, int, int> for MyIntIdentity;
 fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
 
 fn main() int export {
-  a = Array<mut>(5, &!MyIntIdentity());
+  a = MakeArray(5, &!MyIntIdentity());
   = a[3];
 }

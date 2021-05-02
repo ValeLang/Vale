@@ -64,7 +64,10 @@ class ValeCompiler:
               exe_file: PurePath,
               include_path: Optional[PurePath]) -> subprocess.CompletedProcess:
         if self.windows:
-            args = ["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file)] + list(str(x) for x in o_files)
+            args = [
+                "cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file),
+                "/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
+            ] + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)

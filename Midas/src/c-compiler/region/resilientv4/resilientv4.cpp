@@ -767,7 +767,7 @@ void ResilientV4::deallocate(
         buildFlare(FL(), globalState, functionState, thenBuilder, "size: ", sizeLE);
 
         std::vector<LLVMValueRef> argsLE = { sourceContentsI8PtrLE, constI8LE(globalState, 0), sizeLE };
-        LLVMBuildCall(thenBuilder, globalState->memset, argsLE.data(), argsLE.size(), "");
+        LLVMBuildCall(thenBuilder, globalState->externs->memset, argsLE.data(), argsLE.size(), "");
         buildFlare(FL(), globalState, functionState, thenBuilder, "done!");
 
         hgmWeaks.addToUndeadCycle(functionState, thenBuilder, refMT, sourceWrapperPtrLE);

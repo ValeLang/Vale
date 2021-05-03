@@ -22,6 +22,7 @@
 #include "error.h"
 #include "translatetype.h"
 #include "midasfunctions.h"
+#include "externs.h"
 
 #include <cstring>
 #include <llvm-c/Transforms/Scalar.h>
@@ -56,139 +57,16 @@ std::string genFreeName(int bytes) {
   return std::string("__genMalloc") + std::to_string(bytes) + std::string("B");
 }
 
-//LLVMValueRef makeNewStrFunc(GlobalState* globalState) {
-////  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
-//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
-//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-//
-//  std::vector<LLVMTypeRef> paramTypesL = { int64LT };
-//  auto returnTypeL = globalState->rcImm->translateType(globalState->metalCache->strRef);
-//
-//  LLVMTypeRef functionTypeL =
-//      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-//  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_newstr", functionTypeL);
-//
-//  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
-//  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-//  LLVMPositionBuilderAtEnd(builder, block);
-//  // This is unusual because normally we have a separate localsBuilder which points to a separate
-//  // block at the beginning. This is a simple function which should require no locals, so this
-//  // should be fine.
-//  LLVMBuilderRef localsBuilder = builder;
-//
-//  FunctionState functionState("vale_newstr", functionL, returnTypeL, localsBuilder);
-//  BlockState childBlockState(globalState->addressNumberer, nullptr);
-//
-//  auto lengthLE = LLVMGetParam(functionL, 0);
-//  buildAssert(
-//      globalState, &functionState, builder,
-//      LLVMBuildICmp(builder, LLVMIntSGE, lengthLE, constI64LE(globalState, 0), "nonneg"),
-//      "Can't have negative length string!");
-//
-//  // This will allocate lengthLE + 1
-//  auto strRef =
-//      globalState->getRegion(globalState->metalCache->strRef)
-//          ->mallocStr(
-//              makeEmptyTupleRef(globalState, globalState->getRegion(globalState->metalCache->emptyTupleStructRef), builder),
-//              &functionState, builder, lengthLE);
-//
-//  auto resultStrPtrLE =
-//      globalState->getRegion(globalState->metalCache->strRef)
-//          ->checkValidReference(
-//              FL(), &functionState, builder, globalState->metalCache->strRef, strRef);
-//
-//  // Note the lack of an alias() call to increment the string's RC from 0 to 1.
-//  // This is because the users of this function increment that themselves.
-//
-//  LLVMBuildRet(builder, resultStrPtrLE);
-//
-//  LLVMDisposeBuilder(builder);
-//
-//  return functionL;
-//}
-//
-//LLVMValueRef makeGetStrCharsFunc(GlobalState* globalState) {
-////  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
-//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
-//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-//
-//  std::vector<LLVMTypeRef> paramTypesL = {
-//      globalState->getRegion(globalState->metalCache->strRef)
-//          ->translateType(globalState->metalCache->strRef)
-//  };
-//  auto returnTypeL = int8PtrLT;
-//
-//  LLVMTypeRef functionTypeL =
-//      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-//  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "__vale_getstrchars", functionTypeL);
-//  LLVMSetLinkage(functionL, LLVMExternalLinkage);
-//
-//  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
-//  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-//  LLVMPositionBuilderAtEnd(builder, block);
-//  // This is unusual because normally we have a separate localsBuilder which points to a separate
-//  // block at the beginning. This is a simple function which should require no locals, so this
-//  // should be fine.
-//  LLVMBuilderRef localsBuilder = builder;
-//
-//  FunctionState functionState("__vale_getstrchars", functionL, returnTypeL, localsBuilder);
-//
-//  auto strRefLE = LLVMGetParam(functionL, 0);
-//
-//  auto strRef = wrap(globalState->getRegion(globalState->metalCache->strRef), globalState->metalCache->strRef, strRefLE);
-//
-//  LLVMBuildRet(builder, globalState->getRegion(globalState->metalCache->strRef)->getStringBytesPtr(&functionState, builder, strRef));
-//
-//  LLVMDisposeBuilder(builder);
-//
-//  return functionL;
-//}
-//
-//LLVMValueRef makeGetStrNumBytesFunc(GlobalState* globalState) {
-////  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-//  auto int1LT = LLVMInt1TypeInContext(globalState->context);
-//  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-//  auto voidPtrLT = LLVMPointerType(int8LT, 0);
-//  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-//  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-//  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-//
-//  std::vector<LLVMTypeRef> paramTypesL = { globalState->getRegion(globalState->metalCache->strRef)->translateType(globalState->metalCache->strRef) };
-//  auto returnTypeL = int64LT;
-//
-//  LLVMTypeRef functionTypeL =
-//      LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-//  LLVMValueRef functionL = LLVMAddFunction(globalState->mod, "vale_getstrnumbytes", functionTypeL);
-//  LLVMSetLinkage(functionL, LLVMExternalLinkage);
-//
-//  LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, functionL, "entry");
-//  LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-//  LLVMPositionBuilderAtEnd(builder, block);
-//  // This is unusual because normally we have a separate localsBuilder which points to a separate
-//  // block at the beginning. This is a simple function which should require no locals, so this
-//  // should be fine.
-//  LLVMBuilderRef localsBuilder = builder;
-//
-//  FunctionState functionState("vale_getstrnumbytes", functionL, returnTypeL, localsBuilder);
-//
-//  auto strRefLE = LLVMGetParam(functionL, 0);
-//
-//  auto strRef = wrap(globalState->getRegion(globalState->metalCache->strRef), globalState->metalCache->strRef, strRefLE);
-//
-//  LLVMBuildRet(builder, globalState->getRegion(globalState->metalCache->strRef)->getStringLen(&functionState, builder, strRef));
-//
-//  LLVMDisposeBuilder(builder);
-//
-//  return functionL;
-//}
+std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* globalState);
+Prototype* makeValeMainFunction(
+    GlobalState* globalState,
+    LLVMValueRef stringSetupFunctionL,
+    Prototype* mainSetupFuncProto,
+    Prototype* userMainFunctionPrototype,
+    Prototype* mainCleanupFunctionPrototype);
+LLVMValueRef makeEntryFunction(
+    GlobalState* globalState,
+    Prototype* valeMainPrototype);
 
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -200,31 +78,8 @@ void initInternalExterns(GlobalState* globalState) {
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  globalState->censusContains = addExtern(globalState->mod, "__vcensusContains", int64LT,
-      {voidPtrLT});
-  globalState->censusAdd = addExtern(globalState->mod, "__vcensusAdd", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
-  globalState->censusRemove = addExtern(globalState->mod, "__vcensusRemove", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
-
   globalState->genMalloc = addExtern(globalState->mod, "__genMalloc", voidPtrLT, {int64LT});
   globalState->genFree = addExtern(globalState->mod, "__genFree", LLVMVoidTypeInContext(globalState->context), {voidPtrLT});
-  globalState->malloc = addExtern(globalState->mod, "malloc", int8PtrLT, {int64LT});
-  globalState->free = addExtern(globalState->mod, "free", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
-
-  globalState->initTwinPages = addExtern(globalState->mod, "__vale_initTwinPages", LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), {});
-
-  globalState->exit = addExtern(globalState->mod, "exit", LLVMVoidTypeInContext(globalState->context), {int8LT});
-  globalState->assert = addExtern(globalState->mod, "__vassert", LLVMVoidTypeInContext(globalState->context), {int1LT, int8PtrLT});
-  globalState->assertI64Eq = addExtern(globalState->mod, "__vassertI64Eq", LLVMVoidTypeInContext(globalState->context),
-      {int64LT, int64LT, int8PtrLT});
-//  globalState->flareI64 = addExtern(globalState->mod, "__vflare_i64", LLVMVoidTypeInContext(globalState->context), {int64LT, int64LT});
-  globalState->printCStr = addExtern(globalState->mod, "__vprintCStr", LLVMVoidTypeInContext(globalState->context), {int8PtrLT});
-  globalState->getch = addExtern(globalState->mod, "getchar", int64LT, {});
-  globalState->printInt = addExtern(globalState->mod, "__vprintI64", LLVMVoidTypeInContext(globalState->context), {int64LT});
-//  globalState->printBool = addExtern(globalState->mod, "__vprintBool", LLVMVoidTypeInContext(globalState->context), {int1LT});
-
-//  globalState->intToCStr = addExtern(globalState->mod, "__vintToCStr", LLVMVoidTypeInContext(globalState->context),
-//      {int64LT, int8PtrLT, int64LT});
-  globalState->strlen = addExtern(globalState->mod, "strlen", int64LT, {int8PtrLT});
 
   {
     globalState->wrcTableStructLT = LLVMStructCreateNamed(globalState->context, "__WRCTable");
@@ -307,22 +162,88 @@ void initInternalExterns(GlobalState* globalState) {
           });
 }
 
+void generateExports(GlobalState* globalState, Prototype* mainM) {
+  auto program = globalState->program;
+  auto cByExportedName = std::unordered_map<std::string, std::string>();
+  for (auto p : program->structs) {
+    auto structM = p.second;
+    // can we think of this in terms of regions? it's kind of like we're
+    // generating some stuff for the outside to point inside.
+    if (globalState->program->isExported(structM->name)) {
+      if (structM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateStructDefsC(&cByExportedName, structM);
+      } else {
+        globalState->mutRegion->generateStructDefsC(&cByExportedName, structM);
+      }
+    }
+  }
+  for (auto p : program->unknownSizeArrays) {
+    auto usaDefM = p.second;
+    // can we think of this in terms of regions? it's kind of like we're
+    // generating some stuff for the outside to point inside.
+    if (globalState->program->isExported(usaDefM->name)) {
+      if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
+      } else {
+        globalState->mutRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
+      }
+    }
+  }
+  for (auto p : program->interfaces) {
+    auto interfaceM = p.second;
+    if (globalState->program->isExported(interfaceM->name)) {
+      if (interfaceM->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+      } else {
+        globalState->mutRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
+      }
+    }
+  }
+  for (auto p : program->functions) {
+    auto functionM = p.second;
+    if (functionM->prototype->name != mainM->name &&
+        globalState->program->isExported(functionM->prototype->name)) {
+      auto exportedName = program->getExportedName(functionM->prototype->name);
+      std::stringstream s;
+      auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
+      s << "extern " << globalState->getRegion(externReturnType)->getRefNameC(externReturnType) << " ";
+      s << exportedName << "(";
+      for (int i = 0; i < functionM->prototype->params.size(); i++) {
+        if (i > 0) {
+          s << ", ";
+        }
+        auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
+        s << globalState->getRegion(hostParamRefMT)->getRefNameC(hostParamRefMT) << " param" << i;
+      }
+      s << ");" << std::endl;
+      cByExportedName.insert(std::make_pair(exportedName, s.str()));
+    }
+  }
+  for (auto p : cByExportedName) {
+    auto exportedName = p.first;
+    auto c = p.second;
+    std::string filepath = "";
+    if (!globalState->opt->exportsDir.empty()) {
+      filepath = globalState->opt->exportsDir + "/";
+    }
+    filepath += exportedName + ".h";
+    std::ofstream out(filepath, std::ofstream::out);
+    if (!out) {
+      std::cerr << "Couldn't make file '" << filepath << std::endl;
+      exit(1);
+    }
+    std::cout << "Writing " << filepath << std::endl;
+    out << c;
+  }
+}
 
 void compileValeCode(GlobalState* globalState, const std::string& filename) {
-//  std::cout << "OVERRIDING to resilient-v2 mode!" << std::endl;
-//  globalState->opt->regionOverride = RegionOverride::RESILIENT_V2;
-
-//  std::cout << "OVERRIDING to assist mode!" << std::endl;
-//  globalState->opt->regionOverride = RegionOverride::ASSIST;
-
-//  std::cout << "OVERRIDING census to true!" << std::endl;
-//  globalState->opt->census = true;
-//  std::cout << "OVERRIDING flares to true!" << std::endl;
-//  globalState->opt->flares = true;
-
-//  std::cout << "OVERRIDING gen-heap to true!" << std::endl;
-//  globalState->opt->genHeap = true;
-
+  auto voidLT = LLVMVoidTypeInContext(globalState->context);
+  auto int8LT = LLVMInt8TypeInContext(globalState->context);
+  auto int64LT = LLVMInt64TypeInContext(globalState->context);
+  auto int32LT = LLVMInt32TypeInContext(globalState->context);
+  auto int32PtrLT = LLVMPointerType(int32LT, 0);
+  auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {
@@ -331,7 +252,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       globalState->opt->genHeap = true;
     }
   }
-
 
   switch (globalState->opt->regionOverride) {
     case RegionOverride::ASSIST:
@@ -414,29 +334,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   assert(globalState->metalCache->emptyTupleStructRef != nullptr);
 
 
-  // Start making the entry function. We make it up here because we want its
-  // builder for creating string constants. In a perfect world we wouldn't need
-  // a builder for making string constants, but LLVM wants one, and it wants one
-  // that's attached to a function.
-  auto paramTypesL = std::vector<LLVMTypeRef>{
-      LLVMInt64TypeInContext(globalState->context),
-      LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), 0)
-  };
-  LLVMTypeRef functionTypeL =
-      LLVMFunctionType(
-          LLVMInt64TypeInContext(globalState->context), paramTypesL.data(), paramTypesL.size(), 0);
-  LLVMValueRef entryFunctionL =
-      LLVMAddFunction(globalState->mod, "main", functionTypeL);
-  LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
-  LLVMSetDLLStorageClass(entryFunctionL, LLVMDLLExportStorageClass);
-  LLVMSetFunctionCallConv(entryFunctionL, LLVMX86StdcallCallConv);
-  LLVMBuilderRef entryBuilder = LLVMCreateBuilderInContext(globalState->context);
-  LLVMBasicBlockRef blockL =
-      LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");
-  LLVMPositionBuilderAtEnd(entryBuilder, blockL);
-
-
-
+  LLVMValueRef stringSetupFunctionL = nullptr;
+  LLVMBuilderRef stringConstantBuilder = nullptr;
+  std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
+  globalState->stringConstantBuilder = stringConstantBuilder;
 
   globalState->ram64Struct =
       LLVMStructCreateNamed(globalState->context, "__Ram64Struct");
@@ -451,8 +352,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->unserializeName = globalState->metalCache->getName("__vale_unserialize");
   globalState->unserializeThunkName = globalState->metalCache->getName("__vale_unserialize_thunk");
 
+  Externs externs(globalState->mod, globalState->context);
+  globalState->externs = &externs;
 
-  globalState->stringConstantBuilder = entryBuilder;
+//  globalState->stringConstantBuilder = entryBuilder;
 
   globalState->numMainArgs =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__main_num_args");
@@ -533,21 +436,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 //  Mega megaRegion(globalState);
   globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
 
-  auto voidLT = LLVMVoidTypeInContext(globalState->context);
-  auto int8LT = LLVMInt8TypeInContext(globalState->context);
-  auto int64LT = LLVMInt64TypeInContext(globalState->context);
-  auto int32LT = LLVMInt32TypeInContext(globalState->context);
-  auto int32PtrLT = LLVMPointerType(int32LT, 0);
-  auto int8PtrLT = LLVMPointerType(int8LT, 0);
-  globalState->strncpy = addExtern(globalState->mod, "strncpy", voidLT, {int8PtrLT, int8PtrLT, int64LT});
-  globalState->memcpy = addExtern(globalState->mod, "memcpy", int8PtrLT, {int8PtrLT, int8PtrLT, int64LT});
-  globalState->memset = addExtern(globalState->mod, "memset", voidLT, {int8PtrLT, int8LT, int64LT});
-//  globalState->eqStr =
-//      addExtern(globalState->mod, "__veqStr", int8LT,
-//          {int8PtrLT, int8PtrLT});
-//  globalState->printVStr =
-//      addExtern(globalState->mod, "__vprintStr", LLVMVoidTypeInContext(globalState->context),
-//          {int8PtrLT});
 
   assert(LLVMTypeOf(globalState->neverPtr) == globalState->getRegion(globalState->metalCache->neverRef)->translateType(globalState->metalCache->neverRef));
 
@@ -566,7 +454,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
         buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
-  LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
 
   for (auto p : program->structs) {
     auto name = p.first;
@@ -695,8 +582,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-//  initInternalFuncs(globalState);
-
   // This has to come after we declare all the other structs, because we
   // add functions for all the known structs and interfaces.
   // It also has to be after we *define* them, because they want to access members.
@@ -758,31 +643,10 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   }
 
 
-  bool mainExported = false;
-  bool mainExtern = program->externs.find("main") != program->externs.end();
-  Prototype* mainM = nullptr;
-  LLVMValueRef mainL = nullptr;
-  if (!mainExtern) {
-    int numFuncs = program->functions.size();
-    for (auto p : program->functions) {
-      auto name = p.first;
-      auto function = p.second;
-      LLVMValueRef entryFunctionL = declareFunction(globalState, function);
-      bool isExportedMain = program->isExported(function->prototype->name) &&
-                            program->getExportedName(function->prototype->name) == "main";
-      bool isExternMain = program->externs.find(function->prototype->name->name) != program->externs.end() &&
-                          function->prototype->name->name == "main";
-      if (isExportedMain || isExternMain) {
-        mainExported = isExportedMain;
-        mainExtern = isExternMain;
-        mainM = function->prototype;
-        mainL = entryFunctionL;
-      }
-    }
-    if (mainL == nullptr || mainM == nullptr) {
-      std::cerr << "Couldn't find main function! (Did you forget to export it?)" << std::endl;
-      exit(1);
-    }
+  for (auto p : program->functions) {
+    auto name = p.first;
+    auto function = p.second;
+    declareFunction(globalState, function);
   }
 
   for (auto p : program->functions) {
@@ -806,92 +670,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  LLVMBuildStore(
-      entryBuilder,
-      LLVMBuildUDiv(
-          entryBuilder,
-          LLVMBuildPointerCast(
-              entryBuilder,
-              globalState->writeOnlyGlobal,
-              LLVMInt64TypeInContext(globalState->context),
-              "ptrAsIntToWriteOnlyGlobal"),
-          constI64LE(globalState, 8),
-          "ram64IndexToWriteOnlyGlobal"),
-      globalState->ram64IndexToWriteOnlyGlobal);
 
-  if (globalState->opt->census) {
-    // Add all the edges to the census, so we can check that fat pointers are right.
-    // We remove them again at the end of outer main.
-    // We should one day do this for all globals.
-    for (auto edgeAndItablePtr : globalState->interfaceTablePtrs) {
-      auto itablePtrLE = edgeAndItablePtr.second;
-      LLVMValueRef itablePtrAsVoidPtrLE =
-          LLVMBuildBitCast(
-              entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-      LLVMBuildCall(entryBuilder, globalState->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
-    }
-  }
-
-  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
-  auto argsLE = LLVMGetParam(entryFunctionL, 1);
-  LLVMBuildStore(entryBuilder, numArgsLE, globalState->numMainArgs);
-  LLVMBuildStore(entryBuilder, argsLE, globalState->mainArgs);
-
-
-//  auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
-//  auto argStrsArrayPtr = LLVMGetParam(entryFunctionL, 1);
-//
-//  auto argIndexPtrLE = LLVMBuildAlloca(entryBuilder, LLVMInt64TypeInContext(globalState->context), "argIPtr");
-//  LLVMBuildStore(entryBuilder, constI64LE(globalState, 0), argIndexPtrLE);
-//
-//
-//  LLVMBasicBlockRef argsBlockL =
-//      LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "argsBlock");
-//  LLVMBuilderRef argsBlockBuilder = LLVMCreateBuilderInContext(globalState->context);
-//  LLVMPositionBuilderAtEnd(argsBlockBuilder, argsBlockL);
-//
-//  // Jump from our previous block into the body for the first time.
-//  LLVMBuildBr(entryBuilder, argsBlockL);
-//
-//  auto continueLE =
-//      LLVMBuildICmp(
-//          argsBlockBuilder,
-//          LLVMIntSLE,
-//          LLVMBuildLoad(entryBuilder, argIndexPtrLE, "argI"),
-//          numArgsLE,
-//          "argsContinue");
-//
-//  auto argILE = LLVMBuildLoad(entryBuilder, argIndexPtrLE, "argI");
-//
-//  auto argStrLE =
-//      LLVMBuildLoad(argsBlockBuilder,
-//          LLVMBuildGEP(argsBlockBuilder,
-//              argStrsArrayPtr, &argILE, 1, "ptrToArgStrEntry"), "argStr");
-//
-//  add argStrLE to the args array here
-//
-//  LLVMBuildStore(
-//      argsBlockBuilder,
-//      LLVMBuildAdd(argsBlockBuilder,
-//          LLVMBuildLoad(argsBlockBuilder, argIndexPtrLE, "i"),
-//          constI64LE(globalState, 1),
-//          "iPlus1"),
-//      argIndexPtrLE);
-//
-//  LLVMBasicBlockRef afterwardBlockL =
-//      LLVMAppendBasicBlockInContext(globalState->context,
-//          entryFunctionL,
-//          "afterArgsBlock");
-//  LLVMBuildCondBr(argsBlockBuilder, continueLE, argsBlockL, afterwardBlockL);
-//  LLVMPositionBuilderAtEnd(entryBuilder, afterwardBlockL);
-
-
-
-
-
-  LLVMValueRef emptyValues[1] = {};
-  LLVMValueRef mainResult =
-      LLVMBuildCall(entryBuilder, mainL, emptyValues, 0, "");
 
   auto mainCleanupFuncName = globalState->metalCache->getName("__Vale_mainCleanup");
   auto mainCleanupFuncProto =
@@ -904,115 +683,33 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
         }
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
-  LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainCleanupFuncProto), nullptr, 0, "");
 
-  if (globalState->opt->printMemOverhead) {
-    buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
-    buildPrint(globalState, entryBuilder, LLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
-    buildPrint(globalState, entryBuilder, "\n");
-  }
 
-  if (globalState->opt->census) {
-    // Remove all the things from the census that we added at the start of the program.
-    for (auto edgeAndItablePtr : globalState->interfaceTablePtrs) {
-      auto itablePtrLE = edgeAndItablePtr.second;
-      LLVMValueRef itablePtrAsVoidPtrLE =
-          LLVMBuildBitCast(
-              entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-      LLVMBuildCall(entryBuilder, globalState->censusRemove, &itablePtrAsVoidPtrLE, 1, "");
-    }
 
-    LLVMValueRef args[3] = {
-        LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
-        LLVMBuildLoad(entryBuilder, globalState->liveHeapObjCounter, "numLiveObjs"),
-        globalState->getOrMakeStringConstant("Memory leaks!"),
-    };
-    LLVMBuildCall(entryBuilder, globalState->assertI64Eq, args, 3, "");
-  }
-
-  if (mainM->returnType->referend == globalState->metalCache->emptyTupleStruct) {
-    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
-  } else if (mainM->returnType->referend == globalState->metalCache->innt) {
-    LLVMBuildRet(entryBuilder, mainResult);
-  } else if (mainM->returnType->referend == globalState->metalCache->never) {
-    LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
-  } else {
-    assert(false);
-  }
-  LLVMDisposeBuilder(entryBuilder);
-
-  auto cByExportedName = std::unordered_map<std::string, std::string>();
-  for (auto p : program->structs) {
-    auto structM = p.second;
-    // can we think of this in terms of regions? it's kind of like we're
-    // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(structM->name)) {
-      if (structM->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateStructDefsC(&cByExportedName, structM);
-      } else {
-        globalState->mutRegion->generateStructDefsC(&cByExportedName, structM);
-      }
-    }
-  }
-  for (auto p : program->unknownSizeArrays) {
-    auto usaDefM = p.second;
-    // can we think of this in terms of regions? it's kind of like we're
-    // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(usaDefM->name)) {
-      if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
-      } else {
-        globalState->mutRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
-      }
-    }
-  }
-  for (auto p : program->interfaces) {
-    auto interfaceM = p.second;
-    if (globalState->program->isExported(interfaceM->name)) {
-
-      if (interfaceM->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
-      } else {
-        globalState->mutRegion->generateInterfaceDefsC(&cByExportedName, interfaceM);
-      }
-    }
-  }
+  Prototype* mainM = nullptr;
+  int numFuncs = program->functions.size();
   for (auto p : program->functions) {
-    auto functionM = p.second;
-    if (functionM->prototype->name != mainM->name &&
-        globalState->program->isExported(functionM->prototype->name)) {
-      auto exportedName = program->getExportedName(functionM->prototype->name);
-      std::stringstream s;
-      auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
-      s << "extern " << globalState->getRegion(externReturnType)->getRefNameC(externReturnType) << " ";
-      s << exportedName << "(";
-      for (int i = 0; i < functionM->prototype->params.size(); i++) {
-        if (i > 0) {
-          s << ", ";
-        }
-        auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
-        s << globalState->getRegion(hostParamRefMT)->getRefNameC(hostParamRefMT) << " param" << i;
-      }
-      s << ");" << std::endl;
-      cByExportedName.insert(std::make_pair(exportedName, s.str()));
+    auto name = p.first;
+    auto function = p.second;
+//    LLVMValueRef entryFunctionL = declareFunction(globalState, function);
+    bool isExportedMain = program->isExported(function->prototype->name) &&
+                          program->getExportedName(function->prototype->name) == "main";
+//    bool isExternMain = program->externs.find(function->prototype->name->name) != program->externs.end() &&
+//                        function->prototype->name->name == "main";
+    if (isExportedMain) {
+      mainM = function->prototype;
     }
   }
-  for (auto p : cByExportedName) {
-    auto exportedName = p.first;
-    auto c = p.second;
-    std::string filepath = "";
-    if (!globalState->opt->exportsDir.empty()) {
-      filepath = globalState->opt->exportsDir + "/";
-    }
-    filepath += exportedName + ".h";
-    std::ofstream out(filepath, std::ofstream::out);
-    if (!out) {
-      std::cerr << "Couldn't make file '" << filepath << std::endl;
-      exit(1);
-    }
-    std::cout << "Writing " << filepath << std::endl;
-    out << c;
+  if (mainM == nullptr) {
+    std::cerr << "Couldn't find main function! (Did you forget to export it?)" << std::endl;
+    exit(1);
   }
+  auto valeMainPrototype =
+      makeValeMainFunction(
+          globalState, stringSetupFunctionL, mainSetupFuncProto, mainM, mainCleanupFuncProto);
+  auto entryFuncL = makeEntryFunction(globalState, valeMainPrototype);
+
+  generateExports(globalState, mainM);
 }
 
 void createModule(GlobalState *globalState) {

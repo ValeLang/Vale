@@ -74,7 +74,7 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
         buildFlare(FL(), globalState, functionState, builder);
 
         auto protectedTwinPagePtrLE =
-            LLVMBuildCall(builder, globalState->initTwinPages, nullptr, 0, "protectedTwinPagePtr");
+            LLVMBuildCall(builder, globalState->externs->initTwinPages, nullptr, 0, "protectedTwinPagePtr");
         size_t numProtectedBytes = LLVMABISizeOfType(globalState->dataLayout, anyInlRefLT);
         LLVMValueRef negativeNumProtectedBytesLE = constI64LE(globalState, -numProtectedBytes);
 
@@ -88,7 +88,7 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
 
         if (globalState->opt->census) {
           std::cerr << "HGM half-protected block has no census fields!" << std::endl;
-          LLVMBuildCall(builder, globalState->censusAdd, &halfProtectedI8PtrLE, 1, "");
+          LLVMBuildCall(builder, globalState->externs->censusAdd, &halfProtectedI8PtrLE, 1, "");
         }
 
         buildFlare(FL(), globalState, functionState, builder);
@@ -588,7 +588,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
             buildPrint(globalState, thenBuilder, "Exiting!\n");
             // See MPESC for status codes
             auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
-            LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+            LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
           }
         });
   }

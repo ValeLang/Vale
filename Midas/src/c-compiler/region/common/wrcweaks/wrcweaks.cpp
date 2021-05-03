@@ -152,7 +152,7 @@ void WrcWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder)
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(builder, globalState->assertI64Eq, args, 3, "");
+    LLVMBuildCall(builder, globalState->externs->assertI64Eq, args, 3, "");
   }
 }
 
@@ -331,7 +331,7 @@ LLVMValueRef WrcWeaks::lockWrciFatPtr(
         buildPrint(globalState, thenBuilder, "Exiting!\n");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
   return fatWeaks_.getInnerRefFromWeakRef(functionState, builder, refM, weakFatPtrLE);
 }

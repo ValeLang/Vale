@@ -118,7 +118,7 @@ void buildPrint(
   std::vector<LLVMValueRef> indices = { constI64LE(globalState, 0) };
   auto s = LLVMBuildGEP(builder, globalState->getOrMakeStringConstant(first), indices.data(), indices.size(), "stringptr");
   assert(LLVMTypeOf(s) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0));
-  LLVMBuildCall(builder, globalState->printCStr, &s, 1, "");
+  LLVMBuildCall(builder, globalState->externs->printCStr, &s, 1, "");
 }
 
 void buildPrint(
@@ -126,12 +126,12 @@ void buildPrint(
     LLVMBuilderRef builder,
     LLVMValueRef exprLE) {
   if (LLVMTypeOf(exprLE) == LLVMInt64TypeInContext(globalState->context)) {
-    LLVMBuildCall(builder, globalState->printInt, &exprLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->printInt, &exprLE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMInt32TypeInContext(globalState->context)) {
     auto i64LE = LLVMBuildZExt(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
-    LLVMBuildCall(builder, globalState->printInt, &i64LE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->printInt, &i64LE, 1, "");
   } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
-    LLVMBuildCall(builder, globalState->printCStr, &exprLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->printCStr, &exprLE, 1, "");
 //  } else if (LLVMTypeOf(exprLE) == LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0)) {
 //    auto asIntLE = LLVMBuildPointerCast(builder, exprLE, LLVMInt64TypeInContext(globalState->context), "asI64");
 //    LLVMBuildCall(builder, globalState->printInt, &asIntLE, 1, "");
@@ -180,7 +180,7 @@ void buildAssertWithExitCode(
       [globalState, exitCode, failMessage](LLVMBuilderRef thenBuilder) {
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), exitCode, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 }
 
@@ -204,7 +204,7 @@ void buildAssertIntEq(
         buildPrint(globalState, thenBuilder, failMessage + " Exiting!\n");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 }
 
@@ -287,12 +287,12 @@ void buildAssertCensusContains(
               buildPrint(globalState, thenBuilder, "Object null, so not in census, exiting!\n");
               // See MPESC for status codes
               auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
-              LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+              LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
             });
 
     auto isRegisteredIntLE =
         LLVMBuildCall(
-            builder, globalState->censusContains, &resultAsVoidPtrLE, 1, "");
+            builder, globalState->externs->censusContains, &resultAsVoidPtrLE, 1, "");
     auto isRegisteredBoolLE =
         LLVMBuildTruncOrBitCast(
             builder, isRegisteredIntLE, LLVMInt1TypeInContext(globalState->context), "");
@@ -304,7 +304,7 @@ void buildAssertCensusContains(
           buildPrint(globalState, thenBuilder, " not registered with census, exiting!\n");
           // See MPESC for status codes
           auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
-          LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+          LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
         });
   }
 }

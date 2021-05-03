@@ -161,7 +161,7 @@ void Linear::dealias(
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "extStrPtrLE");
 
-  LLVMBuildCall(builder, globalState->free, &sourceI8PtrLE, 1, "");
+  LLVMBuildCall(builder, globalState->externs->free, &sourceI8PtrLE, 1, "");
 }
 
 Ref Linear::lockWeak(
@@ -762,7 +762,7 @@ void Linear::deallocate(
           refLE,
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "concreteCharPtrForFree");
-  LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
 }
 
 Ref Linear::constructUnknownSizeArray(
@@ -929,7 +929,7 @@ Ref Linear::innerMallocStr(
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
         std::vector<LLVMValueRef> argsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
-        LLVMBuildCall(thenBuilder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
+        LLVMBuildCall(thenBuilder, globalState->externs->strncpy, argsLE.data(), argsLE.size(), "");
 
 
         auto charsEndPtr = LLVMBuildGEP(thenBuilder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");

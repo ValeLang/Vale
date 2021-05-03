@@ -166,7 +166,7 @@ void LgtWeaks::mainCleanup(FunctionState* functionState, LLVMBuilderRef builder)
             ""),
         globalState->getOrMakeStringConstant("WRC leaks!"),
     };
-    LLVMBuildCall(builder, globalState->assertI64Eq, args, 3, "");
+    LLVMBuildCall(builder, globalState->externs->assertI64Eq, args, 3, "");
   }
 }
 

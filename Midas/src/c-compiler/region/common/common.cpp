@@ -275,7 +275,7 @@ LLVMValueRef callFree(
             ptrLE,
             LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteCharPtrForFree");
-    return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+    return LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
   }
 }
 
@@ -310,7 +310,7 @@ void innerDeallocateYonder(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
+    LLVMBuildCall(builder, globalState->externs->censusRemove, &resultAsVoidPtrLE, 1,
         "");
   }
 
@@ -409,7 +409,7 @@ LLVMValueRef callMalloc(
   if (globalState->opt->genHeap) {
     return LLVMBuildCall(builder, globalState->genMalloc, &sizeLE, 1, "");
   } else {
-    return LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
+    return LLVMBuildCall(builder, globalState->externs->malloc, &sizeLE, 1, "");
   }
 }
 
@@ -441,7 +441,7 @@ WrapperPtrLE mallocStr(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, destCharPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
   auto newStrWrapperPtrLE =
@@ -463,7 +463,7 @@ WrapperPtrLE mallocStr(
 
 
   std::vector<LLVMValueRef> strncpyArgsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
-  LLVMBuildCall(builder, globalState->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
+  LLVMBuildCall(builder, globalState->externs->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
 
   auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
   LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
@@ -504,7 +504,7 @@ LLVMValueRef mallocKnownSize(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, resultPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
   return resultPtrLE;
 }
@@ -697,7 +697,7 @@ LLVMValueRef mallocUnknownSizeArray(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, newWrapperPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
   return LLVMBuildBitCast(

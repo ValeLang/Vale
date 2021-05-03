@@ -70,7 +70,7 @@ Ref buildExternCall(
   } else if (prototype->name->name == "__panic") {
     // See MPESC for status codes
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8TypeInContext(globalState->context), 1);
-    LLVMBuildCall(builder, globalState->exit, &exitCodeLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->exit, &exitCodeLE, 1, "");
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
   } else if (prototype->name->name == "__multiplyIntInt") {
@@ -86,7 +86,7 @@ Ref buildExternCall(
     auto resultIntLE = LLVMBuildSub(builder, leftLE, rightLE, "diff");
     return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultIntLE);
   } else if (prototype->name->name == "__getch") {
-    auto resultIntLE = LLVMBuildCall(builder, globalState->getch, nullptr, 0, "");
+    auto resultIntLE = LLVMBuildCall(builder, globalState->externs->getch, nullptr, 0, "");
     return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultIntLE);
   } else if (prototype->name->name == "__lessThanInt") {
     assert(args.size() == 2);

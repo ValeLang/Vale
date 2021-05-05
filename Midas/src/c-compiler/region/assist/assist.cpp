@@ -552,12 +552,16 @@ LLVMValueRef Assist::checkValidReference(
   assert(refLE != nullptr);
   assert(LLVMTypeOf(refLE) == globalState->getRegion(refM)->translateType(refM));
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
+        buildFlare(FL(), globalState, functionState, builder);
       regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       assert(false);
     } else {
+        buildFlare(FL(), globalState, functionState, builder);
       if (refM->ownership == Ownership::BORROW) {
         regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
       } else if (refM->ownership == Ownership::WEAK) {
@@ -721,6 +725,8 @@ Ref Assist::upcast(
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM) {
+    buildFlare(FL(), globalState, functionState, builder);
+
   switch (sourceStructMT->ownership) {
     case Ownership::SHARE:
     case Ownership::OWN:

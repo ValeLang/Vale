@@ -945,7 +945,7 @@ void regularCheckValidReference(
     LLVMValueRef refLE) {
 
   if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-    auto interfaceFatPtrLE = referendStructs->makeInterfaceFatPtr(FL(), functionState, builder,
+    auto interfaceFatPtrLE = referendStructs->makeInterfaceFatPtr(checkerAFL, functionState, builder,
         refM, refLE);
     auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);

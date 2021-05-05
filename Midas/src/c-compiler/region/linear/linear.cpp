@@ -37,7 +37,7 @@ LLVMValueRef hexRoundDown(
     LLVMBuilderRef builder,
     LLVMValueRef n) {
   // Mask off the last four bits, to round downward to the next multiple of 16.
-  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFUL, false);
+  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFULL, false);
   return LLVMBuildAnd(builder, n, mask, "rounded");
 }
 
@@ -1819,7 +1819,16 @@ LLVMValueRef Linear::getInterfaceMethodFunctionPtr(
   auto orderedSubstructs = structs.getOrderedSubstructs(hostInterfaceMT);
   auto isValidEdgeNumLE =
       LLVMBuildICmp(builder, LLVMIntULT, edgeNumLE, constI64LE(globalState, orderedSubstructs.size()), "isValidEdgeNum");
-  buildAssert(globalState, functionState, builder, isValidEdgeNumLE, "Invalid edge number!");
+
+  buildIf(
+      globalState, functionState, builder, isZeroLE(builder, isValidEdgeNumLE),
+      [this, edgeNumLE](LLVMBuilderRef thenBuilder) {
+          buildPrint(globalState, thenBuilder, "Invalid edge number (");
+          buildPrint(globalState, thenBuilder, edgeNumLE);
+          buildPrint(globalState, thenBuilder, "), exiting!\n");
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
+          LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+      });
 
   auto functionLT = globalState->getInterfaceFunctionTypes(hostInterfaceMT)[indexInEdge];
 

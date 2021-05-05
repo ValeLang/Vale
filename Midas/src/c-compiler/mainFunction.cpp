@@ -6,6 +6,7 @@ std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* gl
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
 
   auto functionLT = LLVMFunctionType(voidLT, nullptr, 0, false);
+  std::cout << "Adding f function " << "__Vale_SetupStrings" << std::endl;
   auto functionL = LLVMAddFunction(globalState->mod, "__Vale_SetupStrings", functionLT);
 
   auto stringsBuilder = LLVMCreateBuilderInContext(globalState->context);
@@ -41,6 +42,7 @@ Prototype* makeValeMainFunction(
       [globalState, stringSetupFunctionL, mainSetupFuncProto, userMainFunctionPrototype, mainCleanupFunctionPrototype](
           FunctionState *functionState, LLVMBuilderRef entryBuilder) {
         buildFlare(FL(), globalState, functionState, entryBuilder);
+        buildPrint(globalState, entryBuilder, 1337);
 
         LLVMBuildCall(entryBuilder, stringSetupFunctionL, nullptr, 0, "");
         LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
@@ -58,6 +60,7 @@ Prototype* makeValeMainFunction(
                 "ram64IndexToWriteOnlyGlobal"),
             globalState->ram64IndexToWriteOnlyGlobal);
 
+        buildFlare(FL(), globalState, functionState, entryBuilder);
         if (globalState->opt->census) {
           // Add all the edges to the census, so we can check that fat pointers are right.
           // We remove them again at the end of outer main.
@@ -67,9 +70,13 @@ Prototype* makeValeMainFunction(
             LLVMValueRef itablePtrAsVoidPtrLE =
                 LLVMBuildBitCast(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
+
+            buildFlare(FL(), globalState, functionState, entryBuilder, ptrToIntLE(globalState, entryBuilder, itablePtrAsVoidPtrLE));
             LLVMBuildCall(entryBuilder, globalState->externs->censusAdd, &itablePtrAsVoidPtrLE, 1, "");
           }
+          buildFlare(FL(), globalState, functionState, entryBuilder);
         }
+        buildFlare(FL(), globalState, functionState, entryBuilder);
 
         auto userMainResultRef = buildCall(globalState, functionState, entryBuilder, userMainFunctionPrototype, {});
         auto userMainResultLE =
@@ -138,6 +145,7 @@ LLVMValueRef makeEntryFunction(
   // This will be populated at the end, we're just making it here so we can call it
   auto entryParamsLT = std::vector<LLVMTypeRef>{ int64LT, LLVMPointerType(LLVMPointerType(int8LT, 0), 0) };
   LLVMTypeRef functionTypeL = LLVMFunctionType(int64LT, entryParamsLT.data(), entryParamsLT.size(), 0);
+  std::cout << "Adding entry function " << "main" << std::endl;
   LLVMValueRef entryFunctionL = LLVMAddFunction(globalState->mod, "main", functionTypeL);
 
   LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);
@@ -147,6 +155,7 @@ LLVMValueRef makeEntryFunction(
   LLVMBasicBlockRef blockL =
       LLVMAppendBasicBlockInContext(globalState->context, entryFunctionL, "thebestblock");
   LLVMPositionBuilderAtEnd(entryBuilder, blockL);
+
 
   auto numArgsLE = LLVMGetParam(entryFunctionL, 0);
   auto argsLE = LLVMGetParam(entryFunctionL, 1);

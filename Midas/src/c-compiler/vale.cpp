@@ -646,7 +646,11 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    declareFunction(globalState, function);
+    bool skipExporting =
+        program->isExported(function->prototype->name) &&
+        program->getExportedName(function->prototype->name) == "main";
+    std::cout << "blark " << (function->prototype->name->name) << " " << (function->prototype->name->name == "main") << " " << (program->isExported(function->prototype->name)) << std::endl;
+    declareFunction(globalState, function, skipExporting);
   }
 
   for (auto p : program->functions) {
@@ -661,6 +665,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     auto name = p.first;
     auto structM = p.second;
     for (auto e : structM->edges) {
+
       if (structM->mutability == Mutability::IMMUTABLE) {
         globalState->rcImm->defineEdge(e);
         globalState->linearRegion->defineEdge(e);

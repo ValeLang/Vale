@@ -40,5 +40,8 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     vassert(ScoutErrorHumanizer.humanize(filenamesAndSources,
       InterfaceMethodNeedsSelf(RangeS.testZero))
       .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(filenamesAndSources,
+      ForgotSetKeywordError(RangeS.testZero))
+      .nonEmpty)
   }
 }

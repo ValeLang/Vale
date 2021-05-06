@@ -117,7 +117,7 @@ class MutateTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemplarError() match {
       case CantMutateFinalMember(_, structRef2, memberName) => {
-        structRef2.fullName.last match {
+        structRef2.last match {
           case CitizenName2("Vec3", List()) =>
         }
         memberName.last match {
@@ -210,7 +210,7 @@ class MutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
-        serenityKind,
+        serenityKind.fullName,
         FullName2(List(), CodeVarName2("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,

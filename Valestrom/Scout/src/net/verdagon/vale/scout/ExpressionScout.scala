@@ -303,6 +303,9 @@ object ExpressionScout {
 
         (stackFrame0, NormalResult(evalRange(range), WhileSE(evalRange(range), cond1, body1)), selfUses, childUses)
       }
+      case BadLetPE(range) => {
+        throw CompileErrorExceptionS(ForgotSetKeywordError(evalRange(range)))
+      }
       case let @ LetPE(range, rulesP, patternP, exprPE) => {
         val codeLocation = Scout.evalPos(stackFrame0.file, range.begin)
         val (stackFrame1, expr1, selfUses, childUses) =

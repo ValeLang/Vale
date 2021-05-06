@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
-import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
+import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, CodeVarNameA, ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, INameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
@@ -27,13 +27,13 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
       }
-      case CantMutateFinalMember(range, structRef2, memberName) => {
+      case CantMutateFinalMember(range, fullName, memberName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
-          ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of struct " + printableKindName(structRef2)
+          ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
       }
       case CantMutateFinalLocal(range, localName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
-          ": Cannot mutate final local '" + localName
+          ": Cannot mutate final local \"" + printableName(filenamesAndSources, localName) + "\"."
       }
       case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -74,6 +74,10 @@ object TemplarErrorHumanizer {
       case CouldntFindTypeT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find any type named `" + name + "`!"
+      }
+      case ImmStructCantHaveVaryingMember(range, structName, memberName) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Immutable struct (\"" + printableName(filenamesAndSources, structName) + "\") cannot have varying member (\"" + memberName + "\")."
       }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -160,9 +164,11 @@ object TemplarErrorHumanizer {
 
   private def printableName(
     filenamesAndSources: List[(String, String)],
-    functionName: IFunctionDeclarationNameA):
+    name: INameA):
   String = {
-    functionName match {
+    name match {
+      case CodeVarNameA(name) => name
+      case TopLevelCitizenDeclarationNameA(name, codeLocation) => name
       case LambdaNameA(codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + "(lambda)"
       case FunctionNameA(name, codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
       case ConstructorNameA(TopLevelCitizenDeclarationNameA(name, codeLocation)) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
@@ -193,7 +199,13 @@ object TemplarErrorHumanizer {
       case Bool2() => "bool"
       case Float2() => "float"
       case Str2() => "str"
-      case StructRef2(FullName2(_, CitizenName2(humanName, templateArgs))) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+      case StructRef2(f) => printableFullName(f)
+    }
+  }
+  private def printableFullName(fullName2: FullName2[IName2]): String = {
+    fullName2.last match {
+      case CitizenName2(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+      case x => x.toString
     }
   }
 

@@ -40,6 +40,10 @@ case class LetPE(
   expr: IExpressionPE
 ) extends IExpressionPE
 
+case class BadLetPE(
+  range: Range
+) extends IExpressionPE
+
 case class SequencePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
 
 case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE

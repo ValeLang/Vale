@@ -6,7 +6,7 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
-import net.verdagon.vale.astronomer.{Astronomer, CodeVarNameA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
+import net.verdagon.vale.astronomer.{Astronomer, CodeTypeNameA, CodeVarNameA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
 import org.scalatest.{FunSuite, Matchers, _}
@@ -275,6 +275,39 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemplarError() match {
       case CouldntFindFunctionToCallT(_, _) =>
+    }
+  }
+
+  test("Report when imm struct has varying member") {
+    // https://github.com/ValeLang/Vale/issues/131
+    val compile = TemplarCompilation(
+      """
+        |struct Spaceship imm {
+        |  name! str;
+        |  numWings int;
+        |}
+        |fn main() export {
+        |  ship = Spaceship("Serenity", 2);
+        |  println(ship.name);
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case ImmStructCantHaveVaryingMember(_, _, _) =>
+    }
+  }
+
+  test("Report when changing final local") {
+    // https://github.com/ValeLang/Vale/issues/128
+    val compile = TemplarCompilation(
+      """
+        |fn main() export {
+        |  x = "world!";
+        |  mut x = "changed";
+        |  println(x); // => changed
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CantMutateFinalLocal(_, _) =>
     }
   }
 
@@ -979,6 +1012,30 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when mutating a tuple") {
+    val compile = TemplarCompilation(
+      """
+        |fn main() export {
+        |  t2 = [5, true, "V"];
+        |  mut t2.1 = false;
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case CantMutateFinalMember(_, _, _) =>
+    }
+
+    val compile2 = TemplarCompilation(
+      """
+        |fn main() export {
+        |  t2 = [5, true, "V"];
+        |  mut t2[1] = false;
+        |}
+        |""".stripMargin)
+    compile2.getTemplarError() match {
+      case CantMutateFinalMember(_, _, _) =>
+    }
+  }
+
   test("Lock weak member") {
     val compile = TemplarCompilation.multiple(
       List(
@@ -1024,6 +1081,15 @@ class TemplarTests extends FunSuite with Matchers {
 
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindTypeT(RangeS.testZero, "Spaceship")).nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CouldntFindFunctionToCallT(
+        RangeS.testZero,
+        ScoutExpectedFunctionFailure(
+          CodeTypeNameA("someFunc"),
+          List(),
+          Map(),
+          Map(),
+          Map()))).nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindFunctionToCallT(
         RangeS.testZero,
@@ -1083,7 +1149,7 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
-        serenityKind,
+        serenityKind.fullName,
         FullName2(List(), CodeVarName2("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
@@ -1097,6 +1163,10 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       WhileConditionIsntBoolean(
         RangeS.testZero, fireflyCoord))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantMutateFinalLocal(
+        RangeS.testZero, CodeVarNameA("x")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantImplStruct(

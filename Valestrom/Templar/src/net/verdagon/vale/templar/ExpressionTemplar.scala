@@ -587,9 +587,12 @@ class ExpressionTemplar(
               case ReferenceMemberLookup2(range, structExpr, memberName, _, _, _) => {
                 structExpr.referend match {
                   case s @ StructRef2(_) => {
-                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s, memberName))
+                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s.fullName, memberName))
                   }
-                  case _ => vimpl()
+                  case s @ TupleT2(_, _) => {
+                    throw CompileErrorExceptionT(CantMutateFinalMember(range, s.underlyingStruct.fullName, memberName))
+                  }
+                  case _ => vimpl(structExpr.referend.toString)
                 }
               }
               case _ => vimpl()
@@ -675,7 +678,7 @@ class ExpressionTemplar(
 
                     ReferenceMemberLookup2(range, containerExpr2, memberName, memberType.reference, targetPermission, Final)
                   }
-                  case _ => vimpl("impl random access of structs' members")
+                  case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Struct random access not implemented yet!"))
                 }
               }
               case sr@StructRef2(_) => {

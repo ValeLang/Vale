@@ -72,6 +72,18 @@ class StructTemplarCore(
         case None => vwat()
       }
 
+    if (mutability == Immutable) {
+      members.zipWithIndex.foreach({ case (member, index) =>
+      if (member.variability == Varying) {
+          throw CompileErrorExceptionT(
+            ImmStructCantHaveVaryingMember(
+              struct1.members(index).range,
+              struct1.name,
+              struct1.members(index).name))
+        }
+      })
+    }
+
     val structDef2 =
       StructDefinition2(
         fullName,

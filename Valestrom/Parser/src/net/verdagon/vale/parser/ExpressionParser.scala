@@ -38,11 +38,19 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     }
   }
 
+  case class BadLetBegin(range: Range)
+
   case class LetBegin(begin: Int, patternPP: PatternPP)
 
   private[parser] def letBegin: Parser[LetBegin] = {
     pos ~ (atomPattern <~ white <~ "=" <~ white) ^^ {
       case begin ~ pattern => LetBegin(begin, pattern)
+    }
+  }
+
+  private[parser] def badLetBegin: Parser[BadLetBegin] = {
+    pos ~ expressionLevel5 ~ (pos <~ white <~ "=" <~ white) ^^ {
+      case begin ~ _ ~ end => BadLetBegin(Range(begin, end))
     }
   }
 
@@ -54,6 +62,18 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       case LetBegin(begin, pattern) ~ expr ~ end => {
         // We just threw away the topLevelRunes because let statements cant have them.
         LetPE(Range(begin, end), /*maybeTemplateRules.getOrElse(List())*/None, pattern, expr)
+      }
+    }
+  }
+
+  private[parser] def badLet: Parser[BadLetPE] = {
+    //    (opt(templateRulesPR) <~ optWhite) ~
+    badLetBegin ~
+      (expression) ~
+      pos ^^ {
+      case BadLetBegin(range) ~ expr ~ end => {
+        // We just threw away the topLevelRunes because let statements cant have them.
+        BadLetPE(range)
       }
     }
   }
@@ -154,7 +174,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def ifPart: Parser[(BlockPE, BlockPE)] = {
-    ("if" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> (let | expression) <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
+    ("if" ~> optWhite ~> pos) ~ ("(" ~> optWhite ~> (let | badLet | expression) <~ optWhite <~ ")") ~ (pos <~ optWhite) ~ bracedBlock ^^ {
       case condBegin ~ condExpr ~ condEnd ~ thenLambda => {
         (BlockPE(Range(condBegin, condEnd), List(condExpr)), thenLambda)
       }
@@ -198,6 +218,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(StringP(Range(begin, end), "..."), None) }) |
     (mutate <~ optWhite <~ ";") |
     (let <~ optWhite <~ ";") |
+    (badLet <~ optWhite <~ ";") |
     mat |
     (destruct <~ optWhite <~ ";") |
     whiile |

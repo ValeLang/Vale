@@ -241,6 +241,18 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
+  test("Forgetting mut when changing") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = Spaceship(10);
+        |  ship.x = 4;
+        |}
+        |""".stripMargin)
+    error match {
+      case ForgotSetKeywordError(_) =>
+    }
+  }
+
   test("Test loading from member") {
     val program1 = compile(
       """fn MyStruct() {

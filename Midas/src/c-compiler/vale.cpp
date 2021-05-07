@@ -68,6 +68,11 @@ LLVMValueRef makeEntryFunction(
     GlobalState* globalState,
     Prototype* valeMainPrototype);
 
+LLVMValueRef declareFunction(
+  GlobalState* globalState,
+  Function* functionM,
+  bool skipExporting);
+
 void initInternalExterns(GlobalState* globalState) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int1LT = LLVMInt1TypeInContext(globalState->context);
@@ -426,13 +431,14 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   Linear linearRegion(globalState);
   globalState->linearRegion = &linearRegion;
   globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
+  
   ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
   globalState->resilientV3Region = &resilientV3Region;
   globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
-  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
+  /*ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
   globalState->resilientV4Region = &resilientV4Region;
   globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
-
+  */
 //  Mega megaRegion(globalState);
   globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
 
@@ -649,7 +655,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     bool skipExporting =
         program->isExported(function->prototype->name) &&
         program->getExportedName(function->prototype->name) == "main";
-    std::cout << "blark " << (function->prototype->name->name) << " " << (function->prototype->name->name == "main") << " " << (program->isExported(function->prototype->name)) << std::endl;
     declareFunction(globalState, function, skipExporting);
   }
 

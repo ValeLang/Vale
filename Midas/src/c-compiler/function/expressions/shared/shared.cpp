@@ -352,6 +352,5 @@ Ref buildCall(
 
 LLVMValueRef addExtern(LLVMModuleRef mod, const std::string& name, LLVMTypeRef retType, std::vector<LLVMTypeRef> paramTypes) {
   LLVMTypeRef funcType = LLVMFunctionType(retType, paramTypes.data(), paramTypes.size(), 0);
-  std::cout << "Adding extern " << name << std::endl;
   return LLVMAddFunction(mod, name.c_str(), funcType);
 }

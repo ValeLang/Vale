@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata.{CodeLocation2, CoordTemplata, ITemplata, Queriable2}
-import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Share, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Readonly, Share, StructRef2, UnknownSizeArrayT2}
 import net.verdagon.vale.{vassert, vpass, vwat}
 
 // Scout's/Astronomer's name parts correspond to where they are in the source code,
@@ -101,8 +101,8 @@ case class BuildingFunctionNameWithClosuredsAndTemplateArgs2(
 
 // We dont just use "destructor" as the name because we don't want the user to override it.
 case class ImmConcreteDestructorName2(kind: Kind) extends IFunctionName2 {
-  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, kind)))
-  override def parameters: List[Coord] = List(Coord(Share, kind))
+  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, Readonly, kind)))
+  override def parameters: List[Coord] = List(Coord(Share, Readonly, kind))
 
   kind match {
     case InterfaceRef2(_) => vwat()
@@ -126,8 +126,8 @@ case class ImmInterfaceDestructorName2(
 }
 // We dont just use "drop" as the name because we don't want the user to override it.
 case class ImmDropName2(kind: Kind) extends IFunctionName2 {
-  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, kind)))
-  override def parameters: List[Coord] = List(Coord(Share, kind))
+  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, Readonly, kind)))
+  override def parameters: List[Coord] = List(Coord(Share, Readonly, kind))
 
   def order = 39;
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

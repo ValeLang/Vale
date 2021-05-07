@@ -283,14 +283,14 @@ class RuleTyperEvaluator[Env, State](
           case None => RuleTyperEvaluateUnknown()
         }
       }
-      case OwnershippedST(range, ownershipP, innerCoordTemplexS) => {
+      case InterpretedST(range, ownership, permission, innerCoordTemplexS) => {
         makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, innerCoordTemplexS) match {
           case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in inner coord part!", Some(rtmc)))
           case (RuleTyperMatchUnknown()) => {
             RuleTyperEvaluateUnknown()
           }
           case (RuleTyperMatchSuccess(kindTemplexT)) => {
-            val templexT = OwnershippedAT(range, ownershipP, kindTemplexT)
+            val templexT = InterpretedAT(range, ownership, permission, kindTemplexT)
             (RuleTyperEvaluateSuccess(templexT))
           }
         }
@@ -670,7 +670,7 @@ class RuleTyperEvaluator[Env, State](
     components: List[IRulexSR]):
   (IRuleTyperEvaluateResult[List[IRulexAR]]) = {
     components match {
-      case List(ownershipRuleS, kindRuleS) => {
+      case List(ownershipRuleS, permissionRuleS, kindRuleS) => {
         val maybeOwnershipRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, OwnershipTemplataType, ownershipRuleS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Ownership component conflicted!", Some(rtmc)))
@@ -683,29 +683,31 @@ class RuleTyperEvaluator[Env, State](
 //            case RuleTyperMatchUnknown(c) => (c, None)
 //            case RuleTyperMatchContinue(c, locationRuleT) => (c, Some(locationRuleT))
 //          }
-//        val maybePermissionRuleT =
-//          makeMatcher().matchTypeAgainstRulexSR(env, conclusions, PermissionTemplataType, permissionRuleS) match {
-//            case rtmc @ RuleTyperMatchConflict(_, _, _, _) => return RuleTyperEvaluateConflict(conclusions.conclusions, range, "Permission component conflicted!", Some(rtmc))
-//            case RuleTyperMatchUnknown(c) => (c, None)
-//            case RuleTyperMatchContinue(c, permissionRuleT) => (c, Some(permissionRuleT))
-//          }
+        val maybePermissionRuleT =
+          makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, PermissionTemplataType, permissionRuleS) match {
+            case rtmc @ RuleTyperMatchConflict(_, _, _, _) => return RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Permission component conflicted!", Some(rtmc))
+            case RuleTyperMatchUnknown() => (None)
+            case RuleTyperMatchSuccess(permissionRuleT) => (Some(permissionRuleT))
+          }
         val maybeKindRuleT =
           makeMatcher().matchTypeAgainstRulexSR(state, env, conclusions, KindTemplataType, kindRuleS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, outerRange, "Kind component conflicted!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) => (None)
             case (RuleTyperMatchSuccess(kindRuleT)) => (Some(kindRuleT))
           }
-        (maybeOwnershipRuleT, maybeKindRuleT) match {
-          case (Some(ownershipRuleT), Some(kindRuleT)) => {
-            (RuleTyperEvaluateSuccess(List(ownershipRuleT, kindRuleT)))
+        (maybeOwnershipRuleT, maybePermissionRuleT, maybeKindRuleT) match {
+          case (Some(ownershipRuleT), Some(permissionRuleT), Some(kindRuleT)) => {
+            (RuleTyperEvaluateSuccess(List(ownershipRuleT, permissionRuleT, kindRuleT)))
           }
-          case (_, _) => {
+          case (_, _, _) => {
             RuleTyperEvaluateUnknown()
           }
         }
 
       }
-      case _ => throw CompileErrorExceptionA(RangedInternalErrorA(outerRange, "Coords must have 2 components"))
+      case _ => {
+        throw CompileErrorExceptionA(RangedInternalErrorA(outerRange, "Coords must have 3 components"))
+      }
     }
   }
 

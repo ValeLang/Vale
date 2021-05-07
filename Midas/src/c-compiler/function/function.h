@@ -149,7 +149,8 @@ void translateFunction(
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    Function* functionM);
+    Function* functionM,
+    bool skipExporting);
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,

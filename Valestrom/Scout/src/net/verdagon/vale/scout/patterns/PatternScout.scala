@@ -87,7 +87,7 @@ object PatternScout {
         case Some(AbstractP) => (List(), Some(AbstractSP))
         case Some(OverrideP(range, typeP)) => {
           typeP match {
-            case OwnershippedPT(range, _, _) => {
+            case InterpretedPT(range, _, _, _) => {
               throw CompileErrorExceptionS(CantOverrideOwnershipped(Scout.evalRange(stackFrame.file, range)))
             }
             case _ =>
@@ -257,10 +257,10 @@ object PatternScout {
         }
       }
       case MutabilityPT(range, mutability) => (List(), MutabilityST(evalRange(range), mutability), None)
-      case OwnershippedPT(range,ownership, innerP) => {
+      case InterpretedPT(range,ownership,permission, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)
-        (newRules, OwnershippedST(evalRange(range), ownership, innerS), None)
+        (newRules, InterpretedST(evalRange(range), ownership, permission, innerS), None)
       }
       case CallPT(range,maybeTemplateP, argsMaybeTemplexesP) => {
         val (newRulesFromTemplate, maybeTemplateS, _) = translatePatternTemplex(env, rulesS, maybeTemplateP)
@@ -276,13 +276,6 @@ object PatternScout {
       case ManualSequencePT(range,maybeMembersP) => {
         val (newRules, maybeMembersS) = translatePatternTemplexes(env, rulesS, maybeMembersP)
         (newRules, ManualSequenceST(evalRange(range), maybeMembersS), None)
-      }
-      case PermissionedPT(_, permission, innerP) => {
-        // TODO: Add permissions!
-        // This is just a pass-through until then.
-        val (newRules, innerS, _) =
-          translatePatternTemplex(env, rulesS, innerP)
-        (newRules, innerS, None)
       }
 //      case FunctionPT(mutableP, paramsP, retP) => {
 //        val (mutableS, _) = translatePatternMaybeTemplex(declaredRunes, rulesS, mutableP, None)

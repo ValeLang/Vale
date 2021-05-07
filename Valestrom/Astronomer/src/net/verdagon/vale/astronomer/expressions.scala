@@ -28,8 +28,8 @@ case class LocalMutateAE(range: RangeS, name: IVarNameA, expr: IExpressionAE) ex
 
 case class LendAE(range: RangeS, innerExpr1: IExpressionAE, targetOwnership: LoadAsP) extends IExpressionAE {
   targetOwnership match {
-    case LendWeakP =>
-    case LendBorrowP =>
+    case LendWeakP(_) =>
+    case LendBorrowP(_) =>
     case MoveP =>
   }
 }
@@ -79,9 +79,10 @@ case class BlockAE(
 case class ConstructArrayAE(
     range: RangeS,
     typeTemplex: ITemplexA,
+    mutabilityTemplex: ITemplexA,
+    generatorPrototypeTemplex: ITemplexA,
     sizeExpr: IExpressionAE,
-    generatorExpr: IExpressionAE,
-    mutability: MutabilityP) extends IExpressionAE
+    generatorExpr: IExpressionAE) extends IExpressionAE
 
 case class ArgLookupAE(range: RangeS, index: Int) extends IExpressionAE
 

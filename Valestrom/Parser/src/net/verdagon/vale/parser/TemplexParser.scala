@@ -48,12 +48,13 @@ trait TemplexParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def unariedTemplex: Parser[ITemplexPT] = {
-    (pos ~ ("!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => PermissionedPT(Range(begin, end), ReadwriteP, inner) }) |
     (pos ~ ("?" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => NullablePT(Range(begin, end), inner) }) |
-    (pos ~ ("^" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), OwnP, inner) }) |
-    (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), ShareP, inner) }) |
-    (pos ~ ("&&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), WeakP, inner) }) |
-    (pos ~ ("&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => OwnershippedPT(Range(begin, end), BorrowP, inner) }) |
+    (pos ~ ("^" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), OwnP, ReadwriteP, inner) }) |
+    (pos ~ ("*" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), ShareP, ReadonlyP, inner) }) |
+    (pos ~ ("&&!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadwriteP, inner) }) |
+    (pos ~ ("&!" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), BorrowP, ReadwriteP, inner) }) |
+    (pos ~ ("&&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), WeakP, ReadonlyP, inner) }) |
+    (pos ~ ("&" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InterpretedPT(Range(begin, end), BorrowP, ReadonlyP, inner) }) |
     (pos ~ ("inl" ~> optWhite ~> templex) ~ pos ^^ { case begin ~ inner ~ end => InlinePT(Range(begin, end), inner) }) |
     // A hack to do region highlighting
     ((pos ~ ("'" ~> optWhite ~> exprIdentifier <~ optWhite) ~ templex ~ pos) ^^ { case begin ~ regionName ~ inner ~ end => inner }) |

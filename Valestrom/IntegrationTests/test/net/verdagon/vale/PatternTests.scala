@@ -3,7 +3,7 @@ package net.verdagon.vale
 import net.verdagon.vale.parser.FinalP
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
-import net.verdagon.vale.templar.types.{Coord, Final, Int2, Share}
+import net.verdagon.vale.templar.types.{Coord, Final, Int2, Readonly, Share}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
@@ -14,7 +14,7 @@ class PatternTests extends FunSuite with Matchers {
   //  val compile = Compilation("fn main() int export { [x] = (4); = x; }")
   //  compile.getTemputs()
   //  val main = temputs.lookupFunction("main")
-  //  main.header.returnType shouldEqual Coord(Share, Int2())
+  //  main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
   //  compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   //}
 
@@ -23,7 +23,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = Compilation("fn main() int export { (x, y) = [4, 5]; = y; }")
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
-    main.header.returnType shouldEqual Coord(Share, Int2())
+    main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
@@ -36,7 +36,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main");
-    main.header.returnType shouldEqual Coord(Share, Int2())
+    main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
@@ -48,7 +48,7 @@ class PatternTests extends FunSuite with Matchers {
         |fn main() int export { (x, y) = [7, Marine(8)]; = y.hp; }
       """.stripMargin)
     val temputs = compile.getTemputs()
-    temputs.functions.head.header.returnType == Coord(Share, Int2())
+    temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
@@ -64,7 +64,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val temputs = compile.getTemputs()
-    temputs.functions.head.header.returnType == Coord(Share, Int2())
+    temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
@@ -95,7 +95,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val temputs = compile.getTemputs()
-    temputs.functions.head.header.returnType == Coord(Share, Int2())
+    temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 }

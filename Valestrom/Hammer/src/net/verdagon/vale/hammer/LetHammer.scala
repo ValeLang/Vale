@@ -85,7 +85,7 @@ object LetHammer {
   ExpressionH[ReferendH] = {
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
-    val expectedLocalBoxType = ReferenceH(m.OwnH, YonderH, boxStructRefH)
+    val expectedLocalBoxType = ReferenceH(m.OwnH, YonderH, ReadwriteH, boxStructRefH)
 
     val local =
       locals.addTemplarLocal(hinputs, hamuts, varId, Conversions.evaluateVariability(variability), expectedLocalBoxType)
@@ -124,7 +124,8 @@ object LetHammer {
         varId,
         variability,
         sourceExpr2.resultRegister.reference,
-        let2.resultRegister.reference.ownership)
+        let2.resultRegister.reference.ownership,
+        let2.resultRegister.reference.permission)
     ConsecutorH(List(stackifyH, borrowAccess))
   }
 
@@ -149,15 +150,15 @@ object LetHammer {
   }
 
     private def translateMundaneLetAndLend(
-                                            hinputs: Hinputs,
-                                            hamuts: HamutsBox,
+      hinputs: Hinputs,
+      hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeader2,
-                                            locals: LocalsBox,
-                                            sourceExpr2: ReferenceExpression2,
-                                            sourceExprResultLine: ExpressionH[ReferendH],
-                                            sourceResultPointerTypeH: ReferenceH[ReferendH],
-                                            let2: LetAndLend2,
-                                            varId: FullName2[IVarName2],
+      locals: LocalsBox,
+      sourceExpr2: ReferenceExpression2,
+      sourceExprResultLine: ExpressionH[ReferendH],
+      sourceResultPointerTypeH: ReferenceH[ReferendH],
+      let2: LetAndLend2,
+      varId: FullName2[IVarName2],
       variability: Variability):
     ExpressionH[ReferendH] = {
 
@@ -180,7 +181,8 @@ object LetHammer {
         locals,
         varId,
         sourceExpr2.resultRegister.reference,
-        let2.resultRegister.reference.ownership)
+        let2.resultRegister.reference.ownership,
+        let2.resultRegister.reference.permission)
 
       ConsecutorH(List(stackifyH, borrowAccess))
   }
@@ -327,7 +329,7 @@ object LetHammer {
               val (boxStructRefH) =
                 StructHammer.makeBox(hinputs, hamuts, member2.variability, memberRefType2, memberRefTypeH)
               // Structs only ever borrow boxes, boxes are only ever owned by the stack.
-              val localBoxType = ReferenceH(m.BorrowH, YonderH, boxStructRefH)
+              val localBoxType = ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH)
               val localIndex = locals.addHammerLocal(localBoxType, m.Final)
 
               (remainingDestinationReferenceLocalVariables, previousLocalTypes :+ localBoxType, previousLocalIndices :+ localIndex)

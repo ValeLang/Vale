@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, LendBorrowP, OwnP, ShareP, UseP}
+import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, LendBorrowP, OwnP, ReadonlyP, ShareP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
@@ -26,9 +26,18 @@ object RefCounting {
         ParameterA(AtomAP(RangeS.internal(-118), LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(RangeS.internal(-1418),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(RangeS.internal(-1419),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)), ComponentsAR(RangeS.internal(-79), CoordTemplataType, List(TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)), TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("TK"), KindTemplataType))))),
-        EqualsAR(RangeS.internal(-1420),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1418),TemplexAR(RuneAT(RangeS.internal(-5650),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5651),CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(
+          RangeS.internal(-1419),
+          TemplexAR(RuneAT(RangeS.internal(-5652),CodeRuneA("T"), CoordTemplataType)),
+          ComponentsAR(
+            RangeS.internal(-79),
+            CoordTemplataType,
+            List(
+              TemplexAR(OwnershipAT(RangeS.internal(-5653),BorrowP)),
+              TemplexAR(PermissionAT(RangeS.internal(-5654),ReadonlyP)),
+              TemplexAR(RuneAT(RangeS.internal(-5655),CodeRuneA("TK"), KindTemplataType))))),
+        EqualsAR(RangeS.internal(-1420),TemplexAR(RuneAT(RangeS.internal(-5656),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5657),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           RangeS.internal(-35),
@@ -43,7 +52,7 @@ object RefCounting {
                 FunctionCallAE(
                   RangeS.internal(-42),
                   // We add 1 because that "obj" is also a borrow ref
-                  OutsideLoadAE(RangeS.internal(-38),"+", LendBorrowP),
+                  OutsideLoadAE(RangeS.internal(-38),"+", LendBorrowP(None)),
                   List(
                     LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP),
                     IntLiteralAE(RangeS.internal(-35), 1)))),
@@ -69,9 +78,9 @@ object RefCounting {
         ParameterA(AtomAP(RangeS.internal(-116), LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(RangeS.internal(-1421),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("int"), CoordTemplataType))),
-        EqualsAR(RangeS.internal(-1422),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("T"), CoordTemplataType)), ComponentsAR(RangeS.internal(-80), CoordTemplataType, List(TemplexAR(OwnershipAT(RangeS.internal(-56),BorrowP)), TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("TK"), KindTemplataType))))),
-        EqualsAR(RangeS.internal(-1423),TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-56),CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-1421),TemplexAR(RuneAT(RangeS.internal(-5658),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5659),CodeTypeNameA("int"), CoordTemplataType))),
+        EqualsAR(RangeS.internal(-1422),TemplexAR(RuneAT(RangeS.internal(-5660),CodeRuneA("T"), CoordTemplataType)), ComponentsAR(RangeS.internal(-80), CoordTemplataType, List(TemplexAR(OwnershipAT(RangeS.internal(-5661),BorrowP)), TemplexAR(RuneAT(RangeS.internal(-5662),CodeRuneA("TK"), KindTemplataType))))),
+        EqualsAR(RangeS.internal(-1423),TemplexAR(RuneAT(RangeS.internal(-5663),CodeRuneA("V"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5664),CodeTypeNameA("void"), CoordTemplataType)))),
       CodeBodyA(
         BodyAE(
           RangeS.internal(-35),

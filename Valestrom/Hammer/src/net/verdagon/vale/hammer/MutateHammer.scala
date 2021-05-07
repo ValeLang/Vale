@@ -34,7 +34,7 @@ object MutateHammer {
         case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, reference), varType2, _) => {
           translateAddressibleLocalMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
         }
-        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
+        case ReferenceMemberLookup2(_,structExpr2, memberName, _, _, _) => {
           translateMundaneMemberMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, structExpr2, memberName)
         }
         case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
@@ -141,17 +141,25 @@ object MutateHammer {
       StructHammer.makeBox(hinputs, hamuts, variability, boxedType2, boxedTypeH)
 
     // Remember, structs can never own boxes, they only borrow them
-    val expectedStructBoxMemberType = ReferenceH(m.BorrowH, YonderH, boxStructRefH)
+    val expectedStructBoxMemberType = ReferenceH(m.BorrowH, YonderH, ReadwriteH, boxStructRefH)
 
     // We're storing into a struct's member that is a box. The stack is also
     // pointing at this box. First, get the box, then mutate what's inside.
     val nameH = NameHammer.translateFullName(hinputs, hamuts, memberName)
+    val loadResultType =
+      ReferenceH(
+        m.BorrowH,
+        YonderH,
+        // The box should be readwrite, but targetPermission is taken into account when we load/mutate from the
+        // box's member.
+        ReadwriteH,
+        boxStructRefH)
     val loadBoxNode =
         MemberLoadH(
           destinationResultLine.expectStructAccess(),
           memberIndex,
-          m.BorrowH,
           expectedStructBoxMemberType,
+          loadResultType,
           nameH)
     val storeNode =
         MemberStoreH(
@@ -222,6 +230,8 @@ object MutateHammer {
       LocalLoadH(
         local,
         m.BorrowH,
+        // The box should be readwrite, but targetPermission is taken into account when we load from its member.
+        ReadwriteH,
         nameH)
     val storeNode =
         MemberStoreH(

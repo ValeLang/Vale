@@ -50,9 +50,6 @@ class ConvertHelper(
   (ReferenceExpression2) = {
     val sourcePointerType = sourceExpr.resultRegister.reference
 
-    val Coord(targetOwnership, targetType) = targetPointerType;
-    val Coord(sourceOwnership, sourceType) = sourcePointerType;
-
     if (sourceExpr.resultRegister.reference == targetPointerType) {
       return sourceExpr
     }
@@ -61,6 +58,9 @@ class ConvertHelper(
       return sourceExpr
     }
 
+    val Coord(targetOwnership, targetPermission, targetType) = targetPointerType;
+    val Coord(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+
     vcurious(targetPointerType.referend != Never2())
 
     // We make the hammer aware of nevers.
@@ -68,39 +68,56 @@ class ConvertHelper(
 //      return (TemplarReinterpret2(sourceExpr, targetPointerType))
 //    }
 
-    val sourceExprDecayedOwnershipped =
-      (sourceOwnership, targetOwnership) match {
-        case (Own, Own) => sourceExpr
-        case (Borrow, Own) => {
-          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
-        }
-        case (Own, Borrow) => {
-          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
-        }
-        case (Borrow, Borrow) => sourceExpr
-        case (Share, Share) => sourceExpr
-        case (Own, Share) => {
-          vfail(); // curious
-        }
-        case (Borrow, Share) => {
-          vfail(); // curious
-        }
-        case (Weak, Weak) => sourceExpr
+    (sourceOwnership, targetOwnership) match {
+      case (Own, Own) =>
+      case (Borrow, Own) => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
+      }
+      case (Own, Borrow) => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
+      }
+      case (Borrow, Borrow) =>
+      case (Share, Share) =>
+      case (Own, Share) => vwat();
+      case (Borrow, Share) => vwat();
+      case (Weak, Weak) =>
+    }
+
+    (sourcePermission, targetPermission) match {
+//      case (ExclusiveReadwrite, ExclusiveReadwrite) =>
+//      case (Readwrite, ExclusiveReadwrite) => {
+//        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a readwrite reference but target wants an xreadwrite!"))
+//      }
+//      case (Readonly, ExclusiveReadwrite) => {
+//        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a readonly reference but target wants an xreadwrite!"))
+//      }
+//
+//      case (ExclusiveReadwrite, Readwrite) => {
+////        PermissionedSE(range, sourceExpr, Conversions.unevaluatePermission(targetPermission))
+//      }
+      case (Readwrite, Readwrite) =>
+      case (Readonly, Readwrite) => {
+        throw CompileErrorExceptionT(CantUseReadonlyReferenceAsReadwrite(range))
       }
 
-    val sourceExprDecayedOwnershippedConverted =
+//      case (ExclusiveReadwrite, Readonly) =>
+      case (Readwrite, Readonly) =>
+      case (Readonly, Readonly) =>
+    }
+
+    val sourceExprConverted =
       if (sourceType == targetType) {
-        (sourceExprDecayedOwnershipped)
+        sourceExpr
       } else {
         (sourceType, targetType) match {
           case (s @ StructRef2(_), i : InterfaceRef2) => {
-            convert(env.globalEnv, temputs, range, sourceExprDecayedOwnershipped, s, i)
+            convert(env.globalEnv, temputs, range, sourceExpr, s, i)
           }
           case _ => vfail()
         }
       };
 
-    (sourceExprDecayedOwnershippedConverted)
+    (sourceExprConverted)
   }
 
   def convert(

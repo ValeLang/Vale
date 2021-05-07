@@ -455,11 +455,14 @@ LLVMValueRef RCImm::checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     Ref ref) {
+    //buildFlare(FL(), globalState, functionState, builder);
   Reference *actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
+  //buildFlare(FL(), globalState, functionState, builder);
   std::tie(actualRefM, refLE) = megaGetRefInnardsForChecking(ref);
   assert(actualRefM == refM);
   assert(refLE != nullptr);
+  //buildFlare(FL(), globalState, functionState, builder);
   assert(LLVMTypeOf(refLE) == globalState->getRegion(refM)->translateType(refM));
 
   if (globalState->opt->census) {

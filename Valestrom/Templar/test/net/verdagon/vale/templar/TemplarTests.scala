@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{CodeLocationS, CodeVarNameS, ProgramS, RangeS, Scout, VariableNameAlreadyExists}
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.templata._
@@ -9,6 +9,7 @@ import net.verdagon.vale._
 import net.verdagon.vale.astronomer.{Astronomer, CodeTypeNameA, CodeVarNameA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
+import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers, _}
 
 import scala.collection.immutable.List
@@ -43,7 +44,12 @@ class TemplarCompilation(var filenamesAndSources: List[(String, String)]) {
                   vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, err))
                 }
                 case ParseSuccess((program0, _)) => {
-                  program0
+                  val von = ParserVonifier.vonifyFile(program0)
+                  val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+                  ParsedLoader.load(vpstJson) match {
+                    case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, error))
+                    case ParseSuccess(program0) => program0
+                  }
                 }
               }
             }))

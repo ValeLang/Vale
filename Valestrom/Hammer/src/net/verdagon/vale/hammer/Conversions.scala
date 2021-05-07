@@ -20,11 +20,10 @@ object Conversions {
     }
   }
 
-  def evaluatePermission(permission: t.Permission): Permission = {
+  def evaluatePermission(permission: t.Permission): PermissionH = {
     permission match {
-      case t.Readonly => Readonly
-      case t.Readwrite => Readwrite
-      case t.ExclusiveReadwrite => ExclusiveReadwrite
+      case t.Readonly => ReadonlyH
+      case t.Readwrite => ReadwriteH
     }
   }
 

@@ -146,9 +146,11 @@ sealed trait LoadAsP
 case object MoveP extends LoadAsP
 // This means we want to use it, but don't want to own it. This will
 // probably become a BorrowP or ShareP.
-case object LendBorrowP extends LoadAsP
+// If permission is None, then we're probably in a dot. For example, x.launch()
+// should be mapped to launch(&!x) if x is mutable, or launch(&x) if it's readonly.
+case class LendBorrowP(permission: Option[PermissionP]) extends LoadAsP
 // This means we want to get a weak reference to it. Thisll become a WeakP.
-case object LendWeakP extends LoadAsP
+case class LendWeakP(permission: PermissionP) extends LoadAsP
 // This represents unspecified. It basically means, use whatever ownership already there.
 case object UseP extends LoadAsP
 

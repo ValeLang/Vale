@@ -36,7 +36,7 @@ class RunePredictorTests extends FunSuite with Matchers {
           TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
           EqualsSR(RangeS.testZero,
             TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
-            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MyOption")),List(OwnershippedST(RangeS.testZero,ShareP, NameST(RangeS.testZero, CodeTypeNameS("int")))))))),
+            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("MyOption")),List(InterpretedST(RangeS.testZero,ShareP,ReadonlyP, NameST(RangeS.testZero, CodeTypeNameS("int")))))))),
         List())
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }
@@ -96,7 +96,7 @@ class RunePredictorTests extends FunSuite with Matchers {
         TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
         EqualsSR(RangeS.testZero,
           TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
-          TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), IntST(RangeS.testZero,5),OwnershippedST(RangeS.testZero,ShareP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
+          TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
       List())
     conclusions shouldEqual Conclusions(Set(CodeRuneS("Z")), Map(CodeRuneS("Z") -> CoordTypeSR))
   }
@@ -154,8 +154,9 @@ class RunePredictorTests extends FunSuite with Matchers {
           EqualsSR(RangeS.testZero,
             TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
             TemplexSR(
-              OwnershippedST(RangeS.testZero,
+              InterpretedST(RangeS.testZero,
                 BorrowP,
+                ReadonlyP,
                 CallST(RangeS.testZero,
                   NameST(RangeS.testZero, CodeTypeNameS("MyIFunction1")),
                   List(

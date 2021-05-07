@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.{scout, vfail, vimpl, vwat}
+import net.verdagon.vale.{scout, vassert, vfail, vimpl, vwat}
 import net.verdagon.vale.scout.Scout.{noDeclarations, noVariableUses}
 import net.verdagon.vale.scout.patterns.{LetRuleState, PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
@@ -68,7 +68,7 @@ object ExpressionScout {
                 case _ => vwat()
               }, None),
             constructedMembersNames.map(n => DotPE(rangeAtEnd, LookupPE(StringP(rangeAtEnd, "this"), None), Range.zero, false, StringP(rangeAtEnd, n))),
-            LendBorrowP)
+            LendBorrowP(None))
 
         val (stackFrameAfterConstructing, NormalResult(_, constructExpression), selfUsesAfterConstructing, childUsesAfterConstructing) =
           scoutExpression(stackFrameBeforeConstructing, constructorCallP)
@@ -131,7 +131,7 @@ object ExpressionScout {
               val addCallRange = RangeS(prevExpr.range.end, partSE.range.begin)
               FunctionCallSE(
                 addCallRange,
-                OutsideLoadSE(addCallRange, "+", None, LendBorrowP),
+                OutsideLoadSE(addCallRange, "+", None, LendBorrowP(None)),
                 List(prevExpr, partSE))
             }
           })
@@ -140,7 +140,13 @@ object ExpressionScout {
       case LendPE(range, innerPE, targetOwnership) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
           scoutExpressionAndCoerce(stackFrame0, innerPE, targetOwnership)
-        (stackFrame1, NormalResult(evalRange(range), OwnershippedSE(evalRange(range), inner1, targetOwnership)), innerSelfUses, innerChildUses)
+        inner1 match {
+          case OwnershippedSE(_, _, loadAs) => vassert(loadAs == targetOwnership)
+          case LocalLoadSE(_, _, loadAs) => vassert(loadAs == targetOwnership)
+          case OutsideLoadSE(_, _, _, loadAs) => vassert(loadAs == targetOwnership)
+          case _ => vwat()
+        }
+        (stackFrame1, NormalResult(evalRange(range), inner1), innerSelfUses, innerChildUses)
       }
       case ReturnPE(range, innerPE) => {
         val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
@@ -200,7 +206,7 @@ object ExpressionScout {
       }
       case MethodCallPE(range, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, memberLookup, methodArgs) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, memberLookup, LendBorrowP)
+          scoutExpressionAndCoerce(stackFrame0, memberLookup, LendBorrowP(None))
         val (stackFrame2, subject1, subjectSelfUses, subjectChildUses) =
           scoutExpressionAndCoerce(stackFrame1, subjectExpr, subjectTargetOwnership)
         val (stackFrame3, tailArgs1, tailArgsSelfUses, tailArgsChildUses) =
@@ -367,14 +373,14 @@ object ExpressionScout {
           }
           case _ => {
             val (stackFrame1, containerExpr, selfUses, childUses) =
-              scoutExpressionAndCoerce(stackFrame0, containerExprPE, LendBorrowP);
+              scoutExpressionAndCoerce(stackFrame0, containerExprPE, LendBorrowP(None));
             (stackFrame1, NormalResult(evalRange(rangeP), DotSE(evalRange(rangeP), containerExpr, memberName, true)), selfUses, childUses)
           }
         }
       }
       case IndexPE(range, containerExprPE, List(indexExprPE)) => {
         val (stackFrame1, containerExpr1, containerSelfUses, containerChildUses) =
-          scoutExpressionAndCoerce(stackFrame0, containerExprPE, LendBorrowP);
+          scoutExpressionAndCoerce(stackFrame0, containerExprPE, LendBorrowP(None));
         val (stackFrame2, indexExpr1, indexSelfUses, indexChildUses) =
           scoutExpressionAndCoerce(stackFrame1, indexExprPE, UseP);
         val dot1 = DotCallSE(evalRange(range), containerExpr1, indexExpr1)
@@ -394,8 +400,8 @@ object ExpressionScout {
         case LocalLookupResult(range, name) => {
           val uses =
             targetOwnershipIfLookupResult match {
-              case LendBorrowP => firstInnerSelfUses.markBorrowed(name)
-              case LendWeakP => firstInnerSelfUses.markBorrowed(name)
+              case LendBorrowP(_) => firstInnerSelfUses.markBorrowed(name)
+              case LendWeakP(_) => firstInnerSelfUses.markBorrowed(name)
               case _ => firstInnerSelfUses.markMoved(name)
             }
           (LocalLoadSE(range, name, targetOwnershipIfLookupResult), uses)

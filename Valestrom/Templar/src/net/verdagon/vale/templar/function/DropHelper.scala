@@ -21,11 +21,11 @@ class DropHelper(
   (ReferenceExpression2) = {
     val resultExpr2 =
       undestructedExpr2.resultRegister.reference match {
-        case r@Coord(Own, referend) => {
+        case r@Coord(Own, Readwrite, referend) => {
           val destructorPrototype =
             referend match {
               case PackT2(_, understructRef) => {
-                destructorTemplar.getCitizenDestructor(fate.snapshot, temputs, Coord(Own, understructRef))
+                destructorTemplar.getCitizenDestructor(fate.snapshot, temputs, Coord(Own,Readwrite, understructRef))
               }
               case StructRef2(_) | InterfaceRef2(_) => {
                 destructorTemplar.getCitizenDestructor(fate.snapshot, temputs, r)
@@ -36,9 +36,9 @@ class DropHelper(
             }
           FunctionCall2(destructorPrototype, List(undestructedExpr2))
         }
-        case Coord(Borrow, _) => (Discard2(undestructedExpr2))
-        case Coord(Weak, _) => (Discard2(undestructedExpr2))
-        case Coord(Share, _) => {
+        case Coord(Borrow, _, _) => (Discard2(undestructedExpr2))
+        case Coord(Weak, _, _) => (Discard2(undestructedExpr2))
+        case Coord(Share, Readonly, _) => {
           val destroySharedCitizen =
             (temputs: Temputs, Coord: Coord) => {
               val destructorHeader = destructorTemplar.getCitizenDestructor(fate.snapshot, temputs, Coord)
@@ -66,11 +66,19 @@ class DropHelper(
                 Discard2(undestructedExpr2)
               }
               case as@KnownSizeArrayT2(_, _) => {
-                val underarrayReference2 = Coord(undestructedExpr2.resultRegister.reference.ownership, as)
+                val underarrayReference2 =
+                  Coord(
+                    undestructedExpr2.resultRegister.reference.ownership,
+                    undestructedExpr2.resultRegister.reference.permission,
+                    as)
                 destroySharedArray(temputs, underarrayReference2)
               }
               case as@UnknownSizeArrayT2(_) => {
-                val underarrayReference2 = Coord(undestructedExpr2.resultRegister.reference.ownership, as)
+                val underarrayReference2 =
+                  Coord(
+                    undestructedExpr2.resultRegister.reference.ownership,
+                    undestructedExpr2.resultRegister.reference.permission,
+                    as)
                 destroySharedArray(temputs, underarrayReference2)
               }
               case OverloadSet(overloadSetEnv, name, voidStructRef) => {
@@ -93,8 +101,8 @@ class DropHelper(
         }
       }
     vassert(
-      resultExpr2.resultRegister.reference == Coord(Share, Void2()) ||
-        resultExpr2.resultRegister.reference == Coord(Share, Never2()))
+      resultExpr2.resultRegister.reference == Coord(Share, Readonly, Void2()) ||
+        resultExpr2.resultRegister.reference == Coord(Share, Readonly, Never2()))
     resultExpr2
   }
 
@@ -111,10 +119,10 @@ class DropHelper(
         bodyEnv.fullName,
         List(),
         List(Parameter2(CodeVarName2("x"), None, type2)),
-        Coord(Share, Void2()),
+        Coord(Share, Readonly, Void2()),
         Some(originFunction1))
     val function2 = Function2(header, List(), Block2(List(dropExpr2, Return2(VoidLiteral2()))))
-    temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Void2()))
+    temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Readonly, Void2()))
     temputs.addFunction(function2)
     vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
     header

@@ -167,7 +167,7 @@ class PatternTemplar(
             (lets0 ++ innerLets)
           }
           case PackT2(_, underlyingStruct @ StructRef2(_)) => {
-            val structType2 = Coord(expectedCoord.ownership, underlyingStruct)
+            val structType2 = Coord(expectedCoord.ownership, expectedCoord.permission, underlyingStruct)
             val reinterpretExpr2 = TemplarReinterpret2(localLookupExpr, structType2)
             val innerLets =
               nonCheckingTranslateStructInner(
@@ -175,7 +175,7 @@ class PatternTemplar(
             (lets0 ++ innerLets)
           }
           case TupleT2(_, underlyingStruct @ StructRef2(_)) => {
-            val structType2 = Coord(expectedCoord.ownership, underlyingStruct)
+            val structType2 = Coord(expectedCoord.ownership, expectedCoord.permission, underlyingStruct)
             val reinterpretExpr2 = TemplarReinterpret2(localLookupExpr, structType2)
             val innerLets =
               nonCheckingTranslateStructInner(
@@ -325,7 +325,7 @@ class PatternTemplar(
     // for each member, unlet its local and pass it to the subpattern.
 
     val arrSeqRef2 = inputArraySeqExpr.resultRegister.reference
-    val Coord(arrSeqRefOwnership, arraySeqT @ KnownSizeArrayT2(numElements, RawArrayT2(elementType, arrayMutability))) = arrSeqRef2
+    val Coord(arrSeqRefOwnership, arrSeqRefPermission, arraySeqT @ KnownSizeArrayT2(numElements, RawArrayT2(elementType, arrayMutability))) = arrSeqRef2
 
     val memberTypes = (0 until numElements).toList.map(_ => elementType)
 
@@ -356,7 +356,8 @@ class PatternTemplar(
                 val loadExpr =
                   SoftLoad2(
                     ArraySequenceLookup2(range, inputArraySeqExpr, arraySeqT, IntLiteral2(index), Final),
-                    Share)
+                    Share,
+                    Readonly)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
             })
@@ -383,7 +384,7 @@ class PatternTemplar(
     structType2: Coord,
     inputStructExpr: ReferenceExpression2):
   (List[ReferenceExpression2]) = {
-    val Coord(structOwnership, structRef2 @ StructRef2(_)) = structType2
+    val Coord(structOwnership, structPermission, structRef2 @ StructRef2(_)) = structType2
     val structDef2 = temputs.getStructDefForRef(structRef2)
     // We don't pattern match against closure structs.
 
@@ -415,24 +416,30 @@ class PatternTemplar(
                 val memberCoord = member.tyype.expectReferenceMember().reference
 
                 val index = structDef2.members.indexWhere(_.name == member.name)
-                val ownershipInClosureStruct = structDef2.members(index).tyype.reference.ownership
+                val memberOwnershipInStruct = structDef2.members(index).tyype.reference.ownership
                 val coerceToOwnership =
-                  ownershipInClosureStruct match {
+                  memberOwnershipInStruct match {
                     case Own => Borrow
                     case Borrow => Borrow
                     case Weak => Weak
                     case Share => Share
                   }
+                val memberPermissionInStruct = structDef2.members(index).tyype.reference.permission
+                val resultOwnership = if (memberCoord.ownership == Own) Borrow else memberCoord.ownership
+                val resultPermission = Templar.intersectPermission(memberPermissionInStruct, structPermission)
+//                val resultCoord = Coord(resultOwnership, resultPermission, memberCoord.referend)
 
                 val loadExpr =
                   SoftLoad2(
                     ReferenceMemberLookup2(
                       range,
-                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), structOwnership),
+                      SoftLoad2(LocalLookup2(range, packLocalVariable, structType2, Final), structOwnership, structPermission),
                       structDef2.fullName.addStep(structDef2.members(index).name),
                       memberCoord,
+                      resultPermission,
                       member.variability),
-                    coerceToOwnership)
+                    coerceToOwnership,
+                    structPermission)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
             })

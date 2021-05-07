@@ -37,7 +37,7 @@ LLVMValueRef hexRoundDown(
     LLVMBuilderRef builder,
     LLVMValueRef n) {
   // Mask off the last four bits, to round downward to the next multiple of 16.
-  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFUL, false);
+  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFULL, false);
   return LLVMBuildAnd(builder, n, mask, "rounded");
 }
 
@@ -161,7 +161,7 @@ void Linear::dealias(
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "extStrPtrLE");
 
-  LLVMBuildCall(builder, globalState->free, &sourceI8PtrLE, 1, "");
+  LLVMBuildCall(builder, globalState->externs->free, &sourceI8PtrLE, 1, "");
 }
 
 Ref Linear::lockWeak(
@@ -762,7 +762,7 @@ void Linear::deallocate(
           refLE,
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "concreteCharPtrForFree");
-  LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
 }
 
 Ref Linear::constructUnknownSizeArray(
@@ -929,7 +929,7 @@ Ref Linear::innerMallocStr(
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
         std::vector<LLVMValueRef> argsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
-        LLVMBuildCall(thenBuilder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
+        LLVMBuildCall(thenBuilder, globalState->externs->strncpy, argsLE.data(), argsLE.size(), "");
 
 
         auto charsEndPtr = LLVMBuildGEP(thenBuilder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
@@ -1819,7 +1819,16 @@ LLVMValueRef Linear::getInterfaceMethodFunctionPtr(
   auto orderedSubstructs = structs.getOrderedSubstructs(hostInterfaceMT);
   auto isValidEdgeNumLE =
       LLVMBuildICmp(builder, LLVMIntULT, edgeNumLE, constI64LE(globalState, orderedSubstructs.size()), "isValidEdgeNum");
-  buildAssert(globalState, functionState, builder, isValidEdgeNumLE, "Invalid edge number!");
+
+  buildIf(
+      globalState, functionState, builder, isZeroLE(builder, isValidEdgeNumLE),
+      [this, edgeNumLE](LLVMBuilderRef thenBuilder) {
+          buildPrint(globalState, thenBuilder, "Invalid edge number (");
+          buildPrint(globalState, thenBuilder, edgeNumLE);
+          buildPrint(globalState, thenBuilder, "), exiting!\n");
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
+          LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+      });
 
   auto functionLT = globalState->getInterfaceFunctionTypes(hostInterfaceMT)[indexInEdge];
 

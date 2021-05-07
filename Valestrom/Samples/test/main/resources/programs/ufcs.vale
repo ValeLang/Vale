@@ -1,0 +1,12 @@
+struct Spaceship {
+  fuel! int;
+}
+
+fn getFuel(a &Spaceship) int {
+  a.fuel
+}
+
+fn main() int export {
+  ship = Spaceship(42);
+  = ship.getFuel();
+}

@@ -47,13 +47,13 @@ class IfTests extends FunSuite with Matchers {
 
     val temputs = compile.getTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Int2()))
+    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
     ifs.size shouldEqual 2
     val userFuncs = temputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
-        case Coord(Share, Int2()) =>
-        case Coord(Share, Bool2()) =>
+        case Coord(Share, Readonly, Int2()) =>
+        case Coord(Share, Readonly, Bool2()) =>
       }
     })
 
@@ -78,12 +78,12 @@ class IfTests extends FunSuite with Matchers {
 
     val temputs = compile.getTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Int2()))
+    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
     val userFuncs = temputs.getAllUserFunctions
     userFuncs.foreach(func => {
       func.header.returnType match {
-        case Coord(Share, Int2()) =>
-        case Coord(Share, Bool2()) =>
+        case Coord(Share, Readonly, Int2()) =>
+        case Coord(Share, Readonly, Bool2()) =>
       }
     })
 
@@ -104,7 +104,7 @@ class IfTests extends FunSuite with Matchers {
 
     val temputs = compile.getTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
-    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Str2()))
+    ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Str2()))
 
     compile.evalForReferend(Vector()) shouldEqual VonStr("#")
   }

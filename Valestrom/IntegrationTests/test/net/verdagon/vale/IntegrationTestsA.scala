@@ -8,9 +8,9 @@ import net.verdagon.von.{VonBool, VonFloat, VonInt, VonObject}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.hammer.VonHammer
-import net.verdagon.vale.metal.{FullNameH, IntH, YonderH}
+import net.verdagon.vale.metal.{FullNameH, IntH, ReadonlyH, ReadwriteH, YonderH}
 import net.verdagon.vale.templar.templata.Signature2
-import net.verdagon.vale.templar.types.{Coord, Int2, Share, Str2}
+import net.verdagon.vale.templar.types.{Coord, Int2, Readonly, Share, Str2}
 
 import scala.io.Source
 import scala.util.Try
@@ -128,7 +128,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
     val heap = new Heap(System.out)
     val ref =
-      heap.add(m.OwnH, YonderH, StructInstanceV(
+      heap.add(m.OwnH, YonderH, ReadwriteH, StructInstanceV(
         hamuts.lookupStruct("SomeStruct"),
         Some(Vector())))
     compile.run(heap, Vector(ref))
@@ -421,10 +421,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Map function") {
-    val compile = Compilation(
-      Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("programs/genericvirtuals/mapFunc.vale"))
+    val compile = Compilation.multiple(List(
+      Samples.get("libraries/castutils.vale"),
+        Samples.get("libraries/printutils.vale"),
+        Samples.get("programs/genericvirtuals/mapFunc.vale")))
 
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }
@@ -445,32 +445,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.getTemputs()
 
-    vassertSome(hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Int2())))))))
+    vassertSome(hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Int2())))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("bork", List(), List(Coord(Share, Str2())))))))
+    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("bork", List(), List(Coord(Share, Readonly, Str2())))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Str2())))))))
-  }
-
-  test("Test generic array func") {
-    // Make sure that functions that cant be called by main will not be included.
-
-    val compile = Compilation(
-      """
-        |fn Arr<M, F>(n int, generator &F) Array<M, T>
-        |rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
-        |{
-        |  Array<M>(n, &IFunction1<mut, int, T>(generator))
-        |}
-        |
-        |fn main() str {
-        |  a = Arr<mut>(5, (_){"hi"});
-        |  = a.3;
-        |}
-        |""".stripMargin)
-    val temputs = compile.getTemputs()
-
-    compile.run(Vector())
+    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Str2())))))))
   }
 
 //  test("Test overloading between borrow and own") {

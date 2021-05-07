@@ -22,7 +22,6 @@ LLVMValueRef declareFunction(
 
   auto valeFunctionNameL = functionM->prototype->name->name;
 
-  std::cout << "Adding a function " << valeFunctionNameL << std::endl;
   LLVMValueRef valeFunctionL = LLVMAddFunction(globalState->mod, valeFunctionNameL.c_str(), valeFunctionTypeL);
 
   assert(globalState->functions.count(functionM->prototype->name->name) == 0);
@@ -48,7 +47,6 @@ LLVMValueRef declareFunction(
     assert(exportName != functionM->prototype->name->name);
     // This is a thunk function that correctly aliases the objects that come in from the
     // outside world, and dealiases the object that we're returning to the outside world.
-    std::cout << "Adding b function " << exportName << std::endl;
     LLVMValueRef exportFunctionL = LLVMAddFunction(globalState->mod, exportName.c_str(), exportFunctionTypeL);
 
     LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, exportFunctionL, "entry");
@@ -152,7 +150,6 @@ LLVMValueRef declareExternFunction(
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);
-  std::cout << "Adding c function " << nameL << std::endl;
   LLVMValueRef functionL = LLVMAddFunction(globalState->mod, nameL.c_str(), functionTypeL);
 
   assert(globalState->externFunctions.count(prototypeM->name->name) == 0);
@@ -251,7 +248,6 @@ void declareExtraFunction(
   }
 
   auto functionLT = LLVMFunctionType(returnTypeLT, paramsLT.data(), paramsLT.size(), false);
-  std::cout << "Adding e function " << llvmName << std::endl;
   auto functionL = LLVMAddFunction(globalState->mod, llvmName.c_str(), functionLT);
   // Don't define it yet, we're just declaring them right now.
   globalState->extraFunctions.emplace(std::make_pair(prototype, functionL));

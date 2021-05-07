@@ -6,7 +6,6 @@ std::tuple<LLVMValueRef, LLVMBuilderRef> makeStringSetupFunction(GlobalState* gl
   auto voidLT = LLVMVoidTypeInContext(globalState->context);
 
   auto functionLT = LLVMFunctionType(voidLT, nullptr, 0, false);
-  std::cout << "Adding f function " << "__Vale_SetupStrings" << std::endl;
   auto functionL = LLVMAddFunction(globalState->mod, "__Vale_SetupStrings", functionLT);
 
   auto stringsBuilder = LLVMCreateBuilderInContext(globalState->context);
@@ -42,7 +41,6 @@ Prototype* makeValeMainFunction(
       [globalState, stringSetupFunctionL, mainSetupFuncProto, userMainFunctionPrototype, mainCleanupFunctionPrototype](
           FunctionState *functionState, LLVMBuilderRef entryBuilder) {
         buildFlare(FL(), globalState, functionState, entryBuilder);
-        buildPrint(globalState, entryBuilder, 1337);
 
         LLVMBuildCall(entryBuilder, stringSetupFunctionL, nullptr, 0, "");
         LLVMBuildCall(entryBuilder, globalState->lookupFunction(mainSetupFuncProto), nullptr, 0, "");
@@ -84,17 +82,22 @@ Prototype* makeValeMainFunction(
                 ->checkValidReference(
                     FL(), functionState, entryBuilder, userMainFunctionPrototype->returnType, userMainResultRef);
 
+        buildFlare(FL(), globalState, functionState, entryBuilder);
         buildCall(globalState, functionState, entryBuilder, mainCleanupFunctionPrototype, {});
+        buildFlare(FL(), globalState, functionState, entryBuilder);
 
         if (globalState->opt->printMemOverhead) {
+          buildFlare(FL(), globalState, functionState, entryBuilder);
           buildPrint(globalState, entryBuilder, "\nLiveness checks: ");
           buildPrint(
               globalState, entryBuilder,
               LLVMBuildLoad(entryBuilder, globalState->livenessCheckCounter, "livenessCheckCounter"));
           buildPrint(globalState, entryBuilder, "\n");
         }
+        buildFlare(FL(), globalState, functionState, entryBuilder);
 
         if (globalState->opt->census) {
+          buildFlare(FL(), globalState, functionState, entryBuilder);
           // Remove all the things from the census that we added at the start of the program.
           for (auto edgeAndItablePtr : globalState->interfaceTablePtrs) {
             auto itablePtrLE = edgeAndItablePtr.second;
@@ -103,6 +106,7 @@ Prototype* makeValeMainFunction(
                     entryBuilder, itablePtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
             LLVMBuildCall(entryBuilder, globalState->externs->censusRemove, &itablePtrAsVoidPtrLE, 1, "");
           }
+          buildFlare(FL(), globalState, functionState, entryBuilder);
 
           LLVMValueRef args[3] = {
               LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false),
@@ -111,12 +115,16 @@ Prototype* makeValeMainFunction(
           };
           LLVMBuildCall(entryBuilder, globalState->externs->assertI64Eq, args, 3, "");
         }
+        buildFlare(FL(), globalState, functionState, entryBuilder);
 
         if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->emptyTupleStruct) {
+          buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
         } else if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->innt) {
+          buildFlare(FL(), globalState, functionState, entryBuilder, userMainResultLE);
           LLVMBuildRet(entryBuilder, userMainResultLE);
         } else if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->never) {
+          buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
         } else {
           assert(false);
@@ -145,7 +153,6 @@ LLVMValueRef makeEntryFunction(
   // This will be populated at the end, we're just making it here so we can call it
   auto entryParamsLT = std::vector<LLVMTypeRef>{ int64LT, LLVMPointerType(LLVMPointerType(int8LT, 0), 0) };
   LLVMTypeRef functionTypeL = LLVMFunctionType(int64LT, entryParamsLT.data(), entryParamsLT.size(), 0);
-  std::cout << "Adding entry function " << "main" << std::endl;
   LLVMValueRef entryFunctionL = LLVMAddFunction(globalState->mod, "main", functionTypeL);
 
   LLVMSetLinkage(entryFunctionL, LLVMDLLExportLinkage);

@@ -3,14 +3,22 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, Ok, vassert, vfail, vwat}
+import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case ParseSuccess(firstProgram0) => {
+        val von = ParserVonifier.vonifyFile(firstProgram0)
+        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+        val program0 =
+          ParsedLoader.load(vpstJson) match {
+            case ParseFailure(error) => vwat(error.toString)
+            case ParseSuccess(program0) => program0
+          }
         Scout.scoutProgram(List(program0)) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
@@ -22,7 +30,14 @@ class ScoutTests extends FunSuite with Matchers {
   private def compileForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case ParseSuccess(firstProgram0) => {
+        val von = ParserVonifier.vonifyFile(firstProgram0)
+        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+        val program0 =
+          ParsedLoader.load(vpstJson) match {
+            case ParseFailure(error) => vwat(error.toString)
+            case ParseSuccess(program0) => program0
+          }
         Scout.scoutProgram(List(program0)) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)

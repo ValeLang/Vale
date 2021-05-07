@@ -21,9 +21,10 @@ object Driver {
 
   case class Options(
     inputFiles: List[String],
-    outputVirFilepath: Option[String],
-    parsedsOutputDir: Option[String],
-    highlightOutputFile: Option[String],
+    outputDirPath: Option[String],
+    outputVPST: Boolean,
+    outputVAST: Boolean,
+    outputHighlights: Boolean,
     mode: Option[String], // build v run etc
     verbose: Boolean,
   )
@@ -31,17 +32,18 @@ object Driver {
   def parseOpts(opts: Options, list: List[String]) : Options = {
     list match {
       case Nil => opts
-      case "-o" :: value :: tail => {
-        vcheck(opts.outputVirFilepath.isEmpty, "Multiple output files specified!", InputException)
-        parseOpts(opts.copy(outputVirFilepath = Some(value)), tail)
+      case "--output-dir" :: value :: tail => {
+        vcheck(opts.outputDirPath.isEmpty, "Multiple output files specified!", InputException)
+        parseOpts(opts.copy(outputDirPath = Some(value)), tail)
       }
-      case "-op" :: value :: tail => {
-        vcheck(opts.parsedsOutputDir.isEmpty, "Multiple parseds output files specified!", InputException)
-        parseOpts(opts.copy(parsedsOutputDir = Some(value)), tail)
+      case "--output-vpst" :: value :: tail => {
+        parseOpts(opts.copy(outputVPST = value.toBoolean), tail)
       }
-      case "-oh" :: value :: tail => {
-        vcheck(opts.highlightOutputFile.isEmpty, "Multiple highlight output files specified!", InputException)
-        parseOpts(opts.copy(highlightOutputFile = Some(value)), tail)
+      case "--output-vast" :: value :: tail => {
+        parseOpts(opts.copy(outputVAST = value.toBoolean), tail)
+      }
+      case "--output-highlights" :: value :: tail => {
+        parseOpts(opts.copy(outputHighlights = value.toBoolean), tail)
       }
       case ("-v" | "--verbose") :: tail => {
         parseOpts(opts.copy(verbose = true), tail)
@@ -112,60 +114,72 @@ object Driver {
 
     val parseds =
       filepathsAndSources.zipWithIndex.map({ case ((filepath, source), file) =>
-        if (filepath.endsWith(".vpr")) {
-          ParsedLoader.load(source) match {
-            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
-            case ParseSuccess(program0) => program0
+        val vpstJson =
+          if (filepath.endsWith(".vale")) {
+            Parser.runParserForProgramAndCommentRanges(source) match {
+              case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
+              case ParseSuccess((program0, _)) => {
+                val von = ParserVonifier.vonifyFile(program0)
+                val json = new VonPrinter(JsonSyntax, 120).print(von)
+                if (opts.outputVPST) {
+                  val vpstFilepath = filepath.replaceAll("\\.vale", ".vpst")
+                  writeFile(vpstFilepath, json)
+                }
+                json
+              }
+            }
+          } else if (filepath.endsWith(".vpst")) {
+            source
+          } else {
+            throw new InputException("Unknown input type: " + filepath)
           }
-        } else {
-          Parser.runParserForProgramAndCommentRanges(source) match {
-            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
-            case ParseSuccess((program0, _)) => program0
-          }
+        ParsedLoader.load(vpstJson) match {
+          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(filepathsAndSources, file, error))
+          case ParseSuccess(program0) => program0
         }
       })
-    opts.parsedsOutputDir match {
-      case None =>
-      case Some(parsedsOutputDir) => {
-        filepathsAndSources.map(_._1).zip(parseds).foreach({ case (filepath, parsed) =>
-          val von = ParserVonifier.vonifyFile(parsed)
-          val json = new VonPrinter(JsonSyntax, 120).print(von)
-          val valeFilename = filepath.split("[/\\\\]").last
-          val vprFilename = valeFilename.replaceAll("\\.vale", ".vpr")
-          val vprFilepath = parsedsOutputDir + (if (parsedsOutputDir.endsWith("/")) "" else "/") + vprFilename
-          writeFile(vprFilepath, json)
-        })
-      }
-    }
-    opts.outputVirFilepath match {
-      case None => Ok(None)
-      case Some(outputVirFilepath) => {
-        val scoutput =
-          Scout.scoutProgram(parseds) match {
-            case Err(e) => return Err(ScoutErrorHumanizer.humanize(filepathsAndSources, e))
-            case Ok(p) => p
-          }
-        val astrouts =
-          Astronomer.runAstronomer(scoutput) match {
-            case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filepathsAndSources, error))
-            case Left(result) => result
-          }
-        val hinputs =
-          new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler(), false).evaluate(astrouts) match {
-            case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, filepathsAndSources, error))
-            case Ok(x) => x
-          }
-        val programH = Hammer.translate(hinputs)
-
-        if (outputVirFilepath != "") {
-          val json = jsonifyProgram(programH)
-
-          writeFile(outputVirFilepath, json)
-          println("Wrote VIR to file " + outputVirFilepath)
+//    opts.parsedsOutputDir match {
+//      case None =>
+//      case Some(parsedsOutputDir) => {
+//        filepathsAndSources.map(_._1).zip(parseds).foreach({ case (filepath, parsed) =>
+//          val von = ParserVonifier.vonifyFile(parsed)
+//          val json = new VonPrinter(JsonSyntax, 120).print(von)
+//          val valeFilename = filepath.split("[/\\\\]").last
+//          val vpstFilename = valeFilename.replaceAll("\\.vale", ".vpst")
+//          val vpstFilepath = parsedsOutputDir + (if (parsedsOutputDir.endsWith("/")) "" else "/") + vpstFilename
+//          writeFile(vpstFilepath, json)
+//        })
+//      }
+//    }
+    if (opts.outputVAST) {
+      val outputVastFilepath = opts.outputDirPath + "/build.vast"
+      val scoutput =
+        Scout.scoutProgram(parseds) match {
+          case Err(e) => return Err(ScoutErrorHumanizer.humanize(filepathsAndSources, e))
+          case Ok(p) => p
         }
+      val astrouts =
+        Astronomer.runAstronomer(scoutput) match {
+          case Right(error) => return Err(AstronomerErrorHumanizer.humanize(filepathsAndSources, error))
+          case Left(result) => result
+        }
+      val hinputs =
+        new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler(), false).evaluate(astrouts) match {
+          case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, filepathsAndSources, error))
+          case Ok(x) => x
+        }
+      val programH = Hammer.translate(hinputs)
 
-        Ok(Some(programH))
+      if (outputVastFilepath != "") {
+        val json = jsonifyProgram(programH)
+
+        writeFile(outputVastFilepath, json)
+        println("Wrote VAST to file " + outputVastFilepath)
       }
+
+      Ok(Some(programH))
+    } else {
+      Ok(None)
     }
   }
 
@@ -225,81 +239,82 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), None, None, None, None, false), args.toList)
+      val opts = parseOpts(Options(List(), None, true, true, false, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputFiles.nonEmpty, "No input files!", InputException)
 
       opts.mode.get match {
         case "highlight" => {
-          vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
           vcheck(opts.inputFiles.size == 1, "Must have exactly 1 input file for highlighting", InputException)
-          val code = readCode(opts.inputFiles.head)
-          val (parsed, commentRanges) =
-            Parser.runParserForProgramAndCommentRanges(code) match {
-              case ParseFailure(err) => {
-                println(ParseErrorHumanizer.humanize(List(("in.vale", code)), 0, err))
-                System.exit(22)
-                vfail()
+          opts.inputFiles.foreach(inputFile => {
+            val code = readCode(inputFile)
+            val (parsed, commentRanges) =
+              Parser.runParserForProgramAndCommentRanges(code) match {
+                case ParseFailure(err) => {
+                  println(ParseErrorHumanizer.humanize(List(("in.vale", code)), 0, err))
+                  System.exit(22)
+                  vfail()
+                }
+                case ParseSuccess(program0) => program0
               }
-              case ParseSuccess(program0) => program0
-            }
-          val span = Spanner.forProgram(parsed)
-          val highlights = Highlighter.toHTML(code, span, commentRanges)
-          opts.highlightOutputFile.get match {
-            case "" => {
+            val span = Spanner.forProgram(parsed)
+            val highlights = Highlighter.toHTML(code, span, commentRanges)
+            if (opts.outputDirPath == Some("")) {
               println(highlights)
+            } else {
+              val outputFilepath = inputFile.replaceAll("\\.vale", ".html")
+              writeFile(outputFilepath, highlights)
             }
-            case file => {
-              writeFile(file, highlights)
-            }
-          }
+          })
         }
         case "build" => {
-          vcheck(opts.outputVirFilepath.nonEmpty || opts.highlightOutputFile.nonEmpty || opts.parsedsOutputDir.nonEmpty, "No output file!", InputException)
+          vcheck(opts.outputDirPath.nonEmpty, "Must specify --output-dir!", InputException)
           buildAndOutput(opts)
         }
         case "run" => {
-          vcheck(args.size >= 2, "Need name!", InputException)
+          throw InputException("Run command has been disabled.");
 
-          val optsWithForcedCompile =
-            opts.outputVirFilepath match {
-              case None => opts.copy(outputVirFilepath = Some(""))
-              case Some(_) => opts
-            }
-
-          val program =
-            build(optsWithForcedCompile) match {
-              case Ok(Some(programH)) => programH
-              case Err(error) => {
-                System.err.println(error)
-                System.exit(22)
-                vfail()
-              }
-            }
-
-          val verbose = args.slice(2, args.length).contains("--verbose")
-          val result =
-            if (verbose) {
-              Vivem.executeWithPrimitiveArgs(
-                program, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
-            } else {
-              Vivem.executeWithPrimitiveArgs(
-                program,
-                Vector(),
-                new PrintStream(new OutputStream() {
-                  override def write(b: Int): Unit = {
-                    // System.out.write(b)
-                  }
-                }),
-                () => {
-                  scala.io.StdIn.readLine()
-                },
-                (str: String) => {
-                  print(str)
-                })
-            }
-          println("Program result: " + result)
-          println()
+//          vcheck(args.size >= 2, "Need name!", InputException)
+//
+//          val optsWithForcedCompile =
+//            opts.outputVastFilepath match {
+//              case None => opts.copy(outputVastFilepath = Some(""))
+//              case Some(_) => opts
+//            }
+//
+//          val program =
+//            build(optsWithForcedCompile) match {
+//              case Ok(Some(programH)) => programH
+//              case Err(error) => {
+//                System.err.println(error)
+//                System.exit(22)
+//                vfail()
+//              }
+//            }
+//
+//          val verbose = args.slice(2, args.length).contains("--verbose")
+//          val result =
+//            if (verbose) {
+//              Vivem.executeWithPrimitiveArgs(
+//                program, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
+//            } else {
+//              Vivem.executeWithPrimitiveArgs(
+//                program,
+//                Vector(),
+//                new PrintStream(new OutputStream() {
+//                  override def write(b: Int): Unit = {
+//                    // System.out.write(b)
+//                  }
+//                }),
+//                () => {
+//                  scala.io.StdIn.readLine()
+//                },
+//                (str: String) => {
+//                  print(str)
+//                })
+//            }
+//          println("Program result: " + result)
+//          println()
         }
       }
     } catch {

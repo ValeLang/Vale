@@ -48,7 +48,7 @@ fn toImmArray<E>(list &List<E>) Array<imm, E> {
 fn toList<E>(arr &Array<_, E>) List<E> {
   list = List<E>();
   arr each (elem){
-    list.add(elem);
+    list!.add(elem);
   };
   = list;
 }
@@ -121,12 +121,12 @@ fn split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
     maybeFirstAndRest = haystack.splitOnce(needle);
     if (maybeFirstAndRest.isEmpty()) {
       if (haystack.len() > 0) {
-        result.add(haystack);
+        result!.add(haystack);
       }
       ret result;
     }
     (first, rest) = maybeFirstAndRest.get();
-    result.add(first);
+    result!.add(first);
     mut haystack = rest;
   }
 

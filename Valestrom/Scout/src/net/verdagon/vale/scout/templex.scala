@@ -93,7 +93,8 @@ case class BoolST(range: RangeS, value: Boolean) extends ITemplexS
 case class AbsoluteNameST(range: RangeS, name: INameS) extends ITemplexS
 case class NameST(range: RangeS, name: CodeTypeNameS) extends ITemplexS
 case class RuneST(range: RangeS, rune: IRuneS) extends ITemplexS
-case class OwnershippedST(range: RangeS, ownership: OwnershipP, inner: ITemplexS) extends ITemplexS
+case class InterpretedST(range: RangeS, ownership: OwnershipP, permission: PermissionP, inner: ITemplexS) extends ITemplexS
+//case class PermissionedST(range: RangeS, permission: PermissionP, inner: ITemplexS) extends ITemplexS
 case class NullableST(range: RangeS, inner: ITemplexS) extends ITemplexS
 case class CallST(range: RangeS,
     template: ITemplexS,
@@ -143,7 +144,7 @@ object TemplexSUtils {
       case NameST(_, _) => List()
       case AbsoluteNameST(_, _) => List()
       case RuneST(_, rune) => List(rune)
-      case OwnershippedST(_, _, inner) => getDistinctOrderedRunesForTemplex(inner)
+      case InterpretedST(_, _, _, inner) => getDistinctOrderedRunesForTemplex(inner)
       case BorrowST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
       case CallST(_, template, args) => {
         (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct
@@ -177,7 +178,7 @@ object TemplexSUtils {
 //      case VariabilityST(variability) => VariabilityST(variability)
 //      case BoolST(value) => BoolST(value)
 //      case RuneST(rune) => RuneST(rune)
-//      case OwnershippedST(ownership, inner) => OwnershippedST(ownership, templexNamesToRunes(envName, runes)(inner))
+//      case InterpretedST(ownership, inner) => InterpretedST(ownership, templexNamesToRunes(envName, runes)(inner))
 //      case CallST(template, args) => {
 //        CallST(
 //          templexNamesToRunes(envName, runes)(template),

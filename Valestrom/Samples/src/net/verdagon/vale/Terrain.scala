@@ -13,7 +13,7 @@ object Terrain {
       |
       |struct LocationHasher { }
       |fn __call(this: &LocationHasher, loc: Location) int {
-      |  hash = 0;
+      |  hash! = 0;
       |  mut hash = 41 * hash + loc.groupX;
       |  mut hash = 41 * hash + loc.groupY;
       |  mut hash = 41 * hash + loc.indexInGroup;
@@ -300,7 +300,7 @@ object Terrain {
         |  terrain.tiles.add(Location(2, -1, 6), TerrainTile(1, true, "ground"));
         |  println("g");
         |
-        |  rand = 0;
+        |  rand! = 0;
         |  terrain.tiles.keys() each (location){
         |    tile?: Opt:&TerrainTile = terrain.tiles.get(location);
         |    tile = tile?^.get();

@@ -10,7 +10,8 @@
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    Function* functionM) {
+    Function* functionM,
+    bool skipExporting) {
 
   auto valeParamTypesL = translateTypes(globalState, functionM->prototype->params);
   auto valeReturnTypeL =
@@ -26,7 +27,7 @@ LLVMValueRef declareFunction(
   assert(globalState->functions.count(functionM->prototype->name->name) == 0);
   globalState->functions.emplace(functionM->prototype->name->name, valeFunctionL);
 
-  if (globalState->program->isExported(functionM->prototype->name)) {
+  if (!skipExporting && globalState->program->isExported(functionM->prototype->name)) {
     std::vector<LLVMTypeRef> exportParamTypesL;
     for (auto valeRefMT : functionM->prototype->params) {
       auto hostRefMT = globalState->getRegion(valeRefMT)->getExternalType(valeRefMT);

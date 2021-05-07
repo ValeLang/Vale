@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.function
 
-import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, LocalVariableA, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, RuneAT, TemplateTemplataType, TemplexAR, UserFunctionA}
-import net.verdagon.vale.parser.{FinalP, OwnP, ShareP}
+import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, LocalVariableA, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, PermissionAT, PermissionTemplataType, RuneAT, TemplateTemplataType, TemplexAR, UserFunctionA}
+import net.verdagon.vale.parser.{FinalP, OwnP, ReadonlyP, ReadwriteP, ShareP}
 import net.verdagon.vale.scout.{CodeLocationS, NotUsed, RangeS, Used}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
@@ -75,7 +75,7 @@ class DestructorTemplar(
     overloadTemplar.scoutExpectedFunctionForPrototype(
       env,
       temputs,
-      RangeS.internal(-1672),
+      RangeS.internal(-16721),
       if (type2.ownership == Share) {
         ImmConcreteDestructorImpreciseNameA()
       } else {
@@ -132,10 +132,10 @@ class DestructorTemplar(
         bodyEnv.fullName,
         List(),
         List(Parameter2(CodeVarName2("x"), None, type2)),
-        Coord(Share, Void2()),
+        Coord(Share, Readonly, Void2()),
         Some(originFunction1))
     val function2 = Function2(header, List(), Block2(List(dropExpr2, Return2(VoidLiteral2()))))
-    temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Void2()))
+    temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Readonly, Void2()))
     temputs.addFunction(function2)
     vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
     header
@@ -148,11 +148,11 @@ class DestructorTemplar(
   (ReferenceExpression2) = {
     val resultExpr2 =
       undestructedExpr2.resultRegister.reference match {
-        case r @ Coord(Own, referend) => {
+        case r @ Coord(Own, Readwrite, referend) => {
           val destructorPrototype =
             referend match {
               case PackT2(_, understructRef) => {
-                getCitizenDestructor(fate.snapshot, temputs, Coord(Own, understructRef))
+                getCitizenDestructor(fate.snapshot, temputs, Coord(Own, Readwrite, understructRef))
               }
               case StructRef2(_) | InterfaceRef2(_) => {
                 getCitizenDestructor(fate.snapshot, temputs, r)
@@ -163,9 +163,9 @@ class DestructorTemplar(
             }
           FunctionCall2(destructorPrototype, List(undestructedExpr2))
         }
-        case Coord(Borrow, _) => (Discard2(undestructedExpr2))
-        case Coord(Weak, _) => (Discard2(undestructedExpr2))
-        case Coord(Share, _) => {
+        case Coord(Borrow, _, _) => (Discard2(undestructedExpr2))
+        case Coord(Weak, _, _) => (Discard2(undestructedExpr2))
+        case Coord(Share, Readonly, _) => {
           val destroySharedCitizen =
             (temputs: Temputs, Coord: Coord) => {
               val destructorHeader = getCitizenDestructor(fate.snapshot, temputs, Coord)
@@ -193,11 +193,19 @@ class DestructorTemplar(
                 Discard2(undestructedExpr2)
               }
               case as @ KnownSizeArrayT2(_, _) => {
-                val underarrayReference2 = Coord(undestructedExpr2.resultRegister.reference.ownership, as)
+                val underarrayReference2 =
+                  Coord(
+                    undestructedExpr2.resultRegister.reference.ownership,
+                    undestructedExpr2.resultRegister.reference.permission,
+                    as)
                 destroySharedArray(temputs, underarrayReference2)
               }
               case as @ UnknownSizeArrayT2(_) => {
-                val underarrayReference2 = Coord(undestructedExpr2.resultRegister.reference.ownership, as)
+                val underarrayReference2 =
+                  Coord(
+                    undestructedExpr2.resultRegister.reference.ownership,
+                    undestructedExpr2.resultRegister.reference.permission,
+                    as)
                 destroySharedArray(temputs, underarrayReference2)
               }
               case OverloadSet(overloadSetEnv, name, voidStructRef) => {
@@ -220,8 +228,8 @@ class DestructorTemplar(
         }
       }
     vassert(
-      resultExpr2.resultRegister.reference == Coord(Share, Void2()) ||
-      resultExpr2.resultRegister.reference == Coord(Share, Never2()))
+      resultExpr2.resultRegister.reference == Coord(Share, Readonly, Void2()) ||
+      resultExpr2.resultRegister.reference == Coord(Share, Readonly, Never2()))
     resultExpr2
   }
 
@@ -238,15 +246,16 @@ class DestructorTemplar(
 
     val structDef = temputs.lookupStruct(structRef)
     val structOwnership = if (structDef.mutability == Mutable) Own else Share
+    val structPermission = if (structDef.mutability == Mutable) Readwrite else Readonly
     val structBorrowOwnership = if (structDef.mutability == Mutable) Borrow else Share
-    val structType = Coord(structOwnership, structDef.getRef)
+    val structType = Coord(structOwnership, structPermission, structDef.getRef)
 
     val header =
       FunctionHeader2(
         destructorFullName,
         List(),
         params2,
-        Coord(Share, Void2()),
+        Coord(Share, Readonly, Void2()),
         Some(originFunction1));
 
       temputs
@@ -295,8 +304,9 @@ class DestructorTemplar(
     opts.debugOut("turn this into just a regular destructor template function? dont see why its special.")
 
     val arrayOwnership = if (sequence.array.mutability == Mutable) Own else Share
+    val arrayPermission = if (sequence.array.mutability == Mutable) Readwrite else Readonly
     val arrayBorrowOwnership = if (sequence.array.mutability == Mutable) Borrow else Share
-    val arrayRefType = Coord(arrayOwnership, sequence)
+    val arrayRefType = Coord(arrayOwnership, arrayPermission, sequence)
 
     val elementDropFunctionPrototype = getDropFunction(env, temputs, sequence.array.memberType)
 
@@ -328,7 +338,7 @@ class DestructorTemplar(
           env.fullName,
           List(),
           List(Parameter2(CodeVarName2("this"), None, arrayRefType)),
-          Coord(Share, Void2()),
+          Coord(Share, Readonly, Void2()),
           maybeOriginFunction1),
         List(),
         Block2(
@@ -384,7 +394,7 @@ class DestructorTemplar(
           env.fullName,
           List(),
           List(Parameter2(CodeVarName2("this"), None, arrayRefType2)),
-          Coord(Share, Void2()),
+          Coord(Share, Readonly, Void2()),
           maybeOriginFunction1),
         List(),
         Block2(
@@ -414,7 +424,7 @@ class DestructorTemplar(
       RangeS.internal(-1673),
       ImmConcreteDestructorImpreciseNameA(),
       List(),
-      List(ParamFilter(Coord(Share, structRef2), None)),
+      List(ParamFilter(Coord(Share, Readonly, structRef2), None)),
       List(),
       true) match {
       case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
@@ -438,7 +448,7 @@ class DestructorTemplar(
         RangeS.internal(-1677),
         ImmInterfaceDestructorImpreciseNameA(),
         List(),
-        List(ParamFilter(Coord(Share, interfaceRef2), None)),
+        List(ParamFilter(Coord(Share, Readonly, interfaceRef2), None)),
         List(),
         true) match {
         case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
@@ -465,7 +475,7 @@ class DestructorTemplar(
         RangeS.internal(-1674),
         ImmInterfaceDestructorImpreciseNameA(),
         List(),
-        List(ParamFilter(Coord(Share, structRef2), Some(Override2(implementedInterfaceRefT)))),
+        List(ParamFilter(Coord(Share, Readonly, structRef2), Some(Override2(implementedInterfaceRefT)))),
         List(),
         true)
     sefResult match {
@@ -503,25 +513,26 @@ object DestructorTemplar {
         ParameterA(AtomAP(RangeS.internal(-1339), LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(RangeS.internal(-1672),
-          TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("XX"), KindTemplataType)),
+        EqualsAR(RangeS.internal(-16722),
+          TemplexAR(RuneAT(RangeS.internal(-16723),CodeRuneA("XX"), KindTemplataType)),
           ComponentsAR(
             RangeS.internal(-93),
-            KindTemplataType, List(TemplexAR(MutabilityAT(RangeS.internal(-1672),Conversions.unevaluateMutability(mutability)))))),
-        EqualsAR(RangeS.internal(-1672),
-          TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("T"), CoordTemplataType)),
+            KindTemplataType, List(TemplexAR(MutabilityAT(RangeS.internal(-16724),Conversions.unevaluateMutability(mutability)))))),
+        EqualsAR(RangeS.internal(-16725),
+          TemplexAR(RuneAT(RangeS.internal(-16726),CodeRuneA("T"), CoordTemplataType)),
           ComponentsAR(
             RangeS.internal(-94),
             CoordTemplataType,
             List(
-              OrAR(RangeS.internal(-1672),List(TemplexAR(OwnershipAT(RangeS.internal(-1672),OwnP)), TemplexAR(OwnershipAT(RangeS.internal(-1672),ShareP)))),
-              CallAR(RangeS.internal(-1672),
+              OrAR(RangeS.internal(-16727),List(TemplexAR(OwnershipAT(RangeS.internal(-1672),OwnP)), TemplexAR(OwnershipAT(RangeS.internal(-1672),ShareP)))),
+              OrAR(RangeS.internal(-16728),List(TemplexAR(PermissionAT(RangeS.internal(-1672),ReadwriteP)), TemplexAR(PermissionAT(RangeS.internal(-1672),ReadonlyP)))),
+              CallAR(RangeS.internal(-16729),
                 "passThroughIfConcrete",
-                List(TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("XX"), KindTemplataType))),
+                List(TemplexAR(RuneAT(RangeS.internal(-167210),CodeRuneA("XX"), KindTemplataType))),
                 KindTemplataType)))),
-        EqualsAR(RangeS.internal(-1672),
-          TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("V"), CoordTemplataType)),
-          TemplexAR(NameAT(RangeS.internal(-1672),CodeTypeNameA("void"), CoordTemplataType)))),
+        EqualsAR(RangeS.internal(-167211),
+          TemplexAR(RuneAT(RangeS.internal(-167212),CodeRuneA("V"), CoordTemplataType)),
+          TemplexAR(NameAT(RangeS.internal(-167213),CodeTypeNameA("void"), CoordTemplataType)))),
       GeneratedBodyA("concreteDestructorGenerator"))
     val generator =
       new IFunctionGenerator {
@@ -539,19 +550,19 @@ object DestructorTemplar {
           // Even though below we treat packs, closures, and structs the same, they're
           // still disambiguated by the template arguments.
           paramCoords.map(_.tyype) match {
-            case List(Coord(_, PackT2(_, structRef))) => {
+            case List(Coord(_, _, PackT2(_, structRef))) => {
               destructorTemplar.generateStructDestructor(
                 env, temputs, maybeOriginFunction1.get, paramCoords, structRef)
             }
-            case List(Coord(_, sr @ StructRef2(_))) => {
+            case List(Coord(_, _, sr @ StructRef2(_))) => {
               destructorTemplar.generateStructDestructor(
                 env, temputs, maybeOriginFunction1.get, paramCoords, sr)
             }
-            case List(r @ Coord(_, as @ KnownSizeArrayT2(_, _))) => {
+            case List(r @ Coord(_, _, as @ KnownSizeArrayT2(_, _))) => {
               destructorTemplar.generateArraySequenceDestructor(
                 env, temputs, maybeOriginFunction1, r, as)
             }
-            case List(r @ Coord(_, ra @ UnknownSizeArrayT2(_))) => {
+            case List(r @ Coord(_, _, ra @ UnknownSizeArrayT2(_))) => {
               destructorTemplar.generateUnknownSizeArrayDestructor(
                 env, temputs, maybeOriginFunction1, r, ra)
             }
@@ -587,25 +598,26 @@ object DestructorTemplar {
           ParameterA(AtomAP(RangeS.internal(-1340), LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), Some(AbstractAP), CodeRuneA("T"), None))),
         Some(CodeRuneA("V")),
         List(
-          EqualsAR(RangeS.internal(-1672),
-            TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("XX"), KindTemplataType)),
+          EqualsAR(RangeS.internal(-167214),
+            TemplexAR(RuneAT(RangeS.internal(-167215),CodeRuneA("XX"), KindTemplataType)),
             ComponentsAR(
               RangeS.internal(-95),
-              KindTemplataType, List(TemplexAR(MutabilityAT(RangeS.internal(-1672),Conversions.unevaluateMutability(mutability)))))),
-          EqualsAR(RangeS.internal(-1672),
-            TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("T"), CoordTemplataType)),
+              KindTemplataType, List(TemplexAR(MutabilityAT(RangeS.internal(-167216),Conversions.unevaluateMutability(mutability)))))),
+          EqualsAR(RangeS.internal(-167217),
+            TemplexAR(RuneAT(RangeS.internal(-167218),CodeRuneA("T"), CoordTemplataType)),
             ComponentsAR(
               RangeS.internal(-96),
               CoordTemplataType,
               List(
-                OrAR(RangeS.internal(-1672),List(TemplexAR(OwnershipAT(RangeS.internal(-1672),OwnP)), TemplexAR(OwnershipAT(RangeS.internal(-1672),ShareP)))),
-                CallAR(RangeS.internal(-1672),
+                OrAR(RangeS.internal(-167219),List(TemplexAR(OwnershipAT(RangeS.internal(-167220),OwnP)), TemplexAR(OwnershipAT(RangeS.internal(-167221),ShareP)))),
+                OrAR(RangeS.internal(-167222),List(TemplexAR(PermissionAT(RangeS.internal(-167223),ReadwriteP)), TemplexAR(PermissionAT(RangeS.internal(-167224),ReadonlyP)))),
+                CallAR(RangeS.internal(-167225),
                   "passThroughIfInterface",
-                  List(TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("XX"), KindTemplataType))),
+                  List(TemplexAR(RuneAT(RangeS.internal(-167226),CodeRuneA("XX"), KindTemplataType))),
                   KindTemplataType)))),
-          EqualsAR(RangeS.internal(-1672),
-            TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("V"), CoordTemplataType)),
-            TemplexAR(NameAT(RangeS.internal(-1672),CodeTypeNameA("void"), CoordTemplataType)))),
+          EqualsAR(RangeS.internal(-167227),
+            TemplexAR(RuneAT(RangeS.internal(-167228),CodeRuneA("V"), CoordTemplataType)),
+            TemplexAR(NameAT(RangeS.internal(-167229),CodeTypeNameA("void"), CoordTemplataType)))),
         GeneratedBodyA("interfaceDestructorGenerator"))
     val generator =
       new IFunctionGenerator {
@@ -624,7 +636,7 @@ object DestructorTemplar {
           // still disambiguated by the template arguments.
           val Some(returnType2) = maybeReturnType2
           params.map(_.tyype) match {
-            case List(Coord(_, InterfaceRef2(_))) => {
+            case List(Coord(_, _, InterfaceRef2(_))) => {
               functionTemplarCore.makeInterfaceFunction(
                 namedEnv,
                 temputs,
@@ -666,26 +678,27 @@ object DestructorTemplar {
           ParameterA(AtomAP(RangeS.internal(-1341), LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), Some(OverrideAP(RangeS.internal(-1133), CodeRuneA("I"))), CodeRuneA("T"), None))),
         Some(CodeRuneA("V")),
         List(
-          EqualsAR(RangeS.internal(-1672),
-            TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("XX"), KindTemplataType)),
+          EqualsAR(RangeS.internal(-167230),
+            TemplexAR(RuneAT(RangeS.internal(-167231),CodeRuneA("XX"), KindTemplataType)),
             ComponentsAR(
               RangeS.internal(-97),
-              KindTemplataType, List(TemplexAR(MutabilityAT(RangeS.internal(-1672),Conversions.unevaluateMutability(mutability)))))),
-          EqualsAR(RangeS.internal(-1672),
-            TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("T"), CoordTemplataType)),
+              KindTemplataType, List(TemplexAR(MutabilityAT(RangeS.internal(-167232),Conversions.unevaluateMutability(mutability)))))),
+          EqualsAR(RangeS.internal(-167233),
+            TemplexAR(RuneAT(RangeS.internal(-167234),CodeRuneA("T"), CoordTemplataType)),
             ComponentsAR(
               RangeS.internal(-98),
               CoordTemplataType,
               List(
-                OrAR(RangeS.internal(-1672),List(TemplexAR(OwnershipAT(RangeS.internal(-1672),OwnP)), TemplexAR(OwnershipAT(RangeS.internal(-1672),ShareP)))),
-                CallAR(RangeS.internal(-1672),
+                OrAR(RangeS.internal(-167235),List(TemplexAR(OwnershipAT(RangeS.internal(-167236),OwnP)), TemplexAR(OwnershipAT(RangeS.internal(-167237),ShareP)))),
+                OrAR(RangeS.internal(-167238),List(TemplexAR(PermissionAT(RangeS.internal(-167239),ReadwriteP)), TemplexAR(PermissionAT(RangeS.internal(-167240),ReadonlyP)))),
+                CallAR(RangeS.internal(-167241),
                   "passThroughIfStruct",
-                  List(TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("XX"), KindTemplataType))),
+                  List(TemplexAR(RuneAT(RangeS.internal(-167242),CodeRuneA("XX"), KindTemplataType))),
                   KindTemplataType)))),
-          CallAR(RangeS.internal(-1672),"passThroughIfInterface", List(TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("I"), KindTemplataType))), KindTemplataType),
-          EqualsAR(RangeS.internal(-1672),
-            TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("V"), CoordTemplataType)),
-            TemplexAR(NameAT(RangeS.internal(-1672),CodeTypeNameA("void"), CoordTemplataType)))),
+          CallAR(RangeS.internal(-167243),"passThroughIfInterface", List(TemplexAR(RuneAT(RangeS.internal(-167244),CodeRuneA("I"), KindTemplataType))), KindTemplataType),
+          EqualsAR(RangeS.internal(-167245),
+            TemplexAR(RuneAT(RangeS.internal(-167246),CodeRuneA("V"), CoordTemplataType)),
+            TemplexAR(NameAT(RangeS.internal(-167247),CodeTypeNameA("void"), CoordTemplataType)))),
         GeneratedBodyA("implDestructorGenerator"))
     val generator =
       new IFunctionGenerator {
@@ -707,16 +720,17 @@ object DestructorTemplar {
           // However, the template arguments are, and idestructor's template argument
           // is the interface we're overriding.
           val List(
-          CoordTemplata(Coord(_, overridingStructRef2FromTemplateArg @ StructRef2(_))),
+          CoordTemplata(Coord(_, _, overridingStructRef2FromTemplateArg @ StructRef2(_))),
           KindTemplata(implementedInterfaceRef2 @ InterfaceRef2(_))) =
           namedEnv.fullName.last.templateArgs
 
           params.map(_.tyype) match {
-            case List(Coord(_, structRef2 @ StructRef2(_))) => {
+            case List(Coord(_, _, structRef2 @ StructRef2(_))) => {
               vassert(overridingStructRef2FromTemplateArg == structRef2)
               val structDef2 = temputs.lookupStruct(structRef2)
               val ownership = if (structDef2.mutability == Mutable) Own else Share
-              val structType2 = Coord(ownership, structRef2)
+              val permission = if (structDef2.mutability == Mutable) Readwrite else Readonly
+              val structType2 = Coord(ownership, permission, structRef2)
               val structDestructor =
                 destructorTemplar.getCitizenDestructor(namedEnv, temputs, structType2)
               functionTemplarCore.makeImplDestructor(
@@ -751,30 +765,32 @@ object DestructorTemplar {
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
       Set(CodeRuneA("V"), CodeRuneA("O")),
       List(CodeRuneA("T")),
-      Set(CodeRuneA("T"), CodeRuneA("V"), CodeRuneA("O")),
+      Set(CodeRuneA("T"), CodeRuneA("V"), CodeRuneA("O"), CodeRuneA("P")),
       Map(
         CodeRuneA("T") -> CoordTemplataType,
         CodeRuneA("V") -> CoordTemplataType,
-        CodeRuneA("O") -> OwnershipTemplataType),
+        CodeRuneA("O") -> OwnershipTemplataType,
+        CodeRuneA("P") -> PermissionTemplataType),
       List(
         ParameterA(AtomAP(RangeS.internal(-1342), LocalVariableA(CodeVarNameA("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None))),
       Some(CodeRuneA("V")),
       List(
-        EqualsAR(RangeS.internal(-1672),
-          TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("T"), CoordTemplataType)),
+        EqualsAR(RangeS.internal(-167248),
+          TemplexAR(RuneAT(RangeS.internal(-167249),CodeRuneA("T"), CoordTemplataType)),
           ComponentsAR(
             RangeS.internal(-98),
             CoordTemplataType,
             List(
-              TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("O"), OwnershipTemplataType)),
+              TemplexAR(RuneAT(RangeS.internal(-167250),CodeRuneA("O"), OwnershipTemplataType)),
+              TemplexAR(RuneAT(RangeS.internal(-167260),CodeRuneA("P"), PermissionTemplataType)),
               ComponentsAR(
                 RangeS.internal(-99),
                 KindTemplataType,
-                List(TemplexAR(MutabilityAT(RangeS.internal(-1672),Conversions.unevaluateMutability(mutability)))))))),
-        TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("T"), CoordTemplataType)),
-        EqualsAR(RangeS.internal(-1672),
-          TemplexAR(RuneAT(RangeS.internal(-1672),CodeRuneA("V"), CoordTemplataType)),
-          TemplexAR(NameAT(RangeS.internal(-1672),CodeTypeNameA("void"), CoordTemplataType)))),
+                List(TemplexAR(MutabilityAT(RangeS.internal(-167251),Conversions.unevaluateMutability(mutability)))))))),
+        TemplexAR(RuneAT(RangeS.internal(-167252),CodeRuneA("T"), CoordTemplataType)),
+        EqualsAR(RangeS.internal(-167253),
+          TemplexAR(RuneAT(RangeS.internal(-167254),CodeRuneA("V"), CoordTemplataType)),
+          TemplexAR(NameAT(RangeS.internal(-167255),CodeTypeNameA("void"), CoordTemplataType)))),
       GeneratedBodyA("dropGenerator"))
     val generator =
       new IFunctionGenerator {
@@ -789,7 +805,7 @@ object DestructorTemplar {
           params: List[Parameter2],
           maybeReturnType2: Option[Coord]):
         (FunctionHeader2) = {
-          vassert(maybeReturnType2 == Some(Coord(Share, Void2())))
+          vassert(maybeReturnType2 == Some(Coord(Share, Readonly, Void2())))
           val List(CoordTemplata(ref2)) = namedEnv.fullName.last.templateArgs
           val List(Parameter2(CodeVarName2("x"), None, paramType2)) = params
           vassert(paramType2 == ref2)

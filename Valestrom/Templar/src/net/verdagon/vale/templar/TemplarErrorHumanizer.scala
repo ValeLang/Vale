@@ -6,7 +6,7 @@ import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
-import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Float2, Int2, Kind, Own, ParamFilter, Share, Str2, StructRef2, Weak}
+import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Float2, Int2, Kind, Own, ParamFilter, Readonly, Readwrite, Share, Str2, StructRef2, Weak}
 import net.verdagon.vale.vimpl
 
 object TemplarErrorHumanizer {
@@ -19,6 +19,10 @@ object TemplarErrorHumanizer {
       case RangedInternalErrorT(range, message) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) + " " + message
       }
+      case CantUseReadonlyReferenceAsReadwrite(range) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Can't make readonly reference into a readwrite one!"
+      }
       case CantMoveOutOfMemberT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
@@ -26,6 +30,10 @@ object TemplarErrorHumanizer {
       case CantMutateFinalMember(range, structRef2, memberName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of struct " + printableKindName(structRef2)
+      }
+      case CantMutateFinalLocal(range, localName) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Cannot mutate final local '" + localName
       }
       case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -58,6 +66,10 @@ object TemplarErrorHumanizer {
       case CouldntFindIdentifierToLoadT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find anything named `" + name + "`!"
+      }
+      case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Parameter `" + name + "` should be readonly, because it's in a pure function."
       }
       case CouldntFindTypeT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -141,7 +153,7 @@ object TemplarErrorHumanizer {
     banner: FunctionBanner2):
   String = {
     banner.originFunction match {
-      case None => vimpl()
+      case None => "(internal)"
       case Some(x) => printableName(filenamesAndSources, x.name)
     }
   }
@@ -161,12 +173,16 @@ object TemplarErrorHumanizer {
   }
 
   private def printableCoordName(coord: Coord): String = {
-    val Coord(ownership, kind) = coord
+    val Coord(ownership, permission, kind) = coord
     (ownership match {
       case Share => ""
       case Own => ""
       case Borrow => "&"
       case Weak => "&&"
+    }) +
+    (permission match {
+      case Readonly => ""
+      case Readwrite => "!"
     }) +
     printableKindName(kind)
   }

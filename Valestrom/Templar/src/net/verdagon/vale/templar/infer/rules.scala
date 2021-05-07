@@ -103,9 +103,11 @@ case class RuneTT(
   resultType: ITemplataType
 ) extends ITemplexT
 
-case class OwnershippedTT(
+// InterpretedTT will overwrite inner's permission and ownership to the given ones.
+case class InterpretedTT(
   range: RangeS,
   ownership: OwnershipP,
+  permission: PermissionP,
   inner: ITemplexT
 ) extends ITemplexT {
   vassert(inner.resultType == CoordTemplataType)

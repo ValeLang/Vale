@@ -103,7 +103,7 @@ class StructTemplarCore(
                   struct1.range,
                   GlobalFunctionFamilyNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME),
                   List(),
-                  List(ParamFilter(Coord(Own, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
+                  List(ParamFilter(Coord(Own,Readwrite, structDef2.getRef), Some(Override2(implementedInterfaceRefT)))),
                   List(),
                   true)
               sefResult match {
@@ -448,9 +448,9 @@ class StructTemplarCore(
         case (FunctionHeader2(superFunctionName, _, superParams, superReturnType, _), index) => {
           val params =
             superParams.map({
-              case Parameter2(name, Some(Abstract2), Coord(ownership, ir)) => {
+              case Parameter2(name, Some(Abstract2), Coord(ownership, permission, ir)) => {
                 vassert(ir == interfaceRef)
-                Parameter2(name, Some(Override2(interfaceRef)), Coord(ownership, structRef))
+                Parameter2(name, Some(Override2(interfaceRef)), Coord(ownership, permission, structRef))
               }
               case otherParam => otherParam
             })
@@ -524,9 +524,8 @@ class StructTemplarCore(
           })
 
         // The args for the call inside the forwarding function.
-        val forwardedCallArgs =
-          (Coord(if (lambda.ownership == Share) Share else Borrow, lambda.referend) ::
-          forwarderHeader.paramTypes.tail).map(ParamFilter(_, None))
+        val lambdaCoord = Coord(if (lambda.ownership == Share) Share else Borrow, lambda.permission, lambda.referend)
+        val forwardedCallArgs = (lambdaCoord :: forwarderHeader.paramTypes.tail).map(ParamFilter(_, None))
 
 //        start here
         // since IFunction has a drop() method, its looking for a drop() for the
@@ -547,19 +546,28 @@ class StructTemplarCore(
             case ScoutExpectedFunctionSuccess(prototype) => prototype
           }
 
+        val structParamCoord =
+          Coord(
+            if (structDef.mutability == Immutable) Share else Borrow,
+            forwarderHeader.paramTypes.head.permission,
+            structDef.getRef)
+        val methodCoord = structDef.members(methodIndex).tyype.reference
+        val loadSelfResultPermission = Templar.intersectPermission(methodCoord.permission, structParamCoord.permission)
+//        val loadSelfResultCoord = methodCoord.copy(permission = loadSelfResultPermission)
+
+        val loadedThisObjOwnership = if (methodCoord.ownership == Share) Share else Borrow
+        val loadedThisObjPermission = if (methodCoord.ownership == Share) Readonly else Readwrite
         val argExpressions =
           SoftLoad2(
             ReferenceMemberLookup2(
               range,
-              ArgLookup2(
-                0,
-                Coord(
-                  if (structDef.mutability == Immutable) Share else Borrow,
-                  structDef.getRef)),
+              ArgLookup2(0, structParamCoord),
               structDef.fullName.addStep(structDef.members(methodIndex).name),
-              structDef.members(methodIndex).tyype.reference,
+              methodCoord,
+              loadSelfResultPermission,
               Final),
-            if (structDef.members(methodIndex).tyype.reference.ownership == Share) Share else Borrow) ::
+            loadedThisObjOwnership,
+            loadedThisObjPermission) ::
           forwarderHeader.params.tail.zipWithIndex.map({ case (param, index) =>
             ArgLookup2(index + 1, param.tyype)
           })
@@ -592,15 +600,19 @@ class StructTemplarCore(
     prototype: Prototype2,
     structFullName: FullName2[ICitizenName2]):
   StructRef2 = {
-    val mutability = Immutable
-
     val structRef = StructRef2(structFullName)
 
     temputs.declareStruct(structRef)
-    temputs.declareStructMutability(structRef, mutability)
+    temputs.declareStructMutability(structRef, Immutable)
 
     val forwarderParams =
-      Parameter2(TemplarTemporaryVarName2(-1), None, Coord(if (mutability == Immutable) Share else Borrow, structRef)) ::
+      Parameter2(
+        TemplarTemporaryVarName2(-1),
+        None,
+        Coord(
+          Share,
+          Readonly,
+          structRef)) ::
       prototype.paramTypes.zipWithIndex.map({ case (paramType, index) =>
         Parameter2(TemplarTemporaryVarName2(index), None, paramType)
       })
@@ -627,15 +639,15 @@ class StructTemplarCore(
         structFullName,
         List(),
         false,
-        mutability,
+        Immutable,
         List(),
         false)
     temputs.add(structDef)
 
     // If it's immutable, make sure there's a zero-arg destructor.
-    if (mutability == Immutable) {
+//    if (mutability == Immutable) {
       delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
-    }
+//    }
 
     val forwarderFunction =
       Function2(
@@ -643,7 +655,7 @@ class StructTemplarCore(
         List(),
         Block2(
           List(
-            Discard2(ArgLookup2(0, Coord(Share, structRef))),
+            Discard2(ArgLookup2(0, Coord(Share, Readonly, structRef))),
             Return2(
               FunctionCall2(
                 prototype,
@@ -668,7 +680,8 @@ class StructTemplarCore(
         }
       })
     val constructorReturnOwnership = if (structDef.mutability == Mutable) Own else Share
-    val constructorReturnType = Coord(constructorReturnOwnership, structDef.getRef)
+    val constructorReturnPermission = if (structDef.mutability == Mutable) Readwrite else Readonly
+    val constructorReturnType = Coord(constructorReturnOwnership, constructorReturnPermission, structDef.getRef)
     // not virtual because how could a constructor be virtual
     val constructor2 =
       Function2(
@@ -684,7 +697,7 @@ class StructTemplarCore(
             Return2(
               Construct2(
                 structDef.getRef,
-                Coord(if (structDef.mutability == Mutable) Own else Share, structDef.getRef),
+                constructorReturnType,
                 constructorParams.zipWithIndex.map({ case (p, index) => ArgLookup2(index, p.tyype) }))))))
 
     // we cant make the destructor here because they might have a user defined one somewhere

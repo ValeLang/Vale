@@ -17,6 +17,8 @@ object MetalPrinter {
         "Borrow" -> "&",
         "Weak" -> "&&",
         "Own" -> "^",
+        "Readonly" -> "#",
+        "Readwrite" -> "!",
         "Inline" -> "<",
         "Yonder" -> ">",
         "CoordTemplata" -> "TR",

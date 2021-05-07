@@ -21,7 +21,7 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
     vassert(sparkHeader.params.count(_.virtuality.nonEmpty) <= 1)
     val maybeSuperInterfaceAndIndex =
       sparkHeader.params.zipWithIndex.collectFirst({
-        case (Parameter2(_, Some(Override2(ir)), Coord(_, StructRef2(_))), index) => (ir, index)
+        case (Parameter2(_, Some(Override2(ir)), Coord(_, _, StructRef2(_))), index) => (ir, index)
       })
 
     maybeSuperInterfaceAndIndex match {

@@ -217,7 +217,7 @@ void ReferendStructs::defineEdge(
   auto builder = LLVMCreateBuilderInContext(globalState->context);
   auto itableLE = LLVMGetUndef(interfaceTableStructL);
   for (int i = 0; i < functions.size(); i++) {
-    auto entryLE = LLVMConstBitCast(functions[i], LLVMPointerType(interfaceFunctionsLT[i], 0));
+    auto entryLE = LLVMConstBitCast(functions[i], interfaceFunctionsLT[i]);
     itableLE = LLVMBuildInsertValue(builder, itableLE, entryLE, i, std::to_string(i).c_str());
   }
   LLVMDisposeBuilder(builder);

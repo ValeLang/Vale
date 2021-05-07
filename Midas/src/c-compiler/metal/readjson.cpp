@@ -303,6 +303,9 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["sourceType"]),
         readReferend(cache, expression["sourceReferend"]),
         readReference(cache, expression["resultType"]));
+  } else if (type == "NarrowPermission") {
+    return new NarrowPermission(
+        readExpression(cache, expression["sourceExpr"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),
@@ -399,7 +402,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReferend(cache, expression["sizeReferend"]),
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
-        readInterfaceReferend(cache, expression["generatorReferend"]),
+        readReferend(cache, expression["generatorReferend"]),
         readPrototype(cache, expression["generatorMethod"]),
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),

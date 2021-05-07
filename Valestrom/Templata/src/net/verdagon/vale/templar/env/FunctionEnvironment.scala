@@ -310,6 +310,7 @@ sealed trait IVariable2 extends Queriable2 {
 }
 sealed trait ILocalVariable2 extends IVariable2 {
   def reference: Coord
+  def id: FullName2[IVarName2]
 }
 // Why the difference between reference and addressible:
 // If we mutate/move a variable from inside a closure, we need to put

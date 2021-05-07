@@ -18,9 +18,9 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({
-      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakMuta")),Final,Coord(Weak, _)),refExpr) => {
+      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakMuta")),Final,Coord(Weak, Readonly, _)),refExpr) => {
         refExpr.resultRegister.reference match {
-          case Coord(Weak, StructRef2(simpleName("Muta"))) =>
+          case Coord(Weak, Readonly, StructRef2(simpleName("Muta"))) =>
         }
       }
     })
@@ -57,7 +57,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
@@ -69,7 +69,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
@@ -156,9 +156,9 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
     main.only({
-      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakUnit")),Final,Coord(Weak, _)),refExpr) => {
+      case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakUnit")),Final,Coord(Weak, _, _)),refExpr) => {
         refExpr.resultRegister.reference match {
-          case Coord(Weak, InterfaceRef2(simpleName("IUnit"))) =>
+          case Coord(Weak, Readonly, InterfaceRef2(simpleName("IUnit"))) =>
         }
       }
     })
@@ -195,7 +195,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
@@ -207,7 +207,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
@@ -219,7 +219,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
     val hamuts = compile.getHamuts()
 
@@ -233,7 +233,7 @@ class WeakTests extends FunSuite with Matchers {
 
     val main = compile.getTemputs().lookupFunction("main")
 
-    vassert(main.body.all({ case SoftLoad2(_, Weak) => true }).size >= 1)
+    vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
     val hamuts = compile.getHamuts()
 

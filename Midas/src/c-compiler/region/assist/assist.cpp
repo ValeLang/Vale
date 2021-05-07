@@ -281,7 +281,7 @@ void Assist::noteWeakableDestroyed(
         buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 
   if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
@@ -552,12 +552,16 @@ LLVMValueRef Assist::checkValidReference(
   assert(refLE != nullptr);
   assert(LLVMTypeOf(refLE) == globalState->getRegion(refM)->translateType(refM));
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
+        buildFlare(FL(), globalState, functionState, builder);
       regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       assert(false);
     } else {
+        buildFlare(FL(), globalState, functionState, builder);
       if (refM->ownership == Ownership::BORROW) {
         regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
       } else if (refM->ownership == Ownership::WEAK) {
@@ -721,6 +725,8 @@ Ref Assist::upcast(
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM) {
+    buildFlare(FL(), globalState, functionState, builder);
+
   switch (sourceStructMT->ownership) {
     case Ownership::SHARE:
     case Ownership::OWN:

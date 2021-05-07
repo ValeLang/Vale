@@ -96,7 +96,8 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 
 sealed trait ICitizenAttributeS
 sealed trait IFunctionAttributeS
-case object ExternS extends IFunctionAttributeS with ICitizenAttributeS // For optimization later
+case object ExternS extends IFunctionAttributeS with ICitizenAttributeS
+case object PureS extends IFunctionAttributeS with ICitizenAttributeS
 case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS
 case object ExportS extends IFunctionAttributeS with ICitizenAttributeS
 case object UserFunctionS extends IFunctionAttributeS // Whether it was written by a human. Mostly for tests right now.

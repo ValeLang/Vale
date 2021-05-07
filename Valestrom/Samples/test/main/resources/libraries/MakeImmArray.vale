@@ -1,0 +1,9 @@
+
+fn MakeImmArray<G>(n int, generator G) Array<imm, T>
+rules(
+  T Ref,
+  G Ref(share | borrow, _, _),
+  F Prot = Prot("__call", (G, int), T))
+{
+  __Array<imm, T, G, F>(n, generator)
+}

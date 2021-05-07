@@ -21,7 +21,8 @@ object Conversions {
     permission match {
       case ReadonlyP => Readonly
       case ReadwriteP => Readwrite
-      case ExclusiveReadwriteP => ExclusiveReadwrite
+//      case ExclusiveReadwriteP => ExclusiveReadwrite
+      case _ => vimpl()
     }
   }
 
@@ -74,6 +75,14 @@ object Conversions {
     }
   }
 
+  def unevaluatePermission(permission: Permission): PermissionP = {
+    permission match {
+      case Readonly => ReadonlyP
+      case Readwrite => ReadwriteP
+//      case ExclusiveReadwrite => ExclusiveReadwriteP
+    }
+  }
+
   def unevaluateMutability(mutability: Mutability): MutabilityP = {
     mutability match {
       case Mutable => MutableP
@@ -87,6 +96,7 @@ object Conversions {
       case KindTemplataType => KindTypeSR
       case IntegerTemplataType => IntTypeSR
       case BooleanTemplataType => BoolTypeSR
+      case PrototypeTemplataType => PrototypeTypeSR
       case MutabilityTemplataType => MutabilityTypeSR
       case PermissionTemplataType => PermissionTypeSR
       case LocationTemplataType => LocationTypeSR

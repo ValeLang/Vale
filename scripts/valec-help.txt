@@ -5,6 +5,5 @@ USAGE:
 SUBCOMMANDS:
     help        Print this help.
     build       Compile Vale source files.
-    run         Compile and run Vale source files.
 
 Run `python3 valec.py help [subcommand]` for help on a specific subcommand.

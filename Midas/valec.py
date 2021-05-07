@@ -288,7 +288,7 @@ class ValeCompiler:
                 print(proc.stdout + "\n" + proc.stderr)
                 sys.exit(22)
             else:
-                print(f"Internal error while running {valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
+                print(f"Internal error while running {user_valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
                 sys.exit(proc.returncode)
 
         elif args[0] == "build":

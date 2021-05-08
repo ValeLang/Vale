@@ -88,7 +88,7 @@ object Spanner {
   }
 
   def forStruct(struct: StructP): Span = {
-    val StructP(range, StringP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, StructMembersP(membersRange, members)) = struct
+    val StructP(range, NameP(nameRange, _), _, _, maybeIdentifyingRunesP, maybeTemplateRulesP, StructMembersP(membersRange, members)) = struct
 
     makeSpan(
       Struct,
@@ -111,7 +111,7 @@ object Spanner {
   }
 
   def forMember(member: StructMemberP): Span = {
-    val StructMemberP(range, StringP(nameRange, _), _, tyype) = member
+    val StructMemberP(range, NameP(nameRange, _), _, tyype) = member
     makeSpan(
       Memb,
       range,
@@ -182,7 +182,7 @@ object Spanner {
           range,
           List(forPattern(pattern), forExpression(expr)))
       }
-      case LookupPE(StringP(range, _), templateArgs) => {
+      case LookupPE(NameP(range, _), templateArgs) => {
         makeSpan(Lookup, range, List())
       }
       case SequencePE(range, elements) => {
@@ -212,7 +212,7 @@ object Spanner {
         val allSpans = (callableSpan :: argSpans)
         makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, callableExpr, operatorRange, _, _, LookupPE(StringP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
+      case MethodCallPE(range, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val methodSpan = makeSpan(CallLookup, methodNameRange, List())
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)
@@ -220,7 +220,7 @@ object Spanner {
         val allSpans = (callableSpan :: makeSpan(MemberAccess, operatorRange) :: methodSpan :: (maybeTemplateArgsSpan ++ argSpans))
         makeSpan(Call, range, allSpans)
       }
-      case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(StringP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
+      case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(NameP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
         val inlSpan = inlRange.toList.map(x => makeSpan(Inl, x.range, List()))
         val opSpan = makeSpan(MemberAccess, operatorRange)
         val callableSpan = makeSpan(CallLookup, nameRange, List())
@@ -301,10 +301,10 @@ object Spanner {
     val CaptureP(range, name, _) = c
     val nameSpan =
       name match {
-        case LocalNameP(StringP(nameRange, _)) => {
+        case LocalNameP(NameP(nameRange, _)) => {
           makeSpan(CaptureName, nameRange, List())
         }
-        case ConstructingMemberNameP(StringP(nameRange, _)) => {
+        case ConstructingMemberNameP(NameP(nameRange, _)) => {
           makeSpan(CaptureName, nameRange, List())
         }
       }
@@ -316,7 +316,7 @@ object Spanner {
 
   def forTemplex(t: ITemplexPT): Span = {
     t match {
-      case NameOrRunePT(StringP(range, _)) => {
+      case NameOrRunePT(NameP(range, _)) => {
         makeSpan(Typ, range, List())
       }
       case InlinePT(range, inner) => {

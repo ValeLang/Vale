@@ -4,12 +4,12 @@ import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
 import net.verdagon.vale.hammer.{Hammer, VonHammer}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer, Temputs}
 import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, Samples, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
-import net.verdagon.von.IVonData
+import net.verdagon.von.{IVonData, JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.List
 
@@ -58,7 +58,12 @@ class Compilation(
                   vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, err))
                 }
                 case ParseSuccess((program0, _)) => {
-                  program0
+                  val von = ParserVonifier.vonifyFile(program0)
+                  val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+                  ParsedLoader.load(vpstJson) match {
+                    case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, error))
+                    case ParseSuccess(program0) => program0
+                  }
                 }
               }
             }))

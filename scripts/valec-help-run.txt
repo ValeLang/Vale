@@ -1,9 +1,0 @@
-
-USAGE:
-    python3 valec.py run [options] [.vale files]
-
-Compiles and runs a Vale program, using a development/testing interpreter.
-
-OPTIONS:
-    --verbose
-        Prints additional details for compile errors.

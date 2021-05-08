@@ -163,7 +163,7 @@ class DestructorTemplar(
             }
           FunctionCall2(destructorPrototype, List(undestructedExpr2))
         }
-        case Coord(Borrow, _, _) => (Discard2(undestructedExpr2))
+        case Coord(Constraint, _, _) => (Discard2(undestructedExpr2))
         case Coord(Weak, _, _) => (Discard2(undestructedExpr2))
         case Coord(Share, Readonly, _) => {
           val destroySharedCitizen =
@@ -247,7 +247,7 @@ class DestructorTemplar(
     val structDef = temputs.lookupStruct(structRef)
     val structOwnership = if (structDef.mutability == Mutable) Own else Share
     val structPermission = if (structDef.mutability == Mutable) Readwrite else Readonly
-    val structBorrowOwnership = if (structDef.mutability == Mutable) Borrow else Share
+    val structBorrowOwnership = if (structDef.mutability == Mutable) Constraint else Share
     val structType = Coord(structOwnership, structPermission, structDef.getRef)
 
     val header =
@@ -305,7 +305,7 @@ class DestructorTemplar(
 
     val arrayOwnership = if (sequence.array.mutability == Mutable) Own else Share
     val arrayPermission = if (sequence.array.mutability == Mutable) Readwrite else Readonly
-    val arrayBorrowOwnership = if (sequence.array.mutability == Mutable) Borrow else Share
+    val arrayBorrowOwnership = if (sequence.array.mutability == Mutable) Constraint else Share
     val arrayRefType = Coord(arrayOwnership, arrayPermission, sequence)
 
     val elementDropFunctionPrototype = getDropFunction(env, temputs, sequence.array.memberType)
@@ -363,7 +363,7 @@ class DestructorTemplar(
       array: UnknownSizeArrayT2):
   (FunctionHeader2) = {
     val arrayOwnership = if (array.array.mutability == Mutable) Own else Share
-    val arrayBorrowOwnership = if (array.array.mutability == Mutable) Borrow else Share
+    val arrayBorrowOwnership = if (array.array.mutability == Mutable) Constraint else Share
 
     val elementDropFunctionPrototype = getDropFunction(env, temputs, array.array.memberType)
 

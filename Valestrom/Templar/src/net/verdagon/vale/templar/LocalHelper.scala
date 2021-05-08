@@ -1,12 +1,12 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.LocalVariableA
-import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, OwnP, OwnershipP, UseP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, OwnP, OwnershipP, UseP, WeakP}
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
 import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
 import net.verdagon.vale.templar.templata.Conversions
-import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Readonly, Readwrite, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
+import net.verdagon.vale.templar.types.{Bool2, Constraint, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Readonly, Readwrite, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
 import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.List
@@ -144,10 +144,10 @@ class LocalHelper(
                 Unlet2(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ UnknownSizeArrayLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
-              case l @ ArraySequenceLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
-              case l @ ReferenceMemberLookup2(_,_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
-              case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Borrow, a.resultRegister.reference.permission)
+              case l @ UnknownSizeArrayLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ ArraySequenceLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ ReferenceMemberLookup2(_,_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
             }
           }
           case MoveP => {
@@ -164,17 +164,17 @@ class LocalHelper(
               }
             }
           }
-          case LendBorrowP(None) => SoftLoad2(a, Borrow, a.resultRegister.reference.permission)
-          case LendBorrowP(Some(permission)) => SoftLoad2(a, Borrow, Conversions.evaluatePermission(permission))
+          case LendConstraintP(None) => SoftLoad2(a, Constraint, a.resultRegister.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoad2(a, Constraint, Conversions.evaluatePermission(permission))
           case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
         }
       }
-      case Borrow => {
+      case Constraint => {
         loadAsP match {
           case MoveP => vfail()
-          case UseP => SoftLoad2(a, Borrow, a.resultRegister.reference.permission)
-          case LendBorrowP(None) => SoftLoad2(a, Borrow, a.resultRegister.reference.permission)
-          case LendBorrowP(Some(permission)) => SoftLoad2(a, Borrow, Conversions.evaluatePermission(permission))
+          case UseP => SoftLoad2(a, Constraint, a.resultRegister.reference.permission)
+          case LendConstraintP(None) => SoftLoad2(a, Constraint, a.resultRegister.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoad2(a, Constraint, Conversions.evaluatePermission(permission))
           case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
         }
       }
@@ -182,8 +182,8 @@ class LocalHelper(
         loadAsP match {
           case UseP => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
           case MoveP => vfail()
-          case LendBorrowP(None) => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
-          case LendBorrowP(Some(permission)) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
+          case LendConstraintP(None) => SoftLoad2(a, Weak, a.resultRegister.reference.permission)
+          case LendConstraintP(Some(permission)) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
           case LendWeakP(permission) => SoftLoad2(a, Weak, Conversions.evaluatePermission(permission))
         }
       }
@@ -207,17 +207,17 @@ class LocalHelper(
       //      case FunctionT2(_, _) => Raw
       case PackT2(_, understruct2) => {
         val mutability = Templar.getMutability(temputs, understruct2)
-        if (mutability == Mutable) Borrow else Share
+        if (mutability == Mutable) Constraint else Share
       }
       case TupleT2(_, understruct2) => {
         val mutability = Templar.getMutability(temputs, understruct2)
-        if (mutability == Mutable) Borrow else Share
+        if (mutability == Mutable) Constraint else Share
       }
       case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => {
-        if (mutability == Mutable) Borrow else Share
+        if (mutability == Mutable) Constraint else Share
       }
       case UnknownSizeArrayT2(array) => {
-        if (array.mutability == Mutable) Borrow else Share
+        if (array.mutability == Mutable) Constraint else Share
       }
       //      case TemplatedClosure2(_, structRef, _) => {
       //        val mutability = Templar.getMutability(temputs, structRef)
@@ -229,11 +229,11 @@ class LocalHelper(
       //      }
       case sr2 @ StructRef2(_) => {
         val mutability = Templar.getMutability(temputs, sr2)
-        if (mutability == Mutable) Borrow else Share
+        if (mutability == Mutable) Constraint else Share
       }
       case ir2 @ InterfaceRef2(_) => {
         val mutability = Templar.getMutability(temputs, ir2)
-        if (mutability == Mutable) Borrow else Share
+        if (mutability == Mutable) Constraint else Share
       }
       case OverloadSet(_, _, voidStructRef) => {
         getBorrowOwnership(temputs, voidStructRef)

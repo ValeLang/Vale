@@ -89,7 +89,7 @@ class RuleTyperTests extends FunSuite with Matchers {
               RangeS.testZero,
               TemplexSR(RuneST(RangeS.testZero,CodeRuneS("__C"))),
               TemplexSR(
-                InterpretedST(RangeS.testZero,BorrowP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("ImmInterface")))))),
+                InterpretedST(RangeS.testZero,ConstraintP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("ImmInterface")))))),
           RangeS.testZero,
           List(),
           None)
@@ -265,7 +265,7 @@ class RuleTyperTests extends FunSuite with Matchers {
               RangeS.testZero,
               TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
               List(
-                TemplexSR(OwnershipST(RangeS.testZero,BorrowP)),
+                TemplexSR(OwnershipST(RangeS.testZero,ConstraintP)),
                 TemplexSR(PermissionST(RangeS.testZero,ReadonlyP)),
                 TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Q")))))),
           RangeS.testZero,

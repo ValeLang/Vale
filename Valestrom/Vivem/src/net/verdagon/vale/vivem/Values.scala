@@ -130,7 +130,7 @@ case class IntV(value: Int) extends PrimitiveReferendV {
 case class BoolV(value: Boolean) extends PrimitiveReferendV {
   override def tyype = RRReferend(BoolH())
 }
-case class FloatV(value: Float) extends PrimitiveReferendV {
+case class FloatV(value: Double) extends PrimitiveReferendV {
   override def tyype = RRReferend(FloatH())
 }
 case class StrV(value: String) extends PrimitiveReferendV {

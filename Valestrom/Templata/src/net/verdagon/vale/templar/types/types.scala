@@ -27,7 +27,7 @@ case object Own extends Ownership {
     List(this).collect(func)
   }
 }
-case object Borrow extends Ownership {
+case object Constraint extends Ownership {
   override def order: Int = 3;
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

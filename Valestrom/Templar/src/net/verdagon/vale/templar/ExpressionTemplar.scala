@@ -131,7 +131,7 @@ class ExpressionTemplar(
       }
       case Some(AddressibleClosureVariable2(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == Mutable) Borrow else Share
+        val ownership = if (mutability == Mutable) Constraint else Share
         val closuredVarsStructRefPermission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
         val closuredVarsStructRefRef = Coord(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val name2 = fate.fullName.addStep(ClosureParamName2())
@@ -154,7 +154,7 @@ class ExpressionTemplar(
       }
       case Some(ReferenceClosureVariable2(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == Mutable) Borrow else Share
+        val ownership = if (mutability == Mutable) Constraint else Share
         val closuredVarsStructRefPermission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
         val closuredVarsStructRefCoord = Coord(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
 //        val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
@@ -196,7 +196,7 @@ class ExpressionTemplar(
       }
       case Some(AddressibleClosureVariable2(id, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == Mutable) Borrow else Share
+        val ownership = if (mutability == Mutable) Constraint else Share
         val closuredVarsStructRefPermission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
         val closuredVarsStructRefRef = Coord(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val closureParamVarName2 = fate.fullName.addStep(ClosureParamName2())
@@ -219,7 +219,7 @@ class ExpressionTemplar(
       }
       case Some(ReferenceClosureVariable2(varName, closuredVarsStructRef, variability, tyype)) => {
         val mutability = Templar.getMutability(temputs, closuredVarsStructRef)
-        val ownership = if (mutability == Mutable) Borrow else Share
+        val ownership = if (mutability == Mutable) Constraint else Share
         val closuredVarsStructRefPermission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
         val closuredVarsStructRefCoord = Coord(ownership, closuredVarsStructRefPermission, closuredVarsStructRef)
         val closuredVarsStructDef = temputs.lookupStruct(closuredVarsStructRef)
@@ -353,7 +353,7 @@ class ExpressionTemplar(
           (ArgLookup2(index, paramCoord), Set())
         }
         case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
-          vassert(callableTargetOwnership == LendBorrowP(None))
+          vassert(callableTargetOwnership == LendConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -367,7 +367,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
-          vassert(callableTargetOwnership == LendBorrowP(None))
+          vassert(callableTargetOwnership == LendConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -381,7 +381,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
-          vassert(callableTargetOwnership == LendBorrowP(None))
+          vassert(callableTargetOwnership == LendConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -389,7 +389,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, OutsideLoadAE(_, name, callableTargetOwnership), argsPackExpr1) => {
-          vassert(callableTargetOwnership == LendBorrowP(None))
+          vassert(callableTargetOwnership == LendConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
@@ -421,10 +421,10 @@ class ExpressionTemplar(
                     // this can happen if we put a ^ on an owning reference. No harm, let it go.
                     innerExpr2
                   }
-                  case LendBorrowP(None) => {
+                  case LendConstraintP(None) => {
                     localHelper.makeTemporaryLocal(temputs, fate, innerExpr2)
                   }
-                  case LendBorrowP(Some(permission)) => {
+                  case LendConstraintP(Some(permission)) => {
                     maybeNarrowPermission(range, localHelper.makeTemporaryLocal(temputs, fate, innerExpr2), permission)
                   }
                   case LendWeakP(permission) => {
@@ -433,11 +433,11 @@ class ExpressionTemplar(
                   case UseP => vcurious()
                 }
               }
-              case Borrow => {
+              case Constraint => {
                 loadAsP match {
                   case MoveP => vcurious() // Can we even coerce to an owning reference?
-                  case LendBorrowP(None) => innerExpr2
-                  case LendBorrowP(Some(permission)) => maybeNarrowPermission(range, innerExpr2, permission)
+                  case LendConstraintP(None) => innerExpr2
+                  case LendConstraintP(Some(permission)) => maybeNarrowPermission(range, innerExpr2, permission)
                   case LendWeakP(permission) => weakAlias(temputs, maybeNarrowPermission(range, innerExpr2, permission))
                   case UseP => innerExpr2
                 }
@@ -445,7 +445,7 @@ class ExpressionTemplar(
               case Weak => {
                 loadAsP match {
                   case MoveP => vcurious() // Can we even coerce to an owning reference?
-                  case LendBorrowP(permission) => vfail() // Need to call lock() to do this
+                  case LendConstraintP(permission) => vfail() // Need to call lock() to do this
                   case LendWeakP(permission) => maybeNarrowPermission(range, innerExpr2, permission)
                   case UseP => innerExpr2
                 }
@@ -456,7 +456,7 @@ class ExpressionTemplar(
                     // Allow this, we can do ^ on a share ref, itll just give us a share ref.
                     innerExpr2
                   }
-                  case LendBorrowP(permission) => {
+                  case LendConstraintP(permission) => {
                     // Allow this, we can do & on a share ref, itll just give us a share ref.
                     innerExpr2
                   }
@@ -474,7 +474,7 @@ class ExpressionTemplar(
             evaluateAndCoerceToReferenceExpression(temputs, fate, innerExpr1);
           vcheck(innerExpr2.resultRegister.reference.ownership == Weak, "Can only lock a weak")
 
-          val borrowCoord = Coord(Borrow, Readonly, innerExpr2.referend)
+          val borrowCoord = Coord(Constraint, Readonly, innerExpr2.referend)
 
           val interfaceTemplata =
             fate.getNearestTemplataWithName(CodeTypeNameA("Opt"), Set(TemplataLookupContext)) match {
@@ -1178,7 +1178,7 @@ class ExpressionTemplar(
         val unborrowedContainerExpr2 = decaySoloPack(fate, r)
         unborrowedContainerExpr2.resultRegister.reference.ownership match {
           case Own => localHelper.makeTemporaryLocal(temputs, fate, unborrowedContainerExpr2)
-          case Borrow | Share => (unborrowedContainerExpr2)
+          case Constraint | Share => (unborrowedContainerExpr2)
         }
       }
     }

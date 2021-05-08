@@ -2,7 +2,6 @@ package net.verdagon.vale.driver
 
 import java.io.{BufferedWriter, File, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
-
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, ProgramA}
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
@@ -15,6 +14,7 @@ import net.verdagon.vale.{Err, NullProfiler, Ok, Result, Samples, Terrain, vasse
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
+import scala.util.matching.Regex
 
 object Driver {
   case class InputException(message: String) extends Throwable
@@ -122,7 +122,8 @@ object Driver {
                 val von = ParserVonifier.vonifyFile(program0)
                 val json = new VonPrinter(JsonSyntax, 120).print(von)
                 if (opts.outputVPST) {
-                  val vpstFilepath = filepath.replaceAll("\\.vale", ".vpst")
+                  val parts = filepath.split("[/\\\\]")
+                  val vpstFilepath = opts.outputDirPath.get + "/" + parts.last.replaceAll("\\.vale", ".vpst")
                   writeFile(vpstFilepath, json)
                 }
                 json
@@ -152,7 +153,7 @@ object Driver {
 //      }
 //    }
     if (opts.outputVAST) {
-      val outputVastFilepath = opts.outputDirPath + "/build.vast"
+      val outputVastFilepath = opts.outputDirPath.get + "/build.vast"
       val scoutput =
         Scout.scoutProgram(parseds) match {
           case Err(e) => return Err(ScoutErrorHumanizer.humanize(filepathsAndSources, e))

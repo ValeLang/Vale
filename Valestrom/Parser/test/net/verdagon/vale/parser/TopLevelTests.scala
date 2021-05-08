@@ -43,7 +43,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("exporting int") {
     val program = compileProgram("export int as NumberThing;")
     program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(StringP(_,"int")),StringP(_,"NumberThing"))) =>
+      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(NameP(_,"int")),NameP(_,"NumberThing"))) =>
 
     }
   }
@@ -51,7 +51,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("exporting array") {
     val program = compileProgram("export Array<mut, int> as IntArray;")
     program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,_,StringP(_,"IntArray"))) =>
+      case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
     }
   }
 }

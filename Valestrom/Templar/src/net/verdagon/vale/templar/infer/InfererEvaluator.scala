@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, OwnP, ReadonlyP, ReadwriteP, ShareP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, OwnP, ReadonlyP, ReadwriteP, ShareP, WeakP}
 import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar.{CompileErrorExceptionT, IName2, IRune2, NameTranslator, RangedInternalErrorT, SolverKindRune2, Templar}
 import net.verdagon.vale.templar.infer.infer._
@@ -696,18 +696,18 @@ class InfererEvaluator[Env, State](
               (innerCoordOwnership, targetOwnership) match {
                 case (Own, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was an own!", List()))
                 case (Own, OwnP) => Own // No change, allow it
-                case (Own, BorrowP) => Borrow // Can borrow an own, allow it
+                case (Own, ConstraintP) => Constraint // Can borrow an own, allow it
                 case (Own, WeakP) => Weak // Can weak an own, allow it
-                case (Borrow, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a borrow!", List()))
-                case (Borrow, OwnP) => Own // Can turn a borrow into an own, allow it
-                case (Borrow, BorrowP) => Borrow // No change, allow it
-                case (Borrow, WeakP) => Weak // Can weak a borrow, allow it
+                case (Constraint, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a borrow!", List()))
+                case (Constraint, OwnP) => Own // Can turn a borrow into an own, allow it
+                case (Constraint, ConstraintP) => Constraint // No change, allow it
+                case (Constraint, WeakP) => Weak // Can weak a borrow, allow it
                 case (Weak, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a weak!", List()))
                 case (Weak, OwnP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a own, but was a weak!", List()))
-                case (Weak, BorrowP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a borrow, but was a weak!", List()))
+                case (Weak, ConstraintP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a borrow, but was a weak!", List()))
                 case (Weak, WeakP) => Weak // No change, allow it
                 case (Share, OwnP) => Share // Can own a share, just becomes another share.
-                case (Share, BorrowP) => Share // Can borrow a share, just becomes another share.
+                case (Share, ConstraintP) => Share // Can borrow a share, just becomes another share.
                 case (Share, WeakP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a weak, but was a share!", List())) // Cant get a weak ref to a share because it doesnt have lock().
                 case (Share, ShareP) => Share // No change, allow it
               }

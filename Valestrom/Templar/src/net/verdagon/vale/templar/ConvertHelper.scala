@@ -70,16 +70,16 @@ class ConvertHelper(
 
     (sourceOwnership, targetOwnership) match {
       case (Own, Own) =>
-      case (Borrow, Own) => {
+      case (Constraint, Own) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
       }
-      case (Own, Borrow) => {
+      case (Own, Constraint) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
       }
-      case (Borrow, Borrow) =>
+      case (Constraint, Constraint) =>
       case (Share, Share) =>
       case (Own, Share) => vwat();
-      case (Borrow, Share) => vwat();
+      case (Constraint, Share) => vwat();
       case (Weak, Weak) =>
     }
 

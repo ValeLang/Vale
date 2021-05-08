@@ -36,7 +36,7 @@ class DropHelper(
             }
           FunctionCall2(destructorPrototype, List(undestructedExpr2))
         }
-        case Coord(Borrow, _, _) => (Discard2(undestructedExpr2))
+        case Coord(Constraint, _, _) => (Discard2(undestructedExpr2))
         case Coord(Weak, _, _) => (Discard2(undestructedExpr2))
         case Coord(Share, Readonly, _) => {
           val destroySharedCitizen =

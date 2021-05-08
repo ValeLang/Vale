@@ -186,7 +186,7 @@ class TemplarTests extends FunSuite with Matchers {
       main.body.only({
         case LetNormal2(ReferenceLocalVariable2(FullName2(_, CodeVarName2("b")), _, tyype), _) => tyype
       })
-    tyype.ownership shouldEqual Borrow
+    tyype.ownership shouldEqual Constraint
     tyype.permission shouldEqual Readonly
   }
 
@@ -674,7 +674,7 @@ class TemplarTests extends FunSuite with Matchers {
 
     main.only({
       case ReferenceMemberLookup2(_,
-        SoftLoad2(LocalLookup2(_, _, Coord(_,_,StructRef2(_)), Final), Borrow, Readonly),
+        SoftLoad2(LocalLookup2(_, _, Coord(_,_,StructRef2(_)), Final), Constraint, Readonly),
         FullName2(List(CitizenName2("Vec3i",List())),CodeVarName2("x")),Coord(Share,Readonly,Int2()),Readonly,Final) =>
     })
   }

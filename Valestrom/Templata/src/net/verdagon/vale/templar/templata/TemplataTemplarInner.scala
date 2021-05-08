@@ -260,19 +260,19 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     val ownershipDistance =
       (sourceOwnership, targetOwnership) match {
         case (Own, Own) => 0
-        case (Own, Borrow) => 1
+        case (Own, Constraint) => 1
         case (Own, Weak) => 1
         case (Own, Share) => return None
-        case (Borrow, Own) => return (None)
-        case (Borrow, Borrow) => 0
-        case (Borrow, Weak) => 1
-        case (Borrow, Share) => return None
+        case (Constraint, Own) => return (None)
+        case (Constraint, Constraint) => 0
+        case (Constraint, Weak) => 1
+        case (Constraint, Share) => return None
         case (Weak, Own) => return None
-        case (Weak, Borrow) => return None
+        case (Weak, Constraint) => return None
         case (Weak, Weak) => 0
         case (Weak, Share) => return None
         case (Share, Share) => 0
-        case (Share, Borrow) => return None
+        case (Share, Constraint) => return None
         case (Share, Weak) => return None
         case (Share, Own) => return None
       }

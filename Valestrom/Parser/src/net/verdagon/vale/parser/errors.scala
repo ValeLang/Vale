@@ -1,5 +1,7 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.vpass
+
 sealed trait IParseError
 case class UnrecognizedTopLevelThingError(pos: Int) extends IParseError
 case class BadStartOfStatementError(pos: Int) extends IParseError
@@ -26,7 +28,9 @@ case class BadMutateEqualsError(pos: Int) extends IParseError
 case class BadLetEndError(pos: Int) extends IParseError
 
 case class BadVPSTException(err: BadVPSTError) extends RuntimeException
-case class BadVPSTError(message: String) extends IParseError
+case class BadVPSTError(message: String) extends IParseError {
+  vpass()
+}
 
 
 // TODO: Get rid of all the below when we've migrated away from combinators.

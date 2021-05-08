@@ -256,10 +256,10 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries.addEntry(true, CitizenName2("MutStructBorrow", List()),
-      TemplataEnvEntry(CoordTemplata(Coord(Borrow,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
-    entries = entries.addEntry(true, CitizenName2("MutStructBorrowRW", List()),
-      TemplataEnvEntry(CoordTemplata(Coord(Borrow,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
+    entries = entries.addEntry(true, CitizenName2("MutStructConstraint", List()),
+      TemplataEnvEntry(CoordTemplata(Coord(Constraint,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
+    entries = entries.addEntry(true, CitizenName2("MutStructConstraintRW", List()),
+      TemplataEnvEntry(CoordTemplata(Coord(Constraint,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     entries = entries.addEntry(true, CitizenName2("MutStructWeak", List()),
       TemplataEnvEntry(CoordTemplata(Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     entries = entries.addEntry(true, CitizenName2("MutStructWeakRW", List()),
@@ -386,7 +386,7 @@ class InfererTests extends FunSuite with Matchers {
     evaluator
   }
 
-  test("Borrow becomes share if kind is immutable") {
+  test("Constraint becomes share if kind is immutable") {
     val (InferSolveSuccess(inferences)) =
       makeCannedEvaluator()
         .solve(
@@ -396,7 +396,7 @@ class InfererTests extends FunSuite with Matchers {
             TemplexTR(RuneTT(RangeS.testZero,CodeRune2("__C"), CoordTemplataType)),
             EqualsTR(RangeS.testZero,
               TemplexTR(RuneTT(RangeS.testZero,CodeRune2("__C"), CoordTemplataType)),
-              TemplexTR(InterpretedTT(RangeS.testZero,BorrowP,ReadonlyP,NameTT(RangeS.testZero,CodeTypeNameA("ImmInterface"), CoordTemplataType))))),
+              TemplexTR(InterpretedTT(RangeS.testZero,ConstraintP,ReadonlyP,NameTT(RangeS.testZero,CodeTypeNameA("ImmInterface"), CoordTemplataType))))),
           RangeS.testZero,
           Map(CodeRune2("__C") -> CoordTemplataType),
           Set(CodeRune2("__C")),
@@ -578,7 +578,7 @@ class InfererTests extends FunSuite with Matchers {
                 RangeS.internal(-101),
                 CoordTemplataType,
                 List(
-                  TemplexTR(OwnershipTT(RangeS.testZero,BorrowP)),
+                  TemplexTR(OwnershipTT(RangeS.testZero,ConstraintP)),
                   TemplexTR(PermissionTT(RangeS.testZero,ReadonlyP)),
                   TemplexTR(RuneTT(RangeS.testZero,CodeRune2("1337"), KindTemplataType)))))),
           RangeS.testZero,
@@ -589,7 +589,7 @@ class InfererTests extends FunSuite with Matchers {
           Set(CodeRune2("1337"), CodeRune2("0"), CodeRune2("T")),
           Map(),
           List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("m"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("0"),None)),
-          Some(List(ParamFilter(Coord(Borrow,Readonly, InterfaceRef2(FullName2(List(), CitizenName2("MutInterface", List())))),None))),
+          Some(List(ParamFilter(Coord(Constraint,Readonly, InterfaceRef2(FullName2(List(), CitizenName2("MutInterface", List())))),None))),
           true)
 
     vassert(inferences.templatasByRune(CodeRune2("T")) == CoordTemplata(Coord(Own,Readwrite, InterfaceRef2(FullName2(List(), CitizenName2("MutInterface", List()))))))
@@ -1324,8 +1324,8 @@ class InfererTests extends FunSuite with Matchers {
 
     // Dont need to test Own + Readonly, because its impossible to express that with an InterpretedTT rule.
     expectSuccess(run("int", OwnP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Int2())
-    expectSuccess(run("int", BorrowP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Int2())
-    expectSuccess(run("int", BorrowP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Int2())
+    expectSuccess(run("int", ConstraintP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Int2())
+    expectSuccess(run("int", ConstraintP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Int2())
     vassert(expectFail(run("int", WeakP, ReadonlyP)).contains("Expected a weak, but was a share"))
     vassert(expectFail(run("int", WeakP, ReadwriteP)).contains("Expected a weak, but was a share"))
     expectSuccess(run("int", ShareP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Int2())
@@ -1333,47 +1333,47 @@ class InfererTests extends FunSuite with Matchers {
 
     vassert(expectFail(run("MutStruct", ShareP, ReadonlyP)).contains("Expected a share, but was an own"))
     expectSuccess(run("MutStruct", OwnP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    expectSuccess(run("MutStruct", BorrowP, ReadonlyP)) shouldEqual Coord(Borrow,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    expectSuccess(run("MutStruct", BorrowP, ReadwriteP)) shouldEqual Coord(Borrow,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStruct", ConstraintP, ReadonlyP)) shouldEqual Coord(Constraint,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStruct", ConstraintP, ReadwriteP)) shouldEqual Coord(Constraint,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStruct", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStruct", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
-    vassert(expectFail(run("MutStructBorrow", ShareP, ReadonlyP)).contains("Expected a share, but was a borrow"))
-    expectSuccess(run("MutStructBorrow", OwnP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    expectSuccess(run("MutStructBorrow", BorrowP, ReadonlyP)) shouldEqual Coord(Borrow,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    vassert(expectFail(run("MutStructConstraint", ShareP, ReadonlyP)).contains("Expected a share, but was a borrow"))
+    expectSuccess(run("MutStructConstraint", OwnP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraint", ConstraintP, ReadonlyP)) shouldEqual Coord(Constraint,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     // &!T given a &Spaceship should give a &T, it should make the Readonly into a Readwrite.
-    expectSuccess(run("MutStructBorrow", BorrowP, ReadwriteP)) shouldEqual Coord(Borrow,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    expectSuccess(run("MutStructBorrow", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraint", ConstraintP, ReadwriteP)) shouldEqual Coord(Constraint,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraint", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     // &&!T given a &Spaceship should give a &T, it should make the Readonly into a Readwrite, and the borrow into a weak.
-    expectSuccess(run("MutStructBorrow", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraint", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
-    vassert(expectFail(run("MutStructBorrowRW", ShareP, ReadonlyP)).contains("Expected a share, but was a borrow"))
-    expectSuccess(run("MutStructBorrowRW", OwnP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    vassert(expectFail(run("MutStructConstraintRW", ShareP, ReadonlyP)).contains("Expected a share, but was a borrow"))
+    expectSuccess(run("MutStructConstraintRW", OwnP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     // &T given a &!Spaceship should give a &T, it should make the Readwrite into a Readonly.
-    expectSuccess(run("MutStructBorrowRW", BorrowP, ReadonlyP)) shouldEqual Coord(Borrow,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    expectSuccess(run("MutStructBorrowRW", BorrowP, ReadwriteP)) shouldEqual Coord(Borrow,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    expectSuccess(run("MutStructBorrowRW", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadonlyP)) shouldEqual Coord(Constraint,Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadwriteP)) shouldEqual Coord(Constraint,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraintRW", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     // &&T given a &!Spaceship should give a &T, it should make the Readwrite into a Readonly, and the borrow into a weak.
-    expectSuccess(run("MutStructBorrowRW", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    expectSuccess(run("MutStructConstraintRW", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
     vassert(expectFail(run("MutStructWeak", ShareP, ReadonlyP)).contains("Expected a share, but was a weak"))
     vassert(expectFail(run("MutStructWeak", OwnP, ReadwriteP)).contains("Expected a own, but was a weak"))
-    vassert(expectFail(run("MutStructWeak", BorrowP, ReadonlyP)).contains("Expected a borrow, but was a weak"))
-    vassert(expectFail(run("MutStructWeak", BorrowP, ReadwriteP)).contains("Expected a borrow, but was a weak"))
+    vassert(expectFail(run("MutStructWeak", ConstraintP, ReadonlyP)).contains("Expected a borrow, but was a weak"))
+    vassert(expectFail(run("MutStructWeak", ConstraintP, ReadwriteP)).contains("Expected a borrow, but was a weak"))
     expectSuccess(run("MutStructWeak", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStructWeak", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
     vassert(expectFail(run("MutStructWeakRW", ShareP, ReadonlyP)).contains("Expected a share, but was a weak"))
     vassert(expectFail(run("MutStructWeakRW", OwnP, ReadwriteP)).contains("Expected a own, but was a weak"))
-    vassert(expectFail(run("MutStructWeakRW", BorrowP, ReadonlyP)).contains("Expected a borrow, but was a weak"))
-    vassert(expectFail(run("MutStructWeakRW", BorrowP, ReadwriteP)).contains("Expected a borrow, but was a weak"))
+    vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadonlyP)).contains("Expected a borrow, but was a weak"))
+    vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadwriteP)).contains("Expected a borrow, but was a weak"))
     expectSuccess(run("MutStructWeakRW", WeakP, ReadonlyP)) shouldEqual Coord(Weak, Readonly, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     expectSuccess(run("MutStructWeakRW", WeakP, ReadwriteP)) shouldEqual Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
 
     expectSuccess(run("void", ShareP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Void2())
     expectSuccess(run("void", OwnP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Void2())
-    expectSuccess(run("void", BorrowP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Void2())
-    expectSuccess(run("void", BorrowP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Void2())
+    expectSuccess(run("void", ConstraintP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Void2())
+    expectSuccess(run("void", ConstraintP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Void2())
     vassert(expectFail(run("void", WeakP, ReadonlyP)).contains("Expected a weak, but was a share"))
     vassert(expectFail(run("void", WeakP, ReadwriteP)).contains("Expected a weak, but was a share"))
   }
@@ -1410,15 +1410,15 @@ class InfererTests extends FunSuite with Matchers {
     }
 
     expectSuccess(run("int", OwnP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Int2())
-    expectSuccess(run("int", BorrowP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Int2())
-    expectSuccess(run("int", BorrowP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Int2())
+    expectSuccess(run("int", ConstraintP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Int2())
+    expectSuccess(run("int", ConstraintP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Int2())
     vassert(expectFail(run("int", WeakP, ReadonlyP)).contains("Couldn't match incoming Share against expected Weak"))
     vassert(expectFail(run("int", WeakP, ReadwriteP)).contains("Couldn't match incoming Share against expected Weak"))
     expectSuccess(run("int", ShareP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Int2())
 
     expectSuccess(run("void", OwnP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Void2())
-    expectSuccess(run("void", BorrowP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Void2())
-    expectSuccess(run("void", BorrowP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Void2())
+    expectSuccess(run("void", ConstraintP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Void2())
+    expectSuccess(run("void", ConstraintP, ReadwriteP)) shouldEqual Coord(Share, Readonly, Void2())
     vassert(expectFail(run("void", WeakP, ReadonlyP)).contains("Couldn't match incoming Share against expected Weak"))
     vassert(expectFail(run("void", WeakP, ReadwriteP)).contains("Couldn't match incoming Share against expected Weak"))
     expectSuccess(run("void", ShareP, ReadonlyP)) shouldEqual Coord(Share, Readonly, Void2())
@@ -1427,36 +1427,36 @@ class InfererTests extends FunSuite with Matchers {
     // Takes the own off the incoming own coord, ends up as another own.
     expectSuccess(run("MutStruct", OwnP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     // Tries to take the borrow off the incoming own coord... fails.
-    vassert(expectFail(run("MutStruct", BorrowP, ReadonlyP)).contains("Couldn't match incoming Own against expected Borrow"))
-    vassert(expectFail(run("MutStruct", BorrowP, ReadwriteP)).contains("Couldn't match incoming Own against expected Borrow"))
+    vassert(expectFail(run("MutStruct", ConstraintP, ReadonlyP)).contains("Couldn't match incoming Own against expected Constraint"))
+    vassert(expectFail(run("MutStruct", ConstraintP, ReadwriteP)).contains("Couldn't match incoming Own against expected Constraint"))
     vassert(expectFail(run("MutStruct", WeakP, ReadonlyP)).contains("Couldn't match incoming Own against expected Weak"))
     vassert(expectFail(run("MutStruct", WeakP, ReadwriteP)).contains("Couldn't match incoming Own against expected Weak"))
 
     // Tries to take the own off the incoming borrow coord... fails.
-    vassert(expectFail(run("MutStructBorrow", OwnP, ReadwriteP)).contains("Couldn't match incoming Borrow against expected Own"))
+    vassert(expectFail(run("MutStructConstraint", OwnP, ReadwriteP)).contains("Couldn't match incoming Constraint against expected Own"))
     // Takes the borrow off the incoming borrow coord, succeeds and gives us an own.
-    expectSuccess(run("MutStructBorrow", BorrowP, ReadonlyP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
-    vassert(expectFail(run("MutStructBorrow", BorrowP, ReadwriteP)).contains("Couldn't match incoming Readonly against expected Readwrite"))
+    expectSuccess(run("MutStructConstraint", ConstraintP, ReadonlyP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
+    vassert(expectFail(run("MutStructConstraint", ConstraintP, ReadwriteP)).contains("Couldn't match incoming Readonly against expected Readwrite"))
     // Takes the weak off the incoming borrow coord... fails.
-    vassert(expectFail(run("MutStructBorrow", WeakP, ReadonlyP)).contains("Couldn't match incoming Borrow against expected Weak"))
-    vassert(expectFail(run("MutStructBorrow", WeakP, ReadwriteP)).contains("Couldn't match incoming Borrow against expected Weak"))
-    vassert(expectFail(run("MutStructBorrow", ShareP, ReadonlyP)).contains("Couldn't match incoming Borrow against expected Share"))
+    vassert(expectFail(run("MutStructConstraint", WeakP, ReadonlyP)).contains("Couldn't match incoming Constraint against expected Weak"))
+    vassert(expectFail(run("MutStructConstraint", WeakP, ReadwriteP)).contains("Couldn't match incoming Constraint against expected Weak"))
+    vassert(expectFail(run("MutStructConstraint", ShareP, ReadonlyP)).contains("Couldn't match incoming Constraint against expected Share"))
 
     // Tries to take the own off the incoming borrow coord... fails.
-    vassert(expectFail(run("MutStructBorrowRW", OwnP, ReadwriteP)).contains("Couldn't match incoming Borrow against expected Own"))
-    vassert(expectFail(run("MutStructBorrowRW", BorrowP, ReadonlyP)).contains("Couldn't match incoming Readwrite against expected Readonly"))
+    vassert(expectFail(run("MutStructConstraintRW", OwnP, ReadwriteP)).contains("Couldn't match incoming Constraint against expected Own"))
+    vassert(expectFail(run("MutStructConstraintRW", ConstraintP, ReadonlyP)).contains("Couldn't match incoming Readwrite against expected Readonly"))
     // Takes the borrow off the incoming borrow coord, succeeds and gives us an own.
-    expectSuccess(run("MutStructBorrowRW", BorrowP, ReadwriteP)) shouldEqual Coord(Own,Readwrite,StructRef2(FullName2(List(),CitizenName2("MutStruct",List()))))
+    expectSuccess(run("MutStructConstraintRW", ConstraintP, ReadwriteP)) shouldEqual Coord(Own,Readwrite,StructRef2(FullName2(List(),CitizenName2("MutStruct",List()))))
     // Takes the weak off the incoming borrow coord... fails.
-    vassert(expectFail(run("MutStructBorrowRW", WeakP, ReadonlyP)).contains("Couldn't match incoming Borrow against expected Weak"))
-    vassert(expectFail(run("MutStructBorrowRW", WeakP, ReadwriteP)).contains("Couldn't match incoming Borrow against expected Weak"))
-    vassert(expectFail(run("MutStructBorrowRW", ShareP, ReadonlyP)).contains("Couldn't match incoming Borrow against expected Share"))
+    vassert(expectFail(run("MutStructConstraintRW", WeakP, ReadonlyP)).contains("Couldn't match incoming Constraint against expected Weak"))
+    vassert(expectFail(run("MutStructConstraintRW", WeakP, ReadwriteP)).contains("Couldn't match incoming Constraint against expected Weak"))
+    vassert(expectFail(run("MutStructConstraintRW", ShareP, ReadonlyP)).contains("Couldn't match incoming Constraint against expected Share"))
 
     // Tries to take the own off the incoming weak coord... fails.
     vassert(expectFail(run("MutStructWeak", OwnP, ReadwriteP)).contains("Couldn't match incoming Weak against expected Own"))
     // Takes the borrow off the incoming weak coord... fails.
-    vassert(expectFail(run("MutStructWeak", BorrowP, ReadonlyP)).contains("Couldn't match incoming Weak against expected Borrow"))
-    vassert(expectFail(run("MutStructWeak", BorrowP, ReadwriteP)).contains("Couldn't match incoming Weak against expected Borrow"))
+    vassert(expectFail(run("MutStructWeak", ConstraintP, ReadonlyP)).contains("Couldn't match incoming Weak against expected Constraint"))
+    vassert(expectFail(run("MutStructWeak", ConstraintP, ReadwriteP)).contains("Couldn't match incoming Weak against expected Constraint"))
     // Takes the weak off the incoming weak coord, succeeds and gives us an own.
     expectSuccess(run("MutStructWeak", WeakP, ReadonlyP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))
     vassert(expectFail(run("MutStructWeak", WeakP, ReadwriteP)).contains("Couldn't match incoming Readonly against expected Readwrite"))
@@ -1465,8 +1465,8 @@ class InfererTests extends FunSuite with Matchers {
     // Tries to take the own off the incoming weak coord... fails.
     vassert(expectFail(run("MutStructWeakRW", OwnP, ReadwriteP)).contains("Couldn't match incoming Weak against expected Own"))
     // Takes the borrow off the incoming weak coord... fails.
-    vassert(expectFail(run("MutStructWeakRW", BorrowP, ReadonlyP)).contains("Couldn't match incoming Weak against expected Borrow"))
-    vassert(expectFail(run("MutStructWeakRW", BorrowP, ReadwriteP)).contains("Couldn't match incoming Weak against expected Borrow"))
+    vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadonlyP)).contains("Couldn't match incoming Weak against expected Constraint"))
+    vassert(expectFail(run("MutStructWeakRW", ConstraintP, ReadwriteP)).contains("Couldn't match incoming Weak against expected Constraint"))
     vassert(expectFail(run("MutStructWeakRW", WeakP, ReadonlyP)).contains("Couldn't match incoming Readwrite against expected Readonly"))
     // Takes the weak off the incoming weak coord, succeeds and gives us an own.
     expectSuccess(run("MutStructWeakRW", WeakP, ReadwriteP)) shouldEqual Coord(Own,Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List()))))

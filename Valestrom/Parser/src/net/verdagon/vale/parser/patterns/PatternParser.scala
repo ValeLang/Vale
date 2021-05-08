@@ -8,7 +8,7 @@ import scala.util.parsing.combinator.RegexParsers
 trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   // Things needed from other parsers
-  private[parser] def exprIdentifier: Parser[StringP]
+  private[parser] def exprIdentifier: Parser[NameP]
 
 
   // Add any new rules to the "Nothing matches empty string" test!
@@ -64,7 +64,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
   private[parser] def patternCapture: Parser[CaptureP] = {
     pos ~ existsMW("this.") ~ exprIdentifier ~ opt("!") ~ pos ^^ {
       case begin ~ None ~ name ~ maybeMutable ~ end => CaptureP(Range(begin, end), LocalNameP(name), if (maybeMutable.nonEmpty) VaryingP else FinalP)
-      case begin ~ Some(thisdot) ~ name ~ maybeMutable ~ end => CaptureP(Range(begin, end), ConstructingMemberNameP(StringP(Range(begin, name.range.end), name.str)), if (maybeMutable.nonEmpty) VaryingP else FinalP)
+      case begin ~ Some(thisdot) ~ name ~ maybeMutable ~ end => CaptureP(Range(begin, end), ConstructingMemberNameP(NameP(Range(begin, name.range.end), name.str)), if (maybeMutable.nonEmpty) VaryingP else FinalP)
     }
   }
 
@@ -92,7 +92,7 @@ trait PatternParser extends TemplexParser with RegexParsers with ParserUtils {
 
   private[parser] def patternOwnership: Parser[OwnershipP] = {
     // See "Capturing Kinds and Ownerships" for why we don't capture a rune here.
-    (("^" ^^^ OwnP) | ("&" ^^^ BorrowP) | ("&&" ^^^ WeakP) | ("*" ^^^ ShareP))
+    (("^" ^^^ OwnP) | ("&" ^^^ ConstraintP) | ("&&" ^^^ WeakP) | ("*" ^^^ ShareP))
   }
 
   // Add any new rules to the "Nothing matches empty string" test!

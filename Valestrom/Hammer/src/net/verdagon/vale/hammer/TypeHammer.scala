@@ -100,7 +100,7 @@ object TypeHammer {
     val location = {
       (ownership, innerType) match {
         case (Own, _) => YonderH
-        case (Borrow, _) => YonderH
+        case (Constraint, _) => YonderH
         case (Weak, _) => YonderH
         case (Share, OverloadSet(_, _, _)) => InlineH
         case (Share, PackT2(_, _)) => InlineH

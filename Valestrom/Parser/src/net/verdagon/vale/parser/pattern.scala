@@ -37,8 +37,8 @@ case class DestructureP(
   patterns: List[PatternPP])
 
 sealed trait ICaptureNameP
-case class LocalNameP(name: StringP) extends ICaptureNameP
-case class ConstructingMemberNameP(name: StringP) extends ICaptureNameP
+case class LocalNameP(name: NameP) extends ICaptureNameP
+case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP
 
 case class CaptureP(
     range: Range,
@@ -63,7 +63,7 @@ object Patterns {
   object capturedWithTypeRune {
     def unapply(arg: PatternPP): Option[(String, String)] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(StringP(_, name)), FinalP)), Some(NameOrRunePT(StringP(_, kindRune))), None, None) => Some((name, kindRune))
+        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)), FinalP)), Some(NameOrRunePT(NameP(_, kindRune))), None, None) => Some((name, kindRune))
         case _ => None
       }
     }
@@ -76,7 +76,7 @@ object Patterns {
   object capture {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(StringP(_, name)), FinalP)), None, None, None) => Some(name)
+        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)), FinalP)), None, None, None) => Some(name)
         case _ => None
       }
     }
@@ -84,7 +84,7 @@ object Patterns {
   object fromEnv {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, None, Some(NameOrRunePT(StringP(_, kindName))), None, None) => Some(kindName)
+        case PatternPP(_, _, None, Some(NameOrRunePT(NameP(_, kindName))), None, None) => Some(kindName)
         case _ => None
       }
     }
@@ -100,7 +100,7 @@ object Patterns {
   object capturedWithType {
     def unapply(arg: PatternPP): Option[(String, ITemplexPT)] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(StringP(_, name)), FinalP)), Some(templex), None, None) => Some((name, templex))
+        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)), FinalP)), Some(templex), None, None) => Some((name, templex))
         case _ => None
       }
     }

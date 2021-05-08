@@ -3,7 +3,7 @@ package net.verdagon.von
 sealed trait IVonData
 
 case class VonInt(value: Int) extends IVonData
-case class VonFloat(value: Float) extends IVonData
+case class VonFloat(value: Double) extends IVonData
 case class VonBool(value: Boolean) extends IVonData
 case class VonStr(value: String) extends IVonData
 

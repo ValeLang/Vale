@@ -25,6 +25,7 @@ object Driver {
     outputVPST: Boolean,
     outputVAST: Boolean,
     outputHighlights: Boolean,
+    includeBuiltins: Boolean,
     mode: Option[String], // build v run etc
     verbose: Boolean,
   )
@@ -41,6 +42,9 @@ object Driver {
       }
       case "--output-vast" :: value :: tail => {
         parseOpts(opts.copy(outputVAST = value.toBoolean), tail)
+      }
+      case "--include-builtins" :: value :: tail => {
+        parseOpts(opts.copy(includeBuiltins = value.toBoolean), tail)
       }
       case "--output-highlights" :: value :: tail => {
         parseOpts(opts.copy(outputHighlights = value.toBoolean), tail)
@@ -95,15 +99,19 @@ object Driver {
     vassert(opts.inputFiles.size == sources.size)
     val filepathsAndSources =
         opts.inputFiles.zip(sources) ++
-          List(
-            ("builtins/arrayutils.vale", Samples.get("builtins/arrayutils.vale")),
-            ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale")),
-            ("builtins/castutils.vale", Samples.get("builtins/castutils.vale")),
-            ("builtins/file.vale", Samples.get("builtins/file.vale")),
-            ("builtins/opt.vale", Samples.get("builtins/opt.vale")),
-            ("builtins/printutils.vale", Samples.get("builtins/printutils.vale")),
-            ("builtins/strings.vale", Samples.get("builtins/strings.vale")),
-            ("builtins/utils.vale", Samples.get("builtins/utils.vale")))
+          (if (opts.includeBuiltins) {
+            List(
+              ("builtins/arrayutils.vale", Samples.get("builtins/arrayutils.vale")),
+              ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale")),
+              ("builtins/castutils.vale", Samples.get("builtins/castutils.vale")),
+              ("builtins/file.vale", Samples.get("builtins/file.vale")),
+              ("builtins/opt.vale", Samples.get("builtins/opt.vale")),
+              ("builtins/printutils.vale", Samples.get("builtins/printutils.vale")),
+              ("builtins/strings.vale", Samples.get("builtins/strings.vale")),
+              ("builtins/utils.vale", Samples.get("builtins/utils.vale")))
+          } else {
+            List()
+          })
 
     val debugOut =
       if (opts.verbose) {
@@ -240,7 +248,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), None, true, true, false, None, false), args.toList)
+      val opts = parseOpts(Options(List(), None, true, true, false, true, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputFiles.nonEmpty, "No input files!", InputException)
 

@@ -192,9 +192,16 @@ class ValeCompiler:
         if "--verbose" in args:
             args.remove("--verbose")
             valestrom_options.append("--verbose")
-        if "--output-vpst" in args:
-            args.remove("--output-vpst")
-            valestrom_options.append("--output-vpst")
+        if "--include-builtins" in args:
+            ind = args.index("--include-builtins")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            valestrom_options.append("--include-builtins")
+            valestrom_options.append(val)
+        # if "--output-vpst" in args:
+        #     args.remove("--output-vpst")
+        #     valestrom_options.append("--output-vpst")
         if "--llvmir" in args:
             args.remove("--llvmir")
             midas_options.append("--llvmir")
@@ -234,6 +241,22 @@ class ValeCompiler:
             exports_dir = PurePath(val)
             midas_options.append("--exports-dir")
             midas_options.append(val)
+        if "--output-vast" in args:
+            ind = args.index("--output-vast")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            exports_dir = PurePath(val)
+            valestrom_options.append("--output-vast")
+            valestrom_options.append(val)
+        if "--output-vpst" in args:
+            ind = args.index("--output-vpst")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            exports_dir = PurePath(val)
+            valestrom_options.append("--output-vpst")
+            valestrom_options.append(val)
         if "--add-exports-include-path" in args:
             ind = args.index("--add-exports-include-path")
             del args[ind]
@@ -302,7 +325,7 @@ class ValeCompiler:
             for arg in args:
                 if arg.endswith(".vale"):
                     user_valestrom_files.append(PurePath(arg))
-                elif arg.endswith(".vpr"):
+                elif arg.endswith(".vpst"):
                     user_valestrom_files.append(PurePath(arg))
                 elif arg.endswith(".vast"):
                     user_vast_files.append(PurePath(arg))

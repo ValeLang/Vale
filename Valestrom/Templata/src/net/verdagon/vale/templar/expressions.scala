@@ -65,7 +65,7 @@ case class LetAndLend2(
 
   override def resultRegister: ReferenceRegister2 = {
     val Coord(ownership, permission, kind) = expr.resultRegister.reference
-    ReferenceRegister2(Coord(if (ownership == Share) Share else Borrow, permission, kind))
+    ReferenceRegister2(Coord(if (ownership == Share) Share else Constraint, permission, kind))
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -80,7 +80,7 @@ case class NarrowPermission2(
   expr.resultRegister.reference.ownership match {
     case Own => vfail() // This only works on non owning references
     case Share => vfail() // Share only has readonly
-    case Borrow | Weak => // fine
+    case Constraint | Weak => // fine
   }
   // Only thing we support so far is Readwrite -> Readonly
   vassert(expr.resultRegister.reference.permission == Readwrite)
@@ -122,7 +122,7 @@ case class LockWeak2(
 case class WeakAlias2(
   innerExpr: ReferenceExpression2
 ) extends ReferenceExpression2 {
-  vassert(innerExpr.resultRegister.reference.ownership == Borrow)
+  vassert(innerExpr.resultRegister.reference.ownership == Constraint)
 
   override def resultRegister: ReferenceRegister2 = {
     ReferenceRegister2(Coord(Weak, innerExpr.resultRegister.reference.permission, innerExpr.referend))
@@ -172,7 +172,7 @@ case class Discard2(
   override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   expr.resultRegister.reference.ownership match {
-    case Borrow =>
+    case Constraint =>
     case Share =>
     case Weak =>
   }
@@ -425,7 +425,7 @@ case class StrLiteral2(value: String) extends ReferenceExpression2 {
   }
 }
 
-case class FloatLiteral2(value: Float) extends ReferenceExpression2 {
+case class FloatLiteral2(value: Double) extends ReferenceExpression2 {
   override def resultRegister = ReferenceRegister2(Coord(Share, Readonly, Float2()))
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -700,7 +700,7 @@ case class DestroyArraySequenceIntoLocals2(
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
   vassert(expr.referend == arraySeq)
-  if (expr.resultRegister.reference.ownership == Borrow) {
+  if (expr.resultRegister.reference.ownership == Constraint) {
     vfail("wot")
   }
 
@@ -794,7 +794,7 @@ case class Destroy2(
 ) extends ReferenceExpression2 {
   override def resultRegister: ReferenceRegister2 = ReferenceRegister2(Coord(Share, Readonly, Void2()))
 
-  if (expr.resultRegister.reference.ownership == Borrow) {
+  if (expr.resultRegister.reference.ownership == Constraint) {
     vfail("wot")
   }
 

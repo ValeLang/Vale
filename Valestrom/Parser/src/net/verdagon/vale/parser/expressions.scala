@@ -14,7 +14,7 @@ case class LendPE(
     targetOwnership: LoadAsP) extends IExpressionPE {
   targetOwnership match {
     case LendWeakP(_) =>
-    case LendBorrowP(_) =>
+    case LendConstraintP(_) =>
   }
 }
 
@@ -37,7 +37,7 @@ case class LetPE(
   range: Range,
   templateRules: Option[TemplateRulesP],
   pattern: PatternPP,
-  expr: IExpressionPE
+  source: IExpressionPE
 ) extends IExpressionPE
 
 case class BadLetPE(
@@ -49,7 +49,7 @@ case class SequencePE(range: Range, elements: List[IExpressionPE]) extends IExpr
 case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
 case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE
 case class StrLiteralPE(range: Range, value: String) extends IExpressionPE
-case class FloatLiteralPE(range: Range, value: Float) extends IExpressionPE
+case class FloatLiteralPE(range: Range, value: Double) extends IExpressionPE
 
 case class StrInterpolatePE(range: Range, parts: List[IExpressionPE]) extends IExpressionPE
 
@@ -58,7 +58,7 @@ case class DotPE(
   left: IExpressionPE,
   operatorRange: Range,
   isMapAccess: Boolean,
-  member: StringP) extends IExpressionPE
+  member: NameP) extends IExpressionPE
 
 case class IndexPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE
 
@@ -87,8 +87,8 @@ case class MethodCallPE(
 
 case class TemplateArgsP(range: Range, args: List[ITemplexPT])
 case class LookupPE(
-  name: StringP,
-  templateArgs: Option[TemplateArgsP]
+                     name: NameP,
+                     templateArgs: Option[TemplateArgsP]
 ) extends IExpressionPE {
   override def range: Range = name.range
 }

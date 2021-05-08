@@ -14,7 +14,7 @@ object TemplexScout {
     val evalRange = (range: Range) => Scout.evalRange(env.file, range)
 
     templexP match {
-      case NameOrRunePT(StringP(range, nameOrRune)) => {
+      case NameOrRunePT(NameP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
           RuneST(evalRange(range), CodeRuneS(nameOrRune))
         } else {

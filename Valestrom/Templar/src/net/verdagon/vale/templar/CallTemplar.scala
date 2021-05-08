@@ -182,7 +182,7 @@ class CallTemplar(
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.resultRegister.reference match {
-        case Coord(Borrow, _, _) => (givenCallableUnborrowedExpr2)
+        case Coord(Constraint, _, _) => (givenCallableUnborrowedExpr2)
         case Coord(Share, _, _) => (givenCallableUnborrowedExpr2)
         case Coord(Own, _, _) => {
           localHelper.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
@@ -214,7 +214,7 @@ class CallTemplar(
       }
 
     val mutability = Templar.getMutability(temputs, citizenRef)
-    val ownership = if (mutability == Mutable) Borrow else Share
+    val ownership = if (mutability == Mutable) Constraint else Share
 //    val permission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
 //    if (givenCallableBorrowExpr2.resultRegister.reference.permission != Readwrite) {
 //      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can only call readwrite callables! (LHRSP)"))

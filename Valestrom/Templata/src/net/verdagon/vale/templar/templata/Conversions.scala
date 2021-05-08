@@ -43,7 +43,7 @@ object Conversions {
   def evaluateOwnership(ownership: OwnershipP): Ownership = {
     ownership match {
       case OwnP => Own
-      case BorrowP => Borrow
+      case ConstraintP => Constraint
       case WeakP => Weak
       case ShareP => Share
     }
@@ -52,7 +52,7 @@ object Conversions {
   def evaluateMaybeOwnership(maybeOwnership: Option[OwnershipP]): Option[Ownership] = {
     maybeOwnership.map({
       case OwnP => Own
-      case BorrowP => Borrow
+      case ConstraintP => Constraint
       case WeakP => Weak
       case ShareP => Share
     })
@@ -69,7 +69,7 @@ object Conversions {
   def unevaluateOwnership(ownership: Ownership): OwnershipP = {
     ownership match {
       case Own => OwnP
-      case Borrow => BorrowP
+      case Constraint => ConstraintP
       case Weak => WeakP
       case Share => ShareP
     }

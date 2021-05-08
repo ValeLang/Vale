@@ -60,16 +60,16 @@ class RuleTests extends FunSuite with Matchers with Collector {
 
   test("Relations") {
     compile(rulePR, "implements(MyObject, IObject)") shouldHave {
-      case CallPR(_, StringP(_, "implements"),List(TemplexPR(NameOrRunePT(StringP(_, "MyObject"))), TemplexPR(NameOrRunePT(StringP(_, "IObject"))))) =>
+      case CallPR(_, NameP(_, "implements"),List(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
     compile(rulePR, "implements(R, IObject)") shouldHave {
-        case CallPR(_, StringP(_, "implements"),List(TemplexPR(NameOrRunePT(StringP(_, "R"))), TemplexPR(NameOrRunePT(StringP(_, "IObject"))))) =>
+        case CallPR(_, NameP(_, "implements"),List(TemplexPR(NameOrRunePT(NameP(_, "R"))), TemplexPR(NameOrRunePT(NameP(_, "IObject"))))) =>
     }
     compile(rulePR, "implements(MyObject, T)") shouldHave {
-        case CallPR(_, StringP(_, "implements"),List(TemplexPR(NameOrRunePT(StringP(_, "MyObject"))), TemplexPR(NameOrRunePT(StringP(_, "T"))))) =>
+        case CallPR(_, NameP(_, "implements"),List(TemplexPR(NameOrRunePT(NameP(_, "MyObject"))), TemplexPR(NameOrRunePT(NameP(_, "T"))))) =>
     }
     compile(rulePR, "exists(fn +(T)int)") shouldHave {
-        case CallPR(_, StringP(_, "exists"), List(TemplexPR(PrototypePT(_,StringP(_, "+"), List(NameOrRunePT(StringP(_, "T"))), NameOrRunePT(StringP(_, "int")))))) =>
+        case CallPR(_, NameP(_, "exists"), List(TemplexPR(PrototypePT(_,NameP(_, "+"), List(NameOrRunePT(NameP(_, "T"))), NameOrRunePT(NameP(_, "int")))))) =>
     }
   }
 
@@ -92,8 +92,8 @@ class RuleTests extends FunSuite with Matchers with Collector {
       case EqualsPR(_,
         ComponentsPR(_,
           TypedPR(_,None,PrototypeTypePR),
-          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(StringP(_, "T"))))),
-        TemplexPR(NameOrRunePT(StringP(_, "moo")))) =>
+          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "T"))))),
+        TemplexPR(NameOrRunePT(NameP(_, "moo")))) =>
     }
   }
 
@@ -103,7 +103,7 @@ class RuleTests extends FunSuite with Matchers with Collector {
         TypedPR(_,None,PrototypeTypePR),
         List(
           TemplexPR(AnonymousRunePT(_)),
-          TemplexPR(PackPT(_,List(NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "bool"))))),
+          TemplexPR(PackPT(_,List(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))),
           TemplexPR(AnonymousRunePT(_)))) =>
     }
   }

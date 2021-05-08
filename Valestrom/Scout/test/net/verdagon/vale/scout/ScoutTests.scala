@@ -3,14 +3,22 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, Ok, vassert, vfail, vwat}
+import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutTests extends FunSuite with Matchers {
   private def compile(code: String): ProgramS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case ParseSuccess(firstProgram0) => {
+        val von = ParserVonifier.vonifyFile(firstProgram0)
+        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+        val program0 =
+          ParsedLoader.load(vpstJson) match {
+            case ParseFailure(error) => vwat(error.toString)
+            case ParseSuccess(program0) => program0
+          }
         Scout.scoutProgram(List(program0)) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
@@ -22,7 +30,14 @@ class ScoutTests extends FunSuite with Matchers {
   private def compileForError(code: String): ICompileErrorS = {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
-      case ParseSuccess(program0) => {
+      case ParseSuccess(firstProgram0) => {
+        val von = ParserVonifier.vonifyFile(firstProgram0)
+        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+        val program0 =
+          ParsedLoader.load(vpstJson) match {
+            case ParseFailure(error) => vwat(error.toString)
+            case ParseSuccess(program0) => program0
+          }
         Scout.scoutProgram(List(program0)) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
@@ -60,7 +75,7 @@ class ScoutTests extends FunSuite with Matchers {
     val program1 = compile("fn main() int export { {_ + _}(4, 6) }")
 
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), LendBorrowP(None)), _) = expr
+    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), LendConstraintP(None)), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
         vassert(mp1 != mp2)
@@ -86,7 +101,7 @@ class ScoutTests extends FunSuite with Matchers {
         case List(
         EqualsSR(_,
         TypedSR(_, actualThisParamRune, CoordTypeSR),
-        TemplexSR(InterpretedST(_, BorrowP, ReadonlyP, NameST(_, CodeTypeNameS("IMoo"))))),
+        TemplexSR(InterpretedST(_, ConstraintP, ReadonlyP, NameST(_, CodeTypeNameS("IMoo"))))),
         EqualsSR(_,
         TypedSR(_, actualBoolParamRune, CoordTypeSR),
         TemplexSR(NameST(_, CodeTypeNameS("bool")))),
@@ -164,7 +179,7 @@ class ScoutTests extends FunSuite with Matchers {
 
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout", _, _), List(LocalLoadSE(_, name, LendBorrowP(Some(ReadonlyP))))))) => {
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout", _, _), List(LocalLoadSE(_, name, LendConstraintP(Some(ReadonlyP))))))) => {
         name match {
           case CodeVarNameS("x") =>
         }
@@ -241,6 +256,18 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
+  test("Forgetting mut when changing") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = Spaceship(10);
+        |  ship.x = 4;
+        |}
+        |""".stripMargin)
+    error match {
+      case ForgotSetKeywordError(_) =>
+    }
+  }
+
   test("Test loading from member") {
     val program1 = compile(
       """fn MyStruct() {
@@ -254,7 +281,7 @@ class ScoutTests extends FunSuite with Matchers {
       case BlockSE(
       _,List(),
       List(
-      DotSE(_,OutsideLoadSE(_,moo,None,LendBorrowP(None)),x,true))) =>
+      DotSE(_,OutsideLoadSE(_,moo,None,LendConstraintP(None)),x,true))) =>
     }
 
   }
@@ -273,7 +300,7 @@ class ScoutTests extends FunSuite with Matchers {
       _,List(),
       List(
       OwnershippedSE(_,
-      DotSE(_,OutsideLoadSE(_,moo,None,LendBorrowP(None)),x,true),LendBorrowP(Some(ReadonlyP))))) =>
+      DotSE(_,OutsideLoadSE(_,moo,None,LendConstraintP(None)),x,true),LendConstraintP(Some(ReadonlyP))))) =>
     }
 
   }
@@ -299,7 +326,7 @@ class ScoutTests extends FunSuite with Matchers {
       IntLiteralSE(_, 4)),
       LetSE(_, _, _, _,
       AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
-      LocalLoadSE(_, ConstructingMemberNameS("x"), LendBorrowP(Some(ReadonlyP)))),
+      LocalLoadSE(_, ConstructingMemberNameS("x"), LendConstraintP(Some(ReadonlyP)))),
       FunctionCallSE(_,
       OutsideLoadSE(_, "MyStruct", _, _),
       List(
@@ -325,7 +352,7 @@ class ScoutTests extends FunSuite with Matchers {
       List(
       FunctionCallSE(_,
       OutsideLoadSE(_, "println", _, _),
-      List(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LendBorrowP(None)), "x", true))),
+      List(DotSE(_, LocalLoadSE(_, CodeVarNameS("this"), LendConstraintP(None)), "x", true))),
       VoidSE(_))))) =>
     }
   }

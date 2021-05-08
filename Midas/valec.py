@@ -34,8 +34,8 @@ class ValeCompiler:
                 shutil.rmtree(self.build_dir)
             os.makedirs(self.build_dir)
 
-        valestrom_options.append("-o")
-        valestrom_options.append(str(self.output_vast_file))
+        valestrom_options.append("--output-dir")
+        valestrom_options.append(str(self.build_dir))
 
         if self.parseds_output_dir != None:
             valestrom_options.append("-op")
@@ -192,6 +192,16 @@ class ValeCompiler:
         if "--verbose" in args:
             args.remove("--verbose")
             valestrom_options.append("--verbose")
+        if "--include-builtins" in args:
+            ind = args.index("--include-builtins")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            valestrom_options.append("--include-builtins")
+            valestrom_options.append(val)
+        # if "--output-vpst" in args:
+        #     args.remove("--output-vpst")
+        #     valestrom_options.append("--output-vpst")
         if "--llvmir" in args:
             args.remove("--llvmir")
             midas_options.append("--llvmir")
@@ -231,6 +241,22 @@ class ValeCompiler:
             exports_dir = PurePath(val)
             midas_options.append("--exports-dir")
             midas_options.append(val)
+        if "--output-vast" in args:
+            ind = args.index("--output-vast")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            exports_dir = PurePath(val)
+            valestrom_options.append("--output-vast")
+            valestrom_options.append(val)
+        if "--output-vpst" in args:
+            ind = args.index("--output-vpst")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            exports_dir = PurePath(val)
+            valestrom_options.append("--output-vpst")
+            valestrom_options.append(val)
         if "--add-exports-include-path" in args:
             ind = args.index("--add-exports-include-path")
             del args[ind]
@@ -247,8 +273,6 @@ class ValeCompiler:
             val = args[ind]
             del args[ind]
             parseds_output_dir = val
-
-        self.output_vast_file = self.build_dir / "build.vast"
 
         if len(args) == 0:
             print("Must supply a command, such as 'help', 'build`, 'run'.")
@@ -301,7 +325,7 @@ class ValeCompiler:
             for arg in args:
                 if arg.endswith(".vale"):
                     user_valestrom_files.append(PurePath(arg))
-                elif arg.endswith(".vpr"):
+                elif arg.endswith(".vpst"):
                     user_valestrom_files.append(PurePath(arg))
                 elif arg.endswith(".vast"):
                     user_vast_files.append(PurePath(arg))
@@ -316,7 +340,7 @@ class ValeCompiler:
                 proc = self.valestrom("build", user_valestrom_files, valestrom_options)
 
                 if proc.returncode == 0:
-                    vast_file = self.output_vast_file
+                    vast_file = self.build_dir / "build.vast"
                     pass
                 elif proc.returncode == 22:
                     print(proc.stdout + "\n" + proc.stderr)

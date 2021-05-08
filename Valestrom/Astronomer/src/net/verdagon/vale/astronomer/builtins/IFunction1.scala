@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, MutableP, ReadwriteP}
+import net.verdagon.vale.parser.{ConstraintP, CaptureP, FinalP, MutableP, ReadwriteP}
 import net.verdagon.vale.scout.{CodeLocationS, MaybeUsed, NotUsed, ParameterS, RangeS}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP}
 
@@ -61,7 +61,7 @@ object IFunction1 {
               TemplexAR(RuneAT(RangeS.internal(-5640),CodeRuneA("BorrowThis"), CoordTemplataType)),
               TemplexAR(
                 InterpretedAT(
-                  RangeS.internal(-5641),BorrowP,ReadwriteP,
+                  RangeS.internal(-5641),ConstraintP,ReadwriteP,
                   RuneAT(RangeS.internal(-5642),CodeRuneA("ThisK"), CoordTemplataType))))),
           AbstractBodyA)))
 

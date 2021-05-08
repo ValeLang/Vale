@@ -72,6 +72,18 @@ class StructTemplarCore(
         case None => vwat()
       }
 
+    if (mutability == Immutable) {
+      members.zipWithIndex.foreach({ case (member, index) =>
+      if (member.variability == Varying) {
+          throw CompileErrorExceptionT(
+            ImmStructCantHaveVaryingMember(
+              struct1.members(index).range,
+              struct1.name,
+              struct1.members(index).name))
+        }
+      })
+    }
+
     val structDef2 =
       StructDefinition2(
         fullName,
@@ -316,7 +328,7 @@ class StructTemplarCore(
             case AddressMemberType2(reference) => true
             case ReferenceMemberType2(reference) => {
               reference.ownership match {
-                case Own | Borrow | Weak => true
+                case Own | Constraint | Weak => true
                 case Share => false
               }
             }
@@ -524,7 +536,7 @@ class StructTemplarCore(
           })
 
         // The args for the call inside the forwarding function.
-        val lambdaCoord = Coord(if (lambda.ownership == Share) Share else Borrow, lambda.permission, lambda.referend)
+        val lambdaCoord = Coord(if (lambda.ownership == Share) Share else Constraint, lambda.permission, lambda.referend)
         val forwardedCallArgs = (lambdaCoord :: forwarderHeader.paramTypes.tail).map(ParamFilter(_, None))
 
 //        start here
@@ -548,14 +560,14 @@ class StructTemplarCore(
 
         val structParamCoord =
           Coord(
-            if (structDef.mutability == Immutable) Share else Borrow,
+            if (structDef.mutability == Immutable) Share else Constraint,
             forwarderHeader.paramTypes.head.permission,
             structDef.getRef)
         val methodCoord = structDef.members(methodIndex).tyype.reference
         val loadSelfResultPermission = Templar.intersectPermission(methodCoord.permission, structParamCoord.permission)
 //        val loadSelfResultCoord = methodCoord.copy(permission = loadSelfResultPermission)
 
-        val loadedThisObjOwnership = if (methodCoord.ownership == Share) Share else Borrow
+        val loadedThisObjOwnership = if (methodCoord.ownership == Share) Share else Constraint
         val loadedThisObjPermission = if (methodCoord.ownership == Share) Readonly else Readwrite
         val argExpressions =
           SoftLoad2(

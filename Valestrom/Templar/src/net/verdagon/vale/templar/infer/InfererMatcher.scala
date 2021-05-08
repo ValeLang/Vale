@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, OwnP, ReadonlyP, ReadwriteP, ShareP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, OwnP, ReadonlyP, ReadwriteP, ShareP, WeakP}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar.{CompileErrorExceptionT, FunctionName2, IName2, IRune2, NameTranslator, RangedInternalErrorT}
@@ -405,7 +405,7 @@ class InfererMatcher[Env, State](
         ownership match {
           case Share => // fine, continue
           case Own => // fine, continue
-          case Borrow | Weak => {
+          case Constraint | Weak => {
             return InferMatchConflict(inferences.inferences, range, "Expected Own or Share, but was given " + ownership, List())
           }
         }
@@ -454,7 +454,7 @@ class InfererMatcher[Env, State](
         ownership match {
           case Share => // fine, continue
           case Own => // fine, continue
-          case Borrow | Weak => {
+          case Constraint | Weak => {
             return InferMatchConflict(inferences.inferences, range, "Expected Own or Share, but was given " + ownership, List())
           }
         }
@@ -616,22 +616,22 @@ class InfererMatcher[Env, State](
         val ownershipCompatible =
           (instanceOwnership, expectedOwnership) match {
             case (Own, OwnP) => true
-            case (Own, BorrowP) => false
+            case (Own, ConstraintP) => false
             case (Own, WeakP) => false
             case (Own, ShareP) => false
 
-            case (Borrow, OwnP) => false
-            case (Borrow, BorrowP) => true
-            case (Borrow, WeakP) => false
-            case (Borrow, ShareP) => false
+            case (Constraint, OwnP) => false
+            case (Constraint, ConstraintP) => true
+            case (Constraint, WeakP) => false
+            case (Constraint, ShareP) => false
 
             case (Weak, OwnP) => false
-            case (Weak, BorrowP) => false
+            case (Weak, ConstraintP) => false
             case (Weak, WeakP) => true
             case (Weak, ShareP) => false
 
             case (Share, OwnP) => true
-            case (Share, BorrowP) => true
+            case (Share, ConstraintP) => true
             case (Share, WeakP) => false
             case (Share, ShareP) => true
           }

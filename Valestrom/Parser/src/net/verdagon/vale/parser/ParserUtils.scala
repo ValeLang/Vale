@@ -21,9 +21,9 @@ trait ParserUtils extends RegexParsers {
   }
 
   // stands for positioned str
-  private[parser] def pstr(str: String): Parser[StringP] = {
+  private[parser] def pstr(str: String): Parser[NameP] = {
     pos ~ str ~ pos ^^ {
-      case begin ~ str ~ end => StringP(Range(begin, end), str)
+      case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
 
@@ -42,27 +42,27 @@ trait ParserUtils extends RegexParsers {
   // we want marine^.item to explode marine and extract its item
   // but, we don't want it to parse it as (marine^).item
   // so, we need to look ahead a bit and see if there's a . after it.
-  private[parser] def exprIdentifier: Parser[StringP] = {
+  private[parser] def exprIdentifier: Parser[NameP] = {
     pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\*\^\"\<\>\=\`]+""".r ~ pos ^^ {
-      case begin ~ str ~ end => StringP(Range(begin, end), str)
+      case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
 
-  private[parser] def functionIdentifier: Parser[StringP] = {
+  private[parser] def functionIdentifier: Parser[NameP] = {
     pos ~ """[^\s\.\$\&\,\:\(\)\;\[\]\{\}\'\^\"\<\>\=\`]+""".r ~ pos ^^ {
-      case begin ~ str ~ end => StringP(Range(begin, end), str)
+      case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
 
-  private[parser] def infixFunctionIdentifier: Parser[StringP] = {
+  private[parser] def infixFunctionIdentifier: Parser[NameP] = {
     pos ~ """[^\s\.\$\&\,\:\(\)\;\[\]\{\}\'\"\<\>\=\`]+""".r ~ pos ^^ {
-      case begin ~ str ~ end => StringP(Range(begin, end), str)
+      case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
 
-  private[parser] def typeIdentifier: Parser[StringP] = {
+  private[parser] def typeIdentifier: Parser[NameP] = {
     pos ~ """[^\s\.\!\*\?\#\$\&\,\:\|\;\(\)\[\]\{\}=\<\>\`]+""".r ~ pos ^^ {
-      case begin ~ str ~ end => StringP(Range(begin, end), str)
+      case begin ~ str ~ end => NameP(Range(begin, end), str)
     }
   }
 //
@@ -98,10 +98,10 @@ trait ParserUtils extends RegexParsers {
     }
   }
 
-  private[parser] def string: Parser[StringP] = {
+  private[parser] def string: Parser[NameP] = {
     pos ~ ("\"" ~> "(?:[^\"\\\\]|\\\\.)*".r <~ "\"") ~ pos ^^ {
       case begin ~ s ~ end => {
-        StringP(
+        NameP(
           Range(begin, end),
           StringEscapeUtils.unescapeJava(s))
       }

@@ -81,7 +81,7 @@ case class ConstantStrH(
 // Produces a float.
 case class ConstantF64H(
   // The value of the float.
-  value: Float
+  value: Double
 ) extends ExpressionH[FloatH] {
   override def resultType: ReferenceH[FloatH] = ReferenceH(ShareH, InlineH, ReadonlyH, FloatH())
 }

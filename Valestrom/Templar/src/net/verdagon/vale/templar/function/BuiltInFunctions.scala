@@ -40,7 +40,7 @@ object BuiltInFunctions {
               RangeS.internal(-9103),
               CoordTemplataType,
               List(
-                OrAR(RangeS.internal(-9104),List(TemplexAR(OwnershipAT(RangeS.internal(-9105),BorrowP)), TemplexAR(OwnershipAT(RangeS.internal(-9106),ShareP)))),
+                OrAR(RangeS.internal(-9104),List(TemplexAR(OwnershipAT(RangeS.internal(-9105),ConstraintP)), TemplexAR(OwnershipAT(RangeS.internal(-9106),ShareP)))),
                 TemplexAR(PermissionAT(RangeS.internal(-9107), ReadonlyP)),
                 TemplexAR(
                   CallAT(RangeS.internal(-9108),
@@ -86,7 +86,7 @@ object BuiltInFunctions {
               RangeS.internal(-92),
               CoordTemplataType,
               List(
-                TemplexAR(OwnershipAT(RangeS.internal(-9117),BorrowP)),
+                TemplexAR(OwnershipAT(RangeS.internal(-9117),ConstraintP)),
                 TemplexAR(PermissionAT(RangeS.internal(-9117),ReadonlyP)),
                 TemplexAR(
                   RepeaterSequenceAT(RangeS.internal(-9118),
@@ -138,7 +138,7 @@ object BuiltInFunctions {
             TemplexAR(
               CallAT(RangeS.internal(-9130),
                 NameAT(RangeS.internal(-9131),CodeTypeNameA("Opt"), TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
-                List(InterpretedAT(RangeS.internal(-9132),BorrowP,ReadonlyP, RuneAT(RangeS.internal(-9133),CodeRuneA("OwningRune"), CoordTemplataType))),
+                List(InterpretedAT(RangeS.internal(-9132),ConstraintP,ReadonlyP, RuneAT(RangeS.internal(-9133),CodeRuneA("OwningRune"), CoordTemplataType))),
                 CoordTemplataType))),
           EqualsAR(RangeS.internal(-9134),
             TemplexAR(RuneAT(RangeS.internal(-9135),CodeRuneA("WeakRune"), CoordTemplataType)),

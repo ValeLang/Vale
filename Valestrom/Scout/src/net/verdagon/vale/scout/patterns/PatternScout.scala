@@ -130,10 +130,10 @@ object PatternScout {
           val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
           CaptureS(UnnamedLocalNameS(codeLocation), FinalP)
         }
-        case Some(CaptureP(_,LocalNameP(StringP(_, name)), variability)) => {
+        case Some(CaptureP(_,LocalNameP(NameP(_, name)), variability)) => {
           CaptureS(CodeVarNameS(name), variability)
         }
-        case Some(CaptureP(_,ConstructingMemberNameP(StringP(_, name)), variability)) => {
+        case Some(CaptureP(_,ConstructingMemberNameP(NameP(_, name)), variability)) => {
           CaptureS(ConstructingMemberNameS(name), variability)
         }
       }
@@ -159,7 +159,7 @@ object PatternScout {
         val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
       }
-      case Some(NameOrRunePT(StringP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
+      case Some(NameOrRunePT(NameP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
         val rune = CodeRuneS(nameOrRune)
         val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
@@ -249,7 +249,7 @@ object PatternScout {
       }
       case IntPT(range,value) => (List(), IntST(evalRange(range), value), None)
       case BoolPT(range,value) => (List(), BoolST(evalRange(range), value), None)
-      case NameOrRunePT(StringP(range, nameOrRune)) => {
+      case NameOrRunePT(NameP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
           (List(), RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
         } else {

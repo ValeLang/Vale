@@ -155,7 +155,7 @@ class RunePredictorTests extends FunSuite with Matchers {
             TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
             TemplexSR(
               InterpretedST(RangeS.testZero,
-                BorrowP,
+                ConstraintP,
                 ReadonlyP,
                 CallST(RangeS.testZero,
                   NameST(RangeS.testZero, CodeTypeNameS("MyIFunction1")),

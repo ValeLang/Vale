@@ -1,5 +1,6 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.vimpl
 import net.verdagon.von.{IVonData, VonArray, VonBool, VonFloat, VonInt, VonMember, VonObject, VonStr}
 
 object ParserVonifier {
@@ -27,6 +28,7 @@ object ParserVonifier {
       case TopLevelStructP(struct) => vonifyStruct(struct)
       case TopLevelInterfaceP(interface) => vonifyInterface(interface)
       case TopLevelImplP(impl) => vonifyImpl(impl)
+      case TopLevelExportAsP(impl) => vonifyExportAs(impl)
     }
   }
 
@@ -35,6 +37,12 @@ object ParserVonifier {
       case WeakableP(range) => VonObject("WeakableAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case SealedP(range) => VonObject("SealedAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case ExportP(range) => VonObject("ExportAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+    }
+  }
+
+  def vonifyRuneAttribute(thing: IRuneAttributeP): VonObject = {
+    thing match {
+      case x => vimpl(x.toString)
     }
   }
 
@@ -118,6 +126,18 @@ object ParserVonifier {
         VonMember("rules", vonifyOptional(rules, vonifyTemplateRules)),
         VonMember("struct", vonifyTemplex(struct)),
         VonMember("interface", vonifyTemplex(interface))))
+  }
+
+  def vonifyExportAs(exportAs: ExportAsP): VonObject = {
+    val ExportAsP(range, struct, exportedName) = exportAs
+
+    VonObject(
+      "ExportAs",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("struct", vonifyTemplex(struct)),
+        VonMember("exportedName", vonifyName(exportedName))))
   }
 
   def vonifyRange(range: Range): VonObject = {
@@ -404,11 +424,11 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("name", vonifyName(name)),
-        VonMember("range", vonifyRange(range))))
+        VonMember("attributes", VonArray(None, attributes.map(vonifyRuneAttribute).toVector))))
   }
 
-  def vonifyName(thing: StringP): VonObject = {
-    val StringP(range, name) = thing
+  def vonifyName(thing: NameP): VonObject = {
+    val NameP(range, name) = thing
     VonObject(
       "Name",
       None,
@@ -536,7 +556,7 @@ object ParserVonifier {
       }
       case BorrowPT(range, inner) => {
         VonObject(
-          "BorrowPT",
+          "BorrowT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -544,7 +564,7 @@ object ParserVonifier {
       }
       case FunctionPT(range, mutability, parameters, returnType) => {
         VonObject(
-          "FunctionPT",
+          "FunctionT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -554,7 +574,7 @@ object ParserVonifier {
       }
       case PackPT(range, members) => {
         VonObject(
-          "PackPT",
+          "PackT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -562,7 +582,7 @@ object ParserVonifier {
       }
       case PrototypePT(range, name, parameters, returnType) => {
         VonObject(
-          "PrototypePT",
+          "PrototypeT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -572,7 +592,7 @@ object ParserVonifier {
       }
       case SharePT(range, inner) => {
         VonObject(
-          "SharePT",
+          "ShareT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -580,7 +600,7 @@ object ParserVonifier {
       }
       case StringPT(range, str) => {
         VonObject(
-          "StringPT",
+          "StringT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -588,7 +608,7 @@ object ParserVonifier {
       }
       case TypedRunePT(range, rune, tyype) => {
         VonObject(
-          "TypedRunePT",
+          "TypedRuneT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -597,7 +617,7 @@ object ParserVonifier {
       }
       case VariabilityPT(range, variability) => {
         VonObject(
-          "VariabilityPT",
+          "VariabilityT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
@@ -609,7 +629,7 @@ object ParserVonifier {
   def vonifyPermission(thing: PermissionP): VonObject = {
     thing match {
       case ReadonlyP => VonObject("Readonly", None, Vector())
-      case ReadonlyP => VonObject("Readwrite", None, Vector())
+      case ReadwriteP => VonObject("Readwrite", None, Vector())
       case ExclusiveReadwriteP => VonObject("ExclusiveReadwrite", None, Vector())
     }
   }
@@ -632,15 +652,16 @@ object ParserVonifier {
     thing match {
       case ShareP => VonObject("Share", None, Vector())
       case OwnP => VonObject("Own", None, Vector())
-      case BorrowP => VonObject("Constraint", None, Vector())
+      case ConstraintP => VonObject("Constraint", None, Vector())
       case WeakP => VonObject("Weak", None, Vector())
     }
   }
 
   def vonifyLoadAs(thing: LoadAsP): VonObject = {
     thing match {
-      case MoveP => VonObject("Own", None, Vector())
-      case LendBorrowP(permission) => {
+      case UseP => VonObject("Use", None, Vector())
+      case MoveP => VonObject("Move", None, Vector())
+      case LendConstraintP(permission) => {
         VonObject(
           "LendConstraint", None,
           Vector(
@@ -753,6 +774,13 @@ object ParserVonifier {
             VonMember("pattern", vonifyPattern(pattern)),
             VonMember("source", vonifyExpression(source))))
       }
+      case BadLetPE(range) => {
+        VonObject(
+          "BadLet",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range))))
+      }
       case LookupPE(name, templateArgs) => {
         VonObject(
           "Lookup",
@@ -761,7 +789,7 @@ object ParserVonifier {
             VonMember("name", vonifyName(name)),
             VonMember("templateArgs", vonifyOptional(templateArgs, vonifyTemplateArgs))))
       }
-      case MethodCallPE(range, callableExpr, operatorRange, callableTargetOwnership, isMapCall, methodLookup, argExprs) => {
+      case MethodCallPE(range, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, methodLookup, argExprs) => {
         VonObject(
           "MethodCall",
           None,
@@ -769,10 +797,10 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("operatorRange", vonifyRange(operatorRange)),
             VonMember("isMapCall", VonBool(isMapCall)),
-            VonMember("callableExpr", vonifyExpression(callableExpr)),
+            VonMember("subjectExpr", vonifyExpression(subjectExpr)),
             VonMember("method", vonifyExpression(methodLookup)),
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
-            VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
+            VonMember("subjectTargetOwnership", vonifyLoadAs(subjectTargetOwnership))))
       }
       case MutatePE(range, mutatee, expr) => {
         VonObject(

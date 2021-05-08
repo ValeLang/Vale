@@ -349,6 +349,35 @@ object Parser {
     ParseSuccess(LetPE(Range(letBegin, letEnd), None, pattern, source))
   }
 
+  private def parseBadLet(iter: ParsingIterator): IParseResult[BadLetPE] = {
+    if (!iter.peek(CombinatorParsers.badLetBegin)) {
+      vwat()
+    }
+    iter.consumeWhitespace()
+    val badLetBegin = iter.getPos()
+    val pattern =
+      iter.consumeWithCombinator(CombinatorParsers.expressionLevel5) match {
+        case Ok(result) => result
+        case Err(cpe) => return ParseFailure(BadLetDestinationError(iter.getPos(), cpe))
+      }
+    iter.consumeWhitespace()
+    if (!iter.tryConsume("^=".r)) {
+      return ParseFailure(BadLetEqualsError(iter.position))
+    }
+    iter.consumeWhitespace()
+    val source =
+      iter.consumeWithCombinator(CombinatorParsers.expression) match {
+        case Ok(result) => result
+        case Err(cpe) => return ParseFailure(BadLetSourceError(iter.getPos(), cpe))
+      }
+    val badLetEnd = iter.getPos()
+
+    iter.consumeWhitespace()
+    if (!iter.tryConsume("^;".r)) { return ParseFailure(BadLetEndError(iter.getPos())) }
+
+    ParseSuccess(BadLetPE(Range(badLetBegin, badLetEnd)))
+  }
+
   private def parseIfPart(iter: ParsingIterator): IParseResult[(BlockPE, BlockPE)] = {
     if (!iter.tryConsume("^if".r)) {
       vwat()
@@ -362,9 +391,14 @@ object Parser {
       iter.consumeWithCombinator(CombinatorParsers.let) match {
         case Ok(result) => result
         case Err(cpe) => {
-          iter.consumeWithCombinator(CombinatorParsers.expression) match {
+          iter.consumeWithCombinator(CombinatorParsers.badLet) match {
             case Ok(result) => result
-            case Err(cpe) => return ParseFailure(BadIfCondition(iter.getPos(), cpe))
+            case Err(cpe) => {
+              iter.consumeWithCombinator(CombinatorParsers.expression) match {
+                case Ok(result) => result
+                case Err(cpe) => return ParseFailure(BadIfCondition(iter.getPos(), cpe))
+              }
+            }
           }
         }
       }
@@ -498,6 +532,15 @@ object Parser {
         // let is special in that it _must_ have a semicolon after it,
         // it can't be used as a block result.
         parseLet(iter) match {
+          case ParseFailure(err) => return ParseFailure(err)
+          case ParseSuccess(result) => {
+            statements += result
+          }
+        }
+      } else if (iter.peek(CombinatorParsers.badLetBegin)) {
+        // let is special in that it _must_ have a semicolon after it,
+        // it can't be used as a block result.
+        parseBadLet(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(result) => {
             statements += result

@@ -368,7 +368,7 @@ class PatternTemplar(
 
         ((arrSeqLet :: innerLets) :+ dropExpr)
       }
-      case Borrow => {
+      case Constraint => {
         // here, instead of doing a destructure, we'd just put this in a variable
         // and do a bunch of lookups on it.
         vfail("implement!")
@@ -400,7 +400,7 @@ class PatternTemplar(
         val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
         (destroy2 :: lets)
       }
-      case Share | Borrow => {
+      case Share | Constraint => {
         // This is different from the Own case because we're not destructuring the incoming thing, we're just
         // loading from it.
 
@@ -419,13 +419,13 @@ class PatternTemplar(
                 val memberOwnershipInStruct = structDef2.members(index).tyype.reference.ownership
                 val coerceToOwnership =
                   memberOwnershipInStruct match {
-                    case Own => Borrow
-                    case Borrow => Borrow
+                    case Own => Constraint
+                    case Constraint => Constraint
                     case Weak => Weak
                     case Share => Share
                   }
                 val memberPermissionInStruct = structDef2.members(index).tyype.reference.permission
-                val resultOwnership = if (memberCoord.ownership == Own) Borrow else memberCoord.ownership
+                val resultOwnership = if (memberCoord.ownership == Own) Constraint else memberCoord.ownership
                 val resultPermission = Templar.intersectPermission(memberPermissionInStruct, structPermission)
 //                val resultCoord = Coord(resultOwnership, resultPermission, memberCoord.referend)
 

@@ -235,7 +235,7 @@ object ExpressionHammer {
         (newStructAndDeferredsExprH, List())
       }
 
-      case load2 @ SoftLoad2(_, _) => {
+      case load2 @ SoftLoad2(_, _, _) => {
         val (loadedAccessH, deferreds) =
           LoadHammer.translateLoad(hinputs, hamuts, currentFunctionHeader, locals, load2)
         (loadedAccessH, deferreds)
@@ -414,6 +414,8 @@ object ExpressionHammer {
       }
       case ArgLookup2(paramIndex, type2) => {
         val typeH = TypeHammer.translateReference(hinputs, hamuts, type2)
+        vassert(currentFunctionHeader.paramTypes(paramIndex) == type2)
+        vassert(TypeHammer.translateReference(hinputs, hamuts, currentFunctionHeader.paramTypes(paramIndex)) == typeH)
         val argNode = ArgumentH(typeH, paramIndex)
         (argNode, List())
       }
@@ -449,6 +451,12 @@ object ExpressionHammer {
         val (innerExprResultLine, innerDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
         (WeakAliasH(innerExprResultLine), innerDeferreds)
+      }
+
+      case NarrowPermission2(innerExpr, targetPermission) => {
+        val (innerExprResultLine, innerDeferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, innerExpr);
+        (NarrowPermissionH(innerExprResultLine, Conversions.evaluatePermission(targetPermission)), innerDeferreds)
       }
 
       case Is2(leftExprT, rightExprT) => {

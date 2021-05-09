@@ -55,7 +55,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
           RepeaterSequencePT(_,
               MutabilityPT(_,MutableP),
               IntPT(_,3),
-              NameOrRunePT(StringP(_, "MutableStruct")))) =>
+              NameOrRunePT(NameP(_, "MutableStruct")))) =>
     }
   }
 
@@ -65,7 +65,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
         RepeaterSequencePT(_,
           MutabilityPT(_,ImmutableP),
           IntPT(_,3),
-          NameOrRunePT(StringP(_, "MutableStruct")))) =>
+          NameOrRunePT(NameP(_, "MutableStruct")))) =>
     }
   }
 
@@ -74,8 +74,8 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case withType(
           ManualSequencePT(_,
             List(
-              NameOrRunePT(StringP(_, "int")),
-              NameOrRunePT(StringP(_, "bool"))))) =>
+              NameOrRunePT(NameP(_, "int")),
+              NameOrRunePT(NameP(_, "bool"))))) =>
     }
   }
   test("15") {
@@ -83,12 +83,13 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         None,
         Some(
-          OwnershippedPT(_,
-            BorrowP,
+          InterpretedPT(_,
+            ConstraintP,
+            ReadonlyP,
             RepeaterSequencePT(_,
               MutabilityPT(_,MutableP),
               IntPT(_,3),
-              NameOrRunePT(StringP(_, "MutableStruct"))))),
+              NameOrRunePT(NameP(_, "MutableStruct"))))),
         None,
         None) =>
     }
@@ -98,12 +99,13 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case PatternPP(_,_,
         None,
         Some(
-          OwnershippedPT(_,
+          InterpretedPT(_,
             WeakP,
+            ReadonlyP,
             RepeaterSequencePT(_,
               AnonymousRunePT(_),
               IntPT(_,3),
-              NameOrRunePT(StringP(_, "MutableStruct"))))),
+              NameOrRunePT(NameP(_, "MutableStruct"))))),
         None,
         None) =>
     }
@@ -115,12 +117,12 @@ class TypeTests extends FunSuite with Matchers with Collector {
         Some(
           CallPT(
             _,
-            NameOrRunePT(StringP(_, "MyOption")),
+            NameOrRunePT(NameP(_, "MyOption")),
             List(
               CallPT(_,
-                NameOrRunePT(StringP(_, "MyList")),
+                NameOrRunePT(NameP(_, "MyList")),
                 List(
-                  NameOrRunePT(StringP(_, "int"))))))),
+                  NameOrRunePT(NameP(_, "int"))))))),
         None,
         None) =>
     }

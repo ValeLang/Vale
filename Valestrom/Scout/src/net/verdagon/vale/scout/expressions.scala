@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, PermissionP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
 import net.verdagon.vale.{vassert, vpass}
@@ -30,10 +30,14 @@ case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) ex
 
 case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: LoadAsP) extends IExpressionSE {
   targetOwnership match {
-    case LendWeakP =>
-    case LendBorrowP =>
+    case LendWeakP(_) =>
+    case LendConstraintP(_) =>
     case MoveP =>
   }
+}
+
+case class PermissionedSE(range: RangeS, innerExpr1: IExpressionSE, targetPermission: PermissionP) extends IExpressionSE {
+
 }
 
 
@@ -124,7 +128,7 @@ case class BoolLiteralSE(range: RangeS, value: Boolean) extends IExpressionSE
 
 case class StrLiteralSE(range: RangeS, value: String) extends IExpressionSE
 
-case class FloatLiteralSE(range: RangeS, value: Float) extends IExpressionSE
+case class FloatLiteralSE(range: RangeS, value: Double) extends IExpressionSE
 
 case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 

@@ -17,7 +17,7 @@ import scala.collection.immutable.List
 //case class NameAT(name: String) extends ITemplexA
 //case class RuneAT(rune: String) extends ITemplexA
 //case class AnonymousRuneAT() extends ITemplexA
-//case class OwnershippedAT(ownership: OwnershipP, inner: ITemplexA) extends ITemplexA
+//case class InterpretedAT(ownership: OwnershipP, inner: ITemplexA) extends ITemplexA
 //case class NullableAT(inner: ITemplexA) extends ITemplexA
 //case class CallAT(
 //    template: ITemplexA,
@@ -52,7 +52,7 @@ import scala.collection.immutable.List
 //      case NameAT(name) => List()
 //      case RuneAT(rune) => List(rune)
 //      case AnonymousRuneAT() => List()
-//      case OwnershippedAT(_, inner) => getDistinctOrderedRunesForTemplex(inner)
+//      case InterpretedAT(_, inner) => getDistinctOrderedRunesForTemplex(inner)
 //      case CallAT(template, args) => {
 //        (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct
 //      }
@@ -85,7 +85,7 @@ import scala.collection.immutable.List
 //      case NameAT(name) => if (runes.contains(name)) RuneAT(name) else NameAT(name)
 //      case RuneAT(rune) => RuneAT(rune)
 //      case AnonymousRuneAT() => AnonymousRuneAT()
-//      case OwnershippedAT(ownership, inner) => OwnershippedAT(ownership, templexNamesToRunes(runes)(inner))
+//      case InterpretedAT(ownership, inner) => InterpretedAT(ownership, templexNamesToRunes(runes)(inner))
 //      case CallAT(template, args) => {
 //        CallAT(
 //          templexNamesToRunes(runes)(template),

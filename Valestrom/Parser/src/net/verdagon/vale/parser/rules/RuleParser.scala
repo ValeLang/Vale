@@ -108,7 +108,7 @@ trait RuleParser extends RegexParsers with ParserUtils {
         val isRegionAttrInList =
           maybeIsRegion match {
             case None => List()
-            case Some(StringP(range, _)) => List(TypeRuneAttributeP(range, RegionTypePR))
+            case Some(NameP(range, _)) => List(TypeRuneAttributeP(range, RegionTypePR))
           }
         IdentifyingRuneP(Range(begin, end), name, isRegionAttrInList ++ regionAttributes)
       }

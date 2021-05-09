@@ -1,0 +1,4 @@
+
+fn toImmArray<N, E, SM>(seq &[<SM> N * E]) Array<imm, E> {
+  MakeImmArray(N, { seq[_] })
+}

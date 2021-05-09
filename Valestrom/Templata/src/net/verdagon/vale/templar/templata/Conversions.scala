@@ -21,7 +21,8 @@ object Conversions {
     permission match {
       case ReadonlyP => Readonly
       case ReadwriteP => Readwrite
-      case ExclusiveReadwriteP => ExclusiveReadwrite
+//      case ExclusiveReadwriteP => ExclusiveReadwrite
+      case _ => vimpl()
     }
   }
 
@@ -42,7 +43,7 @@ object Conversions {
   def evaluateOwnership(ownership: OwnershipP): Ownership = {
     ownership match {
       case OwnP => Own
-      case BorrowP => Borrow
+      case ConstraintP => Constraint
       case WeakP => Weak
       case ShareP => Share
     }
@@ -51,7 +52,7 @@ object Conversions {
   def evaluateMaybeOwnership(maybeOwnership: Option[OwnershipP]): Option[Ownership] = {
     maybeOwnership.map({
       case OwnP => Own
-      case BorrowP => Borrow
+      case ConstraintP => Constraint
       case WeakP => Weak
       case ShareP => Share
     })
@@ -68,9 +69,17 @@ object Conversions {
   def unevaluateOwnership(ownership: Ownership): OwnershipP = {
     ownership match {
       case Own => OwnP
-      case Borrow => BorrowP
+      case Constraint => ConstraintP
       case Weak => WeakP
       case Share => ShareP
+    }
+  }
+
+  def unevaluatePermission(permission: Permission): PermissionP = {
+    permission match {
+      case Readonly => ReadonlyP
+      case Readwrite => ReadwriteP
+//      case ExclusiveReadwrite => ExclusiveReadwriteP
     }
   }
 
@@ -87,6 +96,7 @@ object Conversions {
       case KindTemplataType => KindTypeSR
       case IntegerTemplataType => IntTypeSR
       case BooleanTemplataType => BoolTypeSR
+      case PrototypeTemplataType => PrototypeTypeSR
       case MutabilityTemplataType => MutabilityTypeSR
       case PermissionTemplataType => PermissionTypeSR
       case LocationTemplataType => LocationTypeSR

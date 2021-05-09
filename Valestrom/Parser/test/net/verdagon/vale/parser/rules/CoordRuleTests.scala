@@ -43,7 +43,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
 
   test("Coord with rune") {
     compile(rulePR, "T Ref") shouldHave {
-      case TypedPR(_,Some(StringP(_, "T")),CoordTypePR) =>
+      case TypedPR(_,Some(NameP(_, "T")),CoordTypePR) =>
     }
   }
 
@@ -55,11 +55,11 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
 
   test("Coord with rune and destructure") {
     compile(rulePR, "T Ref(_, _)") shouldHave {
-      case ComponentsPR(_,TypedPR(_,Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
+      case ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))) =>
     }
     compile(rulePR, "T Ref(own, _)") shouldHave {
         case ComponentsPR(_,
-          TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
+          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           List(TemplexPR(OwnershipPT(_,OwnP)), TemplexPR(AnonymousRunePT(_)))) =>
     }
   }
@@ -75,7 +75,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     //     Ref#T[_, _, Ref[_, _, Int]]:Ref[_, _, Void]))
     //   (a: #T)
     compile(rulePR, "int") shouldHave {
-      case TemplexPR(NameOrRunePT(StringP(_, "int"))) =>
+      case TemplexPR(NameOrRunePT(NameP(_, "int"))) =>
     }
 //        CoordPR(None,None,None,None,None,Some(List(NameTemplexPR("int"))))
 
@@ -84,8 +84,8 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   test("Coord with Int in kind rule") {
     compile(rulePR, "T Ref(_, int)") shouldHave {
       case ComponentsPR(_,
-          TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
-          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(StringP(_, "int"))))) =>
+          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
+          List(TemplexPR(AnonymousRunePT(_)), TemplexPR(NameOrRunePT(NameP(_, "int"))))) =>
     }
 //      runedTCoordWithEnvKind("T", "int")
 
@@ -94,7 +94,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   test("Coord with specific Kind rule") {
     compile(rulePR, "T Ref(_, Kind(mut))") shouldHave {
       case ComponentsPR(_,
-          TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
+          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           List(
             TemplexPR(AnonymousRunePT(_)),
             ComponentsPR(_,
@@ -105,16 +105,16 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   test("Coord with value") {
     compile(rulePR, "T Ref = int") shouldHave {
       case EqualsPR(_,
-          TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
-          TemplexPR(NameOrRunePT(StringP(_, "int")))) =>
+          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
+          TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
     }
   }
 
   test("Coord with destructure and value") {
     compile(rulePR, "T Ref(_, _) = int") shouldHave {
       case EqualsPR(_,
-          ComponentsPR(_,TypedPR(_,Some(StringP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
-          TemplexPR(NameOrRunePT(StringP(_, "int")))) =>
+          ComponentsPR(_,TypedPR(_,Some(NameP(_, "T")),CoordTypePR),List(TemplexPR(AnonymousRunePT(_)), TemplexPR(AnonymousRunePT(_)))),
+          TemplexPR(NameOrRunePT(NameP(_, "int")))) =>
     }
 //        runedTCoordWithValue("T", NameTemplexPR("int"))
   }
@@ -122,10 +122,10 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
   test("Coord with sequence in value spot") {
     compile(rulePR, "T Ref = [int, bool]") shouldHave {
       case EqualsPR(_,
-          TypedPR(_,Some(StringP(_, "T")),CoordTypePR),
+          TypedPR(_,Some(NameP(_, "T")),CoordTypePR),
           TemplexPR(
             ManualSequencePT(_,
-              List(NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "bool")))))) =>
+              List(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool")))))) =>
     }
   }
 
@@ -133,7 +133,7 @@ class CoordRuleTests extends FunSuite with Matchers with Collector {
     compile(rulePR, "[int, bool]") shouldHave {
       case TemplexPR(
           ManualSequencePT(_,
-            List(NameOrRunePT(StringP(_, "int")), NameOrRunePT(StringP(_, "bool"))))) =>
+            List(NameOrRunePT(NameP(_, "int")), NameOrRunePT(NameP(_, "bool"))))) =>
         }
   }
 }

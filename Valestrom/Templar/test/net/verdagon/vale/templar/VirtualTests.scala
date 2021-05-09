@@ -17,7 +17,7 @@ class VirtualTests extends FunSuite with Matchers {
 //    compile.getTemputs()
 //
 //    vassert(temputs.getAllUserFunctions.size == 2)
-//    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Int2()))
+//    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
 //
 //    val doThing = temputs.lookupFunction(Signature2("doThing", List(), List(Coord(Own, InterfaceRef2("I", List()))))).get
 //    vassert(doThing.header.params(0).virtuality.get == Virtual2)
@@ -35,7 +35,7 @@ class VirtualTests extends FunSuite with Matchers {
 //    compile.getTemputs()
 //
 //    vassert(temputs.getAllUserFunctions.size == 3) // including constructor
-//    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Int2()))
+//    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
 //
 //    val doThing = temputs.lookupFunction(Signature2("doThing", List(), List(Coord(Own, InterfaceRef2("I", List()))))).get
 //    vassert(doThing.header.params(0).virtuality.get == Virtual2)
@@ -54,7 +54,7 @@ class VirtualTests extends FunSuite with Matchers {
 //    compile.getTemputs()
 //
 //    vassert(temputs.getAllUserFunctions.size == 3) // including constructor
-//    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Int2()))
+//    vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
 //
 //    val doThingI = temputs.lookupFunction(Signature2("doThing", List(), List(Coord(Own, InterfaceRef2("I", List()))))).get
 //    vassert(doThingI.header.params(0).virtuality.get == Virtual2)
@@ -183,11 +183,11 @@ class VirtualTests extends FunSuite with Matchers {
 //    val family = temputs.functionFamiliesByRootBanner.head._2;
 //    vassert(family.memberSignaturesByVirtualRoots.size == 3);
 //    vassert(family.memberSignaturesByVirtualRoots.values.toList.contains(
-//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))));
+//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))));
 //    vassert(family.memberSignaturesByVirtualRoots.values.toList.contains(
-//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, StructRef2("SA", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))));
+//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, StructRef2("SA", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))));
 //    vassert(family.memberSignaturesByVirtualRoots.values.toList.contains(
-//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, StructRef2("SB", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))));
+//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, StructRef2("SB", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))));
 //  }
 //
 //  test("Calls an overriding function") {
@@ -221,11 +221,11 @@ class VirtualTests extends FunSuite with Matchers {
 //    val family = temputs.functionFamiliesByRootBanner.head._2;
 //    vassert(family.memberSignaturesByVirtualRoots.size == 3);
 //    vassert(family.memberSignaturesByVirtualRoots.values.toList.contains(
-//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))));
+//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))));
 //    vassert(family.memberSignaturesByVirtualRoots.values.toList.contains(
-//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, StructRef2("SA", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))));
+//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, StructRef2("SA", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))));
 //    vassert(family.memberSignaturesByVirtualRoots.values.toList.contains(
-//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, StructRef2("SB", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))));
+//      Signature2("dance", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, StructRef2("SB", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))));
 //  }
 //
 //  // When we call a function with a virtual parameter, try stamping for all ancestors in its
@@ -271,28 +271,28 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //    val doThingFamilyRootForI =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForI = temputs.functionFamiliesByRootBanner(doThingFamilyRootForI);
 //    vassert(getParamArgTypeByVirtualRoot(doThingFamilyForI) == Map("I" -> "I", "J" -> "J", "K" -> "K", "MyStruct" -> "MyStruct"))
 //
 //    val doThingFamilyRootForJ =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, InterfaceRef2("J", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("J", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, InterfaceRef2("J", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("J", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForJ = temputs.functionFamiliesByRootBanner(doThingFamilyRootForJ);
 //    vassert(getParamArgTypeByVirtualRoot(doThingFamilyForJ) == Map("J" -> "J", "K" -> "K", "MyStruct" -> "MyStruct"))
 //
 //    val doThingFamilyRootForK =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, InterfaceRef2("K", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("K", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, InterfaceRef2("K", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("K", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForK = temputs.functionFamiliesByRootBanner(doThingFamilyRootForK);
 //    vassert(getParamArgTypeByVirtualRoot(doThingFamilyForK) == Map("K" -> "K", "MyStruct" -> "MyStruct"))
 //
 //    val doThingFamilyRootForMyStruct =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, StructRef2("MyStruct", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, StructRef2("MyStruct", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Own, StructRef2("MyStruct", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))), List(Parameter2("x", Some(Virtual2), Coord(Own, StructRef2("MyStruct", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForMyStruct =
 //      temputs.functionFamiliesByRootBanner(doThingFamilyRootForMyStruct);
@@ -337,7 +337,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //    val doThingFamilyRoot =
 //      temputs.functionFamiliesByRootBanner.keys.find({
-//        case FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => true
+//        case FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => true
 //      }).get;
 //    val doThingFamily =
 //      temputs.functionFamiliesByRootBanner(doThingFamilyRoot);
@@ -345,7 +345,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //    vassert(
 //      doThingFamily.memberSignaturesByVirtualRoots.values.toSet ==
-//          Set(Signature2("doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))))
+//          Set(Signature2("doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))))
 //  }
 //
 //
@@ -410,7 +410,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //    val doThingFamilyRootForI =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("I", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForI = temputs.functionFamiliesByRootBanner(doThingFamilyRootForI);
 //    vassert(getParamArgTypeByVirtualRoot(doThingFamilyForI) ==
@@ -418,7 +418,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //    val doThingFamilyRootForJ =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("J", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("J", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForJ = temputs.functionFamiliesByRootBanner(doThingFamilyRootForJ);
 //    vassert(getParamArgTypeByVirtualRoot(doThingFamilyForJ) ==
@@ -475,7 +475,7 @@ class VirtualTests extends FunSuite with Matchers {
 //
 //    val doThingFamilyRootForI =
 //      temputs.functionFamiliesByRootBanner.keys.collect({
-//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("MyInterface", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2()))))))))) => b
+//        case b@FunctionBanner2(_, "doThing", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))), List(Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("MyInterface", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2()))))))))) => b
 //      }).head;
 //    val doThingFamilyForI = temputs.functionFamiliesByRootBanner(doThingFamilyRootForI);
 //    vassert(doThingFamilyForI.memberSignaturesByVirtualRoots.size == 2)
@@ -484,10 +484,10 @@ class VirtualTests extends FunSuite with Matchers {
 //      case Function2(
 //        FunctionHeader2(
 //          "doThing", 0, true, false, true,
-//          List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))),
+//          List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))),
 //          List(
-//            Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("MyInterface", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Int2())))))))),
-//          Coord(Share, Void2()),
+//            Parameter2("x", Some(Virtual2), Coord(Own, InterfaceRef2("MyInterface", List(CoercedFinalTemplateArg2(ReferenceTemplata(Coord(Share, Readonly, Int2())))))))),
+//          Coord(Share, Readonly, Void2()),
 //          _),
 //        _,
 //        _) => {}

@@ -36,8 +36,8 @@ object EdgeTemplar {
                 case None => {
                   val overrideParamFilters =
                     superFunction.paramTypes.zipWithIndex.map({
-                      case (Coord(ownership, _), index) if index == superFunction.getVirtualIndex.get => {
-                        ParamFilter(Coord(ownership, struct), Some(Override2(superInterface)))
+                      case (Coord(ownership, permission, _), index) if index == superFunction.getVirtualIndex.get => {
+                        ParamFilter(Coord(ownership, permission, struct), Some(Override2(superInterface)))
                       }
                       case (tyype, _) => ParamFilter(tyype, None)
                     })

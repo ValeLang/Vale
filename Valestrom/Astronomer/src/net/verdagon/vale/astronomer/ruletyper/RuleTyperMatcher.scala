@@ -293,12 +293,12 @@ class RuleTyperMatcher[Env, State](
 //          (RuleTyperMatchContinue(conclusions))
 //        }
 //      }
-      case (OwnershippedST(range, ownership, coordTemplex), CoordTemplataType) => {
+      case (InterpretedST(range, ownership, permission, coordTemplex), CoordTemplataType) => {
         matchTypeAgainstTemplexS(state, env, conclusions, CoordTemplataType, coordTemplex) match {
           case (rtec @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperMatchConflict(conclusions.conclusions, range, "Couldn't evaluate ownershipped's kind!", List(rtec)))
           case RuleTyperMatchUnknown() => RuleTyperMatchUnknown()
           case (RuleTyperMatchSuccess(innerCoordRuleT)) => {
-            (RuleTyperMatchSuccess(OwnershippedAT(range, ownership, innerCoordRuleT)))
+            (RuleTyperMatchSuccess(InterpretedAT(range, ownership, permission, innerCoordRuleT)))
           }
         }
       }

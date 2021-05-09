@@ -237,6 +237,15 @@ public:
     memberName(memberName_) {}
 };
 
+class NarrowPermission : public Expression {
+public:
+  Expression* sourceExpr;
+
+  NarrowPermission(
+      Expression* sourceExpr_) :
+      sourceExpr(sourceExpr_) {}
+};
+
 
 class MemberLoad : public Expression {
 public:
@@ -524,7 +533,7 @@ public:
   Referend* sizeReferend;
   Expression* generatorExpr;
   Reference* generatorType;
-  InterfaceReferend* generatorReferend;
+  Referend* generatorReferend;
   Prototype* generatorMethod;
   bool generatorKnownLive;
   Reference* arrayRefType;
@@ -536,7 +545,7 @@ public:
       Referend* sizeReferend_,
       Expression* generatorExpr_,
       Reference* generatorType_,
-      InterfaceReferend* generatorReferend_,
+      Referend* generatorReferend_,
       Prototype* generatorMethod_,
       bool generatorKnownLive_,
       Reference* arrayRefType_,

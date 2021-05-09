@@ -521,6 +521,10 @@ Ref translateExpressionInner(
         ->dealias(AFL("USALen"), functionState, builder, arrayType, arrayRefLE);
 
     return sizeLE;
+  } else if (auto narrowPermission = dynamic_cast<NarrowPermission*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceExpr = narrowPermission->sourceExpr;
+    return translateExpression(globalState, functionState, blockState, builder, sourceExpr);
   } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateNewArrayFromValues(globalState, functionState, blockState, builder, newArrayFromValues);

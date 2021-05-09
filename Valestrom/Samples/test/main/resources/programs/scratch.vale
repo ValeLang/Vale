@@ -501,10 +501,10 @@ impl OwnershipP for ShareP;
 // Permission says whether a reference can modify the referend it's pointing at.
 // See above reference explanation.
 interface PermissionP {}
-struct ReadonlyP {}
-impl PermissionP for ReadonlyP;
-struct ReadwriteP {}
-impl PermissionP for ReadwriteP;
+struct NormalP {}
+impl PermissionP for NormalP;
+struct NormalP {}
+impl PermissionP for NormalP;
 struct ExclusiveReadwriteP {}
 impl PermissionP for ExclusiveReadwriteP;
 

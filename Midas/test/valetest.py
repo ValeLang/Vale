@@ -87,8 +87,18 @@ class ValeTest(unittest.TestCase):
         proc = self.compile_and_execute(vale_files, region_override, extra_flags)
         # print(proc.stdout)
         # print(proc.stderr)
-        self.assertEqual(proc.returncode, expected_return_code,
-                         f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
+        if proc.returncode != expected_return_code:
+            first_vale_filepath = vale_files[0]
+            file_name_without_extension = os.path.splitext(os.path.basename(first_vale_filepath))[0]
+            build_dir = f"test/test_build/{file_name_without_extension}_build"
+            textfile = open(build_dir + "/stdout.txt", "w")
+            a = textfile.write(proc.stdout)
+            textfile.close()
+            textfile = open(build_dir + "/stderr.txt", "w")
+            a = textfile.write(proc.stderr)
+            textfile.close()
+            self.assertEqual(proc.returncode, expected_return_code,
+                             f"Unexpected result: {proc.returncode}\n" + proc.stdout + proc.stderr)
 
     # Tests for immutables in exports/externs
     def test_assist_externstrlen(self) -> None:

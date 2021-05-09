@@ -45,7 +45,7 @@ object FunctionScout {
     val FunctionP(
       range,
       FunctionHeaderP(_,
-        Some(StringP(_, codeName)),
+        Some(NameP(_, codeName)),
         attributes,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
@@ -60,7 +60,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
-        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
     val userRunesFromRules =
       templateRulesP
         .toList
@@ -209,6 +209,7 @@ object FunctionScout {
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS
       case ExternAttributeP(_) => ExternS
+      case PureAttributeP(_) => PureS
       case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
       case x => vimpl(x.toString)
     })
@@ -227,7 +228,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
-        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val lambdaName = LambdaNameS(/*parentStackFrame.name,*/ codeLocation)
     // Every lambda has a closure as its first arg, even if its empty
@@ -284,7 +285,7 @@ object FunctionScout {
         EqualsSR(
           closureParamRange,
           TypedSR(closureParamRange, closureParamTypeRune,CoordTypeSR),
-          TemplexSR(OwnershippedST(closureParamRange,BorrowP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
+          TemplexSR(InterpretedST(closureParamRange,ConstraintP,ReadwriteP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
     val closureParamS =
       ParameterS(
         AtomSP(
@@ -503,7 +504,7 @@ object FunctionScout {
     val FunctionP(
       range,
       FunctionHeaderP(_,
-        Some(StringP(_, codeName)),
+        Some(NameP(_, codeName)),
         attrsP,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
@@ -526,7 +527,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
           .toList
         .flatMap(_.runes)
-        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val rate = RuleStateBox(RuleState(funcName, 0))
 

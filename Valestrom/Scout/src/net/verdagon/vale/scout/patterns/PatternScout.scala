@@ -87,7 +87,7 @@ object PatternScout {
         case Some(AbstractP) => (List(), Some(AbstractSP))
         case Some(OverrideP(range, typeP)) => {
           typeP match {
-            case OwnershippedPT(range, _, _) => {
+            case InterpretedPT(range, _, _, _) => {
               throw CompileErrorExceptionS(CantOverrideOwnershipped(Scout.evalRange(stackFrame.file, range)))
             }
             case _ =>
@@ -130,10 +130,10 @@ object PatternScout {
           val codeLocation = Scout.evalPos(stackFrame.file, patternPP.range.begin)
           CaptureS(UnnamedLocalNameS(codeLocation), FinalP)
         }
-        case Some(CaptureP(_,LocalNameP(StringP(_, name)), variability)) => {
+        case Some(CaptureP(_,LocalNameP(NameP(_, name)), variability)) => {
           CaptureS(CodeVarNameS(name), variability)
         }
-        case Some(CaptureP(_,ConstructingMemberNameP(StringP(_, name)), variability)) => {
+        case Some(CaptureP(_,ConstructingMemberNameP(NameP(_, name)), variability)) => {
           CaptureS(ConstructingMemberNameS(name), variability)
         }
       }
@@ -159,7 +159,7 @@ object PatternScout {
         val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
       }
-      case Some(NameOrRunePT(StringP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
+      case Some(NameOrRunePT(NameP(_, nameOrRune))) if env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune)) => {
         val rune = CodeRuneS(nameOrRune)
         val newRule = TypedSR(range, rune, RuleScout.translateType(runeType))
         (List(newRule), rune)
@@ -249,7 +249,7 @@ object PatternScout {
       }
       case IntPT(range,value) => (List(), IntST(evalRange(range), value), None)
       case BoolPT(range,value) => (List(), BoolST(evalRange(range), value), None)
-      case NameOrRunePT(StringP(range, nameOrRune)) => {
+      case NameOrRunePT(NameP(range, nameOrRune)) => {
         if (env.allUserDeclaredRunes().contains(CodeRuneS(nameOrRune))) {
           (List(), RuneST(evalRange(range), CodeRuneS(nameOrRune)), Some(CodeRuneS(nameOrRune)))
         } else {
@@ -257,10 +257,10 @@ object PatternScout {
         }
       }
       case MutabilityPT(range, mutability) => (List(), MutabilityST(evalRange(range), mutability), None)
-      case OwnershippedPT(range,ownership, innerP) => {
+      case InterpretedPT(range,ownership,permission, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)
-        (newRules, OwnershippedST(evalRange(range), ownership, innerS), None)
+        (newRules, InterpretedST(evalRange(range), ownership, permission, innerS), None)
       }
       case CallPT(range,maybeTemplateP, argsMaybeTemplexesP) => {
         val (newRulesFromTemplate, maybeTemplateS, _) = translatePatternTemplex(env, rulesS, maybeTemplateP)
@@ -276,13 +276,6 @@ object PatternScout {
       case ManualSequencePT(range,maybeMembersP) => {
         val (newRules, maybeMembersS) = translatePatternTemplexes(env, rulesS, maybeMembersP)
         (newRules, ManualSequenceST(evalRange(range), maybeMembersS), None)
-      }
-      case PermissionedPT(_, permission, innerP) => {
-        // TODO: Add permissions!
-        // This is just a pass-through until then.
-        val (newRules, innerS, _) =
-          translatePatternTemplex(env, rulesS, innerP)
-        (newRules, innerS, None)
       }
 //      case FunctionPT(mutableP, paramsP, retP) => {
 //        val (mutableS, _) = translatePatternMaybeTemplex(declaredRunes, rulesS, mutableP, None)

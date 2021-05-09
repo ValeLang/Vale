@@ -759,12 +759,12 @@ void ResilientV3::checkInlineStructType(
 }
 
 
-std::string ResilientV3::getRefNameC(Reference *refMT) {
+std::string ResilientV3::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
   if (refMT->ownership == Ownership::SHARE) {
     assert(false);
   } else if (auto structRefMT = dynamic_cast<StructReferend *>(refMT->referend)) {
     auto structMT = globalState->program->getStruct(structRefMT->fullName);
-    auto baseName = globalState->program->getExportedName(structRefMT->fullName);
+    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(structRefMT->fullName);
     if (structMT->mutability == Mutability::MUTABLE) {
       assert(refMT->location != Location::INLINE);
       return baseName + "Ref";
@@ -776,7 +776,7 @@ std::string ResilientV3::getRefNameC(Reference *refMT) {
       }
     }
   } else if (auto interfaceMT = dynamic_cast<InterfaceReferend *>(refMT->referend)) {
-    return globalState->program->getExportedName(interfaceMT->fullName) + "Ref";
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
   } else {
     assert(false);
   }
@@ -798,12 +798,13 @@ void ResilientV3::generateStructDefsC(
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto baseName = globalState->program->getExportedName(structDefM->referend->fullName);
-    auto refTypeName = baseName + "Ref";
-    std::stringstream s;
-    s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused1; } " << refTypeName << ";"
-      << std::endl;
-    cByExportedName->insert(std::make_pair(baseName, s.str()));
+    for (auto baseName : globalState->program->getExportedNames(structDefM->referend->fullName)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused1; } " << refTypeName << ";"
+        << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
   }
 }
 
@@ -813,10 +814,11 @@ void ResilientV3::generateInterfaceDefsC(
   if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
-    std::stringstream s;
-    s << "typedef struct " << name << "Ref { uint64_t unused0; void* unused1; void* unused2; } " << name << "Ref;";
-    cByExportedName->insert(std::make_pair(name, s.str()));
+    for (auto name : globalState->program->getExportedNames(interfaceDefM->referend->fullName)) {
+      std::stringstream s;
+      s << "typedef struct " << name << "Ref { uint64_t unused0; void* unused1; void* unused2; } " << name << "Ref;";
+      cByExportedName->insert(std::make_pair(name, s.str()));
+    }
   }
 }
 

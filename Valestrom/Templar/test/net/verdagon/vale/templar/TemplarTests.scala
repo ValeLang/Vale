@@ -109,7 +109,9 @@ class TemplarCompilation(var filenamesAndSources: List[(String, String)]) {
       case Some(temputs) => vfail()
       case None => {
 
-        val debugOut = (string: String) => { println(string) }
+        val debugOut = (string: String) => {
+          println(string)
+        }
 
         new Templar(debugOut, true, new NullProfiler(), false).evaluate(getAstrouts()) match {
           case Ok(t) => vfail("Accidentally successfully compiled:\n" + t.toString)

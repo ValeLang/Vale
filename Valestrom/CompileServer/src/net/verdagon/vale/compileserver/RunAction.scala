@@ -1,10 +1,9 @@
 package net.verdagon.vale.compileserver
 
 import java.io.{OutputStream, PrintStream}
-
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
 import net.verdagon.vale.driver.Driver
-import net.verdagon.vale.driver.Driver.Options
+import net.verdagon.vale.driver.Driver.{Options, SourceInput}
 import net.verdagon.vale.vivem.Vivem
 import net.verdagon.vale.{Err, Ok}
 
@@ -18,7 +17,7 @@ class RunAction extends HttpFunction {
     }
 
     val program =
-      Driver.build(Options(List("in.vale"), Some(""), false, true, false, true, None, false), List(code)) match {
+      Driver.build(Options(List(SourceInput("in.vale", code)), Some(""), false, false, true, false, true, None, false)) match {
         case Ok(Some(programH)) => programH
         case Err(error) => {
           response.setStatusCode(400)

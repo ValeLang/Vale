@@ -331,7 +331,7 @@ public:
 
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
 
-  std::string getRefNameC(
+  std::string getMemberArbitraryRefNameCSeeMMEDT(
       Reference* refMT) override;
   void generateStructDefsC(
       std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;

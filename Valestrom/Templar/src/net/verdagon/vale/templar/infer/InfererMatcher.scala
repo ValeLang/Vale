@@ -2,7 +2,7 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, OwnP, ReadonlyP, ReadwriteP, ShareP, WeakP}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, OverrideSP}
 import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar.{CompileErrorExceptionT, FunctionName2, IName2, IRune2, NameTranslator, RangedInternalErrorT}
@@ -314,34 +314,34 @@ class InfererMatcher[Env, State](
           // Anything is compatible with share
           return (InferMatchSuccess(true))
         }
-        return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualOwnership} doesn't match expected ${expectedOwnership}", List()))
+        return (InferMatchConflict(inferences.inferences, range, s"Supplied ownership ${actualOwnership} doesn't match expected ${expectedOwnership}", List()))
       }
       case (MutabilityTT(range, expectedMutability), MutabilityTemplata(actualMutability)) => {
         if (actualMutability == Conversions.evaluateMutability(expectedMutability)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualMutability} doesn't match expected ${expectedMutability}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied mutability ${actualMutability} doesn't match expected ${expectedMutability}", List()))
         }
       }
       case (PermissionTT(range, expectedPermission), PermissionTemplata(actualPermission)) => {
         if (actualPermission == Conversions.evaluatePermission(expectedPermission)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualPermission} doesn't match expected ${expectedPermission}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied permission ${actualPermission} doesn't match expected ${expectedPermission}", List()))
         }
       }
       case (LocationTT(range, expectedLocation), LocationTemplata(actualLocation)) => {
         if (actualLocation == Conversions.evaluateLocation(expectedLocation)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualLocation} doesn't match expected ${expectedLocation}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied location ${actualLocation} doesn't match expected ${expectedLocation}", List()))
         }
       }
       case (VariabilityTT(range, expectedVariability), VariabilityTemplata(actualVariability)) => {
         if (actualVariability == Conversions.evaluateVariability(expectedVariability)) {
           (InferMatchSuccess(true))
         } else {
-          return (InferMatchConflict(inferences.inferences, range, s"Supplied ${actualVariability} doesn't match expected ${expectedVariability}", List()))
+          return (InferMatchConflict(inferences.inferences, range, s"Supplied variability ${actualVariability} doesn't match expected ${expectedVariability}", List()))
         }
       }
       case (AbsoluteNameTT(range, expectedName, expectedType), actualTemplata) => {
@@ -396,7 +396,7 @@ class InfererMatcher[Env, State](
           case ims @ InferMatchSuccess(_) => ims
         }
       }
-      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(Coord(ownership, structRef @ StructRef2(_)))) => {
+      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(Coord(ownership, permission, structRef @ StructRef2(_)))) => {
         vassert(instance.tyype == ct.resultType)
 
         // This check is to help with NMORFI temporarily. It assumes that we'll never have any templates that return
@@ -405,7 +405,7 @@ class InfererMatcher[Env, State](
         ownership match {
           case Share => // fine, continue
           case Own => // fine, continue
-          case Borrow | Weak => {
+          case Constraint | Weak => {
             return InferMatchConflict(inferences.inferences, range, "Expected Own or Share, but was given " + ownership, List())
           }
         }
@@ -445,7 +445,7 @@ class InfererMatcher[Env, State](
         // We'll then get the return type of the function, and then set the rune.
         // Then we'll know the full IFunction1, and can proceed to glory.
       }
-      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(Coord(ownership, cit @ InterfaceRef2(_)))) => {
+      case (ct @ CallTT(range, _, _, resultType), CoordTemplata(Coord(ownership, permission, cit @ InterfaceRef2(_)))) => {
         vassert(instance.tyype == ct.resultType)
 
         // This check is to help with NMORFI temporarily. It assumes that we'll never have any templates that return
@@ -454,7 +454,7 @@ class InfererMatcher[Env, State](
         ownership match {
           case Share => // fine, continue
           case Own => // fine, continue
-          case Borrow | Weak => {
+          case Constraint | Weak => {
             return InferMatchConflict(inferences.inferences, range, "Expected Own or Share, but was given " + ownership, List())
           }
         }
@@ -514,10 +514,10 @@ class InfererMatcher[Env, State](
       case (CallTT(range, _, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _)))) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against a CallTT, no such rule exists", List()))
       }
-      case (CallTT(range, _, _, _), CoordTemplata(Coord(_, KnownSizeArrayT2(_, _)))) => {
+      case (CallTT(range, _, _, _), CoordTemplata(Coord(_, _, KnownSizeArrayT2(_, _)))) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against a CallTT, no such rule exists", List()))
       }
-      case (CallTT(range, expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(instanceOwnership, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
+      case (CallTT(range, expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(_, _, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
         vassert(instance.tyype == resultType)
         matchArrayAgainstCallTT(
           env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
@@ -540,7 +540,7 @@ class InfererMatcher[Env, State](
 //          })
 //        (InferMatchSuccess(membersDeeplySatisfied))
 //      }
-      case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
+      case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, _, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
         vassert(resultType == CoordTemplataType)
         vcurious(ownership == Share || ownership == Own)
         matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability)
@@ -555,7 +555,7 @@ class InfererMatcher[Env, State](
       case (RepeaterSequenceTT(range, _, _, _, _), CoordTemplata(otherCoord)) => {
         (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherCoord, List()))
       }
-      case (ManualSequenceTT(range, expectedElementTemplexesT, resultType), CoordTemplata(Coord(ownership, TupleT2(elements, _)))) => {
+      case (ManualSequenceTT(range, expectedElementTemplexesT, resultType), CoordTemplata(Coord(ownership, _, TupleT2(elements, _)))) => {
         vassert(resultType == CoordTemplataType)
         vcurious(ownership == Share || ownership == Own)
         matchTupleKind(env, state, typeByRune, localRunes, inferences, expectedElementTemplexesT, elements)
@@ -602,42 +602,67 @@ class InfererMatcher[Env, State](
 
         InferMatchSuccess(deeplySatisfied)
       }
-      case (OwnershippedTT(range, expectedOwnership, innerCoordTemplex), CoordTemplata(Coord(instanceOwnership, instanceKind))) => {
-        val compatible =
+      case (InterpretedTT(range, expectedOwnership, expectedPermission, innerCoordTemplex), CoordTemplata(Coord(instanceOwnership, instancePermission, instanceKind))) => {
+        // When we're matching e.g. a &Spaceship instance into a &T InterpretedTT rule, it's almost as if the
+        // InterpretedTT rule is stripping off the &, to figure out that T = Spaceship.
+        // Here's some examples:
+        // - &Spaceship into &T rule: T = Spaceship
+        // - &&Spaceship into &&T rule: T = Spaceship
+        // - &!Spaceship into &!T rule: T = Spaceship
+        // If there's a mismatch, it's a conflict.
+        // Shared refs are easy, they seem to just ignore and sail through InterpretedTT unchanged... except when
+        // dealing with weak references, those are conflicts.
+
+        val ownershipCompatible =
           (instanceOwnership, expectedOwnership) match {
             case (Own, OwnP) => true
-            case (Own, BorrowP) => false
+            case (Own, ConstraintP) => false
             case (Own, WeakP) => false
             case (Own, ShareP) => false
 
-            case (Borrow, OwnP) => false
-            case (Borrow, BorrowP) => true
-            case (Borrow, WeakP) => false
-            case (Borrow, ShareP) => false
+            case (Constraint, OwnP) => false
+            case (Constraint, ConstraintP) => true
+            case (Constraint, WeakP) => false
+            case (Constraint, ShareP) => false
 
             case (Weak, OwnP) => false
-            case (Weak, BorrowP) => false
+            case (Weak, ConstraintP) => false
             case (Weak, WeakP) => true
             case (Weak, ShareP) => false
 
             case (Share, OwnP) => true
-            case (Share, BorrowP) => true
+            case (Share, ConstraintP) => true
             case (Share, WeakP) => false
             case (Share, ShareP) => true
           }
-        if (compatible) {
-          if (instanceOwnership == Borrow && expectedOwnership == BorrowP) {
-            // The incoming thing is a borrow, and we expect a borrow, so send a regular own into the inner rule matcher.
-            matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(Coord(Own, instanceKind)), innerCoordTemplex)
-          } else if (instanceOwnership == Weak && expectedOwnership == WeakP) {
-            // The incoming thing is a weak, and we expect a weak, so send a regular own into the inner rule matcher.
-            matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(Coord(Own, instanceKind)), innerCoordTemplex)
-          } else {
-            matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, CoordTemplata(Coord(instanceOwnership, instanceKind)), innerCoordTemplex)
-          }
-        } else {
-          (InferMatchConflict(inferences.inferences, range, s"Couldn't match incoming ${instanceOwnership} against expected ${expectedOwnership}", List()))
+        if (!ownershipCompatible) {
+          return InferMatchConflict(inferences.inferences, range, s"Couldn't match incoming ${instanceOwnership} against expected ${expectedOwnership}", List())
         }
+
+        val permissionCompatible =
+          if (instanceOwnership == Share) {
+            // honey badger
+            true
+          } else {
+            (instancePermission, expectedPermission) match {
+              case (Readonly, ReadonlyP) => true
+              case (Readonly, ReadwriteP) => false
+              case (Readwrite, ReadonlyP) => false
+              case (Readwrite, ReadwriteP) => true
+            }
+          }
+
+        if (!permissionCompatible) {
+          return InferMatchConflict(inferences.inferences, range, s"Couldn't match incoming ${instancePermission} against expected ${expectedPermission}", List())
+        }
+
+        val resultCoord =
+          if (instanceOwnership == Share) {
+            CoordTemplata(Coord(Share, Readonly, instanceKind))
+          } else {
+            CoordTemplata(Coord(Own, Readwrite, instanceKind))
+          }
+        matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, resultCoord, innerCoordTemplex)
       }
       case other => throw CompileErrorExceptionT(RangedInternalErrorT(other._1.range, "Can't match rule " + rule + " against instance " + instance))
     }
@@ -757,7 +782,7 @@ class InfererMatcher[Env, State](
       case "toRef" => {
         val List(kindRule) = args
         instance match {
-          case CoordTemplata(Coord(instanceOwnership, instanceKind)) => {
+          case CoordTemplata(Coord(instanceOwnership, instancePermission, instanceKind)) => {
             val defaultOwnershipForKind =
               if (delegate.getMutability(state, instanceKind) == Mutable) Own else Share
             if (instanceOwnership != defaultOwnershipForKind) {
@@ -823,11 +848,17 @@ class InfererMatcher[Env, State](
           env, state, typeByRune, localRunes, inferences, MutabilityTemplata(actualMutability), mutabilityRule)
       }
       case CoordTemplata(actualReference) => {
-        vcheck(components.size == 2, "Wrong number of components for coord")
-        val List(ownershipRule, kindRule) = components
+        vcheck(components.size == 3, "Wrong number of components for coord")
+        val List(ownershipRule, permissionRule, kindRule) = components
         val actualOwnership = OwnershipTemplata(actualReference.ownership)
         val ownershipDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualOwnership, ownershipRule) match {
+            case imc @ InferMatchConflict(_, _, _, _) => return imc
+            case (InferMatchSuccess(ods)) => (ods)
+          }
+        val actualPermission = PermissionTemplata(actualReference.permission)
+        val permissionDeeplySatisfied =
+          matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualPermission, permissionRule) match {
             case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ods)) => (ods)
           }
@@ -837,7 +868,7 @@ class InfererMatcher[Env, State](
             case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(kds)) => (kds)
           }
-        (InferMatchSuccess(ownershipDeeplySatisfied && kindDeeplySatisfied))
+        (InferMatchSuccess(ownershipDeeplySatisfied && permissionDeeplySatisfied && kindDeeplySatisfied))
       }
       case PrototypeTemplata(actualPrototype) => {
         vcheck(components.size == 3, "Wrong number of components for prototype")

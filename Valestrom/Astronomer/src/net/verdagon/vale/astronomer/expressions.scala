@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RangeS, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
@@ -28,8 +28,8 @@ case class LocalMutateAE(range: RangeS, name: IVarNameA, expr: IExpressionAE) ex
 
 case class LendAE(range: RangeS, innerExpr1: IExpressionAE, targetOwnership: LoadAsP) extends IExpressionAE {
   targetOwnership match {
-    case LendWeakP =>
-    case LendBorrowP =>
+    case LendWeakP(_) =>
+    case LendConstraintP(_) =>
     case MoveP =>
   }
 }
@@ -79,9 +79,10 @@ case class BlockAE(
 case class ConstructArrayAE(
     range: RangeS,
     typeTemplex: ITemplexA,
+    mutabilityTemplex: ITemplexA,
+    generatorPrototypeTemplex: ITemplexA,
     sizeExpr: IExpressionAE,
-    generatorExpr: IExpressionAE,
-    mutability: MutabilityP) extends IExpressionAE
+    generatorExpr: IExpressionAE) extends IExpressionAE
 
 case class ArgLookupAE(range: RangeS, index: Int) extends IExpressionAE
 
@@ -113,7 +114,7 @@ case class BoolLiteralAE(range: RangeS, value: Boolean) extends IExpressionAE
 
 case class StrLiteralAE(range: RangeS, value: String) extends IExpressionAE
 
-case class FloatLiteralAE(range: RangeS, value: Float) extends IExpressionAE
+case class FloatLiteralAE(range: RangeS, value: Double) extends IExpressionAE
 
 case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressionAE {
   override def range: RangeS = function.range

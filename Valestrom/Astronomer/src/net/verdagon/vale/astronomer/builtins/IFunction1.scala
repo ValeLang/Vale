@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, CaptureP, FinalP, MutableP}
+import net.verdagon.vale.parser.{ConstraintP, CaptureP, FinalP, MutableP, ReadwriteP}
 import net.verdagon.vale.scout.{CodeLocationS, MaybeUsed, NotUsed, ParameterS, RangeS}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP}
 
@@ -25,12 +25,12 @@ object IFunction1 {
         CodeRuneA("P1") -> CoordTemplataType,
         CodeRuneA("R") -> CoordTemplataType),
       List(
-        TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("M"), MutabilityTemplataType)),
-        TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("P1"), CoordTemplataType)),
-        TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType))),
+        TemplexAR(RuneAT(RangeS.internal(-5630),CodeRuneA("M"), MutabilityTemplataType)),
+        TemplexAR(RuneAT(RangeS.internal(-5631),CodeRuneA("P1"), CoordTemplataType)),
+        TemplexAR(RuneAT(RangeS.internal(-5632),CodeRuneA("R"), CoordTemplataType))),
       List(
         FunctionA(
-          RangeS.internal(-56),
+          RangeS.internal(-5633),
           FunctionNameA("__call", CodeLocationS.internal(-8)),
           List(),
           FunctionTemplataType,
@@ -47,19 +47,22 @@ object IFunction1 {
           List(
             EqualsAR(
               RangeS.internal(-1400),
-              TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("ThisK"), CoordTemplataType)),
+              TemplexAR(RuneAT(RangeS.internal(-5634),CodeRuneA("ThisK"), CoordTemplataType)),
               TemplexAR(
-                CallAT(RangeS.internal(-56),
-                  NameAT(RangeS.internal(-56),CodeTypeNameA("IFunction1"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType), KindTemplataType)),
+                CallAT(RangeS.internal(-5635),
+                  NameAT(RangeS.internal(-5636),CodeTypeNameA("IFunction1"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType, CoordTemplataType), KindTemplataType)),
                   List(
-                    RuneAT(RangeS.internal(-56),CodeRuneA("M"), MutabilityTemplataType),
-                    RuneAT(RangeS.internal(-56),CodeRuneA("P1"), CoordTemplataType),
-                    RuneAT(RangeS.internal(-56),CodeRuneA("R"), CoordTemplataType)),
+                    RuneAT(RangeS.internal(-5637),CodeRuneA("M"), MutabilityTemplataType),
+                    RuneAT(RangeS.internal(-5638),CodeRuneA("P1"), CoordTemplataType),
+                    RuneAT(RangeS.internal(-5639),CodeRuneA("R"), CoordTemplataType)),
                   CoordTemplataType))),
             EqualsAR(
               RangeS.internal(-1401),
-              TemplexAR(RuneAT(RangeS.internal(-56),CodeRuneA("BorrowThis"), CoordTemplataType)),
-              TemplexAR(OwnershippedAT(RangeS.internal(-56),BorrowP, RuneAT(RangeS.internal(-56),CodeRuneA("ThisK"), CoordTemplataType))))),
+              TemplexAR(RuneAT(RangeS.internal(-5640),CodeRuneA("BorrowThis"), CoordTemplataType)),
+              TemplexAR(
+                InterpretedAT(
+                  RangeS.internal(-5641),ConstraintP,ReadwriteP,
+                  RuneAT(RangeS.internal(-5642),CodeRuneA("ThisK"), CoordTemplataType))))),
           AbstractBodyA)))
 
 }

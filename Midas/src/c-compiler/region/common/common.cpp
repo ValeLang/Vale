@@ -275,7 +275,7 @@ LLVMValueRef callFree(
             ptrLE,
             LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteCharPtrForFree");
-    return LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+    return LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
   }
 }
 
@@ -310,7 +310,7 @@ void innerDeallocateYonder(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, controlBlockPtrLE.refLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusRemove, &resultAsVoidPtrLE, 1,
+    LLVMBuildCall(builder, globalState->externs->censusRemove, &resultAsVoidPtrLE, 1,
         "");
   }
 
@@ -385,13 +385,9 @@ void fillUnknownSizeArray(
 //        auto virtualArgRefMT = functionType->params[virtualParamIndex];
 //        auto virtualArgRef = argsLE[virtualParamIndex];
         buildFlare(FL(), globalState, functionState, bodyBuilder);
-        auto methodFunctionPtrLE =
-            globalState->getRegion(generatorType)
-                ->getInterfaceMethodFunctionPtr(functionState, bodyBuilder, generatorType, generatorLE, 0);
-        buildFlare(FL(), globalState, functionState, bodyBuilder);
         auto elementRef =
-            buildInterfaceCall(
-                globalState, functionState, bodyBuilder, generatorMethod, methodFunctionPtrLE, argExprsLE, 0);
+            buildCall(
+                globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
         buildFlare(FL(), globalState, functionState, bodyBuilder);
         globalState->getRegion(usaMT)->initializeElementInUSA(
             functionState, bodyBuilder, usaRefMT, usaMT, usaRef, true, indexRef, elementRef);
@@ -413,7 +409,7 @@ LLVMValueRef callMalloc(
   if (globalState->opt->genHeap) {
     return LLVMBuildCall(builder, globalState->genMalloc, &sizeLE, 1, "");
   } else {
-    return LLVMBuildCall(builder, globalState->malloc, &sizeLE, 1, "");
+    return LLVMBuildCall(builder, globalState->externs->malloc, &sizeLE, 1, "");
   }
 }
 
@@ -445,7 +441,7 @@ WrapperPtrLE mallocStr(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, destCharPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
   auto newStrWrapperPtrLE =
@@ -467,7 +463,7 @@ WrapperPtrLE mallocStr(
 
 
   std::vector<LLVMValueRef> strncpyArgsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
-  LLVMBuildCall(builder, globalState->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
+  LLVMBuildCall(builder, globalState->externs->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
 
   auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
   LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
@@ -508,7 +504,7 @@ LLVMValueRef mallocKnownSize(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, resultPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
   return resultPtrLE;
 }
@@ -701,7 +697,7 @@ LLVMValueRef mallocUnknownSizeArray(
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
             builder, newWrapperPtrLE, LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0), "");
-    LLVMBuildCall(builder, globalState->censusAdd, &resultAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->censusAdd, &resultAsVoidPtrLE, 1, "");
   }
 
   return LLVMBuildBitCast(
@@ -949,7 +945,7 @@ void regularCheckValidReference(
     LLVMValueRef refLE) {
 
   if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(refM->referend)) {
-    auto interfaceFatPtrLE = referendStructs->makeInterfaceFatPtr(FL(), functionState, builder,
+    auto interfaceFatPtrLE = referendStructs->makeInterfaceFatPtr(checkerAFL, functionState, builder,
         refM, refLE);
     auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);

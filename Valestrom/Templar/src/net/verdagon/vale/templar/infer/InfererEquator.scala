@@ -33,6 +33,9 @@ class InfererEquator[Env, State](
       case (OwnershipTemplata(leftOwnership), OwnershipTemplata(rightOwnership)) => {
         (leftOwnership == rightOwnership)
       }
+      case (PermissionTemplata(leftPermission), PermissionTemplata(rightPermission)) => {
+        (leftPermission == rightPermission)
+      }
       case (MutabilityTemplata(leftMutability), MutabilityTemplata(rightMutability)) => {
         (leftMutability == rightMutability)
       }

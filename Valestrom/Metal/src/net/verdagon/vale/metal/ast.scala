@@ -10,7 +10,7 @@ object ProgramH {
     // If the templar ever decides to change this things name, update this to match templar's.
     StructRefH(FullNameH("Tup0", 0, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
-  def emptyTupleStructType = ReferenceH(ShareH, InlineH, emptyTupleStructRef)
+  def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
 
   val mainRegionName = "main"
   val externRegionName = "host"
@@ -37,7 +37,7 @@ case class ProgramH(
     // which should be called when we drop a reference to an immutable object.
     immDestructorsByKind: Map[ReferendH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    exportedNameByFullName: Map[FullNameH, String],
+    fullNameToExportedNames: Map[FullNameH, List[String]],
     // All the regions and their referends. There will always be one in here
     // since every program has at least one region.
     regions: List[RegionH]) {
@@ -55,7 +55,7 @@ case class ProgramH(
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
     val matches =
-      exportedNameByFullName.filter(_._2 == readableName).keys ++
+      fullNameToExportedNames.filter(_._2 == readableName).keys ++
         functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName)
     vassert(matches.size <= 1)
     vassert(matches.size >= 1)
@@ -166,6 +166,7 @@ case class EdgeH(
 
 sealed trait IFunctionAttributeH
 case object UserFunctionH extends IFunctionAttributeH // Whether it was written by a human. Mostly for tests right now.
+case object PureH extends IFunctionAttributeH
 
 // A function's definition.
 case class FunctionH(

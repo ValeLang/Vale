@@ -1633,7 +1633,7 @@ void Mega::checkInlineStructType(
 }
 
 
-std::string Mega::getRefNameC(Reference* refMT) {
+std::string Mega::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
   if (refMT->ownership == Ownership::SHARE) {
     assert(false);
   } else if (auto structRefMT = dynamic_cast<StructReferend*>(refMT->referend)) {

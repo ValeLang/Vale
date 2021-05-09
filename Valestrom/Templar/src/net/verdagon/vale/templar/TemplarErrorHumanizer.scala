@@ -1,12 +1,12 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
-import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
+import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, CodeVarNameA, ConstructorNameA, FunctionA, FunctionNameA, GlobalFunctionFamilyNameA, IFunctionDeclarationNameA, INameA, ImmConcreteDestructorNameA, ImmDropNameA, ImmInterfaceDestructorNameA, LambdaNameA, TopLevelCitizenDeclarationNameA}
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
-import net.verdagon.vale.templar.types.{Bool2, Borrow, Coord, Float2, Int2, Kind, Own, ParamFilter, Share, Str2, StructRef2, Weak}
+import net.verdagon.vale.templar.types.{Bool2, Constraint, Coord, Float2, Int2, Kind, Own, ParamFilter, Readonly, Readwrite, Share, Str2, StructRef2, Weak}
 import net.verdagon.vale.vimpl
 
 object TemplarErrorHumanizer {
@@ -19,13 +19,21 @@ object TemplarErrorHumanizer {
       case RangedInternalErrorT(range, message) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) + " " + message
       }
+      case CantUseReadonlyReferenceAsReadwrite(range) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Can't make readonly reference into a readwrite one!"
+      }
       case CantMoveOutOfMemberT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Cannot move out of member (" + name + ")"
       }
-      case CantMutateFinalMember(range, structRef2, memberName) => {
+      case CantMutateFinalMember(range, fullName, memberName) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
-          ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of struct " + printableKindName(structRef2)
+          ": Cannot mutate final member '" + printableVarName(memberName.last) + "' of container " + printableFullName(fullName)
+      }
+      case CantMutateFinalLocal(range, localName) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Cannot mutate final local \"" + printableName(filenamesAndSources, localName) + "\"."
       }
       case LambdaReturnDoesntMatchInterfaceConstructor(range) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -59,9 +67,17 @@ object TemplarErrorHumanizer {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find anything named `" + name + "`!"
       }
+      case NonReadonlyReferenceFoundInPureFunctionParameter(range, name) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Parameter `" + name + "` should be readonly, because it's in a pure function."
+      }
       case CouldntFindTypeT(range, name) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
           ": Couldn't find any type named `" + name + "`!"
+      }
+      case ImmStructCantHaveVaryingMember(range, structName, memberName) => {
+        humanizePos(filenamesAndSources, range.file, range.begin.offset) +
+          ": Immutable struct (\"" + printableName(filenamesAndSources, structName) + "\") cannot have varying member (\"" + memberName + "\")."
       }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
         humanizePos(filenamesAndSources, range.file, range.begin.offset) +
@@ -141,16 +157,18 @@ object TemplarErrorHumanizer {
     banner: FunctionBanner2):
   String = {
     banner.originFunction match {
-      case None => vimpl()
+      case None => "(internal)"
       case Some(x) => printableName(filenamesAndSources, x.name)
     }
   }
 
   private def printableName(
     filenamesAndSources: List[(String, String)],
-    functionName: IFunctionDeclarationNameA):
+    name: INameA):
   String = {
-    functionName match {
+    name match {
+      case CodeVarNameA(name) => name
+      case TopLevelCitizenDeclarationNameA(name, codeLocation) => name
       case LambdaNameA(codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + "(lambda)"
       case FunctionNameA(name, codeLocation) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
       case ConstructorNameA(TopLevelCitizenDeclarationNameA(name, codeLocation)) => humanizePos(filenamesAndSources, codeLocation.file, codeLocation.offset) + ": " + name
@@ -161,12 +179,16 @@ object TemplarErrorHumanizer {
   }
 
   private def printableCoordName(coord: Coord): String = {
-    val Coord(ownership, kind) = coord
+    val Coord(ownership, permission, kind) = coord
     (ownership match {
       case Share => ""
       case Own => ""
-      case Borrow => "&"
+      case Constraint => "&"
       case Weak => "&&"
+    }) +
+    (permission match {
+      case Readonly => ""
+      case Readwrite => "!"
     }) +
     printableKindName(kind)
   }
@@ -177,7 +199,13 @@ object TemplarErrorHumanizer {
       case Bool2() => "bool"
       case Float2() => "float"
       case Str2() => "str"
-      case StructRef2(FullName2(_, CitizenName2(humanName, templateArgs))) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+      case StructRef2(f) => printableFullName(f)
+    }
+  }
+  private def printableFullName(fullName2: FullName2[IName2]): String = {
+    fullName2.last match {
+      case CitizenName2(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+      case x => x.toString
     }
   }
 

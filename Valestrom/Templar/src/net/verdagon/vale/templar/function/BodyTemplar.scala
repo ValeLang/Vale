@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.function
 
 
-import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, ExportA, IExpressionAE, IFunctionAttributeA, LocalVariableA, ParameterA, UserFunctionA}
+import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, ExportA, IExpressionAE, IFunctionAttributeA, LocalVariableA, ParameterA, PureA, UserFunctionA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.CaptureP
@@ -103,7 +103,7 @@ class BodyTemplar(
 
           if (returns == Set(expectedRetCoord)) {
             // Let it through, it returns the expected type.
-          } else if (returns == Set(Coord(Share, Never2()))) {
+          } else if (returns == Set(Coord(Share, Readonly, Never2()))) {
             // Let it through, it returns a never but we expect something else, that's fine
           } else {
             throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns))
@@ -119,6 +119,7 @@ class BodyTemplar(
     attributesA.map({
       case ExportA => Export2
       case UserFunctionA => UserFunction2
+      case PureA => Pure2
     })
   }
 
@@ -174,8 +175,8 @@ class BodyTemplar(
     // out below.
 
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(Coord(Share, Never2()))) {
-        returnsMaybeWithNever - Coord(Share, Never2())
+      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(Coord(Share, Readonly, Never2()))) {
+        returnsMaybeWithNever - Coord(Share, Readonly, Never2())
       } else {
         returnsMaybeWithNever
       }

@@ -618,13 +618,17 @@ Program* readProgram(MetalCache* cache, const json& program) {
           AddressHasher<Referend*>(cache->addressNumberer),
           program["immDestructorsByReferend"],
           readReferendAndPrototypeEntry),
-      readArrayIntoMap<Name*, std::string>(
+      readArrayIntoMap<Name*, std::vector<std::string>>(
           cache,
           AddressHasher<Name*>(cache->addressNumberer),
-          program["exportedNameByFullName"],
-          [](MetalCache* cache, json j){
-            auto fullName = readName(cache, j["fullName"]);
-            std::string exportedName = j["exportedName"];
-            return std::make_pair(fullName, exportedName);
+          program["fullNameToExportedNames"],
+          [](MetalCache* cache, json entryJ){
+            auto fullName = readName(cache, entryJ["fullName"]);
+            auto exportedNamesJ = entryJ["exportedNames"];
+            auto exportedNames =
+                readArray(cache, exportedNamesJ, [](MetalCache* cache, json j) -> std::string {
+                  return j;
+                });
+            return std::make_pair(fullName, exportedNames);
           }));
 }

@@ -338,6 +338,7 @@ object Astronomer {
     attrsS.flatMap({
       case ExportS => List(ExportA)
       case ExternS => List(ExternA)
+      case PureS => List(PureA)
       case BuiltinS(_) => List()
       case x => vimpl(x.toString)
     })
@@ -702,8 +703,7 @@ object Astronomer {
 
   val wrapperFunctions =
     List(
-      Arrays.makeArrayFunction(MutableP),
-      Arrays.makeArrayFunction(ImmutableP),
+      Arrays.makeArrayFunction(),
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 

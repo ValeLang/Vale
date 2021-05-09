@@ -13,6 +13,7 @@ case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
 
 sealed trait ICompileErrorS
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
+case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS
 case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
 case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
@@ -150,14 +151,14 @@ object Scout {
         KindTypePR)
 
     interface match {
-      case OwnershippedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipInterfaceInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
     }
 
     struct match {
-      case OwnershippedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipStructInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
@@ -199,7 +200,7 @@ object Scout {
   }
 
   private def scoutStruct(file: Int, head: StructP): StructS = {
-    val StructP(range, StringP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+    val StructP(range, NameP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val codeLocation = Scout.evalPos(file, range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
 
@@ -248,7 +249,7 @@ object Scout {
 
     val membersS =
       members.zip(memberRunes).flatMap({
-        case (StructMemberP(range, StringP(_, name), variability, _), memberRune) => {
+        case (StructMemberP(range, NameP(_, name), variability, _), memberRune) => {
           List(StructMemberS(Scout.evalRange(structEnv.file, range), name, variability, memberRune))
         }
         case (StructMethodP(_), memberRune) => {
@@ -295,7 +296,7 @@ object Scout {
   }
 
   private def scoutInterface(file: Int, headP: InterfaceP): InterfaceS = {
-    val InterfaceP(range, StringP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
+    val InterfaceP(range, NameP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
     val codeLocation = Scout.evalPos(file, range.begin)
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
     val rulesP = maybeRulesP.toList.flatMap(_.rules)
@@ -378,10 +379,10 @@ object Scout {
     templex match {
       case NullablePT(_, inner) => getHumanName(inner)
       case InlinePT(_, inner) => getHumanName(inner)
-      case PermissionedPT(_, permission, inner) => getHumanName(inner)
-      case OwnershippedPT(_, ownership, inner) => getHumanName(inner)
+//      case PermissionedPT(_, permission, inner) => getHumanName(inner)
+      case InterpretedPT(_, ownership, permission, inner) => getHumanName(inner)
       case AnonymousRunePT(_) => vwat()
-      case NameOrRunePT(StringP(_, name)) => name
+      case NameOrRunePT(NameP(_, name)) => name
       case CallPT(_, template, args) => getHumanName(template)
       case RepeaterSequencePT(_, mutability, size, element) => vwat()
       case ManualSequencePT(_, members) => vwat()

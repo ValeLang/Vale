@@ -130,7 +130,7 @@ case class IntV(value: Int) extends PrimitiveReferendV {
 case class BoolV(value: Boolean) extends PrimitiveReferendV {
   override def tyype = RRReferend(BoolH())
 }
-case class FloatV(value: Float) extends PrimitiveReferendV {
+case class FloatV(value: Double) extends PrimitiveReferendV {
   override def tyype = RRReferend(FloatH())
 }
 case class StrV(value: String) extends PrimitiveReferendV {
@@ -229,13 +229,14 @@ case class ReferenceV(
   ownership: OwnershipH,
 
   location: LocationH,
+  permission: PermissionH,
 
   // Negative number means it's an empty struct (like void).
   num: Int
 ) {
   def allocId = AllocationId(RRReferend(actualKind.hamut), num)
-  val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, actualKind.hamut))
-  val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, seenAsKind.hamut))
+  val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, permission, actualKind.hamut))
+  val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, permission, seenAsKind.hamut))
 }
 
 sealed trait IObjectReferrer {

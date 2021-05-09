@@ -173,9 +173,10 @@ case class RuneAT(
   resultType: ITemplataType
 ) extends ITemplexA
 
-case class OwnershippedAT(
+case class InterpretedAT(
   rangeS: RangeS,
   ownership: OwnershipP,
+  permission: PermissionP,
   inner: ITemplexA
 ) extends ITemplexA {
   vassert(inner.resultType == CoordTemplataType)

@@ -37,7 +37,7 @@ class IfTests extends FunSuite with Matchers with Collector {
     compile(CombinatorParsers.ifLadder, "if (true) { doBlarks(&x) } else { }") shouldHave {
       case IfPE(_,
       BlockPE(_, List(BoolLiteralPE(_, true))),
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "doBlarks"), None), List(LendPE(_,LookupPE(StringP(_, "x"), None), LendBorrowP)), LendBorrowP))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doBlarks"), None), List(LendPE(_,LookupPE(NameP(_, "x"), None), LendConstraintP(Some(ReadonlyP)))), LendConstraintP(None)))),
       BlockPE(_, List(VoidPE(_)))) =>
     }
   }
@@ -52,9 +52,9 @@ class IfTests extends FunSuite with Matchers with Collector {
                 Some(
                   DestructureP(_,
                     List(
-                      PatternPP(_,None,Some(CaptureP(_,LocalNameP(StringP(_,"u")),FinalP)),None,None,None)))),
+                      PatternPP(_,None,Some(CaptureP(_,LocalNameP(NameP(_,"u")),FinalP)),None,None,None)))),
                 None),
-              LookupPE(StringP(_,"a"),None)))),
+              LookupPE(NameP(_,"a"),None)))),
         BlockPE(_,List(VoidPE(_))),
         BlockPE(_,List(VoidPE(_)))) =>
     }
@@ -65,9 +65,9 @@ class IfTests extends FunSuite with Matchers with Collector {
       "newLen = if (num == 0) { 1 } else { 2 };") shouldHave {
       case LetPE(_,
       None,
-      PatternPP(_, _,Some(CaptureP(_,LocalNameP(StringP(_, "newLen")), FinalP)), None, None, None),
+      PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")), FinalP)), None, None, None),
       IfPE(_,
-      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(StringP(_, "=="), None), List(LookupPE(StringP(_, "num"), None), IntLiteralPE(_, 0)), LendBorrowP))),
+      BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), List(LookupPE(NameP(_, "num"), None), IntLiteralPE(_, 0)), LendConstraintP(None)))),
       BlockPE(_, List(IntLiteralPE(_, 1))),
       BlockPE(_, List(IntLiteralPE(_, 2))))) =>
     }

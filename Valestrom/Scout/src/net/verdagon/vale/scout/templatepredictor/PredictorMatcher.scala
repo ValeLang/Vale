@@ -16,6 +16,7 @@ object PredictorMatcher {
       case MutabilityST(_, _) =>
       case PermissionST(_, _) =>
       case LocationST(_, _) =>
+      case StringST(_, _) =>
       case OwnershipST(_, _) =>
       case VariabilityST(_, _) =>
       case NameST(_, _) =>
@@ -25,13 +26,16 @@ object PredictorMatcher {
         matchAgainstTemplexSR(conclusions, template)
         args.foreach(matchAgainstTemplexSR(conclusions, _))
       }
-      case OwnershippedST(_, _, inner) => matchAgainstTemplexSR(conclusions, inner)
+      case InterpretedST(_, _, _, inner) => matchAgainstTemplexSR(conclusions, inner)
       case RepeaterSequenceST(_, mutabilityRule, sizeRule,elementRule) => {
         matchAgainstTemplexSR(conclusions, mutabilityRule)
         matchAgainstTemplexSR(conclusions, sizeRule)
         matchAgainstTemplexSR(conclusions, elementRule)
       }
       case ManualSequenceST(_, elements) => {
+        elements.foreach(matchAgainstTemplexSR(conclusions, _))
+      }
+      case PackST(_, elements) => {
         elements.foreach(matchAgainstTemplexSR(conclusions, _))
       }
       case x => vimpl(x.toString)

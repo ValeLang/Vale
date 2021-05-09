@@ -40,6 +40,8 @@ add_executable(valec
 		src/c-compiler/translatetype.cpp
         src/c-compiler/valeopts.cpp
         src/c-compiler/midasfunctions.cpp
+		src/c-compiler/mainFunction.cpp
+		src/c-compiler/externs.cpp
 
 		src/c-compiler/utils/counters.cpp
 
@@ -88,6 +90,6 @@ add_executable(valec
 		src/c-compiler/region/regions.cpp
 
         src/c-compiler/fileio.cpp
-        src/c-compiler/options.cpp)
+        src/c-compiler/options.cpp src/c-compiler/mainFunction.cpp src/c-compiler/externs.cpp)
 
 target_link_libraries(valec ${llvm_libs})

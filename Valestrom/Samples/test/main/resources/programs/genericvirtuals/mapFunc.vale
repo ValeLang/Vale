@@ -13,21 +13,21 @@ fn getOr<T>(opt &Some<T> impl Opt<T>, default T) T {
   opt.value
 }
 
-fn map<T, R>(virtual opt &Opt<T>, func &IFunction1<mut, T, R>) Opt<R> abstract;
-fn map<T, R>(opt &None<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
+fn map<T, R>(virtual opt &Opt<T>, func &!IFunction1<mut, T, R>) Opt<R> abstract;
+fn map<T, R>(opt &None<T> impl Opt<T>, func &!IFunction1<mut, T, R>) Opt<R> {
   None<R>()
 }
-fn map<T, R>(opt &Some<T> impl Opt<T>, func &IFunction1<mut, T, R>) Opt<R> {
+fn map<T, R>(opt &Some<T> impl Opt<T>, func &!IFunction1<mut, T, R>) Opt<R> {
   Some<R>(func(opt.value))
 }
 
 struct MyEquals9Functor { }
 impl IFunction1<mut, int, bool> for MyEquals9Functor;
-fn __call(this &MyEquals9Functor impl IFunction1<mut, int, bool>, i int) bool { i == 9 }
+fn __call(this &!MyEquals9Functor impl IFunction1<mut, int, bool>, i int) bool { i == 9 }
 
 fn main() bool export {
   a Opt<int> = Some(9);
   f = MyEquals9Functor();
-  b Opt<bool> = a.map<int, bool>(&f);
+  b Opt<bool> = a.map<int, bool>(&!f);
   = b.getOr<bool>(false);
 }

@@ -303,6 +303,9 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["sourceType"]),
         readReferend(cache, expression["sourceReferend"]),
         readReference(cache, expression["resultType"]));
+  } else if (type == "NarrowPermission") {
+    return new NarrowPermission(
+        readExpression(cache, expression["sourceExpr"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),
@@ -399,7 +402,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReferend(cache, expression["sizeReferend"]),
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
-        readInterfaceReferend(cache, expression["generatorReferend"]),
+        readReferend(cache, expression["generatorReferend"]),
         readPrototype(cache, expression["generatorMethod"]),
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
@@ -615,13 +618,17 @@ Program* readProgram(MetalCache* cache, const json& program) {
           AddressHasher<Referend*>(cache->addressNumberer),
           program["immDestructorsByReferend"],
           readReferendAndPrototypeEntry),
-      readArrayIntoMap<Name*, std::string>(
+      readArrayIntoMap<Name*, std::vector<std::string>>(
           cache,
           AddressHasher<Name*>(cache->addressNumberer),
-          program["exportedNameByFullName"],
-          [](MetalCache* cache, json j){
-            auto fullName = readName(cache, j["fullName"]);
-            std::string exportedName = j["exportedName"];
-            return std::make_pair(fullName, exportedName);
+          program["fullNameToExportedNames"],
+          [](MetalCache* cache, json entryJ){
+            auto fullName = readName(cache, entryJ["fullName"]);
+            auto exportedNamesJ = entryJ["exportedNames"];
+            auto exportedNames =
+                readArray(cache, exportedNamesJ, [](MetalCache* cache, json j) -> std::string {
+                  return j;
+                });
+            return std::make_pair(fullName, exportedNames);
           }));
 }

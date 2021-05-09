@@ -179,6 +179,16 @@ class CallTemplar(
       givenCallableUnborrowedExpr2: ReferenceExpression2,
       givenArgsExprs2: List[ReferenceExpression2]):
       (FunctionCall2) = {
+    // Whether we're given a borrow or an own, the call itself will be given a borrow.
+    val givenCallableBorrowExpr2 =
+      givenCallableUnborrowedExpr2.resultRegister.reference match {
+        case Coord(Constraint, _, _) => (givenCallableUnborrowedExpr2)
+        case Coord(Share, _, _) => (givenCallableUnborrowedExpr2)
+        case Coord(Own, _, _) => {
+          localHelper.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
+        }
+      }
+
     val env =
       citizenRef match {
         case sr @ StructRef2(_) => temputs.getEnvForStructRef(sr) // temputs.envByStructRef(sr)
@@ -186,29 +196,30 @@ class CallTemplar(
       }
 
     val argsTypes2 = givenArgsExprs2.map(_.resultRegister.reference)
+    val closureParamType =
+      Coord(
+        givenCallableBorrowExpr2.resultRegister.reference.ownership,
+        givenCallableUnborrowedExpr2.resultRegister.reference.permission,
+        citizenRef)
     val paramFilters =
-      ParamFilter(templataTemplar.pointifyReferend(temputs, citizenRef, Borrow), None) ::
+      ParamFilter(closureParamType, None) ::
         argsTypes2.map(argType => ParamFilter(argType, None))
     val prototype2 =
       overloadTemplar.scoutExpectedFunctionForPrototype(
         env, temputs, range, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), false) match {
         case ScoutExpectedFunctionSuccess(p) => p
-        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
-      }
-
-    // Whether we're given a borrow or an own, the call itself will be given a borrow.
-    val givenCallableBorrowExpr2 =
-      givenCallableUnborrowedExpr2.resultRegister.reference match {
-        case Coord(Borrow, _) => (givenCallableUnborrowedExpr2)
-        case Coord(Share, _) => (givenCallableUnborrowedExpr2)
-        case Coord(Own, _) => {
-          localHelper.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
+        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+          throw CompileErrorExceptionT(CouldntFindFunctionToCallT(range, seff))
         }
       }
 
     val mutability = Templar.getMutability(temputs, citizenRef)
-    val ownership = if (mutability == Mutable) Borrow else Share
-    vassert(givenCallableBorrowExpr2.resultRegister.reference == Coord(ownership, citizenRef))
+    val ownership = if (mutability == Mutable) Constraint else Share
+//    val permission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
+//    if (givenCallableBorrowExpr2.resultRegister.reference.permission != Readwrite) {
+//      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can only call readwrite callables! (LHRSP)"))
+//    }
+    vassert(givenCallableBorrowExpr2.resultRegister.reference.ownership == ownership)
     val actualCallableExpr2 = givenCallableBorrowExpr2
 
     val actualArgsExprs2 = actualCallableExpr2 :: givenArgsExprs2

@@ -1,10 +1,6 @@
 
-fn toArray<M, N, E, SM>(seq &[<SM> N * E]) rules(M Mutability) Array<M, E> {
-  Array<M, E>(N, &IFunction1<SM, int, E>((i){ seq[i]}))
-}
-
 fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
-  i = 0;
+  i! = 0;
   while (i < arr.len()) {
     if ((equator)(arr[i], elem)) {
       ret true;
@@ -19,7 +15,7 @@ fn has<E>(arr &Array<_, E>, elem E) bool {
 }
 
 fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
-  i = 0;
+  i! = 0;
   while (i < seq.len()) {
     if ((equator)(seq[i], elem)) {
       ret true;
@@ -36,43 +32,25 @@ fn has<E>(seq &[<_> _ * E], elem E) bool {
 // fn Arr<M, F>(n int, generator &F) Array<M, T>
 // rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
 // {
-//   Array<M>(n, &IFunction1<mut, int, T>(generator))
+//   Array<M>(n, &!IFunction1<mut, int, T>(generator))
 // }
-
-fn MakeArray<F>(n int, generator &F) Array<mut, T>
-rules(T Ref, Prot("__call", (&F, int), T))
-{
-  Array<mut>(n, &IFunction1<mut, int, T>(generator))
-}
-fn MakeImmArray<F>(n int, generator &F) Array<imm, T>
-rules(T Ref, Prot("__call", (&F, int), T))
-{
-  Array<imm>(n, &IFunction1<mut, int, T>(generator))
-}
-
-fn each<M, N, T, F>(arr &[<M> N * T], func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(arr[i]);
-    mut i = i + 1;
-  }
-}
-
-fn each<M, T, F>(arr &Array<M, T>, func F) void {
-  i! = 0;
-  l = len(&arr);
-  while (i < l) {
-    func(arr[i]);
-    mut i = i + 1;
-  }
-}
 
 fn indices<>(arr &Array<_, _>) Array<imm, int> {
   MakeImmArray(len(arr), {_})
 }
 
-fn eachI<F>(arr &[<_> _ * _], func F) void {
+fn each<M, N, T, F>(arr A, func F) void
+rules(A Ref(_, _, [<M> N * T])) {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    mut i = i + 1;
+  }
+}
+
+fn eachI<M, N, T, F>(arr A, func F) void
+rules(A Ref(_, _, [<M> N * T])) {
   i! = 0;
   l = len(&arr);
   while (i < l) {
@@ -81,11 +59,52 @@ fn eachI<F>(arr &[<_> _ * _], func F) void {
   }
 }
 
-fn eachI<F>(arr &Array<_, _>, func F) void {
+fn each<M, T, F>(arr A, func F) void
+rules(A Ref(_, _, Array<M, T>)) {
+  i! = 0;
+  l = len(&arr);
+  while (i < l) {
+    func(arr[i]);
+    mut i = i + 1;
+  }
+}
+
+fn eachI<F>(arr A, func F) void
+rules(A Ref(_, _, Array<_, _>)) {
   i! = 0;
   l = len(&arr);
   while (i < l) {
     func(i, arr[i]);
     mut i = i + 1;
   }
+}
+
+fn toImmArray<N, E, SM>(seq &[<SM> N * E]) Array<imm, E> {
+  MakeImmArray(N, { seq[_] })
+}
+
+fn MakeArray<T, G>(n int, generator G) Array<mut, T>
+rules(
+  T Ref,
+  G Ref(share | borrow, _, _),
+  F Prot = Prot("__call", (G, int), T))
+{
+  __Array<mut, T, G, F>(n, generator)
+}
+
+fn MakeImmArray<G>(n int, generator G) Array<imm, T>
+rules(
+  T Ref,
+  G Ref(share | borrow, _, _),
+  F Prot = Prot("__call", (G, int), T))
+{
+  __Array<imm, T, G, F>(n, generator)
+}
+
+fn toImmArray<T>(source &Array<_, T>) Array<imm, &T> {
+  MakeImmArray(source.len(), &!{ source[_] })
+}
+
+fn toArray<T>(source &Array<_, T>) Array<mut, &T> {
+  MakeArray(source.len(), { source[_] })
 }

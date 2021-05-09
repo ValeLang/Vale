@@ -27,7 +27,7 @@ case object Own extends Ownership {
     List(this).collect(func)
   }
 }
-case object Borrow extends Ownership {
+case object Constraint extends Ownership {
   override def order: Int = 3;
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -95,13 +95,13 @@ case object Readwrite extends Permission {
     List(this).collect(func)
   }
 }
-case object ExclusiveReadwrite extends Permission {
-  override def order: Int = 3;
-
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func)
-  }
-}
+//case object ExclusiveReadwrite extends Permission {
+//  override def order: Int = 3;
+//
+//  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+//    List(this).collect(func)
+//  }
+//}
 
 sealed trait Location extends Queriable2 {
   def order: Int;
@@ -122,12 +122,19 @@ case object Yonder extends Location {
 }
 
 
-case class Coord(ownership: Ownership, referend: Kind) extends Queriable2 {
+case class Coord(ownership: Ownership, permission: Permission, referend: Kind) extends Queriable2 {
   referend match {
     case Int2() | Bool2() | Str2() | Float2() | Void2() | Never2() => {
       vassert(ownership == Share)
     }
     case _ =>
+  }
+  if (ownership == Share) {
+    vassert(permission == Readonly)
+  }
+  if (ownership == Own) {
+    // See CSHROOR for why we don't assert this.
+    // vassert(permission == Readwrite)
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

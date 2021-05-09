@@ -10,15 +10,21 @@ object TemplataNamer {
   // with the same signature because of this.
 
   def getReferenceIdentifierName(reference: Coord): String = {
-    val Coord(ownership, referend) = reference;
+    val Coord(ownership, permission, referend) = reference;
     val ownershipString =
       ownership match {
         case Share => ""//"*"
-        case Borrow => "&"
+        case Constraint => "&"
         case Weak => "&&"
         case Own => ""//"^"
       }
-    ownershipString + getReferendIdentifierName(referend)
+    val permissionString =
+      permission match {
+        case Readonly => "#"
+        case Readwrite => "!"
+//        case ExclusiveReadwrite => "!!"
+      }
+    ownershipString + permissionString + getReferendIdentifierName(referend)
   }
 
   def stringifyTemplateArgs(templateArgs: List[ITemplata]): String = {
@@ -66,6 +72,7 @@ object TemplataNamer {
       case Str2() => "str"// "𝓈"
       case Void2() => "void" // "∅"
       case TupleT2(_, _) => "tup"
+      case Never2() => "never"
       case UnknownSizeArrayT2(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
       case KnownSizeArrayT2(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
       case PackT2(_, underlyingStruct) => {

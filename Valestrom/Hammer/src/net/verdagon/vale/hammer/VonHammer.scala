@@ -11,7 +11,7 @@ import net.verdagon.von._
 
 object VonHammer {
   def vonifyProgram(program: ProgramH): IVonData = {
-    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, exportedNameByFullName, regions) = program
+    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, fullNameToExportedNames, regions) = program
 
     VonObject(
       "Program",
@@ -37,16 +37,20 @@ object VonHammer {
                   VonMember("destructor", vonifyPrototype(destructor))))
             }))),
         VonMember(
-          "exportedNameByFullName",
+          "fullNameToExportedNames",
           VonArray(
             None,
-            exportedNameByFullName.toVector.map({ case (fullName, exportedName) =>
+            fullNameToExportedNames.toVector.map({ case (fullName, exportedNames) =>
               VonObject(
                 "Entry",
                 None,
                 Vector(
                   VonMember("fullName", VonStr(fullName.toReadableString)),
-                  VonMember("exportedName", VonStr(exportedName))))
+                  VonMember(
+                    "exportedNames",
+                    VonArray(
+                      None,
+                      exportedNames.map(VonStr).toVector))))
             }))),
         VonMember(
           "regions",

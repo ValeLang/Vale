@@ -1,3 +1,0 @@
-
-fn readFileAsString(filenameVStr str) str extern;
-fn writeStringToFile(filenameVStr str, contentsVStr str) void extern;

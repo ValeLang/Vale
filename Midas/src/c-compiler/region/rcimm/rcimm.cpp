@@ -851,7 +851,7 @@ void RCImm::checkValidReference(
   regularCheckValidReference(checkerAFL, globalState, functionState, builder, referendStructs, refM, refLE);
 }
 
-std::string RCImm::getRefNameC(Reference* sourceMT) {
+std::string RCImm::getMemberArbitraryRefNameCSeeMMEDT(Reference* sourceMT) {
   assert(false);
   exit(1);
 }

@@ -208,20 +208,21 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
     auto functionM = p.second;
     if (functionM->prototype->name != mainM->name &&
         globalState->program->isExported(functionM->prototype->name)) {
-      auto exportedName = program->getExportedName(functionM->prototype->name);
-      std::stringstream s;
-      auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
-      s << "extern " << globalState->getRegion(externReturnType)->getRefNameC(externReturnType) << " ";
-      s << exportedName << "(";
-      for (int i = 0; i < functionM->prototype->params.size(); i++) {
-        if (i > 0) {
-          s << ", ";
+      for (auto exportedName : program->getExportedNames(functionM->prototype->name)) {
+        std::stringstream s;
+        auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
+        s << "extern " << globalState->getRegion(externReturnType)->getMemberArbitraryRefNameCSeeMMEDT(externReturnType) << " ";
+        s << exportedName << "(";
+        for (int i = 0; i < functionM->prototype->params.size(); i++) {
+          if (i > 0) {
+            s << ", ";
+          }
+          auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
+          s << globalState->getRegion(hostParamRefMT)->getMemberArbitraryRefNameCSeeMMEDT(hostParamRefMT) << " param" << i;
         }
-        auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
-        s << globalState->getRegion(hostParamRefMT)->getRefNameC(hostParamRefMT) << " param" << i;
+        s << ");" << std::endl;
+        cByExportedName.insert(std::make_pair(exportedName, s.str()));
       }
-      s << ");" << std::endl;
-      cByExportedName.insert(std::make_pair(exportedName, s.str()));
     }
   }
   for (auto p : cByExportedName) {
@@ -652,9 +653,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-    bool skipExporting =
-        program->isExported(function->prototype->name) &&
-        program->getExportedName(function->prototype->name) == "main";
+    bool skipExporting = program->isExportedAs(function->prototype->name, "main");
     declareFunction(globalState, function, skipExporting);
   }
 
@@ -701,11 +700,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   for (auto p : program->functions) {
     auto name = p.first;
     auto function = p.second;
-//    LLVMValueRef entryFunctionL = declareFunction(globalState, function);
-    bool isExportedMain = program->isExported(function->prototype->name) &&
-                          program->getExportedName(function->prototype->name) == "main";
-//    bool isExternMain = program->externs.find(function->prototype->name->name) != program->externs.end() &&
-//                        function->prototype->name->name == "main";
+    bool isExportedMain = program->isExportedAs(function->prototype->name, "main");
     if (isExportedMain) {
       mainM = function->prototype;
     }

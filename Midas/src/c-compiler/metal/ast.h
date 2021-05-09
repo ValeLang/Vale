@@ -52,7 +52,7 @@ public:
     std::unordered_map<std::string, Prototype*> externs;
     std::unordered_map<std::string, Function*> functions;
     std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind;
-    std::unordered_map<Name*, std::string, AddressHasher<Name*>> exportedNameByFullName;
+    std::unordered_map<Name*, std::vector<std::string>, AddressHasher<Name*>> fullNameToExportedNames;
 
     Program(
         std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
@@ -63,7 +63,7 @@ public:
         std::unordered_map<std::string, Prototype*> externs_,
         std::unordered_map<std::string, Function*> functions_,
         std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind_,
-        std::unordered_map<Name*, std::string, AddressHasher<Name*>> exportedNameByFullName_) :
+        std::unordered_map<Name*, std::vector<std::string>, AddressHasher<Name*>> fullNameToExportedNames_) :
       interfaces(move(interfaces_)),
       structs(move(structs_)),
       knownSizeArrays(move(knownSizeArrays_)),
@@ -72,7 +72,7 @@ public:
       externs(move(externs_)),
       functions(move(functions_)),
       immDestructorsByKind(move(immDestructorsByKind_)),
-      exportedNameByFullName(move(exportedNameByFullName_)) {}
+      fullNameToExportedNames(move(fullNameToExportedNames_)) {}
 
 
   StructDefinition* getStruct(Name* name) {
@@ -104,16 +104,32 @@ public:
     return iter->second;
   }
   bool isExported(Name* name) {
-    auto exportedNameI = exportedNameByFullName.find(name);
-    return exportedNameI != exportedNameByFullName.end();
+    auto exportedNameI = fullNameToExportedNames.find(name);
+    return exportedNameI != fullNameToExportedNames.end();
   }
-  std::string getExportedName(Name* name) {
-    auto exportedNameI = exportedNameByFullName.find(name);
-    if (exportedNameI == exportedNameByFullName.end()) {
+  std::vector<std::string> getExportedNames(Name* name) {
+    auto exportedNameI = fullNameToExportedNames.find(name);
+    if (exportedNameI == fullNameToExportedNames.end()) {
       std::cerr << "No exported name for " << name->name << std::endl;
       assert(false);
     }
     return exportedNameI->second;
+  }
+  std::string getMemberArbitraryExportNameSeeMMEDT(Name* name) {
+    auto names = getExportedNames(name);
+    assert(names.size() > 0);
+    // In the future, we should make this choose the name that was exported
+    // by this module itself. See MMEDT.
+    return names[0];
+  }
+
+  bool isExportedAs(Name* name, const std::string& exportName) {
+    auto exportedNamesI = fullNameToExportedNames.find(name);
+    if (exportedNamesI == fullNameToExportedNames.end()) {
+      return false;
+    }
+    auto& exportedNames = exportedNamesI->second;
+    return std::find(exportedNames.begin(), exportedNames.end(), exportName) != exportedNames.end();
   }
 };
 

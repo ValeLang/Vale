@@ -177,6 +177,9 @@ class ValeCompiler:
         if "--flares" in args:
             args.remove("--flares")
             midas_options.append("--flares")
+        if "--benchmark" in args:
+            args.remove("--benchmark")
+            valestrom_options.append("--benchmark")
         if "--gen-heap" in args:
             args.remove("--gen-heap")
             midas_options.append("--gen-heap")
@@ -331,6 +334,8 @@ class ValeCompiler:
                     user_vast_files.append(PurePath(arg))
                 elif arg.endswith(".c"):
                     user_c_files.append(PurePath(arg))
+                elif os.path.isdir(arg):
+                    user_valestrom_files.append(PurePath(arg))
                 else:
                     print("Unrecognized input: " + arg)
                     sys.exit(22)

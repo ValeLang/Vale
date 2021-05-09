@@ -42,59 +42,60 @@ LLVMValueRef declareFunction(
     LLVMTypeRef exportFunctionTypeL =
         LLVMFunctionType(exportReturnTypeL, exportParamTypesL.data(), exportParamTypesL.size(), 0);
 
-    auto exportName = globalState->program->getExportedName(functionM->prototype->name);
-    // The full name should end in _0, _1, etc. The exported name shouldnt.
-    assert(exportName != functionM->prototype->name->name);
-    // This is a thunk function that correctly aliases the objects that come in from the
-    // outside world, and dealiases the object that we're returning to the outside world.
-    LLVMValueRef exportFunctionL = LLVMAddFunction(globalState->mod, exportName.c_str(), exportFunctionTypeL);
+    for (auto exportName : globalState->program->getExportedNames(functionM->prototype->name)) {
+      // The full name should end in _0, _1, etc. The exported name shouldnt.
+      assert(exportName != functionM->prototype->name->name);
+      // This is a thunk function that correctly aliases the objects that come in from the
+      // outside world, and dealiases the object that we're returning to the outside world.
+      LLVMValueRef exportFunctionL = LLVMAddFunction(globalState->mod, exportName.c_str(), exportFunctionTypeL);
 
-    LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, exportFunctionL, "entry");
-    LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
-    LLVMPositionBuilderAtEnd(builder, block);
-    // This is unusual because normally we have a separate localsBuilder which points to a separate
-    // block at the beginning. This is a simple function which should require no locals, so this
-    // should be fine.
-    LLVMBuilderRef localsBuilder = builder;
+      LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, exportFunctionL, "entry");
+      LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
+      LLVMPositionBuilderAtEnd(builder, block);
+      // This is unusual because normally we have a separate localsBuilder which points to a separate
+      // block at the beginning. This is a simple function which should require no locals, so this
+      // should be fine.
+      LLVMBuilderRef localsBuilder = builder;
 
-    FunctionState functionState(exportName, exportFunctionL, exportReturnTypeL, localsBuilder);
-    BlockState initialBlockState(globalState->addressNumberer, nullptr);
+      FunctionState functionState(exportName, exportFunctionL, exportReturnTypeL, localsBuilder);
+      BlockState initialBlockState(globalState->addressNumberer, nullptr);
 
-    std::vector<Ref> argsToActualFunction;
+      std::vector<Ref> argsToActualFunction;
 
-    for (int i = 0; i < functionM->prototype->params.size(); i++) {
-      auto valeParamMT = functionM->prototype->params[i];
-      auto hostParamMT =
-          (valeParamMT->ownership == Ownership::SHARE ?
-              globalState->linearRegion->linearizeReference(valeParamMT) :
-              valeParamMT);
-      auto hostArgRefLE = LLVMGetParam(exportFunctionL, i);
+      for (int i = 0; i < functionM->prototype->params.size(); i++) {
+        auto valeParamMT = functionM->prototype->params[i];
+        auto hostParamMT =
+            (valeParamMT->ownership == Ownership::SHARE ?
+                globalState->linearRegion->linearizeReference(valeParamMT) :
+                valeParamMT);
+        auto hostArgRefLE = LLVMGetParam(exportFunctionL, i);
 
-      auto valeRef =
-          sendHostObjectIntoVale(
-              globalState, &functionState, builder, hostParamMT, valeParamMT, hostArgRefLE);
+        auto valeRef =
+            sendHostObjectIntoVale(
+                globalState, &functionState, builder, hostParamMT, valeParamMT, hostArgRefLE);
 
-      argsToActualFunction.push_back(valeRef);
+        argsToActualFunction.push_back(valeRef);
+      }
+
+      auto valeReturnRefOrVoid = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
+      auto valeReturnRef =
+          (functionM->prototype->returnType == globalState->metalCache->emptyTupleStructRef ?
+              makeEmptyTupleRef(globalState) :
+              valeReturnRefOrVoid);
+
+      auto valeReturnMT = functionM->prototype->returnType;
+      auto hostReturnMT =
+          (valeReturnMT->ownership == Ownership::SHARE ?
+              globalState->linearRegion->linearizeReference(valeReturnMT) :
+              valeReturnMT);
+
+      auto hostReturnRefLE =
+          sendValeObjectIntoHost(
+              globalState, &functionState, builder, valeReturnMT, hostReturnMT, valeReturnRef);
+      LLVMBuildRet(builder, hostReturnRefLE);
+
+      LLVMDisposeBuilder(builder);
     }
-
-    auto valeReturnRefOrVoid = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
-    auto valeReturnRef =
-        (functionM->prototype->returnType == globalState->metalCache->emptyTupleStructRef ?
-            makeEmptyTupleRef(globalState) :
-            valeReturnRefOrVoid);
-
-    auto valeReturnMT = functionM->prototype->returnType;
-    auto hostReturnMT =
-        (valeReturnMT->ownership == Ownership::SHARE ?
-            globalState->linearRegion->linearizeReference(valeReturnMT) :
-            valeReturnMT);
-
-    auto hostReturnRefLE =
-        sendValeObjectIntoHost(
-            globalState, &functionState, builder, valeReturnMT, hostReturnMT, valeReturnRef);
-    LLVMBuildRet(builder, hostReturnRefLE);
-
-    LLVMDisposeBuilder(builder);
   }
 
   return valeFunctionL;

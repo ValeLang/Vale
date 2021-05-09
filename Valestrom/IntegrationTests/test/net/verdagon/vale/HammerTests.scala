@@ -101,7 +101,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupFunction("moo")
-    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual "moo"
   }
 
   test("Tests export struct") {
@@ -111,7 +111,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupStruct("Moo")
-    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "Moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual "Moo"
   }
 
   test("Tests export interface") {
@@ -121,6 +121,6 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupInterface("Moo")
-    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "Moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual "Moo"
   }
 }

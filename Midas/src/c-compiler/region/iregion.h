@@ -148,7 +148,7 @@ public:
 
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
-  virtual std::string getRefNameC(
+  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
       Reference* refMT) = 0;
   virtual void generateStructDefsC(
       std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) = 0;

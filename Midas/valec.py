@@ -249,7 +249,6 @@ class ValeCompiler:
             del args[ind]
             val = args[ind]
             del args[ind]
-            exports_dir = PurePath(val)
             valestrom_options.append("--output-vast")
             valestrom_options.append(val)
         if "--output-vpst" in args:
@@ -257,7 +256,6 @@ class ValeCompiler:
             del args[ind]
             val = args[ind]
             del args[ind]
-            exports_dir = PurePath(val)
             valestrom_options.append("--output-vpst")
             valestrom_options.append(val)
         if "--add-exports-include-path" in args:

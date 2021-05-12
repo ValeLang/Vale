@@ -41,7 +41,7 @@ object FunctionScout {
 //  // Name of anonymous substructs. They're more identified by their CodeLocation though.
 //  val ANONYMOUS_SUBSTRUCT_NAME = "__AnonymousSubstruct"
 
-  def scoutTopLevelFunction(file: Int, functionP: FunctionP): FunctionS = {
+  def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
     val FunctionP(
       range,
       FunctionHeaderP(_,

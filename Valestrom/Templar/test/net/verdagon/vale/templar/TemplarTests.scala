@@ -24,7 +24,7 @@ object TemplarCompilation {
   }
 }
 
-class TemplarCompilation(var filenamesAndSources: List[(String, String)]) {
+class TemplarCompilation(var codeMap: FileCoordinateMap[String]) {
   filenamesAndSources = filenamesAndSources :+ ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
 
   var parsedsCache: Option[List[FileP]] = None

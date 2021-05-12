@@ -16,7 +16,7 @@ object HammerCompilation {
   }
 }
 
-class HammerCompilation(var filenamesAndSources: List[(String, String)]) {
+class HammerCompilation(var codeMap: FileCoordinateMap[String]) {
   var templarCompilation = new TemplarCompilation(filenamesAndSources)
 
   def getHamuts(): ProgramH = {

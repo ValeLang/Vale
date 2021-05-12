@@ -1,10 +1,11 @@
 package net.verdagon.vale.astronomer
 
+import net.verdagon.vale.FileCoordinateMap
 import net.verdagon.vale.SourceCodeUtils.{humanizePos, lineContaining}
 
 object AstronomerErrorHumanizer {
   def humanize(
-      filenamesAndSources: List[(String, String)],
+      filenamesAndSources: FileCoordinateMap[String],
       err: ICompileErrorA):
   String = {
     err match {

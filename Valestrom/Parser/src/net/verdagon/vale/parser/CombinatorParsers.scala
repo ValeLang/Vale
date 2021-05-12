@@ -174,6 +174,18 @@ object CombinatorParsers
     }
   }
 
+  private[parser] def `import`: Parser[ImportP] = {
+    pos ~
+      ("import" ~> white ~> exprIdentifier) ~
+      rep1(optWhite ~> "." ~> optWhite ~> exprIdentifier) ~
+      (optWhite ~> ";" ~> pos) ^^ {
+      case begin ~ moduleName ~ stepsInsideModule ~ end => {
+        vassert(stepsInsideModule.nonEmpty)
+        ImportP(Range(begin, end), moduleName, stepsInsideModule.init, stepsInsideModule.last)
+      }
+    }
+  }
+
 //  private[parser] def topLevelThing: Parser[ITopLevelThing] = {
 //    struct ^^ TopLevelStruct |
 //    topLevelFunction ^^ TopLevelFunction |

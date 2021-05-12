@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <iostream>

@@ -2,13 +2,13 @@ package net.verdagon.vale
 
 object SourceCodeUtils {
   def humanizePos(
-      filenamesAndSources: List[(String, String)],
-      file: Int,
+    filenamesAndSources: FileCoordinateMap[String],
+    file: FileCoordinate,
       pos: Int): String = {
-    if (file < 0) {
+    if (file.isInternal) {
       return "internal(" + file + ")"
     }
-    val (filename, source) = filenamesAndSources(file)
+    val source = filenamesAndSources(file)
 
     var line = 0
     var lineBegin = 0
@@ -20,27 +20,27 @@ object SourceCodeUtils {
       }
       i = i + 1
     }
-    filename + ":" + (line + 1) + ":" + (i - lineBegin + 1)
+    file.filename + ":" + (line + 1) + ":" + (i - lineBegin + 1)
   }
 
   def nextThingAndRestOfLine(
-      filenamesAndSources: List[(String, String)],
-      file: Int,
+      filenamesAndSources: FileCoordinateMap[String],
+      file: FileCoordinate,
       position: Int) = {
-    val text = filenamesAndSources(file)._2
+    val text = filenamesAndSources(file)
     // TODO: can optimize this
     text.slice(position, text.length).trim().split("\\n")(0).trim()
   }
 
   def lineContaining(
-      filenamesAndSources: List[(String, String)],
-      file: Int,
+      filenamesAndSources: FileCoordinateMap[String],
+      file: FileCoordinate,
       position: Int):
   String = {
-    if (file < 0) {
+    if (file.isInternal) {
       return "(internal(" + file + "))"
     }
-    val text = filenamesAndSources(file)._2
+    val text = filenamesAndSources(file)
     // TODO: can optimize this perhaps
     var lineBegin = 0;
     while (lineBegin < text.length) {

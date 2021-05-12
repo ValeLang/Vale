@@ -2,7 +2,7 @@ package net.verdagon.vale.scout.rules
 
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
-import net.verdagon.vale.{Err, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class RuleScoutTests extends FunSuite with Matchers {
@@ -11,7 +11,7 @@ class RuleScoutTests extends FunSuite with Matchers {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
         val programS =
-          Scout.scoutProgram(List(program0)) match {
+          Scout.scoutProgram(FileCoordinate.test, program0) match {
             case Err(e) => vfail(e.toString)
             case Ok(t) => t
           }

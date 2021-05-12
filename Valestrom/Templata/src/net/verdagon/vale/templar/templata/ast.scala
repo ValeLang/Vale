@@ -208,7 +208,7 @@ case class Prototype2(
 }
 
 case class CodeLocation2(
-  file: Int,
+  file: FileCoordinate,
   offset: Int
 ) extends Queriable2 {
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

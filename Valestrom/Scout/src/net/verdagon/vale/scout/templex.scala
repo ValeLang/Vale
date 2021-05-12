@@ -5,25 +5,6 @@ import net.verdagon.vale.{vassert, vcheck, vcurious, vpass, vwat}
 
 import scala.collection.immutable.List
 
-//// An absolute name is one where we know *exactly* where it's defined; if parser and scout
-//// put their brains together they could know exactly where the thing is.
-//case class AbsoluteNameS[+T <: INameS](file: String, initSteps: List[INameS], last: T) {// extends IImpreciseNameS[T] {
-//  def addStep[Y <: INameS](newLast: Y): Y = Y(file, initSteps :+ last, newLast)
-//  def steps: List[INameS] = initSteps :+ last
-//  def init: INameS = INameS(file, initSteps.init, initSteps.last)
-//}
-//// An imprecise name is one where we don't know exactly where the thing is defined.
-//// For example, in
-////   fn main() int export {
-////     doStuff("hello");
-////   }
-//// we don't know exactly where doStuff was defined, that depends on what overload the
-//// typing stage decides.
-//case class ImpreciseNameS[+T <: IImpreciseNameStepS](init: List[IImpreciseNameStepS], last: T) {//extends IImpreciseNameS[T] {
-//  def addStep[Y <: IImpreciseNameStepS](newLast: Y): ImpreciseNameS[Y] = ImpreciseNameS[Y](init :+ last, newLast)
-//  def steps: List[IImpreciseNameStepS] = init :+ last
-//}
-
 // We namespace runes with a full name so we don't have to worry about collisions
 // between, for example, two ImplicitRune(0)s.
 

@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, Ok, vassert, vfail, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -19,7 +19,7 @@ class ScoutTests extends FunSuite with Matchers {
             case ParseFailure(error) => vwat(error.toString)
             case ParseSuccess(program0) => program0
           }
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -38,7 +38,7 @@ class ScoutTests extends FunSuite with Matchers {
             case ParseFailure(error) => vwat(error.toString)
             case ParseSuccess(program0) => program0
           }
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }

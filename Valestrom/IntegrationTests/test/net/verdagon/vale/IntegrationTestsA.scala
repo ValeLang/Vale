@@ -598,7 +598,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val compilation = Compilation("export Array<mut, int> as IntArray;")
     val hamuts = compilation.getHamuts()
     val (fullNameH, exportedName) = hamuts.fullNameToExportedNames.head
-    exportedName shouldEqual "IntArray"
+    exportedName shouldEqual List("IntArray")
     val usa = hamuts.unknownSizeArrays.find(_.name == fullNameH).get
     usa.rawArray.elementType.kind shouldEqual IntH()
   }

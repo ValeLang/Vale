@@ -133,6 +133,11 @@ object Parser {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(result) => topLevelThings += TopLevelExportAsP(result)
         }
+      } else if (iter.peek("^import\\b".r)) {
+        parseImport(iter) match {
+          case ParseFailure(err) => return ParseFailure(err)
+          case ParseSuccess(result) => topLevelThings += TopLevelImportP(result)
+        }
       } else if (iter.peek("^fn\\b".r)) {
         parseFunction(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
@@ -171,6 +176,13 @@ object Parser {
 
   private def parseExportAs(iter: ParsingIterator): IParseResult[ExportAsP] = {
     iter.consumeWithCombinator(CombinatorParsers.`export`) match {
+      case Err(e) => ParseFailure(BadExport(iter.getPos(), e))
+      case Ok(s) => ParseSuccess(s)
+    }
+  }
+
+  private def parseImport(iter: ParsingIterator): IParseResult[ImportP] = {
+    iter.consumeWithCombinator(CombinatorParsers.`import`) match {
       case Err(e) => ParseFailure(BadExport(iter.getPos(), e))
       case Ok(s) => ParseSuccess(s)
     }

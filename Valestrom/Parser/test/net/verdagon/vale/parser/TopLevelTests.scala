@@ -54,4 +54,18 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
       case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
     }
   }
+
+  test("import just module and thing") {
+    val program = compileProgram("import somemodule.List;")
+    program.topLevelThings(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(), NameP(_, "List"))) =>
+    }
+  }
+
+  test("full import") {
+    val program = compileProgram("import somemodule.subpackage.List;")
+    program.topLevelThings(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(NameP(_, "subpackage")), NameP(_, "List"))) =>
+    }
+  }
 }

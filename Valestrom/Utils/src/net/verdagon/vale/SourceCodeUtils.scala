@@ -20,7 +20,7 @@ object SourceCodeUtils {
       }
       i = i + 1
     }
-    file.filename + ":" + (line + 1) + ":" + (i - lineBegin + 1)
+    file.filepath + ":" + (line + 1) + ":" + (i - lineBegin + 1)
   }
 
   def nextThingAndRestOfLine(

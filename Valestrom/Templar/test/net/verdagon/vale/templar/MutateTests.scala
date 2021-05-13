@@ -147,7 +147,7 @@ class MutateTests extends FunSuite with Matchers {
     val serenityKind = StructRef2(FullName2(List(), CitizenName2("Serenity", List())))
     val serenityCoord = Coord(Own,Readwrite,serenityKind)
 
-    val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
+    val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
 
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindTypeT(RangeS.testZero, "Spaceship")).nonEmpty)
@@ -204,7 +204,7 @@ class MutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         RangeS.testZero,
-        RangeS(CodeLocationS(0, 10), CodeLocationS(0, 15)),
+        RangeS.testZero,
         Signature2(FullName2(List(), FunctionName2("myFunc", List(), List())))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,

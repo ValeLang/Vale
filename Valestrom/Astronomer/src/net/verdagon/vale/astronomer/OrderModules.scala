@@ -10,7 +10,7 @@ object OrderModules {
     val dependentAndDependeeModule: List[(String, String)] =
       mergedProgramS.moduleToNamespacesToFilenameToContents.map({ case (dependentModuleName, namespacesToFilenameToContents) =>
         val dependeeModules = namespacesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
-        dependeeModules.map(_.name).map(dependeeName => (dependentModuleName -> dependeeName))
+        dependeeModules.map(dependeeName => (dependentModuleName -> dependeeName))
       }).flatten.toList
     orderModules(dependentAndDependeeModule)
   }
@@ -44,7 +44,9 @@ object OrderModules {
               val allDependenciesOfModuleDependingOnThisOne = dependentToDependeeModule(moduleDependingOnThisOne)
               val allOtherDependenciesOfModuleDependingOnThisOne =
                 allDependenciesOfModuleDependingOnThisOne - thisModule
-              dependentToDependeeModule = dependentToDependeeModule + allOtherDependenciesOfModuleDependingOnThisOne
+              dependentToDependeeModule =
+                dependentToDependeeModule +
+                  (moduleDependingOnThisOne -> allOtherDependenciesOfModuleDependingOnThisOne)
             })
           }
         }

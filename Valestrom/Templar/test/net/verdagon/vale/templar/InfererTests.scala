@@ -192,7 +192,7 @@ class InfererTests extends FunSuite with Matchers {
               StructMemberA(RangeS.testZero,"i", FinalP, CodeRuneA("B"))))))
     entries = entries.addEntry(true, PrimitiveName2("Array"), TemplataEnvEntry(ArrayTemplateTemplata()))
     entries = entries.addEntry(true,
-        CitizenTemplateName2("MutTStruct", CodeLocation2(-25, 0)),
+        CitizenTemplateName2("MutTStruct", CodeLocation2.internal(-25)),
           StructEnvEntry(
             StructA(
               RangeS.internal(-74),
@@ -208,7 +208,7 @@ class InfererTests extends FunSuite with Matchers {
               Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
               List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
               List())))
-    entries = entries.addEntry(true, CitizenTemplateName2("MutTInterface", CodeLocation2(-27, 0)),
+    entries = entries.addEntry(true, CitizenTemplateName2("MutTInterface", CodeLocation2.internal(-27)),
       InterfaceEnvEntry(
         InterfaceA(
           RangeS.internal(-75),
@@ -224,7 +224,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("T") -> CoordTemplataType, CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries.addEntry(true, CitizenTemplateName2("MutStruct", CodeLocation2(-29, 0)),
+    entries = entries.addEntry(true, CitizenTemplateName2("MutStruct", CodeLocation2.internal(-29)),
       StructEnvEntry(
         StructA(
           RangeS.internal(-73),
@@ -240,7 +240,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneA("M") -> MutabilityTemplataType),
           List(EqualsAR(RangeS.testZero,TemplexAR(RuneAT(RangeS.testZero,CodeRuneA("M"), MutabilityTemplataType)), TemplexAR(MutabilityAT(RangeS.testZero,MutableP)))),
           List())))
-    entries = entries.addEntry(true, CitizenTemplateName2("MutInterface", CodeLocation2(-31, 0)),
+    entries = entries.addEntry(true, CitizenTemplateName2("MutInterface", CodeLocation2.internal(-31)),
       InterfaceEnvEntry(
         InterfaceA(
           RangeS.internal(-72),

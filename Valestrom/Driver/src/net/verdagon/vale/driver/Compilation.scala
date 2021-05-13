@@ -94,8 +94,9 @@ class Compilation(
     hinputsCache match {
       case Some(temputs) => temputs
       case None => {
+        val templar = new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization)
         val hamuts =
-          new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization).evaluate(getAstrouts()) match {
+          templar.evaluate(getAstrouts()) match {
             case Ok(t) => t
             case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, codeMap, e))
           }
@@ -144,5 +145,22 @@ class Compilation(
     val (stdoutStringBuilder, stdoutFunc) = Vivem.stdoutCollector()
     val referend = Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, stdoutFunc)
     (referend, stdoutStringBuilder.mkString)
+  }
+}
+
+object Compilation {
+  def multiple(
+    code: List[String],
+    options: CompilationOptions = CompilationOptions()):
+  Compilation = {
+    new Compilation(
+      FileCoordinateMap.test(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap),
+      options)
+  }
+  def apply(
+    code: String,
+    options: CompilationOptions = CompilationOptions()):
+  Compilation = {
+    new Compilation(FileCoordinateMap.test(code), options)
   }
 }

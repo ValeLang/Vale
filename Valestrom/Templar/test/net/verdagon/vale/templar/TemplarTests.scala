@@ -17,37 +17,37 @@ import scala.io.Source
 
 object TemplarCompilation {
   def multiple(code: List[String]): TemplarCompilation = {
-    new TemplarCompilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }))
+    new TemplarCompilation(FileCoordinateMap.test(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap))
   }
   def apply(code: String): TemplarCompilation = {
-    new TemplarCompilation(List(("in.vale", code)))
+    new TemplarCompilation(FileCoordinateMap.test(code))
   }
 }
 
 class TemplarCompilation(var codeMap: FileCoordinateMap[String]) {
-  filenamesAndSources = filenamesAndSources :+ ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
+  codeMap = codeMap.add("", List(), "builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
 
-  var parsedsCache: Option[List[FileP]] = None
-  var scoutputCache: Option[ProgramS] = None
-  var astroutsCache: Option[ProgramA] = None
+  var parsedsCache: Option[FileCoordinateMap[FileP]] = None
+  var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
+  var astroutsCache: Option[NamespaceCoordinateMap[ProgramA]] = None
   var hinputsCache: Option[Hinputs] = None
 
-  def getParseds(): List[FileP] = {
+  def getParseds(): FileCoordinateMap[FileP] = {
     parsedsCache match {
       case Some(parseds) => parseds
       case None => {
         parsedsCache =
           Some(
-            filenamesAndSources.zipWithIndex.map({ case ((filename, source), fileIndex) =>
+            codeMap.map({ case (fileCoordinate, source) =>
               Parser.runParserForProgramAndCommentRanges(source) match {
                 case ParseFailure(err) => {
-                  vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, err))
+                  vwat(ParseErrorHumanizer.humanize(codeMap, fileCoordinate, err))
                 }
                 case ParseSuccess((program0, _)) => {
                   val von = ParserVonifier.vonifyFile(program0)
                   val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
                   ParsedLoader.load(vpstJson) match {
-                    case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, error))
+                    case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(codeMap, fileCoordinate, error))
                     case ParseSuccess(program0) => program0
                   }
                 }
@@ -58,22 +58,24 @@ class TemplarCompilation(var codeMap: FileCoordinateMap[String]) {
     }
   }
 
-  def getScoutput(): ProgramS = {
+  def getScoutput(): FileCoordinateMap[ProgramS] = {
     scoutputCache match {
       case Some(scoutput) => scoutput
       case None => {
         val scoutput =
-          Scout.scoutProgram(getParseds()) match {
-            case Err(e) => vfail(e.toString)
-            case Ok(p) => p
-          }
+          getParseds().map({ case (fileCoord, parsed) =>
+            Scout.scoutProgram(fileCoord, parsed) match {
+              case Err(e) => vfail(e.toString)
+              case Ok(p) => p
+            }
+          })
         scoutputCache = Some(scoutput)
         scoutput
       }
     }
   }
 
-  def getAstrouts(): ProgramA = {
+  def getAstrouts(): NamespaceCoordinateMap[ProgramA] = {
     astroutsCache match {
       case Some(astrouts) => astrouts
       case None => {
@@ -95,7 +97,7 @@ class TemplarCompilation(var codeMap: FileCoordinateMap[String]) {
         val hamuts =
           new Templar(println, true, new NullProfiler(), true).evaluate(getAstrouts()) match {
             case Ok(t) => t
-            case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, filenamesAndSources, e))
+            case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, codeMap, e))
           }
         hinputsCache = Some(hamuts)
         hamuts
@@ -1085,7 +1087,7 @@ class TemplarTests extends FunSuite with Matchers {
     val serenityKind = StructRef2(FullName2(List(), CitizenName2("Serenity", List())))
     val serenityCoord = Coord(Own,Readwrite,serenityKind)
 
-    val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
+    val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
 
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntFindTypeT(RangeS.testZero, "Spaceship")).nonEmpty)
@@ -1151,7 +1153,7 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         RangeS.testZero,
-        RangeS(CodeLocationS(0, 10), CodeLocationS(0, 15)),
+        RangeS.testZero,
         Signature2(FullName2(List(), FunctionName2("myFunc", List(), List())))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,

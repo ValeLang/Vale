@@ -7,7 +7,7 @@ import net.verdagon.vale.parser.{CaptureP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{ExportS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{FileCoordinateMap, NamespaceCoordinateMap, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{FileCoordinateMap, NamespaceCoordinateMap, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -70,10 +70,10 @@ case class Environment(
   (Option[ITypeSR], List[StructS], List[InterfaceS]) = {
     // See MINAAN for what we're doing here.
 
-    val nearStructs = structs.filter(struct => {
+    val nearStructs = structsS.filter(struct => {
       impreciseNameMatchesAbsoluteName(struct.name, needleImpreciseNameS)
     })
-    val nearInterfaces = interfaces.filter(interface => {
+    val nearInterfaces = interfacesS.filter(interface => {
       impreciseNameMatchesAbsoluteName(interface.name, needleImpreciseNameS)
     })
     val nearPrimitives =
@@ -93,8 +93,8 @@ case class Environment(
 
   def lookupType(name: INameS):
   (List[StructS], List[InterfaceS]) = {
-    val nearStructs = structs.filter(_.name == name)
-    val nearInterfaces = interfaces.filter(_.name == name)
+    val nearStructs = structsS.filter(_.name == name)
+    val nearInterfaces = interfacesS.filter(_.name == name)
 
     if (nearStructs.nonEmpty || nearInterfaces.nonEmpty) {
       return (nearStructs.toList, nearInterfaces.toList)
@@ -119,14 +119,14 @@ case class Environment(
 }
 
 case class AstroutsBox(var astrouts: Astrouts) {
-  def getImpl(name: INameA) = {
-    astrouts.impls.get(name)
+  def getImpl(name: ImplNameA) = {
+    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.impls.get(name))
   }
-  def getStruct(name: INameA) = {
-    astrouts.structs.get(name)
+  def getStruct(name: ITypeDeclarationNameA) = {
+    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.structs.get(name))
   }
-  def getInterface(name: INameA) = {
-    astrouts.interfaces.get(name)
+  def getInterface(name: ITypeDeclarationNameA) = {
+    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.interfaces.get(name))
   }
 }
 
@@ -134,10 +134,10 @@ case class Astrouts(
   moduleAstrouts: Map[String, ModuleAstrouts])
 
 case class ModuleAstrouts(
-  structs: Map[INameA, StructA],
-  interfaces: Map[INameA, InterfaceA],
-  impls: Map[INameA, ImplA],
-  functions: Map[INameA, FunctionA])
+  structs: Map[ITypeDeclarationNameA, StructA],
+  interfaces: Map[ITypeDeclarationNameA, InterfaceA],
+  impls: Map[ImplNameA, ImplA],
+  functions: Map[IFunctionDeclarationNameA, FunctionA])
 
 object Astronomer {
   val primitives =
@@ -677,7 +677,7 @@ object Astronomer {
       suppliedFunctions: List[FunctionA],
       suppliedInterfaces: List[InterfaceA]):
   ProgramA = {
-    val astrouts = AstroutsBox(Astrouts(Map(), Map(), Map(), Map()))
+    val astrouts = AstroutsBox(Astrouts(Map()))
 
     val env = Environment(None, None, primitives, codeMap, Map(), List())
 
@@ -758,7 +758,7 @@ object Astronomer {
               namespaceToInterfacesA.getOrElse(namespace, List()),
               namespaceToImplsA.getOrElse(namespace, List()),
               namespaceToFunctionsA.getOrElse(namespace, List()),
-              namespaceToExportsA.getOrElse(namespace, Map()))
+              namespaceToExportsA.getOrElse(namespace, List()))
           (namespace -> contents)
         }).toMap
       val moduleToNamespaceToContents =

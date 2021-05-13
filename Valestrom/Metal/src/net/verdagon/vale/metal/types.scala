@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{FileCoordinate, vassert, vfail}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -163,8 +163,8 @@ case class RawArrayTH(
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.
 case class CodeLocation(
-  line: Int,
-  char: Int)
+  file: FileCoordinate,
+  offset: Int)
 
 // Ownership is the way a reference relates to the referend's lifetime, see
 // ReferenceH for explanation.

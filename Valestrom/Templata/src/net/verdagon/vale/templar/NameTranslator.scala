@@ -11,9 +11,9 @@ import scala.collection.immutable.List
 object NameTranslator {
   def translateFunctionNameToTemplateName(functionName: IFunctionDeclarationNameA): IFunctionTemplateName2 = {
       functionName match {
-        case ImmConcreteDestructorNameA() => ImmConcreteDestructorTemplateName2()
-        case ImmInterfaceDestructorNameA() => ImmInterfaceDestructorTemplateName2()
-        case ImmDropNameA() => ImmDropTemplateName2()
+        case ImmConcreteDestructorNameA(_) => ImmConcreteDestructorTemplateName2()
+        case ImmInterfaceDestructorNameA(_) => ImmInterfaceDestructorTemplateName2()
+        case ImmDropNameA(_) => ImmDropTemplateName2()
         case LambdaNameA(/*parent, */codeLocation) => {
           LambdaTemplateName2(NameTranslator.translateCodeLocation(codeLocation))
         }

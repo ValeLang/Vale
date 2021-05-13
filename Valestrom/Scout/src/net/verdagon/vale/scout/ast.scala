@@ -67,10 +67,11 @@ case class ProgramS(
 }
 
 object CodeLocationS {
+  // Keep in sync with CodeLocation2
   val zero = CodeLocationS.internal(-1)
   def internal(internalNum: Int): CodeLocationS = {
     vassert(internalNum < 0)
-    CodeLocationS(FileCoordinate("internal", List(), "internal"), internalNum)
+    CodeLocationS(FileCoordinate("", List(), "internal"), internalNum)
   }
 }
 

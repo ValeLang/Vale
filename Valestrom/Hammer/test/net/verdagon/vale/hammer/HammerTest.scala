@@ -1,6 +1,6 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.{Samples, vassert}
+import net.verdagon.vale.{FileCoordinateMap, Samples, vassert}
 import net.verdagon.vale.templar._
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.metal.{FunctionH, ProgramH, StackifyH, VariableIdH}
@@ -9,15 +9,15 @@ import scala.collection.immutable.List
 
 object HammerCompilation {
   def multiple(code: List[String]): HammerCompilation = {
-    new HammerCompilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }))
+    new HammerCompilation(FileCoordinateMap.test(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap))
   }
   def apply(code: String): HammerCompilation = {
-    new HammerCompilation(List(("in.vale", code)))
+    new HammerCompilation(FileCoordinateMap.test(code))
   }
 }
 
 class HammerCompilation(var codeMap: FileCoordinateMap[String]) {
-  var templarCompilation = new TemplarCompilation(filenamesAndSources)
+  var templarCompilation = new TemplarCompilation(codeMap)
 
   def getHamuts(): ProgramH = {
     val hinputs = templarCompilation.getTemputs()
@@ -40,8 +40,7 @@ class HammerTest extends FunSuite with Matchers {
   }
 
   test("Local IDs unique") {
-    val compile = new HammerCompilation(
-      List("in.vale" ->
+    val compile = HammerCompilation(
         """
           |fn main() export {
           |  a = 6;
@@ -56,7 +55,7 @@ class HammerTest extends FunSuite with Matchers {
           |  }
           |  f = 11;
           |}
-          |""".stripMargin))
+          |""".stripMargin)
     val hamuts = compile.getHamuts()
     val main = hamuts.functions.find(_.`export`).get
     val stackifies = recursiveCollect(main, { case s @ StackifyH(_, _, _) => s })

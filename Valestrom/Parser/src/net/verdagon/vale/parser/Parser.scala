@@ -1,7 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.CombinatorParsers.repeatStr
-import net.verdagon.vale.{Err, Ok, Result, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, Ok, Result, repeatStr, vassert, vfail, vimpl, vwat}
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -183,7 +182,7 @@ object Parser {
 
   private def parseImport(iter: ParsingIterator): IParseResult[ImportP] = {
     iter.consumeWithCombinator(CombinatorParsers.`import`) match {
-      case Err(e) => ParseFailure(BadExport(iter.getPos(), e))
+      case Err(e) => ParseFailure(BadImport(iter.getPos(), e))
       case Ok(s) => ParseSuccess(s)
     }
   }

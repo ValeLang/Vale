@@ -23,6 +23,9 @@ import net.verdagon.vale.{NamespaceCoordinate, vassert, vpass}
 
 sealed trait INameA
 sealed trait IVarNameA extends INameA
+sealed trait ITypeDeclarationNameA extends INameA {
+  def namespaceCoordinate: NamespaceCoordinate
+}
 sealed trait IFunctionDeclarationNameA extends INameA {
   def namespaceCoordinate: NamespaceCoordinate
 }
@@ -32,9 +35,15 @@ case class LambdaNameA(codeLocation: CodeLocationS) extends IFunctionDeclaration
 case class FunctionNameA(name: String, codeLocation: CodeLocationS) extends IFunctionDeclarationNameA {
   override def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
 }
-case class TopLevelCitizenDeclarationNameA(name: String, codeLocation: CodeLocationS) extends INameA
-case class LambdaStructNameA(lambdaName: LambdaNameA) extends INameA
-case class ImplNameA(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameA
+case class TopLevelCitizenDeclarationNameA(name: String, codeLocation: CodeLocationS) extends ITypeDeclarationNameA {
+  override def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
+}
+case class LambdaStructNameA(lambdaName: LambdaNameA) extends ITypeDeclarationNameA {
+  override def namespaceCoordinate: NamespaceCoordinate = lambdaName.codeLocation.file.namespaceCoordinate
+}
+case class ImplNameA(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameA {
+  def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
+}
 case class LetNameA(codeLocation: CodeLocationS) extends INameA
 case class UnnamedLocalNameA(codeLocation: CodeLocationS) extends IVarNameA
 case class ClosureParamNameA() extends IVarNameA

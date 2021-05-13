@@ -94,9 +94,9 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests imports") {
-    val compile = Compilation.multiple(
+    val compile = Compilation(
       """
-        |import moduleB:BStruct;
+        |import moduleB.BStruct;
         |
         |fn main() int export {
         |  __panic();

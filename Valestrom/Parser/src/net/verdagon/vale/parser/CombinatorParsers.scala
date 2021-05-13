@@ -175,13 +175,18 @@ object CombinatorParsers
   }
 
   private[parser] def `import`: Parser[ImportP] = {
-    pos ~
-      ("import" ~> white ~> exprIdentifier) ~
-      rep1(optWhite ~> "." ~> optWhite ~> exprIdentifier) ~
+    (pos <~ "import" <~ white) ~
+      rep1sep(exprIdentifier, optWhite ~> "." <~ optWhite) ~
       (optWhite ~> ";" ~> pos) ^^ {
-      case begin ~ moduleName ~ stepsInsideModule ~ end => {
-        vassert(stepsInsideModule.nonEmpty)
-        ImportP(Range(begin, end), moduleName, stepsInsideModule.init, stepsInsideModule.last)
+      case begin ~ steps ~ end => {
+        vassert(steps.nonEmpty)
+        if (steps.size == 1) {
+          throw new NotImplementedError("Importing everything in a module not implemented yet")
+        }
+        val moduleName = steps.head
+        val namespaceSteps = steps.init.tail
+        val importeeName = steps.last
+        ImportP(Range(begin, end), moduleName, namespaceSteps, importeeName)
       }
     }
   }
@@ -197,13 +202,6 @@ object CombinatorParsers
 //    optWhite ~> repsep(topLevelThing, optWhite) <~ optWhite ^^ Program0
 //  }
 
-  def repeatStr(str: String, n: Int): String = {
-    var result = "";
-    (0 until n).foreach(i => {
-      result = result + str
-    })
-    result
-  }
 
 //  def runOldParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
 //    val regex = "(//[^\\r\\n]*|«\\w+»)".r

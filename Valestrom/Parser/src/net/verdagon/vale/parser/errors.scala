@@ -45,6 +45,7 @@ case class BadStruct(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadInterface(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadImpl(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadExport(pos: Int, cause: CombinatorParseError) extends IParseError
+case class BadImport(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadFunctionHeaderError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadEachError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadBlockError(pos: Int, cause: CombinatorParseError) extends IParseError

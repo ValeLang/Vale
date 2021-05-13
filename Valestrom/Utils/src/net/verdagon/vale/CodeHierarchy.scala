@@ -2,29 +2,75 @@ package net.verdagon.vale
 
 import scala.collection.immutable.List
 
-object FileCoordinate {
-  val test = FileCoordinate("test", List(), "test")
-}
-case class FileCoordinate(module: String, namespaces: List[String], filename: String) {
+case class FileCoordinate(module: String, namespaces: List[String], filepath: String) {
   def isInternal = module == ""
 
   def namespaceCoordinate = NamespaceCoordinate(module, namespaces)
+
+  def compareTo(that: FileCoordinate) = FileCoordinate.compare(this, that)
+}
+
+object FileCoordinate extends Ordering[FileCoordinate] {
+  val test = FileCoordinate("test", List(), "test.vale")
+
+  override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
+    val diff = a.namespaceCoordinate.compareTo(b.namespaceCoordinate)
+    if (diff != 0) {
+      diff
+    } else {
+      a.filepath.compareTo(b.filepath)
+    }
+  }
 }
 
 case class NamespaceCoordinate(module: String, namespaces: List[String]) {
   def isInternal = module == ""
+
+  def compareTo(that: NamespaceCoordinate) = NamespaceCoordinate.compare(this, that)
+}
+
+object NamespaceCoordinate extends Ordering[NamespaceCoordinate] {
+  val test = NamespaceCoordinate("test", List())
+
+  val internal = NamespaceCoordinate("", List())
+
+  override def compare(a: NamespaceCoordinate, b: NamespaceCoordinate):Int = {
+    val lenDiff = a.namespaces.length - b.namespaces.length
+    if (lenDiff != 0) {
+      return lenDiff
+    }
+    val stepsDiff =
+      a.namespaces.zip(b.namespaces).foldLeft(0)({
+        case (0, (stepA, stepB)) => stepA.compareTo(stepB)
+        case (diffSoFar, _) => diffSoFar
+      })
+    if (stepsDiff != 0) {
+      return stepsDiff
+    }
+    return a.module.compareTo(b.module)
+  }
 }
 
 object FileCoordinateMap {
   def test[T](contents: T): FileCoordinateMap[T] = {
     FileCoordinateMap(Map()).add("test", List(), "test.vale", contents)
   }
+  def test[T](contents: Map[String, T]): FileCoordinateMap[T] = {
+    contents.foldLeft(FileCoordinateMap[T](Map()))({
+      case (prev, (filename, c)) => prev.add("test", List(), filename, c)
+    })
+  }
 }
 
 case class FileCoordinateMap[Contents](
     moduleToNamespacesToFilenameToContents: Map[String, Map[List[String], Map[String, Contents]]]) {
   def apply(coord: FileCoordinate): Contents = {
-    moduleToNamespacesToFilenameToContents(coord.module)(coord.namespaces)(coord.filename)
+    vassertSome(
+      vassertSome(
+        vassertSome(
+          moduleToNamespacesToFilenameToContents.get(coord.module))
+          .get(coord.namespaces))
+        .get(coord.filepath))
   }
 
   def add(module: String, namespaces: List[String], filename: String, contents: Contents):
@@ -60,6 +106,11 @@ case class FileCoordinateMap[Contents](
       })
     })
   }
+
+  def expectOne(): Contents = {
+    val List(only) = moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values))
+    only
+  }
 }
 
 case class NamespaceCoordinateMap[Contents](
@@ -71,5 +122,14 @@ case class NamespaceCoordinateMap[Contents](
     val newNamespacesToFilenameToContents = namespacesToContents + (namespaces -> contents)
     val newModuleToNamespacesToFilenameToContents = moduleToNamespacesToFilenameToContents + (module -> newNamespacesToFilenameToContents)
     NamespaceCoordinateMap(newModuleToNamespacesToFilenameToContents)
+  }
+
+  def test[T](contents: T): NamespaceCoordinateMap[T] = {
+    NamespaceCoordinateMap(Map()).add("test", List(), contents)
+  }
+
+  def expectOne(): Contents = {
+    val List(only) = moduleToNamespacesToFilenameToContents.values.flatMap(_.values)
+    only
   }
 }

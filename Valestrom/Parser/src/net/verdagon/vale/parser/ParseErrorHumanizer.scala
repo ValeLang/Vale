@@ -52,7 +52,7 @@ object ParseErrorHumanizer {
     }
   }
 
-  def humanize(
+  def humanizeCombinatorParseError(
     fileMap: FileCoordinateMap[String],
     fileCoord: FileCoordinate,
     cpe: CombinatorParseError) = {

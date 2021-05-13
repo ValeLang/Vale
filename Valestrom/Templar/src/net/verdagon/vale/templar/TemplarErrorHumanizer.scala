@@ -7,7 +7,7 @@ import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureR
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
 import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
 import net.verdagon.vale.templar.types.{Bool2, Constraint, Coord, Float2, Int2, Kind, Own, ParamFilter, Readonly, Readwrite, Share, Str2, StructRef2, Weak}
-import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, vimpl}
+import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
   def humanize(
@@ -172,9 +172,9 @@ object TemplarErrorHumanizer {
       case LambdaNameA(codeLocation) => humanizePos(codeMap, codeLocation.file, codeLocation.offset) + ": " + "(lambda)"
       case FunctionNameA(name, codeLocation) => humanizePos(codeMap, codeLocation.file, codeLocation.offset) + ": " + name
       case ConstructorNameA(TopLevelCitizenDeclarationNameA(name, codeLocation)) => humanizePos(codeMap, codeLocation.file, codeLocation.offset) + ": " + name
-      case ImmConcreteDestructorNameA() => vimpl()
-      case ImmInterfaceDestructorNameA() => vimpl()
-      case ImmDropNameA() => vimpl()
+      case ImmConcreteDestructorNameA(_) => vimpl()
+      case ImmInterfaceDestructorNameA(_) => vimpl()
+      case ImmDropNameA(_) => vimpl()
     }
   }
 
@@ -217,13 +217,13 @@ object TemplarErrorHumanizer {
     }
   }
 
-  private def getFile(potentialBanner: IPotentialBanner): FileCoordinate = {
-    getFile(potentialBanner.banner)
-  }
+//  private def getFile(potentialBanner: IPotentialBanner): FileCoordinate = {
+//    getFile(potentialBanner.banner)
+//  }
 
-  private def getFile(banner: FunctionBanner2): FileCoordinate = {
-    banner.originFunction.map(getFile).getOrElse(-76)
-  }
+//  private def getFile(banner: FunctionBanner2): FileCoordinate = {
+//    banner.originFunction.map(getFile).getOrElse(FileCoordinate.internal(-76))
+//  }
 
   private def getFile(functionA: FunctionA): FileCoordinate = {
     functionA.range.file
@@ -236,17 +236,17 @@ object TemplarErrorHumanizer {
       reason: IScoutExpectedFunctionFailureReason): String = {
     reason match {
       case WrongNumberOfArguments(supplied, expected) => {
-        "  ".repeat(indentations) + "Number of params doesn't match! Supplied " + supplied + " but function takes " + expected
+        repeatStr("  ", indentations) + "Number of params doesn't match! Supplied " + supplied + " but function takes " + expected
       }
       case WrongNumberOfTemplateArguments(supplied, expected) => {
-        "  ".repeat(indentations) + "Number of template params doesn't match! Supplied " + supplied + " but function takes " + expected
+        repeatStr("  ", indentations) + "Number of template params doesn't match! Supplied " + supplied + " but function takes " + expected
       }
-      case SpecificParamDoesntMatch(index, reason) => "  ".repeat(indentations) + "Param at index " + index + " doesn't match: " + reason
-      case SpecificParamVirtualityDoesntMatch(index) => "  ".repeat(indentations) + "Virtualities don't match at index " + index
-      case Outscored() => "  ".repeat(indentations) + "Outscored!"
+      case SpecificParamDoesntMatch(index, reason) => repeatStr("  ", indentations) + "Param at index " + index + " doesn't match: " + reason
+      case SpecificParamVirtualityDoesntMatch(index) => repeatStr("  ", indentations) + "Virtualities don't match at index " + index
+      case Outscored() => repeatStr("  ", indentations) + "Outscored!"
       case InferFailure(reason) => {
         if (verbose) {
-          "  ".repeat(indentations) +
+          repeatStr("  ", indentations) +
             "Failed to infer:\n" +
             humanizeConflictCause(indentations + 1, codeMap, reason)
         } else {
@@ -261,10 +261,10 @@ object TemplarErrorHumanizer {
     codeMap: FileCoordinateMap[String],
     reason: IConflictCause):
   String = {
-    "  ".repeat(indentations) +
+    repeatStr("  ", indentations) +
     humanizePos(codeMap, reason.range.file, reason.range.begin.offset) + ": " +
     reason.message + "\n" +
-      reason.inferences.templatasByRune.map({ case (key, value) => "  ".repeat(indentations) + "- " + key + " = " + value + "\n" }).mkString("") +
+      reason.inferences.templatasByRune.map({ case (key, value) => repeatStr("  ", indentations) + "- " + key + " = " + value + "\n" }).mkString("") +
       reason.inferences.typeByRune
         .filter(x => !reason.inferences.templatasByRune.contains(x._1))
         .map({ case (rune, _) => "  ".repeat(indentations) + "- " + rune + " = unknown" + "\n" }).mkString("") +

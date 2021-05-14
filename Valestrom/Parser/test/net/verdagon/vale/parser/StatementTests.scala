@@ -28,13 +28,13 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("9") {
-    compile(CombinatorParsers.statement, "mut x.a = 5;") shouldHave {
+    compile(CombinatorParsers.statement, "set x.a = 5;") shouldHave {
       case MutatePE(_, DotPE(_, LookupPE(NameP(_, "x"), None), _, false, NameP(_, "a")), IntLiteralPE(_,5)) =>
     }
   }
 
   test("1PE") {
-    compile(CombinatorParsers.statement, """mut board.PE.PE.symbol = "v";""") shouldHave {
+    compile(CombinatorParsers.statement, """set board.PE.PE.symbol = "v";""") shouldHave {
       case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(NameP(_, "board"), None), _, false, NameP(_, "PE")), _, false, NameP(_, "PE")), _, false, NameP(_, "symbol")), StrLiteralPE(_, "v")) =>
     }
   }
@@ -52,7 +52,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("Test simple mut") {
-    compile(CombinatorParsers.statement, "mut x = 5;") shouldHave {
+    compile(CombinatorParsers.statement, "set x = 5;") shouldHave {
       case MutatePE(_, LookupPE(NameP(_, "x"), None),IntLiteralPE(_,5)) =>
     }
   }
@@ -220,7 +220,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
   }
 
   test("Mutating as statement") {
-    val program = compile(CombinatorParsers.topLevelFunction, "fn main() int export { mut x = 6; }")
+    val program = compile(CombinatorParsers.topLevelFunction, "fn main() int export { set x = 6; }")
     program shouldHave {
       case MutatePE(_,LookupPE(NameP(_, "x"), None),IntLiteralPE(_, 6)) =>
     }

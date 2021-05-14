@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.{Err, Ok, Result, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, Ok, Result, vfail, vimpl, vwat}
 
 import scala.util.parsing.input.OffsetPosition
 
@@ -23,14 +23,14 @@ case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
 
 sealed trait IEnvironment {
-  def file: Int
+  def file: FileCoordinate
   def name: INameS
   def allUserDeclaredRunes(): Set[IRuneS]
 }
 
 // Someday we might split this into NamespaceEnvironment and CitizenEnvironment
 case class Environment(
-    file: Int,
+    file: FileCoordinate,
     parentEnv: Option[Environment],
     name: INameS,
     userDeclaredRunes: Set[IRuneS]
@@ -41,7 +41,7 @@ case class Environment(
 }
 
 case class FunctionEnvironment(
-    file: Int,
+    file: FileCoordinate,
     name: IFunctionDeclarationNameS,
     parentEnv: Option[IEnvironment],
     userDeclaredRunes: Set[IRuneS],
@@ -55,7 +55,7 @@ case class FunctionEnvironment(
 }
 
 case class StackFrame(
-    file: Int,
+    file: FileCoordinate,
     name: IFunctionDeclarationNameS,
     parentEnv: FunctionEnvironment,
     maybeParent: Option[StackFrame],
@@ -87,31 +87,22 @@ object Scout {
 //  val unrunedParamOverrideRuneSuffix = "Override"
 //  val unnamedMemberNameSeparator = "_mem_"
 
-  def scoutProgram(files: List[FileP]): Result[ProgramS, ICompileErrorS] = {
+  def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
     try {
-      val programsS =
-        files.zipWithIndex.map({ case (FileP(topLevelThings), file) =>
-          val structsS = topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(file, _));
-          val interfacesS = topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(file, _));
-          val implsS = topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(file, _))
-          val functionsS = topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(file, _))
-          val exportsS = topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(file, _))
-          ProgramS(structsS, interfacesS, implsS, functionsS, exportsS)
-        })
-      val programS =
-        ProgramS(
-          programsS.flatMap(_.structs),
-          programsS.flatMap(_.interfaces),
-          programsS.flatMap(_.impls),
-          programsS.flatMap(_.implementedFunctions),
-          programsS.flatMap(_.exports))
+      val structsS = parsed.topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
+      val interfacesS = parsed.topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(fileCoordinate, _));
+      val implsS = parsed.topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
+      val functionsS = parsed.topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(fileCoordinate, _))
+      val exportsS = parsed.topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
+      val importsS = parsed.topLevelThings.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
+      val programS = ProgramS(structsS, interfacesS, implsS, functionsS, exportsS, importsS)
       Ok(programS)
     } catch {
       case CompileErrorExceptionS(err) => Err(err)
     }
   }
 
-  private def scoutImpl(file: Int, impl0: ImplP): ImplS = {
+  private def scoutImpl(file: FileCoordinate, impl0: ImplP): ImplS = {
     val ImplP(range, identifyingRuneNames, maybeTemplateRulesP, struct, interface) = impl0
 
 
@@ -188,7 +179,7 @@ object Scout {
       interfaceRune)
   }
 
-  private def scoutExportAs(file: Int, exportAsP: ExportAsP): ExportAsS = {
+  private def scoutExportAs(file: FileCoordinate, exportAsP: ExportAsP): ExportAsS = {
     val ExportAsP(range, templexP, exportedName) = exportAsP
 
     val pos = Scout.evalPos(file, range.begin)
@@ -199,7 +190,15 @@ object Scout {
     ExportAsS(Scout.evalRange(file, range), exportName, templexS, exportedName.str)
   }
 
-  private def scoutStruct(file: Int, head: StructP): StructS = {
+  private def scoutImport(file: FileCoordinate, importP: ImportP): ImportS = {
+    val ImportP(range, moduleName, namespaceNames, importeeName) = importP
+
+    val pos = Scout.evalPos(file, range.begin)
+
+    ImportS(Scout.evalRange(file, range), moduleName.str, namespaceNames.map(_.str), importeeName.str)
+  }
+
+  private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
     val StructP(range, NameP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val codeLocation = Scout.evalPos(file, range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
@@ -295,7 +294,7 @@ object Scout {
     })
   }
 
-  private def scoutInterface(file: Int, headP: InterfaceP): InterfaceS = {
+  private def scoutInterface(file: FileCoordinate, headP: InterfaceP): InterfaceS = {
     val InterfaceP(range, NameP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
     val codeLocation = Scout.evalPos(file, range.begin)
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
@@ -367,11 +366,11 @@ object Scout {
     interfaceS
   }
 
-  def evalRange(file: Int, range: Range): RangeS = {
+  def evalRange(file: FileCoordinate, range: Range): RangeS = {
     RangeS(evalPos(file, range.begin), evalPos(file, range.end))
   }
 
-  def evalPos(file: Int, pos: Int): CodeLocationS = {
+  def evalPos(file: FileCoordinate, pos: Int): CodeLocationS = {
     CodeLocationS(file, pos)
   }
 

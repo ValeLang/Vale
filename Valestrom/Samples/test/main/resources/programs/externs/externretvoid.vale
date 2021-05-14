@@ -3,7 +3,7 @@ struct MyBox export {
 }
 
 fn changeInBox(b &!MyBox) export {
-  mut b.i = 42;
+  set b.i = 42;
 }
 
 fn runExtCommand(b &!MyBox) extern;

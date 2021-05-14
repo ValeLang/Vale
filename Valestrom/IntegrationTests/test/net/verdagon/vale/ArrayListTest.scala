@@ -27,7 +27,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |            = a[index];
           |          }
           |      }));
-          |  mut list.array = newArray;
+          |  set list.array = newArray;
           |}
           |// todo: make that return a &E
           |fn get<E>(list &List<E>, index int) E {
@@ -195,7 +195,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |fn main() int export {
           |  m! = Marine(6);
           |  lam = {
-          |    mut m = Marine(9);
+          |    set m = Marine(9);
           |  };
           |  lam();
           |  lam();
@@ -219,7 +219,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |fn main() int export {
         |  m! Opt<Marine> = Some(Marine(6));
         |  lam = {
-        |    m2 = (mut m = None<Marine>())^.get();
+        |    m2 = (set m = None<Marine>())^.get();
         |    = m2.hp;
         |  };
         |  = lam();

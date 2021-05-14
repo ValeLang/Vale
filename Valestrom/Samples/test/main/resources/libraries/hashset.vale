@@ -51,18 +51,18 @@ HashSet<K, H, E> {
   ret this;
 }
 
-fn len<K, H, E>(set &HashSet<K, H, E>) int { set.size }
+fn len<K, H, E>(sett &HashSet<K, H, E>) int { sett.size }
 
-fn isEmpty<K, H, E>(set &HashSet<K, H, E>) bool { set.size == 0 }
+fn isEmpty<K, H, E>(sett &HashSet<K, H, E>) bool { sett.size == 0 }
 
-fn add<K, H, E>(set &!HashSet<K, H, E>, key K) void {
-  if (set.has(key)) {
+fn add<K, H, E>(sett &!HashSet<K, H, E>, key K) void {
+  if (sett.has(key)) {
     panic("HashSet already has given key!");
   }
-  if ((set.size + 1) * 2 >= set.table.len()) {
+  if ((sett.size + 1) * 2 >= sett.table.len()) {
     newSize =
-        if (set.table.len() == 0) { 2 }
-        else { set.table.len() * 2 };
+        if (sett.table.len() == 0) { 2 }
+        else { sett.table.len() * 2 };
     newTable =
         MakeArray(
             newSize,
@@ -71,21 +71,21 @@ fn add<K, H, E>(set &!HashSet<K, H, E>, key K) void {
               = opt;
             }));
     i! = 0;
-    while (i < set.table.len()) {
-      if (set.table[i].isEmpty()) {
+    while (i < sett.table.len()) {
+      if (sett.table[i].isEmpty()) {
         // do nothing
       } else {
-        node? = (mut set.table[i] = None<K>());
+        node? = (set sett.table[i] = None<K>());
         node = get(node?);
-        addNodeToHashSetTable(&!newTable, set.hasher, node);
+        addNodeToHashSetTable(&!newTable, sett.hasher, node);
       }
-      mut i = i + 1;
+      set i = i + 1;
     }
-    mut set.table = newTable;
+    set sett.table = newTable;
   }
 
-  addNodeToHashSetTable(&!set.table, set.hasher, key);
-  mut set.size = set.size + 1;
+  addNodeToHashSetTable(&!sett.table, sett.hasher, key);
+  set sett.size = sett.size + 1;
 }
 
 fn addNodeToHashSetTable<K, H>(table &!Array<mut, Opt<K>>, hasher H, key K) {
@@ -94,7 +94,7 @@ fn addNodeToHashSetTable<K, H>(table &!Array<mut, Opt<K>>, hasher H, key K) {
   index = findEmptyIndexInHashSetForKey(&table, startIndex, key);
 
   opt Opt<K> = Some(key);
-  mut table[index] = opt;
+  set table[index] = opt;
 }
 
 fn findEmptyIndexInHashSetForKey<K>(table &Array<mut, Opt<K>>, startIndex int, key K) int {
@@ -106,7 +106,7 @@ fn findEmptyIndexInHashSetForKey<K>(table &Array<mut, Opt<K>>, startIndex int, k
       ret index;
     }
     // continue to next node
-    mut i = i + 1;
+    set i = i + 1;
   }
   = panic("findEmptyIndexInHashSetForKey went past end of table!");
 }
@@ -124,7 +124,7 @@ fn findIndexOfKey<K, E>(table &Array<mut, Opt<K>>, equator E, startIndex int, ke
       ret Some<int>(index);
     }
     // continue to next node
-    mut i = i + 1;
+    set i = i + 1;
   }
   = panic("findIndexOfKey went past end of table! len " + str(table.len()) + " and i " + str(i));
 }
@@ -157,7 +157,7 @@ fn toArray<K, H, E>(self &HashSet<K, H, E>) Array<imm, K> {
     if (not(node?.isEmpty())) {
       list!.add(node?.get());
     }
-    mut index = index + 1;
+    set index = index + 1;
   }
   = list.toImmArray();
 }
@@ -172,29 +172,29 @@ int {
   startIndex = abs(hash mod table.len());
   index? = findIndexOfKey(&table, &equator, startIndex, key);
   index = index?.get();
-  mut table[index] = None<K>();
+  set table[index] = None<K>();
   ret index;
 }
 
 fn remove<K, H, E>(
-  set &!HashSet<K, H, E>,
+  sett &!HashSet<K, H, E>,
   key K)
 void {
-  originalIndex = innerRemove(&!set.table, set.hasher, set.equator, key);
-  mut set.size = set.size - 1;
+  originalIndex = innerRemove(&!sett.table, sett.hasher, sett.equator, key);
+  set sett.size = sett.size - 1;
 
   i! = 1;
-  while (i < set.table.len()) {
-    neighborIndex = (originalIndex + i) mod len(&set.table);
-    neighbor? = (mut set.table[neighborIndex] = None<K>());
+  while (i < sett.table.len()) {
+    neighborIndex = (originalIndex + i) mod len(&sett.table);
+    neighbor? = (set sett.table[neighborIndex] = None<K>());
     if (not neighbor?.isEmpty()) {
       neighborKey = neighbor?^.get();
-      addNodeToHashSetTable(&!set.table, set.hasher, neighborKey);
+      addNodeToHashSetTable(&!sett.table, sett.hasher, neighborKey);
     } else {
       drop(neighbor?);
-      mut i = set.table.len(); // break
+      set i = sett.table.len(); // break
     }
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 
@@ -208,7 +208,7 @@ void {
     if (not(node?.isEmpty())) {
       func(node?.get());
     }
-    mut index = index + 1;
+    set index = index + 1;
   }
 }
 
@@ -222,6 +222,6 @@ void {
     if (not(node?.isEmpty())) {
       func(node?.get());
     }
-    mut index = index + 1;
+    set index = index + 1;
   }
 }

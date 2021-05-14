@@ -23,7 +23,7 @@ class WhileTests extends FunSuite with Matchers {
         |fn main() int export {
         |  i! = 0;
         |  while (i < 4) {
-        |    mut i = i + 1;
+        |    set i = i + 1;
         |  }
         |  = i;
         |}
@@ -37,7 +37,7 @@ class WhileTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  key! = 0;
-        |  while (mut key = __getch(); = key < 96;) {
+        |  while (set key = __getch(); = key < 96;) {
         |    print(key);
         |  }
         |  = key;
@@ -54,7 +54,7 @@ class WhileTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  key! = 0;
-        |  while (mut key = __getch(); = key != 99;) {
+        |  while (set key = __getch(); = key != 99;) {
         |    print(key);
         |  }
         |  = key;

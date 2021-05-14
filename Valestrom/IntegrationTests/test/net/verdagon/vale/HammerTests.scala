@@ -93,6 +93,26 @@ class HammerTests extends FunSuite with Matchers {
     }
   }
 
+  test("Tests imports") {
+    val compile = Compilation(
+      """
+        |import moduleB.BStruct;
+        |
+        |fn main() int export {
+        |  __panic();
+        |  a = 42;
+        |  = a;
+        |}
+      """.stripMargin)
+    val hamuts = compile.getHamuts()
+    val main = hamuts.lookupFunction("main")
+    main.body match {
+      case BlockH(CallH(PrototypeH(fullNameH, List(), ReferenceH(_, _, ReadonlyH, NeverH())), List())) => {
+        vassert(fullNameH.toFullString().contains("__panic"))
+      }
+    }
+  }
+
 
   test("Tests export function") {
     val compile = Compilation(
@@ -101,7 +121,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupFunction("moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual "moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("moo")
   }
 
   test("Tests export struct") {
@@ -111,7 +131,18 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupStruct("Moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual "Moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo")
+  }
+
+  test("Tests export struct twice") {
+    val compile = Compilation(
+      """
+        |struct Moo export { }
+        |export Moo as Bork;
+        |""".stripMargin)
+    val hamuts = compile.getHamuts()
+    val moo = hamuts.lookupStruct("Moo")
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo", "Bork")
   }
 
   test("Tests export interface") {
@@ -121,6 +152,6 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupInterface("Moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual "Moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo")
   }
 }

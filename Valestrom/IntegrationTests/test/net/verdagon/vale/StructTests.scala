@@ -152,13 +152,13 @@ class StructTests extends FunSuite with Matchers {
         |}
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
-        |  mut marine.weapon.owner = None<&Marine>();
+        |  set marine.weapon.owner = None<&Marine>();
         |  Marine(weapon) = marine;
         |}
         |fn main() {
         |  m = Marine(Weapon("Sword", None<&Marine>()));
-        |  mut m.weapon.owner = Some(&m);
-        |  mut m.weapon = Weapon("Spear", Some(&m));
+        |  set m.weapon.owner = Some(&m);
+        |  set m.weapon = Weapon("Spear", Some(&m));
         |}
       """.stripMargin)
 

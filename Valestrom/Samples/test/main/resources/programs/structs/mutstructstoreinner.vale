@@ -8,6 +8,6 @@ struct Inner {
 
 fn main() int export {
   o = Outer(Inner(73));
-  mut o.inner.x = 42;
+  set o.inner.x = 42;
   = o.inner.x;
 }

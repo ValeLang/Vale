@@ -42,6 +42,18 @@ object ParserVonifier {
 
   def vonifyRuneAttribute(thing: IRuneAttributeP): VonObject = {
     thing match {
+      case TypeRuneAttributeP(range, tyype) => {
+        VonObject(
+          "ReadOnlyRuneAttribute",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("type", vonifyRuneType(tyype))))
+      }
+      case ReadOnlyRuneAttributeP(range) => VonObject("ReadOnlyRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case PoolRuneAttributeP(range) => VonObject("PoolRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case ArenaRuneAttributeP(range) => VonObject("ArenaRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+      case BumpRuneAttributeP(range) => VonObject("BumpRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case x => vimpl(x.toString)
     }
   }
@@ -727,6 +739,14 @@ object ParserVonifier {
             VonMember("callableExpr", vonifyExpression(callableExpr)),
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
             VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
+      }
+      case ShortcallPE(range, argExprs) => {
+        VonObject(
+          "Shortcall",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector))))
       }
       case IfPE(range, condition, thenBody, elseBody) => {
         VonObject(

@@ -238,6 +238,11 @@ object ParsedLoader {
           getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
           loadLoadAs(getObjectField(jobj, "callableTargetOwnership")))
       }
+      case "Shortcall" => {
+        ShortcallPE(
+          loadRange(getObjectField(jobj, "range")),
+          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression))
+      }
       case "Lookup" => {
         loadLookup(jobj)
       }
@@ -424,7 +429,8 @@ object ParsedLoader {
           loadTemplex(getObjectField(jobj, "type")))
       }
       case "StructMethod" => {
-        vimpl()
+        StructMethodP(
+          loadFunction(getObjectField(jobj, "function")))
       }
     }
   }
@@ -481,10 +487,17 @@ object ParsedLoader {
 
   def loadRulexType(jobj: JObject): ITypePR = {
     getType(jobj) match {
-      case "CoordTypePR" => CoordTypePR
       case "IntTypePR" => IntTypePR
+      case "BoolTypePR" => BoolTypePR
+      case "OwnershipTypePR" => OwnershipTypePR
       case "MutabilityTypePR" => MutabilityTypePR
+      case "PermissionTypePR" => PermissionTypePR
+      case "LocationTypePR" => LocationTypePR
+      case "CoordTypePR" => CoordTypePR
       case "PrototypeTypePR" => PrototypeTypePR
+      case "KindTypePR" => KindTypePR
+      case "RegionTypePR" => RegionTypePR
+      case "CitizenTemplateTypePR" => CitizenTemplateTypePR
       case x => vimpl(x.toString)
     }
   }
@@ -492,6 +505,7 @@ object ParsedLoader {
   def loadCitizenAttribute(jobj: JObject): ICitizenAttributeP = {
     getType(jobj) match {
       case "ExportAttribute" => ExportP(loadRange(getObjectField(jobj, "range")))
+      case "SealedAttribute" => SealedP(loadRange(getObjectField(jobj, "range")))
       case "WeakableAttribute" => WeakableP(loadRange(getObjectField(jobj, "range")))
       case x => vimpl(x.toString)
     }
@@ -499,6 +513,28 @@ object ParsedLoader {
 
   def loadRuneAttribute(jobj: JObject): IRuneAttributeP = {
     getType(jobj) match {
+      case "TypeRuneAttribute" => {
+        TypeRuneAttributeP(
+          loadRange(getObjectField(jobj, "range")),
+          loadRulexType(getObjectField(jobj, "type")))
+      }
+      case "ReadOnlyRuneAttribute" => ReadOnlyRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "PoolRuneAttribute" => PoolRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "ArenaRuneAttribute" => ArenaRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+      case "BumpRuneAttribute" => BumpRuneAttributeP(loadRange(getObjectField(jobj, "range")))
+
+//      case TypeRuneAttributeP(range, tyype) => {
+//        VonObject(
+//          "ReadOnlyRuneAttribute",
+//          None,
+//          Vector(
+//            VonMember("range", vonifyRange(range)),
+//            VonMember("type", vonifyRuneType(tyype))))
+//      }
+//      case ReadOnlyRuneAttributeP(range) => VonObject("ReadOnlyRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+//      case PoolRuneAttributeP(range) => VonObject("PoolRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+//      case ArenaRuneAttributeP(range) => VonObject("ArenaRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
+//      case BumpRuneAttributeP(range) => VonObject("BumpRuneAttribute", None, Vector(VonMember("range", vonifyRange(range))))
       case x => vimpl(x.toString)
     }
   }
@@ -610,6 +646,11 @@ object ParsedLoader {
       }
       case "BorrowT" => {
         BorrowPT(
+          loadRange(getObjectField(jobj, "range")),
+          loadTemplex(getObjectField(jobj, "inner")))
+      }
+      case "InlineT" => {
+        InlinePT(
           loadRange(getObjectField(jobj, "range")),
           loadTemplex(getObjectField(jobj, "inner")))
       }

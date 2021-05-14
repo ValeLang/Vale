@@ -27,7 +27,10 @@ case class BadLetEqualsError(pos: Int) extends IParseError
 case class BadMutateEqualsError(pos: Int) extends IParseError
 case class BadLetEndError(pos: Int) extends IParseError
 
-case class BadVPSTException(err: BadVPSTError) extends RuntimeException
+case class BadVPSTException(err: BadVPSTError) extends RuntimeException {
+//  println("VPST error:")
+//  printStackTrace()
+}
 case class BadVPSTError(message: String) extends IParseError {
   vpass()
 }

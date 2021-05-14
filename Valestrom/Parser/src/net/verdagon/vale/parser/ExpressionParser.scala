@@ -122,7 +122,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
   }
 
   private[parser] def mutate: Parser[IExpressionPE] = {
-    pos ~ ("mut" ~> white ~> expression <~ white <~ "=" <~ white) ~ expression ~ pos ^^ {
+    pos ~ (("set"|"mut") ~> white ~> expression <~ white <~ "=" <~ white) ~ expression ~ pos ^^ {
       case begin ~ destinationExpr ~ sourceExpr ~ end => MutatePE(Range(begin, end), destinationExpr, sourceExpr)
     }
   }

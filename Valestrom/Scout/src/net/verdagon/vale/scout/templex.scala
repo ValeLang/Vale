@@ -28,6 +28,7 @@ case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class ClosureParamNameS() extends IVarNameS
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class CodeVarNameS(name: String) extends IVarNameS {
+  vcheck(name != "set", "Can't name a variable 'set'")
   vcheck(name != "mut", "Can't name a variable 'mut'")
 }
 case class ConstructingMemberNameS(name: String) extends IVarNameS

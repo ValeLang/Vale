@@ -232,8 +232,8 @@ case object Mutable extends Mutability
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
 //       x! = Car(4, "Honda Civic");
-//       mut x = someOtherCar;
-//       mut x = Car(4, "Toyota Camry");
+//       set x = someOtherCar;
+//       set x = Car(4, "Toyota Camry");
 //     C++:
 //       Car* x = new Car(4, "Honda Civic");
 //       x = someOtherCar;

@@ -39,8 +39,8 @@ struct StrSliceHasher { }
 fn __call(self &StrSliceHasher, s! StrSlice) int {
   sum! = 0;
   while (s != "") {
-    mut sum = sum * 1337 + toAscii(s.slice(0, 1));
-    mut s = s.slice(1);
+    set sum = sum * 1337 + toAscii(s.slice(0, 1));
+    set s = s.slice(1);
   }
   ret sum;
 }
@@ -231,7 +231,7 @@ fn ltrim(s! StrSlice) StrSlice {
     if (whitespace.find(s.slice(0, 1)).isEmpty()) {
       ret s;
     }
-    mut s = s.slice(1, s.len());
+    set s = s.slice(1, s.len());
   }
   panic("unreachable");
 }
@@ -245,7 +245,7 @@ fn rtrim(s! StrSlice) StrSlice {
     if (whitespace.find(s.slice(s.len() - 1, s.len())).isEmpty()) {
       ret s;
     }
-    mut s = s.slice(0, s.len() - 1);
+    set s = s.slice(0, s.len() - 1);
   }
   panic("unreachable");
 }
@@ -265,17 +265,17 @@ fn int(s! StrSlice) Opt<int> {
     digitStr = s.slice(0, 1);
 
     if (digitStr == "-") {
-      mut hasNegative = true;
+      set hasNegative = true;
     } else {
       ascii = toAscii(digitStr);
       if (ascii < 48 or ascii >= 58) {
         ret None<int>();
       }
       digit = ascii - 48;
-      mut totalSoFar = totalSoFar * 10 + digit;
+      set totalSoFar = totalSoFar * 10 + digit;
     }
 
-    mut s = s.slice(1);
+    set s = s.slice(1);
   }
 
   ret Some(totalSoFar);
@@ -298,7 +298,7 @@ fn isWhitespace(s! StrSlice) bool {
       // then its not whitespace
       ret false;
     }
-    mut s = s.slice(1);
+    set s = s.slice(1);
   }
   ret true;
 }
@@ -313,7 +313,7 @@ fn ltrimnl(s! StrSlice) StrSlice {
     if (s.slice(0, 1) != "\n") {
       ret s;
     }
-    mut s = s.slice(1, s.len());
+    set s = s.slice(1, s.len());
   }
   panic("unreachable");
 }
@@ -327,7 +327,7 @@ fn rtrimnl(s! StrSlice) StrSlice {
     if (s.slice(s.len() - 1, s.len()) != "\n") {
       ret s;
     }
-    mut s = s.slice(0, s.len() - 1);
+    set s = s.slice(0, s.len() - 1);
   }
   panic("unreachable");
 }

@@ -24,7 +24,7 @@ class MutateTests extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = TemplarCompilation("fn main() {a! = 3; mut a = 4; }")
+    val compile = TemplarCompilation("fn main() {a! = 3; set a = 4; }")
     val temputs = compile.getTemputs();
     val main = temputs.lookupFunction("main")
     main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), Varying, _), _, Varying), IntLiteral2(4)) => })
@@ -42,7 +42,7 @@ class MutateTests extends FunSuite with Matchers {
           |struct Spaceship { engine! Engine; }
           |fn main() {
           |  ship = Spaceship(Engine(10));
-          |  mut ship.engine = Engine(15);
+          |  set ship.engine = Engine(15);
           |}
           |""".stripMargin)
     val temputs = compile.getTemputs();
@@ -57,7 +57,7 @@ class MutateTests extends FunSuite with Matchers {
     }
   }
 
-  test("Local-mut upcasts") {
+  test("Local-set upcasts") {
     val compile = TemplarCompilation(
       """
         |interface IOption<T> rules(T Ref) { }
@@ -68,7 +68,7 @@ class MutateTests extends FunSuite with Matchers {
         |
         |fn main() {
         |  m! IOption<int> = None<int>();
-        |  mut m = Some(6);
+        |  set m = Some(6);
         |}
       """.stripMargin)
 
@@ -79,7 +79,7 @@ class MutateTests extends FunSuite with Matchers {
     })
   }
 
-  test("Expr-mut upcasts") {
+  test("Expr-set upcasts") {
     val compile = TemplarCompilation(
       """
         |interface IOption<T> rules(T Ref) { }
@@ -93,7 +93,7 @@ class MutateTests extends FunSuite with Matchers {
         |}
         |fn main() {
         |  m = Marine(None<int>());
-        |  mut m.weapon = Some(6);
+        |  set m.weapon = Some(6);
         |}
       """.stripMargin +
         Samples.get("libraries/castutils.vale") +
@@ -112,7 +112,7 @@ class MutateTests extends FunSuite with Matchers {
         |struct Vec3 { x float; y float; z float; }
         |fn main() int export {
         |  v = Vec3(3.0, 4.0, 5.0);
-        |  mut v.x = 10.0;
+        |  set v.x = 10.0;
         |}
         |""".stripMargin)
     compile.getTemplarError() match {
@@ -132,7 +132,7 @@ class MutateTests extends FunSuite with Matchers {
       """
         |fn main() {
         |  a! = 5;
-        |  mut a = "blah";
+        |  set a = "blah";
         |}
         |""".stripMargin)
     compile.getTemplarError() match {

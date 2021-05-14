@@ -15,23 +15,23 @@ fn add<E>(list &!List<E>, newElement E) {
     newArray =
         MakeArray(newLen, &!IFunction1<mut, int, Opt<E>>((index){
           = if (index < len(&list)) {
-              = (mut list.array[index] = None<E>());
+              = (set list.array[index] = None<E>());
             } else {
               result Opt<E> = None<E>();
               = result;
             }
         }));
-    mut list.array = newArray;
+    set list.array = newArray;
   }
-  mut list.array[list.size] = Some<E>(newElement);
-  mut list.size = list.size + 1;
+  set list.array[list.size] = Some<E>(newElement);
+  set list.size = list.size + 1;
 }
 fn get<E>(list &List<E>, index int) &E {
   a = list.array;
   = a[index].get();
 }
 fn set<E>(list &!List<E>, index int, value E) void {
-  mut list.array[index] = Some(value);
+  set list.array[index] = Some(value);
 }
 fn toArray<E>(list &List<E>) Array<mut, E> {
   MakeArray(list.len(), &!(i){ list.get(i) })
@@ -52,7 +52,7 @@ fn each<E, F>(list &List<E>, func F) void {
   l = len(&list);
   while (i < l) {
     func(list.get(i));
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 
@@ -61,7 +61,7 @@ fn each<E, F>(list &!List<E>, func F) void {
   l = len(&list);
   while (i < l) {
     func(list.get(i));
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 
@@ -72,7 +72,7 @@ fn contains<E>(list &List<E>, element E) bool {
     if (list.get(i) == element) {
       ret true;
     }
-    mut i = i + 1;
+    set i = i + 1;
   }
   ret false;
 }
@@ -86,14 +86,14 @@ fn remove<E>(list &!List<E>, removeAtIndex int) E {
     panic("Can't remove, index out of bounds!");
   }
 
-  temp! = (mut list.array[list.size - 1] = None<E>());
+  temp! = (set list.array[list.size - 1] = None<E>());
   i! = list.size - 2;
   while (i >= removeAtIndex) {
-    mut temp = (mut list.array[i] = (mut temp = None<E>()));
-    mut i = i - 1;
+    set temp = (set list.array[i] = (set temp = None<E>()));
+    set i = i - 1;
   }
 
-  mut list.size = list.size - 1;
+  set list.size = list.size - 1;
 
   ret temp^.get();
 }
@@ -121,7 +121,7 @@ fn split(haystack! StrSlice, needle StrSlice) List<StrSlice> {
     }
     (first, rest) = maybeFirstAndRest.get();
     result.add(first);
-    mut haystack = rest;
+    set haystack = rest;
   }
 
   panic("unreachable");

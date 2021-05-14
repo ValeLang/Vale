@@ -2,6 +2,6 @@
 struct Marine { hp! int; }
 fn main() int export {
   m = Marine(9);
-  mut m.hp = 4;
+  set m.hp = 4;
   = m.hp;
 }

@@ -5,6 +5,6 @@ struct Carrier {
 
 fn main() int export {
   c = Carrier(400, 8);
-  mut c.interceptors = 42;
+  set c.interceptors = 42;
   = c.interceptors;
 }

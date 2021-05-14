@@ -27,7 +27,10 @@ case class BadLetEqualsError(pos: Int) extends IParseError
 case class BadMutateEqualsError(pos: Int) extends IParseError
 case class BadLetEndError(pos: Int) extends IParseError
 
-case class BadVPSTException(err: BadVPSTError) extends RuntimeException
+case class BadVPSTException(err: BadVPSTError) extends RuntimeException {
+//  println("VPST error:")
+//  printStackTrace()
+}
 case class BadVPSTError(message: String) extends IParseError {
   vpass()
 }
@@ -45,6 +48,7 @@ case class BadStruct(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadInterface(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadImpl(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadExport(pos: Int, cause: CombinatorParseError) extends IParseError
+case class BadImport(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadFunctionHeaderError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadEachError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadBlockError(pos: Int, cause: CombinatorParseError) extends IParseError

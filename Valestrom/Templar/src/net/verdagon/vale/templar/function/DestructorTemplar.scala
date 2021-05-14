@@ -9,7 +9,7 @@ import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, 
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.{vassert, vfail, vimpl}
+import net.verdagon.vale.{NamespaceCoordinate, vassert, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -498,7 +498,7 @@ object DestructorTemplar {
       if (mutability == Mutable) {
         FunctionNameA(CallTemplar.MUT_DESTRUCTOR_NAME, CodeLocationS.internal(-16))
       } else {
-        ImmConcreteDestructorNameA()
+        ImmConcreteDestructorNameA(NamespaceCoordinate.internal)
       },
       List(UserFunctionA),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
@@ -583,7 +583,7 @@ object DestructorTemplar {
         if (mutability == Mutable) {
           FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS.internal(-17))
         } else {
-          ImmInterfaceDestructorNameA()
+          ImmInterfaceDestructorNameA(NamespaceCoordinate.internal)
         },
         List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
@@ -662,7 +662,7 @@ object DestructorTemplar {
         if (mutability == Mutable) {
           FunctionNameA(CallTemplar.MUT_INTERFACE_DESTRUCTOR_NAME, CodeLocationS.internal(-18))
         } else {
-          ImmInterfaceDestructorNameA()
+          ImmInterfaceDestructorNameA(NamespaceCoordinate.internal)
         },
         List(UserFunctionA),
         TemplateTemplataType(List(CoordTemplataType, KindTemplataType), FunctionTemplataType),
@@ -759,7 +759,7 @@ object DestructorTemplar {
       if (mutability == Mutable) {
         FunctionNameA(CallTemplar.MUT_DROP_FUNCTION_NAME, CodeLocationS.internal(-19))
       } else {
-        ImmDropNameA()
+        ImmDropNameA(NamespaceCoordinate.internal)
       },
       List(UserFunctionA),
       TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),

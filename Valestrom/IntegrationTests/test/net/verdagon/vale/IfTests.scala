@@ -16,8 +16,8 @@ class IfTests extends FunSuite with Matchers {
         |  = if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput()
-    val main = scoutput.lookupFunction("main")
+    val programS = compile.getScoutput().moduleToNamespacesToFilenameToContents("test")(List())("test.vale")
+    val main = programS.lookupFunction("main")
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
 
     val temputs = compile.getTemputs()
@@ -185,7 +185,7 @@ class IfTests extends FunSuite with Matchers {
         |    } else {
         |      drop(moo);
         |    }
-        |    mut zork = zork + 1;
+        |    set zork = zork + 1;
         |  }
         |}
         |""".stripMargin +

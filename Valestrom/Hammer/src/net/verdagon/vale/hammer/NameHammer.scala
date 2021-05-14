@@ -7,7 +7,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.{IEnvironment, NamespaceEnvironment}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{FileCoordinate, vassert, vfail, vimpl, vwat}
 import net.verdagon.von.{IVonData, VonArray, VonInt, VonMember, VonObject, VonStr}
 
 import scala.collection.immutable.List
@@ -103,12 +103,23 @@ object NameHammer {
   }
 
   def translateCodeLocation(location: CodeLocation2): VonObject = {
-    val CodeLocation2(line, char) = location
+    val CodeLocation2(fileCoord, offset) = location
     VonObject(
       "CodeLocation",
       None,
       Vector(
-        VonMember("line", VonInt(line)),
-        VonMember("char", VonInt(char))))
+        VonMember("file", translateFileCoordinate(fileCoord)),
+        VonMember("offset", VonInt(offset))))
+  }
+
+  def translateFileCoordinate(coord: FileCoordinate): VonObject = {
+    val FileCoordinate(module, namespace, filename) = coord
+    VonObject(
+      "CodeLocation",
+      None,
+      Vector(
+        VonMember("module", VonStr(module)),
+        VonMember("namespace", VonArray(None, namespace.map(VonStr).toVector)),
+        VonMember("filename", VonStr(filename))))
   }
 }

@@ -1,5 +1,5 @@
 fn main() int export {
   x! int = 73;
-  mut x = 42;
+  set x = 42;
   = x;
 }

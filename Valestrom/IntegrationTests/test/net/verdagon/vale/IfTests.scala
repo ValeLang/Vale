@@ -185,7 +185,7 @@ class IfTests extends FunSuite with Matchers {
         |    } else {
         |      drop(moo);
         |    }
-        |    mut zork = zork + 1;
+        |    set zork = zork + 1;
         |  }
         |}
         |""".stripMargin +

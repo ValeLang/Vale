@@ -312,7 +312,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |fn main() export {
         |  x = "world!";
-        |  mut x = "changed";
+        |  set x = "changed";
         |  println(x); // => changed
         |}
         |""".stripMargin)
@@ -926,8 +926,8 @@ class TemplarTests extends FunSuite with Matchers {
         |fn main() int export {
         |  m = Marine(Weapon(7));
         |  newWeapon = Weapon(10);
-        |  mut m.weapon = newWeapon;
-        |  mut newWeapon.ammo = 11;
+        |  set m.weapon = newWeapon;
+        |  set newWeapon.ammo = 11;
         |  = 42;
         |}
         |""".stripMargin)
@@ -949,7 +949,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn main() int export {
         |  m = Marine(Weapon(7));
         |  newWeapon = Weapon(10);
-        |  mut m.weapon = newWeapon;
+        |  set m.weapon = newWeapon;
         |  println(newWeapon.ammo);
         |  = 42;
         |}
@@ -1027,7 +1027,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |fn main() export {
         |  t2 = [5, true, "V"];
-        |  mut t2.1 = false;
+        |  set t2.1 = false;
         |}
         |""".stripMargin)
     compile.getTemplarError() match {
@@ -1038,7 +1038,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |fn main() export {
         |  t2 = [5, true, "V"];
-        |  mut t2[1] = false;
+        |  set t2[1] = false;
         |}
         |""".stripMargin)
     compile2.getTemplarError() match {

@@ -93,12 +93,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = Compilation("fn main() {a! = 3; mut a = 4; }")
+    val compile = Compilation("fn main() {a! = 3; set a = 4; }")
     compile.run(Vector())
   }
 
   test("Test returning a local mutable var") {
-    val compile = Compilation("fn main() int export {a! = 3; mut a = 4; = a;}")
+    val compile = Compilation("fn main() int export {a! = 3; set a = 4; = a;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
@@ -173,7 +173,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonBool(false)
   }
 
-  test("mut swapping locals") {
+  test("set swapping locals") {
     val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }

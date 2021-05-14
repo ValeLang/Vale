@@ -256,7 +256,7 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
-  test("Forgetting mut when changing") {
+  test("Forgetting set when changing") {
     val error = compileForError(
       """fn MyStruct() {
         |  ship = Spaceship(10);
@@ -360,7 +360,7 @@ class ScoutTests extends FunSuite with Matchers {
   test("Reports when mutating nonexistant local") {
     val err = compileForError(
       """fn main() int export {
-        |  mut a = a + 1;
+        |  set a = a + 1;
         |}
         |""".stripMargin)
     err match {
@@ -404,7 +404,7 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
-  test("Reports when we forget mut") {
+  test("Reports when we forget set") {
     val err = compileForError(
       """
         |fn main() {

@@ -5,7 +5,7 @@ fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
     if ((equator)(arr[i], elem)) {
       ret true;
     }
-    mut i = i + 1;
+    set i = i + 1;
   }
   = false;
 }
@@ -20,7 +20,7 @@ fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
     if ((equator)(seq[i], elem)) {
       ret true;
     }
-    mut i = i + 1;
+    set i = i + 1;
   }
   = false;
 }
@@ -45,7 +45,7 @@ rules(A Ref(_, _, [<M> N * T])) {
   l = len(&arr);
   while (i < l) {
     func(arr[i]);
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 
@@ -55,7 +55,7 @@ rules(A Ref(_, _, [<M> N * T])) {
   l = len(&arr);
   while (i < l) {
     func(i, arr[i]);
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 
@@ -65,7 +65,7 @@ rules(A Ref(_, _, Array<M, T>)) {
   l = len(&arr);
   while (i < l) {
     func(arr[i]);
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 
@@ -75,7 +75,7 @@ rules(A Ref(_, _, Array<_, _>)) {
   l = len(&arr);
   while (i < l) {
     func(i, arr[i]);
-    mut i = i + 1;
+    set i = i + 1;
   }
 }
 

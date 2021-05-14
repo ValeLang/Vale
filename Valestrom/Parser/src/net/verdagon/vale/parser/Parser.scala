@@ -302,7 +302,7 @@ object Parser {
 
   private def parseMut(iter: ParsingIterator): IParseResult[MutatePE] = {
     val mutateBegin = iter.getPos()
-    if (!iter.tryConsume("^mut".r)) {
+    if (!iter.tryConsume("^(set|mut)".r)) {
       vwat()
     }
     iter.consumeWhitespace()
@@ -350,7 +350,7 @@ object Parser {
     val letEnd = iter.getPos()
 
     pattern.capture match {
-      case Some(CaptureP(_, LocalNameP(name), _)) => vassert(name.str != "mut")
+      case Some(CaptureP(_, LocalNameP(name), _)) => vassert(name.str != "set" && name.str != "mut")
       case _ =>
     }
 
@@ -521,8 +521,8 @@ object Parser {
           case Err(err) => return ParseFailure(BadDestructError(iter.getPos(), err))
           case Ok(result) => statements += result
         }
-        // mut must come before let, or else mut a = 3; is interpreted as a var named `mut` of type `a`.
-      } else if (iter.peek("^mut\\s".r)) {
+        // mut must come before let, or else set a = 3; is interpreted as a var named `mut` of type `a`.
+      } else if (iter.peek("^(set|mut)\\s".r)) {
         parseMut(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(expression) => {

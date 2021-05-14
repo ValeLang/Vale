@@ -28,7 +28,7 @@ object ParseErrorHumanizer {
       case BadStartOfElseBody(pos) => humanizePos(fileMap, fileCoord, pos) + ": Bad start of else body, expected {"
       case BadEndOfElseBody(pos) => humanizePos(fileMap, fileCoord, pos) + ": Bad end of else body, expected }"
       case BadLetEqualsError(pos) => humanizePos(fileMap, fileCoord, pos) + ": Expected = after declarations"
-      case BadMutateEqualsError(pos) => humanizePos(fileMap, fileCoord, pos) + ": Expected = after mut destination"
+      case BadMutateEqualsError(pos) => humanizePos(fileMap, fileCoord, pos) + ": Expected = after set destination"
       case BadLetEndError(pos) => humanizePos(fileMap, fileCoord, pos) + ": Expected ; after declarations source"
       case BadWhileCondition(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this while condition. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
       case BadWhileBody(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this while body. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
@@ -45,8 +45,8 @@ object ParseErrorHumanizer {
       case BadReturnError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this return expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
       case BadDestructError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this destruct expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
       case BadStandaloneExpressionError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
-      case BadMutDestinationError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this mut destination expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
-      case BadMutSourceError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this mut source expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
+      case BadMutDestinationError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this set destination expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
+      case BadMutSourceError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this set source expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
       case BadLetDestinationError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this let destination pattern. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
       case BadLetSourceError(pos, cause) => humanizePos(fileMap, fileCoord, pos) + ": Parse error somewhere inside this let source expression. Imprecise inner error: " + humanize(fileMap, fileCoord, cause)
     }

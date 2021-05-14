@@ -52,7 +52,7 @@ fn display(
       charToPrint! = cell;
 
       if (and(rowI == playerRow, cellI == playerCol)) {
-        mut charToPrint = "@";
+        set charToPrint = "@";
       }
       else {
         goblins.keys().each((key){
@@ -60,14 +60,14 @@ fn display(
           goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
           if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
-            mut charToPrint = "g";
+            set charToPrint = "g";
           }
         });
       }
 
-      mut toPrint = toPrint + charToPrint;
+      set toPrint = toPrint + charToPrint;
     }
-    mut toPrint = toPrint + "\n";
+    set toPrint = toPrint + "\n";
   }
   print(toPrint);
 }
@@ -75,7 +75,7 @@ fn display(
 fn inputKey() int {
   key! = 0;
   while (true) {
-    mut key = __getch();
+    set key = __getch();
     if (key == 81) {
       ret key;
     } else if (key == 119) {
@@ -148,34 +148,34 @@ fn main() int export {
     newPlayerRow! = playerRow;
     newPlayerCol! = playerCol;
     if (key == 81) {
-      mut running = false;
+      set running = false;
     } else if (key == 119) {
-      mut newPlayerRow = newPlayerRow - 1;
+      set newPlayerRow = newPlayerRow - 1;
     } else if (key == 115) {
-      mut newPlayerRow = newPlayerRow + 1;
+      set newPlayerRow = newPlayerRow + 1;
     } else if (key == 97) {
-      mut newPlayerCol = newPlayerCol - 1;
+      set newPlayerCol = newPlayerCol - 1;
     } else if (key == 100) {
-      mut newPlayerCol = newPlayerCol + 1;
+      set newPlayerCol = newPlayerCol + 1;
     }
 
     killedGoblin! = false;
     goblins.keys().each((key){
       if (goblinAt?(&goblins, key, newPlayerRow, newPlayerCol)) {
         goblins.remove(key);
-        mut killedGoblin = true;
+        set killedGoblin = true;
       }
     });
     if (not killedGoblin) {
       if (board[newPlayerRow][newPlayerCol] == ".") {
-        mut playerRow = newPlayerRow;
-        mut playerCol = newPlayerCol;
+        set playerRow = newPlayerRow;
+        set playerCol = newPlayerCol;
       }
     }
 
     if (len(goblins.keys()) == 0) {
       println("You win!");
-      mut running = false;
+      set running = false;
     }
   }
   = 0;

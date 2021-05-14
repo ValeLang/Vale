@@ -14,9 +14,9 @@ object Terrain {
       |struct LocationHasher { }
       |fn __call(this: &LocationHasher, loc: Location) int {
       |  hash! = 0;
-      |  mut hash = 41 * hash + loc.groupX;
-      |  mut hash = 41 * hash + loc.groupY;
-      |  mut hash = 41 * hash + loc.indexInGroup;
+      |  set hash = 41 * hash + loc.groupX;
+      |  set hash = 41 * hash + loc.groupY;
+      |  set hash = 41 * hash + loc.indexInGroup;
       |  = hash;
       |}
       |
@@ -304,8 +304,8 @@ object Terrain {
         |  terrain.tiles.keys() each (location){
         |    tile?: Opt:&TerrainTile = terrain.tiles.get(location);
         |    tile = tile?^.get();
-        |    mut tile.elevation = 1 + (abs(location.groupX + location.groupY + location.indexInGroup + rand) mod 3);
-        |    mut rand = rand * 41 + 13;
+        |    set tile.elevation = 1 + (abs(location.groupX + location.groupY + location.indexInGroup + rand) mod 3);
+        |    set rand = rand * 41 + 13;
         |    println(str(location) + " " + str(tile.elevation));
         |  };
         |

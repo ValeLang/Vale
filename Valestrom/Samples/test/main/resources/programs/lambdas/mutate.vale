@@ -2,7 +2,7 @@
 fn main() int export {
   x = 4;
   {
-    mut x = x + 1;
+    set x = x + 1;
   }();
   x
 }

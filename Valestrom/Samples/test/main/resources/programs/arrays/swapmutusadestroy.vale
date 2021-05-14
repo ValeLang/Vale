@@ -7,6 +7,6 @@ fn __call(this &!GoblinMaker impl IFunction1<mut, int, Goblin>, i int) Goblin { 
 fn main() int export {
   m = GoblinMaker();
   arr = MakeArray(1, &!m);
-  mut arr.0 = Goblin();
+  set arr.0 = Goblin();
   = 42;
 }

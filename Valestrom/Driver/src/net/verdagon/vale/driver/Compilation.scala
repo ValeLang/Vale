@@ -7,26 +7,11 @@ import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{ProgramS, Scout}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer, Temputs}
-import net.verdagon.vale.{Err, IProfiler, NullProfiler, Ok, Samples, vassert, vfail, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IProfiler, NamespaceCoordinate, NamespaceCoordinateMap, NullProfiler, Ok, Samples, vassert, vfail, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.{IVonData, JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.List
-
-object Compilation {
-  def multiple(
-    code: List[String],
-    options: CompilationOptions = CompilationOptions()):
-  Compilation = {
-    new Compilation(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }), options)
-  }
-  def apply(
-    code: String,
-    options: CompilationOptions = CompilationOptions()):
-  Compilation = {
-    new Compilation(List(("in.vale", code)), options)
-  }
-}
 
 case class CompilationOptions(
   debugOut: String => Unit = println,
@@ -36,32 +21,33 @@ case class CompilationOptions(
 )
 
 class Compilation(
-    var filenamesAndSources: List[(String, String)],
+    var codeMap: FileCoordinateMap[String],
     options: CompilationOptions = CompilationOptions()) {
-  filenamesAndSources = filenamesAndSources :+ ("builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
+  codeMap =
+    codeMap.add("", List(), "builtinexterns.vale", Samples.get("builtins/builtinexterns.vale"))
 
-  var parsedsCache: Option[List[FileP]] = None
-  var scoutputCache: Option[ProgramS] = None
-  var astroutsCache: Option[ProgramA] = None
+  var parsedsCache: Option[FileCoordinateMap[FileP]] = None
+  var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
+  var astroutsCache: Option[NamespaceCoordinateMap[ProgramA]] = None
   var hinputsCache: Option[Hinputs] = None
   var hamutsCache: Option[ProgramH] = None
 
-  def getParseds(): List[FileP] = {
+  def getParseds(): FileCoordinateMap[FileP] = {
     parsedsCache match {
       case Some(parseds) => parseds
       case None => {
         parsedsCache =
           Some(
-            filenamesAndSources.zipWithIndex.map({ case ((filename, source), fileIndex) =>
-              Parser.runParserForProgramAndCommentRanges(source) match {
+            codeMap.map({ case (fileCoordinate, code) =>
+              Parser.runParserForProgramAndCommentRanges(code) match {
                 case ParseFailure(err) => {
-                  vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, err))
+                  vwat(ParseErrorHumanizer.humanize(codeMap, fileCoordinate, err))
                 }
                 case ParseSuccess((program0, _)) => {
                   val von = ParserVonifier.vonifyFile(program0)
                   val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
                   ParsedLoader.load(vpstJson) match {
-                    case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(filenamesAndSources, fileIndex, error))
+                    case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(codeMap, fileCoordinate, error))
                     case ParseSuccess(program0) => program0
                   }
                 }
@@ -72,22 +58,24 @@ class Compilation(
     }
   }
 
-  def getScoutput(): ProgramS = {
+  def getScoutput(): FileCoordinateMap[ProgramS] = {
     scoutputCache match {
       case Some(scoutput) => scoutput
       case None => {
         val scoutput =
-          Scout.scoutProgram(getParseds()) match {
-            case Err(e) => vfail(e.toString)
-            case Ok(p) => p
-          }
+          getParseds().map({ case (fileCoordinate, code) =>
+            Scout.scoutProgram(fileCoordinate, code) match {
+              case Err(e) => vfail(e.toString)
+              case Ok(p) => p
+            }
+          })
         scoutputCache = Some(scoutput)
         scoutput
       }
     }
   }
 
-  def getAstrouts(): ProgramA = {
+  def getAstrouts(): NamespaceCoordinateMap[ProgramA] = {
     astroutsCache match {
       case Some(astrouts) => astrouts
       case None => {
@@ -106,10 +94,11 @@ class Compilation(
     hinputsCache match {
       case Some(temputs) => temputs
       case None => {
+        val templar = new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization)
         val hamuts =
-          new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization).evaluate(getAstrouts()) match {
+          templar.evaluate(getAstrouts()) match {
             case Ok(t) => t
-            case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, filenamesAndSources, e))
+            case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, codeMap, e))
           }
         hinputsCache = Some(hamuts)
         hamuts
@@ -156,5 +145,22 @@ class Compilation(
     val (stdoutStringBuilder, stdoutFunc) = Vivem.stdoutCollector()
     val referend = Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, stdoutFunc)
     (referend, stdoutStringBuilder.mkString)
+  }
+}
+
+object Compilation {
+  def multiple(
+    code: List[String],
+    options: CompilationOptions = CompilationOptions()):
+  Compilation = {
+    new Compilation(
+      FileCoordinateMap.test(code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap),
+      options)
+  }
+  def apply(
+    code: String,
+    options: CompilationOptions = CompilationOptions()):
+  Compilation = {
+    new Compilation(FileCoordinateMap.test(code), options)
   }
 }

@@ -398,10 +398,16 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  def evaluate(program: ProgramA): Result[Hinputs, ICompileErrorT] = {
+  def evaluate(namespaceToProgramA: NamespaceCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
-        val ProgramA(structsA, interfacesA, impls1, functions1, exportsA) = program;
+        val programsA = namespaceToProgramA.moduleToNamespacesToFilenameToContents.values.flatMap(_.values)
+
+        val structsA = programsA.flatMap(_.structs)
+        val interfacesA = programsA.flatMap(_.interfaces)
+        val implsA = programsA.flatMap(_.impls)
+        val functionsA = programsA.flatMap(_.functions)
+        val exportsA = programsA.flatMap(_.exports)
 
         val env0 =
           NamespaceEnvironment(
@@ -434,7 +440,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         // This has to come before the structs and interfaces because part of evaluating a
         // struct or interface is figuring out what it extends.
         val env5 =
-        impls1.foldLeft(env3)({
+        implsA.foldLeft(env3)({
           case (env4, impl1) => env4.addEntry(opts.useOptimization, NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
         })
         val env7 =
@@ -447,7 +453,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           })
 
         val env11 =
-          functions1.foldLeft(env9)({
+          functionsA.foldLeft(env9)({
             case (env10, functionS) => {
               env10.addUnevaluatedFunction(opts.useOptimization, functionS)
             }
@@ -457,7 +463,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
         structTemplar.addBuiltInStructs(env11, temputs)
 
-        functions1.foreach({
+        functionsA.foreach({
           case (functionS) => {
             if (functionS.isTemplate) {
               // Do nothing, it's a template

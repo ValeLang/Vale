@@ -295,7 +295,7 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |fn main() int export {
           |  arr = MakeArray(3, {_});
-          |  mut arr[1] = 1337;
+          |  set arr[1] = 1337;
           |  = arr.1;
           |}
         """.stripMargin))
@@ -347,7 +347,7 @@ class ArrayTests extends FunSuite with Matchers {
           |fn main() int export {
           |  m = GoblinMaker();
           |  arr = MakeArray(1, &!m);
-          |  mut arr.0 = Goblin();
+          |  set arr.0 = Goblin();
           |  = 4;
           |}
         """.stripMargin),
@@ -446,7 +446,7 @@ class ArrayTests extends FunSuite with Matchers {
       Samples.get("libraries/arrayutils.vale") +
       """fn main() int export {
         |  sum! = 0;
-        |  [6, 60, 103].each(&!IFunction1<mut, int, void>({ mut sum = sum + _; }));
+        |  [6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  = sum;
         |}
         |""".stripMargin)

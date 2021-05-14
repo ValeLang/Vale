@@ -4,7 +4,7 @@ fn main() int export {
   a! = Ship();
   b! = Ship();
 
-  Ship() = (mut b = (mut a = (mut b = Ship())));
+  Ship() = (set b = (set a = (set b = Ship())));
   Ship() = a;
   Ship() = b;
   ret 42;

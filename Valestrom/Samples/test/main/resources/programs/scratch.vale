@@ -3,10 +3,10 @@ struct Context {
     index int;
 }
 fn advance(c &Context) void {
-    mut c.index = c.index + 1;
+    set c.index = c.index + 1;
 }
 fn advance(c &Context, count int) void {
-    mut c.index = c.index + count;
+    set c.index = c.index + count;
 }
 fn peek(c &Context) StrSlice {
     = c.code.slice(c.index, c.index + 1);
@@ -74,7 +74,7 @@ fn parseRoot(c &Context) void {
             c.parseImpl();
             c.readWhitespace();
         } else {
-            mut c.index = 2147483647;
+            set c.index = 2147483647;
             print("Unknown root type: " + word.str());
         }
     }
@@ -94,7 +94,7 @@ fn parseGenericDefinition(c &Context) {
         c.advance();
         c.readWhitespace();
 
-        mut word = c.readWord();
+        set word = c.readWord();
         if (word.len() == 0) {
             panic("Expected generic type name, but got: " + c.peek().str());
         }
@@ -564,8 +564,8 @@ impl MutabilityP for ImmutableP;
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
 //       x! = Car(4, "Honda Civic");
-//       mut x = someOtherCar;
-//       mut x = Car(4, "Toyota Camry");
+//       set x = someOtherCar;
+//       set x = Car(4, "Toyota Camry");
 //     C++:
 //       Car* x = new Car(4, "Honda Civic");
 //       x = someOtherCar;
@@ -1080,7 +1080,7 @@ struct MatchPE {
 }
 impl IExpressionPE for MatchPE;
 
-// Mutate an existing variable, like `mut a = 5;`
+// Mutate an existing variable, like `set a = 5;`
 struct MutatePE {
   range Range;
   mutatee IExpressionPE;

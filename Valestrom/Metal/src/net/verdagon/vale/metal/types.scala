@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{FileCoordinate, vassert, vfail}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -163,8 +163,8 @@ case class RawArrayTH(
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.
 case class CodeLocation(
-  line: Int,
-  char: Int)
+  file: FileCoordinate,
+  offset: Int)
 
 // Ownership is the way a reference relates to the referend's lifetime, see
 // ReferenceH for explanation.
@@ -232,8 +232,8 @@ case object Mutable extends Mutability
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
 //       x! = Car(4, "Honda Civic");
-//       mut x = someOtherCar;
-//       mut x = Car(4, "Toyota Camry");
+//       set x = someOtherCar;
+//       set x = Car(4, "Toyota Camry");
 //     C++:
 //       Car* x = new Car(4, "Honda Civic");
 //       x = someOtherCar;

@@ -1,5 +1,6 @@
 package net.verdagon.vale.hammer
 
+import net.verdagon.vale.hammer.NameHammer.translateFileCoordinate
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{vassert, vfail, vimpl, metal => m}
@@ -884,23 +885,23 @@ object VonHammer {
   }
 
   def vonifyCodeLocation(codeLocation: m.CodeLocation): IVonData = {
-    val m.CodeLocation(line, char) = codeLocation
+    val m.CodeLocation(file, offset) = codeLocation
     VonObject(
       "CodeLocation",
       None,
       Vector(
-        VonMember("line", VonInt(line)),
-        VonMember("char", VonInt(char))))
+        VonMember("file", translateFileCoordinate(file)),
+        VonMember("offset", VonInt(offset))))
   }
 
   def vonifyCodeLocation2(codeLocation: CodeLocation2): IVonData = {
-    val CodeLocation2(line, char) = codeLocation
+    val CodeLocation2(file, offset) = codeLocation
     VonObject(
       "CodeLocation",
       None,
       Vector(
-        VonMember("line", VonInt(line)),
-        VonMember("char", VonInt(char))))
+        VonMember("file", translateFileCoordinate(file)),
+        VonMember("offset", VonInt(offset))))
   }
 
   def translateName(

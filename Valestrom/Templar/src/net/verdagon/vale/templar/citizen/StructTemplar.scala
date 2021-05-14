@@ -290,7 +290,7 @@ class StructTemplar(
     prototype: Prototype2):
   StructRef2 = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousStruct", prototype.toString, () => {
-      val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2(-13, 0)))
+      val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2.internal(-13)))
 
       temputs.structDeclared(structFullName) match {
         case Some(structRef2) => return structRef2

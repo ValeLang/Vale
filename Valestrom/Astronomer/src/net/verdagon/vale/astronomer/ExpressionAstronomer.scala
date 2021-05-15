@@ -93,9 +93,9 @@ object ExpressionAstronomer {
         (RepeaterBlockIteratorAE(range, exprA))
       }
       case VoidSE(range) => VoidAE(range)
-      case SequenceESE(range, elementsS) => {
+      case TupleSE(range, elementsS) => {
         val elementsA = elementsS.map(translateExpression(env, astrouts, _))
-        SequenceEAE(range, elementsA)
+        TupleAE(range, elementsA)
       }
       case RepeaterPackSE(range, exprS) => {
         val elementsA = translateExpression(env, astrouts, exprS)

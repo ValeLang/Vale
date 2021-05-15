@@ -56,11 +56,11 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     }
   }
 
-  test("4") {
+  test("add as call") {
     compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),LendConstraintP(None)) => }
   }
 
-  test("5") {
+  test("regular call") {
     compile(CombinatorParsers.expression,"x(y)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "x"), None), List(LookupPE(NameP(_, "y"), None)),LendConstraintP(None)) => }
   }
 
@@ -222,8 +222,14 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     }
   }
 
+  test("lambda without surrounding parens") {
+    compile(CombinatorParsers.expression, "{ 0 }()") shouldHave {
+      case FunctionCallPE(_,None,_,false,LambdaPE(None,_),List(),_) =>
+    }
+  }
+
   test("Test templated lambda param") {
-    val program = compile(CombinatorParsers.expression, "(a){a + a}(3)")
+    val program = compile(CombinatorParsers.expression, "((a){a + a})(3)")
     program shouldHave { case FunctionCallPE(_, None, _, false, LambdaPE(_, _), List(IntLiteralPE(_, 3)),LendConstraintP(None)) => }
     program shouldHave {
       case PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),None,None,None) =>
@@ -275,6 +281,34 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
               List(IntLiteralPE(_,5), IntLiteralPE(_,7)),
               LendConstraintP(None))),
           LendConstraintP(None)) =>
+    }
+  }
+
+  test("static array from values") {
+    compile(CombinatorParsers.expression,
+      "[][3, 5, 6]") shouldHave {
+      case StaticArrayFromValuesPE(_,List(IntLiteralPE(_,3), IntLiteralPE(_,5), IntLiteralPE(_,6))) =>
+    }
+  }
+
+  test("static array from callable") {
+    compile(CombinatorParsers.expression,
+      "[3](triple)") shouldHave {
+      case StaticArrayFromCallablePE(_,IntPT(_,3),_) =>
+    }
+    compile(CombinatorParsers.expression,
+      "[N]({_ * 2})") shouldHave {
+      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_) =>
+    }
+  }
+
+  test("Call callable expr") {
+    compile(CombinatorParsers.expression,
+      "(something.callable)(3)") shouldHave {
+      case FunctionCallPE(
+          _,None,_,false,
+          DotPE(_,LookupPE(NameP(_,"something"),None),_,false,NameP(_,"callable")),
+          List(_),LendConstraintP(None)) =>
     }
   }
 

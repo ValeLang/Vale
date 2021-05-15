@@ -44,7 +44,9 @@ case class BadLetPE(
   range: Range
 ) extends IExpressionPE
 
-case class SequencePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
+case class TuplePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
+case class StaticArrayFromValuesPE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
+case class StaticArrayFromCallablePE(range: Range, sizeTemplex: ITemplexPT, callableExpr: IExpressionPE) extends IExpressionPE
 
 case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
 case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE

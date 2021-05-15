@@ -23,7 +23,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                   PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")),FinalP)),None,None,None),
                   PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "y")),FinalP)),None,None,None)))),
             None),
-          SequencePE(_,List(IntLiteralPE(_,4), IntLiteralPE(_,5)))) =>
+          TuplePE(_,List(IntLiteralPE(_,4), IntLiteralPE(_,5)))) =>
     }
   }
 

@@ -7,6 +7,18 @@ import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
 
 class TupleTests extends FunSuite with Matchers {
+  test("Returning tuple from function and dotting it") {
+    val compile = Compilation(
+      """
+        |fn makeArray() infer-ret { [2, 3, 4, 5, 6] }
+        |fn main() int export {
+        |  makeArray().3
+        |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+  }
+
   test("Simple tuple with one int") {
     val compile = Compilation("fn main() int export { [9].0 }")
 

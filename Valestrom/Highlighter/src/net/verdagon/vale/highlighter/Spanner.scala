@@ -42,6 +42,7 @@ case object CallLookup extends IClass
 case object Inl extends IClass
 case object Lookup extends IClass
 case object Seq extends IClass
+case object StaticArray extends IClass
 case object Mut extends IClass
 case object MemberAccess extends IClass
 case object Let extends IClass
@@ -185,8 +186,17 @@ object Spanner {
       case LookupPE(NameP(range, _), templateArgs) => {
         makeSpan(Lookup, range, List())
       }
-      case SequencePE(range, elements) => {
+      case TuplePE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
+      }
+      case StaticArrayFromValuesPE(range, elements) => {
+        makeSpan(StaticArray, range, elements.map(forExpression))
+      }
+      case StaticArrayFromCallablePE(range, sizeTemplex, callableExpr) => {
+        makeSpan(
+          StaticArray,
+          range,
+          List(forTemplex(sizeTemplex), forExpression(callableExpr)))
       }
       case MutatePE(range, mutatee, expr) => {
         makeSpan(Mut, range, List(forExpression(mutatee), forExpression(expr)))

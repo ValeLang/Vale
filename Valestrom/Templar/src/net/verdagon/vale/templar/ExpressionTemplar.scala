@@ -786,7 +786,7 @@ class ExpressionTemplar(
           val callExpr2 = evaluateClosure(temputs, fate, range, name, BFunctionA(function1, body))
           (callExpr2, Set())
         }
-        case SequenceEAE(range, elements1) => {
+        case TupleAE(range, elements1) => {
           val (exprs2, returnsFromElements) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, elements1);
 

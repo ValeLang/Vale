@@ -219,10 +219,10 @@ object ExpressionScout {
         val result = NormalResult(evalRange(range), FunctionCallSE(evalRange(range), callable1, args))
         (stackFrame3, result, selfUses, childUses)
       }
-      case SequencePE(range, elementsPE) => {
+      case TuplePE(range, elementsPE) => {
         val (stackFrame1, elements1, selfUses, childUses) =
           scoutElementsAsExpressions(stackFrame0, elementsPE)
-        (stackFrame1, NormalResult(evalRange(range), scout.SequenceESE(evalRange(range), elements1)), selfUses, childUses)
+        (stackFrame1, NormalResult(evalRange(range), TupleSE(evalRange(range), elements1)), selfUses, childUses)
       }
       case b @ BlockPE(_, _) => {
         val (result, selfUses, childUses) =

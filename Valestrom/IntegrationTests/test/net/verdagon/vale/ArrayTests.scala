@@ -10,10 +10,10 @@ import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class ArrayTests extends FunSuite with Matchers {
-  test("Returning array from function and dotting it") {
+  test("Returning static array from function and dotting it") {
     val compile = Compilation(
       """
-        |fn makeArray() infer-ret { [2, 3, 4, 5, 6] }
+        |fn makeArray() infer-ret { [][2, 3, 4, 5, 6] }
         |fn main() int export {
         |  makeArray().3
         |}
@@ -22,12 +22,31 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
-  test("Simple arraysequence and runtime index lookup") {
+  test("Simple static array and runtime index lookup") {
     val compile = Compilation(
       """
         |fn main() int export {
         |  i = 2;
-        |  a = [2, 3, 4, 5, 6];
+        |  a = [][2, 3, 4, 5, 6];
+        |  = a[i];
+        |}
+      """.stripMargin)
+
+    val temputs = compile.getTemputs()
+    temputs.lookupFunction("main").only({
+      case ArraySequenceLookup2(_,_,_, _, _) => {
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+  }
+
+  test("Static array from lambda") {
+    val compile = Compilation(
+      """
+        |fn main() int export {
+        |  i = 2;
+        |  a = [5]({_ * 2});
         |  = a[i];
         |}
       """.stripMargin)

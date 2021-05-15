@@ -114,7 +114,7 @@ case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) ext
 case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 case class VoidSE(range: RangeS) extends IExpressionSE {}
 
-case class SequenceESE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE
+case class TupleSE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
 case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE

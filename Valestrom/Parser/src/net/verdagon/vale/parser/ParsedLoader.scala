@@ -349,10 +349,21 @@ object ParsedLoader {
           loadExpression(getObjectField(jobj, "left")),
           getArrayField(jobj, "args").map(expectObject).map(loadExpression))
       }
-      case "Sequence" => {
-        SequencePE(
+      case "Tuple" => {
+        TuplePE(
           loadRange(getObjectField(jobj, "range")),
           getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
+      }
+      case "StaticArrayFromValues" => {
+        StaticArrayFromValuesPE(
+          loadRange(getObjectField(jobj, "range")),
+          getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
+      }
+      case "StaticArrayFromCallable" => {
+        StaticArrayFromCallablePE(
+          loadRange(getObjectField(jobj, "range")),
+          loadTemplex(getObjectField(jobj, "sizeExpr")),
+          loadExpression(getObjectField(jobj, "callableExpr")))
       }
       case "Destruct" => {
         DestructPE(

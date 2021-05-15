@@ -908,13 +908,30 @@ object ParserVonifier {
             VonMember("condition", vonifyExpression(condition)),
             VonMember("lambdas", VonArray(None, lambdas.map(vonifyExpression).toVector))))
       }
-      case SequencePE(range, elements) => {
+      case TuplePE(range, elements) => {
         VonObject(
-          "Sequence",
+          "Tuple",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("elements", VonArray(None, elements.map(vonifyExpression).toVector))))
+      }
+      case StaticArrayFromCallablePE(range, sizeTemplex, callableExpr) => {
+        VonObject(
+          "StaticArrayFromCallable",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("sizeTemplex", vonifyTemplex(sizeTemplex)),
+            VonMember("callableExpr", vonifyExpression(callableExpr))))
+      }
+      case StaticArrayFromValuesPE(range, valueExprs) => {
+        VonObject(
+          "StaticArrayFromValues",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("elements", VonArray(None, valueExprs.map(vonifyExpression).toVector))))
       }
       case VoidPE(range) => {
         VonObject(

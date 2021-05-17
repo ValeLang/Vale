@@ -740,6 +740,20 @@ object ParserVonifier {
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
             VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
       }
+      case MethodCallPE(range, inline, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, methodLookup, argExprs) => {
+        VonObject(
+          "MethodCall",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("inline", vonifyOptional(inline, vonifyUnit)),
+            VonMember("operatorRange", vonifyRange(operatorRange)),
+            VonMember("isMapCall", VonBool(isMapCall)),
+            VonMember("subjectExpr", vonifyExpression(subjectExpr)),
+            VonMember("method", vonifyExpression(methodLookup)),
+            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
+            VonMember("subjectTargetOwnership", vonifyLoadAs(subjectTargetOwnership))))
+      }
       case ShortcallPE(range, argExprs) => {
         VonObject(
           "Shortcall",
@@ -808,19 +822,6 @@ object ParserVonifier {
           Vector(
             VonMember("name", vonifyName(name)),
             VonMember("templateArgs", vonifyOptional(templateArgs, vonifyTemplateArgs))))
-      }
-      case MethodCallPE(range, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, methodLookup, argExprs) => {
-        VonObject(
-          "MethodCall",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("operatorRange", vonifyRange(operatorRange)),
-            VonMember("isMapCall", VonBool(isMapCall)),
-            VonMember("subjectExpr", vonifyExpression(subjectExpr)),
-            VonMember("method", vonifyExpression(methodLookup)),
-            VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
-            VonMember("subjectTargetOwnership", vonifyLoadAs(subjectTargetOwnership))))
       }
       case MutatePE(range, mutatee, expr) => {
         VonObject(

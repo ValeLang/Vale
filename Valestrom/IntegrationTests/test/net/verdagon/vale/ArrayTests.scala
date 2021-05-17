@@ -87,6 +87,32 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
+  test("Immutable static array from values") {
+    val compile = Compilation(Samples.get("programs/arrays/immksafromvalues.vale"))
+
+    val temputs = compile.getTemputs()
+    temputs.lookupFunction("main").only({
+      case ArraySequenceLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Immutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Mutable static array from values") {
+    val compile = Compilation(Samples.get("programs/arrays/mutksafromvalues.vale"))
+
+    val temputs = compile.getTemputs()
+    temputs.lookupFunction("main").only({
+      case ArraySequenceLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Mutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+  //m [<mut> 3 * [<mut> 3 * int]] = [mut][ [mut][1, 2, 3], [mut][4, 5, 6], [mut][7, 8, 9] ];
   test("Take arraysequence as a parameter") {
     val compile = Compilation(
       """
@@ -94,7 +120,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  arr.3
         |}
         |fn main() int export {
-        |  a = [][2, 3, 4, 5, 6];
+        |  a = [imm][2, 3, 4, 5, 6];
         |  = doThings(a);
         |}
       """.stripMargin)
@@ -469,7 +495,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  MakeArray(N, { seq[_] })
           |}
           |fn main() int export {
-          |  [][6, 4, 3, 5, 2, 8].toArray<mut>()[3]
+          |  [imm][6, 4, 3, 5, 2, 8].toArray<mut>()[3]
           |}
           |""".stripMargin))
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
@@ -480,7 +506,7 @@ class ArrayTests extends FunSuite with Matchers {
       Samples.get("libraries/MakeImmArray.vale"),
       Samples.get("libraries/ksaToImmArray.vale"),
       """fn main() int export {
-        |  [][[][6, 60].toImmArray(), [][4, 40].toImmArray(), [][3, 30].toImmArray()].toImmArray()[2][1]
+        |  [imm][[imm][6, 60].toImmArray(), [imm][4, 40].toImmArray(), [imm][3, 30].toImmArray()].toImmArray()[2][1]
         |}
         |""".stripMargin))
     compile.evalForReferend(Vector()) shouldEqual VonInt(30)

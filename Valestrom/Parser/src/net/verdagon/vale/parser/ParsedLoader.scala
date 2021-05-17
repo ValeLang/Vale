@@ -238,6 +238,17 @@ object ParsedLoader {
           getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression),
           loadLoadAs(getObjectField(jobj, "callableTargetOwnership")))
       }
+      case "MethodCall" => {
+        MethodCallPE(
+          loadRange(getObjectField(jobj, "range")),
+          loadOptionalObject(getObjectField(jobj, "inline"), loadUnit),
+          loadExpression(getObjectField(jobj, "subjectExpr")),
+          loadRange(getObjectField(jobj, "operatorRange")),
+          loadLoadAs(getObjectField(jobj, "subjectTargetOwnership")),
+          getBooleanField(jobj, "isMapCall"),
+          loadLookup(getObjectField(jobj, "method")),
+          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression))
+      }
       case "Shortcall" => {
         ShortcallPE(
           loadRange(getObjectField(jobj, "range")),
@@ -319,16 +330,6 @@ object ParsedLoader {
         BlockPE(
           loadRange(getObjectField(jobj, "range")),
           getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
-      }
-      case "MethodCall" => {
-        MethodCallPE(
-          loadRange(getObjectField(jobj, "range")),
-          loadExpression(getObjectField(jobj, "subjectExpr")),
-          loadRange(getObjectField(jobj, "operatorRange")),
-          loadLoadAs(getObjectField(jobj, "subjectTargetOwnership")),
-          getBooleanField(jobj, "isMapCall"),
-          loadLookup(getObjectField(jobj, "method")),
-          getArrayField(jobj, "argExprs").map(expectObject).map(loadExpression))
       }
       case "If" => {
         IfPE(

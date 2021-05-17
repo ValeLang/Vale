@@ -522,10 +522,27 @@ WeakFatPtrLE HybridGenerationalMemory::assembleKnownSizeArrayWeakRef(
     Reference* sourceKSAMT,
     KnownSizeArrayT* knownSizeArrayMT,
     Reference* targetKSAWeakRefMT,
-    WrapperPtrLE objPtrLE) {
-  // impl
-  assert(false);
-  exit(1);
+    WrapperPtrLE sourceRefLE) {
+  LLVMValueRef genLE = nullptr;
+  if (sourceKSAMT->ownership == Ownership::OWN) {
+    auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceKSAMT, sourceRefLE);
+    if (limitMode) {
+      genLE = constI64LE(globalState, 0);
+    } else {
+      genLE = getGenerationFromControlBlockPtr(globalState, builder, referendStructsSource, sourceKSAMT->referend,
+          controlBlockPtrLE);
+    }
+  } else if (sourceKSAMT->ownership == Ownership::BORROW) {
+    assert(false); // impl
+  } else {
+    assert(false);
+  }
+  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, knownSizeArrayMT, genLE);
+
+  auto weakRefStructLT =
+      weakRefStructsSource->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT);
+  return fatWeaks.assembleWeakFatPtr(
+      functionState, builder, targetKSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
 
 WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(

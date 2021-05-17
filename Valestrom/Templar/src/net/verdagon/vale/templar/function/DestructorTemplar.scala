@@ -9,6 +9,7 @@ import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, 
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.StructTemplar
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.{NamespaceCoordinate, vassert, vfail, vimpl}
 
 import scala.collection.immutable.List

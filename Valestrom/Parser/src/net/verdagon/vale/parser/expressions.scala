@@ -45,8 +45,21 @@ case class BadLetPE(
 ) extends IExpressionPE
 
 case class TuplePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
-case class StaticArrayFromValuesPE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
-case class StaticArrayFromCallablePE(range: Range, sizeTemplex: ITemplexPT, callableExpr: IExpressionPE) extends IExpressionPE
+
+sealed trait IArraySizeP
+case object RuntimeSizedP extends IArraySizeP
+case class StaticSizedP(sizePT: Option[ITemplexPT]) extends IArraySizeP
+
+case class ConstructArrayPE(
+  range: Range,
+  mutabilityPT: Option[ITemplexPT],
+  variabilityPT: Option[ITemplexPT],
+  size: IArraySizeP,
+  // True if theyre making it like [3][10, 20, 30]
+  // False if theyre making it like [3]({ _ * 10 })
+  initializingIndividualElements: Boolean,
+  args: List[IExpressionPE]
+) extends IExpressionPE
 
 case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
 case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE

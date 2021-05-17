@@ -189,7 +189,7 @@ object ExpressionHammer {
         (newStructAndDeferredsExprH, List())
       }
 
-      case ArraySequenceE2(exprs, arrayReference2, arrayType2) => {
+      case StaticArrayFromValues2(exprs, arrayReference2, arrayType2) => {
         val (resultLines, deferreds) =
           translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         val (underlyingArrayH) =
@@ -262,6 +262,13 @@ object ExpressionHammer {
       case ca2 @ ConstructArray2(_, _, _, _) => {
         val access =
           CallHammer.translateConstructArray(
+            hinputs, hamuts, currentFunctionHeader, locals, ca2)
+        (access, List())
+      }
+
+      case ca2 @ StaticArrayFromCallable2(_, _, _) => {
+        val access =
+          CallHammer.translateStaticArrayFromCallable(
             hinputs, hamuts, currentFunctionHeader, locals, ca2)
         (access, List())
       }

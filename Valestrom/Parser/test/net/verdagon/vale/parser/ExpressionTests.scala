@@ -287,20 +287,100 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("static array from values") {
     compile(CombinatorParsers.expression,
       "[][3, 5, 6]") shouldHave {
-      case StaticArrayFromValuesPE(_,List(IntLiteralPE(_,3), IntLiteralPE(_,5), IntLiteralPE(_,6))) =>
+//      case StaticArrayFromValuesPE(_,List(IntLiteralPE(_,3), IntLiteralPE(_,5), IntLiteralPE(_,6))) =>
+//      case null =>
+      case ConstructArrayPE(_,None,None,StaticSizedP(None),true,List(_, _, _)) =>
+    }
+  }
+
+  test("static array from callable with rune") {
+    compile(CombinatorParsers.expression,
+      "[N]({_ * 2})") shouldHave {
+//      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_,_) =>
+//      case null =>
+      case ConstructArrayPE(_,
+        None,
+        None,
+        StaticSizedP(Some(NameOrRunePT(NameP(_,"N")))),
+        false,
+        List(LambdaPE(None,_))) =>
     }
   }
 
   test("static array from callable") {
     compile(CombinatorParsers.expression,
       "[3](triple)") shouldHave {
-      case StaticArrayFromCallablePE(_,IntPT(_,3),_) =>
-    }
-    compile(CombinatorParsers.expression,
-      "[N]({_ * 2})") shouldHave {
-      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_) =>
+      case ConstructArrayPE(_,
+        None,
+        None,
+        StaticSizedP(Some(IntPT(_,3))),
+        false,
+        List(_)) =>
     }
   }
+
+  test("mutable static array from callable") {
+    compile(CombinatorParsers.expression,
+      "[mut 3](triple)") shouldHave {
+      case ConstructArrayPE(_,
+        Some(MutabilityPT(_,MutableP)),
+        None,
+        StaticSizedP(Some(IntPT(_,3))),
+        false,
+        List(_)) =>
+    }
+  }
+
+  test("mutable static array from callable, no size") {
+    compile(CombinatorParsers.expression,
+      "[mut][3, 4, 5]") shouldHave {
+      case ConstructArrayPE(_,
+        Some(MutabilityPT(_,MutableP)),
+        None,
+        StaticSizedP(None),
+        true,
+        List(_, _, _)) =>
+    }
+  }
+
+  test("runtime array from callable with rune") {
+    compile(CombinatorParsers.expression,
+      "[*](6, {_ * 2})") shouldHave {
+      //      case StaticArrayFromCallablePE(_,NameOrRunePT(NameP(_, "N")),_,_) =>
+      //      case null =>
+      case ConstructArrayPE(_,
+        None,
+        None,
+        RuntimeSizedP,
+        false,
+        List(_, _)) =>
+    }
+  }
+
+  test("runtime array from callable") {
+    compile(CombinatorParsers.expression,
+      "[*](6, triple)") shouldHave {
+      case ConstructArrayPE(_,
+        None,
+        None,
+        RuntimeSizedP,
+        false,
+        List(_, _)) =>
+    }
+  }
+
+  test("mutable runtime array from callable") {
+    compile(CombinatorParsers.expression,
+      "[mut *](6, triple)") shouldHave {
+      case ConstructArrayPE(_,
+        Some(MutabilityPT(_,MutableP)),
+        None,
+        RuntimeSizedP,
+        false,
+        List(_, _)) =>
+    }
+  }
+
 
   test("Call callable expr") {
     compile(CombinatorParsers.expression,

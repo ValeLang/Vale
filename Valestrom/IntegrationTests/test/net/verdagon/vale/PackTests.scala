@@ -1,6 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.templar.{ArraySequenceE2, PackE2, TupleE2}
+import net.verdagon.vale.templar.{StaticArrayFromValues2, PackE2, TupleE2}
 import net.verdagon.vale.templar.types.{Int2, PackT2}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
@@ -18,7 +18,7 @@ class PackTests extends FunSuite with Matchers {
 
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
-    main.all({ case ArraySequenceE2(List(_, _, _), _, _) => }).size shouldEqual 1
+    main.all({ case TupleE2(List(_, _, _), _, _) => }).size shouldEqual 1
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
@@ -35,10 +35,10 @@ class PackTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
     val main = temputs.lookupFunction("main")
     main.all({
-      case ArraySequenceE2(
+      case TupleE2(
         List(
-          ArraySequenceE2(List(_, _), _, _),
-          ArraySequenceE2(List(_, _), _, _)),
+          TupleE2(List(_, _), _, _),
+          TupleE2(List(_, _), _, _)),
         _,
         _) =>
     }).size shouldEqual 1

@@ -354,16 +354,8 @@ object ParsedLoader {
           loadRange(getObjectField(jobj, "range")),
           getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
       }
-      case "StaticArrayFromValues" => {
-        StaticArrayFromValuesPE(
-          loadRange(getObjectField(jobj, "range")),
-          getArrayField(jobj, "elements").map(expectObject).map(loadExpression))
-      }
-      case "StaticArrayFromCallable" => {
-        StaticArrayFromCallablePE(
-          loadRange(getObjectField(jobj, "range")),
-          loadTemplex(getObjectField(jobj, "sizeExpr")),
-          loadExpression(getObjectField(jobj, "callableExpr")))
+      case "ConstructArray" => {
+        loadConstructArray(jobj)
       }
       case "Destruct" => {
         DestructPE(
@@ -389,6 +381,24 @@ object ParsedLoader {
       }
       case x => vimpl(x.toString)
     }
+  }
+
+  private def loadArraySize(jobj: JObject): IArraySizeP = {
+    getType(jobj) match {
+      case "RuntimeSized" => RuntimeSizedP
+      case "StaticSized" => {
+        StaticSizedP(loadOptionalObject(getObjectField(jobj, "size"), loadTemplex))
+      }
+    }
+  }
+  private def loadConstructArray(jobj: JObject) = {
+    ConstructArrayPE(
+      loadRange(getObjectField(jobj, "range")),
+      loadOptionalObject(getObjectField(jobj, "mutability"), loadTemplex),
+      loadOptionalObject(getObjectField(jobj, "variability"), loadTemplex),
+      loadArraySize(getObjectField(jobj, "size")),
+      getBooleanField(jobj, "initializingIndividualElements"),
+      getArrayField(jobj, "args").map(expectObject).map(loadExpression))
   }
 
   private def loadLookup(jobj: JObject) = {

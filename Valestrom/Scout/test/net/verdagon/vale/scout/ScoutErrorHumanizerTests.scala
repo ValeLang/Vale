@@ -43,5 +43,8 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     vassert(ScoutErrorHumanizer.humanize(codeMap,
       ForgotSetKeywordError(RangeS.testZero))
       .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      CantInitializeIndividualElementsOfRuntimeSizedArray(RangeS.testZero))
+      .nonEmpty)
   }
 }

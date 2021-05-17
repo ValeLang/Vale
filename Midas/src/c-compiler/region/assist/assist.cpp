@@ -850,6 +850,8 @@ std::string Assist::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
   } else {
     assert(false);
   }
+  assert(false);
+  return "";
 }
 
 Reference* Assist::getExternalType(Reference* refMT) {
@@ -963,7 +965,15 @@ void Assist::initializeElementInKSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  assert(false);
+  auto ksaDef = globalState->program->getKnownSizeArray(ksaMT->name);
+  auto arrayWrapperPtrLE =
+      referendStructs.makeWrapperPtr(
+          FL(), functionState, builder, ksaRefMT,
+          globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef));
+  auto sizeRef = globalState->constI64(ksaDef->size);
+  auto arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+  ::initializeElement(
+      globalState, functionState, builder, ksaRefMT->location, ksaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref Assist::deinitializeElementFromKSA(

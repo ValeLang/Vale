@@ -2,7 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.types.Int2
-import net.verdagon.von.{VonBool, VonInt}
+import net.verdagon.von.{VonBool, VonInt, VonObject}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
 
@@ -25,7 +25,7 @@ class TupleTests extends FunSuite with Matchers {
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").header.returnType.referend shouldEqual Int2()
     // Funny story, theres no such thing as a one element tuple! It becomes a one element array.
-    temputs.lookupFunction("main").only({ case ArraySequenceE2(_, _, _) => })
+    temputs.lookupFunction("main").only({ case TupleE2(_, _, _) => })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
@@ -36,17 +36,16 @@ class TupleTests extends FunSuite with Matchers {
   }
 
 
-  // Intentional failure 2020-10-15
   test("Tuple type") {
     val compile = Compilation(
       """
-        |fn moo(a [int, int]) { }
+        |fn moo(a [int, int]) int { a.1 }
         |
-        |fn main() {
-        |  moo([3, 4]);
+        |fn main() int {
+        |  moo([3, 4])
         |}
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   // todo: indexing into it with a variable, to get a union type

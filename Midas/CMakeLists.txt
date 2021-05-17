@@ -61,6 +61,7 @@ add_executable(valec
 		src/c-compiler/function/expressions/localload.cpp
 		src/c-compiler/function/expressions/while.cpp
 		src/c-compiler/function/expressions/constructunknownsizearray.cpp
+		src/c-compiler/function/expressions/staticarrayfromcallable.cpp
 		src/c-compiler/function/expressions/newarrayfromvalues.cpp
 
 		src/c-compiler/function/expressions/shared/elements.cpp

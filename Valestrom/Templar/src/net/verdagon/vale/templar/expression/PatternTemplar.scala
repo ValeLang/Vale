@@ -1,15 +1,14 @@
-package net.verdagon.vale.templar;
+package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.{CaptureP, MoveP, UseP}
+import net.verdagon.vale.parser.UseP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
-import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
+import net.verdagon.vale.templar.function.DropHelper
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
-import net.verdagon.vale.templar.templata.TemplataTemplar
+import net.verdagon.vale.templar.templata._
+import net.verdagon.vale.templar.types._
+import net.verdagon.vale.templar._
 import net.verdagon.vale.{IProfiler, vfail}
 
 import scala.collection.immutable.List

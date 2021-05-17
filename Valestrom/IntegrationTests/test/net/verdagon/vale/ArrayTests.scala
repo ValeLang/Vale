@@ -41,23 +41,50 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
-  test("Static array from lambda") {
+  test("Unspecified-mutability static array from lambda defaults to mutable") {
     val compile = Compilation(
       """
         |fn main() int export {
-        |  i = 2;
-        |  a = [5]({_ * 2});
-        |  = a[i];
+        |  i = 3;
+        |  a = [5](&!{_ * 42});
+        |  = a[1];
         |}
-      """.stripMargin)
+        |""".stripMargin)
 
     val temputs = compile.getTemputs()
     temputs.lookupFunction("main").only({
-      case ArraySequenceLookup2(_,_,_, _, _) => {
+      case ArraySequenceLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Mutable
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Immutable static array from lambda") {
+    val compile = Compilation(Samples.get("programs/arrays/immksafromcallable.vale"))
+
+    val temputs = compile.getTemputs()
+    temputs.lookupFunction("main").only({
+      case ArraySequenceLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Immutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Mutable static array from lambda") {
+    val compile = Compilation(Samples.get("programs/arrays/mutksafromcallable.vale"))
+
+    val temputs = compile.getTemputs()
+    temputs.lookupFunction("main").only({
+      case ArraySequenceLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Mutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("Take arraysequence as a parameter") {
@@ -67,7 +94,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  arr.3
         |}
         |fn main() int export {
-        |  a = [2, 3, 4, 5, 6];
+        |  a = [][2, 3, 4, 5, 6];
         |  = doThings(a);
         |}
       """.stripMargin)
@@ -86,7 +113,7 @@ class ArrayTests extends FunSuite with Matchers {
         |  arr.2.x
         |}
         |fn main() int export {
-        |  a = [MutableStruct(2), MutableStruct(3), MutableStruct(4)];
+        |  a = [][MutableStruct(2), MutableStruct(3), MutableStruct(4)];
         |  = doThings(&a);
         |}
       """.stripMargin)
@@ -285,10 +312,10 @@ class ArrayTests extends FunSuite with Matchers {
   test("Capture") {
     val compile = Compilation(
       """
-        |fn myFunc<F>(generator &F) T
-        |rules(T Ref, Prot("__call", (&F, int), T))
+        |fn myFunc<F>(generator F) T
+        |rules(T Ref, Prot("__call", (F, int), T))
         |{
-        |  myFunc(generator)
+        |  generator(9)
         |}
         |
         |struct IntBox {
@@ -298,8 +325,8 @@ class ArrayTests extends FunSuite with Matchers {
         |fn main() int export {
         |  box = IntBox(7);
         |  lam = (col){ box.i };
-        |  board = myFunc(&lam);
-        |  = board.1;
+        |  board = myFunc(&!lam);
+        |  = board;
         |}
       """.stripMargin)
 
@@ -442,7 +469,7 @@ class ArrayTests extends FunSuite with Matchers {
           |  MakeArray(N, { seq[_] })
           |}
           |fn main() int export {
-          |  [6, 4, 3, 5, 2, 8].toArray<mut>()[3]
+          |  [][6, 4, 3, 5, 2, 8].toArray<mut>()[3]
           |}
           |""".stripMargin))
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
@@ -453,7 +480,7 @@ class ArrayTests extends FunSuite with Matchers {
       Samples.get("libraries/MakeImmArray.vale"),
       Samples.get("libraries/ksaToImmArray.vale"),
       """fn main() int export {
-        |  [[6, 60].toImmArray(), [4, 40].toImmArray(), [3, 30].toImmArray()].toImmArray()[2][1]
+        |  [][[][6, 60].toImmArray(), [][4, 40].toImmArray(), [][3, 30].toImmArray()].toImmArray()[2][1]
         |}
         |""".stripMargin))
     compile.evalForReferend(Vector()) shouldEqual VonInt(30)
@@ -465,7 +492,7 @@ class ArrayTests extends FunSuite with Matchers {
       Samples.get("libraries/arrayutils.vale") +
       """fn main() int export {
         |  sum! = 0;
-        |  [6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
+        |  [][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  = sum;
         |}
         |""".stripMargin)
@@ -476,7 +503,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       Samples.get("libraries/arrayutils.vale") +
         """fn main() bool export {
-          |  [6, 60, 103].has(103)
+          |  [][6, 60, 103].has(103)
           |}
           |""".stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
@@ -487,7 +514,7 @@ class ArrayTests extends FunSuite with Matchers {
     val compile = Compilation(
       Samples.get("libraries/arrayutils.vale") +
         """fn main() {
-          |  planets = ["Venus", "Earth", "Mars"];
+          |  planets = []["Venus", "Earth", "Mars"];
           |  each planets (planet){
           |    print(planet);
           |  }

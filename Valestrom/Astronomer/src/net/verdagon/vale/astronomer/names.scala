@@ -65,6 +65,9 @@ case class CodeRuneA(name: String) extends IRuneA {
   vassert(name != "str")
 }
 case class ImplicitRuneA(containerName: INameA, name: Int) extends IRuneA
+case class ArraySizeImplicitRuneA() extends IRuneA
+case class ArrayVariabilityImplicitRuneA() extends IRuneA
+case class ArrayMutabilityImplicitRuneA() extends IRuneA
 case class LetImplicitRuneA(codeLocationS: CodeLocationS, name: Int) extends IRuneA
 case class MemberRuneA(memberIndex: Int) extends IRuneA
 case class MagicImplicitRuneA(codeLocationS: CodeLocationS) extends IRuneA

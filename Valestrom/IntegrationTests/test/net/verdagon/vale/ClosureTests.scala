@@ -10,6 +10,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.templar.expression.LocalHelper
 
 class ClosureTests extends FunSuite with Matchers {
 

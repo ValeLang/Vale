@@ -1,14 +1,13 @@
-package net.verdagon.vale.templar
+package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer.{BlockAE, IExpressionAE}
-import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.FinalP
+import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
-import net.verdagon.vale.{vassert, vcurious}
+import net.verdagon.vale.templar.function.DropHelper
+import net.verdagon.vale.templar.types._
+import net.verdagon.vale.vassert
 
-import scala.collection.immutable.{List, Map, Set}
+import scala.collection.immutable.{List, Set}
 
 trait IBlockTemplarDelegate {
   def evaluateAndCoerceToReferenceExpression(

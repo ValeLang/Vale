@@ -18,6 +18,10 @@ object ScoutErrorHumanizer {
       case VariableNameAlreadyExists(range, name) => humanizePos(codeMap, range.file, range.begin.offset) + s": Local named " + humanizeVarName(name) + " already exists!\n(If you meant to modify the variable, use the `set` keyword beforehand.)"
       case InterfaceMethodNeedsSelf(range) => humanizePos(codeMap, range.file, range.begin.offset) + s": Interface's method needs a virtual param of interface's type!"
       case ForgotSetKeywordError(range) => humanizePos(codeMap, range.file, range.begin.offset) + s": Changing a struct's member must start with the `set` keyword."
+      case CantInitializeIndividualElementsOfRuntimeSizedArray(range) => humanizePos(codeMap, range.file, range.begin.offset) + s": Can't initialize individual elements of a runtime-sized array."
+      case InitializingRuntimeSizedArrayRequiresSizeAndCallable(range) => humanizePos(codeMap, range.file, range.begin.offset) + s": Initializing a runtime-sized array requires two arguments: a size, and a function that will populate the elements."
+      case InitializingStaticSizedArrayRequiresSizeAndCallable(range) => humanizePos(codeMap, range.file, range.begin.offset) + s": Initializing a statically-sized array requires one argument: a function that will populate the elements."
+      case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range) => humanizePos(codeMap, range.file, range.begin.offset) + s": Initializing a statically-sized array requires a size in-between the square brackets."
     }
   }
 

@@ -1,14 +1,13 @@
-package net.verdagon.vale.templar
+package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer.GlobalFunctionFamilyNameA
-import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.parser.MutableP
 import net.verdagon.vale.scout.{ITemplexS, RangeS}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
-import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, IEnvironment}
-import net.verdagon.vale.templar.function.FunctionTemplar
-import net.verdagon.vale.{vassert, vcurious, vfail}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox}
+import net.verdagon.vale.templar.templata._
+import net.verdagon.vale.templar.types._
+import net.verdagon.vale.templar._
+import net.verdagon.vale.{vassert, vfail}
 
 import scala.collection.immutable.List
 

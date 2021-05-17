@@ -669,6 +669,19 @@ object VonHammer {
             VonMember("resultType", vonifyCoord(resultType)),
             VonMember("elementType", vonifyCoord(resultType))))
       }
+      case StaticArrayFromCallableH(generatorExpr, generatorMethod, elementType, resultType) => {
+        VonObject(
+          "StaticArrayFromCallable",
+          None,
+          Vector(
+            VonMember("generatorExpr", vonifyExpression(generatorExpr)),
+            VonMember("generatorType", vonifyCoord(generatorExpr.resultType)),
+            VonMember("generatorReferend", vonifyKind(generatorExpr.resultType.kind)),
+            VonMember("generatorMethod", vonifyPrototype(generatorMethod)),
+            VonMember("generatorKnownLive", VonBool(false)),
+            VonMember("resultType", vonifyCoord(resultType)),
+            VonMember("elementType", vonifyCoord(resultType))))
+      }
       case ksal @ KnownSizeArrayLoadH(arrayExpr, indexExpr, targetOwnership, targetPermission, expectedElementType, arraySize, resultType) => {
         VonObject(
           "KnownSizeArrayLoad",

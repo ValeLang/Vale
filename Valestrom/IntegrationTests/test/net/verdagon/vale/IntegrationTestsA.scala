@@ -255,7 +255,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |
         |fn main() int export {
-        |  v = Vec<3, int>([][3, 4, 5]);
+        |  v = Vec<3, int>([imm][3, 4, 5]);
         |  = v.values.2;
         |}
       """.stripMargin)

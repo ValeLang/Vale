@@ -284,7 +284,8 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     }
   }
 
-  test("static array from values") {
+  test("static array " +
+    "from values") {
     compile(CombinatorParsers.expression,
       "[][3, 5, 6]") shouldHave {
 //      case StaticArrayFromValuesPE(_,List(IntLiteralPE(_,3), IntLiteralPE(_,5), IntLiteralPE(_,6))) =>

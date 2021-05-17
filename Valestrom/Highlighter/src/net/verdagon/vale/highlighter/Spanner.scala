@@ -227,7 +227,7 @@ object Spanner {
         val allSpans = (callableSpan :: argSpans)
         makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
+      case MethodCallPE(range, inline, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val methodSpan = makeSpan(CallLookup, methodNameRange, List())
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)

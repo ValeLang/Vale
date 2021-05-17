@@ -443,12 +443,12 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     // We dont have the optWhite here because we dont want to allow spaces before calls.
     // We dont want to allow moo (4) because we want each statements like this:
     //   each moo (x){ println(x); }
-    (pos ~ existsMW("inl") ~ expressionElementLevel1 ~ rep(/*SEE ABOVE optWhite ~> */step) ~ pos ^^ {
+    (pos ~ existsW("inl") ~ expressionElementLevel1 ~ rep(/*SEE ABOVE optWhite ~> */step) ~ pos ^^ {
       case begin ~ maybeInline ~ first ~ restWithDots ~ end => {
         val (_, expr) =
           restWithDots.foldLeft((maybeInline, first))({
-            case ((None, prev), MethodCallStep(stepRange, operatorRange, borrowContainer, isMapCall, lookup, args)) => {
-              (None, MethodCallPE(Range(begin, stepRange.end), prev, operatorRange, borrowContainer, isMapCall, lookup, args))
+            case ((prevInline, prev), MethodCallStep(stepRange, operatorRange, borrowContainer, isMapCall, lookup, args)) => {
+              (None, MethodCallPE(Range(begin, stepRange.end), prevInline, prev, operatorRange, borrowContainer, isMapCall, lookup, args))
             }
             case ((prevInline, prev), CallStep(stepRange, operatorRange, borrowCallable, isMapCall, args)) => {
               (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, borrowCallable))

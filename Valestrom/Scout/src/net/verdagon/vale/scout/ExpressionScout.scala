@@ -204,7 +204,7 @@ object ExpressionScout {
         val result = NormalResult(evalRange(range), FunctionCallSE(evalRange(range), callable1, args1))
         (stackFrame2, result, callableSelfUses.thenMerge(argsSelfUses), callableChildUses.thenMerge(argsChildUses))
       }
-      case MethodCallPE(range, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, memberLookup, methodArgs) => {
+      case MethodCallPE(range, inline, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, memberLookup, methodArgs) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
           scoutExpressionAndCoerce(stackFrame0, memberLookup, LendConstraintP(None))
         val (stackFrame2, subject1, subjectSelfUses, subjectChildUses) =

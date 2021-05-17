@@ -92,6 +92,7 @@ case class FunctionCallPE(
 
 case class MethodCallPE(
   range: Range,
+  inline: Option[UnitP],
   subjectExpr: IExpressionPE,
   operatorRange: Range,
   subjectTargetOwnership: LoadAsP,

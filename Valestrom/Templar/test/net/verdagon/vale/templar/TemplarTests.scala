@@ -333,7 +333,7 @@ class TemplarTests extends FunSuite with Matchers {
         |}
         |fn main() bool export {
         |  arr = [4][true, false, false];
-        |  arr.0
+        |  = arr.0;
         |}
         |""".stripMargin)
     compile.getTemplarError() match {

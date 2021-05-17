@@ -400,10 +400,11 @@ Ref translateExpressionInner(
         globalState->getRegion(knownSizeArrayLoad->resultType)
             ->upgradeLoadResultToRefWithTargetOwnership(
                 functionState, builder, elementType, knownSizeArrayLoad->resultType, loadResult);
+    globalState->getRegion(elementType)->checkValidReference(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
-        ->alias(FL(), functionState, builder, elementType, resultRef);
+        ->alias(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
-        ->checkValidReference(FL(), functionState, builder, elementType, resultRef);
+        ->checkValidReference(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     return resultRef;
   } else if (auto unknownSizeArrayLoad = dynamic_cast<UnknownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());

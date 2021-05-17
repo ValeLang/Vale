@@ -61,8 +61,8 @@ class ArrayTemplar(
       rules: List[IRulexAR],
       typeByRune: Map[IRuneA, ITemplataType],
       maybeSizeRuneA: Option[IRuneA],
-      maybeMutabilityRune: Option[IRuneA],
-      maybeVariabilityRune: Option[IRuneA],
+      maybeMutabilityRuneA: Option[IRuneA],
+      maybeVariabilityRuneA: Option[IRuneA],
       exprs2: List[ReferenceExpression2]):
    StaticArrayFromValues2 = {
     val memberTypes = exprs2.map(_.resultRegister.reference).toSet
@@ -73,10 +73,10 @@ class ArrayTemplar(
 
     val templatas =
       inferTemplar.inferOrdinaryRules(
-        fate.snapshot, temputs, rules, typeByRune, Set() ++ maybeSizeRuneA ++ maybeMutabilityRune ++ maybeVariabilityRune)
-    val maybeSize = maybeVariabilityRune.map(getArraySize(templatas, _))
-    val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
-    val maybeVariability = maybeVariabilityRune.map(getArrayVariability(templatas, _))
+        fate.snapshot, temputs, rules, typeByRune, Set() ++ maybeSizeRuneA ++ maybeMutabilityRuneA ++ maybeVariabilityRuneA)
+    val maybeSize = maybeSizeRuneA.map(getArraySize(templatas, _))
+    val mutability = maybeMutabilityRuneA.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
+    val maybeVariability = maybeVariabilityRuneA.map(getArrayVariability(templatas, _))
 
     maybeSize match {
       case None =>
@@ -98,15 +98,15 @@ class ArrayTemplar(
   (KnownSizeArrayT2) = {
 //    val tupleMutability =
 //      StructTemplarCore.getCompoundTypeMutability(temputs, List(type2))
-    val tupleMutability = Templar.getMutability(temputs, type2.referend)
-    val rawArrayT2 = RawArrayT2(type2, tupleMutability)
+//    val tupleMutability = Templar.getMutability(temputs, type2.referend)
+    val rawArrayT2 = RawArrayT2(type2, mutability)
 
     temputs.getArraySequenceType(size, rawArrayT2) match {
       case Some(arraySequenceT2) => (arraySequenceT2)
       case None => {
         val arraySeqType = KnownSizeArrayT2(size, rawArrayT2)
-        val arraySeqOwnership = if (tupleMutability == Mutable) Own else Share
-        val arraySeqPermission = if (tupleMutability == Mutable) Readwrite else Readonly
+        val arraySeqOwnership = if (mutability == Mutable) Own else Share
+        val arraySeqPermission = if (mutability == Mutable) Readwrite else Readonly
         val arraySequenceRefType2 = Coord(arraySeqOwnership, arraySeqPermission, arraySeqType)
         val _ = delegate.getArrayDestructor(env, temputs, arraySequenceRefType2)
         (arraySeqType)

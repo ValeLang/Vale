@@ -6,7 +6,7 @@ import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
 
-trait ExpressionParser extends RegexParsers with ParserUtils {
+trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser {
   private[parser] def templex: Parser[ITemplexPT]
   private[parser] def templateRulesPR: Parser[TemplateRulesP]
   private[parser] def atomPattern: Parser[PatternPP]
@@ -616,33 +616,33 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
 
   private[parser] def arrayOrTuple: Parser[IExpressionPE] = {
     // Static arrays have to come before tuples, because the beginning of static array looks kind of like a tuple.
-    staticArrayExpr |
+    constructArrayExpr |
 //    runtimeArrayExpr |
     tuupleExpr
   }
 
-  private[parser] def staticArrayExpr: Parser[IExpressionPE] = {
-    staticArrayFromValuesExpr |
-    staticArrayFromCallableExpr
+  private[parser] def arraySize: Parser[IArraySizeP] = {
+    ("*" ^^^ RuntimeSizedP) |
+      (opt(templex) ^^ StaticSizedP)
   }
 
-  private[parser] def staticArrayFromValuesExpr: Parser[IExpressionPE] = {
-    (pos <~ "[" <~ optWhite <~ "]" <~ optWhite <~ "[" <~ optWhite) ~
-      (repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~
+  private[parser] def constructArrayExpr: Parser[IExpressionPE] = {
+    pos ~
+      (("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
+        (opt(variabilityAtomTemplex <~ optWhite)) ~
+        (arraySize <~ optWhite <~ "]") <~ optWhite) ~
+      (("[" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]")) |
+        ("(" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")"))) ~
       pos ^^ {
-      case begin ~ valueExprs ~ end => {
-        StaticArrayFromValuesPE(Range(begin, end), valueExprs)
-      }
-    }
-  }
-
-  private[parser] def staticArrayFromCallableExpr: Parser[IExpressionPE] = {
-    (pos <~ "[" <~ optWhite) ~
-      (templex <~ optWhite <~ "]" <~ optWhite <~ "(" <~ optWhite) ~
-      (expression <~ optWhite <~ ")") ~
-      pos ^^ {
-      case begin ~ sizeTemplex ~ callableExpr ~ end => {
-        StaticArrayFromCallablePE(Range(begin, end), sizeTemplex, callableExpr)
+      case begin ~ (maybeMutability ~ maybeVariability ~ maybeSize) ~ (argsType ~ valueExprs) ~ end => {
+        val initializingIndividualElements = argsType match { case "[" => true case "(" => false }
+        ConstructArrayPE(
+          Range(begin, end),
+          maybeMutability,
+          maybeVariability,
+          maybeSize,
+          initializingIndividualElements,
+          valueExprs)
       }
     }
   }

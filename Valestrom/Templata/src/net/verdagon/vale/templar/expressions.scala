@@ -367,7 +367,7 @@ case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceE
   }
 }
 
-case class ArraySequenceE2(
+case class StaticArrayFromValues2(
     elements: List[ReferenceExpression2],
     resultReference: Coord,
     arrayType: KnownSizeArrayT2) extends ReferenceExpression2 {
@@ -670,6 +670,24 @@ case class ConstructArray2(
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ arrayType.all(func) ++ sizeExpr.all(func) ++ generator.all(func)
+  }
+}
+
+case class StaticArrayFromCallable2(
+  arrayType: KnownSizeArrayT2,
+  generator: ReferenceExpression2,
+  generatorMethod: Prototype2
+) extends ReferenceExpression2 {
+  override def resultRegister: ReferenceRegister2 = {
+    ReferenceRegister2(
+      Coord(
+        if (arrayType.array.mutability == Mutable) Own else Share,
+        if (arrayType.array.mutability == Mutable) Readwrite else Readonly,
+        arrayType))
+  }
+
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    List(this).collect(func) ++ arrayType.all(func) ++ generator.all(func) ++ generatorMethod.all(func)
   }
 }
 

@@ -10,6 +10,7 @@ import net.verdagon.vale.astronomer.{Astronomer, CodeTypeNameA, CodeVarNameA, Fu
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
+import net.verdagon.vale.templar.expression.CallTemplar
 import org.scalatest.{FunSuite, Matchers, _}
 
 import scala.collection.immutable.List
@@ -303,6 +304,40 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     compile.getTemplarError() match {
       case ImmStructCantHaveVaryingMember(_, _, _) =>
+    }
+  }
+
+  test("Report when multiple types in array") {
+    // https://github.com/ValeLang/Vale/issues/131
+    val compile = TemplarCompilation(
+      """
+        |fn main() int export {
+        |  arr = [][true, 42];
+        |  = arr.1;
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case ArrayElementsHaveDifferentTypes(_, types) => {
+        types shouldEqual Set(Coord(Share, Readonly, Int2()), Coord(Share, Readonly, Bool2()))
+      }
+    }
+  }
+
+  test("Report when num elements mismatch") {
+    // https://github.com/ValeLang/Vale/issues/131
+    val compile = TemplarCompilation(
+      """
+        |struct Spaceship imm {
+        |  name! str;
+        |  numWings int;
+        |}
+        |fn main() bool export {
+        |  arr = [4][true, false, false];
+        |  arr.0
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case InitializedWrongNumberOfElements(_, 4, 3) =>
     }
   }
 

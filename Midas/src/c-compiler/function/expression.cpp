@@ -531,6 +531,9 @@ Ref translateExpressionInner(
   } else if (auto constructUnknownSizeArray = dynamic_cast<ConstructUnknownSizeArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateConstructUnknownSizeArray(globalState, functionState, blockState, builder, constructUnknownSizeArray);
+  } else if (auto staticArrayFromCallable = dynamic_cast<StaticArrayFromCallable*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    return translateStaticArrayFromCallable(globalState, functionState, blockState, builder, staticArrayFromCallable);
   } else if (auto call = dynamic_cast<Call*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", call->function->name->name);
     auto resultLE = translateCall(globalState, functionState, blockState, builder, call);

@@ -152,9 +152,12 @@ object NameTranslator {
       case MagicImplicitRuneA(codeLocation) => MagicImplicitRune2(translateCodeLocation(codeLocation))
       case MemberRuneA(memberIndex) => MemberRune2(memberIndex)
       case ReturnRuneA() => ReturnRune2()
+      case ArraySizeImplicitRuneA() => ArraySizeImplicitRune2()
+      case ArrayVariabilityImplicitRuneA() => ArrayVariabilityImplicitRune2()
+      case ArrayMutabilityImplicitRuneA() => ArrayMutabilityImplicitRune2()
       case AnonymousSubstructParentInterfaceRuneA() => AnonymousSubstructParentInterfaceRune2()
       case ExplicitTemplateArgRuneA(index) => ExplicitTemplateArgRune2(index)
-      case _ => vimpl()
+      case x => vimpl(x.toString)
     }
   }
 

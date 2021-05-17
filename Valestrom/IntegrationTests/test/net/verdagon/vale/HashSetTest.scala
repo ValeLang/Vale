@@ -19,7 +19,7 @@ class HashSetTest extends FunSuite with Matchers {
         Samples.get("libraries/utils.vale"),
         """
             |fn main() int export {
-            |  m = HashSet<int>([0, 4, 8, 12], IntHasher(), IntEquator());
+            |  m = HashSet<int>([][0, 4, 8, 12], IntHasher(), IntEquator());
             |  vassert(m.has(0));
             |  vassert(m.has(4));
             |  vassert(m.has(8));
@@ -47,7 +47,7 @@ class HashSetTest extends FunSuite with Matchers {
         Samples.get("libraries/utils.vale"),
         """
             |fn main() int export {
-            |  m = HashSet<int>([0, 4, 8, 12].toImmArray(), IntHasher(), IntEquator());
+            |  m = HashSet<int>([][0, 4, 8, 12].toImmArray(), IntHasher(), IntEquator());
             |  vassert(m.has(0));
             |  vassert(m.has(4));
             |  vassert(m.has(8));

@@ -91,6 +91,13 @@ Ref translateNewArrayFromValues(
     LLVMBuilderRef builder,
     NewArrayFromValues* newArrayFromValues);
 
+Ref translateStaticArrayFromCallable(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    BlockState* blockState,
+    LLVMBuilderRef builder,
+    StaticArrayFromCallable* staticArrayFromCallable);
+
 Ref translateConstructUnknownSizeArray(
     GlobalState* globalState,
     FunctionState* functionState,

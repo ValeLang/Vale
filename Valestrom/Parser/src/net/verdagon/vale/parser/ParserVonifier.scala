@@ -916,22 +916,8 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("elements", VonArray(None, elements.map(vonifyExpression).toVector))))
       }
-      case StaticArrayFromCallablePE(range, sizeTemplex, callableExpr) => {
-        VonObject(
-          "StaticArrayFromCallable",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("sizeTemplex", vonifyTemplex(sizeTemplex)),
-            VonMember("callableExpr", vonifyExpression(callableExpr))))
-      }
-      case StaticArrayFromValuesPE(range, valueExprs) => {
-        VonObject(
-          "StaticArrayFromValues",
-          None,
-          Vector(
-            VonMember("range", vonifyRange(range)),
-            VonMember("elements", VonArray(None, valueExprs.map(vonifyExpression).toVector))))
+      case ca @ ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) => {
+        vonifyConstructArray(ca)
       }
       case VoidPE(range) => {
         VonObject(
@@ -950,6 +936,35 @@ object ParserVonifier {
             VonMember("body", vonifyBlock(body))))
       }
     }
+  }
+
+  private def vonifyArraySize(obj: IArraySizeP): VonObject = {
+    obj match {
+      case RuntimeSizedP => VonObject("RuntimeSized", None, Vector())
+      case StaticSizedP(maybeSize) => {
+        VonObject(
+          "StaticSized",
+          None,
+          Vector(
+            VonMember("size", vonifyOptional(maybeSize, vonifyTemplex))
+          ))
+      }
+    }
+  }
+
+  private def vonifyConstructArray(ca: ConstructArrayPE): VonObject = {
+    val ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) = ca
+
+    VonObject(
+      "ConstructArray",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("mutability", vonifyOptional(mutability, vonifyTemplex)),
+        VonMember("variability", vonifyOptional(variability, vonifyTemplex)),
+        VonMember("size", vonifyArraySize(size)),
+        VonMember("initializingIndividualElements", VonBool(initializingIndividualElements)),
+        VonMember("args", VonArray(None, args.map(vonifyExpression).toVector))))
   }
 
   def vonifyTemplateArgs(thing: TemplateArgsP): IVonData = {

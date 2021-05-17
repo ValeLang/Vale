@@ -79,6 +79,14 @@ object TemplarErrorHumanizer {
         humanizePos(codeMap, range.file, range.begin.offset) +
           ": Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
       }
+      case ArrayElementsHaveDifferentTypes(range, types) => {
+        humanizePos(codeMap, range.file, range.begin.offset) +
+          ": Array's elements have different types: " + types.mkString(", ")
+      }
+      case InitializedWrongNumberOfElements(range, expectedNumElements, numElementsInitialized) => {
+        humanizePos(codeMap, range.file, range.begin.offset) +
+          ": Supplied " + numElementsInitialized + " elements, but expected " + expectedNumElements + "."
+      }
       case CouldntFindFunctionToCallT(range, ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction)) => {
         humanizePos(codeMap, range.file, range.begin.offset) +
           ": Couldn't find a suitable function named `" +

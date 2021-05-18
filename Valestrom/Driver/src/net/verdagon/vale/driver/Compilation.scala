@@ -22,7 +22,7 @@ case class CompilationOptions(
 )
 
 object Compilation {
-  val testDependencies =
+  val builtins =
     Map(
       "arrayutils" -> Samples.get("builtins/arrayutils.vale"),
       "builtinexterns" -> Samples.get("builtins/builtinexterns.vale"),
@@ -48,7 +48,7 @@ object Compilation {
       List(FileCoordinateMap.TEST_MODULE),
       {
         case NamespaceCoordinate(FileCoordinateMap.TEST_MODULE, List()) => code.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap
-        case NamespaceCoordinate("", List()) => dependencies.map(d => (d -> testDependencies(d))).toMap
+        case NamespaceCoordinate("", List()) => dependencies.map(d => (d -> builtins(d))).toMap
         case x => vfail("Couldn't find module: " + x)
       },
       options)

@@ -80,6 +80,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     compile(CombinatorParsers.expression,"x . shout ()") shouldHave {
       case MethodCallPE(
       _,
+      _,
       LookupPE(NameP(_,"x"),None),
       _,LendConstraintP(Some(ReadonlyP)),
       false,
@@ -90,6 +91,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("Method on member") {
     compile(CombinatorParsers.expression,"x.moo.shout()") shouldHave {
       case MethodCallPE(_,
+        _,
         DotPE(_,
           LookupPE(NameP(_,"x"),None),
           _,
@@ -105,6 +107,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("Moving method call") {
     compile(CombinatorParsers.expression,"x ^.shout()") shouldHave {
       case MethodCallPE(_,
+      _,
         LookupPE(NameP(_,"x"),None),
         _,MoveP,false,
         LookupPE(NameP(_,"shout"),None),
@@ -115,6 +118,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("Map method call") {
     compile(CombinatorParsers.expression,"x*. shout()") shouldHave {
       case MethodCallPE(_,
+      _,
       LookupPE(NameP(_,"x"),None),
       _,LendConstraintP(Some(ReadonlyP)),true,
       LookupPE(NameP(_,"shout"),None),
@@ -133,7 +137,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("Templated method call") {
     compile(CombinatorParsers.expression,"result.toArray <imm> ()") shouldHave {
-      case MethodCallPE(_,LookupPE(NameP(_,"result"),None),_,LendConstraintP(Some(ReadonlyP)),false,LookupPE(NameP(_,"toArray"),Some(TemplateArgsP(_, List(MutabilityPT(_,ImmutableP))))),List()) =>
+      case MethodCallPE(_,_,LookupPE(NameP(_,"result"),None),_,LendConstraintP(Some(ReadonlyP)),false,LookupPE(NameP(_,"toArray"),Some(TemplateArgsP(_, List(MutabilityPT(_,ImmutableP))))),List()) =>
     }
   }
 
@@ -205,6 +209,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     compile(CombinatorParsers.expression,
       "weapon.owner.map()") shouldHave {
       case MethodCallPE(_,
+      _,
       DotPE(_,
       LookupPE(NameP(_,"weapon"),None),
       _, false,

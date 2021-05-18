@@ -95,6 +95,7 @@ object ParsedLoader {
               case "Interface" => TopLevelInterfaceP(loadInterface(topLevelThing))
               case "Function" => TopLevelFunctionP(loadFunction(topLevelThing))
               case "Impl" => TopLevelImplP(loadImpl(topLevelThing))
+              case "Import" => TopLevelImportP(loadImport(topLevelThing))
               case "ExportAs" => TopLevelExportAsP(loadExportAs(topLevelThing))
               case x => vimpl(x.toString)
             }
@@ -125,6 +126,14 @@ object ParsedLoader {
       loadRange(getObjectField(jobj, "range")),
       loadTemplex(getObjectField(jobj, "struct")),
       loadName(getObjectField(jobj, "exportedName")))
+  }
+
+  private def loadImport(jobj: JObject) = {
+    ImportP(
+      loadRange(getObjectField(jobj, "range")),
+      loadName(getObjectField(jobj, "moduleName")),
+      getArrayField(jobj, "namespaceSteps").map(expectObject).map(loadName),
+      loadName(getObjectField(jobj, "importeeName")))
   }
 
   private def loadStruct(jobj: JObject) = {

@@ -14,7 +14,7 @@ import org.scalatest.{FunSuite, Matchers}
 class PureFunctionTests extends FunSuite with Matchers {
   test("Simple pure function") {
     val compile =
-      Compilation(
+      Compilation.test(List("builtinexterns"),
         """
           |struct Engine {
           |  fuel int;

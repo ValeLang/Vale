@@ -10,7 +10,7 @@ import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, 
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinate, NullProfiler, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
@@ -23,12 +23,18 @@ object Driver {
   sealed trait IValestromInput {
     def moduleName: String
   }
-  case class PathInput(moduleName: String, path: String) extends IValestromInput
-  // Path probably doesn't actually exist, it might be something made up like "in.vale", "0.vale", "1.vale", etc
-  case class SourceInput(moduleName: String, path: String, code: String) extends IValestromInput
+  case class ModulePathInput(moduleName: String, path: String) extends IValestromInput
+  case class DirectFilePathInput(moduleName: String, path: String) extends IValestromInput
+  case class SourceInput(
+    moduleName: String,
+    // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
+    name: String,
+    code: String) extends IValestromInput
 
   case class Options(
     inputs: List[IValestromInput],
+//    modulePaths: Map[String, String],
+    modulesToBuild: List[String],
     outputDirPath: Option[String],
     benchmark: Boolean,
     outputVPST: Boolean,
@@ -78,9 +84,19 @@ object Driver {
             vcheck(parts.size == 2, "Arguments can only have 1 colon. Saw: " + value, InputException)
             vcheck(parts(0) != "", "Must have a module name before a colon. Saw: " + value, InputException)
             vcheck(parts(1) != "", "Must have a file path after a colon. Saw: " + value, InputException)
-            parseOpts(opts.copy(inputs = opts.inputs :+ PathInput(parts(0), parts(1))), tail)
+            val Array(moduleName, path) = parts
+            val input =
+              if (path.endsWith(".vale") || path.endsWith(".vpst")) {
+                DirectFilePathInput(moduleName, path)
+              } else {
+                ModulePathInput(moduleName, path)
+              }
+            parseOpts(opts.copy(inputs = opts.inputs :+ input), tail)
           } else {
-            parseOpts(opts.copy(inputs = opts.inputs :+ PathInput(defaultModuleName, value)), tail)
+            if (value.endsWith(".vale") || value.endsWith(".vpst")) {
+              throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
+            }
+            parseOpts(opts.copy(modulesToBuild = opts.modulesToBuild :+ value), tail)
           }
         }
       }
@@ -111,167 +127,214 @@ object Driver {
     }
   }
 
-  def loadAndParseInputs(
-    startTime: Long,
-    benchmark: Boolean,
-    inputs: List[IValestromInput]):
-  Result[(FileCoordinateMap[String], FileCoordinateMap[(String, List[(Int, Int)])], FileCoordinateMap[FileP], Long), String] = {
-    val expandedInputs =
-      inputs.flatMap({
-        case si @ SourceInput(_, _, _) => {
-          List(si)
+  def resolveNamespaceContents(
+      inputs: List[IValestromInput],
+      nsCoord: NamespaceCoordinate) = {
+    val NamespaceCoordinate(module, namespaces) = nsCoord
+
+    val sourceInputs =
+      inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
+        case (SourceInput(_, name, code), index) if (namespaces == List()) => {
+          // All .vpst and .vale direct inputs are considered part of the root namespace.
+          List((index + "(" + name + ")" -> code))
         }
-        case pi @ PathInput(moduleName, path) => {
-          if (path.endsWith(".vale")) {
-            List(pi)
-          } else if (path.endsWith(".vpst")) {
-            List(pi)
-          } else {
-            try {
-              val directory = new java.io.File(path)
-              val filesInDirectory = directory.listFiles
-              val inputFiles =
-                filesInDirectory.filter(_.getName.endsWith(".vale")) ++
-                  filesInDirectory.filter(_.getName.endsWith(".vpst"))
-              inputFiles.map(_.getPath).map(x => PathInput(moduleName, x)).toList
-            } catch {
-              case _ : FileNotFoundException => {
-                throw InputException("Couldn't find file or folder: " + path)
-              }
-            }
-          }
+        case (ModulePathInput(_, path), _) => {
+          val directory = new java.io.File(path)
+          val filesInDirectory = directory.listFiles
+          val inputFiles =
+            filesInDirectory.filter(_.getName.endsWith(".vale")) ++
+              filesInDirectory.filter(_.getName.endsWith(".vpst"))
+          val inputFilePaths = inputFiles.map(_.getPath)
+          inputFilePaths.toList.map(filepath => {
+            val file = path
+            val bufferedSource = Source.fromFile(file)
+            val code = bufferedSource.getLines.mkString("\n")
+            bufferedSource.close
+            (filepath -> code)
+          })
+        }
+        case (DirectFilePathInput(_, path), _) => {
+          val file = path
+          val bufferedSource = Source.fromFile(file)
+          val code = bufferedSource.getLines.mkString("\n")
+          bufferedSource.close
+          List((path -> code))
         }
       })
+    val filepathToSource = sourceInputs.groupBy(_._1).mapValues(_.head._2)
+    vassert(sourceInputs.size == filepathToSource.size, "Input filepaths overlap!")
+    filepathToSource
+  }
+
+//  def loadAndParseInputs(
+//    startTime: Long,
+//    benchmark: Boolean,
+//    compilation: Compilation):
+//  Result[
+//    (FileCoordinateMap[String],
+//      FileCoordinateMap[(String, List[(Int, Int)])],
+//      FileCoordinateMap[FileP],
+//      Long),
+//    String] = {
+//
+//    val expandedInputs =
+//      inputs.flatMap({
+//        case si @ SourceInput(_, _, _) => {
+//          List(si)
+//        }
+//        case pi @ PathInput(moduleName, path) => {
+//          if (path.endsWith(".vale")) {
+//            List(pi)
+//          } else if (path.endsWith(".vpst")) {
+//            List(pi)
+//          } else {
+//            try {
+//              val directory = new java.io.File(path)
+//              val filesInDirectory = directory.listFiles
+//              val inputFiles =
+//                filesInDirectory.filter(_.getName.endsWith(".vale")) ++
+//                  filesInDirectory.filter(_.getName.endsWith(".vpst"))
+//              inputFiles.map(_.getPath).map(x => PathInput(moduleName, x)).toList
+//            } catch {
+//              case _ : FileNotFoundException => {
+//                throw InputException("Couldn't find file or folder: " + path)
+//              }
+//            }
+//          }
+//        }
+//      })
 
     //    val moduleToExpandedInputs =
     //      moduleAndExpandedInputPairs.groupBy(_.moduleName)
+//
+//    val loadedInputs =
+//      expandedInputs.map({
+//        case si@SourceInput(_, _, _) => si
+//        case PathInput(moduleName, path) => {
+//          val contents =
+//            (try {
+//              val file = new java.io.File(path)
+//              val lineSource = Source.fromFile(file)
+//              val source = lineSource.getLines().mkString("\n")
+//              lineSource.close()
+//              source
+//            } catch {
+//              case _: FileNotFoundException => {
+//                throw InputException("Couldn't find file or folder: " + path)
+//              }
+//            })
+//          SourceInput(moduleName, path, contents)
+//        }
+//        case other => vwat(other.toString)
+//      })
+//
+//    val moduleToNamespaceToFilepathToCode =
+//      loadedInputs.groupBy(_.moduleName).mapValues(loadedInputsInModule => {
+//        val namespace = List[String]()
+//        val filepathToCode =
+//          loadedInputsInModule.groupBy(_.path).map({
+//            case (path, List()) => vfail("No files with path: " + path)
+//            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
+//            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
+//          })
+//        val namespaceToFilepathToCode = Map(namespace -> filepathToCode)
+//        namespaceToFilepathToCode
+//      })
+//    val valeCodeMap = FileCoordinateMap(moduleToNamespaceToFilepathToCode)
 
-    val loadedInputs =
-      expandedInputs.map({
-        case si@SourceInput(_, _, _) => si
-        case PathInput(moduleName, path) => {
-          val contents =
-            (try {
-              val file = new java.io.File(path)
-              val lineSource = Source.fromFile(file)
-              val source = lineSource.getLines().mkString("\n")
-              lineSource.close()
-              source
-            } catch {
-              case _: FileNotFoundException => {
-                throw InputException("Couldn't find file or folder: " + path)
-              }
-            })
-          SourceInput(moduleName, path, contents)
-        }
-        case other => vwat(other.toString)
-      })
-
-    val moduleToNamespaceToFilepathToCode =
-      loadedInputs.groupBy(_.moduleName).mapValues(loadedInputsInModule => {
-        val namespace = List[String]()
-        val filepathToCode =
-          loadedInputsInModule.groupBy(_.path).map({
-            case (path, List()) => vfail("No files with path: " + path)
-            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
-            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
-          })
-        val namespaceToFilepathToCode = Map(namespace -> filepathToCode)
-        namespaceToFilepathToCode
-      })
-    val valeCodeMap = FileCoordinateMap(moduleToNamespaceToFilepathToCode)
-
-    val startParsingTime = java.lang.System.currentTimeMillis()
-    if (benchmark) {
-      println("Load duration: " + (startParsingTime - startTime))
-    }
-
-    val vpstCodeMap =
-      valeCodeMap.map({ case (fileCoord @ FileCoordinate(_, _, filepath), contents) =>
-        //        println("Parsing " + filepath + "...")
-        if (filepath.endsWith(".vale")) {
-          Parser.runParserForProgramAndCommentRanges(contents) match {
-            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(valeCodeMap, fileCoord, error))
-            case ParseSuccess((program0, commentRanges)) => {
-              val von = ParserVonifier.vonifyFile(program0)
-              val json = new VonPrinter(JsonSyntax, 120).print(von)
-              (json, commentRanges)
-            }
-          }
-        } else if (filepath.endsWith(".vpst")) {
-          (contents, List())
-        } else {
-          throw new InputException("Unknown input type: " + filepath)
-        }
-      })
-
-    val startLoadingVpstTime = java.lang.System.currentTimeMillis()
-    if (benchmark) {
-      println("Parse .vale duration: " + (startLoadingVpstTime - startParsingTime))
-    }
-
-    val parsedsMap =
-      vpstCodeMap.map({ case (fileCoord, (vpstJson, commentRanges)) =>
-        ParsedLoader.load(vpstJson) match {
-          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(valeCodeMap, fileCoord, error))
-          case ParseSuccess(program0) => program0
-        }
-      })
-
-    val doneParsingVpstTime = java.lang.System.currentTimeMillis()
-    if (benchmark) {
-      println("Parse .vpst duration: " + (doneParsingVpstTime - startLoadingVpstTime))
-    }
-
-    Ok((valeCodeMap, vpstCodeMap, parsedsMap, doneParsingVpstTime))
-  }
+//    val startParsingTime = java.lang.System.currentTimeMillis()
+//    if (benchmark) {
+//      println("Load duration: " + (startParsingTime - startTime))
+//    }
+//
+//    val vpstCodeMap =
+//      valeCodeMap.map({ case (fileCoord @ FileCoordinate(_, _, filepath), contents) =>
+//        //        println("Parsing " + filepath + "...")
+//        if (filepath.endsWith(".vale")) {
+//          Parser.runParserForProgramAndCommentRanges(contents) match {
+//            case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(valeCodeMap, fileCoord, error))
+//            case ParseSuccess((program0, commentRanges)) => {
+//              val von = ParserVonifier.vonifyFile(program0)
+//              val json = new VonPrinter(JsonSyntax, 120).print(von)
+//              (json, commentRanges)
+//            }
+//          }
+//        } else if (filepath.endsWith(".vpst")) {
+//          (contents, List())
+//        } else {
+//          throw new InputException("Unknown input type: " + filepath)
+//        }
+//      })
+//
+//    val startLoadingVpstTime = java.lang.System.currentTimeMillis()
+//    if (benchmark) {
+//      println("Parse .vale duration: " + (startLoadingVpstTime - startParsingTime))
+//    }
+//
+//    val parsedsMap =
+//      vpstCodeMap.map({ case (fileCoord, (vpstJson, commentRanges)) =>
+//        ParsedLoader.load(vpstJson) match {
+//          case ParseFailure(error) => return Err(ParseErrorHumanizer.humanize(valeCodeMap, fileCoord, error))
+//          case ParseSuccess(program0) => program0
+//        }
+//      })
+//
+//    val doneParsingVpstTime = java.lang.System.currentTimeMillis()
+//    if (benchmark) {
+//      println("Parse .vpst duration: " + (doneParsingVpstTime - startLoadingVpstTime))
+//    }
+//
+//    Ok((valeCodeMap, vpstCodeMap, parsedsMap, doneParsingVpstTime))
+//  }
 
   def build(opts: Options):
   Result[Option[ProgramH], String] = {
     val startTime = java.lang.System.currentTimeMillis()
 
-    val inputs =
-        opts.inputs ++
-          (if (opts.includeBuiltins) {
-            List(
-              SourceInput("", "builtins/arrayutils.vale", Samples.get("builtins/arrayutils.vale")),
-              SourceInput("", "builtins/builtinexterns.vale", Samples.get("builtins/builtinexterns.vale")),
-              SourceInput("", "builtins/castutils.vale", Samples.get("builtins/castutils.vale")),
-              SourceInput("", "builtins/opt.vale", Samples.get("builtins/opt.vale")),
-              SourceInput("", "builtins/printutils.vale", Samples.get("builtins/printutils.vale")),
-              SourceInput("", "builtins/strings.vale", Samples.get("builtins/strings.vale")),
-              SourceInput("", "builtins/utils.vale", Samples.get("builtins/utils.vale")))
+    val compilation =
+      new Compilation(
+        opts.modulesToBuild,
+        nsCoord => resolveNamespaceContents(opts.inputs, nsCoord),
+        CompilationOptions(
+          if (opts.verbose) {
+            (x => {
+              println(x)
+            })
           } else {
-            List()
-          })
+            x => Unit // do nothing with it
+          },
+          opts.verbose,
+          new NullProfiler(),
+          false
+        )
+      )
 
-    val (valeCodeMap, vpstCodeMap, parsedsMap, doneParsingVpstTime) =
-      loadAndParseInputs(startTime, opts.benchmark, inputs) match {
-        case Ok(ok) => ok
-        case Err(s) => return Err(s)
-      }
+    val startLoadAndParseTime = java.lang.System.currentTimeMillis()
 
+    val valeCodeMap = compilation.getCodeMap()
+    val parseds = compilation.getParseds()
 
     if (opts.outputVPST) {
-      vpstCodeMap.map({ case (FileCoordinate(_, _, filepath), (vpstJson, commentRanges)) =>
+      parseds.map({ case (FileCoordinate(_, _, filepath), (programP, commentRanges)) =>
+        val von = ParserVonifier.vonifyFile(programP)
+        val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
         val parts = filepath.split("[/\\\\]")
         val vpstFilepath = opts.outputDirPath.get + "/" + parts.last.replaceAll("\\.vale", ".vpst")
         writeFile(vpstFilepath, vpstJson)
       })
     }
 
-    if (opts.outputVAST) {
-      val startScoutTime = doneParsingVpstTime
+    val startScoutTime = java.lang.System.currentTimeMillis()
+    if (opts.benchmark) {
+      println("Loading and parsing duration: " + (startScoutTime - startLoadAndParseTime))
+    }
 
-      val outputVastFilepath = opts.outputDirPath.get + "/build.vast"
-      val scoutput = {
-        parsedsMap.map({ case (fileCoord, programP) =>
-          Scout.scoutProgram(fileCoord, programP) match {
-            case Err(e) => return Err(ScoutErrorHumanizer.humanize(valeCodeMap, e))
-            case Ok(p) => p
-          }
-        })
-      }
+    if (opts.outputVAST) {
+      val scoutput =
+        compilation.getScoutput() match {
+          case Err(e) => return Err(ScoutErrorHumanizer.humanize(valeCodeMap, e))
+          case Ok(p) => p
+        }
 
       val startAstronomerTime = java.lang.System.currentTimeMillis()
       if (opts.benchmark) {
@@ -307,12 +370,10 @@ object Driver {
         println("Hammer phase duration: " + (finishTime - startHammerTime))
       }
 
-      if (outputVastFilepath != "") {
-        val json = jsonifyProgram(programH)
-
-        writeFile(outputVastFilepath, json)
-        println("Wrote VAST to file " + outputVastFilepath)
-      }
+      val outputVastFilepath = opts.outputDirPath.get + "/build.vast"
+      val json = jsonifyProgram(programH)
+      writeFile(outputVastFilepath, json)
+      println("Wrote VAST to file " + outputVastFilepath)
 
       Ok(Some(programH))
     } else {
@@ -376,7 +437,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(List(), List(), None, false, true, true, false, true, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -385,19 +446,29 @@ object Driver {
           vcheck(opts.inputs.size == 1, "Must have exactly 1 input file for highlighting", InputException)
           val List(inputFilePath) = opts.inputs
 
-          val (valeCodeMap, vpstCodeMap, parsedsMap, _) =
-            loadAndParseInputs(0, false, List(inputFilePath)) match {
-              case Err(error) => {
-                System.err.println(error)
-                System.exit(22)
-                vfail()
-              }
-              case Ok(a) => a
-            }
-          val List(code) = valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
-          val List((vpst, commentRanges)) = vpstCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
+          val compilation =
+            new Compilation(
+              opts.modulesToBuild,
+              nsCoord => resolveNamespaceContents(opts.inputs, nsCoord),
+              CompilationOptions(
+                if (opts.verbose) {
+                  (x => {
+                    println(x)
+                  })
+                } else {
+                  x => Unit // do nothing with it
+                },
+                opts.verbose,
+                new NullProfiler(),
+                false))
 
-          parsedsMap.map({ case (FileCoordinate(module, namespaces, filepath), parsed) =>
+          val valeCodeMap = compilation.getCodeMap()
+          val vpstCodeMap = compilation.getVpstMap()
+
+          val List(code) = valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
+          val List(vpst) = vpstCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
+
+          compilation.getParseds().map({ case (FileCoordinate(module, namespaces, filepath), (parsed, commentRanges)) =>
             val span = Spanner.forProgram(parsed)
             val highlights = Highlighter.toHTML(code, span, commentRanges)
             if (opts.outputDirPath == Some("")) {

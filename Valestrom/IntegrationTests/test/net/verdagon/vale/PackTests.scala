@@ -8,7 +8,7 @@ import net.verdagon.vale.driver.Compilation
 
 class PackTests extends FunSuite with Matchers {
   test("Extract seq") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  (x, y, z) = [5, 6, 7];
@@ -24,7 +24,7 @@ class PackTests extends FunSuite with Matchers {
   }
 
   test("Nested seqs") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  (x, (y, z)) = [[4, 5], [6, 7]];
@@ -47,7 +47,7 @@ class PackTests extends FunSuite with Matchers {
   }
 
   test("Nested tuples") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  (x, (y, z)) = [5, [6, false]];

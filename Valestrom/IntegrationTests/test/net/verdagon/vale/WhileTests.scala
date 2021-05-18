@@ -6,7 +6,7 @@ import net.verdagon.vale.driver.Compilation
 
 class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  while (false) {}
@@ -18,7 +18,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Test a for-ish while loop") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  i! = 0;
@@ -33,7 +33,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Tests a while loop with a complex condition") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
       """
         |fn main() int export {
         |  key! = 0;
@@ -42,15 +42,13 @@ class WhileTests extends FunSuite with Matchers {
         |  }
         |  = key;
         |}
-      """.stripMargin +
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale"))
+      """.stripMargin)
 
     compile.evalForReferend(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
   }
 
   test("Tests a while loop with a != in it") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
       """
         |fn main() int export {
         |  key! = 0;
@@ -59,16 +57,13 @@ class WhileTests extends FunSuite with Matchers {
         |  }
         |  = key;
         |}
-      """.stripMargin +
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/utils.vale"))
+      """.stripMargin)
 
     compile.evalForReferend(Vector(), List("A", "B", "c")) shouldEqual VonInt(99)
   }
 
   test("Return from infinite while loop") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  while (true) {
@@ -82,7 +77,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 //
 //  test("Tests a while loop with a move in it") {
-//    val compile = Compilation(
+//    val compile = Compilation.test(List("builtinexterns"),
 //      """
 //        |fn doThings(m: Marine) { }
 //        |struct Marine { hp: int; }

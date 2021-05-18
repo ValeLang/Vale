@@ -418,7 +418,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 //
 //  test("Constructor is stamped even without calling") {
-//    val compile = Compilation(
+//    val compile = Compilation.test(List("builtinexterns"),
 //      """
 //        |struct MyStruct imm {}
 //        |fn wot(b: *MyStruct) int { 9 }

@@ -17,74 +17,74 @@ import scala.util.Try
 
 class IntegrationTestsA extends FunSuite with Matchers {
   test("Simple program returning an int") {
-    val compile = Compilation("fn main() int export {3}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {3}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("Hardcoding negative numbers") {
-    val compile = Compilation("fn main() int export {-3}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {-3}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(-3)
   }
 
   test("Taking an argument and returning it") {
-    val compile = Compilation("fn main(a int) int {a}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main(a int) int {a}")
     compile.evalForReferend(Vector(IntV(5))) shouldEqual VonInt(5)
   }
 
   test("Tests adding two numbers") {
-    val compile = Compilation("fn main() int export { +(2, 3) }")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export { +(2, 3) }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
   test("Tests adding two floats") {
-    val compile = Compilation("fn main() float { +(2.5, 3.5) }")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() float { +(2.5, 3.5) }")
     compile.evalForReferend(Vector()) shouldEqual VonFloat(6.0f)
   }
 
   test("Tests inline adding") {
-    val compile = Compilation("fn main() int export { 2 + 3 }")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export { 2 + 3 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
   test("Test constraint ref") {
-    val compile = Compilation(Samples.get("programs/constraintRef.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/constraintRef.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests inline adding more") {
-    val compile = Compilation("fn main() int export { 2 + 3 + 4 + 5 + 6 }")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export { 2 + 3 + 4 + 5 + 6 }")
     compile.evalForReferend(Vector()) shouldEqual VonInt(20)
   }
 
   test("Simple lambda") {
-    val compile = Compilation("fn main() int export {{7}()}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {{7}()}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   test("Lambda with one magic arg") {
-    val compile = Compilation("fn main() int export {{_}(3)}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {{_}(3)}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
-    val compile = Compilation("fn main() int export {(a int){ +(a,a)}(3)}");
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {(a int){ +(a,a)}(3)}");
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
   test("Test overloads") {
-    val compile = Compilation(Samples.get("programs/functions/overloads.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/functions/overloads.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(6)
   }
 
   test("Test block") {
-    val compile = Compilation("fn main() int export {true; 200; = 300;}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {true; 200; = 300;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(300)
   }
 
   test("Test templates") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn ~<T>(a T, b T) T { a }
         |fn main() int export {true ~ false; 2 ~ 2; = 3 ~ 3;}
@@ -93,17 +93,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = Compilation("fn main() {a! = 3; set a = 4; }")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() {a! = 3; set a = 4; }")
     compile.run(Vector())
   }
 
   test("Test returning a local mutable var") {
-    val compile = Compilation("fn main() int export {a! = 3; set a = 4; = a;}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {a! = 3; set a = 4; = a;}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Test taking a callable param") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn do(callable) infer-ret {callable()}
         |fn main() int export {do({ 3 })}
@@ -112,7 +112,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Stamps an interface template via a function parameter") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface MyInterface<T> rules(T Ref) { }
         |fn doAThing<T>(i MyInterface<T>) { }
@@ -135,12 +135,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests unstackifying a variable multiple times in a function") {
-    val compile = Compilation(Samples.get("programs/multiUnstackify.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/multiUnstackify.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("Reads a struct member") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct MyStruct { a int; }
         |fn main() int export { ms = MyStruct(7); = ms.a; }
@@ -149,7 +149,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("=== true") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct MyStruct { a int; }
         |fn main() bool export {
@@ -161,7 +161,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("=== false") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct MyStruct { a int; }
         |fn main() bool export {
@@ -174,18 +174,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("set swapping locals") {
-    val compile = Compilation(Samples.get("programs/mutswaplocals.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/mutswaplocals.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("imm tuple access") {
-    val compile = Compilation(Samples.get("programs/immtupleaccess.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/immtupleaccess.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   // Known failure 2020-08-20
   test("Tests virtual doesn't get called if theres a better override") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface MyOption { }
         |
@@ -225,7 +225,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests single expression and single statement functions' returns") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct MyThing { value int; }
         |fn moo() MyThing { MyThing(4) }
@@ -235,7 +235,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests calling a templated struct's constructor") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct MySome<T> rules(T Ref) { value T; }
         |fn main() int export {
@@ -246,7 +246,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test int generic") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |
         |struct Vec<N, T> rules(N int)
@@ -263,33 +263,33 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests upcasting from a struct to an interface") {
-    val compile = Compilation(Samples.get("programs/virtuals/upcasting.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/virtuals/upcasting.vale"))
     compile.run(Vector())
   }
 
   test("Tests upcasting from if") {
-    val compile = Compilation(Samples.get("programs/if/upcastif.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/if/upcastif.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests from file") {
-    val compile = Compilation(Samples.get("programs/lambdas/doubleclosure.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/lambdas/doubleclosure.vale"))
     compile.run(Vector())
   }
 
   test("Tests from subdir file") {
-    val compile = Compilation(Samples.get("programs/virtuals/round.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/virtuals/round.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests calling a virtual function") {
-    val compile = Compilation(Samples.get("programs/virtuals/calling.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/virtuals/calling.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   test("Tests making a variable with a pattern") {
     // Tests putting MyOption<int> as the type of x.
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface MyOption<T> rules(T Ref) { }
         |
@@ -310,7 +310,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
 
   test("Tests a linked list") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
       Samples.get("programs/virtuals/ordinarylinkedlist.vale"))
@@ -318,7 +318,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests a templated linked list") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("programs/genericvirtuals/templatedlinkedlist.vale"))
@@ -326,12 +326,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests calling an abstract function") {
-    val compile = Compilation(Samples.get("programs/genericvirtuals/callingAbstract.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/genericvirtuals/callingAbstract.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Template overrides are stamped") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("programs/genericvirtuals/templatedoption.vale"))
@@ -339,7 +339,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests a foreach for a linked list") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("programs/genericvirtuals/foreachlinkedlist.vale"))
@@ -353,18 +353,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // So, this checks that it and its three ancestors are all stamped and all get their own
   // function families.
   test("Stamp multiple ancestors") {
-    val compile = Compilation(Samples.get("programs/genericvirtuals/stampMultipleAncestors.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/genericvirtuals/stampMultipleAncestors.vale"))
     val temputs = compile.getTemputs()
     compile.evalForReferend(Vector())
   }
 
   test("Tests recursion") {
-    val compile = Compilation(Samples.get("programs/functions/recursion.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/functions/recursion.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(120)
   }
 
   test("Tests floats") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Moo imm {
         |  x float;
@@ -377,13 +377,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("getOr function") {
-    val compile = Compilation(Samples.get("programs/genericvirtuals/getOr.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/genericvirtuals/getOr.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
   test("Function return without ret upcasts") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface Opt { }
         |struct Some { value int; }
@@ -409,7 +409,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Function return with ret upcasts") {
-    val compile = Compilation(Samples.get("programs/virtuals/retUpcast.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/virtuals/retUpcast.vale"))
 
     val temputs = compile.getTemputs()
     val doIt = temputs.lookupFunction("doIt")
@@ -421,7 +421,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Map function") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
         Samples.get("programs/genericvirtuals/mapFunc.vale")))
@@ -432,7 +432,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test shaking") {
     // Make sure that functions that cant be called by main will not be included.
 
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
       """
@@ -453,7 +453,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
 //  test("Test overloading between borrow and own") {
-//    val compile = Compilation(
+//    val compile = Compilation.test(List("builtinexterns"),
 //      """
 //        |interface IMoo {}
 //        |struct Moo {}
@@ -475,7 +475,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //  }
 
   test("Test returning empty seq") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """fn main() [] {
         |  []
         |}
@@ -486,7 +486,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test export functions") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """fn moo() int export {
         |  42
         |}
@@ -496,7 +496,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test extern functions") {
-    val compile = Compilation(Samples.get("programs/externs/extern.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/externs/extern.vale"))
 
     val hamuts = compile.getHamuts()
 
@@ -515,7 +515,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     // `get` overloads, because the borrow ownership (from the opt.get()) was creeping into the rules
     // too far.
 
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface Opt<T> rules(T Ref) { }
         |struct None<T> rules(T Ref) { }
@@ -537,7 +537,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test catch deref after drop") {
-    val compile = Compilation(Samples.get("programs/invalidaccess.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/invalidaccess.vale"))
     try {
       compile.evalForReferend(Vector()) shouldEqual VonInt(42)
       vfail()
@@ -549,7 +549,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // This test is here because we had a bug where the compiler was enforcing that we unstackify
   // the same locals from all branches of if, even if they were constraint refs.
   test("Using same constraint ref from both branches of if") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Moo {}
         |fn foo(a &Moo) int { 41 }
@@ -573,7 +573,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   // Compiler should be fine with moving things from if statements if we ret out.
   test("Moving same thing from both branches of if") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Moo {}
         |fn foo(a Moo) int { 41 }
@@ -595,7 +595,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("exporting array") {
-    val compilation = Compilation("export Array<mut, int> as IntArray;")
+    val compilation = Compilation.test(List("builtinexterns"), "export Array<mut, int> as IntArray;")
     val hamuts = compilation.getHamuts()
     val (fullNameH, exportedName) = hamuts.fullNameToExportedNames.head
     exportedName shouldEqual List("IntArray")

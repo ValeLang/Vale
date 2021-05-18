@@ -32,7 +32,7 @@ case class TopLevelStructP(struct: StructP) extends ITopLevelThingP
 case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP
 case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP
 case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP
-case class TopLevelImportP(export: ImportP) extends ITopLevelThingP
+case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP
 
 case class ImplP(
   range: Range,

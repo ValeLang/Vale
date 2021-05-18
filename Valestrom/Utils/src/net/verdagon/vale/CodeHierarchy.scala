@@ -52,12 +52,13 @@ object NamespaceCoordinate extends Ordering[NamespaceCoordinate] {
 }
 
 object FileCoordinateMap {
+  val TEST_MODULE = "test"
   def test[T](contents: T): FileCoordinateMap[T] = {
-    FileCoordinateMap(Map()).add("test", List(), "test.vale", contents)
+    FileCoordinateMap(Map()).add(TEST_MODULE, List(), "test.vale", contents)
   }
   def test[T](contents: Map[String, T]): FileCoordinateMap[T] = {
     contents.foldLeft(FileCoordinateMap[T](Map()))({
-      case (prev, (filename, c)) => prev.add("test", List(), filename, c)
+      case (prev, (filename, c)) => prev.add(TEST_MODULE, List(), filename, c)
     })
   }
 }
@@ -110,6 +111,21 @@ case class FileCoordinateMap[Contents](
   def expectOne(): Contents = {
     val List(only) = moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values))
     only
+  }
+
+  def mergeNonOverlapping(that: FileCoordinateMap[Contents]): FileCoordinateMap[Contents] = {
+    val thisMap = this.moduleToNamespacesToFilenameToContents
+    val thatMap = that.moduleToNamespacesToFilenameToContents
+    FileCoordinateMap(
+      (thisMap.keySet ++ thatMap.keySet).toList.map(module => {
+        val moduleContentsFromThis = thisMap.getOrElse(module, Map())
+        val moduleContentsFromThat = thatMap.getOrElse(module, Map())
+        // Make sure there was no overlap
+        vassert(moduleContentsFromThis.keySet.size + moduleContentsFromThat.keySet.size ==
+          (moduleContentsFromThis.keySet ++ moduleContentsFromThat.keySet).size)
+        val contents = moduleContentsFromThis ++ moduleContentsFromThat
+        (module -> contents)
+      }).toMap)
   }
 }
 

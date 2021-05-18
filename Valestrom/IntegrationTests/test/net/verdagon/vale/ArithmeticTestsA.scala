@@ -13,7 +13,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ArithmeticTestsA extends FunSuite with Matchers {
   test("Dividing") {
-    val compile = Compilation("fn main() int export {5 / 2}")
+    val compile = Compilation.test(List("builtinexterns"), "fn main() int export {5 / 2}")
     compile.evalForReferend(Vector()) shouldEqual VonInt(2)
   }
 }

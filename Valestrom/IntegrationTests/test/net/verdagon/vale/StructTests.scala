@@ -7,7 +7,7 @@ import net.verdagon.vale.driver.Compilation
 
 class StructTests extends FunSuite with Matchers {
   test("Make empty mut struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Marine {}
         |fn main() {
@@ -19,13 +19,13 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Constructor with this") {
-    val compile = Compilation(Samples.get("programs/structs/constructor.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/structs/constructor.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
 
   test("Make struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Marine { hp int; }
         |fn main() {
@@ -37,17 +37,17 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Make struct and get member") {
-    val compile = Compilation(Samples.get("programs/structs/getMember.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/structs/getMember.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
   test("Mutate struct") {
-    val compile = Compilation(Samples.get("programs/structs/mutate.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/structs/mutate.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
   test("Normal destructure") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Marine {
         |  hp int;
@@ -64,7 +64,7 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Sugar destructure") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Marine {
         |  hp int;
@@ -81,7 +81,7 @@ class StructTests extends FunSuite with Matchers {
   }
 
   test("Destroy members at right times") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Weapon { }
         |fn destructor(weapon Weapon) {
@@ -107,7 +107,7 @@ class StructTests extends FunSuite with Matchers {
 
   // Known failure 2020-08-20
   test("Mutate destroys member after moving it out of the object") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale") +
       """
@@ -176,7 +176,7 @@ class StructTests extends FunSuite with Matchers {
 
 
   test("Panic function") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface Opt<T> rules(T Ref) { }
         |struct Some<T> rules(T Ref) { value T; }
@@ -204,7 +204,7 @@ class StructTests extends FunSuite with Matchers {
 
 
   test("Call borrow parameter with shared reference") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """fn get<T>(a &T) &T { a }
         |
         |fn main() int export {

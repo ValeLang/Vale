@@ -129,8 +129,13 @@ object Driver {
 
   def resolveNamespaceContents(
       inputs: List[IValestromInput],
-      nsCoord: NamespaceCoordinate) = {
+      nsCoord: NamespaceCoordinate):
+  Map[String, String] = {
     val NamespaceCoordinate(module, namespaces) = nsCoord
+
+    if (module == "" && namespaces == List()) {
+      return Compilation.builtins
+    }
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
@@ -140,14 +145,13 @@ object Driver {
         }
         case (ModulePathInput(_, path), _) => {
           val directory = new java.io.File(path)
-          val filesInDirectory = directory.listFiles
+          val filesInDirectory = directory.listFiles()
           val inputFiles =
             filesInDirectory.filter(_.getName.endsWith(".vale")) ++
               filesInDirectory.filter(_.getName.endsWith(".vpst"))
           val inputFilePaths = inputFiles.map(_.getPath)
           inputFilePaths.toList.map(filepath => {
-            val file = path
-            val bufferedSource = Source.fromFile(file)
+            val bufferedSource = Source.fromFile(filepath)
             val code = bufferedSource.getLines.mkString("\n")
             bufferedSource.close
             (filepath -> code)

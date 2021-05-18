@@ -48,7 +48,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Tests a while loop with a != in it") {
-    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
+    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils", "utils"),
       """
         |fn main() int export {
         |  key! = 0;

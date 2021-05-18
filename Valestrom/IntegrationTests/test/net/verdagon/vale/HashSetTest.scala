@@ -6,7 +6,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class HashSetTest extends FunSuite with Matchers {
   test("Hash set from KSA") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("builtins/strings.vale"),
@@ -32,7 +32,7 @@ class HashSetTest extends FunSuite with Matchers {
   }
 
   test("Hash set from Array") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("builtins/strings.vale"),
@@ -60,7 +60,7 @@ class HashSetTest extends FunSuite with Matchers {
   }
 
   test("Hash set has") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
       Samples.get("libraries/castutils.vale"),
       Samples.get("builtins/strings.vale"),
@@ -93,7 +93,7 @@ class HashSetTest extends FunSuite with Matchers {
   }
 
   test("Hash set toArray") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("builtins/strings.vale"),
@@ -127,7 +127,7 @@ class HashSetTest extends FunSuite with Matchers {
   }
 
   test("Hash set remove") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("builtins/strings.vale"),

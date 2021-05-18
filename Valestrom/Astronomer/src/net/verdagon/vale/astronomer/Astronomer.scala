@@ -732,7 +732,7 @@ object Astronomer {
           })
         }))
 
-    val orderedModules = orderModules(mergedProgramS)
+//    val orderedModules = orderModules(mergedProgramS)
 
     try {
       val suppliedFunctions = wrapperFunctions

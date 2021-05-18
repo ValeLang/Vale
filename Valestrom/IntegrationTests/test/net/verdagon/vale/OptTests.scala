@@ -9,7 +9,7 @@ import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/utils.vale") +
         Samples.get("libraries/printutils.vale") +
         Samples.get("libraries/castutils.vale") +
@@ -26,8 +26,7 @@ class OptTests extends FunSuite with Matchers {
   }
 
   test("Test empty and get for None") {
-    val profiler = new Profiler()
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
       Samples.get("libraries/utils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -39,17 +38,14 @@ class OptTests extends FunSuite with Matchers {
           |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
-        """.stripMargin),
-      CompilationOptions(profiler = profiler))
+        """.stripMargin))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(0)
-
-    println(profiler.assembleResults())
   }
 
   test("Test empty and get for borrow") {
     val profiler = new Profiler()
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/utils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -65,11 +61,8 @@ class OptTests extends FunSuite with Matchers {
           |  s = Spaceship(42);
           |  ret Some<&Spaceship>(&s).borrowGet().fuel;
           |}
-        """.stripMargin),
-      CompilationOptions(profiler = profiler))
+        """.stripMargin))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
-
-    println(profiler.assembleResults())
   }
 }

@@ -29,6 +29,7 @@ object ParserVonifier {
       case TopLevelInterfaceP(interface) => vonifyInterface(interface)
       case TopLevelImplP(impl) => vonifyImpl(impl)
       case TopLevelExportAsP(impl) => vonifyExportAs(impl)
+      case TopLevelImportP(impl) => vonifyImport(impl)
     }
   }
 
@@ -150,6 +151,19 @@ object ParserVonifier {
         VonMember("range", vonifyRange(range)),
         VonMember("struct", vonifyTemplex(struct)),
         VonMember("exportedName", vonifyName(exportedName))))
+  }
+
+  def vonifyImport(exportAs: ImportP): VonObject = {
+    val ImportP(range, moduleName, namespaceSteps, importeeName) = exportAs
+
+    VonObject(
+      "Import",
+      None,
+      Vector(
+        VonMember("range", vonifyRange(range)),
+        VonMember("moduleName", vonifyName(moduleName)),
+        VonMember("namespaceSteps", VonArray(None, namespaceSteps.map(vonifyName).toVector)),
+        VonMember("importeeName", vonifyName(importeeName))))
   }
 
   def vonifyRange(range: Range): VonObject = {

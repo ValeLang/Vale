@@ -9,7 +9,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ArrayListTest extends FunSuite with Matchers {
   test("Simple ArrayList, no optionals") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/MakeArray.vale"),
         """
@@ -54,7 +54,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list with optionals") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/utils.vale"),
       Samples.get("builtins/strings.vale"),
       Samples.get("libraries/castutils.vale"),
@@ -85,7 +85,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list zero-constructor") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/utils.vale"),
       Samples.get("builtins/strings.vale"),
         Samples.get("libraries/castutils.vale"),
@@ -108,7 +108,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list len") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/opt.vale"),
         Samples.get("libraries/list.vale"),
@@ -132,7 +132,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list set") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/utils.vale"),
       Samples.get("builtins/strings.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -156,7 +156,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Array list with optionals with mutable element") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/utils.vale"),
       Samples.get("builtins/strings.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -188,7 +188,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Mutate mutable from in lambda") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
         """
           |struct Marine { hp int; }
           |
@@ -211,7 +211,7 @@ class ArrayListTest extends FunSuite with Matchers {
   }
 
   test("Move mutable from in lambda") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
       """
         |struct Marine { hp int; }
@@ -235,7 +235,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
 
   test("Remove from middle") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/utils.vale"),
       Samples.get("builtins/strings.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -268,7 +268,7 @@ class ArrayListTest extends FunSuite with Matchers {
 
 
   test("Remove from beginning") {
-    val compile = Compilation.multiple(List(
+    val compile = Compilation.test(List("builtinexterns"), List(
       Samples.get("libraries/utils.vale"),
       Samples.get("builtins/strings.vale"),
         Samples.get("libraries/printutils.vale"),

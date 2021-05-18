@@ -14,8 +14,14 @@ class BuildAction extends HttpFunction {
       return
     }
 
+    val options =
+      Options(
+        List(SourceInput(Driver.defaultModuleName, "in.vale", code)),
+        List(Driver.defaultModuleName),
+        Some(""),
+        false, false, true, false, true, None, false)
     val json =
-      Driver.build(Options(List(SourceInput("", "in.vale", code)), Some(""), false, false, true, false, true, None, false)) match {
+      Driver.build(options) match {
         case Ok(Some(programH)) => jsonifyProgram(programH)
         case Err(error) => {
           response.setStatusCode(400)

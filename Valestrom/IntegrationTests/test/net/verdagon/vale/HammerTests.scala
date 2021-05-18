@@ -6,7 +6,7 @@ import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.Share
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{Compilation, CompilationOptions}
-import net.verdagon.vale.driver.Compilation.testDependencies
+import net.verdagon.vale.driver.Compilation.builtins
 import net.verdagon.von.VonInt
 
 import scala.collection.immutable.List

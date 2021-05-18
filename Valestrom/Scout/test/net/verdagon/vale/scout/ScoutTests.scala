@@ -268,6 +268,17 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
+  test("Forgetting set when changing") {
+    val error = compileForError(
+      """fn moo() {
+        |  set = 6;
+        |}
+        |""".stripMargin)
+    error match {
+      case CantUseThatLocalName(_, "set") =>
+    }
+  }
+
   test("CantInitializeIndividualElementsOfRuntimeSizedArray") {
     val error = compileForError(
       """fn MyStruct() {

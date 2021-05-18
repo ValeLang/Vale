@@ -1,6 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.driver.Compilation.testDependencies
+import net.verdagon.vale.driver.Compilation.builtins
 import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{metal => m}
@@ -32,7 +32,7 @@ class ImportTests extends FunSuite with Matchers {
         {
           case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
           case NamespaceCoordinate("moduleB", List()) => Map("moo.vale" -> moduleBCode)
-          case NamespaceCoordinate("", List()) => testDependencies
+          case NamespaceCoordinate("", List()) => builtins
           case x => vfail("Couldn't find module: " + x)
         },
         CompilationOptions())
@@ -60,7 +60,7 @@ class ImportTests extends FunSuite with Matchers {
         {
           case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
           case NamespaceCoordinate("moduleB", List()) => Map("moo.vale" -> moduleBCode)
-          case NamespaceCoordinate("", List()) => testDependencies
+          case NamespaceCoordinate("", List()) => builtins
           case x => vfail("Couldn't find module: " + x)
         },
         CompilationOptions())

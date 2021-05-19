@@ -22,7 +22,7 @@ class TupleTests extends FunSuite with Matchers {
   test("Simple tuple with one int") {
     val compile = Compilation.test(List("builtinexterns"), "fn main() int export { [9].0 }")
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").header.returnType.referend shouldEqual Int2()
     // Funny story, theres no such thing as a one element tuple! It becomes a one element array.
     temputs.lookupFunction("main").only({ case TupleE2(_, _, _) => })

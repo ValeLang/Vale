@@ -16,7 +16,7 @@ class PackTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.all({ case TupleE2(List(_, _, _), _, _) => }).size shouldEqual 1
 
@@ -32,7 +32,7 @@ class PackTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.all({
       case TupleE2(
@@ -55,7 +55,7 @@ class PackTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main .all({ case TupleE2(List(_, TupleE2(List(_, _), _, _)), _, _) => }).size shouldEqual 1
 

@@ -176,17 +176,13 @@ object CombinatorParsers
 
   private[parser] def `import`: Parser[ImportP] = {
     (pos <~ "import" <~ white) ~
-      rep1sep(exprIdentifier, optWhite ~> "." <~ optWhite) ~
+      rep(exprIdentifier <~ optWhite <~ "." <~ optWhite) ~
+      (exprIdentifier | pstr("*")) ~
       (optWhite ~> ";" ~> pos) ^^ {
-      case begin ~ steps ~ end => {
-        vassert(steps.nonEmpty)
-        if (steps.size == 1) {
-          throw new NotImplementedError("Importing everything in a module not implemented yet")
-        }
+      case begin ~ steps ~ importee ~ end => {
         val moduleName = steps.head
-        val namespaceSteps = steps.init.tail
-        val importeeName = steps.last
-        ImportP(Range(begin, end), moduleName, namespaceSteps, importeeName)
+        val namespaceSteps = steps.tail
+        ImportP(Range(begin, end), moduleName, namespaceSteps, importee)
       }
     }
   }

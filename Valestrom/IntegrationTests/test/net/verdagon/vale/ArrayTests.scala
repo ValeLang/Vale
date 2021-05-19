@@ -32,7 +32,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case ArraySequenceLookup2(_,_,_, _, _) => {
       }
@@ -51,7 +51,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case ArraySequenceLookup2(_,_,arrayType, _, _) => {
         arrayType.array.mutability shouldEqual Mutable
@@ -64,7 +64,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Immutable static array from lambda") {
     val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/immksafromcallable.vale"))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case ArraySequenceLookup2(_,_,arrayType, _, _) => {
         arrayType.array.mutability shouldEqual Immutable
@@ -77,7 +77,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Mutable static array from lambda") {
     val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/mutksafromcallable.vale"))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case ArraySequenceLookup2(_,_,arrayType, _, _) => {
         arrayType.array.mutability shouldEqual Mutable
@@ -90,7 +90,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Immutable static array from values") {
     val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/immksafromvalues.vale"))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case ArraySequenceLookup2(_,_,arrayType, _, _) => {
         arrayType.array.mutability shouldEqual Immutable
@@ -103,7 +103,7 @@ class ArrayTests extends FunSuite with Matchers {
   test("Mutable static array from values") {
     val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/mutksafromvalues.vale"))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case ArraySequenceLookup2(_,_,arrayType, _, _) => {
         arrayType.array.mutability shouldEqual Mutable
@@ -162,7 +162,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("__Array")
     main.only({
       case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable)), _, _, _) =>
@@ -185,7 +185,7 @@ class ArrayTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("__Array")
     main.only({
       case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable)), _, _, _) =>
@@ -236,7 +236,7 @@ class ArrayTests extends FunSuite with Matchers {
           |}
         """.stripMargin))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("__Array")
     main.only({
       case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable)), _, _, _) =>

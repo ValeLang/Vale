@@ -203,7 +203,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |}
         """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
     main.variables.collect({ case AddressibleLocalVariable2(FullName2(_, CodeVarName2("m")), Varying, _) => })
 
@@ -226,7 +226,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
     main.variables.collect({ case AddressibleLocalVariable2(FullName2(_, CodeVarName2("m")), Varying, _) => })
 

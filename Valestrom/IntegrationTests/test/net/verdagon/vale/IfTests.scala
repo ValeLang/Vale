@@ -20,7 +20,7 @@ class IfTests extends FunSuite with Matchers {
     val main = programS.lookupFunction("main")
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case If2(_, _, _) => })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
@@ -45,7 +45,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
     ifs.size shouldEqual 2
@@ -76,7 +76,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
     val userFuncs = temputs.getAllUserFunctions
@@ -102,7 +102,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Str2()))
 
@@ -156,7 +156,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "In else!\nIn rest!\nDestroying marine!\n"
   }
 
@@ -186,7 +186,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "5\n5\n5\n5\n"
   }
 
@@ -210,7 +210,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 

@@ -19,7 +19,7 @@ class VirtualTests extends FunSuite with Matchers {
           |  doThing(i)
           |}
         """.stripMargin)
-      val temputs = compile.getTemputs()
+      val temputs = compile.expectTemputs()
 
       vassert(temputs.getAllUserFunctions.size == 2)
       vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
@@ -51,7 +51,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  doThing(i)
         |}
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 2)
     vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
@@ -85,7 +85,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  doThing(i)
         |}
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 1)
     vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))

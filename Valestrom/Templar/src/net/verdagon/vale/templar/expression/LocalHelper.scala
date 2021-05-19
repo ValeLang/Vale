@@ -1,13 +1,14 @@
-package net.verdagon.vale.templar
+package net.verdagon.vale.templar.expression
 
 import net.verdagon.vale.astronomer.LocalVariableA
-import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, OwnP, OwnershipP, UseP, WeakP}
+import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
-import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper}
+import net.verdagon.vale.templar.function.DropHelper
 import net.verdagon.vale.templar.templata.Conversions
-import net.verdagon.vale.templar.types.{Bool2, Constraint, Coord, Final, Float2, Int2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Mutable, OverloadSet, Own, Ownership, PackT2, RawArrayT2, Readonly, Readwrite, Share, Str2, StructRef2, TupleT2, UnknownSizeArrayT2, Variability, Void2, Weak}
-import net.verdagon.vale.{vassert, vcurious, vfail, vimpl}
+import net.verdagon.vale.templar.types._
+import net.verdagon.vale.templar._
+import net.verdagon.vale.{vassert, vfail}
 
 import scala.collection.immutable.List
 

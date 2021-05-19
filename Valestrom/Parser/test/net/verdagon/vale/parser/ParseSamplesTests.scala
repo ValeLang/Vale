@@ -13,7 +13,7 @@ class ParseSamplesTests extends FunSuite with Matchers with Collector with TestP
   test("programs/addret.vale") { compileProgramWithComments(Samples.get("programs/addret.vale")) }
   test("programs/arrays/immusa.vale") { compileProgramWithComments(Samples.get("programs/arrays/immusa.vale")) }
   test("programs/arrays/immusalen.vale") { compileProgramWithComments(Samples.get("programs/arrays/immusalen.vale")) }
-  test("programs/arrays/knownsizeimmarray.vale") { compileProgramWithComments(Samples.get("programs/arrays/knownsizeimmarray.vale")) }
+  test("programs/arrays/immksafromvalues.vale") { compileProgramWithComments(Samples.get("programs/arrays/immksafromvalues.vale")) }
   test("programs/arrays/mutusa.vale") { compileProgramWithComments(Samples.get("programs/arrays/mutusa.vale")) }
   test("programs/arrays/mutusalen.vale") { compileProgramWithComments(Samples.get("programs/arrays/mutusalen.vale")) }
   test("programs/arrays/swapmutusadestroy.vale") { compileProgramWithComments(Samples.get("programs/arrays/swapmutusadestroy.vale")) }

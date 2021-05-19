@@ -400,10 +400,11 @@ Ref translateExpressionInner(
         globalState->getRegion(knownSizeArrayLoad->resultType)
             ->upgradeLoadResultToRefWithTargetOwnership(
                 functionState, builder, elementType, knownSizeArrayLoad->resultType, loadResult);
+    globalState->getRegion(elementType)->checkValidReference(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
-        ->alias(FL(), functionState, builder, elementType, resultRef);
+        ->alias(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
-        ->checkValidReference(FL(), functionState, builder, elementType, resultRef);
+        ->checkValidReference(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     return resultRef;
   } else if (auto unknownSizeArrayLoad = dynamic_cast<UnknownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -531,6 +532,9 @@ Ref translateExpressionInner(
   } else if (auto constructUnknownSizeArray = dynamic_cast<ConstructUnknownSizeArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateConstructUnknownSizeArray(globalState, functionState, blockState, builder, constructUnknownSizeArray);
+  } else if (auto staticArrayFromCallable = dynamic_cast<StaticArrayFromCallable*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    return translateStaticArrayFromCallable(globalState, functionState, blockState, builder, staticArrayFromCallable);
   } else if (auto call = dynamic_cast<Call*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", call->function->name->name);
     auto resultLE = translateCall(globalState, functionState, blockState, builder, call);

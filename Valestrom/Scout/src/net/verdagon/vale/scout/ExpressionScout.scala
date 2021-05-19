@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser._
+import net.verdagon.vale.parser.{RuntimeSizedP, _}
 import net.verdagon.vale.{scout, vassert, vfail, vimpl, vwat}
 import net.verdagon.vale.scout.Scout.{noDeclarations, noVariableUses}
 import net.verdagon.vale.scout.patterns.{LetRuleState, PatternScout, RuleState, RuleStateBox}
@@ -204,7 +204,7 @@ object ExpressionScout {
         val result = NormalResult(evalRange(range), FunctionCallSE(evalRange(range), callable1, args1))
         (stackFrame2, result, callableSelfUses.thenMerge(argsSelfUses), callableChildUses.thenMerge(argsChildUses))
       }
-      case MethodCallPE(range, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, memberLookup, methodArgs) => {
+      case MethodCallPE(range, inline, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, memberLookup, methodArgs) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
           scoutExpressionAndCoerce(stackFrame0, memberLookup, LendConstraintP(None))
         val (stackFrame2, subject1, subjectSelfUses, subjectChildUses) =
@@ -219,10 +219,51 @@ object ExpressionScout {
         val result = NormalResult(evalRange(range), FunctionCallSE(evalRange(range), callable1, args))
         (stackFrame3, result, selfUses, childUses)
       }
-      case SequencePE(range, elementsPE) => {
+      case TuplePE(range, elementsPE) => {
         val (stackFrame1, elements1, selfUses, childUses) =
           scoutElementsAsExpressions(stackFrame0, elementsPE)
-        (stackFrame1, NormalResult(evalRange(range), scout.SequenceESE(evalRange(range), elements1)), selfUses, childUses)
+        (stackFrame1, NormalResult(evalRange(range), TupleSE(evalRange(range), elements1)), selfUses, childUses)
+      }
+      case ConstructArrayPE(rangeP, maybeMutabilityPT, maybeVariabilityPT, size, initializingIndividualElements, argsPE) => {
+        val rangeS = evalRange(rangeP)
+        val maybeMutabilityST = maybeMutabilityPT.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))
+        val maybeVariabilityST = maybeVariabilityPT.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))
+
+        val (stackFrame1, argsSE, selfUses, childUses) =
+          scoutElementsAsExpressions(stackFrame0, argsPE)
+
+        val result =
+          size match {
+            case RuntimeSizedP => {
+              if (initializingIndividualElements) {
+                throw CompileErrorExceptionS(CantInitializeIndividualElementsOfRuntimeSizedArray(rangeS))
+              }
+              if (argsSE.size != 2) {
+                throw CompileErrorExceptionS(InitializingRuntimeSizedArrayRequiresSizeAndCallable(rangeS))
+              }
+              val List(sizeSE, callableSE) = argsSE
+              RuntimeArrayFromCallableSE(rangeS, maybeMutabilityST, maybeVariabilityST, sizeSE, callableSE)
+            }
+            case StaticSizedP(maybeSizePT) => {
+              val maybeSizeST = maybeSizePT.map(TemplexScout.translateTemplex(stackFrame0.parentEnv, _))
+              if (initializingIndividualElements) {
+                StaticArrayFromValuesSE(rangeS, maybeMutabilityST, maybeVariabilityST, maybeSizeST, argsSE)
+              } else {
+                if (argsSE.size != 1) {
+                  throw CompileErrorExceptionS(InitializingStaticSizedArrayRequiresSizeAndCallable(rangeS))
+                }
+                val sizeST =
+                  maybeSizeST match {
+                    case Some(s) => s
+                    case None => throw new CompileErrorExceptionS(InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(rangeS))
+                  }
+                val List(callableSE) = argsSE
+                StaticArrayFromCallableSE(rangeS, maybeMutabilityST, maybeVariabilityST, sizeST, callableSE)
+              }
+            }
+          }
+
+        (stackFrame1, NormalResult(rangeS, result), selfUses, childUses)
       }
       case b @ BlockPE(_, _) => {
         val (result, selfUses, childUses) =

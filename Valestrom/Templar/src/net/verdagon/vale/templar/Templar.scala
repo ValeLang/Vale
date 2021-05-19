@@ -8,6 +8,7 @@ import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, Par
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.expression.{ExpressionTemplar, IExpressionTemplarDelegate}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.function.{BuiltInFunctions, DestructorTemplar, DropHelper, FunctionTemplar, FunctionTemplarCore, IFunctionTemplarDelegate, VirtualTemplar}
@@ -36,7 +37,9 @@ trait IFunctionGenerator {
 
 case class TemplarOptions(
   functionGeneratorByName: Map[String, IFunctionGenerator],
-  debugOut: String => Unit = println,
+  debugOut: String => Unit = (x => {
+    println("###: " + x)
+  }),
   verboseErrors: Boolean = false,
   useOptimization: Boolean = false,
 )
@@ -281,19 +284,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  val arrayTemplar =
-    new ArrayTemplar(
-      opts,
-      new IArrayTemplarDelegate {
-        def getArrayDestructor(
-          env: IEnvironment,
-          temputs: Temputs,
-          type2: Coord):
-        (Prototype2) = {
-          destructorTemplar.getArrayDestructor(env, temputs, type2)
-        }
-      })
-
   val ancestorHelper =
     new AncestorHelper(opts, profiler, inferTemplar, new IAncestorHelperDelegate {
       override def getInterfaceRef(temputs: Temputs, callRange: RangeS, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
@@ -371,8 +361,22 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
   val virtualTemplar = new VirtualTemplar(opts, overloadTemplar)
 
-  val sequenceTemplar = new SequenceTemplar(opts, arrayTemplar, structTemplar, destructorTemplar)
+  val sequenceTemplar = new SequenceTemplar(opts, structTemplar, destructorTemplar)
 
+  val arrayTemplar =
+    new ArrayTemplar(
+      opts,
+      new IArrayTemplarDelegate {
+        def getArrayDestructor(
+          env: IEnvironment,
+          temputs: Temputs,
+          type2: Coord):
+        (Prototype2) = {
+          destructorTemplar.getArrayDestructor(env, temputs, type2)
+        }
+      },
+      inferTemplar,
+      overloadTemplar)
 
   val expressionTemplar =
     new ExpressionTemplar(

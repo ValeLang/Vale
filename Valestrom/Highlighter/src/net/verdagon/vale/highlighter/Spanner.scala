@@ -42,6 +42,7 @@ case object CallLookup extends IClass
 case object Inl extends IClass
 case object Lookup extends IClass
 case object Seq extends IClass
+case object ConstructArray extends IClass
 case object Mut extends IClass
 case object MemberAccess extends IClass
 case object Let extends IClass
@@ -185,8 +186,22 @@ object Spanner {
       case LookupPE(NameP(range, _), templateArgs) => {
         makeSpan(Lookup, range, List())
       }
-      case SequencePE(range, elements) => {
+      case TuplePE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
+      }
+      case ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) => {
+        makeSpan(
+          ConstructArray,
+          range,
+          mutability.map(forTemplex).toList ++
+          variability.map(forTemplex).toList ++
+          (size match {
+            case RuntimeSizedP => List()
+            case StaticSizedP(sizePT) => {
+              sizePT.map(forTemplex).toList
+            }
+          }) ++
+          args.map(forExpression))
       }
       case MutatePE(range, mutatee, expr) => {
         makeSpan(Mut, range, List(forExpression(mutatee), forExpression(expr)))
@@ -212,7 +227,7 @@ object Spanner {
         val allSpans = (callableSpan :: argSpans)
         makeSpan(Call, range, allSpans)
       }
-      case MethodCallPE(range, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
+      case MethodCallPE(range, inline, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
         val methodSpan = makeSpan(CallLookup, methodNameRange, List())
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)

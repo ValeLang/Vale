@@ -8,6 +8,7 @@ import net.verdagon.vale.templar.templata.{IPotentialBanner, _}
 import net.verdagon.vale.scout.{CodeRuneS, CodeTypeNameS, ExplicitTemplateArgRuneS, INameS, ITemplexS, RangeS}
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, IScoutExpectedFunctionResult, InferFailure, Outscored, ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
@@ -588,4 +589,27 @@ class OverloadTemplar(
       }
     }
   }
+
+  def getArrayGeneratorPrototype(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    range: RangeS,
+    callableTE: ReferenceExpression2):
+  Prototype2 = {
+    val funcName = GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME)
+    val paramFilters =
+      List(
+        ParamFilter(callableTE.resultRegister.underlyingReference, None),
+        ParamFilter(Coord(Share, Readonly, Int2()), None))
+    val prototype =
+      scoutExpectedFunctionForPrototype(
+        fate.snapshot, temputs, range, funcName, List(), paramFilters, List(), false) match {
+        case seff@ScoutExpectedFunctionFailure(name, args, outscoredReasonByPotentialBanner, rejectedReasonByBanner, rejectedReasonByFunction) => {
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
+        }
+        case ScoutExpectedFunctionSuccess(p) => p
+      }
+    prototype
+  }
+
 }

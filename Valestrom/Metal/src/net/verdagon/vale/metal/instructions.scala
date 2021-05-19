@@ -540,6 +540,30 @@ case class ConstructUnknownSizeArrayH(
       generatorExpression.resultType.ownership == ShareH)
 }
 
+// Constructs an unknown-size array, whose length is the integer from sizeExpression,
+// whose values are generated from the function from generatorExpression. Puts the
+// result in a new expressions.
+case class StaticArrayFromCallableH(
+  // Expression containing the IFunction<int, T> interface reference which we'll
+  // call to generate each element of the array.
+  // More specifically, we'll call the "__call" function on the interface, which
+  // should be the only function on it.
+  // This is a constraint reference.
+  generatorExpression: ExpressionH[ReferendH],
+  // The prototype for the "__call" function to call on the interface for each element.
+  generatorMethod: PrototypeH,
+
+  elementType: ReferenceH[ReferendH],
+  // The resulting type of the array.
+  // TODO: Remove this, it's redundant with the generatorExpression's interface's
+  // only method's return type.
+  resultType: ReferenceH[KnownSizeArrayTH]
+) extends ExpressionH[KnownSizeArrayTH] {
+  vassert(
+    generatorExpression.resultType.ownership == BorrowH ||
+      generatorExpression.resultType.ownership == ShareH)
+}
+
 // Destroys an array previously created with NewArrayFromValuesH.
 case class DestroyKnownSizeArrayIntoFunctionH(
   // Expression containing the array we'll destroy.

@@ -1,6 +1,6 @@
 
 fn main() int export {
   x! = 10;
-  { set x = 42; }();
+  ({ set x = 42; })();
   = x;
 }

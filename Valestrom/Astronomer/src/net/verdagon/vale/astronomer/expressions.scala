@@ -100,7 +100,34 @@ case class RepeaterBlockIteratorAE(range: RangeS, expression: IExpressionAE) ext
 
 case class VoidAE(range: RangeS) extends IExpressionAE {}
 
-case class SequenceEAE(range: RangeS, elements: List[IExpressionAE]) extends IExpressionAE
+case class TupleAE(range: RangeS, elements: List[IExpressionAE]) extends IExpressionAE
+case class StaticArrayFromValuesAE(
+  range: RangeS,
+  rules: List[IRulexAR],
+  typeByRune: Map[IRuneA, ITemplataType],
+  maybeSizeRune: Option[IRuneA],
+  maybeMutabilityRune: Option[IRuneA],
+  maybeVariabilityRune: Option[IRuneA],
+  elements: List[IExpressionAE]
+) extends IExpressionAE
+case class StaticArrayFromCallableAE(
+  range: RangeS,
+  rules: List[IRulexAR],
+  typeByRune: Map[IRuneA, ITemplataType],
+  sizeRune: IRuneA,
+  maybeMutabilityRune: Option[IRuneA],
+  maybeVariabilityRune: Option[IRuneA],
+  callable: IExpressionAE
+) extends IExpressionAE
+case class RuntimeArrayFromCallableAE(
+  range: RangeS,
+  rules: List[IRulexAR],
+  typeByRune: Map[IRuneA, ITemplataType],
+  maybeMutabilityRune: Option[IRuneA],
+  maybeVariabilityRune: Option[IRuneA],
+  size: IExpressionAE,
+  callable: IExpressionAE
+) extends IExpressionAE
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
 case class RepeaterPackAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE

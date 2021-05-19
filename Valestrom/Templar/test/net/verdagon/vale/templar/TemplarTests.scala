@@ -113,7 +113,7 @@ class TemplarCompilation(var codeMap: FileCoordinateMap[String]) {
       case None => {
 
         val debugOut = (string: String) => {
-          println(string)
+          println("####: " + string)
         }
 
         new Templar(debugOut, true, new NullProfiler(), false).evaluate(getAstrouts()) match {

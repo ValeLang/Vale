@@ -134,7 +134,7 @@ class ValeTest(unittest.TestCase):
     def test_assist_smallstr(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/strings/smallstr.vale"], "assist", 42)
     def test_assist_immtupleaccess(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/immtupleaccess.vale"], "assist", 42)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/tuples/immtupleaccess.vale"], "assist", 42)
     def test_assist_immksafromcallable(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/immksafromcallable.vale"], "assist", 42)
     def test_assist_immksafromvalues(self) -> None:

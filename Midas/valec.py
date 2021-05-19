@@ -313,7 +313,6 @@ class ValeCompiler:
                         sys.exit(22)
                     module_name = parts[0]
                     contents_path = Path(parts[1]).expanduser()
-                    print("contents path: " + str(contents_path))
                     if str(contents_path).endswith(".vale"):
                         user_valestrom_inputs.append([module_name, contents_path])
                     elif str(contents_path).endswith(".vpst"):

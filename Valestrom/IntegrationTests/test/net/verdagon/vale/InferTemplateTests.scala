@@ -19,7 +19,7 @@ class InferTemplateTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val moo = compile.getTemputs().lookupFunction("moo")
+    val moo = compile.expectTemputs().lookupFunction("moo")
     moo.header.params match {
       case List(Parameter2(CodeVarName2("m"), _, Coord(Constraint,Readonly, _))) =>
     }

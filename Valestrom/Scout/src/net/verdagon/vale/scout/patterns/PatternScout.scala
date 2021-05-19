@@ -132,7 +132,7 @@ object PatternScout {
         }
         case Some(CaptureP(_,LocalNameP(NameP(_, name)), variability)) => {
           if (name == "set" || name == "mut") {
-            throw CompileErrorExceptionS(CantOverrideOwnershipped(Scout.evalRange(stackFrame.file, range)))
+            throw CompileErrorExceptionS(CantUseThatLocalName(Scout.evalRange(stackFrame.file, range), name))
           }
           CaptureS(CodeVarNameS(name), variability)
         }

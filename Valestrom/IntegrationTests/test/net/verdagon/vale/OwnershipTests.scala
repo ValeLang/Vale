@@ -23,7 +23,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({
       case LetAndLend2(ReferenceLocalVariable2(FullName2(List(FunctionName2("main",List(),List())),TemplarTemporaryVarName2(0)),Final,_),refExpr) => {
         refExpr.resultRegister.reference match {
@@ -52,7 +52,7 @@ class OwnershipTests extends FunSuite with Matchers {
         Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
     main.all({ case FunctionCall2(_, _) => }).size shouldEqual 2
 
@@ -76,7 +76,7 @@ class OwnershipTests extends FunSuite with Matchers {
         Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
 
     compile.evalForReferendAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
@@ -99,7 +99,7 @@ class OwnershipTests extends FunSuite with Matchers {
         Samples.get("libraries/castutils.vale") +
         Samples.get("libraries/printutils.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
     main.all({ case FunctionCall2(_, _) => }).size shouldEqual 2
 
@@ -128,7 +128,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     // Destructor should only be calling println, NOT the destructor (itself)
     val destructor = temputs.lookupUserFunction(CallTemplar.MUT_DESTRUCTOR_NAME)
@@ -167,7 +167,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
     main.all({ case FunctionCall2(_, _) => }).size shouldEqual 2
 
@@ -208,7 +208,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     // Should be a temporary for this object
-    compile.getTemputs().lookupFunction("main")
+    compile.expectTemputs().lookupFunction("main")
             .allOf(classOf[LetAndLend2]).size shouldEqual 1
 
     compile.run(Vector())
@@ -224,7 +224,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     // Only one variable containing a Muta
     main.only({
       case LetNormal2(ReferenceLocalVariable2(_,Final,Coord(Own,Readwrite,StructRef2(FullName2(List(),CitizenName2("Muta",List()))))),_) =>
@@ -242,7 +242,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     val numVariables = main.all({ case ReferenceLocalVariable2(_, _, _) => }).size
     main.all({ case LetAndLend2(_, _) => case LetNormal2(_, _) => }).size shouldEqual numVariables

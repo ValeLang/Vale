@@ -143,9 +143,13 @@ object Driver {
           // All .vpst and .vale direct inputs are considered part of the root namespace.
           List((index + "(" + name + ")" -> code))
         }
-        case (ModulePathInput(_, path), _) => {
-          val directory = new java.io.File(path)
+        case (ModulePathInput(_, modulePath), _) => {
+          val directoryPath = modulePath + namespaces.map(File.separator + _).mkString("")
+          val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
+          if (filesInDirectory == null) {
+            throw InputException("Couldn't find " + directoryPath)
+          }
           val inputFiles =
             filesInDirectory.filter(_.getName.endsWith(".vale")) ++
               filesInDirectory.filter(_.getName.endsWith(".vpst"))
@@ -302,7 +306,7 @@ object Driver {
         CompilationOptions(
           if (opts.verbose) {
             (x => {
-              println(x)
+              println("#: " + x)
             })
           } else {
             x => Unit // do nothing with it
@@ -334,40 +338,37 @@ object Driver {
     }
 
     if (opts.outputVAST) {
-      val scoutput =
-        compilation.getScoutput() match {
-          case Err(e) => return Err(ScoutErrorHumanizer.humanize(valeCodeMap, e))
-          case Ok(p) => p
-        }
+      compilation.getScoutput() match {
+        case Err(e) => return Err(ScoutErrorHumanizer.humanize(valeCodeMap, e))
+        case Ok(p) => p
+      }
 
       val startAstronomerTime = java.lang.System.currentTimeMillis()
       if (opts.benchmark) {
         println("Scout phase duration: " + (startAstronomerTime - startScoutTime))
       }
 
-      val astrouts =
-        Astronomer.runAstronomer(scoutput) match {
-          case Right(error) => return Err(AstronomerErrorHumanizer.humanize(valeCodeMap, error))
-          case Left(result) => result
-        }
+      compilation.getAstrouts() match {
+        case Err(error) => return Err(AstronomerErrorHumanizer.humanize(valeCodeMap, error))
+        case Ok(result) => result
+      }
 
       val startTemplarTime = java.lang.System.currentTimeMillis()
       if (opts.benchmark) {
         println("Astronomer phase duration: " + (startTemplarTime - startAstronomerTime))
       }
 
-      val hinputs =
-        new Templar(if (opts.verbose) println else (_), opts.verbose, new NullProfiler(), false).evaluate(astrouts) match {
-          case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, valeCodeMap, error))
-          case Ok(x) => x
-        }
+      compilation.getTemputs() match {
+        case Err(error) => return Err(TemplarErrorHumanizer.humanize(opts.verbose, valeCodeMap, error))
+        case Ok(x) => x
+      }
 
       val startHammerTime = java.lang.System.currentTimeMillis()
       if (opts.benchmark) {
         println("Templar phase duration: " + (startHammerTime - startTemplarTime))
       }
 
-      val programH = Hammer.translate(hinputs)
+      val programH = compilation.getHamuts()
 
       val finishTime = java.lang.System.currentTimeMillis()
       if (opts.benchmark) {
@@ -396,7 +397,7 @@ object Driver {
         case Ok(_) => {
         }
         case Err(error) => {
-          System.err.println(error)
+          System.err.println("#: " + error)
           System.exit(22)
           vfail()
         }
@@ -457,7 +458,7 @@ object Driver {
               CompilationOptions(
                 if (opts.verbose) {
                   (x => {
-                    println(x)
+                    println("##: " + x)
                   })
                 } else {
                   x => Unit // do nothing with it

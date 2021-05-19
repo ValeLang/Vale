@@ -21,7 +21,7 @@ class PatternTests extends FunSuite with Matchers {
   test("Test matching a multiple-member seq of immutables") {
     // Checks that the 5 made it into y, and it was an int
     val compile = Compilation.test(List("builtinexterns"), "fn main() int export { (x, y) = [4, 5]; = y; }")
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
@@ -34,7 +34,7 @@ class PatternTests extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |fn main() int export { (x, y) = [Marine(6), Marine(8)]; = y.hp; }
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
     main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
@@ -47,7 +47,7 @@ class PatternTests extends FunSuite with Matchers {
         |struct Marine { hp int; }
         |fn main() int export { (x, y) = [7, Marine(8)]; = y.hp; }
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
@@ -63,7 +63,7 @@ class PatternTests extends FunSuite with Matchers {
         |  = y.hp;
         |}
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }
@@ -94,7 +94,7 @@ class PatternTests extends FunSuite with Matchers {
         |  Vec3(x * len, y * len, z * len)
         |}
         |""".stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
     compile.evalForReferend(Vector()) shouldEqual VonInt(8)
   }

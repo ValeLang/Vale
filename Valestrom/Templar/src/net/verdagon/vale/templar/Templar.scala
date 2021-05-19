@@ -37,7 +37,9 @@ trait IFunctionGenerator {
 
 case class TemplarOptions(
   functionGeneratorByName: Map[String, IFunctionGenerator],
-  debugOut: String => Unit = println,
+  debugOut: String => Unit = (x => {
+    println("###: " + x)
+  }),
   verboseErrors: Boolean = false,
   useOptimization: Boolean = false,
 )

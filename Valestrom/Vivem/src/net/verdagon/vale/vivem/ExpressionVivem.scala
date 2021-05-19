@@ -1,7 +1,9 @@
 package net.verdagon.vale.vivem
 
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl, vwat, metal => m}
+import net.verdagon.vale.{Err, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat, metal => m}
+
+import scala.collection.mutable
 
 object ExpressionVivem {
   // The contained reference has a ResultToObjectReferrer pointing at it.
@@ -728,52 +730,17 @@ object ExpressionVivem {
 
         val generatorReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), generatorExpr) match {
-            case r @ NodeReturn(_) => return r
-            case NodeContinue(r) => r
+            case nr @ NodeReturn(_) => return nr
+            case NodeContinue(v) => v
           }
 
-        val generatorFunction = vassertSome(programH.functions.find(_.prototype == generatorPrototype))
-
-        (0 until size).foreach(i => {
-          heap.vivemDout.println()
-          heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (generator)")
-
-          val indexReference = heap.allocateTransient(ShareH, InlineH, ReadonlyH, IntV(i))
-
-
-//          val generatorInterfaceDefH =
-//            programH.interfaces.find(_.getRef == generatorExpr.resultType.kind).get
-//
-//          // We're assuming here that theres only 1 method in the interface.
-//          val indexInEdge = generatorInterfaceDefH.methods.indexWhere(_.prototypeH == generatorMethod)
-//          vassert(indexInEdge >= 0)
-//          vassert(indexInEdge == 0) // curious. should always be 0, because it's an IFunction1.
-//          // We're assuming that it takes self then the index int as arguments.
-//          val virtualParamIndex = 0
-
-          heap.vivemDout.println()
-
-          heap.vivemDout.println()
-          heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (icall)")
-
-          val (calleeCallId, retuurn) =
-            FunctionVivem.executeFunction(
-              programH,
-              stdin,
-              stdout,
-              heap,
-              Vector(generatorReference, indexReference),
-              generatorFunction)
-
-          heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
-
-          val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
-
-          // No need to increment or decrement, we're conceptually moving the return value
-          // from the return slot to the array slot
-          heap.initializeArrayElement(arrayReference, i, returnRef)
-          discard(programH, heap, stdout, stdin, callId, generatorFunction.prototype.returnType, returnRef)
-        });
+        generateElements(
+          programH, stdin, stdout, heap, expressionId, callId, generatorReference, generatorPrototype, size,
+          (i, elementRef) => {
+            // No need to increment or decrement, we're conceptually moving the return value
+            // from the return slot to the array slot
+            heap.initializeArrayElement(arrayReference, i, elementRef)
+          })
 
         discard(programH, heap, stdout, stdin, callId, generatorExpr.resultType, generatorReference)
         discard(programH, heap, stdout, stdin, callId, sizeExpr.resultType, sizeReference)
@@ -781,6 +748,36 @@ object ExpressionVivem {
         heap.vivemDout.print(" o" + arrayReference.num + "=")
         heap.printReferend(arrayInstance)
 
+        NodeContinue(arrayReference)
+      }
+
+      case cac @ StaticArrayFromCallableH(generatorExpr, generatorPrototype, _, arrayRefType) => {
+        val ksaDef = programH.knownSizeArrays.find(_.name == arrayRefType.kind.name).get
+
+        val generatorReference =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), generatorExpr) match {
+            case nr @ NodeReturn(_) => return nr
+            case NodeContinue(v) => v
+          }
+
+        val elementRefs = mutable.MutableList[ReferenceV]()
+
+        generateElements(
+          programH, stdin, stdout, heap, expressionId, callId, generatorReference, generatorPrototype, ksaDef.size,
+          (i, elementRef) => {
+            // No need to increment or decrement, we're conceptually moving the return value
+            // from the return slot to the array slot
+            elementRefs += elementRef
+          })
+
+        discard(programH, heap, stdout, stdin, callId, generatorExpr.resultType, generatorReference)
+
+        val (arrayReference, arrayInstance) =
+          heap.addArray(ksaDef, arrayRefType, elementRefs.toList)
+        heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
+
+        heap.vivemDout.print(" o" + arrayReference.num + "=")
+        heap.printReferend(arrayInstance)
         NodeContinue(arrayReference)
       }
 
@@ -936,6 +933,51 @@ object ExpressionVivem {
         NodeContinue(makeVoid(programH, heap, callId))
       }
     }
+  }
+
+  private def generateElements(
+    programH: ProgramH,
+    stdin: () => String,
+    stdout: String => Unit,
+    heap: Heap,
+    expressionId: ExpressionId,
+    callId: CallId,
+    generatorReference: ReferenceV,
+    generatorPrototype: PrototypeH,
+    size: Int,
+    receiver: (Int, ReferenceV) => Unit):
+  Unit = {
+    val generatorFunction = vassertSome(programH.functions.find(_.prototype == generatorPrototype))
+
+    (0 until size).foreach(i => {
+      heap.vivemDout.println()
+      heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (generator)")
+
+      val indexReference = heap.allocateTransient(ShareH, InlineH, ReadonlyH, IntV(i))
+
+      heap.vivemDout.println()
+
+      heap.vivemDout.println()
+      heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (icall)")
+
+      val (calleeCallId, retuurn) =
+        FunctionVivem.executeFunction(
+          programH,
+          stdin,
+          stdout,
+          heap,
+          Vector(generatorReference, indexReference),
+          generatorFunction)
+
+      heap.vivemDout.print("  " * callId.callDepth + "Getting return reference")
+
+      val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+
+      // This decrements it, but does not discard it.
+      heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, returnRef.ownership), returnRef)
+
+      receiver(i, returnRef)
+    });
   }
 
   private def executeInterfaceFunction(

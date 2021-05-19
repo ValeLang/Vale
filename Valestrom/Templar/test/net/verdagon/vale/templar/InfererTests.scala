@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{FakeState => _, SimpleEnvironment => _, _}
 import net.verdagon.vale.astronomer.ruletyper.IRuleTyperEvaluatorDelegate
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{IEnvironment => _, _}
-import net.verdagon.vale.templar.{ArraySequenceE2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, GlobalNamespaceName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
+import net.verdagon.vale.templar.{StaticArrayFromValues2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, GlobalNamespaceName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
 import net.verdagon.vale.{IProfiler, NullProfiler, vassert, vassertSome, vfail, vimpl, scout => s}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.{InfererEquator, InfererEvaluator}

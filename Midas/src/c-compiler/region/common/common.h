@@ -124,6 +124,20 @@ void fillUnknownSizeArray(
     Ref generatorLE,
     Ref sizeLE,
     Ref usaRef);
+
+void fillKnownSizeArrayFromCallable(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Reference* elementType,
+    Reference* generatorType,
+    Prototype* generatorMethod,
+    Ref generatorLE,
+    Ref sizeLE,
+    Ref ksaRef);
+
 std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref);
 
 LLVMValueRef callMalloc(

@@ -10,6 +10,7 @@ import net.verdagon.vale.astronomer.{Astronomer, CodeTypeNameA, CodeVarNameA, Fu
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
+import net.verdagon.vale.templar.expression.CallTemplar
 import org.scalatest.{FunSuite, Matchers, _}
 
 import scala.collection.immutable.List
@@ -112,7 +113,7 @@ class TemplarCompilation(var codeMap: FileCoordinateMap[String]) {
       case None => {
 
         val debugOut = (string: String) => {
-          println(string)
+          println("####: " + string)
         }
 
         new Templar(debugOut, true, new NullProfiler(), false).evaluate(getAstrouts()) match {
@@ -306,6 +307,40 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Report when multiple types in array") {
+    // https://github.com/ValeLang/Vale/issues/131
+    val compile = TemplarCompilation(
+      """
+        |fn main() int export {
+        |  arr = [][true, 42];
+        |  = arr.1;
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case ArrayElementsHaveDifferentTypes(_, types) => {
+        types shouldEqual Set(Coord(Share, Readonly, Int2()), Coord(Share, Readonly, Bool2()))
+      }
+    }
+  }
+
+  test("Report when num elements mismatch") {
+    // https://github.com/ValeLang/Vale/issues/131
+    val compile = TemplarCompilation(
+      """
+        |struct Spaceship imm {
+        |  name! str;
+        |  numWings int;
+        |}
+        |fn main() bool export {
+        |  arr = [4][true, false, false];
+        |  = arr.0;
+        |}
+        |""".stripMargin)
+    compile.getTemplarError() match {
+      case InitializedWrongNumberOfElements(_, 4, 3) =>
+    }
+  }
+
   test("Report when changing final local") {
     // https://github.com/ValeLang/Vale/issues/128
     val compile = TemplarCompilation(
@@ -383,7 +418,7 @@ class TemplarTests extends FunSuite with Matchers {
   }
 //
 //  test("Constructor is stamped even without calling") {
-//    val compile = Compilation(
+//    val compile = Compilation.test(List("builtinexterns"),
 //      """
 //        |struct MyStruct imm {}
 //        |fn wot(b: *MyStruct) int { 9 }

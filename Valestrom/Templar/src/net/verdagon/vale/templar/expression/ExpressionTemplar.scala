@@ -1,20 +1,19 @@
-package net.verdagon.vale.templar;
+package net.verdagon.vale.templar.expression
 
-import net.verdagon.vale.astronomer.{PrototypeTemplataType, _}
-import net.verdagon.vale.astronomer.ruletyper.{IRuleTyperEvaluatorDelegate, RuleTyperEvaluator}
-import net.verdagon.vale.templar.types._
-import net.verdagon.vale.templar.templata._
+import net.verdagon.vale._
+import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
+import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.function.DropHelper
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
-import net.verdagon.vale.templar.function.{DestructorTemplar, DropHelper, FunctionTemplar}
-import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcheck, vcurious, vfail, vimpl, vwat}
+import net.verdagon.vale.templar.templata.{TemplataTemplar, _}
+import net.verdagon.vale.templar.types._
 
-import scala.collection.immutable.{List, Map, Nil, Set}
+import scala.collection.immutable.{List, Nil, Set}
 
 case class TookWeakRefOfNonWeakableError() extends Throwable
 
@@ -786,7 +785,7 @@ class ExpressionTemplar(
           val callExpr2 = evaluateClosure(temputs, fate, range, name, BFunctionA(function1, body))
           (callExpr2, Set())
         }
-        case SequenceEAE(range, elements1) => {
+        case TupleAE(range, elements1) => {
           val (exprs2, returnsFromElements) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, elements1);
 
@@ -795,25 +794,23 @@ class ExpressionTemplar(
             sequenceTemplar.evaluate(fate, temputs, exprs2)
           (expr2, returnsFromElements)
         }
-        //      case ConstructAE(type1, argExprs1) => {
-        //        val (argExprs2, returnsFromArgs) =
-        //          evaluateList(temputs, fate, argExprs1);
-        //
-        //        val stuff = vfail() // this is where we do the thing
-        //
-        //        val kind = templataTemplar.evaluateTemplex(fate.snapshot, temputs, stuff)
-        //        val constructExpr2 =
-        //          kind match {
-        //            case KindTemplata(structRef2 @ StructRef2(_)) => {
-        //              val structDef2 = temputs.lookupStruct(structRef2)
-        //              val ownership = if (structDef2.mutability == Mutable) Own else Share
-        //              val resultPointerType = Coord(ownership, structRef2)
-        //              Construct2(structRef2, resultPointerType, argExprs2)
-        //            }
-        //            case _ => vfail("wat")
-        //          }
-        //        (constructExpr2, returnsFromArgs)
-        //      }
+        case StaticArrayFromValuesAE(range, rules, typeByRune, sizeRuneA, maybeMutabilityRune, maybeVariabilityRune, elements1) => {
+          val (exprs2, returnsFromElements) =
+            evaluateAndCoerceToReferenceExpressions(temputs, fate, elements1);
+          // would we need a sequence templata? probably right?
+          val expr2 =
+            arrayTemplar.evaluateStaticSizedArrayFromValues(
+              temputs, fate, range, rules, typeByRune, sizeRuneA, maybeMutabilityRune, maybeVariabilityRune, exprs2)
+          (expr2, returnsFromElements)
+        }
+        case StaticArrayFromCallableAE(range, rules, typeByRune, sizeRuneA, maybeMutabilityRune, maybeVariabilityRune, callableAE) => {
+          val (callableTE, returnsFromCallable) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, callableAE);
+          val expr2 =
+            arrayTemplar.evaluateStaticSizedArrayFromCallable(
+              temputs, fate, range, rules, typeByRune, sizeRuneA, maybeMutabilityRune, maybeVariabilityRune, callableTE)
+          (expr2, returnsFromCallable)
+        }
         case ConstructArrayAE(range, mutabilityTemplex, elementCoordTemplex, generatorPrototypeTemplex, sizeExpr1, generatorExpr1) => {
           val (MutabilityTemplata(arrayMutability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, mutabilityTemplex)
           val (CoordTemplata(elementCoord)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, elementCoordTemplex)

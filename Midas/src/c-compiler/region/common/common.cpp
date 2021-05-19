@@ -52,8 +52,10 @@ LLVMValueRef upcastThinPtr(
 }
 
 LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend) {
-  if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
-    assert(false); // impl
+  if (auto ksaMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
+    auto knownSizeArrayCountedStructLT =
+        structs->getKnownSizeArrayWrapperStruct(ksaMT);
+    return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
   } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
     auto unknownSizeArrayCountedStructLT =
         structs->getUnknownSizeArrayWrapperStruct(usaMT);
@@ -72,8 +74,8 @@ LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsS
 }
 
 LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend) {
-  if (auto knownSizeArrayMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
-    assert(false); // impl
+  if (auto ksaMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
+    return weakRefStructs->getKnownSizeArrayWeakRefStruct(ksaMT);
   } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
     return weakRefStructs->getUnknownSizeArrayWeakRefStruct(usaMT);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
@@ -372,7 +374,6 @@ void fillUnknownSizeArray(
     Ref sizeLE,
     Ref usaRef) {
 
-  buildFlare(FL(), globalState, functionState, builder);
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
       [globalState, functionState, usaRefMT, usaMT, generatorMethod, generatorType, usaRef, generatorLE](
@@ -382,18 +383,42 @@ void fillUnknownSizeArray(
             functionState, bodyBuilder, generatorType, generatorLE);
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
 
-//        auto virtualArgRefMT = functionType->params[virtualParamIndex];
-//        auto virtualArgRef = argsLE[virtualParamIndex];
-        buildFlare(FL(), globalState, functionState, bodyBuilder);
         auto elementRef =
             buildCall(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
-        buildFlare(FL(), globalState, functionState, bodyBuilder);
         globalState->getRegion(usaMT)->initializeElementInUSA(
             functionState, bodyBuilder, usaRefMT, usaMT, usaRef, true, indexRef, elementRef);
-        buildFlare(FL(), globalState, functionState, bodyBuilder);
       });
-  buildFlare(FL(), globalState, functionState, builder);
+}
+
+void fillKnownSizeArrayFromCallable(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* ksaRefMT,
+    KnownSizeArrayT* ksaMT,
+    Reference* elementType,
+    Reference* generatorType,
+    Prototype* generatorMethod,
+    Ref generatorLE,
+    Ref sizeLE,
+    Ref ksaRef) {
+
+  intRangeLoop(
+      globalState, functionState, builder, sizeLE,
+      [globalState, functionState, ksaRefMT, ksaMT, generatorMethod, generatorType, ksaRef, generatorLE](
+          Ref indexRef, LLVMBuilderRef bodyBuilder) {
+        globalState->getRegion(generatorType)->alias(
+            AFL("ConstructKSA generate iteration"),
+            functionState, bodyBuilder, generatorType, generatorLE);
+        std::vector<Ref> argExprsLE = { generatorLE, indexRef };
+
+        auto elementRef =
+            buildCall(
+                globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
+        globalState->getRegion(ksaMT)->initializeElementInKSA(
+            functionState, bodyBuilder, ksaRefMT, ksaMT, ksaRef, true, indexRef, elementRef);
+      });
 }
 
 std::tuple<Reference*, LLVMValueRef> megaGetRefInnardsForChecking(Ref ref) {

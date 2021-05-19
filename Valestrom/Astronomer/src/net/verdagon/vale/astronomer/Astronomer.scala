@@ -648,6 +648,9 @@ object Astronomer {
     rune match {
       case CodeRuneS(name) => CodeRuneA(name)
       case ImplicitRuneS(parentName, name) => ImplicitRuneA(translateName(parentName), name)
+      case ArraySizeImplicitRuneS() => ArraySizeImplicitRuneA()
+      case ArrayVariabilityImplicitRuneS() => ArrayVariabilityImplicitRuneA()
+      case ArrayMutabilityImplicitRuneS() => ArrayMutabilityImplicitRuneA()
       case LetImplicitRuneS(codeLocation, name) => LetImplicitRuneA(codeLocation, name)
       case MagicParamRuneS(magicParamIndex) => MagicImplicitRuneA(magicParamIndex)
       case MemberRuneS(memberIndex) => MemberRuneA(memberIndex)
@@ -729,7 +732,7 @@ object Astronomer {
           })
         }))
 
-    val orderedModules = orderModules(mergedProgramS)
+//    val orderedModules = orderModules(mergedProgramS)
 
     try {
       val suppliedFunctions = wrapperFunctions

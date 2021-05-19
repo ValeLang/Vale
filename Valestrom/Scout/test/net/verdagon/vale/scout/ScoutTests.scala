@@ -268,6 +268,83 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
+  test("Cant use set as a local name") {
+    val error = compileForError(
+      """fn moo() {
+        |  (set) = [6];
+        |}
+        |""".stripMargin)
+    error match {
+      case CantUseThatLocalName(_, "set") =>
+    }
+  }
+
+  test("CantInitializeIndividualElementsOfRuntimeSizedArray") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = [*][4, 5, 6];
+        |}
+        |""".stripMargin)
+    error match {
+      case CantInitializeIndividualElementsOfRuntimeSizedArray(_) =>
+    }
+  }
+
+  test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too few") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = [*](4);
+        |}
+        |""".stripMargin)
+    error match {
+      case InitializingRuntimeSizedArrayRequiresSizeAndCallable(_) =>
+    }
+  }
+
+  test("InitializingRuntimeSizedArrayRequiresSizeAndCallable too many") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = [*](4, {_}, 10);
+        |}
+        |""".stripMargin)
+    error match {
+      case InitializingRuntimeSizedArrayRequiresSizeAndCallable(_) =>
+    }
+  }
+
+  test("InitializingStaticSizedArrayRequiresSizeAndCallable too few") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = [5]();
+        |}
+        |""".stripMargin)
+    error match {
+      case InitializingStaticSizedArrayRequiresSizeAndCallable(_) =>
+    }
+  }
+
+  test("InitializingStaticSizedArrayRequiresSizeAndCallable too many") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = [5](4, {_});
+        |}
+        |""".stripMargin)
+    error match {
+      case InitializingStaticSizedArrayRequiresSizeAndCallable(_) =>
+    }
+  }
+
+  test("InitializingStaticSizedArrayFromCallableNeedsSizeTemplex") {
+    val error = compileForError(
+      """fn MyStruct() {
+        |  ship = []({_});
+        |}
+        |""".stripMargin)
+    error match {
+      case InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(_) =>
+    }
+  }
+
   test("Test loading from member") {
     val program1 = compile(
       """fn MyStruct() {

@@ -562,6 +562,33 @@ public:
     elementType(elementType_) {}
 };
 
+class StaticArrayFromCallable : public Expression {
+public:
+  Expression* generatorExpr;
+  Reference* generatorType;
+  Referend* generatorReferend;
+  Prototype* generatorMethod;
+  bool generatorKnownLive;
+  Reference* arrayRefType;
+  Reference* elementType;
+
+  StaticArrayFromCallable(
+      Expression* generatorExpr_,
+      Reference* generatorType_,
+      Referend* generatorReferend_,
+      Prototype* generatorMethod_,
+      bool generatorKnownLive_,
+      Reference* arrayRefType_,
+      Reference* elementType_) :
+      generatorExpr(generatorExpr_),
+      generatorType(generatorType_),
+      generatorReferend(generatorReferend_),
+      generatorMethod(generatorMethod_),
+      generatorKnownLive(generatorKnownLive_),
+      arrayRefType(arrayRefType_),
+      elementType(elementType_) {}
+};
+
 class DestroyKnownSizeArrayIntoFunction : public Expression {
 public:
   Expression* arrayExpr;

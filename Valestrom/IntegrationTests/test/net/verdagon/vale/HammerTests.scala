@@ -5,14 +5,18 @@ import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.Share
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
+import net.verdagon.vale.driver.{Compilation, CompilationOptions}
+import net.verdagon.vale.driver.Compilation.builtins
+import net.verdagon.von.VonInt
+
+import scala.collection.immutable.List
 
 class HammerTests extends FunSuite with Matchers {
   // Hammer tests only test the general structure of things, not the generated nodes.
   // The generated nodes will be tested by end-to-end tests.
 
   test("Simple main") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       "fn main() int export {3}")
     val hamuts = compile.getHamuts()
 
@@ -22,7 +26,7 @@ class HammerTests extends FunSuite with Matchers {
 
 //  // Make sure a ListNode struct made it out
 //  test("Templated struct makes it into hamuts") {
-//    val compile = Compilation(
+//    val compile = Compilation.test(List("builtinexterns"),
 //      """
 //        |struct ListNode<T> imm rules(T: Ref) {
 //        |  tail: *ListNode<T>;
@@ -34,7 +38,7 @@ class HammerTests extends FunSuite with Matchers {
 //  }
 
   test("Two templated structs make it into hamuts") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface MyOption<T> imm rules(T Ref) { }
         |struct MyNone<T> imm rules(T Ref) { }
@@ -59,7 +63,7 @@ class HammerTests extends FunSuite with Matchers {
   // Maybe we can turn off tree shaking?
   // Maybe this just violates requirements?
   test("Virtual and override functions make it into hamuts") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface Blark imm { }
         |fn wot(virtual b *Blark) int abstract;
@@ -76,7 +80,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests stripping things after panic") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  __panic();
@@ -92,30 +96,9 @@ class HammerTests extends FunSuite with Matchers {
       }
     }
   }
-
-  test("Tests imports") {
-    val compile = Compilation(
-      """
-        |import moduleB.BStruct;
-        |
-        |fn main() int export {
-        |  __panic();
-        |  a = 42;
-        |  = a;
-        |}
-      """.stripMargin)
-    val hamuts = compile.getHamuts()
-    val main = hamuts.lookupFunction("main")
-    main.body match {
-      case BlockH(CallH(PrototypeH(fullNameH, List(), ReferenceH(_, _, ReadonlyH, NeverH())), List())) => {
-        vassert(fullNameH.toFullString().contains("__panic"))
-      }
-    }
-  }
-
 
   test("Tests export function") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn moo() int export { 42 }
         |""".stripMargin)
@@ -125,7 +108,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests export struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Moo export { }
         |""".stripMargin)
@@ -135,7 +118,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests export struct twice") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Moo export { }
         |export Moo as Bork;
@@ -146,7 +129,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests export interface") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface Moo export { }
         |""".stripMargin)

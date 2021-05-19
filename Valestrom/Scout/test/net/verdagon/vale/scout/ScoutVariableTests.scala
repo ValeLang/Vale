@@ -131,7 +131,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  { doBlarks(&x); }();
+        |  ({ doBlarks(&x); })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -148,7 +148,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  { doBlarks(x); }();
+        |  ({ doBlarks(x); })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -165,7 +165,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  { set x = 9; }();
+        |  ({ set x = 9; })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")

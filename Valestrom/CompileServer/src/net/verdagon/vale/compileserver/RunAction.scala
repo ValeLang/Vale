@@ -16,8 +16,14 @@ class RunAction extends HttpFunction {
       return
     }
 
+    val options =
+      Options(
+        List(SourceInput(Driver.defaultModuleName, "in.vale", code)),
+        List(Driver.defaultModuleName),
+        Some(""),
+        false, false, true, false, true, None, false)
     val program =
-      Driver.build(Options(List(SourceInput("", "in.vale", code)), Some(""), false, false, true, false, true, None, false)) match {
+      Driver.build(options) match {
         case Ok(Some(programH)) => programH
         case Err(error) => {
           response.setStatusCode(400)

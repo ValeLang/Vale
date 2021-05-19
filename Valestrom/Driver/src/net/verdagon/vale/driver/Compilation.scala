@@ -1,13 +1,13 @@
 package net.verdagon.vale.driver
 
-import net.verdagon.vale.astronomer.{Astronomer, ProgramA}
+import net.verdagon.vale.astronomer.{Astronomer, ICompileErrorA, ProgramA}
 import net.verdagon.vale.driver.Driver.SourceInput
 import net.verdagon.vale.hammer.{Hammer, VonHammer}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ImportP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, TopLevelImportP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS, Scout}
-import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer, Temputs}
+import net.verdagon.vale.templar.{ICompileErrorT, Templar, TemplarErrorHumanizer, Temputs}
 import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, IProfiler, NamespaceCoordinate, NamespaceCoordinateMap, NullProfiler, Ok, Result, Samples, vassert, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
 import net.verdagon.von.{IVonData, JsonSyntax, VonPrinter}
@@ -15,7 +15,9 @@ import net.verdagon.von.{IVonData, JsonSyntax, VonPrinter}
 import scala.collection.immutable.List
 
 case class CompilationOptions(
-  debugOut: String => Unit = println,
+  debugOut: String => Unit = (x => {
+    println("##: " + x)
+  }),
   verbose: Boolean = true,
   profiler: IProfiler = new NullProfiler(),
   useOptimization: Boolean = false,
@@ -97,11 +99,8 @@ object Compilation {
     val neededCodeMapFlat =
         neededNamespaceCoords.flatMap(neededNamespaceCoord => {
           val filepathsAndContents = resolver(neededNamespaceCoord)
-          if (filepathsAndContents.isEmpty) {
-            List()
-          } else {
-            List((neededNamespaceCoord.module, neededNamespaceCoord.namespaces, filepathsAndContents))
-          }
+          // Note that filepathsAndContents *can* be empty, see ImportTests.
+          List((neededNamespaceCoord.module, neededNamespaceCoord.namespaces, filepathsAndContents))
         })
     val grouped =
       neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
@@ -194,42 +193,48 @@ class Compilation(
     getScoutput().getOrDie()
   }
 
-  def getAstrouts(): NamespaceCoordinateMap[ProgramA] = {
+  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
     astroutsCache match {
-      case Some(astrouts) => astrouts
+      case Some(astrouts) => Ok(astrouts)
       case None => {
         Astronomer.runAstronomer(expectScoutput()) match {
-          case Right(err) => vfail(err.toString)
+          case Right(err) => Err(err)
           case Left(astrouts) => {
             astroutsCache = Some(astrouts)
-            astrouts
+            Ok(astrouts)
           }
         }
       }
     }
   }
+  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = {
+    getAstrouts().getOrDie()
+  }
 
-  def getTemputs(): Hinputs = {
+  def getTemputs(): Result[Hinputs, ICompileErrorT] = {
     hinputsCache match {
-      case Some(temputs) => temputs
+      case Some(temputs) => Ok(temputs)
       case None => {
         val templar = new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization)
-        val hamuts =
-          templar.evaluate(getAstrouts()) match {
-            case Ok(t) => t
-            case Err(e) => vfail(TemplarErrorHumanizer.humanize(true, codeMapCache.get, e))
+        templar.evaluate(expectAstrouts()) match {
+          case Err(e) => Err(e)
+          case Ok(hinputs) => {
+            hinputsCache = Some(hinputs)
+            Ok(hinputs)
           }
-        hinputsCache = Some(hamuts)
-        hamuts
+        }
       }
     }
+  }
+  def expectTemputs(): Hinputs = {
+    getTemputs().getOrDie()
   }
 
   def getHamuts(): ProgramH = {
     hamutsCache match {
       case Some(hamuts) => hamuts
       case None => {
-        val hamuts = Hammer.translate(getTemputs())
+        val hamuts = Hammer.translate(expectTemputs())
         VonHammer.vonifyProgram(hamuts)
         hamutsCache = Some(hamuts)
         hamuts

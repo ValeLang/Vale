@@ -27,6 +27,8 @@ case class NamespaceCoordinate(module: String, namespaces: List[String]) {
   def isInternal = module == ""
 
   def compareTo(that: NamespaceCoordinate) = NamespaceCoordinate.compare(this, that)
+
+  override def toString: String = module + namespaces.map("." + _).mkString("")
 }
 
 object NamespaceCoordinate extends Ordering[NamespaceCoordinate] {

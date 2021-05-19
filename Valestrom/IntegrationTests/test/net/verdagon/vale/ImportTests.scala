@@ -69,4 +69,61 @@ class ImportTests extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
+
+  test("Tests import with namespace") {
+    val moduleACode =
+      """
+        |import moduleB.bork.*;
+        |
+        |fn main() int export {
+        |  a = moo();
+        |  = a;
+        |}
+      """.stripMargin
+
+    val moduleBCode =
+      """
+        |fn moo() int { 42 }
+      """.stripMargin
+
+    val compile =
+      new Compilation(
+        List("moduleA"),
+        {
+          case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
+          case NamespaceCoordinate("moduleB", List("bork")) => Map("moo.vale" -> moduleBCode)
+          case NamespaceCoordinate("", List()) => builtins
+          case x => vfail("Couldn't find module: " + x)
+        },
+        CompilationOptions())
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Tests import of directory with no vale files") {
+    val moduleACode =
+      """
+        |import moduleB.bork.*;
+        |
+        |fn main() int export {
+        |  a = 42;
+        |  = a;
+        |}
+      """.stripMargin
+
+    val compile =
+      new Compilation(
+        List("moduleA"),
+        {
+          case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
+            // This module and directory exist, but contain nothing
+          case NamespaceCoordinate("moduleB", List("bork")) => Map()
+          case NamespaceCoordinate("", List()) => builtins
+          case x => vfail("Couldn't find module: " + x)
+        },
+        CompilationOptions())
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
 }

@@ -179,7 +179,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("imm tuple access") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/immtupleaccess.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/tuples/immtupleaccess.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
@@ -354,7 +354,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // function families.
   test("Stamp multiple ancestors") {
     val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/genericvirtuals/stampMultipleAncestors.vale"))
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     compile.evalForReferend(Vector())
   }
 
@@ -399,7 +399,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
     doIt.only({
       case StructToInterfaceUpcast2(_, _) =>
@@ -411,7 +411,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Function return with ret upcasts") {
     val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/virtuals/retUpcast.vale"))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
     doIt.only({
       case StructToInterfaceUpcast2(_, _) =>
@@ -443,7 +443,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  helperFunc(4);
         |}
         |""".stripMargin)
-    val hinputs = compile.getTemputs()
+    val hinputs = compile.expectTemputs()
 
     vassertSome(hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Int2())))))))
 
@@ -480,7 +480,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  []
         |}
         |""".stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     compile.run(Vector())
   }

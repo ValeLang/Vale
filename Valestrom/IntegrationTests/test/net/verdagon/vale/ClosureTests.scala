@@ -109,7 +109,7 @@ class ClosureTests extends FunSuite with Matchers {
 
   test("Test closure's local variables") {
     val compile = Compilation.test(List("builtinexterns"), "fn main() int export { x = 4; = {x}(); }")
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     temputs.lookupLambdaIn("main").variables match {
       case List(
@@ -126,7 +126,7 @@ class ClosureTests extends FunSuite with Matchers {
 
   test("Test returning a nonmutable closured variable from the closure") {
     val compile = Compilation.test(List("builtinexterns"), "fn main() int export { x = 4; = {x}(); }")
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     // The struct should have an int x in it which is a reference type.
     // It's a reference because we know for sure that it's moved from our child,
@@ -185,7 +185,7 @@ class ClosureTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val scoutput = compile.expectScoutput()
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     // The struct should have an int x in it.
     val closuredVarsStruct = vassertSome(temputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenName2(_) => true case _ => false }));
     val expectedMembers = List(StructMember2(CodeVarName2("x"), Varying, AddressMemberType2(Coord(Share, Readonly, Int2()))));
@@ -232,7 +232,7 @@ class ClosureTests extends FunSuite with Matchers {
       Compilation.test(List("builtinexterns"),
         Samples.get("programs/lambdas/lambdamut.vale"))
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val closureStruct =
       temputs.structs.find(struct => {
         struct.fullName.last match {

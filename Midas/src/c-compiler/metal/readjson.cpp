@@ -407,6 +407,15 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
         readReference(cache, expression["elementType"]));
+  } else if (type == "StaticArrayFromCallable") {
+    return new StaticArrayFromCallable(
+        readExpression(cache, expression["generatorExpr"]),
+        readReference(cache, expression["generatorType"]),
+        readReferend(cache, expression["generatorReferend"]),
+        readPrototype(cache, expression["generatorMethod"]),
+        expression["generatorKnownLive"],
+        readReference(cache, expression["resultType"]),
+        readReference(cache, expression["elementType"]));
   } else if (type == "DestroyUnknownSizeArray") {
     return new DestroyUnknownSizeArray(
         readExpression(cache, expression["arrayExpr"]),

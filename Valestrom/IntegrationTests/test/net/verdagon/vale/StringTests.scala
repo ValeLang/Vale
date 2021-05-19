@@ -7,42 +7,42 @@ import net.verdagon.vale.driver.Compilation
 
 class StringTests extends FunSuite with Matchers {
   test("Simple string") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() str {
         |  "sprogwoggle"
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case StrLiteral2("sprogwoggle") => })
 
     compile.evalForReferend(Vector()) shouldEqual VonStr("sprogwoggle")
   }
 
   test("String with escapes") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() str {
         |  "sprog\nwoggle"
         |}
         |""".stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case StrLiteral2("sprog\nwoggle") => })
 
     compile.evalForReferend(Vector()) shouldEqual VonStr("sprog\nwoggle")
   }
 
   test("String with hex escape") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() str {
         |  "sprog\u001bwoggle"
         |}
         |""".stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
       case StrLiteral2(x) => {
         x shouldEqual "sprog\u001bwoggle"
@@ -53,13 +53,13 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String length") {
-    val compile = Compilation(Samples.get("programs/strings/strlen.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/strings/strlen.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(11)
   }
 
   test("String interpolate") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       "fn +(s str, i int) str { s + str(i) }\n" +
       "fn ns(i int) int { i }\n" +
       "fn main() str { \"\"\"bl\"{ns(4)}rg\"\"\" }")
@@ -68,7 +68,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("Slice a slice") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("builtins/strings.vale"),
         Samples.get("builtins/castutils.vale"),

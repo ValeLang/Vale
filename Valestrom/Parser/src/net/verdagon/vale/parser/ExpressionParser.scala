@@ -6,7 +6,7 @@ import org.apache.commons.lang.StringEscapeUtils
 
 import scala.util.parsing.combinator.RegexParsers
 
-trait ExpressionParser extends RegexParsers with ParserUtils {
+trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser {
   private[parser] def templex: Parser[ITemplexPT]
   private[parser] def templateRulesPR: Parser[TemplateRulesP]
   private[parser] def atomPattern: Parser[PatternPP]
@@ -307,6 +307,32 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
     longStringExpr | shortStringExpr
   }
 
+//  private[parser] def callCallable: Parser[IExpressionPE] = {
+//    (pos <~ "(" <~ optWhite) ~
+//      (expression <~ optWhite <~ ")" <~ optWhite) ~
+//      packExpr ~
+//      pos ^^ {
+//      case begin ~ callable ~ args ~ end => {
+//        FunctionCallPE(Range(begin, end), None, Range(begin, end), false, callable, args, LendConstraintP(None))
+//      }
+//    }
+//  }
+//
+//  private[parser] def callNamed: Parser[IExpressionPE] = {
+//    pos ~
+//      (existsW("inl") <~ optWhite) ~
+//      // We dont have the optWhite here because we dont want to allow spaces before calls.
+//      // We dont want to allow moo (4) because we want each statements like this:
+//      //   each moo (x){ println(x); }
+//      ((templateSpecifiedLookup | lookup) /*SEE ABOVE <~ optWhite*/) ~
+//      packExpr ~
+//      pos ^^ {
+//      case begin ~ maybeInl ~ callable ~ args ~ end => {
+//        FunctionCallPE(Range(begin, end), maybeInl, Range(begin, end), false, callable, args, LendConstraintP(None))
+//      }
+//    }
+//  }
+
   private[parser] def expressionElementLevel1: Parser[IExpressionPE] = {
     (pos ~ ("..." ~> pos) ^^ { case begin ~ end => LookupPE(NameP(Range(begin, end), "..."), None) }) |
     stringExpr |
@@ -325,11 +351,13 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
             LendConstraintP((None)))
         }
       }) |
+//      callNamed |
+//      callCallable |
       (pos ~ packExpr ~ pos ^^ {
         case begin ~ List(inner) ~ end => inner
         case begin ~ inners ~ end => ShortcallPE(Range(begin, end), inners)
       }) |
-      tupleExpr |
+      arrayOrTuple |
       templateSpecifiedLookup |
       (lookup ^^ {
         case l @ LookupPE(NameP(r, "_"), None) => MagicParamLookupPE(r)
@@ -419,8 +447,8 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       case begin ~ maybeInline ~ first ~ restWithDots ~ end => {
         val (_, expr) =
           restWithDots.foldLeft((maybeInline, first))({
-            case ((None, prev), MethodCallStep(stepRange, operatorRange, borrowContainer, isMapCall, lookup, args)) => {
-              (None, MethodCallPE(Range(begin, stepRange.end), prev, operatorRange, borrowContainer, isMapCall, lookup, args))
+            case ((prevInline, prev), MethodCallStep(stepRange, operatorRange, borrowContainer, isMapCall, lookup, args)) => {
+              (None, MethodCallPE(Range(begin, stepRange.end), prevInline, prev, operatorRange, borrowContainer, isMapCall, lookup, args))
             }
             case ((prevInline, prev), CallStep(stepRange, operatorRange, borrowCallable, isMapCall, args)) => {
               (None, FunctionCallPE(Range(begin, stepRange.end), prevInline, operatorRange, isMapCall, prev, args, borrowCallable))
@@ -586,10 +614,43 @@ trait ExpressionParser extends RegexParsers with ParserUtils {
       (pos ~ ("..." ~> pos) ^^ { case begin ~ end => List(VoidPE(Range(begin, end))) })
   }
 
-  private[parser] def tupleExpr: Parser[IExpressionPE] = {
+  private[parser] def arrayOrTuple: Parser[IExpressionPE] = {
+    // Static arrays have to come before tuples, because the beginning of static array looks kind of like a tuple.
+    constructArrayExpr |
+//    runtimeArrayExpr |
+    tuupleExpr
+  }
+
+  private[parser] def arraySize: Parser[IArraySizeP] = {
+    ("*" ^^^ RuntimeSizedP) |
+      (opt(templex) ^^ StaticSizedP)
+  }
+
+  private[parser] def constructArrayExpr: Parser[IExpressionPE] = {
+    pos ~
+      (("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
+        (opt(variabilityAtomTemplex <~ optWhite)) ~
+        (arraySize <~ optWhite <~ "]") <~ optWhite) ~
+      (("[" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]")) |
+        ("(" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")"))) ~
+      pos ^^ {
+      case begin ~ (maybeMutability ~ maybeVariability ~ maybeSize) ~ (argsType ~ valueExprs) ~ end => {
+        val initializingIndividualElements = argsType match { case "[" => true case "(" => false }
+        ConstructArrayPE(
+          Range(begin, end),
+          maybeMutability,
+          maybeVariability,
+          maybeSize,
+          initializingIndividualElements,
+          valueExprs)
+      }
+    }
+  }
+
+  private[parser] def tuupleExpr: Parser[IExpressionPE] = {
     pos ~ ("[" ~> optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]") ~ pos ^^ {
       case begin ~ (a:List[IExpressionPE]) ~ end => {
-        SequencePE(Range(begin, end), a)
+        TuplePE(Range(begin, end), a)
       }
     }
   }

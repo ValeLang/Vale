@@ -111,6 +111,43 @@ object CallHammer {
       hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds ++ sizeDeferreds)
   }
 
+  def translateStaticArrayFromCallable(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
+    locals: LocalsBox,
+    exprTE: StaticArrayFromCallable2):
+  (ExpressionH[ReferendH]) = {
+    val StaticArrayFromCallable2(arrayType2, generatorExpr2, generatorMethod) = exprTE;
+
+    val (generatorRegisterId, generatorDeferreds) =
+      ExpressionHammer.translate(
+        hinputs, hamuts, currentFunctionHeader, locals, generatorExpr2);
+
+    val (arrayRefTypeH) =
+      TypeHammer.translateReference(
+        hinputs, hamuts, exprTE.resultRegister.reference)
+
+    val (arrayTypeH) =
+      TypeHammer.translateKnownSizeArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectKnownSizeArrayReference().kind == arrayTypeH)
+
+    val elementType = hamuts.getKnownSizeArray(arrayTypeH).rawArray.elementType
+
+    val generatorMethodH =
+      FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
+
+    val constructArrayCallNode =
+      StaticArrayFromCallableH(
+        generatorRegisterId,
+        generatorMethodH,
+        elementType,
+        arrayRefTypeH.expectKnownSizeArrayReference())
+
+    ExpressionHammer.translateDeferreds(
+      hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds)
+  }
+
   def translateDestroyArraySequence(
       hinputs: Hinputs,
       hamuts: HamutsBox,

@@ -11,7 +11,7 @@ import net.verdagon.von.VonInt
 class VirtualTests extends FunSuite with Matchers {
 
     test("Simple program containing a virtual function") {
-      val compile = Compilation(
+      val compile = Compilation.test(List("builtinexterns"),
         """
           |interface I {}
           |fn doThing(virtual i I) int {4}
@@ -19,7 +19,7 @@ class VirtualTests extends FunSuite with Matchers {
           |  doThing(i)
           |}
         """.stripMargin)
-      val temputs = compile.getTemputs()
+      val temputs = compile.expectTemputs()
 
       vassert(temputs.getAllUserFunctions.size == 2)
       vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
@@ -43,7 +43,7 @@ class VirtualTests extends FunSuite with Matchers {
     }
 
   test("Can call virtual function") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface I {}
         |fn doThing(virtual i I) int {4}
@@ -51,7 +51,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  doThing(i)
         |}
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 2)
     vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
@@ -76,7 +76,7 @@ class VirtualTests extends FunSuite with Matchers {
   }
 
   test("Can call interface env's function from outside") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |interface I {
         |  fn doThing(virtual i I) int;
@@ -85,7 +85,7 @@ class VirtualTests extends FunSuite with Matchers {
         |  doThing(i)
         |}
       """.stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     vassert(temputs.getAllUserFunctions.size == 1)
     vassert(temputs.lookupFunction("main").header.returnType == Coord(Share, Readonly, Int2()))
@@ -101,7 +101,7 @@ class VirtualTests extends FunSuite with Matchers {
 
 
   test("Interface with method with param of substruct") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/opt.vale"),
         Samples.get("libraries/list.vale"),
@@ -117,7 +117,7 @@ class VirtualTests extends FunSuite with Matchers {
   }
 
   test("Open interface constructors") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         """
           |interface Bipedal {

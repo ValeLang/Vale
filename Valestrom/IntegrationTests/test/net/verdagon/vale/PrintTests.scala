@@ -5,7 +5,7 @@ import net.verdagon.vale.driver.Compilation
 
 class PrintTests extends FunSuite with Matchers {
   test("Println'ing an int") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() {
         |  println(6);
@@ -18,7 +18,7 @@ class PrintTests extends FunSuite with Matchers {
   }
 
   test("Println'ing a bool") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() {
         |  println(true);

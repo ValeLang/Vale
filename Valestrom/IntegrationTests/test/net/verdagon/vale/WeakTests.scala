@@ -5,6 +5,7 @@ import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnv
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.WeakableImplingMismatch
 import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.expression.TookWeakRefOfNonWeakableError
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vivem.ConstraintViolatedException
 import net.verdagon.von.VonInt
@@ -12,11 +13,11 @@ import org.scalatest.{FunSuite, Matchers}
 
 class WeakTests extends FunSuite with Matchers {
   test("Make and lock weak ref then destroy own, with struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/lockWhileLiveStruct.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({
       case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakMuta")),Final,Coord(Weak, Readonly, _)),refExpr) => {
         refExpr.resultRegister.reference match {
@@ -29,7 +30,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Destroy own then locking gives none, with struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/dropThenLockStruct.vale"))
 
@@ -37,7 +38,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Drop while locked, with struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/dropWhileLockedStruct.vale"))
 
@@ -51,11 +52,11 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make and lock weak ref from borrow local then destroy own, with struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
       Samples.get("programs/weaks/weakFromLocalCRefStruct.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
@@ -63,11 +64,11 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make and lock weak ref from borrow then destroy own, with struct") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/weakFromCRefStruct.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
@@ -75,7 +76,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make weak ref from temporary") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         """
           |struct Muta weakable { hp int; }
@@ -83,13 +84,13 @@ class WeakTests extends FunSuite with Matchers {
           |fn main() int export { getHp(&&Muta(7)) }
           |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.body.only({ case WeakAlias2(_) => })
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   test("Cant make weak ref to non-weakable") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         """
           |struct Muta { hp int; }
@@ -98,7 +99,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-      compile.getTemputs().lookupFunction("main")
+      compile.expectTemputs().lookupFunction("main")
       vfail()
     } catch {
       case TookWeakRefOfNonWeakableError() =>
@@ -108,7 +109,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Cant make weakable extend a non-weakable") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         """
           |interface IUnit {}
@@ -118,7 +119,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-      compile.getTemputs().lookupFunction("main")
+      compile.expectTemputs().lookupFunction("main")
       vfail()
     } catch {
       case WeakableImplingMismatch(true, false) =>
@@ -127,7 +128,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Cant make non-weakable extend a weakable") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         """
           |interface IUnit weakable {}
@@ -137,7 +138,7 @@ class WeakTests extends FunSuite with Matchers {
           |""".stripMargin)
 
     try {
-      compile.getTemputs().lookupFunction("main")
+      compile.expectTemputs().lookupFunction("main")
       vfail()
     } catch {
       case WeakableImplingMismatch(false, true) =>
@@ -150,11 +151,11 @@ class WeakTests extends FunSuite with Matchers {
 
 
   test("Make and lock weak ref then destroy own, with interface") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/lockWhileLiveInterface.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     main.only({
       case LetNormal2(ReferenceLocalVariable2(FullName2(_,CodeVarName2("weakUnit")),Final,Coord(Weak, _, _)),refExpr) => {
         refExpr.resultRegister.reference match {
@@ -167,7 +168,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Destroy own then locking gives none, with interface") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/dropThenLockInterface.vale"))
 
@@ -175,7 +176,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Drop while locked, with interface") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/dropWhileLockedInterface.vale"))
 
@@ -189,11 +190,11 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make and lock weak ref from borrow local then destroy own, with interface") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/weakFromLocalCRefInterface.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
@@ -201,11 +202,11 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Make and lock weak ref from borrow then destroy own, with interface") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/weakFromCRefInterface.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
@@ -213,11 +214,11 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Call weak-self method, after drop") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/callWeakSelfMethodAfterDrop.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
@@ -227,11 +228,11 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Call weak-self method, while alive") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       Samples.get("libraries/opt.vale") +
         Samples.get("programs/weaks/callWeakSelfMethodWhileLive.vale"))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     vassert(main.body.all({ case SoftLoad2(_, Weak, Readonly) => true }).size >= 1)
 
@@ -241,7 +242,7 @@ class WeakTests extends FunSuite with Matchers {
   }
 
   test("Weak yonder member") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/opt.vale"),
         Samples.get("builtins/printutils.vale"),
@@ -269,7 +270,7 @@ class WeakTests extends FunSuite with Matchers {
           |}
           |""".stripMargin))
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
 
     val hamuts = compile.getHamuts()
 

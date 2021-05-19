@@ -9,7 +9,7 @@ import net.verdagon.vale.driver.Compilation
 
 class HashMapTest extends FunSuite with Matchers {
   test("Hash map update") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -38,7 +38,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map collisions") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -87,7 +87,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map with functors") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -116,7 +116,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map with struct as key") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -161,7 +161,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map has") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -196,7 +196,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map keys") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -230,7 +230,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map values") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -264,7 +264,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map with mutable values") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -300,7 +300,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map remove") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),
@@ -336,7 +336,7 @@ class HashMapTest extends FunSuite with Matchers {
   }
 
   test("Hash map remove 2") {
-    val compile = Compilation.multiple(
+    val compile = Compilation.test(List("builtinexterns"),
       List(
         Samples.get("libraries/castutils.vale"),
         Samples.get("libraries/printutils.vale"),

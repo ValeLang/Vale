@@ -49,6 +49,12 @@ case class ImplicitRuneS(containerName: INameS, name: Int) extends IRuneS {
 case class LetImplicitRuneS(codeLocationS: CodeLocationS, name: Int) extends IRuneS
 case class MagicParamRuneS(codeLocationS: CodeLocationS) extends IRuneS
 case class MemberRuneS(memberIndex: Int) extends IRuneS
+// Used to type the templex handed to the size part of the static sized array expressions
+case class ArraySizeImplicitRuneS() extends IRuneS
+// Used to type the templex handed to the mutability part of the static sized array expressions
+case class ArrayMutabilityImplicitRuneS() extends IRuneS
+// Used to type the templex handed to the variability part of the static sized array expressions
+case class ArrayVariabilityImplicitRuneS() extends IRuneS
 case class ReturnRuneS() extends IRuneS
 // These are only made by the templar
 case class ExplicitTemplateArgRuneS(index: Int) extends IRuneS

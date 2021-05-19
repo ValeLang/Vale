@@ -13,6 +13,8 @@ sealed trait ICompileErrorT
 case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunctionFailure) extends ICompileErrorT
 case class ImmStructCantHaveVaryingMember(range: RangeS, structName: TopLevelCitizenDeclarationNameA, memberName: String) extends ICompileErrorT
 case class CouldntFindTypeT(range: RangeS, name: String) extends ICompileErrorT
+case class ArrayElementsHaveDifferentTypes(range: RangeS, types: Set[Coord]) extends ICompileErrorT
+case class InitializedWrongNumberOfElements(range: RangeS, expectedNumElements: Int, numElementsInitialized: Int) extends ICompileErrorT
 case class CannotSubscriptT(range: RangeS, tyype: Kind) extends ICompileErrorT
 case class NonReadonlyReferenceFoundInPureFunctionParameter(range: RangeS, paramName: IVarName2) extends ICompileErrorT
 case class CouldntFindIdentifierToLoadT(range: RangeS, name: String) extends ICompileErrorT

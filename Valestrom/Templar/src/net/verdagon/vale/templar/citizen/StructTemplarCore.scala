@@ -10,6 +10,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar, FunctionTemplarCore, FunctionTemplarMiddleLayer, FunctionTemplarOrdinaryOrTemplatedLayer}
 import net.verdagon.vale._
+import net.verdagon.vale.templar.expression.CallTemplar
 
 import scala.collection.immutable.List
 

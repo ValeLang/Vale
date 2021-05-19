@@ -10,24 +10,24 @@ import net.verdagon.vale.vivem.IntV
 
 class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  = if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
-    val programS = compile.getScoutput().moduleToNamespacesToFilenameToContents("test")(List())("test.vale")
+    val programS = compile.expectScoutput().moduleToNamespacesToFilenameToContents("test")(List())("0.vale")
     val main = programS.lookupFunction("main")
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case If2(_, _, _) => })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("Simple false branch returning an int") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  = if (false) { 3 } else { 5 }
@@ -38,14 +38,14 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Ladder") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  = if (false) { 3 } else if (true) { 5 } else { 7 }
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
     ifs.size shouldEqual 2
@@ -61,7 +61,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Moving from inside if") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Marine { x int; }
         |fn main() int export {
@@ -76,7 +76,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Int2()))
     val userFuncs = temputs.getAllUserFunctions
@@ -91,7 +91,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("If with complex condition") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |struct Marine { x int; }
         |fn main() str {
@@ -102,7 +102,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Str2()))
 
@@ -110,7 +110,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Ret from inside if will destroy locals") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
       """struct Marine { hp int; }
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
@@ -129,15 +129,13 @@ class IfTests extends FunSuite with Matchers {
         |  println("In rest!");
         |  = x;
         |}
-        |""".stripMargin +
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale"))
+        |""".stripMargin)
 
     compile.evalForStdout(Vector()) shouldEqual "In then!\nDestroying marine!\n"
   }
 
   test("Can continue if other branch would have returned") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
       """struct Marine { hp int; }
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
@@ -156,16 +154,14 @@ class IfTests extends FunSuite with Matchers {
         |  println("In rest!");
         |  = x;
         |}
-        |""".stripMargin +
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale"))
+        |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "In else!\nIn rest!\nDestroying marine!\n"
   }
 
   test("Destructure inside if") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
 
       """
         |struct Bork {
@@ -188,21 +184,19 @@ class IfTests extends FunSuite with Matchers {
         |    set zork = zork + 1;
         |  }
         |}
-        |""".stripMargin +
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale"))
+        |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     compile.evalForStdout(Vector()) shouldEqual "5\n5\n5\n5\n"
   }
 
   test("If nevers") {
-    val compile = Compilation(Samples.get("programs/if/ifnevers.vale"))
+    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/if/ifnevers.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("Toast") {
-    val compile = Compilation(
+    val compile = Compilation.test(List("builtinexterns"),
       """
         |fn main() int export {
         |  a = 0;
@@ -216,7 +210,7 @@ class IfTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
 
-    val main = compile.getTemputs().lookupFunction("main")
+    val main = compile.expectTemputs().lookupFunction("main")
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 

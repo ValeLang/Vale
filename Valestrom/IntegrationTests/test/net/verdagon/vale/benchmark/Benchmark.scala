@@ -6,7 +6,7 @@ import net.verdagon.vale.{Profiler, Samples}
 object Benchmark {
   def go(useOptimization: Boolean): Profiler = {
     val profiler = new Profiler()
-    val compile = Compilation.multiple(
+    val compile = Compilation.testWithOptions(List("builtinexterns"),
       List(
         Samples.get("libraries/printutils.vale"),
         Samples.get("libraries/castutils.vale"),

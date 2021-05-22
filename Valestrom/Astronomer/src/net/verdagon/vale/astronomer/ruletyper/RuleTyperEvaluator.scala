@@ -441,6 +441,8 @@ class RuleTyperEvaluator[Env, State](
         case IntTypeSR => IntegerTemplataType
         case KindTypeSR => KindTemplataType
         case MutabilityTypeSR => MutabilityTemplataType
+        case OwnershipTypeSR => OwnershipTemplataType
+        case PermissionTypeSR => PermissionTemplataType
         case PrototypeTypeSR => PrototypeTemplataType
       }
 

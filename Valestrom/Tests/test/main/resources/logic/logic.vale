@@ -1,0 +1,4 @@
+
+fn !=<T>(a &T, b &T) bool {
+  not (a == b)
+}

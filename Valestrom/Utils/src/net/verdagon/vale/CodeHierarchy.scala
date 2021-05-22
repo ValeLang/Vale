@@ -58,6 +58,9 @@ object FileCoordinateMap {
   def test[T](contents: T): FileCoordinateMap[T] = {
     FileCoordinateMap(Map()).add(TEST_MODULE, List(), "test.vale", contents)
   }
+  def test[T](contents: List[T]): FileCoordinateMap[T] = {
+    test(contents.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap)
+  }
   def test[T](contents: Map[String, T]): FileCoordinateMap[T] = {
     contents.foldLeft(FileCoordinateMap[T](Map()))({
       case (prev, (filename, c)) => prev.add(TEST_MODULE, List(), filename, c)
@@ -66,7 +69,8 @@ object FileCoordinateMap {
 }
 
 case class FileCoordinateMap[Contents](
-    moduleToNamespacesToFilenameToContents: Map[String, Map[List[String], Map[String, Contents]]]) {
+    moduleToNamespacesToFilenameToContents: Map[String, Map[List[String], Map[String, Contents]]])
+extends INamespaceResolver[Map[String, Contents]] {
   def apply(coord: FileCoordinate): Contents = {
     vassertSome(
       vassertSome(
@@ -128,6 +132,64 @@ case class FileCoordinateMap[Contents](
         val contents = moduleContentsFromThis ++ moduleContentsFromThat
         (module -> contents)
       }).toMap)
+  }
+
+  def resolve(nsCoord: NamespaceCoordinate): Option[Map[String, Contents]] = {
+    moduleToNamespacesToFilenameToContents.get(nsCoord.module) match {
+      case None => None
+      case Some(namespacesToFilenameToContents) => {
+        namespacesToFilenameToContents.get(nsCoord.namespaces) match {
+          case None => None
+          case Some(filenameToContents) => Some(filenameToContents)
+        }
+      }
+    }
+  }
+}
+
+object NamespaceCoordinateMap {
+  def composeResolvers[Contents](
+    resolverA: NamespaceCoordinate => Option[Map[String, Contents]],
+    resolverB: NamespaceCoordinate => Map[String, Contents])
+    (nsCoord: NamespaceCoordinate):
+  Map[String, Contents] = {
+    resolverA(nsCoord) match {
+      case Some(result) => result
+      case None => resolverB(nsCoord)
+    }
+  }
+
+  def composeMapAndResolver[Contents](
+    files: FileCoordinateMap[Contents],
+    thenResolver: NamespaceCoordinate => Map[String, Contents])
+    (nsCoord: NamespaceCoordinate):
+  Map[String, Contents] = {
+    files.moduleToNamespacesToFilenameToContents.get(nsCoord.module) match {
+      case Some(namespacesToFilenameToContents) => {
+        namespacesToFilenameToContents.get(nsCoord.namespaces) match {
+          case Some(filenameToContents) => {
+            return filenameToContents
+          }
+          case None =>
+        }
+      }
+      case None =>
+    }
+    thenResolver(nsCoord)
+  }
+}
+
+trait INamespaceResolver[T] {
+  def resolve(nsCoord: NamespaceCoordinate): Option[T]
+
+  def or(fallback: INamespaceResolver[T]): INamespaceResolver[T] =
+    x => innerOr(fallback, x)
+
+  def innerOr(fallback: INamespaceResolver[T], nsCoord: NamespaceCoordinate): Option[T] = {
+    resolve(nsCoord) match {
+      case Some(x) => Some(x)
+      case None => fallback.resolve(nsCoord)
+    }
   }
 }
 

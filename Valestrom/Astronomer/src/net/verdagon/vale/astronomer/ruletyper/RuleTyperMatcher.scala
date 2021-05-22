@@ -488,6 +488,8 @@ class RuleTyperMatcher[Env, State](
       case CoordTemplataType =>
       case KindTemplataType =>
       case MutabilityTemplataType =>
+      case OwnershipTemplataType =>
+      case PermissionTemplataType =>
       case PrototypeTemplataType =>
       case IntegerTemplataType =>
     }
@@ -497,6 +499,8 @@ class RuleTyperMatcher[Env, State](
       case CoordTypeSR =>
       case KindTypeSR =>
       case MutabilityTypeSR =>
+      case OwnershipTypeSR =>
+      case PermissionTypeSR =>
       case PrototypeTypeSR =>
       case IntTypeSR =>
     }
@@ -505,6 +509,8 @@ class RuleTyperMatcher[Env, State](
       case (IntegerTemplataType, IntTypeSR) =>
       case (KindTemplataType, KindTypeSR) =>
       case (MutabilityTemplataType, MutabilityTypeSR) =>
+      case (OwnershipTemplataType, OwnershipTypeSR) =>
+      case (PermissionTemplataType, PermissionTypeSR) =>
       case (PrototypeTemplataType, PrototypeTypeSR) =>
       // When you add a case here, make sure you consider all combinations, and
       // add it to the above matches to note that you did.

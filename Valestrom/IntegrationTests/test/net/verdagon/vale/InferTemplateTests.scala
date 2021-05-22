@@ -5,11 +5,10 @@ import net.verdagon.vale.templar.templata.{CoordTemplata, Parameter2}
 import net.verdagon.vale.templar.types.{Constraint, Coord, Own, Readonly, Readwrite, StructRef2}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 
 class InferTemplateTests extends FunSuite with Matchers {
   test("Test inferring a borrowed argument") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
         |fn moo<T>(m &T) int { m.hp }

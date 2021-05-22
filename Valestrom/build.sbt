@@ -24,6 +24,7 @@ logLevel := Level.Debug
     (baseDirectory.value / "Hammer" / "src"),
     (baseDirectory.value / "Highlighter" / "src"),
     (baseDirectory.value / "Hinputs" / "src"),
+    (baseDirectory.value / "Builtins" / "src"),
     (baseDirectory.value / "Metal" / "src"),
     (baseDirectory.value / "Samples" / "src"),
     (baseDirectory.value / "Scout" / "src"),
@@ -35,7 +36,7 @@ logLevel := Level.Debug
 unmanagedJars in Compile += (baseDirectory.value / "lib" / "scala-parser-combinators_2.12-1.1.1.jar")
 
 (unmanagedResourceDirectories) in Compile := Seq(
-    baseDirectory.value / "Samples" / "test" / "main" / "resources")
+    baseDirectory.value / "Builtins" / "src" / "net" / "verdagon" / "vale" / "resources")
 
 assemblyJarName in assembly := "Valestrom.jar"
 assemblyOutputPath in assembly := (baseDirectory.value / "Valestrom.jar")

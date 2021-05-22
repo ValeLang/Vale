@@ -1,7 +1,9 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{Err, Ok, Result, repeatStr, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NullProfiler, Ok, Result, repeatStr, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.von.{JsonSyntax, VonPrinter}
 
+import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.util.parsing.input.{CharSequenceReader, Position}
@@ -658,5 +660,113 @@ object Parser {
       }
 
     ParseSuccess(FunctionP(Range(funcBegin, bodyEnd), header, Some(body)))
+  }
+}
+
+object ParserCompilation {
+
+  def loadAndParse(
+    neededModules: List[String],
+    resolver: INamespaceResolver[Map[String, String]]):
+  (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
+    vassert(neededModules.size == neededModules.distinct.size, "Duplicate modules in: " + neededModules.mkString(", "))
+
+    loadAndParseIteration(neededModules, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
+  }
+
+  def loadAndParseIteration(
+    neededModules: List[String],
+    alreadyFoundCodeMap: FileCoordinateMap[String],
+    alreadyParsedProgramPMap: FileCoordinateMap[(FileP, List[(Int, Int)])],
+    resolver: INamespaceResolver[Map[String, String]]):
+  (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
+    val neededNamespaceCoords =
+      neededModules.map(module => NamespaceCoordinate(module, List())) ++
+        alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
+          file._1.topLevelThings.collect({
+            case TopLevelImportP(ImportP(_, moduleName, namespaceSteps, importeeName)) => {
+              NamespaceCoordinate(moduleName.str, namespaceSteps.map(_.str))
+            }
+          })
+        }).toList.flatten.filter(namespaceCoord => {
+          !alreadyParsedProgramPMap.moduleToNamespacesToFilenameToContents
+            .getOrElse(namespaceCoord.module, Map())
+            .contains(namespaceCoord.namespaces)
+        })
+
+    if (neededNamespaceCoords.isEmpty) {
+      return (alreadyFoundCodeMap, alreadyParsedProgramPMap)
+    }
+
+    val neededCodeMapFlat =
+      neededNamespaceCoords.flatMap(neededNamespaceCoord => {
+        val filepathsAndContents = vassertSome(resolver.resolve(neededNamespaceCoord))
+        // Note that filepathsAndContents *can* be empty, see ImportTests.
+        List((neededNamespaceCoord.module, neededNamespaceCoord.namespaces, filepathsAndContents))
+      })
+    val grouped =
+      neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
+    val neededCodeMap = FileCoordinateMap(grouped)
+
+    val newProgramPMap =
+      neededCodeMap.map({ case (fileCoord, code) =>
+        Parser.runParserForProgramAndCommentRanges(code) match {
+          case ParseFailure(err) => {
+            vwat(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, err))
+          }
+          case ParseSuccess((program0, commentsRanges)) => {
+            val von = ParserVonifier.vonifyFile(program0)
+            val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+            ParsedLoader.load(vpstJson) match {
+              case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, error))
+              case ParseSuccess(program0) => (program0, commentsRanges)
+            }
+          }
+        }
+      })
+
+    val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
+    val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
+
+    loadAndParseIteration(List(), combinedCodeMap, combinedProgramPMap, resolver)
+  }
+}
+
+class ParserCompilation(
+  modulesToBuild: List[String],
+  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
+  var codeMapCache: Option[FileCoordinateMap[String]] = None
+  var vpstMapCache: Option[FileCoordinateMap[String]] = None
+  var parsedsCache: Option[FileCoordinateMap[(FileP, List[(Int, Int)])]] = None
+
+  def getCodeMap(): FileCoordinateMap[String] = {
+    getParseds()
+    codeMapCache.get
+  }
+  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = {
+    parsedsCache match {
+      case Some(parseds) => parseds
+      case None => {
+        // Also build the "" module, which has all the builtins
+        val (codeMap, programPMap) =
+          ParserCompilation.loadAndParse(modulesToBuild, namespaceToContentsResolver)
+        codeMapCache = Some(codeMap)
+        parsedsCache = Some(programPMap)
+        parsedsCache.get
+      }
+    }
+  }
+
+  def getVpstMap(): FileCoordinateMap[String] = {
+    vpstMapCache match {
+      case Some(vpst) => vpst
+      case None => {
+        getParseds().map({ case (fileCoord, (programP, commentRanges)) =>
+          val von = ParserVonifier.vonifyFile(programP)
+          val json = new VonPrinter(JsonSyntax, 120).print(von)
+          json
+        })
+      }
+    }
   }
 }

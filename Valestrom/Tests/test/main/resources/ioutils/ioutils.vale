@@ -1,0 +1,5 @@
+
+fn getch() int { __getch() }
+fn __getch() int extern;
+
+fn stdinReadInt() int extern;

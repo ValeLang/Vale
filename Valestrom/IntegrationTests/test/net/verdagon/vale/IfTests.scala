@@ -5,12 +5,11 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.vivem.IntV
 
 class IfTests extends FunSuite with Matchers {
   test("Simple true branch returning an int") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  = if (true) { 3 } else { 5 }
@@ -27,7 +26,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Simple false branch returning an int") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  = if (false) { 3 } else { 5 }
@@ -38,7 +37,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Ladder") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  = if (false) { 3 } else if (true) { 5 } else { 7 }
@@ -61,7 +60,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Moving from inside if") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
         |fn main() int export {
@@ -91,7 +90,7 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("If with complex condition") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
         |fn main() str {
@@ -110,8 +109,9 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Ret from inside if will destroy locals") {
-    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
-      """struct Marine { hp int; }
+    val compile = RunCompilation.test(
+      """import printutils.*;
+        |struct Marine { hp int; }
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
@@ -135,8 +135,11 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Can continue if other branch would have returned") {
-    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
-      """struct Marine { hp int; }
+    val compile = RunCompilation.test(
+      """
+        |import printutils.*;
+        |
+        |struct Marine { hp int; }
         |fn destructor(marine Marine) void {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
@@ -161,9 +164,8 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("Destructure inside if") {
-    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
-
-      """
+    val compile = RunCompilation.test(
+      """import printutils.*;
         |struct Bork {
         |  num int;
         |}
@@ -191,12 +193,12 @@ class IfTests extends FunSuite with Matchers {
   }
 
   test("If nevers") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/if/ifnevers.vale"))
+    val compile = RunCompilation.test(Tests.loadExpected("programs/if/ifnevers.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
   test("Toast") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  a = 0;

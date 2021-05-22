@@ -1,6 +1,5 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.hammer.VonHammer
 import net.verdagon.vale.metal.{IntH, YonderH}
 import net.verdagon.vale.templar._
@@ -14,7 +13,7 @@ import org.scalatest.{FunSuite, Matchers}
 class PureFunctionTests extends FunSuite with Matchers {
   test("Simple pure function") {
     val compile =
-      Compilation.test(List("builtinexterns"),
+      RunCompilation.test(
         """
           |struct Engine {
           |  fuel int;

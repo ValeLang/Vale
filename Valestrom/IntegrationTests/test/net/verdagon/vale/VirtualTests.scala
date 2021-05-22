@@ -4,14 +4,13 @@ import net.verdagon.vale.templar.{CitizenName2, FullName2, FunctionName2, simple
 import net.verdagon.vale.templar.templata.{Abstract2, Signature2}
 import net.verdagon.vale.templar.types._
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.vivem.IntV
 import net.verdagon.von.VonInt
 
 class VirtualTests extends FunSuite with Matchers {
 
     test("Simple program containing a virtual function") {
-      val compile = Compilation.test(List("builtinexterns"),
+      val compile = RunCompilation.test(
         """
           |interface I {}
           |fn doThing(virtual i I) int {4}
@@ -43,7 +42,7 @@ class VirtualTests extends FunSuite with Matchers {
     }
 
   test("Can call virtual function") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |interface I {}
         |fn doThing(virtual i I) int {4}
@@ -76,7 +75,7 @@ class VirtualTests extends FunSuite with Matchers {
   }
 
   test("Can call interface env's function from outside") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |interface I {
         |  fn doThing(virtual i I) int;
@@ -101,24 +100,20 @@ class VirtualTests extends FunSuite with Matchers {
 
 
   test("Interface with method with param of substruct") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("builtins/strings.vale"),
+    val compile = RunCompilation.test(
         """
+          |import list.*;
           |interface SectionMember {}
           |struct Header {}
           |impl SectionMember for Header;
           |fn collectHeaders2(header &List<&Header>, virtual this &SectionMember) abstract;
           |fn collectHeaders2(header &List<&Header>, this &Header impl SectionMember) { }
-        """.stripMargin))
+        """.stripMargin)
     val temputs = compile.getHamuts()
   }
 
   test("Open interface constructors") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
+    val compile = RunCompilation.test(
         """
           |interface Bipedal {
           |  fn hop(virtual s &Bipedal) int;
@@ -142,13 +137,61 @@ class VirtualTests extends FunSuite with Matchers {
           |
           |  = hopscotch(&x);
           |}
-        """.stripMargin))
+        """.stripMargin)
     val temputs = compile.getHamuts()
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
+  test("Successful downcast with as") {
+    val compile = RunCompilation.test(
+      """
+        |interface IShip {}
+        |
+        |struct Serenity {}
+        |impl IShip for Serenity;
+        |
+        |struct Raza { fuel int; }
+        |impl IShip for Raza;
+        |
+        |fn moo(ship IShip) int {
+        |  maybeRaza Opt<&Raza> = ship.as<Raza>();
+        |  = if (not maybeRaza.isEmpty()) {
+        |      = maybeRaza.get().fuel;
+        |    } else {
+        |      72
+        |    }
+        |}
+        |fn main() int export {
+        |  moo(Raza(42))
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
 
-
-
+  test("Failed downcast with as") {
+    val compile = RunCompilation.test(
+      """
+        |interface IShip {}
+        |
+        |struct Serenity {}
+        |impl IShip for Serenity;
+        |
+        |struct Raza { fuel int; }
+        |impl IShip for Raza;
+        |
+        |fn moo(ship IShip) int {
+        |  maybeRaza Opt<&Raza> = ship.as<Raza>();
+        |  = if (not maybeRaza.isEmpty()) {
+        |      = maybeRaza.get().fuel;
+        |    } else {
+        |      42
+        |    }
+        |}
+        |fn main() int export {
+        |  moo(Serenity())
+        |}
+        |""".stripMargin)
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
 
 }

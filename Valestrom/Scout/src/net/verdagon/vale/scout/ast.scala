@@ -68,7 +68,7 @@ case class ProgramS(
 
 object CodeLocationS {
   // Keep in sync with CodeLocation2
-  val zero = CodeLocationS.internal(-1)
+  val testZero = CodeLocationS.internal(-1)
   def internal(internalNum: Int): CodeLocationS = {
     vassert(internalNum < 0)
     CodeLocationS(FileCoordinate("", List(), "internal"), internalNum)
@@ -77,7 +77,7 @@ object CodeLocationS {
 
 object RangeS {
   // Should only be used in tests.
-  val testZero = RangeS(CodeLocationS.zero, CodeLocationS.zero)
+  val testZero = RangeS(CodeLocationS.testZero, CodeLocationS.testZero)
 
   def internal(internalNum: Int): RangeS = {
     vassert(internalNum < 0)

@@ -6,11 +6,10 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.types.{Bool2, Coord, Int2, Share}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 
 class BlockTests extends FunSuite with Matchers {
   test("Empty block") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  block {
@@ -25,7 +24,7 @@ class BlockTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  block {
@@ -45,7 +44,7 @@ class BlockTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable, another variable outside with same name") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  block {

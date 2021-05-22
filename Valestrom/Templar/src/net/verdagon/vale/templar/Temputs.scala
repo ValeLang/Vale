@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, NamespaceEnvironment}
 import net.verdagon.vale.templar.templata.{Prototype2, Signature2}
-import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, RawArrayT2, Share, StructDefinition2, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Never2, RawArrayT2, Share, StructDefinition2, StructRef2, UnknownSizeArrayT2}
 import net.verdagon.vale.{vassert, vassertSome, vfail}
 
 import scala.collection.immutable.{List, Map}
@@ -87,6 +87,16 @@ case class Temputs() {
 
   def addFunction(function: Function2): Unit = {
     vassert(declaredSignatures.contains(function.header.toSignature))
+    vassert(
+      function.body.resultRegister.reference.referend == Never2() ||
+      function.body.resultRegister.reference == function.header.returnType)
+    function.all({
+      case Return2(innerExpr) => {
+        vassert(
+          innerExpr.resultRegister.reference.referend == Never2() ||
+          innerExpr.resultRegister.reference == function.header.returnType)
+      }
+    })
 
     if (functions.exists(_.header == function.header)) {
       vfail("wot")

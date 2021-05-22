@@ -1,0 +1,3 @@
+
+fn print(s str) void { __vprintStr(s, 0, len(s)) }
+fn __vprintStr(s str, start int, length int) extern;

@@ -475,40 +475,10 @@ class ExpressionTemplar(
 
           val borrowCoord = Coord(Constraint, Readonly, innerExpr2.referend)
 
-          val interfaceTemplata =
-            fate.getNearestTemplataWithName(CodeTypeNameA("Opt"), Set(TemplataLookupContext)) match {
-              case Some(it@InterfaceTemplata(_, _)) => it
-              case _ => vfail()
-            }
-          val optBorrowInterfaceRef =
-            structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(borrowCoord)))
-          val ownOptBorrowCoord = Coord(Own,Readwrite, optBorrowInterfaceRef)
+          val (optCoord, someConstructor, noneConstructor) =
+            getOption(temputs, fate.snapshot, range, borrowCoord)
 
-          val someConstructorTemplata =
-            fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("Some"), Set(ExpressionLookupContext)) match {
-              case Some(ft@FunctionTemplata(_, _)) => ft
-              case _ => vwat();
-            }
-          val someConstructor =
-            delegate.evaluateTemplatedFunctionFromCallForPrototype(
-              temputs, range, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
-              case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
-              case EvaluateFunctionSuccess(p) => p
-            }
-
-          val noneConstructorTemplata =
-            fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("None"), Set(ExpressionLookupContext)) match {
-              case Some(ft@FunctionTemplata(_, _)) => ft
-              case _ => vwat();
-            }
-          val noneConstructor =
-            delegate.evaluateTemplatedFunctionFromCallForPrototype(
-              temputs, range, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
-              case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
-              case EvaluateFunctionSuccess(p) => p
-            }
-
-          val resultExpr2 = LockWeak2(innerExpr2, ownOptBorrowCoord, someConstructor, noneConstructor)
+          val resultExpr2 = LockWeak2(innerExpr2, optCoord, someConstructor, noneConstructor)
           (resultExpr2, returnsFromInner)
         }
         case LocalLoadAE(range, nameA, targetOwnership) => {
@@ -811,6 +781,17 @@ class ExpressionTemplar(
               temputs, fate, range, rules, typeByRune, sizeRuneA, maybeMutabilityRune, maybeVariabilityRune, callableTE)
           (expr2, returnsFromCallable)
         }
+        case RuntimeArrayFromCallableAE(range, rules, typeByRune, maybeMutabilityRune, maybeVariabilityRune, sizeAE, callableAE) => {
+          val (sizeTE, returnsFromSize) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, sizeAE);
+          val (callableTE, returnsFromCallable) =
+            evaluateAndCoerceToReferenceExpression(temputs, fate, callableAE);
+
+          val expr2 =
+            arrayTemplar.evaluateRuntimeSizedArrayFromCallable(
+              temputs, fate, range, rules, typeByRune, maybeMutabilityRune, maybeVariabilityRune, sizeTE, callableTE)
+          (expr2, returnsFromSize ++ returnsFromCallable)
+        }
         case ConstructArrayAE(range, mutabilityTemplex, elementCoordTemplex, generatorPrototypeTemplex, sizeExpr1, generatorExpr1) => {
           val (MutabilityTemplata(arrayMutability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, mutabilityTemplex)
           val (CoordTemplata(elementCoord)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, elementCoordTemplex)
@@ -821,18 +802,6 @@ class ExpressionTemplar(
 
           val (generatorExpr2, returnsFromGenerator) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, generatorExpr1);
-
-//          val memberType2 =
-//            generatorExpr2.referend match {
-//              case InterfaceRef2(FullName2(List(), CitizenName2("IFunction1", List(MutabilityTemplata(_), CoordTemplata(Coord(Share, Readonly, Int2())), CoordTemplata(element))))) => element
-//              case other => vwat(other.toString)
-//            }
-
-//          val isConvertible =
-//            templataTemplar.isTypeTriviallyConvertible(temputs, memberType2, elementCoord)
-//          if (!isConvertible) {
-//            throw CompileErrorExceptionT(RangedInternalErrorT(range, memberType2 + " cant convert to " + elementCoord))
-//          }
 
           if (generatorPrototype.returnType != elementCoord) {
             throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator return type doesn't agree with array element type!"))
@@ -1115,6 +1084,43 @@ class ExpressionTemplar(
         }
       }
     })
+  }
+
+  def getOption(temputs: Temputs, fate: FunctionEnvironment, range: RangeS, borrowCoord: Coord):
+  (Coord, Prototype2, Prototype2) = {
+    val interfaceTemplata =
+      fate.getNearestTemplataWithName(CodeTypeNameA("Opt"), Set(TemplataLookupContext)) match {
+        case Some(it@InterfaceTemplata(_, _)) => it
+        case _ => vfail()
+      }
+    val optBorrowInterfaceRef =
+      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(borrowCoord)))
+    val ownOptBorrowCoord = Coord(Own, Readwrite, optBorrowInterfaceRef)
+
+    val someConstructorTemplata =
+      fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("Some"), Set(ExpressionLookupContext)) match {
+        case Some(ft@FunctionTemplata(_, _)) => ft
+        case _ => vwat();
+      }
+    val someConstructor =
+      delegate.evaluateTemplatedFunctionFromCallForPrototype(
+        temputs, range, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
+        case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
+        case EvaluateFunctionSuccess(p) => p
+      }
+
+    val noneConstructorTemplata =
+      fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("None"), Set(ExpressionLookupContext)) match {
+        case Some(ft@FunctionTemplata(_, _)) => ft
+        case _ => vwat();
+      }
+    val noneConstructor =
+      delegate.evaluateTemplatedFunctionFromCallForPrototype(
+        temputs, range, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
+        case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
+        case EvaluateFunctionSuccess(p) => p
+      }
+    (ownOptBorrowCoord, someConstructor, noneConstructor)
   }
 
   private def maybeNarrowPermission(range: RangeS, innerExpr2: ReferenceExpression2, permission: PermissionP) = {

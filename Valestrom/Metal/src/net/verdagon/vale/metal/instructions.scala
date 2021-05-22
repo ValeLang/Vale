@@ -628,12 +628,27 @@ case class WeakAliasH(
 }
 
 // Checks if the given args are the same instance.
-case class IsH(
+case class IsSameInstanceH(
   leftExpression: ExpressionH[ReferendH],
   rightExpression: ExpressionH[ReferendH],
 ) extends ExpressionH[ReferendH] {
   override def resultType: ReferenceH[ReferendH] = ReferenceH(ShareH, InlineH, ReadonlyH, BoolH())
 }
+
+// Tries to downcast to the specified subtype and wrap in a Some.
+// If it fails, will result in a None.
+case class AsSubtypeH(
+  // Expression whose result we'll try to downcast
+  sourceExpression: ExpressionH[ReferendH],
+  // The subtype to try and cast the source to.
+  targetType: ReferendH,
+  // Should be an owned ref to optional of something
+  resultType: ReferenceH[InterfaceRefH],
+  // Function to give a ref to to make a Some(ref)
+  someConstructor: PrototypeH,
+  // Function to make a None of the right type
+  noneConstructor: PrototypeH,
+) extends ExpressionH[ReferendH]
 
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(

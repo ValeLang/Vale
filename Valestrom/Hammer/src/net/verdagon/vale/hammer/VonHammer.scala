@@ -383,6 +383,24 @@ object VonHammer {
             VonMember("resultType", vonifyCoord(wa.resultType)),
             VonMember("resultReferend", vonifyKind(wa.resultType.kind))))
       }
+      case AsSubtypeH(sourceExpr, targetType, resultOptType, someConstructor, noneConstructor) => {
+        VonObject(
+          "LockWeak",
+          None,
+          Vector(
+            VonMember("sourceExpr", vonifyExpression(sourceExpr)),
+            VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
+            VonMember("sourceKnownLive", VonBool(false)),
+            VonMember("targetReferend", vonifyKind(targetType)),
+            VonMember("someConstructor", vonifyPrototype(someConstructor)),
+            VonMember("someType", vonifyCoord(someConstructor.returnType)),
+            VonMember("someReferend", vonifyKind(someConstructor.returnType.kind)),
+            VonMember("noneConstructor", vonifyPrototype(noneConstructor)),
+            VonMember("noneType", vonifyCoord(noneConstructor.returnType)),
+            VonMember("noneReferend", vonifyKind(noneConstructor.returnType.kind)),
+            VonMember("resultOptType", vonifyCoord(resultOptType)),
+            VonMember("resultOptReferend", vonifyKind(resultOptType.kind))))
+      }
       case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
         VonObject(
           "LockWeak",
@@ -761,7 +779,7 @@ object VonHammer {
             VonMember("innerExpr", vonifyExpression(inner)),
             VonMember("innerType", vonifyCoord(inner.resultType))))
       }
-      case IsH(left, right) => {
+      case IsSameInstanceH(left, right) => {
         VonObject(
           "Is",
           None,

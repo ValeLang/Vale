@@ -10,7 +10,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="Highlighter" />
     <orderEntry type="module" module-name="Parser" />
-    <orderEntry type="module" module-name="Samples" />
+    <orderEntry type="module" module-name="Tests" />
     <orderEntry type="module" module-name="Scout" />
     <orderEntry type="module" module-name="Utils" />
     <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />

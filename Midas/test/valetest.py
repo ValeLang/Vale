@@ -15,7 +15,7 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(args, capture_output=True, text=True, **kwargs)
 
 
-PATH_TO_SAMPLES = "../Valestrom/Samples/test/main/resources/"
+PATH_TO_SAMPLES = "../Valestrom/Tests/test/main/resources/"
 
 class ValeTest(unittest.TestCase):
     GENPATH: str = os.environ.get('GENPATH', ".")

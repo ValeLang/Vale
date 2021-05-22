@@ -24,8 +24,8 @@ class MutateTests extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = TemplarCompilation("fn main() {a! = 3; set a = 4; }")
-    val temputs = compile.getTemputs();
+    val compile = TemplarTestCompilation.test("fn main() {a! = 3; set a = 4; }")
+    val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
     main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), Varying, _), _, Varying), IntLiteral2(4)) => })
 
@@ -36,7 +36,7 @@ class MutateTests extends FunSuite with Matchers {
 
   test("Test mutable member permission") {
     val compile =
-      TemplarCompilation(
+      TemplarTestCompilation.test(
         """
           |struct Engine { fuel int; }
           |struct Spaceship { engine! Engine; }
@@ -45,7 +45,7 @@ class MutateTests extends FunSuite with Matchers {
           |  set ship.engine = Engine(15);
           |}
           |""".stripMargin)
-    val temputs = compile.getTemputs();
+    val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
 
     val lookup = main.only({ case l @ ReferenceMemberLookup2(_, _, _, _, _, _) => l })
@@ -58,21 +58,21 @@ class MutateTests extends FunSuite with Matchers {
   }
 
   test("Local-set upcasts") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """
-        |interface IOption<T> rules(T Ref) { }
-        |struct Some<T> rules(T Ref) { value T; }
-        |impl<T> IOption<T> for Some<T>;
-        |struct None<T> rules(T Ref) { }
-        |impl<T> IOption<T> for None<T>;
+        |interface IXOption<T> rules(T Ref) { }
+        |struct XSome<T> rules(T Ref) { value T; }
+        |impl<T> IXOption<T> for XSome<T>;
+        |struct XNone<T> rules(T Ref) { }
+        |impl<T> IXOption<T> for XNone<T>;
         |
         |fn main() {
-        |  m! IOption<int> = None<int>();
-        |  set m = Some(6);
+        |  m! IXOption<int> = XNone<int>();
+        |  set m = XSome(6);
         |}
       """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
       case Mutate2(_, StructToInterfaceUpcast2(_, _)) =>
@@ -80,26 +80,24 @@ class MutateTests extends FunSuite with Matchers {
   }
 
   test("Expr-set upcasts") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """
-        |interface IOption<T> rules(T Ref) { }
-        |struct Some<T> rules(T Ref) { value T; }
-        |impl<T> IOption<T> for Some<T>;
-        |struct None<T> rules(T Ref) { }
-        |impl<T> IOption<T> for None<T>;
+        |interface IXOption<T> rules(T Ref) { }
+        |struct XSome<T> rules(T Ref) { value T; }
+        |impl<T> IXOption<T> for XSome<T>;
+        |struct XNone<T> rules(T Ref) { }
+        |impl<T> IXOption<T> for XNone<T>;
         |
         |struct Marine {
-        |  weapon! IOption<int>;
+        |  weapon! IXOption<int>;
         |}
         |fn main() {
-        |  m = Marine(None<int>());
-        |  set m.weapon = Some(6);
+        |  m = Marine(XNone<int>());
+        |  set m.weapon = XSome(6);
         |}
-      """.stripMargin +
-        Samples.get("libraries/castutils.vale") +
-        Samples.get("libraries/printutils.vale"))
+      """.stripMargin)
 
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
       case Mutate2(_, StructToInterfaceUpcast2(_, _)) =>
@@ -107,7 +105,7 @@ class MutateTests extends FunSuite with Matchers {
   }
 
   test("Reports when we try to mutate an imm struct") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """
         |struct Vec3 { x float; y float; z float; }
         |fn main() int export {
@@ -115,8 +113,8 @@ class MutateTests extends FunSuite with Matchers {
         |  set v.x = 10.0;
         |}
         |""".stripMargin)
-    compile.getTemplarError() match {
-      case CantMutateFinalMember(_, structRef2, memberName) => {
+    compile.getTemputs() match {
+      case Err(CantMutateFinalMember(_, structRef2, memberName)) => {
         structRef2.last match {
           case CitizenName2("Vec3", List()) =>
         }
@@ -128,15 +126,15 @@ class MutateTests extends FunSuite with Matchers {
   }
 
   test("Reports when we try to mutate a local variable with wrong type") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """
         |fn main() {
         |  a! = 5;
         |  set a = "blah";
         |}
         |""".stripMargin)
-    compile.getTemplarError() match {
-      case CouldntConvertForMutateT(_, Coord(Share, Readonly, Int2()), Coord(Share, Readonly, Str2())) =>
+    compile.getTemputs() match {
+      case Err(CouldntConvertForMutateT(_, Coord(Share, Readonly, Int2()), Coord(Share, Readonly, Str2()))) =>
       case _ => vfail()
     }
   }
@@ -174,7 +172,7 @@ class MutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       BodyResultDoesntMatch(
         RangeS.testZero,
-        FunctionNameA("myFunc", CodeLocationS.zero), fireflyCoord, serenityCoord))
+        FunctionNameA("myFunc", CodeLocationS.testZero), fireflyCoord, serenityCoord))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CouldntConvertForReturnT(

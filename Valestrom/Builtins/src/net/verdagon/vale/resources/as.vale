@@ -1,0 +1,9 @@
+import v.builtins.opt.*;
+
+fn as<TargetKind, SourceType>(left SourceType) Opt<TargetType>
+rules(
+  SourceOwnership Ownership,
+  SourcePermission Permission,
+  SourceType Ref(SourceOwnership, SourcePermission, _),
+  TargetType Ref(SourceOwnership, SourcePermission, TargetKind))
+extern(vale_as_subtype);

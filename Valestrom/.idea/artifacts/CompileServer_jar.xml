@@ -9,7 +9,7 @@
       <element id="module-output" name="Parser" />
       <element id="module-output" name="Utils" />
       <element id="module-output" name="Von" />
-      <element id="module-output" name="Samples" />
+      <element id="module-output" name="Tests" />
       <element id="module-output" name="Scout" />
       <element id="module-output" name="Hinputs" />
       <element id="module-output" name="Templata" />
@@ -26,7 +26,7 @@
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/commons-lang-2.6.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-parser-combinators_2.12-1.1.1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/scala-library-2.12.6.jar" path-in-jar="/" />
-      <element id="dir-copy" path="$PROJECT_DIR$/Samples/test/main/resources" />
+      <element id="dir-copy" path="$PROJECT_DIR$/Tests/test/main/resources" />
     </root>
   </artifact>
 </component>

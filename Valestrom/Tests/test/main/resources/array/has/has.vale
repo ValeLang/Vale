@@ -1,0 +1,30 @@
+
+fn has<E, F>(arr &Array<_, E>, elem E, equator F) bool {
+  i! = 0;
+  while (i < arr.len()) {
+    if ((equator)(arr[i], elem)) {
+      ret true;
+    }
+    set i = i + 1;
+  }
+  = false;
+}
+
+fn has<E>(arr &Array<_, E>, elem E) bool {
+  has(arr, elem, ==)
+}
+
+fn has<E, F>(seq &[<_> _ * E], elem E, equator F) bool {
+  i! = 0;
+  while (i < seq.len()) {
+    if ((equator)(seq[i], elem)) {
+      ret true;
+    }
+    set i = i + 1;
+  }
+  = false;
+}
+
+fn has<E>(seq &[<_> _ * E], elem E) bool {
+  has(seq, elem, ==)
+}

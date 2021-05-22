@@ -2,11 +2,10 @@ package net.verdagon.vale
 
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 
 class WhileTests extends FunSuite with Matchers {
   test("Simple while loop that doesnt execute") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  while (false) {}
@@ -18,7 +17,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Test a for-ish while loop") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  i! = 0;
@@ -33,8 +32,9 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Tests a while loop with a complex condition") {
-    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils"),
-      """
+    val compile = RunCompilation.test(
+      """import ioutils.*;
+        |import printutils.*;
         |fn main() int export {
         |  key! = 0;
         |  while (set key = __getch(); = key < 96;) {
@@ -48,8 +48,12 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Tests a while loop with a != in it") {
-    val compile = Compilation.test(List("builtinexterns", "printutils", "castutils", "utils"),
+    val compile = RunCompilation.test(
       """
+        |import printutils.*;
+        |import ioutils.*;
+        |import logic.*;
+        |
         |fn main() int export {
         |  key! = 0;
         |  while (set key = __getch(); = key != 99;) {
@@ -63,7 +67,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 
   test("Return from infinite while loop") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  while (true) {
@@ -77,7 +81,7 @@ class WhileTests extends FunSuite with Matchers {
   }
 //
 //  test("Tests a while loop with a move in it") {
-//    val compile = Compilation.test(List("builtinexterns"),
+//    val compile = RunCompilation.test(
 //      """
 //        |fn doThings(m: Marine) { }
 //        |struct Marine { hp: int; }

@@ -700,7 +700,11 @@ object ParserCompilation {
 
     val neededCodeMapFlat =
       neededNamespaceCoords.flatMap(neededNamespaceCoord => {
-        val filepathsAndContents = vassertSome(resolver.resolve(neededNamespaceCoord))
+        val filepathsAndContents =
+          resolver.resolve(neededNamespaceCoord) match {
+            case None => throw InputException("Couldn't find: " + neededNamespaceCoord)
+            case Some(fac) => fac
+          }
         // Note that filepathsAndContents *can* be empty, see ImportTests.
         List((neededNamespaceCoord.module, neededNamespaceCoord.namespaces, filepathsAndContents))
       })
@@ -770,3 +774,5 @@ class ParserCompilation(
     }
   }
 }
+
+case class InputException(message: String) extends Throwable

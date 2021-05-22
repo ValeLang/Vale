@@ -6,7 +6,7 @@ import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, Progr
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
@@ -17,8 +17,6 @@ import scala.io.Source
 import scala.util.matching.Regex
 
 object Driver {
-  case class InputException(message: String) extends Throwable
-
   val defaultModuleName = "my_module"
   sealed trait IValestromInput {
     def moduleName: String

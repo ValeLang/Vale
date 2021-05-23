@@ -231,6 +231,25 @@ Ref NaiveRC::lockWeak(
       isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
 }
 
+
+Ref NaiveRC::asSubtype(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  return regularInnerAsSubtype(
+      globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM, constraintRefM,
+      sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetReferend, buildThen, buildElse);
+}
+
 LLVMTypeRef NaiveRC::translateType(Reference* referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:

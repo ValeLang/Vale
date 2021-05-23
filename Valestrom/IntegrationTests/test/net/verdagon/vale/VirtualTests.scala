@@ -142,56 +142,32 @@ class VirtualTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
-  test("Successful downcast with as") {
+  test("Successful constraint downcast with as") {
     val compile = RunCompilation.test(
-      """
-        |interface IShip {}
-        |
-        |struct Serenity {}
-        |impl IShip for Serenity;
-        |
-        |struct Raza { fuel int; }
-        |impl IShip for Raza;
-        |
-        |fn moo(ship IShip) int {
-        |  maybeRaza Opt<&Raza> = ship.as<Raza>();
-        |  = if (not maybeRaza.isEmpty()) {
-        |      = maybeRaza.get().fuel;
-        |    } else {
-        |      72
-        |    }
-        |}
-        |fn main() int export {
-        |  moo(Raza(42))
-        |}
-        |""".stripMargin)
+      Tests.loadExpected("programs/downcast/downcastConstraintSuccessful.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
-  test("Failed downcast with as") {
+  test("Failed constraint downcast with as") {
     val compile = RunCompilation.test(
-      """
-        |interface IShip {}
-        |
-        |struct Serenity {}
-        |impl IShip for Serenity;
-        |
-        |struct Raza { fuel int; }
-        |impl IShip for Raza;
-        |
-        |fn moo(ship IShip) int {
-        |  maybeRaza Opt<&Raza> = ship.as<Raza>();
-        |  = if (not maybeRaza.isEmpty()) {
-        |      = maybeRaza.get().fuel;
-        |    } else {
-        |      42
-        |    }
-        |}
-        |fn main() int export {
-        |  moo(Serenity())
-        |}
-        |""".stripMargin)
+      Tests.loadExpected("programs/downcast/downcastConstraintFailed.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
+//
+//  test("Successful owning downcast with as") {
+//    val compile = RunCompilation.test(
+//      Tests.loadExpected("programs/downcast/downcastOwningSuccessful.vale"))
+//    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+//  }
+//
+//  test("Failed owning downcast with as") {
+////    i think the generated function isnt dropping the owning ref
+//    // downcasting an owning ref should give a Result, so the user can drop it.
+//    vimpl()
+//
+//    val compile = RunCompilation.test(
+//      Tests.loadExpected("programs/downcast/downcastOwningFailed.vale"))
+//    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+//  }
 
 }

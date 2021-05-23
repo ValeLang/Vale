@@ -707,6 +707,86 @@ Ref translateExpressionInner(
         functionState, builder, sourceType, sourceLE);
 
     return resultOptLE;
+  } else if (auto asSubtype = dynamic_cast<AsSubtype*>(expr)) {
+    bool sourceKnownLive = asSubtype->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+
+    auto sourceType = asSubtype->sourceType;
+    auto sourceLE =
+        translateExpression(
+            globalState, functionState, blockState, builder, asSubtype->sourceExpr);
+    globalState->getRegion(sourceType)
+        ->checkValidReference(FL(), functionState, builder, sourceType, sourceLE);
+
+    auto sourceTypeAsConstraintRefM =
+        globalState->metalCache->getReference(
+            Ownership::BORROW,
+            sourceType->location,
+            sourceType->referend);
+
+    auto resultOptTypeLE =
+        globalState->getRegion(asSubtype->resultOptType)
+            ->translateType(asSubtype->resultOptType);
+
+    auto resultOptLE =
+        globalState->getRegion(sourceType)->asSubtype(
+            functionState, builder,
+            false, false, asSubtype->resultOptType,
+            sourceTypeAsConstraintRefM,
+            sourceType,
+            sourceLE,
+            sourceKnownLive,
+            asSubtype->targetReferend,
+            [globalState, functionState, asSubtype, sourceLE](LLVMBuilderRef thenBuilder, Ref constraintRef) -> Ref {
+              globalState->getRegion(asSubtype->someConstructor->params[0])
+                  ->checkValidReference(
+                      FL(), functionState, thenBuilder,
+                      asSubtype->someConstructor->params[0],
+                      constraintRef);
+              globalState->getRegion(asSubtype->someConstructor->params[0])
+                  ->alias(
+                      FL(), functionState, thenBuilder,
+                      asSubtype->someConstructor->params[0],
+                      constraintRef);
+              // If we get here, object is alive, return a Some.
+              auto someRef = buildCall(globalState, functionState, thenBuilder, asSubtype->someConstructor, {constraintRef});
+              globalState->getRegion(asSubtype->someType)
+                  ->checkValidReference(
+                      FL(), functionState, thenBuilder, asSubtype->someType, someRef);
+              return globalState->getRegion(asSubtype->someType)
+                  ->upcast(
+                      functionState,
+                      thenBuilder,
+                      asSubtype->someType,
+                      asSubtype->someReferend,
+                      someRef,
+                      asSubtype->resultOptType,
+                      asSubtype->resultOptReferend);
+            },
+            [globalState, functionState, asSubtype](LLVMBuilderRef elseBuilder) {
+              auto noneConstructor = asSubtype->noneConstructor;
+              // If we get here, object is dead, return a None.
+              auto noneRef = buildCall(globalState, functionState, elseBuilder, noneConstructor, {});
+              globalState->getRegion(asSubtype->noneType)
+                  ->checkValidReference(
+                      FL(), functionState, elseBuilder, asSubtype->noneType, noneRef);
+              return globalState->getRegion(asSubtype->noneType)
+                  ->upcast(
+                      functionState,
+                      elseBuilder,
+                      asSubtype->noneType,
+                      asSubtype->noneReferend,
+                      noneRef,
+                      asSubtype->resultOptType,
+                      asSubtype->resultOptReferend);
+            });
+
+    globalState->getRegion(sourceType)->dealias(
+        AFL("LockWeak drop weak ref"),
+        functionState, builder, sourceType, sourceLE);
+
+    return resultOptLE;
   } else {
     std::string name = typeid(*expr).name();
     std::cout << name << std::endl;

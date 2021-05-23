@@ -27,4 +27,30 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
+  test("Test inferring a borrowed known size array") {
+    val compile = RunCompilation.test(
+      """
+        |struct Muta { hp int; }
+        |fn moo<N>(m &[N * Muta]) int { m[0].hp }
+        |fn main() int export {
+        |  x = [][Muta(10)];
+        |  = moo(&x);
+        |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+  }
+  test("Test inferring an owning known size array") {
+    val compile = RunCompilation.test(
+      """
+        |struct Muta { hp int; }
+        |fn moo<N>(m [N * Muta]) int { m[0].hp }
+        |fn main() int export {
+        |  x = [][Muta(10)];
+        |  = moo(x);
+        |}
+      """.stripMargin)
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+  }
 }

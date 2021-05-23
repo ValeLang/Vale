@@ -245,6 +245,19 @@ Ref resilientLockWeak(
     Ref isAliveLE,
     LLVMTypeRef resultOptTypeL,
     IWeakRefStructsSource* weakRefStructs);
+
+Ref resilientDowncast(
+    GlobalState* globalState,
+    FunctionState *functionState, LLVMBuilderRef builder,
+    IWeakRefStructsSource* weakRefStructs,
+    Reference *resultOptTypeM,
+    Reference *sourceInterfaceRefMT,
+    Ref &sourceInterfaceRef,
+    Referend *targetReferend,
+    const std::function<Ref(LLVMBuilderRef, Ref)> &buildThen,
+    std::function<Ref(LLVMBuilderRef)> &buildElse,
+    StructReferend *targetStructReferend,
+    InterfaceReferend *sourceInterfaceReferend);
 ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState);
 ControlBlock makeResilientV3WeakableControlBlock(GlobalState* globalState);
 ControlBlock makeMutNonWeakableControlBlock(GlobalState* globalState, RegionId* regionId);
@@ -564,5 +577,20 @@ Ref normalLocalLoad(
 
 Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore);
 
+
+Ref regularInnerAsSubtype(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse);
 
 #endif

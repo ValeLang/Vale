@@ -1,0 +1,20 @@
+
+interface IShip {}
+
+struct Serenity {}
+impl IShip for Serenity;
+
+struct Raza { fuel int; }
+impl IShip for Raza;
+
+fn moo(ship IShip) int {
+  maybeRaza Opt<&Raza> = ship.as<Raza>();
+  = if (not maybeRaza.isEmpty()) {
+      = maybeRaza.get().fuel;
+    } else {
+      42
+    }
+}
+fn main() int export {
+  moo(Serenity())
+}

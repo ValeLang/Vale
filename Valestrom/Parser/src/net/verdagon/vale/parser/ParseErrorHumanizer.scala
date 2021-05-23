@@ -11,6 +11,7 @@ object ParseErrorHumanizer {
       err: IParseError):
   String = {
     err match {
+      case CombinatorParseError(pos, msg) => humanizePos(fileMap, fileCoord, pos) + ": Internal parser error: " + msg + ":\n"  + nextThingAndRestOfLine(fileMap, fileCoord, pos) + "\n"
       case UnrecognizedTopLevelThingError(pos) => humanizePos(fileMap, fileCoord, pos) + ": expected fn, struct, interface, impl, import, or export, but found:\n"  + nextThingAndRestOfLine(fileMap, fileCoord, pos) + "\n"
       case BadFunctionBodyError(pos) => humanizePos(fileMap, fileCoord, pos) + ": expected a function body, or `;` to note there is none. Found:\n" + nextThingAndRestOfLine(fileMap, fileCoord, pos) + "\n"
       case BadStartOfStatementError(pos) => humanizePos(fileMap, fileCoord, pos) + ": expected `}` to end the block, but found:\n" + nextThingAndRestOfLine(fileMap, fileCoord, pos) + "\n"

@@ -385,7 +385,7 @@ object VonHammer {
       }
       case AsSubtypeH(sourceExpr, targetType, resultOptType, someConstructor, noneConstructor) => {
         VonObject(
-          "LockWeak",
+          "AsSubtype",
           None,
           Vector(
             VonMember("sourceExpr", vonifyExpression(sourceExpr)),

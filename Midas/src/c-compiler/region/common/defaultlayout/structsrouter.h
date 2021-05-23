@@ -167,6 +167,11 @@ public:
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
   LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override;
   LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override;
+  WeakFatPtrLE downcastWeakFatPtr(
+      LLVMBuilderRef builder,
+      StructReferend* targetStructReferend,
+      Reference* targetRefMT,
+      LLVMValueRef sourceWeakFatPtrLE) override;
 
 private:
   GetWeakRefStructsSource getWeakRefStructsSource;

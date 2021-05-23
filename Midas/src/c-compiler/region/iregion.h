@@ -118,6 +118,20 @@ public:
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
 
+  virtual Ref asSubtype(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      bool thenResultIsNever,
+      bool elseResultIsNever,
+      Reference* resultOptTypeM,
+      Reference* constraintRefM,
+      Reference* sourceInterfaceRefMT,
+      Ref sourceInterfaceRefLE,
+      bool sourceRefKnownLive,
+      Referend* targetReferend,
+      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+      std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
+
   virtual Ref constructKnownSizeArray(
       Ref regionInstanceRef,
       FunctionState* functionState,

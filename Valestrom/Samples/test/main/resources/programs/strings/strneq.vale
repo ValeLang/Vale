@@ -1,8 +1,0 @@
-
-fn main() int export {
-  = if ("abc" == "def") {
-      73
-    } else {
-      42
-    }
-}

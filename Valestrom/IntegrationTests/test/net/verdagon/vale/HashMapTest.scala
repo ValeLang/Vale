@@ -5,131 +5,88 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 
 class HashMapTest extends FunSuite with Matchers {
   test("Hash map update") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
-              |fn main() int export {
-              |  m = HashMap<int, int>(IntHasher(), IntEquator());
-              |  m!.add(0, 100);
-              |  m!.add(4, 101);
-              |  m!.add(8, 102);
-              |  m!.add(12, 103);
-              |  m!.update(8, 108);
-              |  = m.get(8).get();
-              |}
-              |""".stripMargin))
+          |import hashmap.*;
+          |fn main() int export {
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 100);
+          |  m!.add(4, 101);
+          |  m!.add(8, 102);
+          |  m!.add(12, 103);
+          |  m!.update(8, 108);
+          |  = m.get(8).get();
+          |}
+          |""".stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(108)
   }
 
   test("Hash map collisions") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
-        |fn main() int export {
-        |  m = HashMap<int, int>(IntHasher(), IntEquator());
-        |  m!.add(0, 100);
-        |  m!.add(4, 101);
-        |  m!.add(8, 102);
-        |  m!.add(12, 103);
-        |  m!.add(16, 104);
-        |  m!.add(20, 105);
-        |  m!.add(24, 106);
-        |  m!.add(28, 107);
-        |  m!.add(32, 108);
-        |  m!.add(36, 109);
-        |  m!.add(40, 110);
-        |  m!.add(44, 111);
-        |  vassertEq(m.get(0).get(), 100, "val at 0 not 100!");
-        |  vassertEq(m.get(4).get(), 101, "val at 1 not 101!");
-        |  vassertEq(m.get(8).get(), 102, "val at 2 not 102!");
-        |  vassertEq(m.get(12).get(), 103, "val at 3 not 103!");
-        |  vassertEq(m.get(16).get(), 104, "val at 4 not 104!");
-        |  vassertEq(m.get(20).get(), 105, "val at 5 not 105!");
-        |  vassertEq(m.get(24).get(), 106, "val at 6 not 106!");
-        |  vassertEq(m.get(28).get(), 107, "val at 7 not 107!");
-        |  vassertEq(m.get(32).get(), 108, "val at 8 not 108!");
-        |  vassertEq(m.get(36).get(), 109, "val at 9 not 109!");
-        |  vassertEq(m.get(40).get(), 110, "val at 10 not 110!");
-        |  vassertEq(m.get(44).get(), 111, "val at 11 not 111!");
-        |  vassert(m.get(1337).isEmpty(), "expected nothing at 1337!");
-        |  = m.get(44).get();
-        |}
-      """.stripMargin))
+          |import hashmap.*;
+          |import panicutils.*;
+          |fn main() int export {
+          |  m = HashMap<int, int>(IntHasher(), IntEquator());
+          |  m!.add(0, 100);
+          |  m!.add(4, 101);
+          |  m!.add(8, 102);
+          |  m!.add(12, 103);
+          |  m!.add(16, 104);
+          |  m!.add(20, 105);
+          |  m!.add(24, 106);
+          |  m!.add(28, 107);
+          |  m!.add(32, 108);
+          |  m!.add(36, 109);
+          |  m!.add(40, 110);
+          |  m!.add(44, 111);
+          |  vassertEq(m.get(0).get(), 100, "val at 0 not 100!");
+          |  vassertEq(m.get(4).get(), 101, "val at 1 not 101!");
+          |  vassertEq(m.get(8).get(), 102, "val at 2 not 102!");
+          |  vassertEq(m.get(12).get(), 103, "val at 3 not 103!");
+          |  vassertEq(m.get(16).get(), 104, "val at 4 not 104!");
+          |  vassertEq(m.get(20).get(), 105, "val at 5 not 105!");
+          |  vassertEq(m.get(24).get(), 106, "val at 6 not 106!");
+          |  vassertEq(m.get(28).get(), 107, "val at 7 not 107!");
+          |  vassertEq(m.get(32).get(), 108, "val at 8 not 108!");
+          |  vassertEq(m.get(36).get(), 109, "val at 9 not 109!");
+          |  vassertEq(m.get(40).get(), 110, "val at 10 not 110!");
+          |  vassertEq(m.get(44).get(), 111, "val at 11 not 111!");
+          |  vassert(m.get(1337).isEmpty(), "expected nothing at 1337!");
+          |  = m.get(44).get();
+          |}
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(111)
   }
 
   test("Hash map with functors") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
-        |fn add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
-        |  map!.add(42, 100);
-        |}
-        |
-        |fn main() int export {
-        |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
-        |  add42(&!m);
-        |  = m.get(42).get();
-        |}
-      """.stripMargin))
+          |import hashmap.*;
+          |fn add42(map &!HashMap<int, int, IntHasher, IntEquator>) {
+          |  map!.add(42, 100);
+          |}
+          |
+          |fn main() int export {
+          |  m = HashMap<int, int, IntHasher, IntEquator>(IntHasher(), IntEquator());
+          |  add42(&!m);
+          |  = m.get(42).get();
+          |}
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(100)
   }
 
   test("Hash map with struct as key") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |
           |struct Location imm {
           |  groupX int;
           |  groupY int;
@@ -155,26 +112,16 @@ class HashMapTest extends FunSuite with Matchers {
           |  m!.add(Location(4, 5, 6), 100);
           |  = m.get(Location(4, 5, 6)).get();
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(100)
   }
 
   test("Hash map has") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |import panicutils.*;
           |fn main() int export {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
@@ -190,26 +137,16 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(m.has(12));
           |  = 111;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(111)
   }
 
   test("Hash map keys") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |import panicutils.*;
           |fn main() int export {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
@@ -224,26 +161,16 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[3], 12);
           |  = 1337;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map values") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |import panicutils.*;
           |fn main() int export {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
@@ -258,26 +185,16 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(k[3], 103);
           |  = 1337;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map with mutable values") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |import panicutils.*;
           |struct Plane {}
           |
           |fn main() int export {
@@ -294,26 +211,16 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(not m.has(12));
           |  = 1337;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map remove") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |import panicutils.*;
           |fn main() int export {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 100);
@@ -330,26 +237,17 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassert(not m.has(4));
           |  = 1337;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }
 
   test("Hash map remove 2") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("builtins/strings.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/hashmap.vale"),
-        Samples.get("libraries/MakeArray.vale"),
-        Samples.get("libraries/MakeImmArray.vale"),
-        Samples.get("libraries/usaToImmArray.vale"),
-        Samples.get("libraries/usaToMutArray.vale"),
-        Samples.get("libraries/utils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import hashmap.*;
+          |import panicutils.*;
+          |
           |fn main() int export {
           |  m = HashMap<int, int>(IntHasher(), IntEquator());
           |  m!.add(0, 0);
@@ -367,7 +265,7 @@ class HashMapTest extends FunSuite with Matchers {
           |  vassertEq(values[2], 4, "wat");
           |  = 1337;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(1337)
   }

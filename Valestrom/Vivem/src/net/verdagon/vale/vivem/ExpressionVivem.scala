@@ -121,7 +121,7 @@ object ExpressionVivem {
           }
         return NodeReturn(sourceRef)
       }
-      case IsH(leftExpr, rightExpr) => {
+      case IsSameInstanceH(leftExpr, rightExpr) => {
         val leftRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), leftExpr) match {
             case r @ NodeReturn(_) => {
@@ -275,6 +275,49 @@ object ExpressionVivem {
         discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, constraintRef)
 
         NodeContinue(weakRef)
+      }
+      case AsSubtypeH(sourceExpr, targetReferend, resultType, someConstructor, noneConstructor) => {
+        val sourceRef =
+          executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
+            case r @ NodeReturn(_) => return r
+            case NodeContinue(r) => r
+          }
+
+        if (sourceRef.actualKind.hamut == targetReferend) {
+//          val newRef = ReferenceH(BorrowH, YonderH, sourceExpr.resultType.permission, sourceExpr.resultType.kind)
+          val constraintRef = heap.alias(sourceRef, sourceExpr.resultType, someConstructor.params.head)
+
+          heap.vivemDout.println()
+          heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (lock call)")
+
+          val function = programH.functions.find(_.prototype == someConstructor).get
+          // The receiver should increment with their own arg referrers.
+          heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, sourceRef.ownership), sourceRef)
+
+          val (calleeCallId, retuurn) =
+            FunctionVivem.executeFunction(
+              programH, stdin, stdout, heap, Vector(constraintRef), function)
+          heap.vivemDout.print("  " * expressionId.callId.callDepth + "Getting return reference")
+
+          val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+
+          NodeContinue(upcast(returnRef, resultType.kind))
+        } else {
+          discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceRef)
+
+          heap.vivemDout.println()
+          heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (lock call)")
+
+          val function = programH.functions.find(_.prototype == noneConstructor).get
+
+          val (calleeCallId, retuurn) =
+            FunctionVivem.executeFunction(
+              programH, stdin, stdout, heap, Vector(), function)
+          heap.vivemDout.print("  " * expressionId.callId.callDepth + "Getting return reference")
+
+          val returnRef = possessCalleeReturn(heap, callId, calleeCallId, retuurn)
+          NodeContinue(upcast(returnRef, resultType.kind))
+        }
       }
       case LockWeakH(sourceExpr, resultType, someConstructor, noneConstructor) => {
         val weakRef =

@@ -1,7 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.driver.Compilation.builtins
-import net.verdagon.vale.driver.{Compilation, CompilationOptions}
+import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.metal._
 import net.verdagon.vale.{metal => m}
 import net.verdagon.von.VonInt
@@ -27,15 +26,15 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val compile =
-      new Compilation(
-        List("moduleA"),
-        {
-          case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
-          case NamespaceCoordinate("moduleB", List()) => Map("moo.vale" -> moduleBCode)
-          case NamespaceCoordinate("", List()) => builtins
-          case x => vfail("Couldn't find module: " + x)
-        },
-        CompilationOptions())
+      new RunCompilation(
+        List("", "moduleA"),
+        Builtins.getCodeMap()
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List(), "moduleA.vale", moduleACode)
+              .add("moduleB", List(), "moduleB.vale", moduleBCode))
+          .or(Tests.getNamespaceToResourceResolver),
+        FullCompilationOptions())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
@@ -55,15 +54,15 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val compile =
-      new Compilation(
-        List("moduleA"),
-        {
-          case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
-          case NamespaceCoordinate("moduleB", List()) => Map("moo.vale" -> moduleBCode)
-          case NamespaceCoordinate("", List()) => builtins
-          case x => vfail("Couldn't find module: " + x)
-        },
-        CompilationOptions())
+      new RunCompilation(
+        List("", "moduleA"),
+        Builtins.getCodeMap()
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List(), "moduleA.vale", moduleACode)
+              .add("moduleB", List(), "moduleB.vale", moduleBCode))
+          .or(Tests.getNamespaceToResourceResolver),
+        FullCompilationOptions())
 
     vassert(!compile.getParseds().moduleToNamespacesToFilenameToContents.contains("moduleB"))
 
@@ -87,15 +86,15 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val compile =
-      new Compilation(
-        List("moduleA"),
-        {
-          case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
-          case NamespaceCoordinate("moduleB", List("bork")) => Map("moo.vale" -> moduleBCode)
-          case NamespaceCoordinate("", List()) => builtins
-          case x => vfail("Couldn't find module: " + x)
-        },
-        CompilationOptions())
+      new RunCompilation(
+        List("", "moduleA"),
+        Builtins.getCodeMap()
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List(), "moduleA.vale", moduleACode)
+              .add("moduleB", List("bork"), "moduleB.vale", moduleBCode))
+          .or(Tests.getNamespaceToResourceResolver),
+        FullCompilationOptions())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
@@ -112,16 +111,15 @@ class ImportTests extends FunSuite with Matchers {
       """.stripMargin
 
     val compile =
-      new Compilation(
-        List("moduleA"),
-        {
-          case NamespaceCoordinate("moduleA", List()) => Map("test.vale" -> moduleACode)
-            // This module and directory exist, but contain nothing
-          case NamespaceCoordinate("moduleB", List("bork")) => Map()
-          case NamespaceCoordinate("", List()) => builtins
-          case x => vfail("Couldn't find module: " + x)
-        },
-        CompilationOptions())
+      new RunCompilation(
+        List("", "moduleA"),
+        Builtins.getCodeMap()
+          .or(Tests.getNamespaceToResourceResolver)
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List(), "moduleA.vale", moduleACode))
+          .or({ case NamespaceCoordinate("moduleB", List("bork")) => Some(Map()) }),
+    FullCompilationOptions())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }

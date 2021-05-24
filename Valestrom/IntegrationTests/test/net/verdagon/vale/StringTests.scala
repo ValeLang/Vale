@@ -3,11 +3,10 @@ package net.verdagon.vale
 import net.verdagon.vale.templar._
 import net.verdagon.von.{VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 
 class StringTests extends FunSuite with Matchers {
   test("Simple string") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() str {
         |  "sprogwoggle"
@@ -21,7 +20,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with escapes") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() str {
         |  "sprog\nwoggle"
@@ -35,7 +34,7 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with hex escape") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() str {
         |  "sprog\u001bwoggle"
@@ -53,13 +52,13 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String length") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/strings/strlen.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/strings/strlen.vale"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(11)
   }
 
   test("String interpolate") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       "fn +(s str, i int) str { s + str(i) }\n" +
       "fn ns(i int) int { i }\n" +
       "fn main() str { \"\"\"bl\"{ns(4)}rg\"\"\" }")
@@ -68,18 +67,54 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("Slice a slice") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("builtins/strings.vale"),
-        Samples.get("builtins/castutils.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/utils.vale"),
-        Samples.get("libraries/printutils.vale"),
+    val compile = RunCompilation.test(
         """
+          |import panicutils.*;
+          |import printutils.*;
+          |
+          |struct StrSlice imm {
+          |  string str;
+          |  begin int;
+          |  end int;
+          |}
+          |fn newStrSlice(string str, begin int, end int) StrSlice {
+          |  vassert(begin >= 0, "slice begin was negative!");
+          |  vassert(end >= 0, "slice end was negative!");
+          |  vassert(begin <= string.len(), "slice begin was more than length!");
+          |  vassert(end <= string.len(), "slice end was more than length!");
+          |  vassert(end >= begin, "slice end was before begin!");
+          |  ret StrSlice(string, begin, end);
+          |}
+          |
+          |fn slice(s str) StrSlice {
+          |  newStrSlice(s, 0, s.len())
+          |}
+          |
+          |fn slice(s str, begin int) StrSlice { s.slice().slice(begin) }
+          |fn slice(s StrSlice, begin int) StrSlice {
+          |  newBegin = s.begin + begin;
+          |  vassert(newBegin <= s.string.len(), "slice begin is more than string length!");
+          |  = newStrSlice(s.string, newBegin, s.end);
+          |}
+          |
+          |fn len(s StrSlice) int {
+          |  ret s.end - s.begin;
+          |}
+          |
+          |fn slice(s str, begin int, end int) StrSlice {
+          |  = newStrSlice(s, begin, end);
+          |}
+          |
+          |fn slice(s StrSlice, begin int, end int) StrSlice {
+          |  newGlyphBeginOffset = s.begin + begin;
+          |  newGlyphEndOffset = s.begin + end;
+          |  = newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
+          |}
+          |
           |fn main() int {
           |  "hello".slice().slice(1, 4).len()
           |}
-          |""".stripMargin))
+          |""".stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }

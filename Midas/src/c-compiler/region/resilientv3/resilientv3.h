@@ -94,6 +94,20 @@ public:
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
+  Ref asSubtype(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      bool thenResultIsNever,
+      bool elseResultIsNever,
+      Reference* resultOptTypeM,
+      Reference* constraintRefM,
+      Reference* sourceInterfaceRefMT,
+      Ref sourceInterfaceRefLE,
+      bool sourceRefKnownLive,
+      Referend* targetReferend,
+      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+      std::function<Ref(LLVMBuilderRef)> buildElse) override;
+
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
   Ref constructKnownSizeArray(

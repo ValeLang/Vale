@@ -474,6 +474,20 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readStructReferend(cache, expression["noneReferend"]),
         readReference(cache, expression["resultOptType"]),
         readInterfaceReferend(cache, expression["resultOptReferend"]));
+  } else if (type == "AsSubtype") {
+    return new AsSubtype(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        expression["sourceKnownLive"],
+        readReferend(cache, expression["targetReferend"]),
+        readPrototype(cache, expression["someConstructor"]),
+        readReference(cache, expression["someType"]),
+        readStructReferend(cache, expression["someReferend"]),
+        readPrototype(cache, expression["noneConstructor"]),
+        readReference(cache, expression["noneType"]),
+        readStructReferend(cache, expression["noneReferend"]),
+        readReference(cache, expression["resultOptType"]),
+        readInterfaceReferend(cache, expression["resultOptReferend"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);

@@ -16,7 +16,7 @@
     <orderEntry type="module" module-name="Hinputs" />
     <orderEntry type="module" module-name="Metal" />
     <orderEntry type="module" module-name="Parser" />
-    <orderEntry type="module" module-name="Samples" exported="" />
+    <orderEntry type="module" module-name="Tests" exported="" />
     <orderEntry type="module" module-name="Scout" />
     <orderEntry type="module" module-name="Templar" />
     <orderEntry type="module" module-name="Templata" />
@@ -25,5 +25,6 @@
     <orderEntry type="module" module-name="Von" />
     <orderEntry type="library" name="org.scalatest:scalatest_2.12:3.0.8" level="project" />
     <orderEntry type="library" name="scala-sdk-2.12.6" level="application" />
+    <orderEntry type="module" module-name="Builtins" />
   </component>
 </module>

@@ -54,6 +54,27 @@ class ArrayTemplar(
     expr2
   }
 
+  def evaluateRuntimeSizedArrayFromCallable(
+    temputs: Temputs,
+    fate: FunctionEnvironmentBox,
+    range: RangeS,
+    rules: List[IRulexAR],
+    typeByRune: Map[IRuneA, ITemplataType],
+    maybeMutabilityRune: Option[IRuneA],
+    maybeVariabilityRune: Option[IRuneA],
+    sizeTE: ReferenceExpression2,
+    callableTE: ReferenceExpression2):
+  ConstructArray2 = {
+    val templatas =
+      inferTemplar.inferOrdinaryRules(fate.snapshot, temputs, rules, typeByRune, Set() ++ maybeMutabilityRune ++ maybeVariabilityRune)
+    val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
+    val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _))
+    val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
+    val ksaMT = UnknownSizeArrayT2(RawArrayT2(prototype.returnType, mutability))
+    val expr2 = ConstructArray2(ksaMT, sizeTE, callableTE, prototype)
+    expr2
+  }
+
   def evaluateStaticSizedArrayFromValues(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,

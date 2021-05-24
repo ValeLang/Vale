@@ -3,11 +3,11 @@ package net.verdagon.vale.astronomer
 import net.verdagon.vale.astronomer.OrderModules.orderModules
 import net.verdagon.vale.astronomer.builtins._
 import net.verdagon.vale.astronomer.ruletyper._
-import net.verdagon.vale.parser.{CaptureP, ImmutableP, MutabilityP, MutableP}
+import net.verdagon.vale.parser.{CaptureP, FileP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{ExportS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{FileCoordinateMap, NamespaceCoordinateMap, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, INamespaceResolver, NamespaceCoordinate, NamespaceCoordinateMap, Ok, Result, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -776,5 +776,36 @@ object Astronomer {
         Right(err)
       }
     }
+  }
+}
+
+class AstronomerCompilation(
+  modulesToBuild: List[String],
+  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
+  var scoutCompilation = new ScoutCompilation(modulesToBuild, namespaceToContentsResolver)
+  var astroutsCache: Option[NamespaceCoordinateMap[ProgramA]] = None
+
+  def getCodeMap(): FileCoordinateMap[String] = scoutCompilation.getCodeMap()
+  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = scoutCompilation.getParseds()
+  def getVpstMap(): FileCoordinateMap[String] = scoutCompilation.getVpstMap()
+  def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = scoutCompilation.getScoutput()
+  def expectScoutput(): FileCoordinateMap[ProgramS] = scoutCompilation.expectScoutput()
+
+  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+    astroutsCache match {
+      case Some(astrouts) => Ok(astrouts)
+      case None => {
+        Astronomer.runAstronomer(expectScoutput()) match {
+          case Right(err) => Err(err)
+          case Left(astrouts) => {
+            astroutsCache = Some(astrouts)
+            Ok(astrouts)
+          }
+        }
+      }
+    }
+  }
+  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = {
+    getAstrouts().getOrDie()
   }
 }

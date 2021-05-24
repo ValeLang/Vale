@@ -25,13 +25,13 @@ class PermissionTests extends FunSuite with Matchers {
 
 
   test("Templex readonly") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """struct Bork {}
         |fn main(a &Bork) int {
         |  = 7;
         |}
         |""".stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
     main.only({
@@ -40,13 +40,13 @@ class PermissionTests extends FunSuite with Matchers {
   }
 
   test("Templex readwrite") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """struct Bork {}
         |fn main(a &!Bork) int {
         |  = 7;
         |}
         |""".stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
     main.only({
@@ -55,7 +55,7 @@ class PermissionTests extends FunSuite with Matchers {
   }
 
   test("Borrow readwrite member from a readonly container") {
-    val compile = TemplarCompilation(
+    val compile = TemplarTestCompilation.test(
       """
         |struct Engine {}
         |struct Bork {
@@ -65,7 +65,7 @@ class PermissionTests extends FunSuite with Matchers {
         |  a.engine
         |}
         |""".stripMargin)
-    val temputs = compile.getTemputs()
+    val temputs = compile.expectTemputs()
 
     val main = temputs.lookupFunction("main")
     main.header.returnType match {

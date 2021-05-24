@@ -466,15 +466,38 @@ object ExpressionHammer {
         (NarrowPermissionH(innerExprResultLine, Conversions.evaluatePermission(targetPermission)), innerDeferreds)
       }
 
-      case Is2(leftExprT, rightExprT) => {
+      case IsSameInstance2(leftExprT, rightExprT) => {
         val (leftExprResultLine, leftDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprT);
         val (rightExprResultLine, rightDeferreds) =
           translate(hinputs, hamuts, currentFunctionHeader, locals, rightExprT);
-        val resultLine = IsH(leftExprResultLine, rightExprResultLine)
+        val resultLine = IsSameInstanceH(leftExprResultLine, rightExprResultLine)
 
         val expr = translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, resultLine, leftDeferreds ++ rightDeferreds)
         (expr, List())
+      }
+
+      case AsSubtype2(leftExprT, targetSubtype, resultOptType, someConstructor, noneConstructor) => {
+        val (resultLine, deferreds) =
+          translate(hinputs, hamuts, currentFunctionHeader, locals, leftExprT);
+        val (targetSubtypeH) =
+          TypeHammer.translateKind(hinputs, hamuts, targetSubtype)
+        val (resultOptTypeH) =
+          TypeHammer.translateReference(hinputs, hamuts, resultOptType).expectInterfaceReference()
+
+        val someConstructorH =
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, someConstructor);
+        val noneConstructorH =
+          FunctionHammer.translateFunctionRef(hinputs, hamuts, currentFunctionHeader, noneConstructor);
+
+        val resultNode =
+          AsSubtypeH(
+            resultLine,
+            targetSubtypeH,
+            resultOptTypeH,
+            someConstructorH.prototype,
+            noneConstructorH.prototype);
+        (resultNode, deferreds)
       }
 
       case _ => {

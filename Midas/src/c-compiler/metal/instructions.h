@@ -746,4 +746,50 @@ public:
     resultOptReferend(resultOptReferend_) {}
 };
 
+class AsSubtype : public Expression {
+public:
+  Expression* sourceExpr;
+  Reference* sourceType;
+  bool sourceKnownLive;
+
+  Referend* targetReferend;
+
+  Prototype* someConstructor;
+  Reference* someType;
+  StructReferend* someReferend;
+
+  Prototype* noneConstructor;
+  Reference* noneType;
+  StructReferend* noneReferend;
+
+  Reference* resultOptType;
+  InterfaceReferend* resultOptReferend;
+
+  AsSubtype(
+      Expression* sourceExpr_,
+      Reference* sourceType_,
+      bool sourceKnownLive_,
+      Referend* targetReferend_,
+      Prototype* someConstructor_,
+      Reference* someType_,
+      StructReferend* someReferend_,
+      Prototype* noneConstructor_,
+      Reference* noneType_,
+      StructReferend* noneReferend_,
+      Reference* resultOptType_,
+      InterfaceReferend* resultOptReferend_) :
+    sourceExpr(sourceExpr_),
+    sourceType(sourceType_),
+    sourceKnownLive(sourceKnownLive_),
+    targetReferend(targetReferend_),
+    someConstructor(someConstructor_),
+    someType(someType_),
+    someReferend(someReferend_),
+    noneConstructor(noneConstructor_),
+    noneType(noneType_),
+    noneReferend(noneReferend_),
+    resultOptType(resultOptType_),
+    resultOptReferend(resultOptReferend_) {}
+};
+
 #endif

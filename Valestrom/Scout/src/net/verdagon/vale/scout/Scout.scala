@@ -5,8 +5,9 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.{Err, FileCoordinate, Ok, Result, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NullProfiler, Ok, Result, vfail, vimpl, vwat}
 
+import scala.collection.immutable.List
 import scala.util.parsing.input.OffsetPosition
 
 case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
@@ -24,6 +25,7 @@ case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
 case class VariableNameAlreadyExists(range: RangeS, name: IVarNameS) extends ICompileErrorS
 case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS
+case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS
 
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
 
@@ -397,5 +399,36 @@ object Scout {
       case LocationPT(_, location) => vwat()
       case PermissionPT(_, permission) => vwat()
     }
+  }
+}
+
+class ScoutCompilation(
+  modulesToBuild: List[String],
+  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
+  var parserCompilation = new ParserCompilation(modulesToBuild, namespaceToContentsResolver)
+  var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
+
+  def getCodeMap(): FileCoordinateMap[String] = parserCompilation.getCodeMap()
+  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = parserCompilation.getParseds()
+  def getVpstMap(): FileCoordinateMap[String] = parserCompilation.getVpstMap()
+
+  def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = {
+    scoutputCache match {
+      case Some(scoutput) => Ok(scoutput)
+      case None => {
+        val scoutput =
+          getParseds().map({ case (fileCoordinate, (code, commentsAndRanges)) =>
+            Scout.scoutProgram(fileCoordinate, code) match {
+              case Err(e) => return Err(e)
+              case Ok(p) => p
+            }
+          })
+        scoutputCache = Some(scoutput)
+        Ok(scoutput)
+      }
+    }
+  }
+  def expectScoutput(): FileCoordinateMap[ProgramS] = {
+    getScoutput().getOrDie()
   }
 }

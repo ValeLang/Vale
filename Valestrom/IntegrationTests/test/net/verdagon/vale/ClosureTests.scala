@@ -9,7 +9,6 @@ import net.verdagon.vale.templar.templata.{FunctionHeader2, Parameter2}
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 import net.verdagon.vale.templar.expression.LocalHelper
 
 class ClosureTests extends FunSuite with Matchers {
@@ -93,7 +92,7 @@ class ClosureTests extends FunSuite with Matchers {
     // the environment in the closure has to match this; the environment has
     // to have a borrow reference instead of an owning reference.
 
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |struct Marine {
         |  hp int;
@@ -108,7 +107,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test closure's local variables") {
-    val compile = Compilation.test(List("builtinexterns"), "fn main() int export { x = 4; = {x}(); }")
+    val compile = RunCompilation.test("fn main() int export { x = 4; = {x}(); }")
     val temputs = compile.expectTemputs()
 
     temputs.lookupLambdaIn("main").variables match {
@@ -125,7 +124,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Test returning a nonmutable closured variable from the closure") {
-    val compile = Compilation.test(List("builtinexterns"), "fn main() int export { x = 4; = {x}(); }")
+    val compile = RunCompilation.test("fn main() int export { x = 4; = {x}(); }")
     val temputs = compile.expectTemputs()
 
     // The struct should have an int x in it which is a reference type.
@@ -176,7 +175,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  x! = 4;
@@ -210,13 +209,13 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = Compilation.test(List("builtinexterns"), "fn main() int export { x! = 4; { { set x = x + 1; }(); }(); = x; }")
+    val compile = RunCompilation.test("fn main() int export { x! = 4; { { set x = x + 1; }(); }(); = x; }")
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
   test("Read from inside a closure inside a closure") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int {
         |  x = 42;
@@ -229,8 +228,8 @@ class ClosureTests extends FunSuite with Matchers {
 
   test("Mutable lambda") {
     val compile =
-      Compilation.test(List("builtinexterns"),
-        Samples.get("programs/lambdas/lambdamut.vale"))
+      RunCompilation.test(
+        Tests.loadExpected("programs/lambdas/lambdamut.vale"))
 
     val temputs = compile.expectTemputs()
     val closureStruct =

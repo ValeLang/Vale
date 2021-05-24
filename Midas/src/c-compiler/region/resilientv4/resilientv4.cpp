@@ -253,6 +253,29 @@ Ref ResilientV4::lockWeak(
       buildThen, buildElse, isAliveLE, resultOptTypeLE, &weakRefStructs);
 }
 
+Ref ResilientV4::asSubtype(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  auto targetStructReferend = dynamic_cast<StructReferend*>(targetReferend);
+  assert(targetStructReferend);
+  auto sourceInterfaceReferend = dynamic_cast<InterfaceReferend*>(sourceInterfaceRefMT->referend);
+  assert(sourceInterfaceReferend);
+
+  return resilientDowncast(
+      globalState, functionState, builder, &weakRefStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
+      targetReferend, buildThen, buildElse, targetStructReferend, sourceInterfaceReferend);
+}
+
 LLVMTypeRef ResilientV4::translateType(Reference *referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:

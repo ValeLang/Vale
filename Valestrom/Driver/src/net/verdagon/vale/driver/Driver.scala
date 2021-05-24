@@ -6,19 +6,17 @@ import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, Progr
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinate, NullProfiler, Ok, Result, Samples, Terrain, vassert, vassertSome, vcheck, vfail, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinate, NullProfiler, Ok, Result, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
 import scala.util.matching.Regex
 
 object Driver {
-  case class InputException(message: String) extends Throwable
-
   val defaultModuleName = "my_module"
   sealed trait IValestromInput {
     def moduleName: String
@@ -113,11 +111,6 @@ object Driver {
         if (ok) allLines.append(ln + "\n")
       }
       allLines.toString()
-    } else if (path.startsWith("v:")) {
-      // For example:
-      //   java -cp out/artifacts/Driver_jar/Driver.jar net.verdagon.vale.driver.Driver run v:roguelike.vale v:genericvirtuals/opt.vale v:genericvirtuals/hashmap.vale v:utils.vale v:generics/arrayutils.vale v:printutils.vale v:castutils.vale v:genericvirtuals/optingarraylist.vale -o built
-      val builtin = path.toLowerCase().slice("v:".length, path.length)
-      Samples.get(builtin)
     } else {
       val file = path
       val bufferedSource = Source.fromFile(file)
@@ -130,12 +123,8 @@ object Driver {
   def resolveNamespaceContents(
       inputs: List[IValestromInput],
       nsCoord: NamespaceCoordinate):
-  Map[String, String] = {
+  Option[Map[String, String]] = {
     val NamespaceCoordinate(module, namespaces) = nsCoord
-
-    if (module == "" && namespaces == List()) {
-      return Compilation.builtins
-    }
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
@@ -148,7 +137,7 @@ object Driver {
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
           if (filesInDirectory == null) {
-            throw InputException("Couldn't find " + directoryPath)
+            return None
           }
           val inputFiles =
             filesInDirectory.filter(_.getName.endsWith(".vale")) ++
@@ -171,7 +160,7 @@ object Driver {
       })
     val filepathToSource = sourceInputs.groupBy(_._1).mapValues(_.head._2)
     vassert(sourceInputs.size == filepathToSource.size, "Input filepaths overlap!")
-    filepathToSource
+    Some(filepathToSource)
   }
 
 //  def loadAndParseInputs(
@@ -300,10 +289,10 @@ object Driver {
     val startTime = java.lang.System.currentTimeMillis()
 
     val compilation =
-      new Compilation(
-        opts.modulesToBuild,
-        nsCoord => resolveNamespaceContents(opts.inputs, nsCoord),
-        CompilationOptions(
+      new FullCompilation(
+        "" :: opts.modulesToBuild,
+        Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
+        FullCompilationOptions(
           if (opts.verbose) {
             (x => {
               println("#: " + x)
@@ -452,10 +441,10 @@ object Driver {
           val List(inputFilePath) = opts.inputs
 
           val compilation =
-            new Compilation(
+            new FullCompilation(
               opts.modulesToBuild,
-              nsCoord => resolveNamespaceContents(opts.inputs, nsCoord),
-              CompilationOptions(
+              Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
+              FullCompilationOptions(
                 if (opts.verbose) {
                   (x => {
                     println("##: " + x)
@@ -470,7 +459,12 @@ object Driver {
           val valeCodeMap = compilation.getCodeMap()
           val vpstCodeMap = compilation.getVpstMap()
 
-          val List(code) = valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
+          val code =
+            valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
+              case List() => throw InputException("No vale code given to highlight!")
+              case List(x) => x
+              case _ => throw InputException("No vale code given to highlight!")
+            }
           val List(vpst) = vpstCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
 
           compilation.getParseds().map({ case (FileCoordinate(module, namespaces, filepath), (parsed, commentRanges)) =>

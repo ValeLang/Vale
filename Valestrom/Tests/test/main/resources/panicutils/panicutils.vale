@@ -1,0 +1,21 @@
+import printutils.*;
+
+fn __pretend<T>() T { __panic() }
+
+fn vassert(cond bool) {
+  vassert(cond, "Assertion failed!");
+}
+fn vassert(cond bool, msg str) {
+  if (cond == false) {
+    println(msg);
+    __panic();
+  }
+}
+
+fn vassertEq<T>(a T, b T) void {
+  vassert(a == b, "Assertion failed, not equal!");
+}
+
+fn vassertEq<T>(a T, b T, msg str) void {
+  vassert(a == b, msg);
+}

@@ -1,0 +1,10 @@
+import v.builtins.opt.*;
+
+fn as<TargetKind, SourceType>(left SourceType) Opt<TargetType>
+rules(
+  // See DORPAR for why we dont have own yet.
+  SourceOwnership Ownership = borrow | weak | share,
+  SourcePermission Permission,
+  SourceType Ref(SourceOwnership, SourcePermission, _),
+  TargetType Ref(SourceOwnership, SourcePermission, TargetKind))
+extern(vale_as_subtype);

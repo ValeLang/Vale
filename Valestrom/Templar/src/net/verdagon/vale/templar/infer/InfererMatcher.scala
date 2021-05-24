@@ -542,7 +542,7 @@ class InfererMatcher[Env, State](
 //      }
       case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, _, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
         vassert(resultType == CoordTemplataType)
-        vcurious(ownership == Share || ownership == Own)
+        vcurious(ownership == Share || ownership == Own, "Got a non-share non-own repeater sequence!")
         matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability)
       }
       case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability)))) => {

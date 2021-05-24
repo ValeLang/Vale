@@ -1,0 +1,3 @@
+
+fn numMainArgs() int extern;
+fn getMainArg(i int) str extern;

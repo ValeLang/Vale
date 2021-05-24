@@ -7,11 +7,10 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonBool, VonInt, VonStr}
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class ArrayTests extends FunSuite with Matchers {
   test("Returning static array from function and dotting it") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn makeArray() infer-ret { [][2, 3, 4, 5, 6] }
         |fn main() int export {
@@ -23,7 +22,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Simple static array and runtime index lookup") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  i = 2;
@@ -42,7 +41,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Unspecified-mutability static array from lambda defaults to mutable") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  i = 3;
@@ -62,7 +61,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable static array from lambda") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/immksafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immksafromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -75,7 +74,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable static array from lambda") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/mutksafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutksafromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -88,7 +87,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable static array from values") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/immksafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immksafromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -101,7 +100,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable static array from values") {
-    val compile = Compilation.test(List("builtinexterns"), Samples.get("programs/arrays/mutksafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutksafromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -112,9 +111,56 @@ class ArrayTests extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
+
+  test("Unspecified-mutability runtime array from lambda defaults to mutable") {
+    val compile = RunCompilation.test(
+      """
+        |fn main() int export {
+        |  i = 3;
+        |  a = [*](5, &!{_ * 42});
+        |  = a[1];
+        |}
+        |""".stripMargin)
+
+    val temputs = compile.expectTemputs()
+    temputs.lookupFunction("main").only({
+      case UnknownSizeArrayLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Mutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Immutable runtime array from lambda") {
+    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/immusafromcallable.vale"))
+
+    val temputs = compile.expectTemputs()
+    temputs.lookupFunction("main").only({
+      case UnknownSizeArrayLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Immutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Mutable runtime array from lambda") {
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutusafromcallable.vale"))
+
+    val temputs = compile.expectTemputs()
+    temputs.lookupFunction("main").only({
+      case UnknownSizeArrayLookup2(_,_,arrayType, _, _) => {
+        arrayType.array.mutability shouldEqual Mutable
+      }
+    })
+
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
   //m [<mut> 3 * [<mut> 3 * int]] = [mut][ [mut][1, 2, 3], [mut][4, 5, 6], [mut][7, 8, 9] ];
   test("Take arraysequence as a parameter") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn doThings(arr [<imm> 5 * int]) int {
         |  arr.3
@@ -129,7 +175,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Borrow arraysequence as a parameter") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |struct MutableStruct {
         |  x int;
@@ -150,7 +196,7 @@ class ArrayTests extends FunSuite with Matchers {
   // the argument to __Array doesnt even have to be a struct or a lambda or an
   // interface or whatever, its just passed straight through to the prototype
   test("array map with int") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn makeElement(lol int, i int) int { i }
         |
@@ -172,7 +218,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("array map with lambda") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |struct Lam imm {}
         |fn makeElement(lam Lam, i int) int { i }
@@ -195,10 +241,10 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("MakeArray map with struct") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
+    val compile = RunCompilation.test(
         """
+          |import array.make.*;
+          |
           |struct Lam imm {}
           |fn __call(lam Lam, i int) int { i }
           |
@@ -206,35 +252,32 @@ class ArrayTests extends FunSuite with Matchers {
           |  a = MakeArray(10, Lam());
           |  = a.3;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("MakeArray map with lambda") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
+    val compile = RunCompilation.test(
         """
+          |import array.make.*;
           |fn main() int export {
           |  a = MakeArray(10, {_});
           |  = a.3;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("array map with interface") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeImmArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |fn main() int export {
           |  a = MakeImmArray(10, &!IFunction1<imm, int, int>({_}));
           |  = a.3;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("__Array")
@@ -246,31 +289,27 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Array map taking a closure which captures something") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeImmArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |fn main() int export {
           |  x = 7;
           |  a = MakeImmArray(10, { _ + x });
           |  = a.3;
           |}
-        """.stripMargin))
+        """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
 
   test("Simple array map with runtime index lookup") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeImmArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |fn main() int export {
           |  a = MakeImmArray(10, {_});
           |  i = 5;
           |  = a[i];
           |}
-        """.stripMargin))
-//    val compile = Compilation.test(List("builtinexterns"),
+        """.stripMargin)
+//    val compile = RunCompilation.test(
 //      """
 //        |struct MyIntIdentity {}
 //        |impl IFunction1<mut, int, int> for MyIntIdentity;
@@ -287,7 +326,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Nested array") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  = [[2]].0.0;
@@ -299,10 +338,8 @@ class ArrayTests extends FunSuite with Matchers {
 
 
   test("Two dimensional array") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |fn main() int export {
           |  board =
           |      MakeArray(
@@ -310,16 +347,14 @@ class ArrayTests extends FunSuite with Matchers {
           |          (row){ MakeArray(3, { row + _ }) });
           |  = board.1.2;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
 
   test("Array with capture") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |struct IntBox {
           |  i int;
           |}
@@ -329,14 +364,14 @@ class ArrayTests extends FunSuite with Matchers {
           |  board = MakeArray(3, &!(col){ box.i });
           |  = board.1;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
   // Known failure 2020-08-20
   test("Capture") {
-    val compile = Compilation.test(List("builtinexterns"),
+    val compile = RunCompilation.test(
       """
         |fn myFunc<F>(generator F) T
         |rules(T Ref, Prot("__call", (F, int), T))
@@ -361,17 +396,15 @@ class ArrayTests extends FunSuite with Matchers {
 
 
   test("Mutate array") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |fn main() int export {
           |  arr = MakeArray(3, {_});
           |  set arr[1] = 1337;
           |  = arr.1;
           |}
-        """.stripMargin))
-//    val compile = Compilation.test(List("builtinexterns"),
+        """.stripMargin)
+//    val compile = RunCompilation.test(
 //      """
 //        |struct MyIntIdentity {}
 //        |impl IFunction1<mut, int, int> for MyIntIdentity;
@@ -388,10 +421,8 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Capture mutable array") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
           |fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
@@ -401,16 +432,14 @@ class ArrayTests extends FunSuite with Matchers {
           |  lam = { print(str(arr.6)); };
           |  (lam)();
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForStdout(Vector()) shouldEqual "6"
   }
 
   test("Swap out of array") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |struct Goblin { }
           |
           |struct GoblinMaker {}
@@ -422,30 +451,27 @@ class ArrayTests extends FunSuite with Matchers {
           |  set arr.0 = Goblin();
           |  = 4;
           |}
-        """.stripMargin))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
   }
 
 
   test("Test array length") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
-        """
+    val compile = RunCompilation.test(
+        """import array.make.*;
           |fn main() int export {
           |  a = MakeArray(11, {_});
           |  = len(&a);
           |}
-        """.stripMargin))
+        """.stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(11)
   }
 
   test("Map using array construct") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
+    val compile = RunCompilation.test(
         """
+          |import array.make.*;
           |fn main() int export {
           |  board = MakeArray(5, {_});
           |  result =
@@ -454,8 +480,8 @@ class ArrayTests extends FunSuite with Matchers {
           |      });
           |  = result.2;
           |}
-        """.stripMargin))
-//    val compile = Compilation.test(List("builtinexterns"),
+        """.stripMargin)
+//    val compile = RunCompilation.test(
 //      """
 //        |struct MyIntIdentity {}
 //        |impl IFunction1<mut, int, int> for MyIntIdentity;
@@ -485,10 +511,9 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Map from hardcoded values") {
-    val compile = Compilation.test(List("builtinexterns"),
-      List(
-        Samples.get("libraries/MakeArray.vale"),
+    val compile = RunCompilation.test(
         """
+          |import array.make.*;
           |fn toArray<M, N, E>(seq &[<_> N * E]) Array<M, E>
           |rules(M Mutability) {
           |  MakeArray(N, { seq[_] })
@@ -496,26 +521,28 @@ class ArrayTests extends FunSuite with Matchers {
           |fn main() int export {
           |  [imm][6, 4, 3, 5, 2, 8].toArray<mut>()[3]
           |}
-          |""".stripMargin))
+          |""".stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }
 
   test("Nested imm arrays") {
-    val compile = Compilation.test(List("builtinexterns"), List(
-      Samples.get("libraries/MakeImmArray.vale"),
-      Samples.get("libraries/ksaToImmArray.vale"),
-      """fn main() int export {
+    val compile = RunCompilation.test(
+      """
+        |import array.make.*;
+        |fn main() int export {
         |  [imm][[imm][6, 60].toImmArray(), [imm][4, 40].toImmArray(), [imm][3, 30].toImmArray()].toImmArray()[2][1]
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     compile.evalForReferend(Vector()) shouldEqual VonInt(30)
   }
 
   // Known failure 2020-08-05
   test("Array foreach") {
-    val compile = Compilation.test(List("builtinexterns"),
-      Samples.get("libraries/arrayutils.vale") +
-      """fn main() int export {
+    val compile = RunCompilation.test(
+      """
+        |import array.make.*;
+        |import array.each.*;
+        |fn main() int export {
         |  sum! = 0;
         |  [][6, 60, 103].each(&!IFunction1<mut, int, void>({ set sum = sum + _; }));
         |  = sum;
@@ -525,9 +552,10 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Array has") {
-    val compile = Compilation.test(List("builtinexterns"),
-      Samples.get("libraries/arrayutils.vale") +
-        """fn main() bool export {
+    val compile = RunCompilation.test(
+        """
+          |import array.has.*;
+          |fn main() bool export {
           |  [][6, 60, 103].has(103)
           |}
           |""".stripMargin)
@@ -536,9 +564,11 @@ class ArrayTests extends FunSuite with Matchers {
 
 
   test("each on KSA") {
-    val compile = Compilation.test(List("builtinexterns"),
-      Samples.get("libraries/arrayutils.vale") +
-        """fn main() {
+    val compile = RunCompilation.test(
+        """
+          |import array.make.*;
+          |import array.each.*;
+          |fn main() {
           |  planets = []["Venus", "Earth", "Mars"];
           |  each planets (planet){
           |    print(planet);
@@ -549,24 +579,21 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Change mutability") {
-    val compile = Compilation.test(List("builtinexterns"), List(
-      Samples.get("libraries/MakeArray.vale"),
-      Samples.get("libraries/MakeImmArray.vale"),
-      Samples.get("libraries/usaToImmArray.vale"),
-      """
+    val compile = RunCompilation.test(
+      """import array.make.*;
         |fn main() str export {
         |  a = MakeArray(10, { str(_) });
         |  b = a.toImmArray();
         |  = a.3;
         |}
-      """.stripMargin))
+      """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonStr("3")
   }
 
 //  test("Destroy lambda with mutable captures") {
-//    val compile = Compilation.test(List("builtinexterns"),
-//      Samples.get("generics/arrayutils.vale") +
+//    val compile = RunCompilation.test(
+//      Samples.get("generics/each.vale") +
 //        """
 //          |fn main() int export {
 //          |  list = Array<mut, int>(3, &!IFunction1<mut, int, int>({_}));
@@ -589,7 +616,7 @@ class ArrayTests extends FunSuite with Matchers {
 
 
 //  test("Map using map()") {
-//    val compile = Compilation.test(List("builtinexterns"),
+//    val compile = RunCompilation.test(
 //      """
 //        |fn map
 //        |:(n: Int, T: reference, F: referend)

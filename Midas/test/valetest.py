@@ -15,7 +15,7 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(args, capture_output=True, text=True, **kwargs)
 
 
-PATH_TO_SAMPLES = "../Valestrom/Samples/test/main/resources/"
+PATH_TO_SAMPLES = "../Valestrom/Tests/test/main/resources/"
 
 class ValeTest(unittest.TestCase):
     GENPATH: str = os.environ.get('GENPATH', ".")
@@ -480,6 +480,28 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/swapmutusadestroy.vale"], "resilient-v3", 42)
     def test_naiverc_swapmutusadestroy(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/swapmutusadestroy.vale"], "naive-rc", 42)
+
+    def test_assist_downcastConstraintSuccessful(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintSuccessful.vale"], "assist", 42)
+    def test_unsafefast_downcastConstraintSuccessful(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintSuccessful.vale"], "unsafe-fast", 42)
+    # def test_resilientv4_downcastConstraintSuccessful(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintSuccessful.vale"], "resilient-v4", 42)
+    def test_resilientv3_downcastConstraintSuccessful(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintSuccessful.vale"], "resilient-v3", 42)
+    def test_naiverc_downcastConstraintSuccessful(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintSuccessful.vale"], "naive-rc", 42)
+
+    def test_assist_downcastConstraintFailed(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintFailed.vale"], "assist", 42)
+    def test_unsafefast_downcastConstraintFailed(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintFailed.vale"], "unsafe-fast", 42)
+    # def test_resilientv4_downcastConstraintFailed(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintFailed.vale"], "resilient-v4", 42)
+    def test_resilientv3_downcastConstraintFailed(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintFailed.vale"], "resilient-v3", 42)
+    def test_naiverc_downcastConstraintFailed(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/downcast/downcastConstraintFailed.vale"], "naive-rc", 42)
 
     def test_assist_unreachablemoot(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/unreachablemoot.vale"], "assist", 42)

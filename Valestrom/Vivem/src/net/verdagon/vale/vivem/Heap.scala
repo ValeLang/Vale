@@ -473,7 +473,7 @@ class Heap(in_vivemDout: PrintStream) {
 
     ReferenceV(
       actualKind,
-      RRReferend(expectedType.kind),
+      RRReferend(targetType.kind),
       targetType.ownership,
       targetType.location,
       targetType.permission,

@@ -1,10 +1,14 @@
 package net.verdagon.vale.hammer
 
+import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.parser.VariabilityP
-import net.verdagon.vale.templar.{CitizenName2, ExportAs2, ExternFunctionName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, types => t}
-import net.verdagon.vale.{vassert, vfail, vwat}
+import net.verdagon.vale.parser.{FileP, VariabilityP}
+import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
+import net.verdagon.vale.templar.{CitizenName2, ExportAs2, ExternFunctionName2, FullName2, FunctionName2, ICompileErrorT, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, TemplarCompilation, TemplarCompilationOptions, types => t}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NamespaceCoordinateMap, NullProfiler, Result, vassert, vfail, vwat}
+
+import scala.collection.immutable.List
 
 case class FunctionRefH(prototype: PrototypeH) {
   //  def functionType = prototype.functionType
@@ -255,3 +259,4 @@ object Hammer {
     hamuts.addExport(fullNameH, exportedName)
   }
 }
+

@@ -7,5 +7,5 @@ case class Ok[T, E](t: T) extends Result[T, E] {
   override def getOrDie(): T = t
 }
 case class Err[T, E](e: E) extends Result[T, E] {
-  override def getOrDie(): T = vfail("Called getOrDie on an Err: " + e)
+  override def getOrDie(): T = vfail("Called getOrDie on an Err:\n" + e)
 }

@@ -3,7 +3,7 @@ package net.verdagon.vale.templar;
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, RangeS}
+import net.verdagon.vale.scout.{CodeLocationS, ICompileErrorS, ITemplexS, ProgramS, RangeS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdge2}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
@@ -67,7 +67,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       (id, generator)
     }).toMap +
-    ("vale_is" ->
+    ("vale_same_instance" ->
       new IFunctionGenerator {
         override def generate(
           functionTemplarCore: FunctionTemplarCore,
@@ -87,7 +87,81 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             Function2(
               header,
               List(),
-              Block2(List(Return2(Is2(ArgLookup2(0, paramCoords(0).tyype), ArgLookup2(1, paramCoords(1).tyype)))))))
+              Block2(List(Return2(IsSameInstance2(ArgLookup2(0, paramCoords(0).tyype), ArgLookup2(1, paramCoords(1).tyype)))))))
+          header
+        }
+      }) +
+    ("vale_as_subtype" ->
+      new IFunctionGenerator {
+        override def generate(
+          functionTemplarCore: FunctionTemplarCore,
+          structTemplar: StructTemplar,
+          destructorTemplar: DestructorTemplar,
+          namedEnv: FunctionEnvironment,
+          temputs: Temputs,
+          callRange: RangeS,
+          maybeOriginFunction1: Option[FunctionA],
+          paramCoords: List[Parameter2],
+          maybeReturnType2: Option[Coord]):
+        (FunctionHeader2) = {
+          val header =
+            FunctionHeader2(namedEnv.fullName, List(), paramCoords, maybeReturnType2.get, maybeOriginFunction1)
+          temputs.declareFunctionReturnType(header.toSignature, header.returnType)
+
+          val sourceKind = vassertSome(paramCoords.headOption).tyype.referend
+          val KindTemplata(targetKind) = vassertSome(namedEnv.fullName.last.templateArgs.headOption)
+
+          val sourceCitizen =
+            sourceKind match {
+              case c : CitizenRef2 => c
+              case _ => throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+            }
+
+          val targetCitizen =
+            targetKind match {
+              case c : CitizenRef2 => c
+              case _ => throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+            }
+
+          // We dont support downcasting to interfaces yet
+          val targetStruct =
+            targetCitizen match {
+              case sr @ StructRef2(_) => sr
+              case ir @ InterfaceRef2(_) => throw CompileErrorExceptionT(CantDowncastToInterface(callRange, ir))
+              case _ => vfail()
+            }
+
+
+          val incomingCoord = paramCoords(0).tyype
+          val incomingSubkind = incomingCoord.referend
+          val targetCoord = incomingCoord.copy(referend = targetKind)
+          val asSubtypeExpr: ReferenceExpression2 =
+            sourceCitizen match {
+              case sourceInterface @ InterfaceRef2(_) => {
+                if (ancestorHelper.isAncestor(temputs, targetStruct, sourceInterface)) {
+                  val (optCoord, someConstructor, noneConstructor) =
+                    expressionTemplar.getOption(temputs, namedEnv, callRange, targetCoord)
+
+                  AsSubtype2(
+                    ArgLookup2(0, incomingCoord),
+                    targetKind,
+                    optCoord,
+                    someConstructor,
+                    noneConstructor)
+                } else {
+                  throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+                }
+              }
+              case sourceStruct @ StructRef2(_) => {
+                if (sourceStruct == targetStruct) {
+                  ArgLookup2(0, incomingCoord)
+                } else {
+                  throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+                }
+              }
+            }
+
+          temputs.addFunction(Function2(header, List(), Block2(List(Return2(asSubtypeExpr)))))
           header
         }
       })
@@ -284,7 +358,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  val ancestorHelper =
+  val ancestorHelper: AncestorHelper =
     new AncestorHelper(opts, profiler, inferTemplar, new IAncestorHelperDelegate {
       override def getInterfaceRef(temputs: Temputs, callRange: RangeS, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
         structTemplar.getInterfaceRef(temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
@@ -378,7 +452,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
       inferTemplar,
       overloadTemplar)
 
-  val expressionTemplar =
+  val expressionTemplar: ExpressionTemplar =
     new ExpressionTemplar(
       opts,
       profiler,

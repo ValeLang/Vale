@@ -1,0 +1,57 @@
+
+fn float(x int) float { __castIntFloat(x) }
+fn __castIntFloat(x int) float extern;
+
+fn int(x float) int { __castFloatInt(x) }
+fn __castFloatInt(x float) int extern;
+
+fn -(x int) int { __negateInt(x) }
+fn __negateInt(x int) int extern;
+
+fn -(x float) float { __negateFloat(x) }
+fn __negateFloat(x float) float extern;
+
+fn +(left int, right int) int { __addIntInt(left, right) }
+fn __addIntInt(left int, right int) int extern;
+
+fn +(left float, right float) float { __addFloatFloat(left, right) }
+fn __addFloatFloat(left float, right float) float extern;
+
+fn *(left int, right int) int { __multiplyIntInt(left, right) }
+fn __multiplyIntInt(left int, right int) int extern;
+
+fn *(left float, right float) float { __multiplyFloatFloat(left, right) }
+fn __multiplyFloatFloat(left float, right float) float extern;
+
+fn -(left int, right int) int { __subtractIntInt(left, right) }
+fn __subtractIntInt(left int, right int) int extern;
+
+fn -(left float, right float) float { __subtractFloatFloat(left, right) }
+fn __subtractFloatFloat(left float, right float) float extern;
+
+fn /(left int, right int) int { __divideIntInt(left, right) }
+fn __divideIntInt(left int, right int) int extern;
+
+fn <(left float, right float) bool { __lessThanFloat(left, right) }
+fn __lessThanFloat(left float, right float) bool extern;
+
+fn >(left float, right float) bool { __greaterThanFloat(left, right) }
+fn __greaterThanFloat(left float, right float) bool extern;
+
+fn <(left int, right int) bool { __lessThanInt(left, right) }
+fn __lessThanInt(left int, right int) bool extern;
+
+fn >(left int, right int) bool { __greaterThanInt(left, right) }
+fn __greaterThanInt(left int, right int) bool extern;
+
+fn <=(left int, right int) bool { __lessThanOrEqInt(left, right) }
+fn __lessThanOrEqInt(left int, right int) bool extern;
+
+fn >=(left int, right int) bool { __greaterThanOrEqInt(left, right) }
+fn __greaterThanOrEqInt(left int, right int) bool extern;
+
+fn ==(left int, right int) bool { __eqIntInt(left, right) }
+fn __eqIntInt(left int, right int) bool extern;
+
+fn mod(left int, right int) int { __mod(left, right) }
+fn __mod(left int, right int) int extern;

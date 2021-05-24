@@ -1,0 +1,6 @@
+
+fn not(b bool) bool { __not(b) }
+fn __not(b bool) bool extern;
+
+fn ==(left bool, right bool) bool { __eqBoolBool(left, right) }
+fn __eqBoolBool(left bool, right bool) bool extern;

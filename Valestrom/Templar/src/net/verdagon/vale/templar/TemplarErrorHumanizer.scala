@@ -79,6 +79,14 @@ object TemplarErrorHumanizer {
         humanizePos(codeMap, range.file, range.begin.offset) +
           ": Immutable struct (\"" + printableName(codeMap, structName) + "\") cannot have varying member (\"" + memberName + "\")."
       }
+      case CantDowncastUnrelatedTypes(range, sourceKind, targetKind) => {
+        humanizePos(codeMap, range.file, range.begin.offset) +
+          ": Can't downcast `" + sourceKind + "` to unrelated `" + targetKind + "`"
+      }
+      case CantDowncastToInterface(range, targetKind) => {
+        humanizePos(codeMap, range.file, range.begin.offset) +
+          ": Can't downcast to an interface (" + targetKind + ") yet."
+      }
       case ArrayElementsHaveDifferentTypes(range, types) => {
         humanizePos(codeMap, range.file, range.begin.offset) +
           ": Array's elements have different types: " + types.mkString(", ")

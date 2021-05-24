@@ -861,7 +861,7 @@ Ref resilientLockWeak(
       resultOptTypeM,
       [globalState, functionState, constraintRefM, weakRefStructs, sourceWeakRefLE, sourceWeakRefMT, buildThen](LLVMBuilderRef thenBuilder) {
         // TODO extract more of this common code out?
-        // The incoming "constraint" ref is actually already a week ref, so just return it
+        // The incoming "constraint" ref is actually already a weak ref, so just return it
         // (after wrapping it in a different Ref that actually thinks/knows it's a weak
         // reference).
         auto constraintRef =
@@ -869,6 +869,158 @@ Ref resilientLockWeak(
                 globalState, functionState, thenBuilder, sourceWeakRefMT, constraintRefM,
                 weakRefStructs, sourceWeakRefLE);
         return buildThen(thenBuilder, constraintRef);
+      },
+      buildElse);
+}
+
+
+Ref interfaceRefIsForEdge(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    StructReferend *targetStructReferend,
+    InterfaceReferend *sourceInterfaceReferend) {
+
+  LLVMValueRef itablePtrLE = nullptr;
+  LLVMValueRef possibilityPtrLE = nullptr;
+  std::tie(itablePtrLE, possibilityPtrLE) =
+      globalState->getRegion(sourceInterfaceRefMT)
+          ->explodeInterfaceRef(
+              functionState, builder, sourceInterfaceRefMT, sourceInterfaceRef);
+
+  auto targetStructDefM = globalState->program->getStruct(targetStructReferend->fullName);
+  auto targetEdgeM = targetStructDefM->getEdgeForInterface(sourceInterfaceReferend->fullName);
+
+  auto edgePtrLE = globalState->getInterfaceTablePtr(targetEdgeM);
+
+  auto itablePtrDiffLE = LLVMBuildPtrDiff(builder, itablePtrLE, edgePtrLE, "ptrDiff");
+  auto itablePtrsMatchLE = LLVMBuildICmp(builder, LLVMIntEQ, itablePtrDiffLE, constI64LE(globalState, 0), "ptrsMatch");
+  auto itablePtrsMatchRef =
+      wrap(globalState->getRegion(globalState->metalCache->boolRef),
+          globalState->metalCache->boolRef,
+          itablePtrsMatchLE);
+  return itablePtrsMatchRef;
+}
+
+Ref regularInnerAsSubtype(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+
+  LLVMValueRef itablePtrLE = nullptr;
+  LLVMValueRef newVirtualArgLE = nullptr;
+  std::tie(itablePtrLE, newVirtualArgLE) =
+      globalState->getRegion(sourceInterfaceRefMT)
+          ->explodeInterfaceRef(
+              functionState, builder, sourceInterfaceRefMT, sourceInterfaceRef);
+  buildFlare(FL(), globalState, functionState, builder);
+
+  auto targetStructReferend = dynamic_cast<StructReferend*>(targetReferend);
+  assert(targetStructReferend);
+
+  auto sourceInterfaceReferend = dynamic_cast<InterfaceReferend*>(sourceInterfaceRefMT->referend);
+  assert(sourceInterfaceReferend);
+
+  auto targetStructDefM = globalState->program->getStruct(targetStructReferend->fullName);
+  auto targetEdgeM = targetStructDefM->getEdgeForInterface(sourceInterfaceReferend->fullName);
+
+  auto edgePtrLE = globalState->getInterfaceTablePtr(targetEdgeM);
+
+  auto itablePtrDiffLE = LLVMBuildPtrDiff(builder, itablePtrLE, edgePtrLE, "ptrDiff");
+  auto itablePtrsMatchLE = LLVMBuildICmp(builder, LLVMIntEQ, itablePtrDiffLE, constI64LE(globalState, 0), "ptrsMatch");
+  auto itablePtrsMatchRef =
+      wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, itablePtrsMatchLE);
+
+  auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
+
+  return buildIfElse(
+      globalState, functionState, builder, itablePtrsMatchRef,
+      resultOptTypeLE,
+      resultOptTypeM,
+      resultOptTypeM,
+      [globalState, sourceInterfaceRefMT, targetReferend, newVirtualArgLE, buildThen, functionState](
+          LLVMBuilderRef thenBuilder) {
+        auto resultStructRefMT =
+            globalState->metalCache->getReference(
+                sourceInterfaceRefMT->ownership, sourceInterfaceRefMT->location, targetReferend);
+        auto resultStructRefLT = globalState->getRegion(resultStructRefMT)->translateType(resultStructRefMT);
+        auto resultStructRefLE =
+            LLVMBuildPointerCast(thenBuilder, newVirtualArgLE, resultStructRefLT, "subtypePtr");
+        auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+        return buildThen(thenBuilder, resultStructRef);
+      },
+      buildElse);
+}
+
+Ref resilientDowncast(
+    GlobalState* globalState,
+    FunctionState *functionState, LLVMBuilderRef builder,
+    IWeakRefStructsSource* weakRefStructs,
+    Reference *resultOptTypeM,
+    Reference *sourceInterfaceRefMT,
+    Ref &sourceInterfaceRef,
+    Referend *targetReferend,
+    const std::function<Ref(LLVMBuilderRef, Ref)> &buildThen,
+    std::function<Ref(LLVMBuilderRef)> &buildElse,
+    StructReferend *targetStructReferend,
+    InterfaceReferend *sourceInterfaceReferend) {
+  auto itablePtrsMatchRef =
+      interfaceRefIsForEdge(
+          globalState,
+          functionState,
+          builder,
+          sourceInterfaceRefMT,
+          sourceInterfaceRef,
+          targetStructReferend,
+          sourceInterfaceReferend);
+
+  auto resultOptTypeLE = globalState->getRegion(resultOptTypeM)->translateType(resultOptTypeM);
+
+  return buildIfElse(
+      globalState, functionState, builder, itablePtrsMatchRef,
+      resultOptTypeLE,
+      resultOptTypeM,
+      resultOptTypeM,
+      [globalState, weakRefStructs, functionState, sourceInterfaceRef, sourceInterfaceRefMT, targetReferend, targetStructReferend, buildThen](
+          LLVMBuilderRef thenBuilder) {
+        auto possibilityPtrLE =
+            std::get<1>(
+                globalState->getRegion(sourceInterfaceRefMT)
+                    ->explodeInterfaceRef(functionState, thenBuilder, sourceInterfaceRefMT, sourceInterfaceRef));
+        buildFlare(FL(), globalState, functionState, thenBuilder);
+
+        auto resultStructRefMT =
+            globalState->metalCache->getReference(
+                sourceInterfaceRefMT->ownership, sourceInterfaceRefMT->location, targetReferend);
+        switch (sourceInterfaceRefMT->ownership) {
+          case Ownership::OWN: {
+            // See DORPAR for why we don't have own yet.
+            assert(false);
+            break;
+          }
+          case Ownership::BORROW:
+          case Ownership::WEAK: {
+            auto resultStructRefLE =
+                weakRefStructs->downcastWeakFatPtr(
+                    thenBuilder, targetStructReferend, resultStructRefMT, possibilityPtrLE);
+            auto targetWeakRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+            return buildThen(thenBuilder, targetWeakRef);
+          }
+          default:
+            assert(false);
+        }
       },
       buildElse);
 }

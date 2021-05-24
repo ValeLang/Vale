@@ -1,0 +1,7 @@
+import v.builtins.print.*;
+
+fn panic(msg str) infer-ret {
+  print(msg);
+  print("\n");
+  = __panic();
+}

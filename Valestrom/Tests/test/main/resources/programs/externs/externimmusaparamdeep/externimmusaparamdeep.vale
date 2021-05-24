@@ -1,0 +1,13 @@
+struct Spaceship export imm {
+  fuel int;
+  wings int;
+}
+
+export Array<imm, Spaceship> as ImmSpaceshipArray;
+
+fn sumWings(arr Array<imm, Spaceship>) int extern;
+
+fn main() int export {
+  a = [imm *](5, (i){ Spaceship(i, i * 2) });
+  = sumWings(a);
+}

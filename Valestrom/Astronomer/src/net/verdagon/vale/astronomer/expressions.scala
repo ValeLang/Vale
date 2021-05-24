@@ -72,10 +72,6 @@ case class BlockAE(
   vassert(exprs.nonEmpty)
 }
 
-//case class ConstructAE(
-//  tyype: ITemplexA,
-//  args: List[IExpressionAE]) extends IExpressionAE
-
 case class ConstructArrayAE(
     range: RangeS,
     typeTemplex: ITemplexA,

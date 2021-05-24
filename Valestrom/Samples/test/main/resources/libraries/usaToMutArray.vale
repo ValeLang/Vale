@@ -1,4 +1,0 @@
-
-fn toArray<T>(source &Array<_, T>) Array<mut, &T> {
-  MakeArray(source.len(), { source[_] })
-}

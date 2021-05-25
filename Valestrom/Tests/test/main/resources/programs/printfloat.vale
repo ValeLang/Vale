@@ -1,0 +1,6 @@
+import printutils.*;
+
+fn main() export {
+  a = 42.125;
+  print(a);
+}

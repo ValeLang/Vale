@@ -148,6 +148,11 @@ class ValeTest(unittest.TestCase):
         proc = procrun(["clang", "test/testtwinpages.c", "-o", "test/test_build/testtwinpages"])
         self.assertEqual(proc.returncode, 0, f"Twin pages test failed!")
 
+    def test_assist_addret(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)
+    def test_assist_floatarithmetic(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/floatarithmetic.vale"], "assist", 42)
+
     # def test_resilientv4_tether(self) -> None:
     #     self.compile_and_execute_and_expect_return_code(["test/tether.vale"], "resilient-v4", 0)
 
@@ -161,17 +166,6 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "resilient-v3", 42)
     def test_naiverc_mutswaplocals(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/mutswaplocals.vale"], "naive-rc", 42)
-
-    def test_assist_addret(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)
-    def test_unsafefast_addret(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "unsafe-fast", 7)
-    # def test_resilientv4_addret(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "resilient-v4", 7)
-    def test_resilientv3_addret(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "resilient-v3", 7)
-    def test_naiverc_addret(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "naive-rc", 7)
 
     def test_assist_immstruct(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/immstruct.vale"], "assist", 5)

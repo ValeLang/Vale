@@ -65,6 +65,17 @@ object VivemExterns {
     }
   }
 
+  def divideFloatFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 2)
+    val aReferend = memory.dereference(args(0))
+    val bReferend = memory.dereference(args(1))
+    (aReferend, bReferend) match {
+      case (FloatV(aValue), FloatV(bValue)) => {
+        memory.addAllocationForReturn(ShareH, InlineH, ReadonlyH, FloatV(aValue / bValue))
+      }
+    }
+  }
+
   def mod(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 2)
     val aReferend = memory.dereference(args(0))
@@ -275,6 +286,12 @@ object VivemExterns {
     vassert(args.size == 1)
     val FloatV(value) = memory.dereference(args(0))
     memory.addAllocationForReturn(ShareH, YonderH, ReadonlyH, StrV(value.toString))
+  }
+
+  def negateFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 1)
+    val FloatV(value) = memory.dereference(args(0))
+    memory.addAllocationForReturn(ShareH, InlineH, ReadonlyH, FloatV(-value))
   }
 
   def castIntFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {

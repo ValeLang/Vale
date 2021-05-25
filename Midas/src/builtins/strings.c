@@ -160,6 +160,15 @@ ValeStr* __castIntStr(int n) {
   return result;
 }
 
+ValeStr* __castFloatStr(double f) {
+  char tempBuffer[100] = { 0 };
+  int charsWritten = snprintf(tempBuffer, 100, "%lf", f);
+  ValeStr* result = ValeStrNew(charsWritten);
+  char* resultChars = result->chars;
+  strncpy(resultChars, tempBuffer, charsWritten);
+  return result;
+}
+
 void __vprintStr(ValeStr* s, int start, int length) {
   char* chars = s->chars;
   fwrite(chars + start, 1, length, stdout);

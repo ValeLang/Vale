@@ -14,3 +14,7 @@ fn +(s str, i int) str {
 fn +(s str, b bool) str {
   s + str(b)
 }
+
+fn +(s str, f float) str {
+  s + str(f)
+}

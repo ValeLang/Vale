@@ -32,6 +32,9 @@ fn __subtractFloatFloat(left float, right float) float extern;
 fn /(left int, right int) int { __divideIntInt(left, right) }
 fn __divideIntInt(left int, right int) int extern;
 
+fn /(left float, right float) float { __divideFloatFloat(left, right) }
+fn __divideFloatFloat(left float, right float) float extern;
+
 fn <(left float, right float) bool { __lessThanFloat(left, right) }
 fn __lessThanFloat(left float, right float) bool extern;
 

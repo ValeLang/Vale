@@ -14,10 +14,18 @@ fn println(b bool) void {
   print(str(b) + "\n");
 }
 
+fn println(f float) void {
+  print(str(f) + "\n");
+}
+
 fn print(i int) void {
   print(str(i));
 }
 
 fn print(b bool) void {
   print(str(b));
+}
+
+fn print(f float) void {
+  print(str(f));
 }

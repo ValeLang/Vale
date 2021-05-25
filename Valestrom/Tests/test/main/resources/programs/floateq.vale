@@ -1,0 +1,4 @@
+fn main() int export {
+   x = 32.0 == 16.0 + 16.0;
+   ret if (x) { 42 } else { 73 }
+}

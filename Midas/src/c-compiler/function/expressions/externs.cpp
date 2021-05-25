@@ -28,6 +28,29 @@ Ref buildExternCall(
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
     return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, result);
+  } else if (prototype->name->name == "__divideFloatFloat") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildFDiv(builder, leftLE, rightLE,"divided");
+    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
+  } else if (prototype->name->name == "__multiplyFloatFloat") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildFMul(builder, leftLE, rightLE,"multiplied");
+    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
+  } else if (prototype->name->name == "__subtractFloatFloat") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildFSub(builder, leftLE, rightLE,"subtracted");
+    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
+  } else if (prototype->name->name == "__negateFloat") {
+    assert(args.size() == 1);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto result = LLVMBuildFNeg(builder, leftLE, "negated");
+    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
 //  } else if (prototype->name->name == "__eqStrStr") {
 //    assert(args.size() == 2);
 //
@@ -65,8 +88,11 @@ Ref buildExternCall(
         ->dealias(FL(), functionState, builder, globalState->metalCache->strRef, args[0]);
     return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultLenLE);
   } else if (prototype->name->name == "__addFloatFloat") {
-    // VivemExterns.addFloatFloat
-    assert(false);
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildFAdd(builder, leftLE, rightLE, "add");
+    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
   } else if (prototype->name->name == "__panic") {
     // See MPESC for status codes
     auto exitCodeLE = makeConstIntExpr(functionState, builder, LLVMInt8TypeInContext(globalState->context), 1);

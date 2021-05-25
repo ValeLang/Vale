@@ -34,6 +34,23 @@ class OwnershipTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(9)
   }
 
+  test("Owning ref method call") {
+    val compile = RunCompilation.test(
+      """
+        |struct Muta { hp int; }
+        |fn take(m Muta) {
+        |  ret m.hp;
+        |}
+        |fn main() int export {
+        |  m = Muta(9);
+        |  = (m).hp;
+        |}
+      """.stripMargin)
+
+    val main = compile.expectTemputs().lookupFunction("main")
+    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+  }
+
   test("When statement result is an owning ref, calls destructor") {
     val compile = RunCompilation.test(
       """

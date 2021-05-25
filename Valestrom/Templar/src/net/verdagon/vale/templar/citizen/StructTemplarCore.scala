@@ -686,6 +686,7 @@ class StructTemplarCore(
     structDef: StructDefinition2,
     constructorFullName: FullName2[IFunctionName2]):
   FunctionHeader2 = {
+    vassert(constructorFullName.last.parameters.size == structDef.members.size)
     val constructorParams =
       structDef.members.map({
         case StructMember2(name, _, ReferenceMemberType2(reference)) => {

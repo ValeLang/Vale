@@ -56,8 +56,8 @@ object FunctionVivem {
       case """F("__multiplyIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.multiplyIntInt
       case """F("__subtractFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.subtractFloatFloat
       case """F("__divideIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.divideIntInt
-//      case PrototypeH(FullNameH(List(NamePartH("__multiplyFloatFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,FloatH())) =>
-//        VivemExterns.multiplyFloatFloat
+      case """F("__multiplyFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.multiplyFloatFloat
+      case """F("__divideFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.divideFloatFloat
       case """F("__subtractIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.subtractIntInt
       case """F("__vaddStr",[],[R(*,>,#,s),R(*,<,#,i),R(*,<,#,i),R(*,>,#,s),R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.addStrStr
       case """F("__getch")""" => VivemExterns.getch
@@ -80,12 +80,12 @@ object FunctionVivem {
       case """F("__castIntFloat",[],[R(*,<,#,i)])""" => VivemExterns.castIntFloat
       case """F("__castFloatInt",[],[R(*,<,#,f)])""" => VivemExterns.castFloatInt
       case """F("__lessThanOrEqInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.lessThanOrEqInt
-//      case PrototypeH(FullNameH(List(NamePartH("__castFloatStr", Some(List()), Some(List(ReferenceH(m.Share,FloatH()))), None))),List(ReferenceH(m.Share,FloatH())),ReferenceH(m.Share,StrH())) =>
-//        VivemExterns.castFloatStr
       case """F("__and",[],[R(*,<,#,b),R(*,<,#,b)])""" => VivemExterns.and
       case """F("__or",[],[R(*,<,#,b),R(*,<,#,b)])""" => VivemExterns.or
       case """F("__mod",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.mod
       case """F("__strLength",[],[R(*,>,#,s)])""" => VivemExterns.strLength
+      case """F("__castFloatStr",[],[R(*,<,#,f)])""" => VivemExterns.castFloatStr
+      case """F("__negateFloat",[],[R(*,<,#,f)])""" => VivemExterns.negateFloat
       case _ => vimpl(ref.fullName.toFullString())
     }
   }

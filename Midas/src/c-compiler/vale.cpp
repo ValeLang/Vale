@@ -182,6 +182,18 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       }
     }
   }
+  for (auto p : program->knownSizeArrays) {
+    auto ksaDefM = p.second;
+    // can we think of this in terms of regions? it's kind of like we're
+    // generating some stuff for the outside to point inside.
+    if (globalState->program->isExported(ksaDefM->name)) {
+      if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateKnownSizeArrayDefsC(&cByExportedName, ksaDefM);
+      } else {
+        globalState->mutRegion->generateKnownSizeArrayDefsC(&cByExportedName, ksaDefM);
+      }
+    }
+  }
   for (auto p : program->unknownSizeArrays) {
     auto usaDefM = p.second;
     // can we think of this in terms of regions? it's kind of like we're

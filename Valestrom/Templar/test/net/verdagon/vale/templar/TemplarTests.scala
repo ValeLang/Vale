@@ -796,9 +796,9 @@ class TemplarTests extends FunSuite with Matchers {
         |    };
         |  = x;
         |}
-        |""".stripMargin +
-        Tests.loadExpected("castutils/castutils.vale") +
-        Tests.loadExpected("printutils/printutils.vale"))
+        |""".stripMargin)// +
+//        Tests.loadExpected("castutils/castutils.vale") +
+//        Tests.loadExpected("printutils/printutils.vale"))
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     val destructorCalls =

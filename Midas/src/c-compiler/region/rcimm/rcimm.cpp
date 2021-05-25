@@ -888,11 +888,31 @@ void RCImm::generateInterfaceDefsC(std::unordered_map<std::string, std::string>*
 void RCImm::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     UnknownSizeArrayDefinitionT* usaDefM) {
+  if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(usaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 void RCImm::generateKnownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
-    KnownSizeArrayDefinitionT* usaDefM) {
+    KnownSizeArrayDefinitionT* ksaDefM) {
+  if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(ksaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 Reference* RCImm::getExternalType(Reference* refMT) {

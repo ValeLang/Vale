@@ -718,6 +718,7 @@ object ParserCompilation {
           case ParseFailure(err) => {
             println(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, err))
             System.exit(1)
+            vfail()
           }
           case ParseSuccess((program0, commentsRanges)) => {
             val von = ParserVonifier.vonifyFile(program0)

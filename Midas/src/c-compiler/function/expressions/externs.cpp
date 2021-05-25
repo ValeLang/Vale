@@ -144,6 +144,12 @@ Ref buildExternCall(
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildICmp(builder, LLVMIntEQ, leftLE, rightLE, "");
     return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
+  } else if (prototype->name->name == "__eqFloatFloat") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildFCmp(builder, LLVMRealOEQ, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
   } else if (prototype->name->name == "__eqBoolBool") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);

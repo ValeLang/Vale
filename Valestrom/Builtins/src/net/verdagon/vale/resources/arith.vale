@@ -56,5 +56,8 @@ fn __greaterThanOrEqInt(left int, right int) bool extern;
 fn ==(left int, right int) bool { __eqIntInt(left, right) }
 fn __eqIntInt(left int, right int) bool extern;
 
+fn ==(left float, right float) bool { __eqFloatFloat(left, right) }
+fn __eqFloatFloat(left float, right float) bool extern;
+
 fn mod(left int, right int) int { __mod(left, right) }
 fn __mod(left int, right int) int extern;

@@ -10,15 +10,13 @@ class ArrayListTest extends FunSuite with Matchers {
   test("Simple ArrayList, no optionals") {
     val compile = RunCompilation.test(
         """
-          |import list.*;
-          |
           |struct List<E> rules(E Ref) {
           |  array! Array<mut, E>;
           |}
           |fn listLen<E>(list &List<E>) int { len(&list.array) }
           |fn add<E>(list &!List<E>, newElement E) {
           |  newArray =
-          |      MakeArray(listLen(&list) + 1, &!IFunction1<mut, int, int>((index){
+          |      [*](listLen(&list) + 1, &!IFunction1<mut, int, int>((index){
           |        = if (index == listLen(&list)) {
           |            = newElement;
           |          } else {
@@ -37,7 +35,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |fn main() int export {
           |  l =
           |      List<int>(
-          |           MakeArray(
+          |           [*](
           |               0,
           |               &!IFunction1<mut, int, int>((index){
           |                 index

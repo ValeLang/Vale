@@ -1,0 +1,10 @@
+export Array<mut, int> as MutIntArray;
+
+fn sumBytes(arr &Array<mut, int>) int extern;
+fn getMutIntArrayLen(arr &Array<mut, int>) int export { arr.len() }
+fn getMutIntArrayElem(arr &Array<mut, int>, i int) int export { arr[i] }
+
+fn main() int export {
+  a = [mut *](5, {_});
+  = sumBytes(&a);
+}

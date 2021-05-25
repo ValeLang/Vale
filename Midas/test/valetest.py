@@ -152,6 +152,10 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)
     def test_assist_floatarithmetic(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/floatarithmetic.vale"], "assist", 42)
+    def test_assist_floateq(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/floateq.vale"], "assist", 42)
+    def test_assist_concatstrfloat(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/concatstrfloat.vale"], "assist", 42)
 
     # def test_resilientv4_tether(self) -> None:
     #     self.compile_and_execute_and_expect_return_code(["test/tether.vale"], "resilient-v4", 0)

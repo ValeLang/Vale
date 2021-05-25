@@ -376,6 +376,28 @@ class ValeTest(unittest.TestCase):
     def test_naiverc_mutusa(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/mutusa.vale"], "naive-rc", 3)
 
+    def test_assist_exportmutusaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutusaparam"], "assist", 10)
+    def test_unsafefast_exportmutusaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutusaparam"], "unsafe-fast", 10)
+    # def test_resilientv4_exportmutusaparam(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutusaparam"], "resilient-v4", 10)
+    def test_resilientv3_exportmutusaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutusaparam"], "resilient-v3", 10)
+    def test_naiverc_exportmutusaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutusaparam"], "naive-rc", 10)
+
+    def test_assist_exportmutksaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutksaparam"], "assist", 10)
+    def test_unsafefast_exportmutksaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutksaparam"], "unsafe-fast", 10)
+    # def test_resilientv4_exportmutksaparam(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutksaparam"], "resilient-v4", 10)
+    def test_resilientv3_exportmutksaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutksaparam"], "resilient-v3", 10)
+    def test_naiverc_exportmutksaparam(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportmutksaparam"], "naive-rc", 10)
+
     def test_assist_mutusalen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/mutusalen.vale"], "assist", 5)
     def test_unsafefast_mutusalen(self) -> None:

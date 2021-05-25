@@ -208,15 +208,27 @@ object VivemExterns {
     }
   }
 
-  def eqStrStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+  def eqFloatFloat(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
     vassert(args.size == 2)
     val aReferend = memory.dereference(args(0))
     val bReferend = memory.dereference(args(1))
     (aReferend, bReferend) match {
-      case (StrV(aValue), StrV(bValue)) => {
+      case (FloatV(aValue), FloatV(bValue)) => {
         memory.addAllocationForReturn(ShareH, InlineH, ReadonlyH, BoolV(aValue == bValue))
       }
     }
+  }
+
+  def eqStrStr(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {
+    vassert(args.size == 6)
+    val StrV(leftStr) = memory.dereference(args(0))
+    val IntV(leftStrStart) = memory.dereference(args(1))
+    val IntV(leftStrLen) = memory.dereference(args(2))
+    val StrV(rightStr) = memory.dereference(args(3))
+    val IntV(rightStrStart) = memory.dereference(args(4))
+    val IntV(rightStrLen) = memory.dereference(args(5))
+    val result = BoolV(leftStr.slice(leftStrStart, leftStrLen) == rightStr.slice(rightStrStart, rightStrLen))
+    memory.addAllocationForReturn(ShareH, InlineH, ReadonlyH, result)
   }
 
   def eqBoolBool(memory: AdapterForExterns, args: Vector[ReferenceV]): ReferenceV = {

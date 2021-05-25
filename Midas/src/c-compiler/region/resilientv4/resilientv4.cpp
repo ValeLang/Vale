@@ -908,6 +908,10 @@ std::string ResilientV4::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
     }
   } else if (auto interfaceMT = dynamic_cast<InterfaceReferend *>(refMT->referend)) {
     return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(usaMT->name) + "Ref";
+  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ksaMT->name) + "Ref";
   } else {
     assert(false);
   }
@@ -916,11 +920,13 @@ std::string ResilientV4::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
 void ResilientV4::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string> *cByExportedName,
     UnknownSizeArrayDefinitionT *usaDefM) {
+  assert(false);
 }
 
 void ResilientV4::generateKnownSizeArrayDefsC(
     std::unordered_map<std::string, std::string> *cByExportedName,
     KnownSizeArrayDefinitionT *usaDefM) {
+  assert(false);
 }
 
 void ResilientV4::generateStructDefsC(

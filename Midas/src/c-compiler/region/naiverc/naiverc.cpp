@@ -816,6 +816,10 @@ std::string NaiveRC::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
     }
   } else if (auto interfaceMT = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
     return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(usaMT->name) + "Ref";
+  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ksaMT->name) + "Ref";
   } else {
     assert(false);
   }
@@ -824,11 +828,31 @@ std::string NaiveRC::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
 void NaiveRC::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     UnknownSizeArrayDefinitionT* usaDefM) {
+  if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(usaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 void NaiveRC::generateKnownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
-    KnownSizeArrayDefinitionT* usaDefM) {
+    KnownSizeArrayDefinitionT* ksaDefM) {
+  if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(ksaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 void NaiveRC::generateStructDefsC(

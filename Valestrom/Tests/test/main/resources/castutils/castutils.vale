@@ -15,6 +15,14 @@ fn +(s str, b bool) str {
   s + str(b)
 }
 
+fn +(b bool, s str) str {
+  str(b) + s
+}
+
+fn +(f float, s str) str {
+  str(f) + s
+}
+
 fn +(s str, f float) str {
   s + str(f)
 }

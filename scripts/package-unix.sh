@@ -9,5 +9,5 @@ cp -r ../Midas/src/builtins ../release-unix/builtins
 cp -r ../Midas/vstl ../release-unix/vstl
 cp ../Midas/valec.py ../release-unix/valec.py
 cp releaseREADME.txt ../release-unix/README.txt
-cp valec-help* ../release-unix
+cp valec-* ../release-unix
 cp ../Midas/build/valec ../release-unix/valec

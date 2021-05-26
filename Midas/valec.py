@@ -172,7 +172,8 @@ class ValeCompiler:
         add_exports_include_path = False
 
 
-
+        print_help = False
+        print_version = False
         valestrom_options = []
         midas_options = []
         if "--flares" in args:
@@ -275,13 +276,30 @@ class ValeCompiler:
             val = args[ind]
             del args[ind]
             parseds_output_dir = val
+        if "--help" in args:
+            ind = args.index("--help")
+            del args[ind]
+            print_help = True
+        if "-v" in args:
+            ind = args.index("-v")
+            del args[ind]
+            print_version = True
+        if "--version" in args:
+            ind = args.index("--version")
+            del args[ind]
+            print_version = True
 
         if len(args) == 0:
-            print("Must supply a command, such as 'help', 'build`, 'run'.")
+            print("Must supply a command, such as 'help', 'build`, 'run', 'version'.")
             sys.exit(22)
 
-        if args[0] == "help" or args[0] == "--help":
+        if print_version or args[0] == "version":
+            with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+                print(f.read())
+        elif print_help or args[0] == "help":
             if len(args) < 2:
+                with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+                    print(f.read())
                 with open(str(self.valestrom_path / "valec-help.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "build":

@@ -5,7 +5,7 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NullProfiler, Ok, Result, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, IPackageResolver, IProfiler, PackageCoordinate, NullProfiler, Ok, Result, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 import scala.util.parsing.input.OffsetPosition
@@ -35,7 +35,7 @@ sealed trait IEnvironment {
   def allUserDeclaredRunes(): Set[IRuneS]
 }
 
-// Someday we might split this into NamespaceEnvironment and CitizenEnvironment
+// Someday we might split this into PackageEnvironment and CitizenEnvironment
 case class Environment(
     file: FileCoordinate,
     parentEnv: Option[Environment],
@@ -198,11 +198,11 @@ object Scout {
   }
 
   private def scoutImport(file: FileCoordinate, importP: ImportP): ImportS = {
-    val ImportP(range, moduleName, namespaceNames, importeeName) = importP
+    val ImportP(range, moduleName, packageNames, importeeName) = importP
 
     val pos = Scout.evalPos(file, range.begin)
 
-    ImportS(Scout.evalRange(file, range), moduleName.str, namespaceNames.map(_.str), importeeName.str)
+    ImportS(Scout.evalRange(file, range), moduleName.str, packageNames.map(_.str), importeeName.str)
   }
 
   private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
@@ -276,7 +276,7 @@ object Scout {
       }
 
     val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
-    val attrsS = translateCitizenAttributes(attributesP.filter({ case WeakableP(_) => false case _ => true}))
+    val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableP(_) => false case _ => true}))
 
     StructS(
       Scout.evalRange(file, range),
@@ -294,9 +294,9 @@ object Scout {
       membersS)
   }
 
-  def translateCitizenAttributes(attrsP: List[ICitizenAttributeP]): List[ICitizenAttributeS] = {
+  def translateCitizenAttributes(file: FileCoordinate, attrsP: List[ICitizenAttributeP]): List[ICitizenAttributeS] = {
     attrsP.map({
-      case ExportP(_) => ExportS
+      case ExportP(_) => ExportS(file.packageCoordinate)
       case x => vimpl(x.toString)
     })
   }
@@ -352,7 +352,7 @@ object Scout {
     val internalMethodsS = internalMethodsP.map(FunctionScout.scoutInterfaceMember(interfaceEnv, _))
 
     val weakable = attributesP.exists({ case w @ WeakableP(_) => true case _ => false })
-    val attrsS = translateCitizenAttributes(attributesP.filter({ case WeakableP(_) => false case _ => true}))
+    val attrsS = translateCitizenAttributes(file, attributesP.filter({ case WeakableP(_) => false case _ => true}))
 
     val interfaceS =
       InterfaceS(
@@ -403,9 +403,9 @@ object Scout {
 }
 
 class ScoutCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
-  var parserCompilation = new ParserCompilation(modulesToBuild, namespaceToContentsResolver)
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]]) {
+  var parserCompilation = new ParserCompilation(packagesToBuild, packageToContentsResolver)
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 
   def getCodeMap(): FileCoordinateMap[String] = parserCompilation.getCodeMap()

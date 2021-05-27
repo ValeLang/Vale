@@ -5,7 +5,7 @@ import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.{FunctionEnvironment, IEnvironment, TemplatasStore, InterfaceEnvEntry, NamespaceEnvironment, TemplataEnvEntry}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, IEnvironment, TemplatasStore, InterfaceEnvEntry, PackageEnvironment, TemplataEnvEntry}
 import net.verdagon.vale.templar.function.{FunctionTemplar, FunctionTemplarCore, VirtualTemplar}
 import net.verdagon.vale.{IProfiler, vfail, vimpl}
 
@@ -19,7 +19,7 @@ class StructTemplarMiddle(
     delegate: IStructTemplarDelegate) {
   val core = new StructTemplarCore(opts, profiler, newTemplataStore, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
     core.addBuiltInStructs(env, temputs)
   }
 
@@ -33,7 +33,7 @@ class StructTemplarMiddle(
   }
 
   def getStructRef(
-    structOuterEnv: NamespaceEnvironment[IName2],
+    structOuterEnv: PackageEnvironment[IName2],
     temputs: Temputs,
     callRange: RangeS,
     structS: StructA,
@@ -53,7 +53,7 @@ class StructTemplarMiddle(
   }
 
   def getInterfaceRef(
-    interfaceOuterEnv: NamespaceEnvironment[IName2],
+    interfaceOuterEnv: PackageEnvironment[IName2],
     temputs: Temputs,
     callRange: RangeS,
     interfaceA: InterfaceA,
@@ -93,7 +93,7 @@ class StructTemplarMiddle(
 
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnderstruct(
-    env: NamespaceEnvironment[IName2],
+    env: PackageEnvironment[IName2],
     temputs: Temputs,
     memberTypes2: List[Coord],
     name: ICitizenName2):

@@ -1,15 +1,15 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.scout.ProgramS
-import net.verdagon.vale.{NamespaceCoordinateMap, vassert}
+import net.verdagon.vale.{PackageCoordinateMap, vassert}
 
 import scala.collection.immutable.List
 
 object OrderModules {
-  def orderModules(mergedProgramS: NamespaceCoordinateMap[ProgramS]): List[String] = {
+  def orderModules(mergedProgramS: PackageCoordinateMap[ProgramS]): List[String] = {
     val dependentAndDependeeModule: List[(String, String)] =
-      mergedProgramS.moduleToNamespacesToFilenameToContents.map({ case (dependentModuleName, namespacesToFilenameToContents) =>
-        val dependeeModules = namespacesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
+      mergedProgramS.moduleToPackagesToFilenameToContents.map({ case (dependentModuleName, packagesToFilenameToContents) =>
+        val dependeeModules = packagesToFilenameToContents.values.flatMap(_.imports.map(_.moduleName))
         dependeeModules.map(dependeeName => (dependentModuleName -> dependeeName))
       }).flatten.toList
     orderModules(dependentAndDependeeModule)

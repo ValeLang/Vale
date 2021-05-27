@@ -24,7 +24,7 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
 class ValeCompiler:
     def valestrom(self,
                   command: str,
-                  user_modules: List[str],
+                  namespaces_to_build: List[str],
                   user_valestrom_inputs: List[Path],
                   valestrom_options: List[str]) -> subprocess.CompletedProcess:
 
@@ -49,7 +49,7 @@ class ValeCompiler:
                 str(self.valestrom_path / "Valestrom.jar"),
                 "net.verdagon.vale.driver.Driver",
                 command
-            ] + user_modules + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
+            ] + namespaces_to_build + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
         )
 
     def valec(self,
@@ -318,7 +318,7 @@ class ValeCompiler:
         elif args[0] == "build":
             args.pop(0)
 
-            user_modules = []
+            namespaces_to_build = []
             user_valestrom_inputs = []
             user_vast_files = []
             user_c_files = []
@@ -342,16 +342,21 @@ class ValeCompiler:
                     elif contents_path.is_dir():
                         for c_file in contents_path.rglob('*.c'):
                             user_c_files.append(Path(c_file))
-                        user_valestrom_inputs.append([module_name, contents_path])
+                        for vale_file in contents_path.rglob('*.vale'):
+                            with open(str(vale_file), 'r') as f:
+                                contents = f.read()
+                                if ("export" in contents) or ("extern" in contents):
+                                    print("Contains export: " + str(vale_file))
+                            user_c_files.append(Path(c_file))
                     else:
                         print("Unrecognized input: " + arg + " (should be module name, then a colon, then a directory or file ending in .vale, .vpst, .vast, .c)")
                         sys.exit(22)
                 else:
-                    user_modules.append(arg)
+                    namespaces_to_build.append(arg)
 
             vast_file = None
             if len(user_valestrom_inputs) > 0 and len(user_vast_files) == 0:
-                proc = self.valestrom("build", user_modules, user_valestrom_inputs, valestrom_options)
+                proc = self.valestrom("build", namespaces_to_build, user_valestrom_inputs, valestrom_options)
 
                 if proc.returncode == 0:
                     vast_file = self.build_dir / "build.vast"

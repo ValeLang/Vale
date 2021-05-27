@@ -2,7 +2,7 @@ package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{FileP, ParseFailure, ParseSuccess, Parser, Range}
 import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
-import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinateMap, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, PackageCoordinateMap, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ErrorTests extends FunSuite with Matchers  {
@@ -46,7 +46,7 @@ class ErrorTests extends FunSuite with Matchers  {
       }
     }
 
-    def getAstrouts(): Either[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+    def getAstrouts(): Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
       Astronomer.runAstronomer(FileCoordinateMap.test(getScoutput()))
     }
   }

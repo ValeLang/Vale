@@ -20,9 +20,9 @@ class StructTemplarCore(
     newTemplataStore: () => TemplatasStore,
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
     val emptyTupleFullName = FullName2(List(), TupleName2(List()))
-    val emptyTupleEnv = NamespaceEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
+    val emptyTupleEnv = PackageEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
     val structDef2 = StructDefinition2(emptyTupleFullName, List(), false, Immutable, List(), false)
     temputs.declareStruct(structDef2.getRef)
     temputs.declareStructMutability(structDef2.getRef, Immutable)
@@ -36,7 +36,7 @@ class StructTemplarCore(
 
   def maakeStruct(
     // The environment that the struct was defined in.
-    structRunesEnv: NamespaceEnvironment[IName2],
+    structRunesEnv: PackageEnvironment[IName2],
     temputs: Temputs,
     struct1: StructA,
     coercedFinalTemplateArgs: List[ITemplata]):
@@ -46,7 +46,7 @@ class StructTemplarCore(
     val temporaryStructRef = StructRef2(fullName)
 
     val structInnerEnv =
-      NamespaceEnvironment(
+      PackageEnvironment(
         Some(structRunesEnv),
         fullName,
         newTemplataStore())
@@ -153,7 +153,7 @@ class StructTemplarCore(
 
   def translateCitizenAttributes(attrs: List[ICitizenAttributeA]): List[ICitizenAttribute2] = {
     attrs.map({
-      case ExportA => Export2
+      case ExportA(packageCoord) => Export2(packageCoord)
       case x => vimpl(x.toString)
     })
   }
@@ -164,7 +164,7 @@ class StructTemplarCore(
   // }
   // which means we need some way to know what T is.
   def makeInterface(
-    interfaceRunesEnv: NamespaceEnvironment[IName2],
+    interfaceRunesEnv: PackageEnvironment[IName2],
     temputs: Temputs,
     interfaceA: InterfaceA,
     coercedFinalTemplateArgs2: List[ITemplata]):
@@ -174,7 +174,7 @@ class StructTemplarCore(
     val temporaryInferfaceRef = InterfaceRef2(fullName)
 
     val interfaceInnerEnv0 =
-      NamespaceEnvironment(
+      PackageEnvironment(
         Some(interfaceRunesEnv),
         fullName,
         newTemplataStore())
@@ -292,7 +292,7 @@ class StructTemplarCore(
 //    // and see the function and use it.
 //    // See CSFMSEO and SAFHE.
 //    val structEnv =
-//      NamespaceEnvironment(
+//      PackageEnvironment(
 //        Some(outerEnv),
 //        fullName,
 //        Map(
@@ -348,7 +348,7 @@ class StructTemplarCore(
     // and see the function and use it.
     // See CSFMSEO and SAFHE.
     val structEnv =
-      NamespaceEnvironment(
+      PackageEnvironment(
         Some(containingFunctionEnv),
         fullName,
         newTemplataStore()
@@ -384,7 +384,7 @@ class StructTemplarCore(
 
   // Makes a struct to back a pack or tuple
   def makeSeqOrPackUnderstruct(
-    outerEnv: NamespaceEnvironment[IName2],
+    outerEnv: PackageEnvironment[IName2],
     temputs: Temputs,
     memberCoords: List[Coord],
     name: ICitizenName2):
@@ -401,7 +401,7 @@ class StructTemplarCore(
 
     val fullName = outerEnv.fullName.addStep(TupleName2(memberCoords))
     val structInnerEnv =
-      NamespaceEnvironment(
+      PackageEnvironment(
         Some(outerEnv),
         fullName,
         newTemplataStore())
@@ -498,7 +498,7 @@ class StructTemplarCore(
         AnonymousSubstructParentInterfaceRune2() -> List(TemplataEnvEntry(KindTemplata(interfaceRef))),
         AnonymousSubstructImplName2() -> List(TemplataEnvEntry(ExternImplTemplata(structRef, interfaceRef))))
     val structInnerEnv =
-      NamespaceEnvironment(
+      PackageEnvironment(
         Some(interfaceEnv),
         anonymousSubstructName,
         newTemplataStore().addEntries(opts.useOptimization, structInnerEnvEntries))
@@ -639,7 +639,7 @@ class StructTemplarCore(
     temputs.declareFunctionSignature(range, forwarderHeader.toSignature, None)
 
     val structInnerEnv =
-      NamespaceEnvironment(
+      PackageEnvironment(
         Some(outerEnv),
         structFullName,
         newTemplataStore().addEntries(

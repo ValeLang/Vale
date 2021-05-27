@@ -7,7 +7,7 @@ import net.verdagon.vale.parser.{CaptureP, FileP, ImmutableP, MutabilityP, Mutab
 import net.verdagon.vale.scout.{ExportS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinateMap, INamespaceResolver, NamespaceCoordinate, NamespaceCoordinateMap, Ok, Result, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, PackageCoordinate, PackageCoordinateMap, Ok, Result, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -17,16 +17,16 @@ case class Environment(
     maybeName: Option[INameS],
     maybeParentEnv: Option[Environment],
     primitives: Map[String, ITypeSR],
-    codeMap: NamespaceCoordinateMap[ProgramS],
+    codeMap: PackageCoordinateMap[ProgramS],
     typeByRune: Map[IRuneA, ITemplataType],
     locals: List[LocalVariableA]) {
 
-  val structsS: List[StructS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.structs)).toList
-  val interfacesS: List[InterfaceS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
-  val implsS: List[ImplS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.impls)).toList
-  val functionsS: List[FunctionS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
-  val exportsS: List[ExportAsS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.exports)).toList
-  val imports: List[ImportS] = codeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.imports)).toList
+  val structsS: List[StructS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.structs)).toList
+  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
+  val implsS: List[ImplS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.impls)).toList
+  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
+  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.exports)).toList
+  val imports: List[ImportS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.imports)).toList
 
   def addLocals(newLocals: List[LocalVariableA]): Environment = {
     Environment(maybeName, maybeParentEnv, primitives, codeMap, typeByRune, locals ++ newLocals)
@@ -120,13 +120,13 @@ case class Environment(
 
 case class AstroutsBox(var astrouts: Astrouts) {
   def getImpl(name: ImplNameA) = {
-    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.impls.get(name))
+    astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.impls.get(name))
   }
   def getStruct(name: ITypeDeclarationNameA) = {
-    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.structs.get(name))
+    astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.structs.get(name))
   }
   def getInterface(name: ITypeDeclarationNameA) = {
-    astrouts.moduleAstrouts.get(name.namespaceCoordinate.module).flatMap(_.interfaces.get(name))
+    astrouts.moduleAstrouts.get(name.packageCoordinate.module).flatMap(_.interfaces.get(name))
   }
 }
 
@@ -338,14 +338,14 @@ object Astronomer {
 
   def translateCitizenAttributes(attrsS: List[ICitizenAttributeS]) = {
     attrsS.map({
-      case ExportS => ExportA
+      case ExportS(packageCoordinate) => ExportA(packageCoordinate)
       case x => vimpl(x.toString)
     })
   }
 
   def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]): List[IFunctionAttributeA] = {
     attrsS.flatMap({
-      case ExportS => List(ExportA)
+      case ExportS(packageCoordinate) => List(ExportA(packageCoordinate))
       case ExternS => List(ExternA)
       case PureS => List(PureA)
       case BuiltinS(_) => List()
@@ -675,7 +675,7 @@ object Astronomer {
   }
 
   def translateProgram(
-      codeMap: NamespaceCoordinateMap[ProgramS],
+      codeMap: PackageCoordinateMap[ProgramS],
       primitives: Map[String, ITypeSR],
       suppliedFunctions: List[FunctionA],
       suppliedInterfaces: List[InterfaceA]):
@@ -717,11 +717,11 @@ object Astronomer {
       RefCounting.checkvarrc)
 
   def runAstronomer(separateProgramsS: FileCoordinateMap[ProgramS]):
-  Either[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+  Either[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
     val mergedProgramS =
-      NamespaceCoordinateMap(
-        separateProgramsS.moduleToNamespacesToFilenameToContents.mapValues(namespacesToFilenameToContents => {
-          namespacesToFilenameToContents.mapValues(filenameToContents => {
+      PackageCoordinateMap(
+        separateProgramsS.moduleToPackagesToFilenameToContents.mapValues(packagesToFilenameToContents => {
+          packagesToFilenameToContents.mapValues(filenameToContents => {
             ProgramS(
               filenameToContents.values.flatMap(_.structs).toList,
               filenameToContents.values.flatMap(_.interfaces).toList,
@@ -741,36 +741,36 @@ object Astronomer {
         Astronomer.translateProgram(
           mergedProgramS, primitives, suppliedFunctions, suppliedInterfaces)
 
-      val namespaceToStructsA = structsA.groupBy(_.name.codeLocation.file.namespaceCoordinate)
-      val namespaceToInterfacesA = interfacesA.groupBy(_.name.codeLocation.file.namespaceCoordinate)
-      val namespaceToFunctionsA = functionsA.groupBy(_.name.namespaceCoordinate)
-      val namespaceToImplsA = implsA.groupBy(_.name.codeLocation.file.namespaceCoordinate)
-      val namespaceToExportsA = exportsA.groupBy(_.range.file.namespaceCoordinate)
+      val packageToStructsA = structsA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToInterfacesA = interfacesA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToFunctionsA = functionsA.groupBy(_.name.packageCoordinate)
+      val packageToImplsA = implsA.groupBy(_.name.codeLocation.file.packageCoordinate)
+      val packageToExportsA = exportsA.groupBy(_.range.file.packageCoordinate)
 
-      val allNamespaces =
-        namespaceToStructsA.keySet ++
-        namespaceToInterfacesA.keySet ++
-        namespaceToFunctionsA.keySet ++
-        namespaceToImplsA.keySet ++
-        namespaceToExportsA.keySet
-      val namespaceToContents =
-        allNamespaces.map(namespace => {
+      val allPackages =
+        packageToStructsA.keySet ++
+        packageToInterfacesA.keySet ++
+        packageToFunctionsA.keySet ++
+        packageToImplsA.keySet ++
+        packageToExportsA.keySet
+      val packageToContents =
+        allPackages.map(paackage => {
           val contents =
             ProgramA(
-              namespaceToStructsA.getOrElse(namespace, List()),
-              namespaceToInterfacesA.getOrElse(namespace, List()),
-              namespaceToImplsA.getOrElse(namespace, List()),
-              namespaceToFunctionsA.getOrElse(namespace, List()),
-              namespaceToExportsA.getOrElse(namespace, List()))
-          (namespace -> contents)
+              packageToStructsA.getOrElse(paackage, List()),
+              packageToInterfacesA.getOrElse(paackage, List()),
+              packageToImplsA.getOrElse(paackage, List()),
+              packageToFunctionsA.getOrElse(paackage, List()),
+              packageToExportsA.getOrElse(paackage, List()))
+          (paackage -> contents)
         }).toMap
-      val moduleToNamespaceToContents =
-        namespaceToContents.keys.toList.groupBy(_.module).mapValues(namespaceCoordinates => {
-          namespaceCoordinates.map(namespaceCoordinate => {
-            (namespaceCoordinate.namespaces -> namespaceToContents(namespaceCoordinate))
+      val moduleToPackageToContents =
+        packageToContents.keys.toList.groupBy(_.module).mapValues(packageCoordinates => {
+          packageCoordinates.map(packageCoordinate => {
+            (packageCoordinate.packages -> packageToContents(packageCoordinate))
           }).toMap
         })
-      Left(NamespaceCoordinateMap(moduleToNamespaceToContents))
+      Left(PackageCoordinateMap(moduleToPackageToContents))
     } catch {
       case CompileErrorExceptionA(err) => {
         Right(err)
@@ -780,10 +780,10 @@ object Astronomer {
 }
 
 class AstronomerCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
-  var scoutCompilation = new ScoutCompilation(modulesToBuild, namespaceToContentsResolver)
-  var astroutsCache: Option[NamespaceCoordinateMap[ProgramA]] = None
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]]) {
+  var scoutCompilation = new ScoutCompilation(packagesToBuild, packageToContentsResolver)
+  var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
 
   def getCodeMap(): FileCoordinateMap[String] = scoutCompilation.getCodeMap()
   def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = scoutCompilation.getParseds()
@@ -791,7 +791,7 @@ class AstronomerCompilation(
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = scoutCompilation.getScoutput()
   def expectScoutput(): FileCoordinateMap[ProgramS] = scoutCompilation.expectScoutput()
 
-  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = {
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
     astroutsCache match {
       case Some(astrouts) => Ok(astrouts)
       case None => {
@@ -805,7 +805,7 @@ class AstronomerCompilation(
       }
     }
   }
-  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = {
+  def expectAstrouts(): PackageCoordinateMap[ProgramA] = {
     getAstrouts().getOrDie()
   }
 }

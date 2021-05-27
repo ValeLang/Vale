@@ -72,7 +72,7 @@ class StructTemplar(
     new StructTemplarTemplateArgsLayer(
       opts, profiler, newTemplataStore, inferTemplar, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
     templateArgsLayer.addBuiltInStructs(env, temputs)
   }
 
@@ -251,7 +251,7 @@ class StructTemplar(
   }
 
   // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnderstruct(env: NamespaceEnvironment[IName2], temputs: Temputs, memberTypes2: List[Coord], name: ICitizenName2):
+  def makeSeqOrPackUnderstruct(env: PackageEnvironment[IName2], temputs: Temputs, memberTypes2: List[Coord], name: ICitizenName2):
   (StructRef2, Mutability) = {
 //    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + memberTypes2.map(_.toString).mkString(", ") + "]", () => {
       templateArgsLayer.makeSeqOrPackUnerstruct(env, temputs, memberTypes2, name)

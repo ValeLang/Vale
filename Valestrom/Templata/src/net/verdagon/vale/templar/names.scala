@@ -6,16 +6,16 @@ import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArr
 import net.verdagon.vale.{vassert, vpass, vwat}
 
 // Scout's/Astronomer's name parts correspond to where they are in the source code,
-// but Templar's correspond more to what namespaces and stamped functions / structs
+// but Templar's correspond more to what packages and stamped functions / structs
 // they're in. See TNAD.
 
 case class FullName2[+T <: IName2](initSteps: List[IName2], last: T) extends Queriable2 {
-  // GlobalNamespaceName2 is just here because names have to have a last step.
-  vassert(!initSteps.contains(GlobalNamespaceName2()))
+  // GlobalPackageName2 is just here because names have to have a last step.
+  vassert(!initSteps.contains(GlobalPackageName2()))
 
   def steps: List[IName2] = {
     last match {
-      case GlobalNamespaceName2() => initSteps
+      case GlobalPackageName2() => initSteps
       case _ => initSteps :+ last
     }
   }
@@ -72,7 +72,7 @@ case class CodeVarName2(name: String) extends IVarName2 { def order = 6; def all
 case class AnonymousSubstructMemberName2(index: Int) extends IVarName2 { def order = 24; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class PrimitiveName2(humanName: String) extends IName2 { def order = 26; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 // Only made in templar
-case class GlobalNamespaceName2() extends IName2 { def order = 25; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class GlobalPackageName2() extends IName2 { def order = 25; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 
 // We use this one to look for impls, which are disambiguated by the above ImplDeclareName2
 //case class ImplImpreciseName2() extends IName2 { def order = 22; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }

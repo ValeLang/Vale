@@ -12,7 +12,7 @@ import net.verdagon.von._
 
 object VonHammer {
   def vonifyProgram(program: ProgramH): IVonData = {
-    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, fullNameToExportedNames, regions) = program
+    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, moduleNameToExportedNameToExportee, regions) = program
 
     VonObject(
       "Program",
@@ -38,20 +38,33 @@ object VonHammer {
                   VonMember("destructor", vonifyPrototype(destructor))))
             }))),
         VonMember(
-          "fullNameToExportedNames",
+          "moduleNameToExportedNameToExportee",
           VonArray(
             None,
-            fullNameToExportedNames.toVector.map({ case (fullName, exportedNames) =>
+            moduleNameToExportedNameToExportee.toVector.map({ case (moduleName, exportedNameToExportee) =>
               VonObject(
                 "Entry",
                 None,
                 Vector(
-                  VonMember("fullName", VonStr(fullName.toReadableString)),
+                  VonMember("moduleName", VonStr(moduleName)),
                   VonMember(
-                    "exportedNames",
+                    "exportedNameToExportee",
                     VonArray(
                       None,
-                      exportedNames.map(VonStr).toVector))))
+                      exportedNameToExportee.toVector.map({ case (exportedName, (packageCoord, fullName)) =>
+                        VonObject(
+                          "Entry",
+                          None,
+                          Vector(
+                            VonMember("exportedName", VonStr(exportedName)),
+                            VonMember("module", VonStr(moduleName)),
+                            VonMember(
+                              "packageSteps",
+                              VonArray(
+                                None,
+                                packageCoord.packages.map(VonStr).toVector)),
+                            VonMember("fullName", VonStr(fullName.toReadableString))))
+                      })))))
             }))),
         VonMember(
           "regions",
@@ -1067,9 +1080,9 @@ object VonHammer {
           Vector(
             VonMember(humanName, VonStr(humanName))))
       }
-      case GlobalNamespaceName2() => {
+      case GlobalPackageName2() => {
         VonObject(
-          "GlobalNamespaceName",
+          "GlobalPackageName",
           None,
           Vector())
       }

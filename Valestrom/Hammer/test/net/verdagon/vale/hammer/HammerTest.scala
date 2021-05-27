@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.{FileCoordinateMap, NamespaceCoordinate, NamespaceCoordinateMap, Result, Tests, vassert}
+import net.verdagon.vale.{FileCoordinateMap, PackageCoordinate, PackageCoordinateMap, Result, Tests, vassert}
 import net.verdagon.vale.templar._
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.metal.{FunctionH, ProgramH, StackifyH, VariableIdH}

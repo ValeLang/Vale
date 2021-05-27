@@ -187,7 +187,7 @@ object FunctionScout {
         Some(FunctionTypeSR)
       }
 
-    val attrsS = translateFunctionAttributes(attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
+    val attrsS = translateFunctionAttributes(file, attributes.filter({ case AbstractAttributeP(_) => false case _ => true}))
 
     FunctionS(
       Scout.evalRange(file, range),
@@ -204,10 +204,10 @@ object FunctionScout {
       body1)
   }
 
-  def translateFunctionAttributes(attrsP: List[IFunctionAttributeP]): List[IFunctionAttributeS] = {
+  def translateFunctionAttributes(file: FileCoordinate, attrsP: List[IFunctionAttributeP]): List[IFunctionAttributeS] = {
     attrsP.map({
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
-      case ExportAttributeP(_) => ExportS
+      case ExportAttributeP(_) => ExportS(file.packageCoordinate)
       case ExternAttributeP(_) => ExternS
       case PureAttributeP(_) => PureS
       case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
@@ -401,7 +401,7 @@ object FunctionScout {
       FunctionS(
         Scout.evalRange(parentStackFrame.file, range),
         lambdaName,
-        translateFunctionAttributes(attrsP),
+        translateFunctionAttributes(parentStackFrame.file, attrsP),
         knowableValueRunes,
         identifyingRunes,
         localRunes,
@@ -607,7 +607,7 @@ object FunctionScout {
     FunctionS(
       Scout.evalRange(functionEnv.file, range),
       funcName,
-      translateFunctionAttributes(attrsP),
+      translateFunctionAttributes(functionEnv.file, attrsP),
       knowableValueRunes,
       identifyingRunes,
       localRunes,

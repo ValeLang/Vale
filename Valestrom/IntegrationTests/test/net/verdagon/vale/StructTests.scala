@@ -112,7 +112,7 @@ class StructTests extends FunSuite with Matchers {
         |
         |struct GetMarineWeaponNameFunc { }
         |impl IFunction1<mut, &Marine, str> for GetMarineWeaponNameFunc;
-        |fn __call(this &GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, str>, m &Marine) str {
+        |fn __call(this &!GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, str>, m &Marine) str {
         |  m.weapon.name
         |}
         |
@@ -121,7 +121,7 @@ class StructTests extends FunSuite with Matchers {
         |  owner! Opt<&Marine>;
         |}
         |fn destructor(weapon Weapon) void {
-        |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&GetMarineWeaponNameFunc()).getOr("none"));
+        |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&!GetMarineWeaponNameFunc()).getOr("none"));
         |  Weapon(name, owner) = weapon;
         |}
         |struct Marine {

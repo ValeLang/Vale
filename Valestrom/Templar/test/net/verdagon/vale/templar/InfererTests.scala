@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.{FakeState => _, SimpleEnvironment => _, _}
 import net.verdagon.vale.astronomer.ruletyper.IRuleTyperEvaluatorDelegate
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{IEnvironment => _, _}
-import net.verdagon.vale.templar.{StaticArrayFromValues2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, GlobalNamespaceName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
+import net.verdagon.vale.templar.{StaticArrayFromValues2, CitizenName2, CitizenTemplateName2, CodeRune2, FullName2, FunctionName2, GlobalPackageName2, IName2, ImplicitRune2, NameTranslator, PrimitiveName2, Program2, TupleName2}
 import net.verdagon.vale.{IProfiler, NullProfiler, vassert, vassertSome, vfail, vimpl, scout => s}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.infer.{InfererEquator, InfererEvaluator}
@@ -36,8 +36,8 @@ object InfererTestUtils {
 
 case class SimpleEnvironment(templatas: TemplatasStore) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = None
-  def fullName = FullName2(List(), GlobalNamespaceName2())
-  def globalEnv: NamespaceEnvironment[IName2] = {
+  def fullName = FullName2(List(), GlobalPackageName2())
+  def globalEnv: PackageEnvironment[IName2] = {
     vfail()
   }
   override def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata] = {

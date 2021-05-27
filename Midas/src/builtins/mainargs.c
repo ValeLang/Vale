@@ -3,14 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-
-typedef struct ValeStr {
-  uint64_t length;
-  char chars[0];
-} ValeStr;
-
-extern ValeStr* ValeStrNew(int64_t length);
+#include "ValeBuiltins.h"
 
 
 extern int64_t __main_num_args;

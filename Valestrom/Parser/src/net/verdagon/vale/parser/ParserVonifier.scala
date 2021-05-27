@@ -154,7 +154,7 @@ object ParserVonifier {
   }
 
   def vonifyImport(exportAs: ImportP): VonObject = {
-    val ImportP(range, moduleName, namespaceSteps, importeeName) = exportAs
+    val ImportP(range, moduleName, packageSteps, importeeName) = exportAs
 
     VonObject(
       "Import",
@@ -162,7 +162,7 @@ object ParserVonifier {
       Vector(
         VonMember("range", vonifyRange(range)),
         VonMember("moduleName", vonifyName(moduleName)),
-        VonMember("namespaceSteps", VonArray(None, namespaceSteps.map(vonifyName).toVector)),
+        VonMember("packageSteps", VonArray(None, packageSteps.map(vonifyName).toVector)),
         VonMember("importeeName", vonifyName(importeeName))))
   }
 

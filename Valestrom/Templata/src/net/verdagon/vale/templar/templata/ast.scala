@@ -4,7 +4,7 @@ package net.verdagon.vale.templar.templata
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.templar.{FullName2, FunctionName2, IFunctionName2, IVarName2}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{FileCoordinate, vassert, vassertSome, vfail, vimpl}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vassertSome, vfail, vimpl}
 
 case class CovariantFamily(
     root: Prototype2,
@@ -153,7 +153,7 @@ case class FunctionBanner2(
 sealed trait IFunctionAttribute2
 sealed trait ICitizenAttribute2
 case object Extern2 extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
-case object Export2 extends IFunctionAttribute2 with ICitizenAttribute2
+case class Export2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2
 case object Pure2 extends IFunctionAttribute2 with ICitizenAttribute2
 case object UserFunction2 extends IFunctionAttribute2 // Whether it was written by a human. Mostly for tests right now.
 
@@ -170,7 +170,7 @@ case class FunctionHeader2(
   vassert(fullName.last.parameters == paramTypes)
 
   def isExtern = attributes.contains(Extern2)
-  def isExport = attributes.contains(Export2)
+  def isExport = attributes.exists({ case Export2(_) => true case _ => false })
   def isUserFunction = attributes.contains(UserFunction2)
   def getAbstractInterface: Option[InterfaceRef2] = toBanner.getAbstractInterface
   def getOverride: Option[(StructRef2, InterfaceRef2)] = toBanner.getOverride

@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vassertSome, vfail, vwat}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vwat}
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -30,6 +30,7 @@ case class Impl2(
 
 case class ExportAs2(
   tyype: Kind,
+  packageCoordinate: PackageCoordinate,
   exportedName: String
 ) extends Queriable2 {
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

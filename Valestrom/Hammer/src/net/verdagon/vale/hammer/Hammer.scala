@@ -6,7 +6,7 @@ import net.verdagon.vale.metal._
 import net.verdagon.vale.parser.{FileP, VariabilityP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.{CitizenName2, ExportAs2, ExternFunctionName2, FullName2, FunctionName2, ICompileErrorT, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, TemplarCompilation, TemplarCompilationOptions, types => t}
-import net.verdagon.vale.{Builtins, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NamespaceCoordinateMap, NullProfiler, Result, vassert, vfail, vwat}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, PackageCoordinate, PackageCoordinateMap, NullProfiler, Result, vassert, vfail, vwat}
 
 import scala.collection.immutable.List
 
@@ -184,7 +184,7 @@ object Hammer {
     FunctionHammer.translateFunctions(hinputs, hamuts, userFunctions)
     FunctionHammer.translateFunctions(hinputs, hamuts, nonUserFunctions)
 
-    exports.foreach({ case ExportAs2(tyype, exportedName) =>
+    exports.foreach({ case ExportAs2(tyype, packageCoord, exportedName) =>
       val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
       val nameH =
         kindH match {
@@ -193,7 +193,7 @@ object Hammer {
           case StructRefH(name) => name
           case InterfaceRefH(name) => name
         }
-      hamuts.addExport(nameH, exportedName)
+      hamuts.addExport(nameH, packageCoord, exportedName)
     })
 
     val immDestructors2 =
@@ -216,7 +216,7 @@ object Hammer {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
     }})
 
-    val fullNameToExportedNames = hamuts.exportedNameToFullName.groupBy(_._2).map({ case (k, v) => (k, v.keys.toList) })
+//    val fullNameToExportedNames = .groupBy(_._2).map({ case (k, v) => (k, v.keys.toList) })
 //    if (fullNameToExportedNames.size != hamuts.exportedNameToFullName.size) {
 //      fullNameToExportedNames.foreach({ case (fullName, exportedName) =>
 //        if (hamuts.exportedNameToFullName(exportedName) != fullName) {
@@ -239,24 +239,24 @@ object Hammer {
       hamuts.inner.knownSizeArrays,
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
-      fullNameToExportedNames,
+      hamuts.moduleNameToExportedNameToExportee,
       List())
   }
 
-  def exportName(hamuts: HamutsBox, fullName2: FullName2[IName2], fullNameH: FullNameH) = {
+  def exportName(hamuts: HamutsBox, packageCoord: PackageCoordinate, fullName2: FullName2[IName2], fullNameH: FullNameH) = {
     val exportedName =
       fullName2.last match {
         case FunctionName2(humanName, _, _) => humanName
         case CitizenName2(humanName, _) => humanName
         case _ => vfail("Can't export something that doesn't have a human readable name!")
       }
-    hamuts.exportedNameToFullName.get(exportedName) match {
+    hamuts.moduleNameToExportedNameToExportee.get(exportedName) match {
       case None =>
       case Some(existingFullName) => {
         vfail("Can't export " + fullNameH + " as " + exportedName + ", that exported name already taken by " + existingFullName)
       }
     }
-    hamuts.addExport(fullNameH, exportedName)
+    hamuts.addExport(fullNameH, packageCoord, exportedName)
   }
 }
 

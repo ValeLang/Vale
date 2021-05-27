@@ -170,6 +170,18 @@ void initInternalExterns(GlobalState* globalState) {
 void generateExports(GlobalState* globalState, Prototype* mainM) {
   auto program = globalState->program;
   auto cByExportedName = std::unordered_map<std::string, std::string>();
+
+  std::stringstream builtinExportsCode;
+  builtinExportsCode << "#include <stdint.h>" << std::endl;
+  builtinExportsCode << "#include <stdlib.h>" << std::endl;
+  builtinExportsCode << "#include <string.h>" << std::endl;
+  builtinExportsCode << "typedef struct { uint64_t length; char chars[0]; } ValeStr;" << std::endl;
+  builtinExportsCode << "typedef int64_t ValeInt;" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrNew(int64_t length);" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrFrom(char* source);" << std::endl;
+
+  cByExportedName["ValeBuiltins"] = builtinExportsCode.str();
+
   for (auto p : program->structs) {
     auto structM = p.second;
     // can we think of this in terms of regions? it's kind of like we're
@@ -239,7 +251,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   }
   for (auto p : cByExportedName) {
     auto exportedName = p.first;
-    auto c = p.second;
+    auto exportCode = p.second;
     std::string filepath = "";
     if (!globalState->opt->exportsDir.empty()) {
       filepath = globalState->opt->exportsDir + "/";
@@ -251,7 +263,12 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       exit(1);
     }
     std::cout << "Writing " << filepath << std::endl;
-    out << c;
+
+    out << "#ifndef VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
+    out << "#define VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
+    out << "#include \"ValeBuiltins.h\"" << std::endl;
+    out << exportCode;
+    out << "#endif" << std::endl;
   }
 }
 

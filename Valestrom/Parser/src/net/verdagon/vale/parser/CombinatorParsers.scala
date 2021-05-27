@@ -181,8 +181,8 @@ object CombinatorParsers
       (optWhite ~> ";" ~> pos) ^^ {
       case begin ~ steps ~ importee ~ end => {
         val moduleName = steps.head
-        val namespaceSteps = steps.tail
-        ImportP(Range(begin, end), moduleName, namespaceSteps, importee)
+        val packageSteps = steps.tail
+        ImportP(Range(begin, end), moduleName, packageSteps, importee)
       }
     }
   }

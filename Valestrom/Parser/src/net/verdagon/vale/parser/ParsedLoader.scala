@@ -132,7 +132,7 @@ object ParsedLoader {
     ImportP(
       loadRange(getObjectField(jobj, "range")),
       loadName(getObjectField(jobj, "moduleName")),
-      getArrayField(jobj, "namespaceSteps").map(expectObject).map(loadName),
+      getArrayField(jobj, "packageSteps").map(expectObject).map(loadName),
       loadName(getObjectField(jobj, "importeeName")))
   }
 

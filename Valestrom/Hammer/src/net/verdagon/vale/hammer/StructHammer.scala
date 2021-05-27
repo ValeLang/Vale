@@ -68,12 +68,12 @@ object StructHammer {
 
         val methodsH = translateInterfaceMethods(hinputs, hamuts, interfaceRef2)
 
-        val export = interfaceDef2.attributes.contains(Export2)
+        val maybeExport = interfaceDef2.attributes.collectFirst { case Export2(packageCoord) => packageCoord }
 
         val interfaceDefH =
           InterfaceDefinitionH(
             fullNameH,
-            export,
+            maybeExport.nonEmpty,
             interfaceDef2.weakable,
             Conversions.evaluateMutability(interfaceDef2.mutability),
             List() /* super interfaces */,
@@ -81,8 +81,8 @@ object StructHammer {
         hamuts.addInterface(interfaceRef2, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
 
-        if (export) {
-          Hammer.exportName(hamuts, interfaceDef2.fullName, interfaceDefH.fullName)
+        if (maybeExport.nonEmpty) {
+          Hammer.exportName(hamuts, maybeExport.get, interfaceDef2.fullName, interfaceDefH.fullName)
         }
 
         (interfaceDefH.getRef)
@@ -125,12 +125,12 @@ object StructHammer {
           }
         }
 
-        val export = structDef2.attributes.contains(Export2)
+        val maybeExport = structDef2.attributes.collectFirst { case Export2(packageCoord) => packageCoord }
 
         val structDefH =
           StructDefinitionH(
             fullNameH,
-            export,
+            maybeExport.nonEmpty,
             structDef2.weakable,
             Conversions.evaluateMutability(structDef2.mutability),
             edgesH,
@@ -138,8 +138,8 @@ object StructHammer {
         hamuts.addStructOriginatingFromTemplar(structRef2, structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)
 
-        if (export) {
-          Hammer.exportName(hamuts, structDef2.fullName, structDefH.fullName)
+        if (maybeExport.nonEmpty) {
+          Hammer.exportName(hamuts, maybeExport.get, structDef2.fullName, structDefH.fullName)
         }
 
         (structDefH.getRef)

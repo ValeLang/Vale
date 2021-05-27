@@ -10,29 +10,32 @@ import net.verdagon.vale.parser.{CombinatorParsers, FileP, InputException, Parse
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinate, NullProfiler, Ok, Result, vassert, vassertSome, vcheck, vfail, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, PackageCoordinate, NullProfiler, Ok, Result, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
 import scala.util.matching.Regex
 
 object Driver {
-  val defaultModuleName = "my_module"
+  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List())
+
   sealed trait IValestromInput {
     def moduleName: String
   }
   case class ModulePathInput(moduleName: String, path: String) extends IValestromInput
   case class DirectFilePathInput(moduleName: String, path: String) extends IValestromInput
   case class SourceInput(
-    moduleName: String,
-    // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
-    name: String,
-    code: String) extends IValestromInput
+      packageCoord: PackageCoordinate,
+      // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
+      name: String,
+      code: String) extends IValestromInput {
+    override def moduleName = packageCoord.module
+  }
 
   case class Options(
     inputs: List[IValestromInput],
 //    modulePaths: Map[String, String],
-    modulesToBuild: List[String],
+    packagesToBuild: List[PackageCoordinate],
     outputDirPath: Option[String],
     benchmark: Boolean,
     outputVPST: Boolean,
@@ -94,7 +97,10 @@ object Driver {
             if (value.endsWith(".vale") || value.endsWith(".vpst")) {
               throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
             }
-            parseOpts(opts.copy(modulesToBuild = opts.modulesToBuild :+ value), tail)
+            val parts = value.split(".")
+            vassert(parts.nonEmpty)
+            val packageCoord = PackageCoordinate(parts.head, parts.tail.toList)
+            parseOpts(opts.copy(packagesToBuild = opts.packagesToBuild :+ packageCoord), tail)
           }
         }
       }
@@ -120,20 +126,20 @@ object Driver {
     }
   }
 
-  def resolveNamespaceContents(
+  def resolvePackageContents(
       inputs: List[IValestromInput],
-      nsCoord: NamespaceCoordinate):
+      packageCoord: PackageCoordinate):
   Option[Map[String, String]] = {
-    val NamespaceCoordinate(module, namespaces) = nsCoord
+    val PackageCoordinate(module, packages) = packageCoord
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
-        case (SourceInput(_, name, code), index) if (namespaces == List()) => {
-          // All .vpst and .vale direct inputs are considered part of the root namespace.
+        case (SourceInput(_, name, code), index) if (packages == List()) => {
+          // All .vpst and .vale direct inputs are considered part of the root paackage.
           List((index + "(" + name + ")" -> code))
         }
         case (ModulePathInput(_, modulePath), _) => {
-          val directoryPath = modulePath + namespaces.map(File.separator + _).mkString("")
+          val directoryPath = modulePath + packages.map(File.separator + _).mkString("")
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
           if (filesInDirectory == null) {
@@ -225,19 +231,19 @@ object Driver {
 //        case other => vwat(other.toString)
 //      })
 //
-//    val moduleToNamespaceToFilepathToCode =
+//    val moduleToPackageToFilepathToCode =
 //      loadedInputs.groupBy(_.moduleName).mapValues(loadedInputsInModule => {
-//        val namespace = List[String]()
+//        val paackage = List[String]()
 //        val filepathToCode =
 //          loadedInputsInModule.groupBy(_.path).map({
 //            case (path, List()) => vfail("No files with path: " + path)
 //            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
 //            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
 //          })
-//        val namespaceToFilepathToCode = Map(namespace -> filepathToCode)
-//        namespaceToFilepathToCode
+//        val packageToFilepathToCode = Map(paackage -> filepathToCode)
+//        packageToFilepathToCode
 //      })
-//    val valeCodeMap = FileCoordinateMap(moduleToNamespaceToFilepathToCode)
+//    val valeCodeMap = FileCoordinateMap(moduleToPackageToFilepathToCode)
 
 //    val startParsingTime = java.lang.System.currentTimeMillis()
 //    if (benchmark) {
@@ -290,8 +296,8 @@ object Driver {
 
     val compilation =
       new FullCompilation(
-        "" :: opts.modulesToBuild,
-        Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
+        PackageCoordinate.BUILTIN :: opts.packagesToBuild,
+        Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
         FullCompilationOptions(
           if (opts.verbose) {
             (x => {
@@ -442,8 +448,8 @@ object Driver {
 
           val compilation =
             new FullCompilation(
-              opts.modulesToBuild,
-              Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
+              opts.packagesToBuild,
+              Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
               FullCompilationOptions(
                 if (opts.verbose) {
                   (x => {
@@ -460,14 +466,14 @@ object Driver {
           val vpstCodeMap = compilation.getVpstMap()
 
           val code =
-            valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
+            valeCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
               case List() => throw InputException("No vale code given to highlight!")
               case List(x) => x
               case _ => throw InputException("No vale code given to highlight!")
             }
-          val List(vpst) = vpstCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
+          val List(vpst) = vpstCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
 
-          compilation.getParseds().map({ case (FileCoordinate(module, namespaces, filepath), (parsed, commentRanges)) =>
+          compilation.getParseds().map({ case (FileCoordinate(module, packages, filepath), (parsed, commentRanges)) =>
             val span = Spanner.forProgram(parsed)
             val highlights = Highlighter.toHTML(code, span, commentRanges)
             if (opts.outputDirPath == Some("")) {

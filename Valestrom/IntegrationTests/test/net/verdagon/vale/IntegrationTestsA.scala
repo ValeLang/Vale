@@ -18,26 +18,26 @@ import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Readonly, Share, Str2}
 
 import scala.collection.immutable.List
-import scala.io.Source
-import scala.util.Try
 
 
 object RunCompilation {
   def test(code: String*): RunCompilation = {
     new RunCompilation(
-      List("", FileCoordinateMap.TEST_MODULE),
+      List(
+        PackageCoordinate.BUILTIN,
+        PackageCoordinate.TEST_TLD),
       Builtins.getCodeMap()
         .or(FileCoordinateMap.test(code.toList))
-        .or(Tests.getNamespaceToResourceResolver),
+        .or(Tests.getPackageToResourceResolver),
       FullCompilationOptions())
   }
 }
 
 class RunCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]],
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
-  var fullCompilation = new FullCompilation(modulesToBuild, namespaceToContentsResolver, options)
+  var fullCompilation = new FullCompilation(packagesToBuild, packageToContentsResolver, options)
 
   def getCodeMap(): FileCoordinateMap[String] = fullCompilation.getCodeMap()
   def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = fullCompilation.getParseds()
@@ -45,8 +45,8 @@ class RunCompilation(
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = fullCompilation.getScoutput()
   def expectScoutput(): FileCoordinateMap[ProgramS] = fullCompilation.expectScoutput()
 
-  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
-  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = fullCompilation.expectAstrouts()
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
+  def expectAstrouts(): PackageCoordinateMap[ProgramA] = fullCompilation.expectAstrouts()
 
   def getTemputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getTemputs()
   def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
@@ -660,8 +660,8 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("exporting array") {
     val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
     val hamuts = compilation.getHamuts()
-    val (fullNameH, exportedName) = hamuts.fullNameToExportedNames.head
-    exportedName shouldEqual List("IntArray")
+    val (packageCoord, fullNameH) = hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("IntArray")
+//    exportedName shouldEqual List("IntArray")
     val usa = hamuts.unknownSizeArrays.find(_.name == fullNameH).get
     usa.rawArray.elementType.kind shouldEqual IntH()
   }

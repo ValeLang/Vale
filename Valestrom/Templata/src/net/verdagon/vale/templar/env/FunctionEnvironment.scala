@@ -17,7 +17,7 @@ case class BuildingFunctionEnvironmentWithClosureds(
   templatas: TemplatasStore
 ) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
-  override def globalEnv: NamespaceEnvironment[IName2] = parentEnv.globalEnv
+  override def globalEnv: PackageEnvironment[IName2] = parentEnv.globalEnv
   override def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
     templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
@@ -40,7 +40,7 @@ case class BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
   templatas: TemplatasStore
 ) extends IEnvironment {
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
-  override def globalEnv: NamespaceEnvironment[IName2] = parentEnv.globalEnv
+  override def globalEnv: PackageEnvironment[IName2] = parentEnv.globalEnv
   override def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata] = {
     templatas.getAllTemplatasWithAbsoluteName2(this, name, lookupFilter)
   }
@@ -81,7 +81,7 @@ case class FunctionEnvironment(
   vassert(locals == locals.distinct)
 
   override def getParentEnv(): Option[IEnvironment] = Some(parentEnv)
-  override def globalEnv: NamespaceEnvironment[IName2] = parentEnv.globalEnv
+  override def globalEnv: PackageEnvironment[IName2] = parentEnv.globalEnv
 
   def addVariables(newVars: List[IVariable2]): FunctionEnvironment = {
     FunctionEnvironment(parentEnv, fullName, function, templatas, maybeReturnType, varCounter, locals ++ newVars, unstackifieds)
@@ -196,7 +196,7 @@ case class FunctionEnvironment(
       Set())
   }
 
-  // No particular reason we don't have an addFunction like NamespaceEnvironment does
+  // No particular reason we don't have an addFunction like PackageEnvironment does
 }
 
 case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) extends IEnvironmentBox {
@@ -209,7 +209,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
   def varCounter: Int = functionEnvironment.varCounter
   def locals: List[IVariable2] = functionEnvironment.locals
   def unstackifieds: Set[FullName2[IVarName2]] = functionEnvironment.unstackifieds
-  override def globalEnv: NamespaceEnvironment[IName2] = parentEnv.globalEnv
+  override def globalEnv: PackageEnvironment[IName2] = parentEnv.globalEnv
 
   def setReturnType(returnType: Option[Coord]): Unit = {
     functionEnvironment = functionEnvironment.copy(maybeReturnType = returnType)
@@ -300,7 +300,7 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
       functionEnvironment.makeChildEnvironment(newTemplataStore))
   }
 
-  // No particular reason we don't have an addFunction like NamespaceEnvironment does
+  // No particular reason we don't have an addFunction like PackageEnvironment does
 }
 
 sealed trait IVariable2 extends Queriable2 {

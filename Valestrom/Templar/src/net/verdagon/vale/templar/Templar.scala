@@ -476,10 +476,10 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  def evaluate(namespaceToProgramA: NamespaceCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
+  def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
-        val programsA = namespaceToProgramA.moduleToNamespacesToFilenameToContents.values.flatMap(_.values)
+        val programsA = packageToProgramA.moduleToPackagesToFilenameToContents.values.flatMap(_.values)
 
         val structsA = programsA.flatMap(_.structs)
         val interfacesA = programsA.flatMap(_.interfaces)
@@ -488,9 +488,9 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         val exportsA = programsA.flatMap(_.exports)
 
         val env0 =
-          NamespaceEnvironment(
+          PackageEnvironment(
             None,
-            FullName2(List(), GlobalNamespaceName2()),
+            FullName2(List(), GlobalPackageName2()),
             newTemplataStore()
                 .addEntries(
                   opts.useOptimization,
@@ -592,7 +592,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
               case Some(KindTemplata(referend)) => referend
               case _ => vfail()
             }
-          temputs.addExport(referend, exportedName)
+          temputs.addExport(referend, range.file.packageCoordinate, exportedName)
         })
 
         profiler.newProfile("StampOverridesUntilSettledProbe", "", () => {
@@ -681,24 +681,24 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
       case FunctionNameA("main", _) => return true
       case _ =>
     }
-    functionA.attributes.contains(ExportA)
+    functionA.attributes.exists({ case ExportA(_) => true case _ => false })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootStruct(structA: StructA): Boolean = {
-    structA.attributes.contains(ExportA)
+    structA.attributes.exists({ case ExportA(_) => true case _ => false })
   }
 
   // Returns whether we should eagerly compile this and anything it depends on.
   def isRootInterface(interfaceA: InterfaceA): Boolean = {
-    interfaceA.attributes.contains(ExportA)
+    interfaceA.attributes.exists({ case ExportA(_) => true case _ => false })
   }
 
-  // (Once we add namespaces, this will probably change)
+  // (Once we add packages, this will probably change)
   def addInterfaceEnvironmentEntries(
-    env0: NamespaceEnvironment[GlobalNamespaceName2],
+    env0: PackageEnvironment[GlobalPackageName2],
     interfaceA: InterfaceA
-  ): NamespaceEnvironment[GlobalNamespaceName2] = {
+  ): PackageEnvironment[GlobalPackageName2] = {
     val interfaceEnvEntry = InterfaceEnvEntry(interfaceA)
 
     val TopLevelCitizenDeclarationNameA(humanName, codeLocationS) = interfaceA.name
@@ -716,11 +716,11 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
     env2
   }
 
-  // (Once we add namespaces, this will probably change)
+  // (Once we add packages, this will probably change)
   def makeStructEnvironmentEntries(
-    env0: NamespaceEnvironment[GlobalNamespaceName2],
+    env0: PackageEnvironment[GlobalPackageName2],
     structA: StructA
-  ): NamespaceEnvironment[GlobalNamespaceName2] = {
+  ): PackageEnvironment[GlobalPackageName2] = {
     val interfaceEnvEntry = StructEnvEntry(structA)
 
     val env1 = env0.addEntry(opts.useOptimization, NameTranslator.translateNameStep(structA.name), interfaceEnvEntry)
@@ -741,7 +741,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
     env2
   }
 
-  def stampNeededOverridesUntilSettled(env: NamespaceEnvironment[IName2], temputs: Temputs): Unit = {
+  def stampNeededOverridesUntilSettled(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
     val neededOverrides =
       profiler.childFrame("assemble partial edges", () => {
         val partialEdges = EdgeTemplar.assemblePartialEdges(temputs)

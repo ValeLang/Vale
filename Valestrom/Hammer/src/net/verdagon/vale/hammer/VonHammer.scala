@@ -12,7 +12,14 @@ import net.verdagon.von._
 
 object VonHammer {
   def vonifyProgram(program: ProgramH): IVonData = {
-    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, fullNameToExportedNames, regions) = program
+    val ProgramH(interfaces, structs, externs, functions, knownSizeArrays, unknownSizeArrays, immDestructorsByKind, moduleNameToExportedNameToExportee, moduleNameToExternedNameToExtern, regions) = program
+
+    val fullNameToExportedNames =
+      moduleNameToExportedNameToExportee.flatMap({ case (moduleName, exportedNameToExportee) =>
+        exportedNameToExportee.map({ case (exportedName, (packageCoord, fullName)) =>
+          (moduleName, exportedName, packageCoord, fullName)
+        })
+      }).groupBy(_._4).mapValues(_.map(_._2).toList)
 
     VonObject(
       "Program",
@@ -38,6 +45,35 @@ object VonHammer {
                   VonMember("destructor", vonifyPrototype(destructor))))
             }))),
         VonMember(
+          "moduleNameToExportedNameToExportee",
+          VonArray(
+            None,
+            moduleNameToExportedNameToExportee.toVector.map({ case (moduleName, exportedNameToExportee) =>
+              VonObject(
+                "Entry",
+                None,
+                Vector(
+                  VonMember("moduleName", VonStr(moduleName)),
+                  VonMember(
+                    "exportedNameToExportee",
+                    VonArray(
+                      None,
+                      exportedNameToExportee.toVector.map({ case (exportedName, (packageCoord, fullName)) =>
+                        VonObject(
+                          "Entry",
+                          None,
+                          Vector(
+                            VonMember("exportedName", VonStr(exportedName)),
+                            VonMember("module", VonStr(moduleName)),
+                            VonMember(
+                              "packageSteps",
+                              VonArray(
+                                None,
+                                packageCoord.packages.map(VonStr).toVector)),
+                            VonMember("fullName", VonStr(fullName.toReadableString))))
+                      })))))
+            }))),
+        VonMember(
           "fullNameToExportedNames",
           VonArray(
             None,
@@ -52,6 +88,35 @@ object VonHammer {
                     VonArray(
                       None,
                       exportedNames.map(VonStr).toVector))))
+            }))),
+        VonMember(
+          "moduleNameToExternedNameToExtern",
+          VonArray(
+            None,
+            moduleNameToExternedNameToExtern.toVector.map({ case (moduleName, externedNameToExtern) =>
+              VonObject(
+                "Entry",
+                None,
+                Vector(
+                  VonMember("moduleName", VonStr(moduleName)),
+                  VonMember(
+                    "externedNameToExtern",
+                    VonArray(
+                      None,
+                      externedNameToExtern.toVector.map({ case (externedName, (packageCoord, fullName)) =>
+                        VonObject(
+                          "Entry",
+                          None,
+                          Vector(
+                            VonMember("externedName", VonStr(externedName)),
+                            VonMember("module", VonStr(moduleName)),
+                            VonMember(
+                              "packageSteps",
+                              VonArray(
+                                None,
+                                packageCoord.packages.map(VonStr).toVector)),
+                            VonMember("fullName", VonStr(fullName.toReadableString))))
+                      })))))
             }))),
         VonMember(
           "regions",
@@ -1067,9 +1132,9 @@ object VonHammer {
           Vector(
             VonMember(humanName, VonStr(humanName))))
       }
-      case GlobalNamespaceName2() => {
+      case GlobalPackageName2() => {
         VonObject(
-          "GlobalNamespaceName",
+          "GlobalPackageName",
           None,
           Vector())
       }

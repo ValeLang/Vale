@@ -49,7 +49,7 @@ case class ExportAsP(
 case class ImportP(
   range: Range,
   moduleName: NameP,
-  namespaceSteps: List[NameP],
+  packageSteps: List[NameP],
   importeeName: NameP)
 
 sealed trait ICitizenAttributeP
@@ -58,13 +58,13 @@ case class WeakableP(range: Range) extends ICitizenAttributeP
 case class SealedP(range: Range) extends ICitizenAttributeP
 
 case class StructP(
-                    range: Range,
-                    name: NameP,
-                    attributes: List[ICitizenAttributeP],
-                    mutability: MutabilityP,
-                    identifyingRunes: Option[IdentifyingRunesP],
-                    templateRules: Option[TemplateRulesP],
-                    members: StructMembersP)
+  range: Range,
+  name: NameP,
+  attributes: List[ICitizenAttributeP],
+  mutability: MutabilityP,
+  identifyingRunes: Option[IdentifyingRunesP],
+  templateRules: Option[TemplateRulesP],
+  members: StructMembersP)
 
 case class StructMembersP(
   range: Range,

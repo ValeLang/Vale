@@ -4,7 +4,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.{IEnvironment, NamespaceEnvironment}
+import net.verdagon.vale.templar.env.{IEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{FileCoordinate, vassert, vfail, vimpl, vwat}
@@ -43,7 +43,7 @@ object NameHammer {
       case ExternFunctionName2(humanName, params) => humanName
       case FunctionName2(humanName, templateArgs, params) => humanName
       case FunctionTemplateName2(humanName, codeLoc) => humanName
-      case GlobalNamespaceName2() => vwat() // Does this ever make it to hammer?
+      case GlobalPackageName2() => vwat() // Does this ever make it to hammer?
       case ImmConcreteDestructorName2(kind) => "immConcreteDestructor"
       case ImmConcreteDestructorTemplateName2() => "immConcreteDestructorTemplate"
       case ImmDropName2(kind) => "immDrop"
@@ -113,13 +113,13 @@ object NameHammer {
   }
 
   def translateFileCoordinate(coord: FileCoordinate): VonObject = {
-    val FileCoordinate(module, namespace, filename) = coord
+    val FileCoordinate(module, paackage, filename) = coord
     VonObject(
       "CodeLocation",
       None,
       Vector(
         VonMember("module", VonStr(module)),
-        VonMember("namespace", VonArray(None, namespace.map(VonStr).toVector)),
+        VonMember("paackage", VonArray(None, paackage.map(VonStr).toVector)),
         VonMember("filename", VonStr(filename))))
   }
 }

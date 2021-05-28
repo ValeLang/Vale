@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vcurious, vfail, vimpl}
 import net.verdagon.von.{IVonData, JsonSyntax, VonArray, VonMember, VonObject, VonPrinter, VonStr, VonSyntax}
 
 import scala.collection.immutable.ListMap
@@ -37,7 +37,9 @@ case class ProgramH(
     // which should be called when we drop a reference to an immutable object.
     immDestructorsByKind: Map[ReferendH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    fullNameToExportedNames: Map[FullNameH, List[String]],
+    moduleNameToExportedNameToExportee: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
+    // Translations for backends to use if they need to export a name.
+    moduleNameToExternNameToExtern: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
     // All the regions and their referends. There will always be one in here
     // since every program has at least one region.
     regions: List[RegionH]) {
@@ -55,10 +57,19 @@ case class ProgramH(
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
     val matches =
-      fullNameToExportedNames.filter(_._2 == readableName).keys ++
-        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName)
+        (List() ++
+          (moduleNameToExportedNameToExportee.flatMap({
+          case (moduleName, exportedNameToExportee) => {
+            exportedNameToExportee.get(readableName) match {
+              case None => List()
+              case Some((packageCoord, exporteeFullName)) => List(exporteeFullName)
+            }
+          }
+        })) ++
+        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName))
+          .distinct
+    vassert(matches.nonEmpty)
     vassert(matches.size <= 1)
-    vassert(matches.size >= 1)
     functions.find(_.prototype.fullName == matches.head).get
   }
 

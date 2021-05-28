@@ -14,7 +14,7 @@ trait IEnvironment {
     "#Environment"
   }
   def getParentEnv(): Option[IEnvironment]
-  def globalEnv: NamespaceEnvironment[IName2]
+  def globalEnv: PackageEnvironment[IName2]
   def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata]
   def getNearestTemplataWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): Option[ITemplata]
   def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
@@ -27,7 +27,7 @@ trait IEnvironmentBox {
   override def toString: String = {
     "#Environment"
   }
-  def globalEnv: NamespaceEnvironment[IName2]
+  def globalEnv: PackageEnvironment[IName2]
   def getAllTemplatasWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): List[ITemplata]
   def getNearestTemplataWithAbsoluteName2(name: IName2, lookupFilter: Set[ILookupContext]): Option[ITemplata]
   def getAllTemplatasWithName(profiler: IProfiler, name: IImpreciseNameStepA, lookupFilter: Set[ILookupContext]): List[ITemplata]
@@ -39,7 +39,7 @@ sealed trait ILookupContext
 case object TemplataLookupContext extends ILookupContext
 case object ExpressionLookupContext extends ILookupContext
 
-case class NamespaceEnvironment[+T <: IName2](
+case class PackageEnvironment[+T <: IName2](
   maybeParentEnv: Option[IEnvironment],
   fullName: FullName2[T],
   templatas: TemplatasStore
@@ -49,7 +49,7 @@ case class NamespaceEnvironment[+T <: IName2](
     case Some(parentEnv) => vassert(fullName.steps.startsWith(parentEnv.fullName.steps))
   }
 
-  override def globalEnv: NamespaceEnvironment[IName2] = {
+  override def globalEnv: PackageEnvironment[IName2] = {
     maybeParentEnv match {
       case None => this
       case Some(parentEnv) => parentEnv.globalEnv
@@ -81,22 +81,22 @@ case class NamespaceEnvironment[+T <: IName2](
   def addUnevaluatedFunction(
     useOptimization: Boolean,
     function: FunctionA
-  ): NamespaceEnvironment[T] = {
-    NamespaceEnvironment(
+  ): PackageEnvironment[T] = {
+    PackageEnvironment(
       maybeParentEnv,
       fullName,
       templatas.addUnevaluatedFunction(useOptimization, function))
   }
 
-  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): NamespaceEnvironment[T] = {
-    NamespaceEnvironment(
+  def addEntry(useOptimization: Boolean, name: IName2, entry: IEnvEntry): PackageEnvironment[T] = {
+    PackageEnvironment(
       maybeParentEnv,
       fullName,
       templatas.addEntry(useOptimization, name, entry))
   }
 
-  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): NamespaceEnvironment[T] = {
-    NamespaceEnvironment(
+  def addEntries(useOptimization: Boolean, newEntries: Map[IName2, List[IEnvEntry]]): PackageEnvironment[T] = {
+    PackageEnvironment(
       maybeParentEnv,
       fullName,
       templatas.addEntries(useOptimization: Boolean, newEntries))
@@ -118,10 +118,10 @@ case class TemplatasStore(
         FunctionTemplata(env, func)
       }
       case StructEnvEntry(struct) => {
-        StructTemplata(NamespaceEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), struct)
+        StructTemplata(PackageEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), struct)
       }
       case InterfaceEnvEntry(interface) => {
-        InterfaceTemplata(NamespaceEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), interface)
+        InterfaceTemplata(PackageEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), interface)
       }
       case ImplEnvEntry(impl) => ImplTemplata(env, impl)
       case TemplataEnvEntry(templata) => templata

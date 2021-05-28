@@ -462,7 +462,7 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupStruct("Moo")
-    moo.attributes.contains(Export2) shouldEqual true
+    moo.attributes.exists({ case Export2(_) => true }) shouldEqual true
   }
 
   test("Tests exporting interface") {
@@ -472,7 +472,7 @@ class TemplarTests extends FunSuite with Matchers {
         |""".stripMargin)
     val temputs = compile.expectTemputs()
     val moo = temputs.lookupInterface("IMoo")
-    moo.attributes.contains(Export2) shouldEqual true
+    moo.attributes.exists({ case Export2(_) => true }) shouldEqual true
   }
 
   test("Tests stamping a struct and its implemented interface from a function param") {
@@ -815,7 +815,7 @@ class TemplarTests extends FunSuite with Matchers {
   test("Lambda inside template") {
     // This originally didn't work because both helperFunc<int> and helperFunc<Str>
     // made a closure struct called helperFunc:lam1, which collided.
-    // This is what spurred namespace support.
+    // This is what spurred paackage support.
 
     val compile = TemplarTestCompilation.test(
       """

@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.citizen.{StructTemplar, StructTemplarCore}
-import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, IEnvironment, NamespaceEnvironment}
+import net.verdagon.vale.templar.env.{FunctionEnvironment, FunctionEnvironmentBox, IEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.function.{DestructorTemplar, FunctionTemplar}
 import net.verdagon.vale.vassert
 

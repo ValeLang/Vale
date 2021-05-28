@@ -94,7 +94,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving to method") {
-    val program1 = compile("fn main() int export { x = 4; x^.doBlarks(); }")
+    val program1 = compile("fn main() int export { x = 4; (x).doBlarks(); }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -577,7 +577,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  m = Marine();
-        |  { m.shout() }();
+        |  { m.shout() }!();
         |}
       """.stripMargin)
     val scoutput = program1
@@ -602,7 +602,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     val program1 = compile(
       """
         |fn main() int export {
-        |  { print(_) }(3);
+        |  { print(_) }!(3);
         |}
       """.stripMargin)
     val scoutput = program1

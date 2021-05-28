@@ -15,6 +15,7 @@ object Builtins {
       "print" -> "print.vale",
       "panic" -> "panic.vale",
       "opt" -> "opt.vale",
+      "result" -> "result.vale",
       "sameinstance" -> "sameinstance.vale")
 
   def load(resourceFilename: String): String = {

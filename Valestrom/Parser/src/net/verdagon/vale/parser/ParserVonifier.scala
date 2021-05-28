@@ -754,6 +754,14 @@ object ParserVonifier {
             VonMember("argExprs", VonArray(None, argExprs.map(vonifyExpression).toVector)),
             VonMember("callableTargetOwnership", vonifyLoadAs(callableTargetOwnership))))
       }
+      case PackPE(range, innersPE) => {
+        VonObject(
+          "Pack",
+          None,
+          Vector(
+            VonMember("range", vonifyRange(range)),
+            VonMember("innerExprs", VonArray(None, innersPE.map(vonifyExpression).toVector))))
+      }
       case MethodCallPE(range, inline, subjectExpr, operatorRange, subjectTargetOwnership, isMapCall, methodLookup, argExprs) => {
         VonObject(
           "MethodCall",

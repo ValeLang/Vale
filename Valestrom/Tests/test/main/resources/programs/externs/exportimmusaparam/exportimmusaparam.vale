@@ -5,7 +5,7 @@ rules(A Ref(_, _, Array<_, _>)) {
   i! = 0;
   l = len(&arr);
   while (i < l) {
-    func(arr[i]);
+    func!(arr[i]);
     set i = i + 1;
   }
 }

@@ -196,6 +196,12 @@ object ExpressionScout {
           scoutExpressionAndCoerce(stackFrame0, innerPE, UseP)
         (stackFrame1, NormalResult(evalRange(range), DestructSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
+      case PackPE(range, innersPE) => {
+        vassert(innersPE.size == 1)
+        val (stackFrame1, inner1, innerSelfUses, innerChildUses) =
+          scoutExpressionAndCoerce(stackFrame0, innersPE.head, UseP)
+        (stackFrame1, NormalResult(evalRange(range), inner1), innerSelfUses, innerChildUses)
+      }
       case FunctionCallPE(range, inline, _, isMapCall, callablePE, args, borrowCallable) => {
         val (stackFrame1, callable1, callableSelfUses, callableChildUses) =
           scoutExpressionAndCoerce(stackFrame0, callablePE, borrowCallable)

@@ -57,7 +57,7 @@ fn display(
       else {
         goblins.keys().each((key){
           goblin? = goblins.get(key);
-          goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+          goblin = (goblin?).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
           if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
             set charToPrint = "g";
@@ -102,7 +102,7 @@ fn goblinAt?(
   col int)
 bool {
   a = goblins.get(goblinKey);
-  b = a^.get();
+  b = (a).get();
   (goblinCol, goblinRow) = b.location.values;
   ret and(row == goblinRow, col == goblinCol);
 }

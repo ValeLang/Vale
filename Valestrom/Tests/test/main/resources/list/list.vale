@@ -97,5 +97,5 @@ fn remove<E>(list &!List<E>, removeAtIndex int) E {
 
   set list.size = list.size - 1;
 
-  ret temp^.get();
+  ret (temp).get();
 }

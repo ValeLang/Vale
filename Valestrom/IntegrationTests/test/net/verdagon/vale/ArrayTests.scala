@@ -376,7 +376,7 @@ class ArrayTests extends FunSuite with Matchers {
         |fn myFunc<F>(generator F) T
         |rules(T Ref, Prot("__call", (F, int), T))
         |{
-        |  generator(9)
+        |  generator!(9)
         |}
         |
         |struct IntBox {

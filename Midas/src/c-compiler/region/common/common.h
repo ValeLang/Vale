@@ -578,7 +578,7 @@ Ref normalLocalLoad(
 Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore);
 
 
-Ref regularInnerAsSubtype(
+Ref regularDowncast(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,

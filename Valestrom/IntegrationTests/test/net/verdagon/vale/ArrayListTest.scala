@@ -158,8 +158,8 @@ class ArrayListTest extends FunSuite with Matchers {
           |  lam = {
           |    set m = Marine(9);
           |  };
-          |  lam();
-          |  lam();
+          |  lam!();
+          |  lam!();
           |  = m.hp;
           |}
         """.stripMargin)
@@ -179,10 +179,10 @@ class ArrayListTest extends FunSuite with Matchers {
         |fn main() int export {
         |  m! Opt<Marine> = Some(Marine(6));
         |  lam = {
-        |    m2 = (set m = None<Marine>())^.get();
+        |    m2 = (set m = None<Marine>()).get();
         |    = m2.hp;
         |  };
-        |  = lam();
+        |  = lam!();
         |}
       """.stripMargin)
 

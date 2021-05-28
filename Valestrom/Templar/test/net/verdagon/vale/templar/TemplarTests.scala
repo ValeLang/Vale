@@ -925,6 +925,26 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when moving from inside a while") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |struct Marine {
+        |  ammo int;
+        |}
+        |
+        |fn main() int export {
+        |  m = Marine(7);
+        |  while (false) {
+        |    drop(m);
+        |  }
+        |  = 42;
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantUnstackifyOutsideLocalFromInsideWhile(_, CodeVarName2("m"))) =>
+    }
+  }
+
   test("Cant subscript non-subscriptable type") {
     val compile = TemplarTestCompilation.test(
       """
@@ -1040,7 +1060,7 @@ class TemplarTests extends FunSuite with Matchers {
           |  base = Base("Zion");
           |  ship = Spaceship("Neb", &&base);
           |  printShipBase(&ship);
-          |  base^.drop(); // Destroys base.
+          |  (base).drop(); // Destroys base.
           |  printShipBase(&ship);
           |}
           |""".stripMargin)
@@ -1118,6 +1138,11 @@ class TemplarTests extends FunSuite with Matchers {
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
+        RangeS.testZero,
+        CodeVarName2("firefly")))
+      .nonEmpty)
+    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
+      CantUnstackifyOutsideLocalFromInsideWhile(
         RangeS.testZero,
         CodeVarName2("firefly")))
       .nonEmpty)

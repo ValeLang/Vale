@@ -480,14 +480,14 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["sourceType"]),
         expression["sourceKnownLive"],
         readReferend(cache, expression["targetReferend"]),
-        readPrototype(cache, expression["someConstructor"]),
-        readReference(cache, expression["someType"]),
-        readStructReferend(cache, expression["someReferend"]),
-        readPrototype(cache, expression["noneConstructor"]),
-        readReference(cache, expression["noneType"]),
-        readStructReferend(cache, expression["noneReferend"]),
-        readReference(cache, expression["resultOptType"]),
-        readInterfaceReferend(cache, expression["resultOptReferend"]));
+        readPrototype(cache, expression["okConstructor"]),
+        readReference(cache, expression["okType"]),
+        readStructReferend(cache, expression["okReferend"]),
+        readPrototype(cache, expression["errConstructor"]),
+        readReference(cache, expression["errType"]),
+        readStructReferend(cache, expression["errReferend"]),
+        readReference(cache, expression["resultResultType"]),
+        readInterfaceReferend(cache, expression["resultResultReferend"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);

@@ -252,17 +252,18 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   for (auto p : cByExportedName) {
     auto exportedName = p.first;
     auto exportCode = p.second;
-    std::string filepath = "";
-    if (!globalState->opt->exportsDir.empty()) {
-      filepath = globalState->opt->exportsDir + "/";
+    if (globalState->opt->outputDir.empty()) {
+      std::cerr << "Must specify --output-dir!" << std::endl;
+      assert(false);
     }
+    std::string filepath = globalState->opt->outputDir + "/";
     filepath += exportedName + ".h";
     std::ofstream out(filepath, std::ofstream::out);
     if (!out) {
       std::cerr << "Couldn't make file '" << filepath << std::endl;
       exit(1);
     }
-    std::cout << "Writing " << filepath << std::endl;
+    // std::cout << "Writing " << filepath << std::endl;
 
     out << "#ifndef VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
     out << "#define VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
@@ -864,7 +865,7 @@ void generateModule(GlobalState *globalState) {
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
-    auto outputFilePath = fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(), "ll");
+    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(), "ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
     if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
       std::cerr << "Could not emit pre-ir file: " << err << std::endl;
@@ -901,7 +902,7 @@ void generateModule(GlobalState *globalState) {
 
   // Serialize the LLVM IR, if requested
   if (globalState->opt->print_llvmir) {
-    auto outputFilePath = fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(), "opt.ll");
+    auto outputFilePath = fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(), "opt.ll");
     std::cout << "Printing file " << outputFilePath << std::endl;
     if (LLVMPrintModuleToFile(globalState->mod, outputFilePath.c_str(), &err) != 0) {
       std::cerr << "Could not emit ir file: " << err << std::endl;
@@ -912,10 +913,10 @@ void generateModule(GlobalState *globalState) {
   // Transform IR to target's ASM and OBJ
   if (globalState->machine) {
     auto objpath =
-        fileMakePath(globalState->opt->output.c_str(), globalState->opt->srcNameNoExt.c_str(),
+        fileMakePath(globalState->opt->outputDir.c_str(), globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wasm" : objext);
     auto asmpath =
-        fileMakePath(globalState->opt->output.c_str(),
+        fileMakePath(globalState->opt->outputDir.c_str(),
             globalState->opt->srcNameNoExt.c_str(),
             globalState->opt->wasm ? "wat" : asmext);
     generateOutput(

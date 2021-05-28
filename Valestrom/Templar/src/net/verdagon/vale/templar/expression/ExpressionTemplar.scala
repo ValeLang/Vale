@@ -352,7 +352,7 @@ class ExpressionTemplar(
           (ArgLookup2(index, paramCoord), Set())
         }
         case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
-          vassert(callableTargetOwnership == LendConstraintP(None))
+//          vassert(callableTargetOwnership == LendConstraintP(Some(ReadonlyP)))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -366,7 +366,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, TemplateSpecifiedLookupAE(_, name, templateArgTemplexesS, callableTargetOwnership), argsExprs1) => {
-          vassert(callableTargetOwnership == LendConstraintP(None))
+//          vassert(callableTargetOwnership == LendConstraintP(None))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsExprs1)
           val callExpr2 =
@@ -388,7 +388,7 @@ class ExpressionTemplar(
           (callExpr2, returnsFromArgs)
         }
         case FunctionCallAE(range, OutsideLoadAE(_, name, callableTargetOwnership), argsPackExpr1) => {
-          vassert(callableTargetOwnership == LendConstraintP(None))
+//          vassert(callableTargetOwnership == LendConstraintP(Some(ReadonlyP)))
           val (argsExprs2, returnsFromArgs) =
             evaluateAndCoerceToReferenceExpressions(temputs, fate, argsPackExpr1)
           val callExpr2 =
@@ -1086,16 +1086,16 @@ class ExpressionTemplar(
     })
   }
 
-  def getOption(temputs: Temputs, fate: FunctionEnvironment, range: RangeS, borrowCoord: Coord):
+  def getOption(temputs: Temputs, fate: FunctionEnvironment, range: RangeS, containedCoord: Coord):
   (Coord, Prototype2, Prototype2) = {
     val interfaceTemplata =
       fate.getNearestTemplataWithName(CodeTypeNameA("Opt"), Set(TemplataLookupContext)) match {
         case Some(it@InterfaceTemplata(_, _)) => it
         case _ => vfail()
       }
-    val optBorrowInterfaceRef =
-      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(borrowCoord)))
-    val ownOptBorrowCoord = Coord(Own, Readwrite, optBorrowInterfaceRef)
+    val optInterfaceRef =
+      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(containedCoord)))
+    val ownOptCoord = Coord(Own, Readwrite, optInterfaceRef)
 
     val someConstructorTemplata =
       fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("Some"), Set(ExpressionLookupContext)) match {
@@ -1104,7 +1104,7 @@ class ExpressionTemplar(
       }
     val someConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, someConstructorTemplata, List(CoordTemplata(borrowCoord)), List(ParamFilter(borrowCoord, None))) match {
+        temputs, range, someConstructorTemplata, List(CoordTemplata(containedCoord)), List(ParamFilter(containedCoord, None))) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
@@ -1116,11 +1116,49 @@ class ExpressionTemplar(
       }
     val noneConstructor =
       delegate.evaluateTemplatedFunctionFromCallForPrototype(
-        temputs, range, noneConstructorTemplata, List(CoordTemplata(borrowCoord)), List()) match {
+        temputs, range, noneConstructorTemplata, List(CoordTemplata(containedCoord)), List()) match {
         case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
         case EvaluateFunctionSuccess(p) => p
       }
-    (ownOptBorrowCoord, someConstructor, noneConstructor)
+    (ownOptCoord, someConstructor, noneConstructor)
+  }
+
+  def getResult(temputs: Temputs, fate: FunctionEnvironment, range: RangeS, containedSuccessCoord: Coord, containedFailCoord: Coord):
+  (Coord, Prototype2, Prototype2) = {
+    val interfaceTemplata =
+      fate.getNearestTemplataWithName(CodeTypeNameA("Result"), Set(TemplataLookupContext)) match {
+        case Some(it@InterfaceTemplata(_, _)) => it
+        case _ => vfail()
+      }
+    val resultInterfaceRef =
+      structTemplar.getInterfaceRef(temputs, range, interfaceTemplata, List(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)))
+    val ownResultCoord = Coord(Own, Readwrite, resultInterfaceRef)
+
+    val okConstructorTemplata =
+      fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("Ok"), Set(ExpressionLookupContext)) match {
+        case Some(ft@FunctionTemplata(_, _)) => ft
+        case _ => vwat();
+      }
+    val okConstructor =
+      delegate.evaluateTemplatedFunctionFromCallForPrototype(
+        temputs, range, okConstructorTemplata, List(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), List(ParamFilter(containedSuccessCoord, None))) match {
+        case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
+        case EvaluateFunctionSuccess(p) => p
+      }
+
+    val errConstructorTemplata =
+      fate.getNearestTemplataWithName(GlobalFunctionFamilyNameA("Err"), Set(ExpressionLookupContext)) match {
+        case Some(ft@FunctionTemplata(_, _)) => ft
+        case _ => vwat();
+      }
+    val errConstructor =
+      delegate.evaluateTemplatedFunctionFromCallForPrototype(
+        temputs, range, errConstructorTemplata, List(CoordTemplata(containedSuccessCoord), CoordTemplata(containedFailCoord)), List(ParamFilter(containedFailCoord, None))) match {
+        case seff@EvaluateFunctionFailure(_) => throw CompileErrorExceptionT(RangedInternalErrorT(range, seff.toString))
+        case EvaluateFunctionSuccess(p) => p
+      }
+
+    (ownResultCoord, okConstructor, errConstructor)
   }
 
   private def maybeNarrowPermission(range: RangeS, innerExpr2: ReferenceExpression2, permission: PermissionP) = {

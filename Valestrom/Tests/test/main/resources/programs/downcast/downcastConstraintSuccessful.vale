@@ -8,9 +8,9 @@ struct Raza { fuel int; }
 impl IShip for Raza;
 
 fn moo(ship IShip) int {
-  maybeRaza Opt<&Raza> = ship.as<Raza>();
-  = if (not maybeRaza.isEmpty()) {
-      = maybeRaza.get().fuel;
+  maybeRaza Result<&Raza, &IShip> = ship.as<Raza>();
+  = if (maybeRaza.is_ok()) {
+      = maybeRaza.expect().fuel;
     } else {
       72
     }

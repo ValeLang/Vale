@@ -4,7 +4,7 @@ import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullPr
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.FileP
+import net.verdagon.vale.parser.{FailedParse, FileP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.{ICompileErrorT, TemplarCompilation, TemplarCompilationOptions}
 
@@ -34,15 +34,11 @@ class HammerCompilation(
         options.useOptimization))
   var hamutsCache: Option[ProgramH] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = templarCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = templarCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = templarCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = templarCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = templarCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = templarCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = templarCompilation.getScoutput()
-  def expectScoutput(): FileCoordinateMap[ProgramS] = templarCompilation.expectScoutput()
-
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = templarCompilation.getAstrouts()
-  def expectAstrouts(): PackageCoordinateMap[ProgramA] = templarCompilation.expectAstrouts()
-
   def getTemputs(): Result[Hinputs, ICompileErrorT] = templarCompilation.getTemputs()
   def expectTemputs(): Hinputs = templarCompilation.expectTemputs()
 
@@ -50,7 +46,7 @@ class HammerCompilation(
     hamutsCache match {
       case Some(hamuts) => hamuts
       case None => {
-        val hamuts = Hammer.translate(expectTemputs())
+        val hamuts = Hammer.translate(templarCompilation.expectTemputs())
         VonHammer.vonifyProgram(hamuts)
         hamutsCache = Some(hamuts)
         hamuts

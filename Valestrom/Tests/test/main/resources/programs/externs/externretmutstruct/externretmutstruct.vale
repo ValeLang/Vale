@@ -1,12 +1,12 @@
-struct Result export {
+struct Thing export {
   a str;
   b int;
 }
-fn makeResult(a str, b int) Result export {
-  Result(a, b)
+fn makeThing(a str, b int) Thing export {
+  Thing(a, b)
 }
 
-fn runExtCommand() Result extern;
+fn runExtCommand() Thing extern;
 
 fn main() int export {
   res = runExtCommand();

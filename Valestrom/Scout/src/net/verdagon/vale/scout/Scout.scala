@@ -409,16 +409,16 @@ class ScoutCompilation(
   var parserCompilation = new ParserCompilation(packagesToBuild, packageToContentsResolver)
   var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = parserCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = parserCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = parserCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = parserCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = parserCompilation.getVpstMap()
 
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = {
     scoutputCache match {
       case Some(scoutput) => Ok(scoutput)
       case None => {
         val scoutput =
-          getParseds().map({ case (fileCoordinate, (code, commentsAndRanges)) =>
+          parserCompilation.expectParseds().map({ case (fileCoordinate, (code, commentsAndRanges)) =>
             Scout.scoutProgram(fileCoordinate, code) match {
               case Err(e) => return Err(e)
               case Ok(p) => p

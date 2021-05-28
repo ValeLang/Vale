@@ -72,10 +72,10 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Lambda") {
-    val program1 = compile("fn main() int export { {_ + _}(4, 6) }")
+    val program1 = compile("fn main() int export { {_ + _}!(4, 6) }")
 
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(expr)))) = program1.lookupFunction("main").body
-    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), LendConstraintP(None)), _) = expr
+    val FunctionCallSE(_, OwnershippedSE(_,FunctionSE(lambda@FunctionS(_, _, _, _, _, _, _, _, _, _, _, _)), LendConstraintP(Some(ReadwriteP))), _) = expr
     lambda.identifyingRunes match {
       case List(MagicParamRuneS(mp1), MagicParamRuneS(mp2)) => {
         vassert(mp1 != mp2)
@@ -188,12 +188,12 @@ class ScoutTests extends FunSuite with Matchers {
   }
 
   test("Moving method call") {
-    val program1 = compile("fn main() int export { x = 4; = x^.shout(); }")
+    val program1 = compile("fn main() int export { x = 4; = (x).shout(); }")
     val main = program1.lookupFunction("main")
 
     val CodeBody1(BodySE(_, _, block)) = main.body
     block match {
-      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout", _, _), List(LocalLoadSE(_, _, MoveP))))) =>
+      case BlockSE(_, _, List(_, FunctionCallSE(_, OutsideLoadSE(_, "shout", _, _),List(LocalLoadSE(_,CodeVarNameS("x"), UseP))))) =>
     }
   }
 

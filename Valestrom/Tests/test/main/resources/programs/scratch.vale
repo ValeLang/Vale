@@ -1193,11 +1193,8 @@ struct MethodCallPE {
   range Range;
   // The thing to the left of the . like mySpaceship above.
   callableExpr IExpressionPE;
-  // The range of the . (or the *. or the ^.)
+  // The range of the . (or the *.).
   operatorRange Range;
-  // The ownership we want to take the callable as. For example, we could do `mySpaceship^.explode(4, 5)`
-  // if `explode` expects an owning reference.
-  callableTargetOwnership OwnershipP;
   // Whether its a *. or just a .
   isMapCall bool;
   // The name of the method we're calling, like `launch` above. Could have template args, like

@@ -1,6 +1,12 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vpass
+import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, vpass}
+
+case class FailedParse(
+  codeMapSoFar: FileCoordinateMap[String],
+  fileCoord: FileCoordinate,
+  error: IParseError,
+)
 
 sealed trait IParseError
 case class UnrecognizedTopLevelThingError(pos: Int) extends IParseError

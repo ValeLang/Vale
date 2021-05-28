@@ -668,7 +668,7 @@ object ParserCompilation {
   def loadAndParse(
     neededPackages: List[PackageCoordinate],
     resolver: IPackageResolver[Map[String, String]]):
-  (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
+  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]), FailedParse] = {
     vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
 
     neededPackages.foreach(x => println("Originally requested package: " + x))
@@ -681,7 +681,7 @@ object ParserCompilation {
     alreadyFoundCodeMap: FileCoordinateMap[String],
     alreadyParsedProgramPMap: FileCoordinateMap[(FileP, List[(Int, Int)])],
     resolver: IPackageResolver[Map[String, String]]):
-  (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
+  Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]), FailedParse] = {
     val neededPackageCoords =
       neededPackages ++
         alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
@@ -697,7 +697,7 @@ object ParserCompilation {
         })
 
     if (neededPackageCoords.isEmpty) {
-      return (alreadyFoundCodeMap, alreadyParsedProgramPMap)
+      return Ok((alreadyFoundCodeMap, alreadyParsedProgramPMap))
     }
 
     val neededCodeMapFlat =
@@ -710,8 +710,6 @@ object ParserCompilation {
             case Some(fac) => fac
           }
 
-        println("Found package " + neededPackageCoord + ": " + filepathsAndContents)
-
         // Note that filepathsAndContents *can* be empty, see ImportTests.
         List((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
       })
@@ -719,13 +717,13 @@ object ParserCompilation {
       neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
     val neededCodeMap = FileCoordinateMap(grouped)
 
+    val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
+
     val newProgramPMap =
       neededCodeMap.map({ case (fileCoord, code) =>
         Parser.runParserForProgramAndCommentRanges(code) match {
           case ParseFailure(err) => {
-            println(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, err))
-            System.exit(1)
-            vfail()
+            return Err(FailedParse(combinedCodeMap, fileCoord, err))
           }
           case ParseSuccess((program0, commentsRanges)) => {
             val von = ParserVonifier.vonifyFile(program0)
@@ -738,7 +736,6 @@ object ParserCompilation {
         }
       })
 
-    val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
     val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
 
     loadAndParseIteration(List(), combinedCodeMap, combinedProgramPMap, resolver)
@@ -752,36 +749,65 @@ class ParserCompilation(
   var vpstMapCache: Option[FileCoordinateMap[String]] = None
   var parsedsCache: Option[FileCoordinateMap[(FileP, List[(Int, Int)])]] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = {
-    getParseds()
-    codeMapCache.get
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = {
+    getParseds() match {
+      case Ok(_) => Ok(codeMapCache.get)
+      case Err(e) => Err(e)
+    }
   }
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = {
+  def expectCodeMap(): FileCoordinateMap[String] = {
+    getCodeMap().getOrDie()
+  }
+
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = {
     parsedsCache match {
-      case Some(parseds) => parseds
+      case Some(parseds) => Ok(parseds)
       case None => {
         // Also build the "" module, which has all the builtins
         val (codeMap, programPMap) =
-          ParserCompilation.loadAndParse(packagesToBuild, packageToContentsResolver)
+          ParserCompilation.loadAndParse(packagesToBuild, packageToContentsResolver) match {
+            case Ok((codeMap, programPMap)) => (codeMap, programPMap)
+            case Err(e) => return Err(e)
+          }
         codeMapCache = Some(codeMap)
         parsedsCache = Some(programPMap)
-        parsedsCache.get
+        Ok(parsedsCache.get)
       }
     }
   }
+  def expectParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = {
+    getParseds() match {
+      case Err(FailedParse(codeMap, fileCoord, err)) => {
+        println(ParseErrorHumanizer.humanize(codeMap, fileCoord, err))
+        vfail()
+      }
+      case Ok(x) => x
+    }
+  }
 
-  def getVpstMap(): FileCoordinateMap[String] = {
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = {
     vpstMapCache match {
-      case Some(vpst) => vpst
+      case Some(vpst) => Ok(vpst)
       case None => {
-        getParseds().map({ case (fileCoord, (programP, commentRanges)) =>
-          val von = ParserVonifier.vonifyFile(programP)
-          val json = new VonPrinter(JsonSyntax, 120).print(von)
-          json
-        })
+        getParseds() match {
+          case Err(e) => Err(e)
+          case Ok(parseds) => {
+            Ok(
+              parseds.map({ case (fileCoord, (programP, commentRanges)) =>
+                val von = ParserVonifier.vonifyFile(programP)
+                val json = new VonPrinter(JsonSyntax, 120).print(von)
+                json
+              }))
+          }
+        }
       }
     }
+  }
+  def expectVpstMap(): FileCoordinateMap[String] = {
+    getVpstMap().getOrDie()
   }
 }
 
-case class InputException(message: String) extends Throwable
+case class InputException(message: String) extends Throwable {
+  override def toString: String = message
+}

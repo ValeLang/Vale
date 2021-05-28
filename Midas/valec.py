@@ -352,12 +352,12 @@ class ValeCompiler:
                 else:
                     namespaces_to_build.append(arg)
 
-            for user_valestrom_input in user_valestrom_inputs:
-                print("Valestrom input: " + user_valestrom_input[0] + ":" + str(user_valestrom_input[1]))
-            for user_vast_file in user_vast_files:
-                print("VAST input: " + str(user_vast_file))
-            for namespace_to_build in namespaces_to_build:
-                print("Namespace to build: " + namespace_to_build)
+            # for user_valestrom_input in user_valestrom_inputs:
+            #     print("Valestrom input: " + user_valestrom_input[0] + ":" + str(user_valestrom_input[1]))
+            # for user_vast_file in user_vast_files:
+            #     print("VAST input: " + str(user_vast_file))
+            # for namespace_to_build in namespaces_to_build:
+            #     print("Namespace to build: " + namespace_to_build)
 
             vast_file = None
             if len(namespaces_to_build) > 0 and len(user_vast_files) == 0:
@@ -393,14 +393,12 @@ class ValeCompiler:
                 sys.exit(1)
 
 
-            print("opening vast: " + str(vast_file))
             with open(str(vast_file), 'r') as vast:
                 json_root = json.loads(vast.read())
                 if "moduleNameToExternedNameToExtern" not in json_root:
                     print("Couldn't find moduleNameToExternedNameToExtern in .vast!")
                     sys.exit(1)
                 module_name_to_externed_name_to_extern = json_root["moduleNameToExternedNameToExtern"]
-                print("big map len: " + str(len(module_name_to_externed_name_to_extern)))
 
                 package_coords_with_externs = []
 

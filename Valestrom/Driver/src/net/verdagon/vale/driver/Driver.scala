@@ -20,17 +20,17 @@ object Driver {
   val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List())
 
   sealed trait IValestromInput {
-    def moduleName: String
+    def packageCoord: PackageCoordinate
   }
-  case class ModulePathInput(moduleName: String, path: String) extends IValestromInput
-  case class DirectFilePathInput(moduleName: String, path: String) extends IValestromInput
+  case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
+    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List())
+  }
+  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput
   case class SourceInput(
       packageCoord: PackageCoordinate,
       // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
       name: String,
-      code: String) extends IValestromInput {
-    override def moduleName = packageCoord.module
-  }
+      code: String) extends IValestromInput
 
   case class Options(
     inputs: List[IValestromInput],
@@ -81,16 +81,27 @@ object Driver {
           parseOpts(opts.copy(mode = Some(value)), tail)
         } else {
           if (value.contains(":")) {
-            val parts = value.split(":")
-            vcheck(parts.size == 2, "Arguments can only have 1 colon. Saw: " + value, InputException)
-            vcheck(parts(0) != "", "Must have a module name before a colon. Saw: " + value, InputException)
-            vcheck(parts(1) != "", "Must have a file path after a colon. Saw: " + value, InputException)
-            val Array(moduleName, path) = parts
+            val packageCoordAndPath = value.split(":")
+            vcheck(packageCoordAndPath.size == 2, "Arguments can only have 1 colon. Saw: " + value, InputException)
+            vcheck(packageCoordAndPath(0) != "", "Must have a module name before a colon. Saw: " + value, InputException)
+            vcheck(packageCoordAndPath(1) != "", "Must have a file path after a colon. Saw: " + value, InputException)
+            val Array(packageCoordStr, path) = packageCoordAndPath
+
+            val packageCoordinate =
+              if (packageCoordStr.contains(".")) {
+                val packageCoordinateParts = packageCoordStr.split("\\.")
+                PackageCoordinate(packageCoordinateParts.head, packageCoordinateParts.tail.toList)
+              } else {
+                PackageCoordinate(packageCoordStr, List())
+              }
             val input =
               if (path.endsWith(".vale") || path.endsWith(".vpst")) {
-                DirectFilePathInput(moduleName, path)
+                DirectFilePathInput(packageCoordinate, path)
               } else {
-                ModulePathInput(moduleName, path)
+                if (packageCoordinate.packages.nonEmpty) {
+                  throw InputException("Cannot define a directory for a specific package, only for a module.")
+                }
+                ModulePathInput(packageCoordinate.module, path)
               }
             parseOpts(opts.copy(inputs = opts.inputs :+ input), tail)
           } else {
@@ -99,7 +110,7 @@ object Driver {
             }
             val parts =
               if (value.contains(".")) {
-                value.split(".").toList
+                value.split("\\.").toList
               } else {
                 List(value)
               }
@@ -136,14 +147,18 @@ object Driver {
   Option[Map[String, String]] = {
     val PackageCoordinate(module, packages) = packageCoord
 
+    println("resolving " + packageCoord + " with inputs:\n" + inputs)
+
     val sourceInputs =
-      inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
+      inputs.zipWithIndex.filter(_._1.packageCoord.module == module).flatMap({
         case (SourceInput(_, name, code), index) if (packages == List()) => {
           // All .vpst and .vale direct inputs are considered part of the root paackage.
           List((index + "(" + name + ")" -> code))
         }
-        case (ModulePathInput(_, modulePath), _) => {
+        case (mpi @ ModulePathInput(_, modulePath), _) => {
+          println("checking with modulepathinput " + mpi)
           val directoryPath = modulePath + packages.map(File.separator + _).mkString("")
+          println("looking in dir " + directoryPath)
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
           if (filesInDirectory == null) {
@@ -152,6 +167,7 @@ object Driver {
           val inputFiles =
             filesInDirectory.filter(_.getName.endsWith(".vale")) ++
               filesInDirectory.filter(_.getName.endsWith(".vpst"))
+          println("found files: " + inputFiles)
           val inputFilePaths = inputFiles.map(_.getPath)
           inputFilePaths.toList.map(filepath => {
             val bufferedSource = Source.fromFile(filepath)

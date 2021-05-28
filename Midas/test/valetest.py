@@ -40,7 +40,6 @@ class ValeTest(unittest.TestCase):
              "--flares",
              "--region-override", region_override,
              "--output-dir", o_files_dir,
-             "--exports-dir", o_files_dir,
              "--add-exports-include-path",
              "-o",
              exe_name] + extra_flags + in_filepaths)

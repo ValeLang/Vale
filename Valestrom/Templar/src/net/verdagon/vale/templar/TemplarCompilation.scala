@@ -19,10 +19,10 @@ case class TemplarCompilationOptions(
 )
 
 class TemplarCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]],
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: TemplarCompilationOptions = TemplarCompilationOptions()) {
-  var astronomerCompilation = new AstronomerCompilation(modulesToBuild, namespaceToContentsResolver)
+  var astronomerCompilation = new AstronomerCompilation(packagesToBuild, packageToContentsResolver)
   var hinputsCache: Option[Hinputs] = None
 
   def getCodeMap(): FileCoordinateMap[String] = astronomerCompilation.getCodeMap()
@@ -31,8 +31,8 @@ class TemplarCompilation(
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = astronomerCompilation.getScoutput()
   def expectScoutput(): FileCoordinateMap[ProgramS] = astronomerCompilation.expectScoutput()
 
-  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = astronomerCompilation.getAstrouts()
-  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = astronomerCompilation.expectAstrouts()
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = astronomerCompilation.getAstrouts()
+  def expectAstrouts(): PackageCoordinateMap[ProgramA] = astronomerCompilation.expectAstrouts()
 
   def getTemputs(): Result[Hinputs, ICompileErrorT] = {
     hinputsCache match {

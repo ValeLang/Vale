@@ -1,6 +1,6 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.{FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinateMap, NullProfiler, Result}
+import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result}
 import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.ProgramH
@@ -20,13 +20,13 @@ case class HammerCompilationOptions(
 )
 
 class HammerCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]],
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: HammerCompilationOptions = HammerCompilationOptions()) {
   var templarCompilation =
     new TemplarCompilation(
-      modulesToBuild,
-      namespaceToContentsResolver,
+      packagesToBuild,
+      packageToContentsResolver,
       TemplarCompilationOptions(
         options.debugOut,
         options.verbose,
@@ -40,8 +40,8 @@ class HammerCompilation(
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = templarCompilation.getScoutput()
   def expectScoutput(): FileCoordinateMap[ProgramS] = templarCompilation.expectScoutput()
 
-  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = templarCompilation.getAstrouts()
-  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = templarCompilation.expectAstrouts()
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = templarCompilation.getAstrouts()
+  def expectAstrouts(): PackageCoordinateMap[ProgramA] = templarCompilation.expectAstrouts()
 
   def getTemputs(): Result[Hinputs, ICompileErrorT] = templarCompilation.getTemputs()
   def expectTemputs(): Hinputs = templarCompilation.expectTemputs()

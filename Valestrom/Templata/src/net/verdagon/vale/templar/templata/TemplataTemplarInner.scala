@@ -660,7 +660,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         case _ => return false
       }
     if (actualCitizenRef.fullName.initSteps != citizenTemplateNameInitSteps) {
-      // Namespaces dont match, bail
+      // Packages dont match, bail
       return false
     }
     actualCitizenRef.fullName.last match {

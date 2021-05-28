@@ -1,7 +1,7 @@
 package net.verdagon.vale.benchmark
 
 import net.verdagon.vale.driver.FullCompilationOptions
-import net.verdagon.vale.{Builtins, FileCoordinateMap, Profiler, RunCompilation, Tests}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Profiler, RunCompilation, Tests}
 
 import scala.collection.immutable.List
 
@@ -10,10 +10,10 @@ object Benchmark {
     val profiler = new Profiler()
     val compile =
       new RunCompilation(
-        List("", FileCoordinateMap.TEST_MODULE),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate.TEST_TLD),
         Builtins.getCodeMap()
           .or(FileCoordinateMap.test(Tests.loadExpected("programs/scratch.vale")))
-          .or(Tests.getNamespaceToResourceResolver),
+          .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions(
           debugOut = (_) => {},
           profiler = profiler,

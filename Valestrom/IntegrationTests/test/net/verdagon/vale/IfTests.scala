@@ -15,7 +15,7 @@ class IfTests extends FunSuite with Matchers {
         |  = if (true) { 3 } else { 5 }
         |}
       """.stripMargin)
-    val programS = compile.expectScoutput().moduleToNamespacesToFilenameToContents("test")(List())("0.vale")
+    val programS = compile.expectScoutput().moduleToPackagesToFilenameToContents("test")(List())("0.vale")
     val main = programS.lookupFunction("main")
     val CodeBody1(BodySE(_, _, BlockSE(_, _, List(IfSE(_, _, _, _))))) = main.body
 

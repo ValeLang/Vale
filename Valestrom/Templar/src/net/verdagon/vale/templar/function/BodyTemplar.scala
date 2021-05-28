@@ -117,7 +117,7 @@ class BodyTemplar(
 
   def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
     attributesA.map({
-      case ExportA => Export2
+      case ExportA(packageCoord) => Export2(packageCoord)
       case UserFunctionA => UserFunction2
       case PureA => Pure2
     })

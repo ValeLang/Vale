@@ -29,8 +29,8 @@ object Reachability {
         }) ||
         func.header.isExport
       })
-    val exposedStructs = structs.filter(_.attributes.contains(Export2))
-    val exposedInterfaces = interfaces.filter(_.attributes.contains(Export2))
+    val exposedStructs = structs.filter(_.attributes.exists({ case Export2(_) => true }))
+    val exposedInterfaces = interfaces.filter(_.attributes.exists({ case Export2(_) => true }))
     val reachables = new Reachables(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     var sizeBefore = 0
     do {

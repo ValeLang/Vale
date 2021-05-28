@@ -15,8 +15,8 @@ object Tests {
     load(resourceFilename).get
   }
 
-  def resolveNamespaceToResource(nsCoord: NamespaceCoordinate): Option[Map[String, String]] = {
-    val directory = (nsCoord.module :: nsCoord.namespaces)
+  def resolvePackageToResource(packageCoord: PackageCoordinate): Option[Map[String, String]] = {
+    val directory = (packageCoord.module :: packageCoord.packages)
     val filename = directory.last + ".vale"
     val filepath = (directory :+ filename).mkString("/")
     load(filepath) match {
@@ -25,6 +25,6 @@ object Tests {
     }
   }
 
-  def getNamespaceToResourceResolver: INamespaceResolver[Map[String, String]]
-  = resolveNamespaceToResource
+  def getPackageToResourceResolver: IPackageResolver[Map[String, String]]
+  = resolvePackageToResource
 }

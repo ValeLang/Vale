@@ -1,5 +1,6 @@
 package net.verdagon.vale
 
+import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.hammer._
 import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReadonlyH, ReferenceH}
 import net.verdagon.vale.{metal => m}
@@ -102,7 +103,8 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupFunction("moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("moo")
+    hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("moo") shouldEqual
+      (PackageCoordinate(FileCoordinateMap.TEST_MODULE, List()), moo.fullName)
   }
 
   test("Tests export struct") {
@@ -112,7 +114,8 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupStruct("Moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo")
+    hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("Moo") shouldEqual
+      (PackageCoordinate(FileCoordinateMap.TEST_MODULE, List()), moo.fullName)
   }
 
   test("Tests export struct twice") {
@@ -123,7 +126,10 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupStruct("Moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo", "Bork")
+    hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("Moo") shouldEqual
+      (PackageCoordinate(FileCoordinateMap.TEST_MODULE, List()), moo.fullName)
+    hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("Bork") shouldEqual
+      (PackageCoordinate(FileCoordinateMap.TEST_MODULE, List()), moo.fullName)
   }
 
   test("Tests export interface") {
@@ -133,6 +139,77 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupInterface("Moo")
-    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo")
+    hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("Moo") shouldEqual
+      (PackageCoordinate(FileCoordinateMap.TEST_MODULE, List()), moo.fullName)
+  }
+
+  test("Tests recovering directory from export") {
+    val compile =
+      new RunCompilation(
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List("someDir", "someOtherDir"))),
+        Builtins.getCodeMap()
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List("someDir", "someOtherDir"), "StructA.vale", "struct StructA export { a int; }"))
+          .or(Tests.getPackageToResourceResolver),
+        FullCompilationOptions())
+    val hamuts = compile.getHamuts()
+
+    hamuts.moduleNameToExportedNameToExportee("moduleA")("StructA") match {
+      case (PackageCoordinate("moduleA", List("someDir", "someOtherDir")), _) =>
+    }
+  }
+
+  test("Tests exports from two modules, different names") {
+    val compile =
+      new RunCompilation(
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List()), PackageCoordinate("moduleB", List())),
+        Builtins.getCodeMap()
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List(), "StructA.vale", "struct StructA export { a int; }")
+              .add("moduleB", List(), "StructB.vale", "struct StructB export { a int; }"))
+          .or(Tests.getPackageToResourceResolver),
+        FullCompilationOptions())
+    val hamuts = compile.getHamuts()
+
+    val fullNameA =
+      hamuts.moduleNameToExportedNameToExportee("moduleA")("StructA") match {
+        case (PackageCoordinate("moduleA", List()), fullName) => fullName
+      }
+
+    val fullNameB =
+      hamuts.moduleNameToExportedNameToExportee("moduleB")("StructB") match {
+        case (PackageCoordinate("moduleB", List()), fullName) => fullName
+      }
+
+    vassert(fullNameA != fullNameB)
+  }
+
+  // Intentional failure, we want these to be invisible to each other and both make it through
+  test("Tests exports from two modules, same name") {
+    val compile =
+      new RunCompilation(
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List()), PackageCoordinate("moduleB", List())),
+        Builtins.getCodeMap()
+          .or(
+            FileCoordinateMap(Map())
+              .add("moduleA", List(), "MyStruct.vale", "struct MyStruct export { a int; }")
+              .add("moduleB", List(), "MyStruct.vale", "struct MyStruct export { a int; }"))
+          .or(Tests.getPackageToResourceResolver),
+        FullCompilationOptions())
+    val hamuts = compile.getHamuts()
+
+    val fullNameA =
+      hamuts.moduleNameToExportedNameToExportee("moduleA")("MyStruct") match {
+        case (PackageCoordinate("moduleA", List()), fullName) => fullName
+      }
+
+    val fullNameB =
+      hamuts.moduleNameToExportedNameToExportee("moduleB")("MyStruct") match {
+        case (PackageCoordinate("moduleB", List()), fullName) => fullName
+      }
+
+    vassert(fullNameA != fullNameB)
   }
 }

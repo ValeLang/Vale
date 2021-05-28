@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.scout.CodeLocationS
-import net.verdagon.vale.{NamespaceCoordinate, vassert, vpass}
+import net.verdagon.vale.{PackageCoordinate, vassert, vpass}
 
 //// An absolute name is one where we know *exactly* where it's defined; if parser and scout
 //// put their brains together they could know exactly where the thing is.
@@ -24,25 +24,25 @@ import net.verdagon.vale.{NamespaceCoordinate, vassert, vpass}
 sealed trait INameA
 sealed trait IVarNameA extends INameA
 sealed trait ITypeDeclarationNameA extends INameA {
-  def namespaceCoordinate: NamespaceCoordinate
+  def packageCoordinate: PackageCoordinate
 }
 sealed trait IFunctionDeclarationNameA extends INameA {
-  def namespaceCoordinate: NamespaceCoordinate
+  def packageCoordinate: PackageCoordinate
 }
 case class LambdaNameA(codeLocation: CodeLocationS) extends IFunctionDeclarationNameA {
-  override def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
+  override def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
 }
 case class FunctionNameA(name: String, codeLocation: CodeLocationS) extends IFunctionDeclarationNameA {
-  override def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
+  override def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
 }
 case class TopLevelCitizenDeclarationNameA(name: String, codeLocation: CodeLocationS) extends ITypeDeclarationNameA {
-  override def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
+  override def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
 }
 case class LambdaStructNameA(lambdaName: LambdaNameA) extends ITypeDeclarationNameA {
-  override def namespaceCoordinate: NamespaceCoordinate = lambdaName.codeLocation.file.namespaceCoordinate
+  override def packageCoordinate: PackageCoordinate = lambdaName.codeLocation.file.packageCoordinate
 }
 case class ImplNameA(subCitizenHumanName: String, codeLocation: CodeLocationS) extends INameA {
-  def namespaceCoordinate: NamespaceCoordinate = codeLocation.file.namespaceCoordinate
+  def packageCoordinate: PackageCoordinate = codeLocation.file.packageCoordinate
 }
 case class LetNameA(codeLocation: CodeLocationS) extends INameA
 case class UnnamedLocalNameA(codeLocation: CodeLocationS) extends IVarNameA
@@ -54,11 +54,11 @@ case class ExportAsNameA(codeLocation: CodeLocationS) extends IVarNameA
 case class CodeVarNameA(name: String) extends IVarNameA
 // Only made by templar, see if we can take these out
 case class ConstructorNameA(tlcd: TopLevelCitizenDeclarationNameA) extends IFunctionDeclarationNameA {
-  override def namespaceCoordinate: NamespaceCoordinate = tlcd.codeLocation.file.namespaceCoordinate
+  override def packageCoordinate: PackageCoordinate = tlcd.codeLocation.file.packageCoordinate
 }
-case class ImmConcreteDestructorNameA(namespaceCoordinate: NamespaceCoordinate) extends IFunctionDeclarationNameA
-case class ImmInterfaceDestructorNameA(namespaceCoordinate: NamespaceCoordinate) extends IFunctionDeclarationNameA
-case class ImmDropNameA(namespaceCoordinate: NamespaceCoordinate) extends IFunctionDeclarationNameA
+case class ImmConcreteDestructorNameA(packageCoordinate: PackageCoordinate) extends IFunctionDeclarationNameA
+case class ImmInterfaceDestructorNameA(packageCoordinate: PackageCoordinate) extends IFunctionDeclarationNameA
+case class ImmDropNameA(packageCoordinate: PackageCoordinate) extends IFunctionDeclarationNameA
 
 sealed trait IRuneA extends INameA
 case class CodeRuneA(name: String) extends IRuneA {

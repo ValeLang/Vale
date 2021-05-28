@@ -83,10 +83,10 @@ case class FunctionTemplata(
 }
 
 case class StructTemplata(
-  // The namespace this interface was declared in.
+  // The paackage this interface was declared in.
   // has the name of the surrounding environment, does NOT include struct's name.
   // See TMRE for more on these environments.
-  env: NamespaceEnvironment[IName2],
+  env: PackageEnvironment[IName2],
 //
 //  // The containers are the structs/interfaces/impls/functions that this thing is inside.
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
@@ -129,10 +129,10 @@ case class ContainerFunction(function: FunctionA) extends IContainer
 case class ContainerImpl(impl: ImplA) extends IContainer
 
 case class InterfaceTemplata(
-  // The namespace this interface was declared in.
+  // The paackage this interface was declared in.
   // Has the name of the surrounding environment, does NOT include interface's name.
   // See TMRE for more on these environments.
-  env: NamespaceEnvironment[IName2],
+  env: PackageEnvironment[IName2],
 //
 //  // The containers are the structs/interfaces/impls/functions that this thing is inside.
 //  // E.g. if LinkedList has a Node substruct, then the Node's templata will have one
@@ -169,7 +169,7 @@ case class InterfaceTemplata(
 }
 
 case class ImplTemplata(
-  // The namespace this interface was declared in.
+  // The paackage this interface was declared in.
   // See TMRE for more on these environments.
   env: IEnvironment,
 //

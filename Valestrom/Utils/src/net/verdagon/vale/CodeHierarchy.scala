@@ -2,10 +2,10 @@ package net.verdagon.vale
 
 import scala.collection.immutable.List
 
-case class FileCoordinate(module: String, namespaces: List[String], filepath: String) {
+case class FileCoordinate(module: String, packages: List[String], filepath: String) {
   def isInternal = module == ""
 
-  def namespaceCoordinate = NamespaceCoordinate(module, namespaces)
+  def packageCoordinate = PackageCoordinate(module, packages)
 
   def compareTo(that: FileCoordinate) = FileCoordinate.compare(this, that)
 }
@@ -14,7 +14,7 @@ object FileCoordinate extends Ordering[FileCoordinate] {
   val test = FileCoordinate("test", List(), "test.vale")
 
   override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
-    val diff = a.namespaceCoordinate.compareTo(b.namespaceCoordinate)
+    val diff = a.packageCoordinate.compareTo(b.packageCoordinate)
     if (diff != 0) {
       diff
     } else {
@@ -23,26 +23,26 @@ object FileCoordinate extends Ordering[FileCoordinate] {
   }
 }
 
-case class NamespaceCoordinate(module: String, namespaces: List[String]) {
+case class PackageCoordinate(module: String, packages: List[String]) {
   def isInternal = module == ""
 
-  def compareTo(that: NamespaceCoordinate) = NamespaceCoordinate.compare(this, that)
-
-  override def toString: String = module + namespaces.map("." + _).mkString("")
+  def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
 }
 
-object NamespaceCoordinate extends Ordering[NamespaceCoordinate] {
-  val test = NamespaceCoordinate("test", List())
+object PackageCoordinate extends Ordering[PackageCoordinate] {
+  val TEST_TLD = PackageCoordinate("test", List())
 
-  val internal = NamespaceCoordinate("", List())
+  val BUILTIN = PackageCoordinate("", List())
 
-  override def compare(a: NamespaceCoordinate, b: NamespaceCoordinate):Int = {
-    val lenDiff = a.namespaces.length - b.namespaces.length
+  val internal = PackageCoordinate("", List())
+
+  override def compare(a: PackageCoordinate, b: PackageCoordinate):Int = {
+    val lenDiff = a.packages.length - b.packages.length
     if (lenDiff != 0) {
       return lenDiff
     }
     val stepsDiff =
-      a.namespaces.zip(b.namespaces).foldLeft(0)({
+      a.packages.zip(b.packages).foldLeft(0)({
         case (0, (stepA, stepB)) => stepA.compareTo(stepB)
         case (diffSoFar, _) => diffSoFar
       })
@@ -69,59 +69,59 @@ object FileCoordinateMap {
 }
 
 case class FileCoordinateMap[Contents](
-    moduleToNamespacesToFilenameToContents: Map[String, Map[List[String], Map[String, Contents]]])
-extends INamespaceResolver[Map[String, Contents]] {
+    moduleToPackagesToFilenameToContents: Map[String, Map[List[String], Map[String, Contents]]])
+extends IPackageResolver[Map[String, Contents]] {
   def apply(coord: FileCoordinate): Contents = {
     vassertSome(
       vassertSome(
         vassertSome(
-          moduleToNamespacesToFilenameToContents.get(coord.module))
-          .get(coord.namespaces))
+          moduleToPackagesToFilenameToContents.get(coord.module))
+          .get(coord.packages))
         .get(coord.filepath))
   }
 
-  def add(module: String, namespaces: List[String], filename: String, contents: Contents):
+  def add(module: String, packages: List[String], filename: String, contents: Contents):
   FileCoordinateMap[Contents] = {
-    val namespacesToFilenameToContents = moduleToNamespacesToFilenameToContents.getOrElse(module, Map())
-    val filenameToContents = namespacesToFilenameToContents.getOrElse(namespaces, Map())
+    val packagesToFilenameToContents = moduleToPackagesToFilenameToContents.getOrElse(module, Map())
+    val filenameToContents = packagesToFilenameToContents.getOrElse(packages, Map())
     vassert(!filenameToContents.contains(filename))
     val newFilenameToContents = filenameToContents + (filename -> contents)
-    val newNamespacesToFilenameToContents = namespacesToFilenameToContents + (namespaces -> newFilenameToContents)
-    val newModuleToNamespacesToFilenameToContents = moduleToNamespacesToFilenameToContents + (module -> newNamespacesToFilenameToContents)
-    FileCoordinateMap(newModuleToNamespacesToFilenameToContents)
+    val newPackagesToFilenameToContents = packagesToFilenameToContents + (packages -> newFilenameToContents)
+    val newModuleToPackagesToFilenameToContents = moduleToPackagesToFilenameToContents + (module -> newPackagesToFilenameToContents)
+    FileCoordinateMap(newModuleToPackagesToFilenameToContents)
   }
 
   def map[T](func: (FileCoordinate, Contents) => T): FileCoordinateMap[T] = {
     FileCoordinateMap(
-      moduleToNamespacesToFilenameToContents.map({ case (module, namespacesToFilenameToContents) =>
+      moduleToPackagesToFilenameToContents.map({ case (module, packagesToFilenameToContents) =>
         module ->
-          namespacesToFilenameToContents.map({ case (namespaces, filenameToContents) =>
-            namespaces ->
+          packagesToFilenameToContents.map({ case (packages, filenameToContents) =>
+            packages ->
               filenameToContents.map({ case (filename, contents) =>
-                filename -> func(FileCoordinate(module, namespaces, filename), contents)
+                filename -> func(FileCoordinate(module, packages, filename), contents)
               })
           })
       }))
   }
 
   def flatMap[T](func: (FileCoordinate, Contents) => T): Iterable[T] = {
-    moduleToNamespacesToFilenameToContents.flatMap({ case (module, namespacesToFilenameToContents) =>
-      namespacesToFilenameToContents.flatMap({ case (namespaces, filenameToContents) =>
+    moduleToPackagesToFilenameToContents.flatMap({ case (module, packagesToFilenameToContents) =>
+      packagesToFilenameToContents.flatMap({ case (packages, filenameToContents) =>
         filenameToContents.map({ case (filename, contents) =>
-          func(FileCoordinate(module, namespaces, filename), contents)
+          func(FileCoordinate(module, packages, filename), contents)
         })
       })
     })
   }
 
   def expectOne(): Contents = {
-    val List(only) = moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values))
+    val List(only) = moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values))
     only
   }
 
   def mergeNonOverlapping(that: FileCoordinateMap[Contents]): FileCoordinateMap[Contents] = {
-    val thisMap = this.moduleToNamespacesToFilenameToContents
-    val thatMap = that.moduleToNamespacesToFilenameToContents
+    val thisMap = this.moduleToPackagesToFilenameToContents
+    val thatMap = that.moduleToPackagesToFilenameToContents
     FileCoordinateMap(
       (thisMap.keySet ++ thatMap.keySet).toList.map(module => {
         val moduleContentsFromThis = thisMap.getOrElse(module, Map())
@@ -134,11 +134,11 @@ extends INamespaceResolver[Map[String, Contents]] {
       }).toMap)
   }
 
-  def resolve(nsCoord: NamespaceCoordinate): Option[Map[String, Contents]] = {
-    moduleToNamespacesToFilenameToContents.get(nsCoord.module) match {
+  def resolve(packageCoord: PackageCoordinate): Option[Map[String, Contents]] = {
+    moduleToPackagesToFilenameToContents.get(packageCoord.module) match {
       case None => None
-      case Some(namespacesToFilenameToContents) => {
-        namespacesToFilenameToContents.get(nsCoord.namespaces) match {
+      case Some(packagesToFilenameToContents) => {
+        packagesToFilenameToContents.get(packageCoord.packages) match {
           case None => None
           case Some(filenameToContents) => Some(filenameToContents)
         }
@@ -147,26 +147,26 @@ extends INamespaceResolver[Map[String, Contents]] {
   }
 }
 
-object NamespaceCoordinateMap {
+object PackageCoordinateMap {
   def composeResolvers[Contents](
-    resolverA: NamespaceCoordinate => Option[Map[String, Contents]],
-    resolverB: NamespaceCoordinate => Map[String, Contents])
-    (nsCoord: NamespaceCoordinate):
+    resolverA: PackageCoordinate => Option[Map[String, Contents]],
+    resolverB: PackageCoordinate => Map[String, Contents])
+    (packageCoord: PackageCoordinate):
   Map[String, Contents] = {
-    resolverA(nsCoord) match {
+    resolverA(packageCoord) match {
       case Some(result) => result
-      case None => resolverB(nsCoord)
+      case None => resolverB(packageCoord)
     }
   }
 
   def composeMapAndResolver[Contents](
     files: FileCoordinateMap[Contents],
-    thenResolver: NamespaceCoordinate => Map[String, Contents])
-    (nsCoord: NamespaceCoordinate):
+    thenResolver: PackageCoordinate => Map[String, Contents])
+    (packageCoord: PackageCoordinate):
   Map[String, Contents] = {
-    files.moduleToNamespacesToFilenameToContents.get(nsCoord.module) match {
-      case Some(namespacesToFilenameToContents) => {
-        namespacesToFilenameToContents.get(nsCoord.namespaces) match {
+    files.moduleToPackagesToFilenameToContents.get(packageCoord.module) match {
+      case Some(packagesToFilenameToContents) => {
+        packagesToFilenameToContents.get(packageCoord.packages) match {
           case Some(filenameToContents) => {
             return filenameToContents
           }
@@ -175,41 +175,41 @@ object NamespaceCoordinateMap {
       }
       case None =>
     }
-    thenResolver(nsCoord)
+    thenResolver(packageCoord)
   }
 }
 
-trait INamespaceResolver[T] {
-  def resolve(nsCoord: NamespaceCoordinate): Option[T]
+trait IPackageResolver[T] {
+  def resolve(packageCoord: PackageCoordinate): Option[T]
 
-  def or(fallback: INamespaceResolver[T]): INamespaceResolver[T] =
+  def or(fallback: IPackageResolver[T]): IPackageResolver[T] =
     x => innerOr(fallback, x)
 
-  def innerOr(fallback: INamespaceResolver[T], nsCoord: NamespaceCoordinate): Option[T] = {
-    resolve(nsCoord) match {
+  def innerOr(fallback: IPackageResolver[T], packageCoord: PackageCoordinate): Option[T] = {
+    resolve(packageCoord) match {
       case Some(x) => Some(x)
-      case None => fallback.resolve(nsCoord)
+      case None => fallback.resolve(packageCoord)
     }
   }
 }
 
-case class NamespaceCoordinateMap[Contents](
-  moduleToNamespacesToFilenameToContents: Map[String, Map[List[String], Contents]]) {
-  def add(module: String, namespaces: List[String], contents: Contents):
-  NamespaceCoordinateMap[Contents] = {
-    val namespacesToContents = moduleToNamespacesToFilenameToContents.getOrElse(module, Map())
-    vassert(!namespacesToContents.contains(namespaces))
-    val newNamespacesToFilenameToContents = namespacesToContents + (namespaces -> contents)
-    val newModuleToNamespacesToFilenameToContents = moduleToNamespacesToFilenameToContents + (module -> newNamespacesToFilenameToContents)
-    NamespaceCoordinateMap(newModuleToNamespacesToFilenameToContents)
+case class PackageCoordinateMap[Contents](
+  moduleToPackagesToFilenameToContents: Map[String, Map[List[String], Contents]]) {
+  def add(module: String, packages: List[String], contents: Contents):
+  PackageCoordinateMap[Contents] = {
+    val packagesToContents = moduleToPackagesToFilenameToContents.getOrElse(module, Map())
+    vassert(!packagesToContents.contains(packages))
+    val newPackagesToFilenameToContents = packagesToContents + (packages -> contents)
+    val newModuleToPackagesToFilenameToContents = moduleToPackagesToFilenameToContents + (module -> newPackagesToFilenameToContents)
+    PackageCoordinateMap(newModuleToPackagesToFilenameToContents)
   }
 
-  def test[T](contents: T): NamespaceCoordinateMap[T] = {
-    NamespaceCoordinateMap(Map()).add("test", List(), contents)
+  def test[T](contents: T): PackageCoordinateMap[T] = {
+    PackageCoordinateMap(Map()).add("test", List(), contents)
   }
 
   def expectOne(): Contents = {
-    val List(only) = moduleToNamespacesToFilenameToContents.values.flatMap(_.values)
+    val List(only) = moduleToPackagesToFilenameToContents.values.flatMap(_.values)
     only
   }
 }

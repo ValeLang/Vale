@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{Err, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NullProfiler, Ok, Result, repeatStr, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, IProfiler, PackageCoordinate, NullProfiler, Ok, Result, repeatStr, vassert, vassertSome, vfail, vimpl, vwat}
 import net.verdagon.von.{JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.{List, Map}
@@ -666,47 +666,54 @@ object Parser {
 object ParserCompilation {
 
   def loadAndParse(
-    neededModules: List[String],
-    resolver: INamespaceResolver[Map[String, String]]):
+    neededPackages: List[PackageCoordinate],
+    resolver: IPackageResolver[Map[String, String]]):
   (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
-    vassert(neededModules.size == neededModules.distinct.size, "Duplicate modules in: " + neededModules.mkString(", "))
+    vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
 
-    loadAndParseIteration(neededModules, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
+    neededPackages.foreach(x => println("Originally requested package: " + x))
+
+    loadAndParseIteration(neededPackages, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
   }
 
   def loadAndParseIteration(
-    neededModules: List[String],
+    neededPackages: List[PackageCoordinate],
     alreadyFoundCodeMap: FileCoordinateMap[String],
     alreadyParsedProgramPMap: FileCoordinateMap[(FileP, List[(Int, Int)])],
-    resolver: INamespaceResolver[Map[String, String]]):
+    resolver: IPackageResolver[Map[String, String]]):
   (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
-    val neededNamespaceCoords =
-      neededModules.map(module => NamespaceCoordinate(module, List())) ++
+    val neededPackageCoords =
+      neededPackages ++
         alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
           file._1.topLevelThings.collect({
-            case TopLevelImportP(ImportP(_, moduleName, namespaceSteps, importeeName)) => {
-              NamespaceCoordinate(moduleName.str, namespaceSteps.map(_.str))
+            case TopLevelImportP(ImportP(_, moduleName, packageSteps, importeeName)) => {
+              PackageCoordinate(moduleName.str, packageSteps.map(_.str))
             }
           })
-        }).toList.flatten.filter(namespaceCoord => {
-          !alreadyParsedProgramPMap.moduleToNamespacesToFilenameToContents
-            .getOrElse(namespaceCoord.module, Map())
-            .contains(namespaceCoord.namespaces)
+        }).toList.flatten.filter(packageCoord => {
+          !alreadyParsedProgramPMap.moduleToPackagesToFilenameToContents
+            .getOrElse(packageCoord.module, Map())
+            .contains(packageCoord.packages)
         })
 
-    if (neededNamespaceCoords.isEmpty) {
+    if (neededPackageCoords.isEmpty) {
       return (alreadyFoundCodeMap, alreadyParsedProgramPMap)
     }
 
     val neededCodeMapFlat =
-      neededNamespaceCoords.flatMap(neededNamespaceCoord => {
+      neededPackageCoords.flatMap(neededPackageCoord => {
         val filepathsAndContents =
-          resolver.resolve(neededNamespaceCoord) match {
-            case None => throw InputException("Couldn't find: " + neededNamespaceCoord)
+          resolver.resolve(neededPackageCoord) match {
+            case None => {
+              throw InputException("Couldn't find: " + neededPackageCoord)
+            }
             case Some(fac) => fac
           }
+
+        println("Found package " + neededPackageCoord + ": " + filepathsAndContents)
+
         // Note that filepathsAndContents *can* be empty, see ImportTests.
-        List((neededNamespaceCoord.module, neededNamespaceCoord.namespaces, filepathsAndContents))
+        List((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
       })
     val grouped =
       neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
@@ -739,8 +746,8 @@ object ParserCompilation {
 }
 
 class ParserCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]]) {
   var codeMapCache: Option[FileCoordinateMap[String]] = None
   var vpstMapCache: Option[FileCoordinateMap[String]] = None
   var parsedsCache: Option[FileCoordinateMap[(FileP, List[(Int, Int)])]] = None
@@ -755,7 +762,7 @@ class ParserCompilation(
       case None => {
         // Also build the "" module, which has all the builtins
         val (codeMap, programPMap) =
-          ParserCompilation.loadAndParse(modulesToBuild, namespaceToContentsResolver)
+          ParserCompilation.loadAndParse(packagesToBuild, packageToContentsResolver)
         codeMapCache = Some(codeMap)
         parsedsCache = Some(programPMap)
         parsedsCache.get

@@ -1,7 +1,9 @@
 import unittest
 import subprocess
+from collections import OrderedDict
 import os.path
 import os
+import json
 import sys
 import shutil
 import glob
@@ -24,7 +26,7 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
 class ValeCompiler:
     def valestrom(self,
                   command: str,
-                  user_modules: List[str],
+                  namespaces_to_build: List[str],
                   user_valestrom_inputs: List[Path],
                   valestrom_options: List[str]) -> subprocess.CompletedProcess:
 
@@ -49,7 +51,7 @@ class ValeCompiler:
                 str(self.valestrom_path / "Valestrom.jar"),
                 "net.verdagon.vale.driver.Driver",
                 command
-            ] + user_modules + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
+            ] + namespaces_to_build + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
         )
 
     def valec(self,
@@ -166,7 +168,6 @@ class ValeCompiler:
         # args = parser.parse_args()
 
         self.build_dir = Path(f".")
-        exports_dir = Path(f".")
         exe_file = ("main.exe" if self.windows else "a.out")
         self.parseds_output_dir = None
         add_exports_include_path = False
@@ -243,9 +244,7 @@ class ValeCompiler:
             del args[ind]
             val = args[ind]
             del args[ind]
-            exports_dir = Path(val)
-            midas_options.append("--exports-dir")
-            midas_options.append(val)
+            print("--exports-dir is deprecated, combined with --output-dir.")
         if "--output-vast" in args:
             ind = args.index("--output-vast")
             del args[ind]
@@ -318,7 +317,7 @@ class ValeCompiler:
         elif args[0] == "build":
             args.pop(0)
 
-            user_modules = []
+            namespaces_to_build = []
             user_valestrom_inputs = []
             user_vast_files = []
             user_c_files = []
@@ -335,23 +334,34 @@ class ValeCompiler:
                         user_valestrom_inputs.append([module_name, contents_path])
                     elif str(contents_path).endswith(".vpst"):
                         user_valestrom_inputs.append([module_name, contents_path])
-                    elif str(contents_path).endswith(".vast"):
-                        user_vast_files.append(contents_path)
                     elif str(contents_path).endswith(".c"):
                         user_c_files.append(contents_path)
                     elif contents_path.is_dir():
-                        for c_file in contents_path.rglob('*.c'):
-                            user_c_files.append(Path(c_file))
+                        # for vale_file in contents_path.rglob('*.vale'):
+                        #     with open(str(vale_file), 'r') as f:
+                        #         contents = f.read()
+                        #         if ("export" in contents) or ("extern" in contents):
+                        #             print("Contains export: " + str(vale_file))
+                            # user_vale_files.append(Path(vale_file))
                         user_valestrom_inputs.append([module_name, contents_path])
                     else:
                         print("Unrecognized input: " + arg + " (should be module name, then a colon, then a directory or file ending in .vale, .vpst, .vast, .c)")
                         sys.exit(22)
+                elif str(arg).endswith(".vast"):
+                    user_vast_files.append(Path(arg))
                 else:
-                    user_modules.append(arg)
+                    namespaces_to_build.append(arg)
+
+            for user_valestrom_input in user_valestrom_inputs:
+                print("Valestrom input: " + user_valestrom_input[0] + ":" + str(user_valestrom_input[1]))
+            for user_vast_file in user_vast_files:
+                print("VAST input: " + str(user_vast_file))
+            for namespace_to_build in namespaces_to_build:
+                print("Namespace to build: " + namespace_to_build)
 
             vast_file = None
-            if len(user_valestrom_inputs) > 0 and len(user_vast_files) == 0:
-                proc = self.valestrom("build", user_modules, user_valestrom_inputs, valestrom_options)
+            if len(namespaces_to_build) > 0 and len(user_vast_files) == 0:
+                proc = self.valestrom("build", namespaces_to_build, user_valestrom_inputs, valestrom_options)
 
                 if proc.returncode == 0:
                     vast_file = self.build_dir / "build.vast"
@@ -362,15 +372,63 @@ class ValeCompiler:
                 else:
                     print(f"Internal error while compiling {user_valestrom_inputs}:\n" + proc.stdout + "\n" + proc.stderr)
                     sys.exit(proc.returncode)
-            elif len(user_vast_files) > 0 and len(user_valestrom_inputs) == 0:
+            elif len(user_vast_files) > 0 and len(namespaces_to_build) == 0:
                 if len(user_vast_files) > 1:
                     print("Can't have more than one VAST file!")
                     sys.exit(1)
                 vast_file = user_vast_files[0]
+            elif len(user_vast_files) == 0 and len(namespaces_to_build) == 0:
+                print(f"No inputs found!")
+                sys.exit(1)
             else:
-                print(f"Specify at least one .vale file, or exactly one .vast file (but not both)")
+                print(f"Both a .vast and non-vast files were specified! If a .vast is specified, it must be the only input.")
                 sys.exit(1)
 
+
+            print("opening vast: " + str(vast_file))
+            with open(str(vast_file), 'r') as vast:
+                json_root = json.loads(vast.read())
+                if "moduleNameToExternedNameToExtern" not in json_root:
+                    print("Couldn't find moduleNameToExternedNameToExtern in .vast!")
+                    sys.exit(1)
+                module_name_to_externed_name_to_extern = json_root["moduleNameToExternedNameToExtern"]
+                print("big map len: " + str(len(module_name_to_externed_name_to_extern)))
+
+                package_coords_with_externs = []
+
+                for module_name_to_externed_name_to_extern_entry in module_name_to_externed_name_to_extern:
+                    module_name = module_name_to_externed_name_to_extern_entry["moduleName"]
+                    if module_name == "":
+                        # We have lots of externs for adding, subtracting, etc. They all use the "" module.
+                        continue
+
+                    externed_name_to_extern = module_name_to_externed_name_to_extern_entry["externedNameToExtern"]
+                    for externed_name_to_extern_entry in externed_name_to_extern:
+                        # externed_name = externed_name_to_extern_entry["externedName"]
+                        module = externed_name_to_extern_entry["module"]
+                        package_steps = externed_name_to_extern_entry["packageSteps"]
+                        # full_name = externed_name_to_extern_entry["fullName"]
+
+                        package_coords_with_externs.append([module, package_steps])
+
+                directories_with_c = []
+                for package_coord in package_coords_with_externs:
+                    directory_for_module = None
+                    for user_valestrom_input in user_valestrom_inputs:
+                        if user_valestrom_input[0] == package_coord[0]:
+                            directory_for_module = user_valestrom_input[1]
+                    if directory_for_module == None:
+                        print("Couldn't find directory for module: " + package_coord[0])
+                        sys.exit(1)
+
+                    native_directory = directory_for_module
+                    for package_step in package_coord[1]:
+                        native_directory = native_directory / package_step
+                    native_directory = native_directory / "native"
+
+                    if native_directory.exists() and native_directory not in directories_with_c:
+                        directories_with_c.append(native_directory)
+                        print("Adding dir with native: " + str(native_directory))
 
             proc = self.valec(str(vast_file), str(self.build_dir), midas_options)
             # print(proc.stdout)
@@ -378,6 +436,10 @@ class ValeCompiler:
             if proc.returncode != 0:
                 print(f"valec couldn't compile {vast_file}:\n" + proc.stdout + "\n" + proc.stderr, file=sys.stderr)
                 sys.exit(1)
+
+            for directory_with_c in directories_with_c:
+                for c_file in directory_with_c.rglob('*.c'):
+                    user_c_files.append(Path(c_file))
 
             c_files = user_c_files.copy() + glob.glob(str(self.builtins_path / "*.c"))
 
@@ -396,7 +458,7 @@ class ValeCompiler:
                 [str(n) for n in clang_inputs],
                 self.build_dir,
                 self.build_dir / exe_file,
-                exports_dir if add_exports_include_path else None)
+                self.build_dir if add_exports_include_path else None)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode != 0:

@@ -5,7 +5,7 @@ import net.verdagon.vale.{vassert, vcheck, vcurious, vpass, vwat}
 
 import scala.collection.immutable.List
 
-// We namespace runes with a full name so we don't have to worry about collisions
+// We paackage runes with a full name so we don't have to worry about collisions
 // between, for example, two ImplicitRune(0)s.
 
 // We have this INameS stuff so we don't have to have prefixes and names like

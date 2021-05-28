@@ -27,13 +27,13 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List("", "moduleA"),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
               .add("moduleA", List(), "moduleA.vale", moduleACode)
               .add("moduleB", List(), "moduleB.vale", moduleBCode))
-          .or(Tests.getNamespaceToResourceResolver),
+          .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
@@ -55,21 +55,21 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List("", "moduleA"),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
               .add("moduleA", List(), "moduleA.vale", moduleACode)
               .add("moduleB", List(), "moduleB.vale", moduleBCode))
-          .or(Tests.getNamespaceToResourceResolver),
+          .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
-    vassert(!compile.getParseds().moduleToNamespacesToFilenameToContents.contains("moduleB"))
+    vassert(!compile.getParseds().moduleToPackagesToFilenameToContents.contains("moduleB"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
 
-  test("Tests import with namespace") {
+  test("Tests import with paackage") {
     val moduleACode =
       """
         |import moduleB.bork.*;
@@ -87,13 +87,13 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List("", "moduleA"),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
         Builtins.getCodeMap()
           .or(
             FileCoordinateMap(Map())
               .add("moduleA", List(), "moduleA.vale", moduleACode)
               .add("moduleB", List("bork"), "moduleB.vale", moduleBCode))
-          .or(Tests.getNamespaceToResourceResolver),
+          .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
@@ -112,13 +112,13 @@ class ImportTests extends FunSuite with Matchers {
 
     val compile =
       new RunCompilation(
-        List("", "moduleA"),
+        List(PackageCoordinate.BUILTIN, PackageCoordinate("moduleA", List())),
         Builtins.getCodeMap()
-          .or(Tests.getNamespaceToResourceResolver)
+          .or(Tests.getPackageToResourceResolver)
           .or(
             FileCoordinateMap(Map())
               .add("moduleA", List(), "moduleA.vale", moduleACode))
-          .or({ case NamespaceCoordinate("moduleB", List("bork")) => Some(Map()) }),
+          .or({ case PackageCoordinate("moduleB", List("bork")) => Some(Map()) }),
     FullCompilationOptions())
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)

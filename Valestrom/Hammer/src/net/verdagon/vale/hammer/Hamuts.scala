@@ -4,13 +4,15 @@ import net.verdagon.vale.metal._
 import net.verdagon.vale.templar.{FullName2, IName2}
 import net.verdagon.vale.templar.templata.Prototype2
 import net.verdagon.vale.templar.types.{InterfaceRef2, PackT2, StructRef2}
-import net.verdagon.vale.{vassert, vimpl}
+import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
 
 
 case class HamutsBox(var inner: Hamuts) {
 
-  def exportedNameToFullName: Map[String, FullNameH] = inner.exportedNameToFullName
+  def moduleNameToExportedNameToExportee: Map[String, Map[String, (PackageCoordinate, FullNameH)]] = {
+    inner.moduleNameToExportedNameToExportee
+  }
   def structRefsByRef2: Map[StructRef2, StructRefH] = inner.structRefsByRef2
   def structDefsByRef2: Map[StructRef2, StructDefinitionH] = inner.structDefsByRef2
   def structDefs: List[StructDefinitionH] = inner.structDefs
@@ -55,8 +57,8 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addFunction(functionRef2, functionDefH)
   }
 
-  def addExport(fullNameH: FullNameH, exportedName: String): Unit = {
-    inner = inner.addExport(fullNameH, exportedName)
+  def addExport(fullNameH: FullNameH, packageCoordinate: PackageCoordinate, exportedName: String): Unit = {
+    inner = inner.addExport(fullNameH, packageCoordinate, exportedName)
   }
 
   def getNameId(readableName: String, parts: List[IVonData]): Int = {
@@ -75,7 +77,7 @@ case class HamutsBox(var inner: Hamuts) {
 
 case class Hamuts(
     idByFullNameByHumanName: Map[String, Map[String, Int]],
-    exportedNameToFullName: Map[String, FullNameH],
+    moduleNameToExportedNameToExportee: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
     structRefsByRef2: Map[StructRef2, StructRefH],
     structDefsByRef2: Map[StructRef2, StructDefinitionH],
     structDefs: List[StructDefinitionH],
@@ -88,7 +90,7 @@ case class Hamuts(
   def forwardDeclareStruct(structRef2: StructRef2, structRefH: StructRefH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2 + (structRef2 -> structRefH),
       structDefsByRef2,
       structDefs,
@@ -104,7 +106,7 @@ case class Hamuts(
     vassert(structRefsByRef2.contains(structRef2))
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2 + (structRef2 -> structDefH),
       structDefs :+ structDefH,
@@ -119,7 +121,7 @@ case class Hamuts(
   def addStructOriginatingFromHammer(structDefH: StructDefinitionH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs :+ structDefH,
@@ -134,7 +136,7 @@ case class Hamuts(
   def forwardDeclareInterface(interfaceRef2: InterfaceRef2, interfaceRefH: InterfaceRefH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -150,7 +152,7 @@ case class Hamuts(
     vassert(interfaceRefs.contains(interfaceRef2))
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -165,7 +167,7 @@ case class Hamuts(
   def forwardDeclareFunction(functionRef2: Prototype2, functionRefH: FunctionRefH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -182,7 +184,7 @@ case class Hamuts(
 
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -194,12 +196,24 @@ case class Hamuts(
       functionDefs + (functionRef2 -> functionDefH))
   }
 
-  def addExport(fullNameH: FullNameH, exportedName: String): Hamuts = {
-    vassert(!exportedNameToFullName.contains(exportedName))
+  def addExport(fullNameH: FullNameH, packageCoordinate: PackageCoordinate, exportedName: String): Hamuts = {
+    val newModuleNameToExportedNameToExportee =
+      moduleNameToExportedNameToExportee.get(packageCoordinate.module) match {
+        case None => moduleNameToExportedNameToExportee + (packageCoordinate.module -> Map(exportedName -> (packageCoordinate, fullNameH)))
+        case Some(exportedNameToExportee) => {
+          exportedNameToExportee.get(exportedName) match {
+            case None => moduleNameToExportedNameToExportee + (packageCoordinate.module -> (exportedNameToExportee + (exportedName -> (packageCoordinate, fullNameH))))
+            case Some(originPackageAndFullName) => {
+              val (originPackage, fullName) = originPackageAndFullName
+              vfail("Already exported a `" + exportedName + "` from module `" + packageCoordinate.module + "`:\n" + originPackage + " : " + fullName)
+            }
+          }
+        }
+      }
 
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName + (exportedName -> fullNameH),
+      newModuleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -214,7 +228,7 @@ case class Hamuts(
   def addKnownSizeArray(knownSizeArrayDefinitionTH: KnownSizeArrayDefinitionTH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -229,7 +243,7 @@ case class Hamuts(
   def addUnknownSizeArray(unknownSizeArrayDefinitionTH: UnknownSizeArrayDefinitionTH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
-      exportedNameToFullName,
+      moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
@@ -261,7 +275,7 @@ case class Hamuts(
     val newHamuts =
       Hamuts(
         idByFullNameByHumanNameNew,
-        exportedNameToFullName,
+        moduleNameToExportedNameToExportee,
         structRefsByRef2,
         structDefsByRef2,
         structDefs,

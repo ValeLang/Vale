@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.NamespaceCoordinateMap
+import net.verdagon.vale.PackageCoordinateMap
 import net.verdagon.vale.scout.ProgramS
 import org.scalatest.{FunSuite, Matchers}
 

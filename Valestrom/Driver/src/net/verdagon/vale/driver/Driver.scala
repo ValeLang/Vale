@@ -10,29 +10,32 @@ import net.verdagon.vale.parser.{CombinatorParsers, FileP, InputException, Parse
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NamespaceCoordinate, NullProfiler, Ok, Result, vassert, vassertSome, vcheck, vfail, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, PackageCoordinate, NullProfiler, Ok, Result, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
 import scala.util.matching.Regex
 
 object Driver {
-  val defaultModuleName = "my_module"
+  val DEFAULT_PACKAGE_COORD = PackageCoordinate("my_module", List())
+
   sealed trait IValestromInput {
-    def moduleName: String
+    def packageCoord: PackageCoordinate
   }
-  case class ModulePathInput(moduleName: String, path: String) extends IValestromInput
-  case class DirectFilePathInput(moduleName: String, path: String) extends IValestromInput
+  case class ModulePathInput(moduleName: String, path: String) extends IValestromInput {
+    override def packageCoord: PackageCoordinate = PackageCoordinate(moduleName, List())
+  }
+  case class DirectFilePathInput(packageCoord: PackageCoordinate, path: String) extends IValestromInput
   case class SourceInput(
-    moduleName: String,
-    // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
-    name: String,
-    code: String) extends IValestromInput
+      packageCoord: PackageCoordinate,
+      // Name isnt guaranteed to be unique, we sometimes hand in strings like "builtins.vale"
+      name: String,
+      code: String) extends IValestromInput
 
   case class Options(
     inputs: List[IValestromInput],
 //    modulePaths: Map[String, String],
-    modulesToBuild: List[String],
+    packagesToBuild: List[PackageCoordinate],
     outputDirPath: Option[String],
     benchmark: Boolean,
     outputVPST: Boolean,
@@ -78,23 +81,41 @@ object Driver {
           parseOpts(opts.copy(mode = Some(value)), tail)
         } else {
           if (value.contains(":")) {
-            val parts = value.split(":")
-            vcheck(parts.size == 2, "Arguments can only have 1 colon. Saw: " + value, InputException)
-            vcheck(parts(0) != "", "Must have a module name before a colon. Saw: " + value, InputException)
-            vcheck(parts(1) != "", "Must have a file path after a colon. Saw: " + value, InputException)
-            val Array(moduleName, path) = parts
+            val packageCoordAndPath = value.split(":")
+            vcheck(packageCoordAndPath.size == 2, "Arguments can only have 1 colon. Saw: " + value, InputException)
+            vcheck(packageCoordAndPath(0) != "", "Must have a module name before a colon. Saw: " + value, InputException)
+            vcheck(packageCoordAndPath(1) != "", "Must have a file path after a colon. Saw: " + value, InputException)
+            val Array(packageCoordStr, path) = packageCoordAndPath
+
+            val packageCoordinate =
+              if (packageCoordStr.contains(".")) {
+                val packageCoordinateParts = packageCoordStr.split("\\.")
+                PackageCoordinate(packageCoordinateParts.head, packageCoordinateParts.tail.toList)
+              } else {
+                PackageCoordinate(packageCoordStr, List())
+              }
             val input =
               if (path.endsWith(".vale") || path.endsWith(".vpst")) {
-                DirectFilePathInput(moduleName, path)
+                DirectFilePathInput(packageCoordinate, path)
               } else {
-                ModulePathInput(moduleName, path)
+                if (packageCoordinate.packages.nonEmpty) {
+                  throw InputException("Cannot define a directory for a specific package, only for a module.")
+                }
+                ModulePathInput(packageCoordinate.module, path)
               }
             parseOpts(opts.copy(inputs = opts.inputs :+ input), tail)
           } else {
             if (value.endsWith(".vale") || value.endsWith(".vpst")) {
               throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
             }
-            parseOpts(opts.copy(modulesToBuild = opts.modulesToBuild :+ value), tail)
+            val parts =
+              if (value.contains(".")) {
+                value.split("\\.").toList
+              } else {
+                List(value)
+              }
+            val packageCoord = PackageCoordinate(parts.head, parts.tail)
+            parseOpts(opts.copy(packagesToBuild = opts.packagesToBuild :+ packageCoord), tail)
           }
         }
       }
@@ -120,20 +141,24 @@ object Driver {
     }
   }
 
-  def resolveNamespaceContents(
+  def resolvePackageContents(
       inputs: List[IValestromInput],
-      nsCoord: NamespaceCoordinate):
+      packageCoord: PackageCoordinate):
   Option[Map[String, String]] = {
-    val NamespaceCoordinate(module, namespaces) = nsCoord
+    val PackageCoordinate(module, packages) = packageCoord
+
+    println("resolving " + packageCoord + " with inputs:\n" + inputs)
 
     val sourceInputs =
-      inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
-        case (SourceInput(_, name, code), index) if (namespaces == List()) => {
-          // All .vpst and .vale direct inputs are considered part of the root namespace.
+      inputs.zipWithIndex.filter(_._1.packageCoord.module == module).flatMap({
+        case (SourceInput(_, name, code), index) if (packages == List()) => {
+          // All .vpst and .vale direct inputs are considered part of the root paackage.
           List((index + "(" + name + ")" -> code))
         }
-        case (ModulePathInput(_, modulePath), _) => {
-          val directoryPath = modulePath + namespaces.map(File.separator + _).mkString("")
+        case (mpi @ ModulePathInput(_, modulePath), _) => {
+          println("checking with modulepathinput " + mpi)
+          val directoryPath = modulePath + packages.map(File.separator + _).mkString("")
+          println("looking in dir " + directoryPath)
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
           if (filesInDirectory == null) {
@@ -142,6 +167,7 @@ object Driver {
           val inputFiles =
             filesInDirectory.filter(_.getName.endsWith(".vale")) ++
               filesInDirectory.filter(_.getName.endsWith(".vpst"))
+          println("found files: " + inputFiles)
           val inputFilePaths = inputFiles.map(_.getPath)
           inputFilePaths.toList.map(filepath => {
             val bufferedSource = Source.fromFile(filepath)
@@ -225,19 +251,19 @@ object Driver {
 //        case other => vwat(other.toString)
 //      })
 //
-//    val moduleToNamespaceToFilepathToCode =
+//    val moduleToPackageToFilepathToCode =
 //      loadedInputs.groupBy(_.moduleName).mapValues(loadedInputsInModule => {
-//        val namespace = List[String]()
+//        val paackage = List[String]()
 //        val filepathToCode =
 //          loadedInputsInModule.groupBy(_.path).map({
 //            case (path, List()) => vfail("No files with path: " + path)
 //            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
 //            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
 //          })
-//        val namespaceToFilepathToCode = Map(namespace -> filepathToCode)
-//        namespaceToFilepathToCode
+//        val packageToFilepathToCode = Map(paackage -> filepathToCode)
+//        packageToFilepathToCode
 //      })
-//    val valeCodeMap = FileCoordinateMap(moduleToNamespaceToFilepathToCode)
+//    val valeCodeMap = FileCoordinateMap(moduleToPackageToFilepathToCode)
 
 //    val startParsingTime = java.lang.System.currentTimeMillis()
 //    if (benchmark) {
@@ -290,8 +316,8 @@ object Driver {
 
     val compilation =
       new FullCompilation(
-        "" :: opts.modulesToBuild,
-        Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
+        PackageCoordinate.BUILTIN :: opts.packagesToBuild,
+        Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
         FullCompilationOptions(
           if (opts.verbose) {
             (x => {
@@ -442,8 +468,8 @@ object Driver {
 
           val compilation =
             new FullCompilation(
-              opts.modulesToBuild,
-              Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
+              opts.packagesToBuild,
+              Builtins.getCodeMap().or(packageCoord => resolvePackageContents(opts.inputs, packageCoord)),
               FullCompilationOptions(
                 if (opts.verbose) {
                   (x => {
@@ -460,14 +486,14 @@ object Driver {
           val vpstCodeMap = compilation.getVpstMap()
 
           val code =
-            valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
+            valeCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
               case List() => throw InputException("No vale code given to highlight!")
               case List(x) => x
               case _ => throw InputException("No vale code given to highlight!")
             }
-          val List(vpst) = vpstCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
+          val List(vpst) = vpstCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
 
-          compilation.getParseds().map({ case (FileCoordinate(module, namespaces, filepath), (parsed, commentRanges)) =>
+          compilation.getParseds().map({ case (FileCoordinate(module, packages, filepath), (parsed, commentRanges)) =>
             val span = Spanner.forProgram(parsed)
             val highlights = Highlighter.toHTML(code, span, commentRanges)
             if (opts.outputDirPath == Some("")) {

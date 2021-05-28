@@ -399,15 +399,15 @@ case class AsSubtype2(
 
     // We could just calculate this, but it feels better to let the StructTemplar
     // make it, so we're sure it's created.
-    resultOptType: Coord,
+    resultResultType: Coord,
     // Function to give a borrow ref to to make a Some(borrow ref)
-    someConstructor: Prototype2,
+    okConstructor: Prototype2,
     // Function to make a None of the right type
-    noneConstructor: Prototype2,
+    errConstructor: Prototype2,
 ) extends ReferenceExpression2 {
-  override def resultRegister = ReferenceResult2(resultOptType)
+  override def resultRegister = ReferenceResult2(resultResultType)
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ sourceExpr.all(func) ++ targetSubtype.all(func) ++ resultOptType.all(func) ++ someConstructor.all(func) ++ noneConstructor.all(func)
+    List(this).collect(func) ++ sourceExpr.all(func) ++ targetSubtype.all(func) ++ resultResultType.all(func) ++ okConstructor.all(func) ++ errConstructor.all(func)
   }
 }
 

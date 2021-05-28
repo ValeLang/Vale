@@ -43,6 +43,10 @@ object TemplarErrorHumanizer {
         humanizePos(codeMap, range.file, range.begin.offset) +
           ": Can't use local that was already moved (" + name + ")"
       }
+      case CantUnstackifyOutsideLocalFromInsideWhile(range, name) => {
+        humanizePos(codeMap, range.file, range.begin.offset) +
+          ": Can't move a local (" + name + ") from inside a while loop."
+      }
       case CannotSubscriptT(range, tyype) => {
         humanizePos(codeMap, range.file, range.begin.offset) +
           ": Cannot subscript type: " + tyype + "!"

@@ -64,7 +64,7 @@ class ImportTests extends FunSuite with Matchers {
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
-    vassert(!compile.getParseds().moduleToPackagesToFilenameToContents.contains("moduleB"))
+    vassert(!compile.getParseds().getOrDie().moduleToPackagesToFilenameToContents.contains("moduleB"))
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }

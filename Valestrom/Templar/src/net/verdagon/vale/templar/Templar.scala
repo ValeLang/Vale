@@ -135,26 +135,27 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           val incomingCoord = paramCoords(0).tyype
           val incomingSubkind = incomingCoord.referend
           val targetCoord = incomingCoord.copy(referend = targetKind)
+          val (resultCoord, okConstructor, errConstructor) =
+            expressionTemplar.getResult(temputs, namedEnv, callRange, targetCoord, incomingCoord)
           val asSubtypeExpr: ReferenceExpression2 =
             sourceCitizen match {
               case sourceInterface @ InterfaceRef2(_) => {
                 if (ancestorHelper.isAncestor(temputs, targetStruct, sourceInterface)) {
-                  val (optCoord, someConstructor, noneConstructor) =
-                    expressionTemplar.getOption(temputs, namedEnv, callRange, targetCoord)
-
                   AsSubtype2(
                     ArgLookup2(0, incomingCoord),
                     targetKind,
-                    optCoord,
-                    someConstructor,
-                    noneConstructor)
+                    resultCoord,
+                    okConstructor,
+                    errConstructor)
                 } else {
                   throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
                 }
               }
               case sourceStruct @ StructRef2(_) => {
                 if (sourceStruct == targetStruct) {
-                  ArgLookup2(0, incomingCoord)
+                  FunctionCall2(
+                    okConstructor,
+                    List(ArgLookup2(0, incomingCoord)))
                 } else {
                   throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
                 }

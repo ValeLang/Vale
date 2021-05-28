@@ -32,6 +32,7 @@ class Call(callId: CallId, in_args: Vector[ReferenceV]) {
   }
 
   def takeArgument(index: Int): ReferenceV = {
+    vassert(index < args.size)
     args(index) match {
       case Some(ref) => {
         args.put(index, None)

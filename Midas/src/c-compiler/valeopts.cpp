@@ -17,7 +17,6 @@ enum
     OPT_STRIP,
     OPT_PATHS,
     OPT_OUTPUT_DIR,
-    OPT_EXPORTS_DIR,
     OPT_LIBRARY,
     OPT_RUNTIMEBC,
     OPT_PIC,
@@ -69,7 +68,6 @@ static opt_arg_t args[] =
     { "strip", 's', OPT_ARG_NONE, OPT_STRIP },
     { "path", 'p', OPT_ARG_REQUIRED, OPT_PATHS },
     { "output-dir", '\0', OPT_ARG_REQUIRED, OPT_OUTPUT_DIR },
-    { "exports-dir", '\0', OPT_ARG_REQUIRED, OPT_EXPORTS_DIR },
     { "library", 'l', OPT_ARG_NONE, OPT_LIBRARY },
     { "runtimebc", '\0', OPT_ARG_NONE, OPT_RUNTIMEBC },
     { "pic", '\0', OPT_ARG_NONE, OPT_PIC },
@@ -126,7 +124,8 @@ static void usage()
         "  --strip, -s     Strip debug info.\n"
         "  --path, -p      Add an additional search path.\n"
         "    =path         Used to find packages and libraries.\n"
-        "  --output, -o    Write output to this directory.\n"
+        "  --o             Name the resulting executable.\n"
+        "  --output-dir    Write output to this directory.\n"
         "    =path         Defaults to the current directory.\n"
         "  --library, -l   Generate a C-API compatible static library.\n"
         "  --runtimebc     Compile with the LLVM bitcode file for the runtime.\n"
@@ -206,8 +205,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             return 0;
 
         case OPT_DEBUG: opt->release = 0; break;
-        case OPT_OUTPUT_DIR: opt->output = s.arg_val; break;
-        case OPT_EXPORTS_DIR: opt->exportsDir = s.arg_val; break;
+        case OPT_OUTPUT_DIR: opt->outputDir = s.arg_val; break;
         case OPT_LIBRARY: opt->library = 1; break;
         case OPT_PIC: opt->pic = 1; break;
         case OPT_NOPIC: opt->pic = 0; break;

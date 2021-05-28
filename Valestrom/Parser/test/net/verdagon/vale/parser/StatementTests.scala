@@ -77,7 +77,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
           FunctionCallPE(_,None,_, false,
             LookupPE(NameP(_, "Wizard"), None),
             List(IntLiteralPE(_,8)),
-            LendConstraintP(None)),
+            LendConstraintP(Some(ReadonlyP))),
         _, false,
         NameP(_, "charges")) =>
     }
@@ -168,11 +168,11 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Test block's trailing void presence") {
     compile(CombinatorParsers.filledBody, "{ moo() }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(None)))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(Some(ReadonlyP))))) =>
     }
 
     compile(CombinatorParsers.filledBody, "{ moo(); }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(None)), VoidPE(_))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(Some(ReadonlyP))), VoidPE(_))) =>
     }
   }
 
@@ -181,7 +181,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     compile(
       CombinatorParsers.blockExprs,
       "= doThings(a);") shouldHave {
-      case List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(None))) =>
+      case List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(Some(ReadonlyP)))) =>
     }
   }
 
@@ -214,8 +214,8 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
         |= doThings(a);
       """.stripMargin) shouldHave {
       case List(
-      LetPE(_,None, PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")), FinalP)), None, None, None), IntLiteralPE(_, 2)),
-      FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(None))) =>
+        LetPE(_,None, PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")), FinalP)), None, None, None), IntLiteralPE(_, 2)),
+        FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(Some(ReadonlyP)))) =>
     }
   }
 

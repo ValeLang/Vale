@@ -1,0 +1,20 @@
+
+interface IShip {}
+
+struct Serenity {}
+impl IShip for Serenity;
+
+struct Raza { fuel int; }
+impl IShip for Raza;
+
+fn moo(ship IShip) int {
+  maybeRaza Result<Raza, IShip> = (ship).as<Raza>();
+  = if (maybeRaza.is_ok()) {
+      = maybeRaza.expect().fuel;
+    } else {
+      42
+    }
+}
+fn main() int export {
+  moo(Serenity())
+}

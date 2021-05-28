@@ -121,7 +121,7 @@ Ref RCImm::asSubtype(
     Referend* targetReferend,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
-  return regularInnerAsSubtype(
+  return regularDowncast(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM, constraintRefM,
       sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetReferend, buildThen, buildElse);
 }

@@ -75,7 +75,9 @@ class PatternTemplar(
 
       val templatasByRune =
         inferTemplar.inferFromArgCoords(fate.snapshot, temputs, List(), rules, typeByRune, localRunes, List(pattern), None, pattern.range, List(), List(ParamFilter(inputExpr.resultRegister.reference, None))) match {
-          case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
+          case (isf@InferSolveFailure(_, _, _, _, range, _, _)) => {
+            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Couldn't figure out runes for pattern!\n" + isf))
+          }
           case (InferSolveSuccess(tbr)) => (tbr.templatasByRune.mapValues(v => List(TemplataEnvEntry(v))))
         }
 

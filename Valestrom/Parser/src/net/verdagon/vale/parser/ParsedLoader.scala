@@ -237,6 +237,11 @@ object ParsedLoader {
 
   def loadExpression(jobj: JObject): IExpressionPE = {
     getType(jobj) match {
+      case "Pack" => {
+        PackPE(
+          loadRange(getObjectField(jobj, "range")),
+          getArrayField(jobj, "innerExprs").map(expectObject).map(loadExpression))
+      }
       case "FunctionCall" => {
         FunctionCallPE(
           loadRange(getObjectField(jobj, "range")),

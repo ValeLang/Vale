@@ -469,6 +469,18 @@ class ScoutTests extends FunSuite with Matchers {
     }
   }
 
+  test("Reports when extern function has body") {
+    val err = compileForError(
+      """
+        |fn bork() int extern {
+        |  3
+        |}
+        |""".stripMargin)
+    err match {
+      case ExternHasBody(_) =>
+    }
+  }
+
   test("Reports when non-kind struct in impl") {
     val err = compileForError(
       """

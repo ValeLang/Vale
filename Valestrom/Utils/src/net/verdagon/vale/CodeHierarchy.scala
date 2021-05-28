@@ -27,8 +27,6 @@ case class PackageCoordinate(module: String, packages: List[String]) {
   def isInternal = module == ""
 
   def compareTo(that: PackageCoordinate) = PackageCoordinate.compare(this, that)
-
-  override def toString: String = module + packages.map("." + _).mkString("")
 }
 
 object PackageCoordinate extends Ordering[PackageCoordinate] {

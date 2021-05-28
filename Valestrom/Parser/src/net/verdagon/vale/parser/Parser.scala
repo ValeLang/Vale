@@ -671,6 +671,8 @@ object ParserCompilation {
   (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
     vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
 
+    neededPackages.foreach(x => println("Originally requested package: " + x))
+
     loadAndParseIteration(neededPackages, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
   }
 
@@ -707,6 +709,9 @@ object ParserCompilation {
             }
             case Some(fac) => fac
           }
+
+        println("Found package " + neededPackageCoord + ": " + filepathsAndContents)
+
         // Note that filepathsAndContents *can* be empty, see ImportTests.
         List((neededPackageCoord.module, neededPackageCoord.packages, filepathsAndContents))
       })

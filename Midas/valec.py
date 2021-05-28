@@ -168,7 +168,6 @@ class ValeCompiler:
         # args = parser.parse_args()
 
         self.build_dir = Path(f".")
-        exports_dir = Path(f".")
         exe_file = ("main.exe" if self.windows else "a.out")
         self.parseds_output_dir = None
         add_exports_include_path = False
@@ -245,9 +244,7 @@ class ValeCompiler:
             del args[ind]
             val = args[ind]
             del args[ind]
-            exports_dir = Path(val)
-            midas_options.append("--exports-dir")
-            midas_options.append(val)
+            print("--exports-dir is deprecated, combined with --output-dir.")
         if "--output-vast" in args:
             ind = args.index("--output-vast")
             del args[ind]
@@ -461,7 +458,7 @@ class ValeCompiler:
                 [str(n) for n in clang_inputs],
                 self.build_dir,
                 self.build_dir / exe_file,
-                exports_dir if add_exports_include_path else None)
+                self.build_dir if add_exports_include_path else None)
             # print(proc.stdout)
             # print(proc.stderr)
             if proc.returncode != 0:

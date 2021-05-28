@@ -117,6 +117,9 @@ object FunctionScout {
       if (attributes.collectFirst({ case AbstractAttributeP(_) => }).nonEmpty) {
         AbstractBody1
       } else if (attributes.collectFirst({ case ExternAttributeP(_) => }).nonEmpty) {
+        if (maybeBody0.nonEmpty) {
+          throw CompileErrorExceptionS(ExternHasBody(Scout.evalRange(file, range)))
+        }
         ExternBody1
       } else if (attributes.collectFirst({ case BuiltinAttributeP(_, _) => }).nonEmpty) {
         GeneratedBody1(attributes.collectFirst({ case BuiltinAttributeP(_, generatorId) => generatorId}).head.str)

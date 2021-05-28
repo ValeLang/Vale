@@ -43,7 +43,7 @@ struct ValeOptions {
     bool print_llvmir = false;    // Print out LLVM IR
     bool docs = false;            // Generate code documentation
     bool census = false;    // Enable census checking
-    bool flares = false;    // Enable flare outputDir
+    bool flares = false;    // Enable flare output
     bool genHeap = false;    // Enables generational heap
     bool elideChecksForKnownLive = false;    // Enables generational heap
     bool overrideKnownLiveTrue = false;    // Enables generational heap

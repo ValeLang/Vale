@@ -12668,7 +12668,7 @@ namespace nlohmann
 
 // #include <nlohmann/detail/meta/type_traits.hpp>
 
-// #include <nlohmann/detail/outputDir/binary_writer.hpp>
+// #include <nlohmann/detail/output/binary_writer.hpp>
 
 
 #include <algorithm> // reverse
@@ -12683,7 +12683,7 @@ namespace nlohmann
 
 // #include <nlohmann/detail/macro_scope.hpp>
 
-// #include <nlohmann/detail/outputDir/output_adapters.hpp>
+// #include <nlohmann/detail/output/output_adapters.hpp>
 
 
 #include <algorithm> // copy
@@ -12701,7 +12701,7 @@ namespace nlohmann
 {
   namespace detail
   {
-    /// abstract outputDir adapter interface
+    /// abstract output adapter interface
     template<typename CharType> struct output_adapter_protocol
     {
       virtual void write_character(CharType c) = 0;
@@ -12713,7 +12713,7 @@ namespace nlohmann
     template<typename CharType>
     using output_adapter_t = std::shared_ptr<output_adapter_protocol<CharType>>;
 
-    /// outputDir adapter for byte vectors
+    /// output adapter for byte vectors
     template<typename CharType>
     class output_vector_adapter : public output_adapter_protocol<CharType>
     {
@@ -12737,7 +12737,7 @@ namespace nlohmann
       std::vector<CharType>& v;
     };
 
-    /// outputDir adapter for outputDir streams
+    /// output adapter for output streams
     template<typename CharType>
     class output_stream_adapter : public output_adapter_protocol<CharType>
     {
@@ -12761,7 +12761,7 @@ namespace nlohmann
       std::basic_ostream<CharType>& stream;
     };
 
-    /// outputDir adapter for basic_string
+    /// output adapter for basic_string
     template<typename CharType, typename StringType = std::basic_string<CharType>>
     class output_string_adapter : public output_adapter_protocol<CharType>
     {
@@ -12832,7 +12832,7 @@ namespace nlohmann
       /*!
       @brief create a binary writer
 
-      @param[in] adapter  outputDir adapter to write to
+      @param[in] adapter  output adapter to write to
       */
       explicit binary_writer(output_adapter_t<CharType> adapter) : oa(adapter)
       {
@@ -13712,7 +13712,7 @@ namespace nlohmann
       }
 
       /*!
-      @brief Writes the given @a element_type and @a name to the outputDir adapter
+      @brief Writes the given @a element_type and @a name to the output adapter
       */
       void write_bson_entry_header(const string_t& name,
         const std::uint8_t element_type)
@@ -14294,10 +14294,10 @@ namespace nlohmann
       ///////////////////////
 
       /*
-      @brief write a number to outputDir input
+      @brief write a number to output input
       @param[in] n number of type @a NumberType
       @tparam NumberType the type of the number
-      @tparam OutputIsLittleEndian Set to true if outputDir data is
+      @tparam OutputIsLittleEndian Set to true if output data is
                                    required to be little endian
 
       @note This function needs to respect the system's endianess, because bytes
@@ -14311,7 +14311,7 @@ namespace nlohmann
         std::array<CharType, sizeof(NumberType)> vec;
         std::memcpy(vec.data(), &n, sizeof(NumberType));
 
-        // step 2: write array to outputDir (with possible reordering)
+        // step 2: write array to output (with possible reordering)
         if (is_little_endian != OutputIsLittleEndian)
         {
           // reverse byte order prior to conversion if necessary
@@ -14386,15 +14386,15 @@ namespace nlohmann
       /// whether we can assume little endianess
       const bool is_little_endian = little_endianess();
 
-      /// the outputDir
+      /// the output
       output_adapter_t<CharType> oa = nullptr;
     };
   }  // namespace detail
 }  // namespace nlohmann
 
-// #include <nlohmann/detail/outputDir/output_adapters.hpp>
+// #include <nlohmann/detail/output/output_adapters.hpp>
 
-// #include <nlohmann/detail/outputDir/serializer.hpp>
+// #include <nlohmann/detail/output/serializer.hpp>
 
 
 #include <algorithm> // reverse, remove, fill, find, none_of
@@ -15523,9 +15523,9 @@ namespace nlohmann
 
 // #include <nlohmann/detail/meta/cpp_future.hpp>
 
-// #include <nlohmann/detail/outputDir/binary_writer.hpp>
+// #include <nlohmann/detail/output/binary_writer.hpp>
 
-// #include <nlohmann/detail/outputDir/output_adapters.hpp>
+// #include <nlohmann/detail/output/output_adapters.hpp>
 
 // #include <nlohmann/detail/value_t.hpp>
 
@@ -15559,7 +15559,7 @@ namespace nlohmann
 
     public:
       /*!
-      @param[in] s  outputDir stream to serialize to
+      @param[in] s  output stream to serialize to
       @param[in] ichar  indentation character to use
       @param[in] error_handler_  how to react on decoding errors
       */
@@ -15596,9 +15596,9 @@ namespace nlohmann
         byte array
 
       @param[in] val               value to serialize
-      @param[in] pretty_print      whether the outputDir shall be pretty-printed
+      @param[in] pretty_print      whether the output shall be pretty-printed
       @param[in] ensure_ascii If @a ensure_ascii is true, all non-ASCII characters
-      in the outputDir are escaped with `\uXXXX` sequences, and the result consists
+      in the output are escaped with `\uXXXX` sequences, and the result consists
       of ASCII characters only.
       @param[in] indent_step       the indent level
       @param[in] current_indent    the current indent level (only used internally)
@@ -15879,7 +15879,7 @@ namespace nlohmann
       Escape a string by replacing certain special characters by a sequence of an
       escape character (backslash) and another character and other control
       characters by a sequence of "\u" followed by a four-digit hex
-      representation. The escaped string is written to outputDir stream @a o.
+      representation. The escaped string is written to output stream @a o.
 
       @param[in] s  the string to escape
       @param[in] ensure_ascii  whether to escape non-ASCII characters with
@@ -16173,7 +16173,7 @@ namespace nlohmann
       /*!
       @brief dump an integer
 
-      Dump a given integer to outputDir stream @a o. Works internally with
+      Dump a given integer to output stream @a o. Works internally with
       @a number_buffer.
 
       @param[in] x  integer number (signed or unsigned) to dump
@@ -16265,7 +16265,7 @@ namespace nlohmann
       /*!
       @brief dump a floating-point number
 
-      Dump a given floating-point number to outputDir stream @a o. Works internally
+      Dump a given floating-point number to output stream @a o. Works internally
       with @a number_buffer.
 
       @param[in] x  floating-point number to dump
@@ -16430,7 +16430,7 @@ namespace nlohmann
       }
 
     private:
-      /// the outputDir of the serializer
+      /// the output of the serializer
       output_adapter_t<char> o = nullptr;
 
       /// a (hopefully) large enough character buffer
@@ -16897,7 +16897,7 @@ namespace nlohmann
     `url`       | The URL of the project as string.
     `version`   | The version of the library. It is an object with the following keys: `major`, `minor`, and `patch` as defined by [Semantic Versioning](http://semver.org), and `string` (the version string).
 
-    @liveexample{The following code shows an example outputDir of the `meta()`
+    @liveexample{The following code shows an example output of the `meta()`
     function.,meta}
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
@@ -18805,13 +18805,13 @@ namespace nlohmann
     @param[in] indent_char The character to use for indentation if @a indent is
     greater than `0`. The default is ` ` (space).
     @param[in] ensure_ascii If @a ensure_ascii is true, all non-ASCII characters
-    in the outputDir are escaped with `\uXXXX` sequences, and the result consists
+    in the output are escaped with `\uXXXX` sequences, and the result consists
     of ASCII characters only.
     @param[in] error_handler  how to react on decoding errors; there are three
     possible values: `strict` (throws and exception in case a decoding error
     occurs; default), `replace` (replace invalid UTF-8 sequences with U+FFFD),
     and `ignore` (ignore invalid UTF-8 sequences during serialization; all
-    bytes are copied to the outputDir unchanged).
+    bytes are copied to the output unchanged).
 
     @return string containing the serialization of the JSON value
 
@@ -21626,7 +21626,7 @@ namespace nlohmann
             array       | result of function `array_t::max_size()`
 
     @liveexample{The following code calls `max_size()` on the different value
-    types. Note the outputDir is implementation specific.,max_size}
+    types. Note the output is implementation specific.,max_size}
 
     @complexity Constant, as long as @ref array_t and @ref object_t satisfy
     the Container concept; that is, their `max_size()` functions have constant
@@ -23098,16 +23098,16 @@ namespace nlohmann
     /*!
     @brief serialize to stream
 
-    Serialize the given JSON value @a j to the outputDir stream @a o. The JSON
+    Serialize the given JSON value @a j to the output stream @a o. The JSON
     value will be serialized using the @ref dump member function.
 
-    - The indentation of the outputDir can be controlled with the member variable
-      `width` of the outputDir stream @a o. For instance, using the manipulator
+    - The indentation of the output can be controlled with the member variable
+      `width` of the output stream @a o. For instance, using the manipulator
       `std::setw(4)` on @a o sets the indentation level to `4` and the
       serialization result is the same as calling `dump(4)`.
 
     - The indentation character can be controlled with the member variable
-      `fill` of the outputDir stream @a o. For instance, the manipulator
+      `fill` of the output stream @a o. For instance, the manipulator
       `std::setfill('\\t')` sets indentation to use a tab character rather than
       the default space character.
 
@@ -23705,7 +23705,7 @@ namespace nlohmann
           - arrays with more than 4294967295 elements
           - objects with more than 4294967295 elements
 
-    @note Any MessagePack outputDir created @ref to_msgpack can be successfully
+    @note Any MessagePack output created @ref to_msgpack can be successfully
           parsed by @ref from_msgpack.
 
     @note If NaN or Infinity are stored inside a JSON number, they are
@@ -23789,7 +23789,7 @@ namespace nlohmann
           - `Z`: no-op values are not created.
           - `C`: single-byte strings are serialized with `S` markers.
 
-    @note Any UBJSON outputDir created @ref to_ubjson can be successfully parsed
+    @note Any UBJSON output created @ref to_ubjson can be successfully parsed
           by @ref from_ubjson.
 
     @note If NaN or Infinity are stored inside a JSON number, they are
@@ -23890,7 +23890,7 @@ namespace nlohmann
 
     @pre The input `j` is required to be an object: `j.is_object() == true`.
 
-    @note Any BSON outputDir created via @ref to_bson can be successfully parsed
+    @note Any BSON output created via @ref to_bson can be successfully parsed
           by @ref from_bson.
 
     @param[in] j  JSON value to serialize
@@ -23920,7 +23920,7 @@ namespace nlohmann
     @brief Serializes the given JSON object `j` to BSON and forwards the
            corresponding BSON-representation to the given output_adapter `o`.
     @param j The JSON object to convert to BSON.
-    @param o The outputDir adapter that receives the binary BSON representation.
+    @param o The output adapter that receives the binary BSON representation.
     @pre The input `j` shall be an object: `j.is_object() == true`
     @sa @ref to_bson(const basic_json&)
     */
@@ -24003,7 +24003,7 @@ namespace nlohmann
              strings as keys in object values. Therefore, CBOR maps with keys
              other than UTF-8 strings are rejected (parse_error.113).
 
-    @note Any CBOR outputDir created @ref to_cbor can be successfully parsed by
+    @note Any CBOR output created @ref to_cbor can be successfully parsed by
           @ref from_cbor.
 
     @param[in] i  an input in CBOR format convertible to an input adapter
@@ -24144,7 +24144,7 @@ namespace nlohmann
     fixext 16        | binary          | 0xD8
     negative fixint  | number_integer  | 0xE0-0xFF
 
-    @note Any MessagePack outputDir created @ref to_msgpack can be successfully
+    @note Any MessagePack output created @ref to_msgpack can be successfully
           parsed by @ref from_msgpack.
 
     @param[in] i  an input in MessagePack format convertible to an input

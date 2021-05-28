@@ -379,6 +379,14 @@ class ValeCompiler:
                 vast_file = user_vast_files[0]
             elif len(user_vast_files) == 0 and len(namespaces_to_build) == 0:
                 print(f"No inputs found!")
+                print("")
+                if len(user_valestrom_inputs) > 0:
+                    print("You've declared where some projects are (via the projectname:path/to/project),")
+                    print("but you'll still need to specify one to start building. Example:")
+                    print("  python3 valec.py markvale markvale:~/markvale stdlib:~/stdlib")
+                    print("Note how even though we already specify where markvale is, we still need to")
+                    print("say `markvale` as a lone argument, to start building from there.")
+                    print("")
                 sys.exit(1)
             else:
                 print(f"Both a .vast and non-vast files were specified! If a .vast is specified, it must be the only input.")

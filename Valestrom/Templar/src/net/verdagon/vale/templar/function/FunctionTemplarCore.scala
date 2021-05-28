@@ -208,11 +208,11 @@ class FunctionTemplarCore(
 //
 //      }
       case FunctionName2(humanName, List(), params) => {
-        val header = FunctionHeader2(fullName, Extern2 :: attributes, params2, returnType2, maybeOrigin)
+        val header = FunctionHeader2(fullName, Extern2(range.file.packageCoordinate) :: attributes, params2, returnType2, maybeOrigin)
 
         val externFullName = FullName2(List(), ExternFunctionName2(humanName, params))
         val externPrototype = Prototype2(externFullName, header.returnType)
-        temputs.addExternPrototype(externPrototype)
+        temputs.addExternPrototype(range.file.packageCoordinate, externPrototype)
 
         val argLookups =
           header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })
@@ -233,7 +233,7 @@ class FunctionTemplarCore(
   def translateFunctionAttributes(a: List[IFunctionAttributeA]): List[IFunctionAttribute2] = {
     a.map({
       case UserFunctionA => UserFunction2
-      case ExternA => Extern2
+      case ExternA(packageCoord) => Extern2(packageCoord)
       case x => vimpl(x.toString)
     })
   }

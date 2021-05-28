@@ -38,6 +38,8 @@ case class ProgramH(
     immDestructorsByKind: Map[ReferendH, PrototypeH],
     // Translations for backends to use if they need to export a name.
     moduleNameToExportedNameToExportee: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
+    // Translations for backends to use if they need to export a name.
+    moduleNameToExternNameToExtern: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
     // All the regions and their referends. There will always be one in here
     // since every program has at least one region.
     regions: List[RegionH]) {

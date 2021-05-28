@@ -151,7 +151,7 @@ object Hammer {
       emptyPackStructRef,
       functions,
       exports,
-      externPrototypes2,
+      moduleNameToExternNameToExtern2,
       edgeBlueprintsByInterface,
       edges) = hinputs
 
@@ -163,19 +163,29 @@ object Hammer {
     // We generate the names here first, so that externs get the first chance at having
     // ID 0 for each name, which means we dont need to add _1 _2 etc to the end of them,
     // and they'll match up with the actual outside names.
-    val externPrototypesH =
-      externPrototypes2.map(prototype2 => {
-        val fullNameH = NameHammer.translateFullName(hinputs, hamuts, prototype2.fullName)
-        val humanName =
-          prototype2.fullName.last match {
-            case ExternFunctionName2(humanName, _) => humanName
-            case _ => vfail("Only human-named functions can be extern")
-          }
-        if (fullNameH.readableName != humanName) {
-          vfail("Name conflict, two externs with the same name!")
-        }
-        FunctionHammer.translatePrototype(hinputs, hamuts, prototype2)
+    val moduleNameToExternNameToPrototypeH =
+      moduleNameToExternNameToExtern2.map({ case (moduleName, externNameToExtern) =>
+        moduleName ->
+          externNameToExtern.map({ case (externName, (packageCoord, prototype2)) =>
+            val fullNameH = NameHammer.translateFullName(hinputs, hamuts, prototype2.fullName)
+            val humanName =
+              prototype2.fullName.last match {
+                case ExternFunctionName2(humanName, _) => humanName
+                case _ => vfail("Only human-named functions can be extern")
+              }
+            if (fullNameH.readableName != humanName) {
+              vfail("Name conflict, two externs with the same name!")
+            }
+            val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype2)
+            (externName -> (packageCoord, prototypeH))
+          })
       })
+    val moduleNameToExternNameToExternH =
+      moduleNameToExternNameToPrototypeH.mapValues(
+        _.mapValues({ case (packageCoord, prototypeH) => (packageCoord, prototypeH.fullName) }))
+
+    val externPrototypesH =
+      moduleNameToExternNameToPrototypeH.values.flatMap(_.values).map(_._2)
 
     StructHammer.translateInterfaces(hinputs, hamuts);
     StructHammer.translateStructs(hinputs, hamuts)
@@ -234,12 +244,13 @@ object Hammer {
     ProgramH(
       hamuts.interfaceDefs.values.toList,
       hamuts.structDefs,
-      externPrototypesH,
+      externPrototypesH.toList,
       hamuts.functionDefs.values.toList,
       hamuts.inner.knownSizeArrays,
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
       hamuts.moduleNameToExportedNameToExportee,
+      moduleNameToExternNameToExternH,
       List())
   }
 

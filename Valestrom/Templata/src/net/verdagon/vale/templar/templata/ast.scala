@@ -152,7 +152,7 @@ case class FunctionBanner2(
 
 sealed trait IFunctionAttribute2
 sealed trait ICitizenAttribute2
-case object Extern2 extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
+case class Extern2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
 case class Export2(packageCoord: PackageCoordinate) extends IFunctionAttribute2 with ICitizenAttribute2
 case object Pure2 extends IFunctionAttribute2 with ICitizenAttribute2
 case object UserFunction2 extends IFunctionAttribute2 // Whether it was written by a human. Mostly for tests right now.
@@ -169,7 +169,7 @@ case class FunctionHeader2(
 
   vassert(fullName.last.parameters == paramTypes)
 
-  def isExtern = attributes.contains(Extern2)
+  def isExtern = attributes.exists({ case Extern2(_) => true case _ => false })
   def isExport = attributes.exists({ case Export2(_) => true case _ => false })
   def isUserFunction = attributes.contains(UserFunction2)
   def getAbstractInterface: Option[InterfaceRef2] = toBanner.getAbstractInterface

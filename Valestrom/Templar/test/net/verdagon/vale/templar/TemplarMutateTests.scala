@@ -14,7 +14,7 @@ import org.scalatest.{FunSuite, Matchers}
 import scala.collection.immutable.List
 import scala.io.Source
 
-class MutateTests extends FunSuite with Matchers {
+class TemplarMutateTests extends FunSuite with Matchers {
   // TODO: pull all of the templar specific stuff out, the unit test-y stuff
 
   def readCodeFromResource(resourceFilename: String): String = {

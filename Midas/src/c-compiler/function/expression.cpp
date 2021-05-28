@@ -724,66 +724,57 @@ Ref translateExpressionInner(
             sourceType->location,
             sourceType->referend);
 
-    auto resultOptTypeLE =
-        globalState->getRegion(asSubtype->resultOptType)
-            ->translateType(asSubtype->resultOptType);
+    auto resultResultTypeLE =
+        globalState->getRegion(asSubtype->resultResultType)
+            ->translateType(asSubtype->resultResultType);
 
     auto resultOptLE =
         globalState->getRegion(sourceType)->asSubtype(
             functionState, builder,
-            false, false, asSubtype->resultOptType,
+            false, false, asSubtype->resultResultType,
             sourceTypeAsConstraintRefM,
             sourceType,
             sourceLE,
             sourceKnownLive,
             asSubtype->targetReferend,
-            [globalState, functionState, asSubtype, sourceLE](LLVMBuilderRef thenBuilder, Ref constraintRef) -> Ref {
-              globalState->getRegion(asSubtype->someConstructor->params[0])
+            [globalState, functionState, asSubtype, sourceType, sourceLE](LLVMBuilderRef thenBuilder, Ref refAsSubtype) -> Ref {
+              globalState->getRegion(asSubtype->okConstructor->params[0])
                   ->checkValidReference(
                       FL(), functionState, thenBuilder,
-                      asSubtype->someConstructor->params[0],
-                      constraintRef);
-              globalState->getRegion(asSubtype->someConstructor->params[0])
-                  ->alias(
-                      FL(), functionState, thenBuilder,
-                      asSubtype->someConstructor->params[0],
-                      constraintRef);
-              // If we get here, object is alive, return a Some.
-              auto someRef = buildCall(globalState, functionState, thenBuilder, asSubtype->someConstructor, {constraintRef});
-              globalState->getRegion(asSubtype->someType)
+                      asSubtype->okConstructor->params[0],
+                      refAsSubtype);
+
+              // If we get here, object is of the desired targetType, return a Ok containing it.
+              auto okRef = buildCall(globalState, functionState, thenBuilder, asSubtype->okConstructor, {refAsSubtype});
+              globalState->getRegion(asSubtype->okType)
                   ->checkValidReference(
-                      FL(), functionState, thenBuilder, asSubtype->someType, someRef);
-              return globalState->getRegion(asSubtype->someType)
+                      FL(), functionState, thenBuilder, asSubtype->okType, okRef);
+              return globalState->getRegion(asSubtype->okType)
                   ->upcast(
                       functionState,
                       thenBuilder,
-                      asSubtype->someType,
-                      asSubtype->someReferend,
-                      someRef,
-                      asSubtype->resultOptType,
-                      asSubtype->resultOptReferend);
+                      asSubtype->okType,
+                      asSubtype->okReferend,
+                      okRef,
+                      asSubtype->resultResultType,
+                      asSubtype->resultResultReferend);
             },
-            [globalState, functionState, asSubtype](LLVMBuilderRef elseBuilder) {
-              auto noneConstructor = asSubtype->noneConstructor;
-              // If we get here, object is dead, return a None.
-              auto noneRef = buildCall(globalState, functionState, elseBuilder, noneConstructor, {});
-              globalState->getRegion(asSubtype->noneType)
+            [globalState, functionState, asSubtype, sourceLE](LLVMBuilderRef thenBuilder) -> Ref {
+              // If we get here, object is not of the desired targetType, return a Err containing the original ref.
+              auto errRef = buildCall(globalState, functionState, thenBuilder, asSubtype->errConstructor, {sourceLE});
+              globalState->getRegion(asSubtype->errType)
                   ->checkValidReference(
-                      FL(), functionState, elseBuilder, asSubtype->noneType, noneRef);
-              return globalState->getRegion(asSubtype->noneType)
+                      FL(), functionState, thenBuilder, asSubtype->errType, errRef);
+              return globalState->getRegion(asSubtype->errType)
                   ->upcast(
                       functionState,
-                      elseBuilder,
-                      asSubtype->noneType,
-                      asSubtype->noneReferend,
-                      noneRef,
-                      asSubtype->resultOptType,
-                      asSubtype->resultOptReferend);
+                      thenBuilder,
+                      asSubtype->errType,
+                      asSubtype->errReferend,
+                      errRef,
+                      asSubtype->resultResultType,
+                      asSubtype->resultResultReferend);
             });
-
-    globalState->getRegion(sourceType)->dealias(
-        AFL("LockWeak drop weak ref"),
-        functionState, builder, sourceType, sourceLE);
 
     return resultOptLE;
   } else {

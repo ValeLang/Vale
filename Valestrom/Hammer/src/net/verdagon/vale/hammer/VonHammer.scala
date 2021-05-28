@@ -448,7 +448,7 @@ object VonHammer {
             VonMember("resultType", vonifyCoord(wa.resultType)),
             VonMember("resultReferend", vonifyKind(wa.resultType.kind))))
       }
-      case AsSubtypeH(sourceExpr, targetType, resultOptType, someConstructor, noneConstructor) => {
+      case AsSubtypeH(sourceExpr, targetType, resultResultType, okConstructor, errConstructor) => {
         VonObject(
           "AsSubtype",
           None,
@@ -457,14 +457,14 @@ object VonHammer {
             VonMember("sourceType", vonifyCoord(sourceExpr.resultType)),
             VonMember("sourceKnownLive", VonBool(false)),
             VonMember("targetReferend", vonifyKind(targetType)),
-            VonMember("someConstructor", vonifyPrototype(someConstructor)),
-            VonMember("someType", vonifyCoord(someConstructor.returnType)),
-            VonMember("someReferend", vonifyKind(someConstructor.returnType.kind)),
-            VonMember("noneConstructor", vonifyPrototype(noneConstructor)),
-            VonMember("noneType", vonifyCoord(noneConstructor.returnType)),
-            VonMember("noneReferend", vonifyKind(noneConstructor.returnType.kind)),
-            VonMember("resultOptType", vonifyCoord(resultOptType)),
-            VonMember("resultOptReferend", vonifyKind(resultOptType.kind))))
+            VonMember("okConstructor", vonifyPrototype(okConstructor)),
+            VonMember("okType", vonifyCoord(okConstructor.returnType)),
+            VonMember("okReferend", vonifyKind(okConstructor.returnType.kind)),
+            VonMember("errConstructor", vonifyPrototype(errConstructor)),
+            VonMember("errType", vonifyCoord(errConstructor.returnType)),
+            VonMember("errReferend", vonifyKind(errConstructor.returnType.kind)),
+            VonMember("resultResultType", vonifyCoord(resultResultType)),
+            VonMember("resultResultReferend", vonifyKind(resultResultType.kind))))
       }
       case LockWeakH(sourceExpr, resultOptType, someConstructor, noneConstructor) => {
         VonObject(

@@ -12,7 +12,7 @@ import net.verdagon.vale.driver.{FullCompilation, FullCompilationOptions}
 import net.verdagon.vale.hammer.VonHammer
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.{FullNameH, IntH, ProgramH, ReadonlyH, ReadwriteH, YonderH}
-import net.verdagon.vale.parser.FileP
+import net.verdagon.vale.parser.{FailedParse, FileP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
 import net.verdagon.vale.templar.templata.Signature2
 import net.verdagon.vale.templar.types.{Coord, Int2, Readonly, Share, Str2}
@@ -39,18 +39,13 @@ class RunCompilation(
   options: FullCompilationOptions = FullCompilationOptions()) {
   var fullCompilation = new FullCompilation(packagesToBuild, packageToContentsResolver, options)
 
-  def getCodeMap(): FileCoordinateMap[String] = fullCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = fullCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = fullCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = fullCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = fullCompilation.getScoutput()
-  def expectScoutput(): FileCoordinateMap[ProgramS] = fullCompilation.expectScoutput()
-
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
-  def expectAstrouts(): PackageCoordinateMap[ProgramA] = fullCompilation.expectAstrouts()
-
   def getTemputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getTemputs()
   def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
-
   def getHamuts(): ProgramH = fullCompilation.getHamuts()
 
   def evalForReferend(heap: Heap, args: Vector[ReferenceV]): IVonData = {
@@ -488,6 +483,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Map function") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/genericvirtuals/mapFunc.vale"))
+    compile.expectTemputs()
 
     compile.evalForReferend(Vector()) shouldEqual VonBool(true)
   }

@@ -99,7 +99,7 @@ class ClosureTests extends FunSuite with Matchers {
         |}
         |fn main() int export {
         |  m = Marine(9);
-        |  = { m.hp }();
+        |  = { m.hp }!();
         |}
       """.stripMargin)
 
@@ -179,11 +179,11 @@ class ClosureTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x! = 4;
-        |  { set x = x + 1; }();
+        |  { set x = x + 1; }!();
         |  = x;
         |}
       """.stripMargin)
-    val scoutput = compile.expectScoutput()
+    val scoutput = compile.getScoutput().getOrDie()
     val temputs = compile.expectTemputs()
     // The struct should have an int x in it.
     val closuredVarsStruct = vassertSome(temputs.structs.find(struct => struct.fullName.last match { case l @ LambdaCitizenName2(_) => true case _ => false }));
@@ -209,7 +209,7 @@ class ClosureTests extends FunSuite with Matchers {
   }
 
   test("Mutates from inside a closure inside a closure") {
-    val compile = RunCompilation.test("fn main() int export { x! = 4; { { set x = x + 1; }(); }(); = x; }")
+    val compile = RunCompilation.test("fn main() int export { x! = 4; { { set x = x + 1; }!(); }!(); = x; }")
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(5)
   }

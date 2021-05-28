@@ -14,7 +14,7 @@ import org.scalatest.{FunSuite, Matchers, _}
 import scala.collection.immutable.List
 import scala.io.Source
 
-class PermissionTests extends FunSuite with Matchers {
+class TemplarPermissionTests extends FunSuite with Matchers {
   // TODO: pull all of the templar specific stuff out, the unit test-y stuff
 
   def readCodeFromResource(resourceFilename: String): String = {
@@ -71,6 +71,22 @@ class PermissionTests extends FunSuite with Matchers {
     main.header.returnType match {
       case Coord(Constraint, Readonly, _) =>
     }
+  }
+
+  test("Borrow-method-call on readwrite member") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |struct Engine { }
+        |struct Bork {
+        |  engine Engine;
+        |}
+        |fn getFuel(engine &Engine) int { 42 }
+        |fn main() infer-ret {
+        |  bork = Bork(Engine());
+        |  ret bork.engine.getFuel();
+        |}
+        |""".stripMargin)
+    val temputs = compile.expectTemputs()
   }
 
 }

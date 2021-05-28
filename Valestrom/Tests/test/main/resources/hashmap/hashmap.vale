@@ -198,7 +198,7 @@ void {
     neighborIndex = (originalIndex + i) mod len(&map.table);
     neighbor? = (set map.table[neighborIndex] = None<HashMapNode<K, V>>());
     if (not neighbor?.isEmpty()) {
-      (neighborKey, neighborValue) = neighbor?^.get();
+      (neighborKey, neighborValue) = (neighbor?).get();
       addNodeToTable(map.table, map.hasher, HashMapNode<K, V>(neighborKey, neighborValue));
     } else {
       drop(neighbor?);

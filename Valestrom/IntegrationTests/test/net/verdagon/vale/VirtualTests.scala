@@ -153,21 +153,17 @@ class VirtualTests extends FunSuite with Matchers {
       Tests.loadExpected("programs/downcast/downcastConstraintFailed.vale"))
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
   }
-//
-//  test("Successful owning downcast with as") {
-//    val compile = RunCompilation.test(
-//      Tests.loadExpected("programs/downcast/downcastOwningSuccessful.vale"))
-//    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
-//  }
-//
-//  test("Failed owning downcast with as") {
-////    i think the generated function isnt dropping the owning ref
-//    // downcasting an owning ref should give a Result, so the user can drop it.
-//    vimpl()
-//
-//    val compile = RunCompilation.test(
-//      Tests.loadExpected("programs/downcast/downcastOwningFailed.vale"))
-//    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
-//  }
+
+  test("Successful owning downcast with as") {
+    val compile = RunCompilation.test(
+      Tests.loadExpected("programs/downcast/downcastOwningSuccessful.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
+
+  test("Failed owning downcast with as") {
+    val compile = RunCompilation.test(
+      Tests.loadExpected("programs/downcast/downcastOwningFailed.vale"))
+    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+  }
 
 }

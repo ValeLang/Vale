@@ -16,6 +16,7 @@ sealed trait ICompileErrorS
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
 case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS
 case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS
+case class ExternHasBody(range: RangeS) extends ICompileErrorS
 case class CantInitializeIndividualElementsOfRuntimeSizedArray(range: RangeS) extends ICompileErrorS
 case class InitializingRuntimeSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS
 case class InitializingStaticSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS

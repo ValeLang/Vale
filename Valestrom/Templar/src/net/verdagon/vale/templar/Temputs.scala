@@ -24,7 +24,7 @@ case class Temputs() {
   private val envByFunctionSignature: mutable.HashMap[Signature2, FunctionEnvironment] = mutable.HashMap()
 
   // Prototypes for extern functions
-  private val externPrototypes: mutable.HashSet[Prototype2] = mutable.HashSet()
+  private val moduleNameToExternNameToExtern: mutable.HashMap[String, mutable.HashMap[String, (PackageCoordinate, Prototype2)]] = mutable.HashMap()
 
   // One must fill this in when putting things into declaredStructs/Interfaces.
   private val mutabilitiesByCitizenRef: mutable.HashMap[CitizenRef2, Mutability] = mutable.HashMap()
@@ -190,13 +190,24 @@ case class Temputs() {
     exports += ExportAs2(kind, packageCoord, exportedName)
   }
 
-  def addExternPrototype(prototype2: Prototype2): Unit = {
-    prototype2.fullName.last match {
-      case n @ ExternFunctionName2(_, _) => {
-        vassert(!externPrototypes.exists(_.toSignature.fullName.last == n))
+  def addExternPrototype(packageCoord: PackageCoordinate, prototype2: Prototype2): Unit = {
+    val externName =
+      prototype2.fullName.last match {
+        case ExternFunctionName2(externName, _) => externName
+      }
+    moduleNameToExternNameToExtern.get(packageCoord.module) match {
+      case None => {
+        moduleNameToExternNameToExtern.put(
+          packageCoord.module,
+          mutable.HashMap(externName -> (packageCoord, prototype2)))
+      }
+      case Some(externNameToExtern) => {
+        externNameToExtern.get(externName) match {
+          case None => externNameToExtern.put(externName, (packageCoord, prototype2))
+          case Some(_) => vfail("Extern already exists: " + externName)
+        }
       }
     }
-    externPrototypes += prototype2
   }
 
   def structDeclared(fullName: FullName2[ICitizenName2]): Option[StructRef2] = {
@@ -312,8 +323,10 @@ case class Temputs() {
   def getUnknownSizeArray(array: RawArrayT2): Option[UnknownSizeArrayT2] = {
     unknownSizeArrayTypes.get(array)
   }
-  def getExternPrototypes: List[Prototype2] = {
-    externPrototypes.toList
+  def getExternPrototypes: Map[String, Map[String, (PackageCoordinate, Prototype2)]] = {
+    moduleNameToExternNameToExtern.map({ case (moduleName, externNameToExtern) =>
+      (moduleName -> externNameToExtern.toMap)
+    }).toMap
   }
   def getExports: List[ExportAs2] = {
     exports.toList

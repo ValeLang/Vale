@@ -98,7 +98,7 @@ case class RangeS(begin: CodeLocationS, end: CodeLocationS) {
 
 sealed trait ICitizenAttributeS
 sealed trait IFunctionAttributeS
-case object ExternS extends IFunctionAttributeS with ICitizenAttributeS
+case class ExternS(packageCoord: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS
 case object PureS extends IFunctionAttributeS with ICitizenAttributeS
 case class BuiltinS(generatorName: String) extends IFunctionAttributeS with ICitizenAttributeS
 case class ExportS(packageCoordinate: PackageCoordinate) extends IFunctionAttributeS with ICitizenAttributeS

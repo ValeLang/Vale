@@ -4,10 +4,10 @@ import net.verdagon.vale.astronomer.OrderModules.orderModules
 import net.verdagon.vale.astronomer.builtins._
 import net.verdagon.vale.astronomer.ruletyper._
 import net.verdagon.vale.parser.{CaptureP, FileP, ImmutableP, MutabilityP, MutableP}
-import net.verdagon.vale.scout.{ExportS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.scout.{ExportS, ExternS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, PackageCoordinate, PackageCoordinateMap, Ok, Result, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, IPackageResolver, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vfail, vimpl, vwat}
 
 import scala.collection.immutable.List
 
@@ -346,7 +346,7 @@ object Astronomer {
   def translateFunctionAttributes(attrsS: List[IFunctionAttributeS]): List[IFunctionAttributeA] = {
     attrsS.flatMap({
       case ExportS(packageCoordinate) => List(ExportA(packageCoordinate))
-      case ExternS => List(ExternA)
+      case ExternS(packageCoordinate) => List(ExternA(packageCoordinate))
       case PureS => List(PureA)
       case BuiltinS(_) => List()
       case x => vimpl(x.toString)

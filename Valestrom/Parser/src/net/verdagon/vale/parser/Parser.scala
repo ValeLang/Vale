@@ -671,7 +671,7 @@ object ParserCompilation {
   Result[(FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]), FailedParse] = {
     vassert(neededPackages.size == neededPackages.distinct.size, "Duplicate modules in: " + neededPackages.mkString(", "))
 
-    neededPackages.foreach(x => println("Originally requested package: " + x))
+//    neededPackages.foreach(x => println("Originally requested package: " + x))
 
     loadAndParseIteration(neededPackages, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
   }

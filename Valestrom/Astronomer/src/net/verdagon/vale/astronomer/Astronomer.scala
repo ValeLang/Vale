@@ -3,7 +3,7 @@ package net.verdagon.vale.astronomer
 import net.verdagon.vale.astronomer.OrderModules.orderModules
 import net.verdagon.vale.astronomer.builtins._
 import net.verdagon.vale.astronomer.ruletyper._
-import net.verdagon.vale.parser.{CaptureP, FileP, ImmutableP, MutabilityP, MutableP}
+import net.verdagon.vale.parser.{CaptureP, FailedParse, FileP, ImmutableP, MutabilityP, MutableP}
 import net.verdagon.vale.scout.{ExportS, ExternS, Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS, OverrideSP}
 import net.verdagon.vale.scout.rules._
@@ -785,17 +785,16 @@ class AstronomerCompilation(
   var scoutCompilation = new ScoutCompilation(packagesToBuild, packageToContentsResolver)
   var astroutsCache: Option[PackageCoordinateMap[ProgramA]] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = scoutCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = scoutCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = scoutCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = scoutCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = scoutCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = scoutCompilation.getScoutput()
-  def expectScoutput(): FileCoordinateMap[ProgramS] = scoutCompilation.expectScoutput()
 
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = {
     astroutsCache match {
       case Some(astrouts) => Ok(astrouts)
       case None => {
-        Astronomer.runAstronomer(expectScoutput()) match {
+        Astronomer.runAstronomer(scoutCompilation.getScoutput().getOrDie()) match {
           case Right(err) => Err(err)
           case Left(astrouts) => {
             astroutsCache = Some(astrouts)

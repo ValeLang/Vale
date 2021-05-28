@@ -6,11 +6,11 @@ import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, Progr
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
-import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, PackageCoordinate, NullProfiler, Ok, Result, vassert, vassertSome, vcheck, vfail, vwat}
+import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
 import scala.io.Source
@@ -147,7 +147,7 @@ object Driver {
   Option[Map[String, String]] = {
     val PackageCoordinate(module, packages) = packageCoord
 
-    println("resolving " + packageCoord + " with inputs:\n" + inputs)
+//    println("resolving " + packageCoord + " with inputs:\n" + inputs)
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.packageCoord.module == module).flatMap({
@@ -156,9 +156,9 @@ object Driver {
           List((index + "(" + name + ")" -> code))
         }
         case (mpi @ ModulePathInput(_, modulePath), _) => {
-          println("checking with modulepathinput " + mpi)
+//          println("checking with modulepathinput " + mpi)
           val directoryPath = modulePath + packages.map(File.separator + _).mkString("")
-          println("looking in dir " + directoryPath)
+//          println("looking in dir " + directoryPath)
           val directory = new java.io.File(directoryPath)
           val filesInDirectory = directory.listFiles()
           if (filesInDirectory == null) {
@@ -167,7 +167,7 @@ object Driver {
           val inputFiles =
             filesInDirectory.filter(_.getName.endsWith(".vale")) ++
               filesInDirectory.filter(_.getName.endsWith(".vpst"))
-          println("found files: " + inputFiles)
+//          println("found files: " + inputFiles)
           val inputFilePaths = inputFiles.map(_.getPath)
           inputFilePaths.toList.map(filepath => {
             val bufferedSource = Source.fromFile(filepath)
@@ -334,8 +334,12 @@ object Driver {
 
     val startLoadAndParseTime = java.lang.System.currentTimeMillis()
 
-    val valeCodeMap = compilation.getCodeMap()
-    val parseds = compilation.getParseds()
+    val parseds =
+      compilation.getParseds() match {
+        case Err(FailedParse(codeMapSoFar, fileCoord, error)) => return Err(ParseErrorHumanizer.humanize(codeMapSoFar, fileCoord, error))
+        case Ok(p) => p
+      }
+    val valeCodeMap = compilation.getCodeMap().getOrDie()
 
     if (opts.outputVPST) {
       parseds.map({ case (FileCoordinate(_, _, filepath), (programP, commentRanges)) =>
@@ -482,8 +486,15 @@ object Driver {
                 new NullProfiler(),
                 false))
 
-          val valeCodeMap = compilation.getCodeMap()
-          val vpstCodeMap = compilation.getVpstMap()
+          val parseds =
+            compilation.getParseds() match {
+              case Err(FailedParse(codeMapSoFar, fileCoord, error)) => {
+                throw InputException(ParseErrorHumanizer.humanize(codeMapSoFar, fileCoord, error))
+              }
+              case Ok(p) => p
+            }
+          val valeCodeMap = compilation.getCodeMap().getOrDie()
+          val vpstCodeMap = compilation.getVpstMap().getOrDie()
 
           val code =
             valeCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
@@ -493,7 +504,7 @@ object Driver {
             }
           val List(vpst) = vpstCodeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList
 
-          compilation.getParseds().map({ case (FileCoordinate(module, packages, filepath), (parsed, commentRanges)) =>
+          parseds.map({ case (FileCoordinate(module, packages, filepath), (parsed, commentRanges)) =>
             val span = Spanner.forProgram(parsed)
             val highlights = Highlighter.toHTML(code, span, commentRanges)
             if (opts.outputDirPath == Some("")) {

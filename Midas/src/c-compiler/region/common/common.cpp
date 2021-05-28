@@ -904,7 +904,7 @@ Ref interfaceRefIsForEdge(
   return itablePtrsMatchRef;
 }
 
-Ref regularInnerAsSubtype(
+Ref regularDowncast(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -1006,9 +1006,11 @@ Ref resilientDowncast(
                 sourceInterfaceRefMT->ownership, sourceInterfaceRefMT->location, targetReferend);
         switch (sourceInterfaceRefMT->ownership) {
           case Ownership::OWN: {
-            // See DORPAR for why we don't have own yet.
-            assert(false);
-            break;
+            auto resultStructRefLT = globalState->getRegion(resultStructRefMT)->translateType(resultStructRefMT);
+            auto resultStructRefLE =
+                LLVMBuildPointerCast(thenBuilder, possibilityPtrLE, resultStructRefLT, "subtypePtr");
+            auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
+            return buildThen(thenBuilder, resultStructRef);
           }
           case Ownership::BORROW:
           case Ownership::WEAK: {

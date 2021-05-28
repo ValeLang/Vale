@@ -24,7 +24,9 @@ case class BodyResultDoesntMatch(range: RangeS, functionName: IFunctionDeclarati
 case class CouldntConvertForReturnT(range: RangeS, expectedType: Coord, actualType: Coord) extends ICompileErrorT
 case class CouldntConvertForMutateT(range: RangeS, expectedType: Coord, actualType: Coord) extends ICompileErrorT
 case class CantMoveOutOfMemberT(range: RangeS, name: IVarName2) extends ICompileErrorT
-case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunctionFailure) extends ICompileErrorT
+case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunctionFailure) extends ICompileErrorT {
+  vpass()
+}
 case class CantUseUnstackifiedLocal(range: RangeS, localId: IVarName2) extends ICompileErrorT
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarName2) extends ICompileErrorT
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: Signature2) extends ICompileErrorT

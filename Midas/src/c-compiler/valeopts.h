@@ -25,8 +25,7 @@ struct ValeOptions {
     std::string srcNameNoExt;    // Just the name of the file, without extension
     std::string srcDirAndNameNoExt;    // Just the name of the file, without extension
 
-    std::string output;
-    std::string exportsDir;
+    std::string outputDir;
 
     std::string triple;
     std::string cpu;
@@ -44,7 +43,7 @@ struct ValeOptions {
     bool print_llvmir = false;    // Print out LLVM IR
     bool docs = false;            // Generate code documentation
     bool census = false;    // Enable census checking
-    bool flares = false;    // Enable flare output
+    bool flares = false;    // Enable flare outputDir
     bool genHeap = false;    // Enables generational heap
     bool elideChecksForKnownLive = false;    // Enables generational heap
     bool overrideKnownLiveTrue = false;    // Enables generational heap

@@ -38,10 +38,6 @@ trait ParserUtils extends RegexParsers {
   private[parser] def white: Parser[Unit] = { "\\s+".r ^^^ () }
   private[parser] def optWhite: Parser[Unit] = { opt(white) ^^^ () }
 
-  // soon, give special treatment to ^
-  // we want marine^.item to explode marine and extract its item
-  // but, we don't want it to parse it as (marine^).item
-  // so, we need to look ahead a bit and see if there's a . after it.
   private[parser] def exprIdentifier: Parser[NameP] = {
     pos ~ """[^\s\.\!\$\&\,\:\(\)\;\[\]\{\}\'\*\^\"\<\>\=\`]+""".r ~ pos ^^ {
       case begin ~ str ~ end => NameP(Range(begin, end), str)

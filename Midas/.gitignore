@@ -10,7 +10,7 @@ Directory.Build.props
 *.obj
 *.elf
 
-# Linker output
+# Linker outputDir
 *.ilk
 *.map
 *.exp
@@ -86,7 +86,7 @@ packages
 # vale frontend compiler driver generated files
 *.vir
 
-# Build output
+# Build outputDir
 valec
 test/test_build
 test/Driver.jar

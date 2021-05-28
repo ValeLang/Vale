@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.parser.FileP
+import net.verdagon.vale.parser.{FailedParse, FileP}
 import net.verdagon.vale.scout.{CodeLocationS, ICompileErrorS, ITemplexS, ProgramS, RangeS}
 
 import scala.collection.immutable.{List, ListMap, Map, Set}
@@ -25,21 +25,19 @@ class TemplarCompilation(
   var astronomerCompilation = new AstronomerCompilation(packagesToBuild, packageToContentsResolver)
   var hinputsCache: Option[Hinputs] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = astronomerCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = astronomerCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = astronomerCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = astronomerCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = astronomerCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = astronomerCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = astronomerCompilation.getScoutput()
-  def expectScoutput(): FileCoordinateMap[ProgramS] = astronomerCompilation.expectScoutput()
 
   def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = astronomerCompilation.getAstrouts()
-  def expectAstrouts(): PackageCoordinateMap[ProgramA] = astronomerCompilation.expectAstrouts()
 
   def getTemputs(): Result[Hinputs, ICompileErrorT] = {
     hinputsCache match {
       case Some(temputs) => Ok(temputs)
       case None => {
         val templar = new Templar(options.debugOut, options.verbose, options.profiler, options.useOptimization)
-        templar.evaluate(expectAstrouts()) match {
+        templar.evaluate(astronomerCompilation.getAstrouts().getOrDie()) match {
           case Err(e) => Err(e)
           case Ok(hinputs) => {
             hinputsCache = Some(hinputs)
@@ -49,7 +47,13 @@ class TemplarCompilation(
       }
     }
   }
+
   def expectTemputs(): Hinputs = {
-    getTemputs().getOrDie()
+    getTemputs() match {
+      case Err(err) => {
+        vfail(TemplarErrorHumanizer.humanize(true, getCodeMap().getOrDie(), err))
+      }
+      case Ok(x) => x
+    }
   }
 }

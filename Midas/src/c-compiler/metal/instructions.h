@@ -754,42 +754,42 @@ public:
 
   Referend* targetReferend;
 
-  Prototype* someConstructor;
-  Reference* someType;
-  StructReferend* someReferend;
+  Prototype* okConstructor;
+  Reference* okType;
+  StructReferend* okReferend;
 
-  Prototype* noneConstructor;
-  Reference* noneType;
-  StructReferend* noneReferend;
+  Prototype* errConstructor;
+  Reference* errType;
+  StructReferend* errReferend;
 
-  Reference* resultOptType;
-  InterfaceReferend* resultOptReferend;
+  Reference* resultResultType;
+  InterfaceReferend* resultResultReferend;
 
   AsSubtype(
       Expression* sourceExpr_,
       Reference* sourceType_,
       bool sourceKnownLive_,
       Referend* targetReferend_,
-      Prototype* someConstructor_,
-      Reference* someType_,
-      StructReferend* someReferend_,
-      Prototype* noneConstructor_,
-      Reference* noneType_,
-      StructReferend* noneReferend_,
-      Reference* resultOptType_,
-      InterfaceReferend* resultOptReferend_) :
+      Prototype* okConstructor_,
+      Reference* okType_,
+      StructReferend* okReferend_,
+      Prototype* errConstructor_,
+      Reference* errType_,
+      StructReferend* errReferend_,
+      Reference* resultResultType_,
+      InterfaceReferend* resultResultReferend_) :
     sourceExpr(sourceExpr_),
     sourceType(sourceType_),
     sourceKnownLive(sourceKnownLive_),
     targetReferend(targetReferend_),
-    someConstructor(someConstructor_),
-    someType(someType_),
-    someReferend(someReferend_),
-    noneConstructor(noneConstructor_),
-    noneType(noneType_),
-    noneReferend(noneReferend_),
-    resultOptType(resultOptType_),
-    resultOptReferend(resultOptReferend_) {}
+    okConstructor(okConstructor_),
+    okType(okType_),
+    okReferend(okReferend_),
+    errConstructor(errConstructor_),
+    errType(errType_),
+    errReferend(errReferend_),
+    resultResultType(resultResultType_),
+    resultResultReferend(resultResultReferend_) {}
 };
 
 #endif

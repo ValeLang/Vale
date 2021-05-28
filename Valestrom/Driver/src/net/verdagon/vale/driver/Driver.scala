@@ -97,9 +97,13 @@ object Driver {
             if (value.endsWith(".vale") || value.endsWith(".vpst")) {
               throw InputException(".vale and .vpst inputs must be prefixed with their module name and a colon.")
             }
-            val parts = value.split(".")
-            vassert(parts.nonEmpty)
-            val packageCoord = PackageCoordinate(parts.head, parts.tail.toList)
+            val parts =
+              if (value.contains(".")) {
+                value.split(".").toList
+              } else {
+                List(value)
+              }
+            val packageCoord = PackageCoordinate(parts.head, parts.tail)
             parseOpts(opts.copy(packagesToBuild = opts.packagesToBuild :+ packageCoord), tail)
           }
         }

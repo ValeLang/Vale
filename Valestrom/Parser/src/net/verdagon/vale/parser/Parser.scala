@@ -689,10 +689,9 @@ object ParserCompilation {
             }
           })
         }).toList.flatten.filter(packageCoord => {
-          alreadyParsedProgramPMap.moduleToPackagesToFilenameToContents
+          !alreadyParsedProgramPMap.moduleToPackagesToFilenameToContents
             .getOrElse(packageCoord.module, Map())
-            .getOrElse(packageCoord.packages, Map())
-            .isEmpty
+            .contains(packageCoord.packages)
         })
 
     if (neededPackageCoords.isEmpty) {

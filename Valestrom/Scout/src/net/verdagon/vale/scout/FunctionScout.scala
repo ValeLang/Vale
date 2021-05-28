@@ -208,7 +208,7 @@ object FunctionScout {
     attrsP.map({
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS(file.packageCoordinate)
-      case ExternAttributeP(_) => ExternS
+      case ExternAttributeP(_) => ExternS(file.packageCoordinate)
       case PureAttributeP(_) => PureS
       case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
       case x => vimpl(x.toString)

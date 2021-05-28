@@ -3,7 +3,7 @@ package net.verdagon.vale.hinputs
 import net.verdagon.vale.templar.{CitizenName2, Edge2, ExportAs2, FullName2, Function2, FunctionName2, IFunctionName2, Impl2, InterfaceEdgeBlueprint, LambdaCitizenName2, Program2, simpleName}
 import net.verdagon.vale.templar.templata.{FunctionBanner2, Prototype2, Signature2}
 import net.verdagon.vale.templar.types.{InterfaceDefinition2, InterfaceRef2, StructDefinition2, StructRef2}
-import net.verdagon.vale.vfail
+import net.verdagon.vale.{PackageCoordinate, vfail}
 
 import scala.collection.immutable.List
 
@@ -15,7 +15,7 @@ case class Hinputs(
   emptyPackStructRef: StructRef2,
   functions: List[Function2],
   exports: List[ExportAs2],
-  externPrototypes: List[Prototype2],
+  moduleNameToExternNameToExtern: Map[String, Map[String, (PackageCoordinate, Prototype2)]],
   edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
   edges: List[Edge2]) {
 

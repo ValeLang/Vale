@@ -654,7 +654,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("exporting array") {
-    val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
+    val compilation = RunCompilation.test("export Array<mut, vary, int> as IntArray;")
     val hamuts = compilation.getHamuts()
     val (packageCoord, fullNameH) = hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("IntArray")
 //    exportedName shouldEqual List("IntArray")

@@ -22,8 +22,9 @@ class PatternTemplar(
     opts: TemplarOptions,
     profiler: IProfiler,
     inferTemplar: InferTemplar,
+    arrayTemplar: ArrayTemplar,
     convertHelper: ConvertHelper,
-  dropHelper: DropHelper,
+    dropHelper: DropHelper,
     localHelper: LocalHelper) {
   // Note: This will unlet/drop the input expressions. Be warned.
   // patternInputExprs2 is a list of reference expression because they're coming in from
@@ -183,7 +184,7 @@ class PatternTemplar(
                 temputs, fate, range, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
             (lets0 ++ innerLets)
           }
-          case KnownSizeArrayT2(size, RawArrayT2(memberType, mutability)) => {
+          case KnownSizeArrayT2(size, RawArrayT2(_, _, _)) => {
             if (size != listOfMaybeDestructureMemberPatterns.size) {
               throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
             }
@@ -326,7 +327,7 @@ class PatternTemplar(
     // for each member, unlet its local and pass it to the subpattern.
 
     val arrSeqRef2 = inputArraySeqExpr.resultRegister.reference
-    val Coord(arrSeqRefOwnership, arrSeqRefPermission, arraySeqT @ KnownSizeArrayT2(numElements, RawArrayT2(elementType, arrayMutability))) = arrSeqRef2
+    val Coord(arrSeqRefOwnership, arrSeqRefPermission, arraySeqT @ KnownSizeArrayT2(numElements, RawArrayT2(elementType, arrayMutability, _))) = arrSeqRef2
 
     val memberTypes = (0 until numElements).toList.map(_ => elementType)
 
@@ -354,11 +355,9 @@ class PatternTemplar(
           innerPatternMaybes.zip(memberTypes).zipWithIndex
             .flatMap({
               case (((innerPattern, memberType), index)) => {
-                val loadExpr =
-                  SoftLoad2(
-                    ArraySequenceLookup2(range, inputArraySeqExpr, arraySeqT, IntLiteral2(index), Final),
-                    Share,
-                    Readonly)
+                val addrExpr =
+                  arrayTemplar.lookupInKnownSizeArray(range, inputArraySeqExpr, IntLiteral2(index), arraySeqT)
+                val loadExpr = SoftLoad2(addrExpr, Share, Readonly)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
             })

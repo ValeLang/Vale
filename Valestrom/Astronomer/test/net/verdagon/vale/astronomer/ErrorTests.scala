@@ -77,4 +77,24 @@ class ErrorTests extends FunSuite with Matchers  {
       }
     }
   }
+
+  test("Report couldnt solve rules") {
+    val compilation =
+      new Compilation(
+        """
+          |fn moo<A>(x int) {
+          |  42
+          |}
+          |fn main() {
+          |  moo();
+          |}
+          |""".stripMargin)
+
+    compileProgramForError(compilation) match {
+      case e @ CouldntSolveRulesA(range, failure) => {
+        val errorText = AstronomerErrorHumanizer.humanize(compilation.getFileMap(), e)
+        vassert(errorText.contains("olve"))
+      }
+    }
+  }
 }

@@ -733,7 +733,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  y float;
         |}
         |struct Pattern imm {
-        |  patternTiles Array<imm, Vec2>;
+        |  patternTiles Array<imm, final, Vec2>;
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()

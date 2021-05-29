@@ -213,7 +213,9 @@ case class TupleT2(members: List[Coord], underlyingStruct: StructRef2) extends K
 
 case class RawArrayT2(
   memberType: Coord,
-  mutability: Mutability) extends Queriable2 {
+  mutability: Mutability,
+  variability: Variability
+) extends Queriable2 {
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ memberType.all(func)
   }

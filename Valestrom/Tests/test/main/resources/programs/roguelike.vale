@@ -27,10 +27,10 @@ struct Goblin {
   location Vec<2, int>;
 }
 
-fn makeBoard() Array<mut, Array<mut, str>> {
+fn makeBoard() Array<mut, final, Array<mut, vary, str>> {
   ret
     MakeArray(10, (row){
-      MakeArray(10, (col){
+      MakeVaryArray(10, (col){
         = if (row == 0) { "#" }
           else if (col == 0) { "#" }
           else if (row == 9) { "#" }

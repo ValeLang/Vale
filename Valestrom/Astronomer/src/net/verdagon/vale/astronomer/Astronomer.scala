@@ -148,7 +148,7 @@ object Astronomer {
       "float" -> KindTypeSR,
       "void" -> KindTypeSR,
       "IFunction1" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR, CoordTypeSR), KindTypeSR),
-      "Array" -> TemplateTypeSR(List(MutabilityTypeSR, CoordTypeSR), KindTypeSR))
+      "Array" -> TemplateTypeSR(List(MutabilityTypeSR, VariabilityTypeSR, CoordTypeSR), KindTypeSR))
 
   def translateRuneType(tyype: ITypeSR): ITemplataType = {
     tyype match {
@@ -213,23 +213,23 @@ object Astronomer {
     val (structsS, interfacesS) = env.lookupType(name)
 
     if (structsS.isEmpty && interfacesS.isEmpty) {
-      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Nothing found with name " + name))
+      ErrorReporter.report(RangedInternalErrorA(range, "Nothing found with name " + name))
     }
     if (structsS.size.signum + interfacesS.size.signum > 1) {
-      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
+      ErrorReporter.report(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
     }
 
     if (structsS.nonEmpty) {
       val types = structsS.map(lookupStructType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
     } else if (interfacesS.nonEmpty) {
       val types = interfacesS.map(lookupInterfaceType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
@@ -248,7 +248,7 @@ object Astronomer {
       ErrorReporter.report(CouldntFindTypeA(range, name.name))
     }
     if (primitivesS.size.signum + structsS.size.signum + interfacesS.size.signum > 1) {
-      throw CompileErrorExceptionA(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
+      ErrorReporter.report(RangedInternalErrorA(range, "Name doesn't correspond to only one of primitive or struct or interface: " + name))
     }
 
     if (primitivesS.nonEmpty) {
@@ -257,14 +257,14 @@ object Astronomer {
     } else if (structsS.nonEmpty) {
       val types = structsS.map(lookupStructType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
     } else if (interfacesS.nonEmpty) {
       val types = interfacesS.map(lookupInterfaceType(astrouts, env, _))
       if (types.toSet.size > 1) {
-        throw CompileErrorExceptionA(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
+        ErrorReporter.report(RangedInternalErrorA(range, "'" + name + "' has multiple types: " + types.toSet))
       }
       val tyype = types.head
       tyype
@@ -304,7 +304,7 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, rules, rangeS, List(), Some(localRunesA ++ knowableRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(rangeS, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -372,7 +372,7 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, rules, range, List(), Some(knowableRunesA ++ localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -416,12 +416,12 @@ object Astronomer {
 
     val (conclusionsForRulesFromStructDirection, rulesFromStructDirectionA) =
       makeRuleTyper().solve(astrouts, env, rulesFromStructDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     val (conclusionsForRulesFromInterfaceDirection, rulesFromInterfaceDirectionA) =
       makeRuleTyper().solve(astrouts, env, rulesFromInterfaceDirection, range, List(), Some(knowableRunesA ++ localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
     vassert(conclusionsForRulesFromStructDirection == conclusionsForRulesFromInterfaceDirection)
@@ -447,7 +447,7 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, rulesS, range, List(), Some(Set(runeA))) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => throw CompileErrorExceptionA(CouldntSolveRulesA(range, rtsf))
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -507,7 +507,9 @@ object Astronomer {
 
     val (conclusions, rulesA) =
       makeRuleTyper().solve(astrouts, env, templateRules, rangeS, List(), Some(localRunesA)) match {
-        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => vfail(rtsf.toString)
+        case (_, rtsf @ RuleTyperSolveFailure(_, _, _, _)) => {
+          ErrorReporter.report(CouldntSolveRulesA(rangeS, rtsf))
+        }
         case (c, RuleTyperSolveSuccess(r)) => (c, r)
       }
 
@@ -712,7 +714,7 @@ object Astronomer {
 
   val wrapperFunctions =
     List(
-      Arrays.makeArrayFunction(),
+//      Arrays.makeArrayFunction(),
       RefCounting.checkmemberrc,
       RefCounting.checkvarrc)
 

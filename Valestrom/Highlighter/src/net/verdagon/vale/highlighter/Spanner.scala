@@ -340,7 +340,7 @@ object Spanner {
       case InterpretedPT(range, ownership, permission, inner) => {
         makeSpan(Ownership, range, List(forTemplex(inner)))
       }
-      case RepeaterSequencePT(range, mutability, size, element) => {
+      case RepeaterSequencePT(range, mutability, variability, size, element) => {
         makeSpan(
           Typ,
           range,

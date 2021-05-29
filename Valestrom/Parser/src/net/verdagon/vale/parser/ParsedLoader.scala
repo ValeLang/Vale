@@ -629,7 +629,12 @@ object ParsedLoader {
       case "MutabilityT" => {
         MutabilityPT(
           loadRange(getObjectField(jobj, "range")),
-          loadMutability(getObjectField(jobj, "inner")))
+          loadMutability(getObjectField(jobj, "mutability")))
+      }
+      case "VariabilityT" => {
+        VariabilityPT(
+          loadRange(getObjectField(jobj, "range")),
+          loadVariability(getObjectField(jobj, "variability")))
       }
       case "StringT" => {
         StringPT(
@@ -677,6 +682,7 @@ object ParsedLoader {
         RepeaterSequencePT(
           loadRange(getObjectField(jobj, "range")),
           loadTemplex(getObjectField(jobj, "mutability")),
+          loadTemplex(getObjectField(jobj, "variability")),
           loadTemplex(getObjectField(jobj, "size")),
           loadTemplex(getObjectField(jobj, "element")))
       }

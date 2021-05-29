@@ -28,8 +28,8 @@ object InfererTestUtils {
       case StructRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
       case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
       case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
-      case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
-      case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
+      case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
+      case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => mutability
     }
   }
 }
@@ -120,8 +120,11 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
     vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
   }
 
-  override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+  override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
     vfail()
+  }
+  override def makeUnknownSizeArrayType(env: SimpleEnvironment, state: FakeState, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
+    UnknownSizeArrayT2(RawArrayT2(type2, arrayMutability, arrayVariability))
   }
   override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[Coord]): TupleT2 = {
     vfail()
@@ -265,7 +268,7 @@ class InfererTests extends FunSuite with Matchers {
     entries = entries.addEntry(true, CitizenName2("MutStructWeakRW", List()),
       TemplataEnvEntry(CoordTemplata(Coord(Weak, Readwrite, StructRef2(FullName2(List(), CitizenName2("MutStruct", List())))))))
     entries = entries.addEntry(true, CitizenName2("MutArraySequenceOf4Int", List()),
-      TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Readonly, Int2()), Mutable)))))
+      TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Readonly, Int2()), Mutable, Varying)))))
     // Tuples are normally addressed by TupleNameT, but that's a detail this test doesn't need to care about.
     entries = entries.addEntry(true, CitizenName2("IntAndBoolTupName", List()),
       TemplataEnvEntry(
@@ -290,8 +293,8 @@ class InfererTests extends FunSuite with Matchers {
             case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
             case InterfaceRef2(FullName2(_, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
             case Int2() | Void2() | Bool2() => Immutable
-            case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
-            case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
+            case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
+            case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => mutability
             case TupleT2(_, StructRef2(FullName2(_, CitizenName2(humanName, _)))) if humanName.startsWith("Imm") => Immutable
             case _ => vfail()
           }
@@ -333,8 +336,8 @@ class InfererTests extends FunSuite with Matchers {
             case StructTemplata(_,structName(TopLevelCitizenDeclarationNameA("MutTStruct", _))) => TemplateTemplataType(List(CoordTemplataType), KindTemplataType)
           }
         }
-        override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-          (KnownSizeArrayT2(size, RawArrayT2(element, mutability)))
+        override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+          (KnownSizeArrayT2(size, RawArrayT2(element, mutability, variability)))
         }
 
         override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[Coord]): TupleT2 = {
@@ -950,7 +953,12 @@ class InfererTests extends FunSuite with Matchers {
           TemplexTR(RuneTT(RangeS.testZero,CodeRune2("Z"), CoordTemplataType)),
           EqualsTR(RangeS.testZero,
             TemplexTR(RuneTT(RangeS.testZero,CodeRune2("Z"), CoordTemplataType)),
-            TemplexTR(RepeaterSequenceTT(RangeS.testZero,MutabilityTT(RangeS.testZero,ImmutableP), IntTT(RangeS.testZero,5),InterpretedTT(RangeS.testZero,ShareP,ReadonlyP,NameTT(RangeS.testZero,CodeTypeNameA("int"), CoordTemplataType)), CoordTemplataType)))),
+            TemplexTR(
+              RepeaterSequenceTT(RangeS.testZero,
+                MutabilityTT(RangeS.testZero,ImmutableP),
+                VariabilityTT(RangeS.testZero,FinalP),
+                IntTT(RangeS.testZero,5),
+                InterpretedTT(RangeS.testZero,ShareP,ReadonlyP,NameTT(RangeS.testZero,CodeTypeNameA("int"), CoordTemplataType)), CoordTemplataType)))),
         RangeS.testZero,
         Map(CodeRune2("Z") -> CoordTemplataType),
         Set(CodeRune2("Z")),
@@ -959,7 +967,7 @@ class InfererTests extends FunSuite with Matchers {
         None,
         true)
     inferencesD.templatasByRune(CodeRune2("Z")) shouldEqual
-      CoordTemplata(Coord(Share, Readonly,KnownSizeArrayT2(5,RawArrayT2(Coord(Share, Readonly,Int2()),Immutable))))
+      CoordTemplata(Coord(Share, Readonly,KnownSizeArrayT2(5,RawArrayT2(Coord(Share, Readonly,Int2()),Immutable,Final))))
   }
 
   test("Test matching array sequence as coord") {
@@ -973,17 +981,19 @@ class InfererTests extends FunSuite with Matchers {
             TemplexTR(
               RepeaterSequenceTT(RangeS.testZero,
                 RuneTT(RangeS.testZero,CodeRune2("M"), MutabilityTemplataType),
+                RuneTT(RangeS.testZero,CodeRune2("V"), VariabilityTemplataType),
                 RuneTT(RangeS.testZero,CodeRune2("N"), IntegerTemplataType),
                 RuneTT(RangeS.testZero,CodeRune2("E"), CoordTemplataType),
                 CoordTemplataType)))),
         RangeS.testZero,
         Map(CodeRune2("E") -> CoordTemplataType),
-        Set(CodeRune2("E"), CodeRune2("M"), CodeRune2("N")),
+        Set(CodeRune2("E"), CodeRune2("M"), CodeRune2("V"), CodeRune2("N")),
         Map(),
         List(),
         None,
         true)
     inferencesD.templatasByRune(CodeRune2("M")) shouldEqual MutabilityTemplata(Mutable)
+    inferencesD.templatasByRune(CodeRune2("V")) shouldEqual VariabilityTemplata(Varying)
     inferencesD.templatasByRune(CodeRune2("N")) shouldEqual IntegerTemplata(4)
     inferencesD.templatasByRune(CodeRune2("E")) shouldEqual CoordTemplata(Coord(Share, Readonly,Int2()))
   }
@@ -999,17 +1009,19 @@ class InfererTests extends FunSuite with Matchers {
             TemplexTR(
               RepeaterSequenceTT(RangeS.testZero,
                 RuneTT(RangeS.testZero,CodeRune2("M"), MutabilityTemplataType),
+                RuneTT(RangeS.testZero,CodeRune2("V"), VariabilityTemplataType),
                 RuneTT(RangeS.testZero,CodeRune2("N"), IntegerTemplataType),
                 RuneTT(RangeS.testZero,CodeRune2("E"), CoordTemplataType),
                 KindTemplataType)))),
         RangeS.testZero,
         Map(CodeRune2("E") -> CoordTemplataType),
-        Set(CodeRune2("E"), CodeRune2("M"), CodeRune2("N")),
+        Set(CodeRune2("E"), CodeRune2("M"), CodeRune2("V"), CodeRune2("N")),
         Map(),
         List(),
         None,
         true)
     inferencesD.templatasByRune(CodeRune2("M")) shouldEqual MutabilityTemplata(Mutable)
+    inferencesD.templatasByRune(CodeRune2("V")) shouldEqual VariabilityTemplata(Varying)
     inferencesD.templatasByRune(CodeRune2("N")) shouldEqual IntegerTemplata(4)
     inferencesD.templatasByRune(CodeRune2("E")) shouldEqual CoordTemplata(Coord(Share, Readonly,Int2()))
   }
@@ -1105,24 +1117,32 @@ class InfererTests extends FunSuite with Matchers {
             TemplexTR(RuneTT(RangeS.testZero,CodeRune2("K"), KindTemplataType)),
             TemplexTR(
               CallTT(RangeS.testZero,
-                NameTT(RangeS.testZero,CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
-                List(MutabilityTT(RangeS.testZero,MutableP), NameTT(RangeS.testZero,CodeTypeNameA("int"), CoordTemplataType)),
+                NameTT(RangeS.testZero,CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
+                List(MutabilityTT(RangeS.testZero,MutableP), VariabilityTT(RangeS.testZero,VaryingP), NameTT(RangeS.testZero,CodeTypeNameA("int"), CoordTemplataType)),
                 KindTemplataType))),
           EqualsTR(RangeS.testZero,
             TemplexTR(RuneTT(RangeS.testZero,CodeRune2("K"), KindTemplataType)),
             TemplexTR(
               CallTT(RangeS.testZero,
-                NameTT(RangeS.testZero,CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
-                List(RuneTT(RangeS.testZero,CodeRune2("M"), MutabilityTemplataType), RuneTT(RangeS.testZero,CodeRune2("T"), CoordTemplataType)),
+                NameTT(RangeS.testZero,CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
+                List(
+                  RuneTT(RangeS.testZero,CodeRune2("M"), MutabilityTemplataType),
+                  RuneTT(RangeS.testZero,CodeRune2("V"), VariabilityTemplataType),
+                  RuneTT(RangeS.testZero,CodeRune2("T"), CoordTemplataType)),
                 KindTemplataType)))),
         RangeS.testZero,
-        Map(CodeRune2("T") -> CoordTemplataType, CodeRune2("M") -> MutabilityTemplataType, CodeRune2("K") -> KindTemplataType),
-        Set(CodeRune2("T"), CodeRune2("M"), CodeRune2("K")),
+        Map(
+          CodeRune2("T") -> CoordTemplataType,
+          CodeRune2("M") -> MutabilityTemplataType,
+          CodeRune2("V") -> VariabilityTemplataType,
+          CodeRune2("K") -> KindTemplataType),
+        Set(CodeRune2("T"), CodeRune2("M"), CodeRune2("V"), CodeRune2("K")),
         Map(),
         List(),
         None,
         true)
     inferencesD.templatasByRune(CodeRune2("M")) shouldEqual MutabilityTemplata(Mutable)
+    inferencesD.templatasByRune(CodeRune2("V")) shouldEqual VariabilityTemplata(Varying)
     inferencesD.templatasByRune(CodeRune2("T")) shouldEqual CoordTemplata(Coord(Share, Readonly,Int2()))
   }
 

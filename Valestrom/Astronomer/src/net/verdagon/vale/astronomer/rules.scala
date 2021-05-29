@@ -223,6 +223,7 @@ case class PrototypeAT(
 case class RepeaterSequenceAT(
   rangeS: RangeS,
   mutability: ITemplexA,
+  variability: ITemplexA,
   size: ITemplexA,
   element: ITemplexA,
   // This is here because we might want to coerce the result. We do this for

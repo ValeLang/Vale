@@ -656,21 +656,37 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
       (opt(templex) ^^ StaticSizedP)
   }
 
+  private[parser] def arrayHeader: Parser[(Option[ITemplexPT], Option[ITemplexPT], IArraySizeP)] = {
+    ((("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
+        (opt(variabilityAtomTemplex <~ optWhite)) ~
+        (arraySize <~ optWhite <~ "]")) ^^ {
+      case maybeMutability ~ maybeVariability ~ maybeSize => {
+        (maybeMutability, maybeVariability, maybeSize)
+      }
+    }) |
+    ((("[" ~> optWhite) ~>
+      (opt(templex <~ optWhite) <~ "," <~ optWhite) ~
+      (opt(templex <~ optWhite) <~ "," <~ optWhite) ~
+      (arraySize <~ optWhite <~ "]")) ^^ {
+      case maybeMutability ~ maybeVariability ~ maybeSize => {
+        (maybeMutability, maybeVariability, maybeSize)
+      }
+    })
+  }
+
   private[parser] def constructArrayExpr: Parser[IExpressionPE] = {
     pos ~
-      (("[" ~> optWhite ~> opt(mutabilityAtomTemplex <~ optWhite)) ~
-        (opt(variabilityAtomTemplex <~ optWhite)) ~
-        (arraySize <~ optWhite <~ "]") <~ optWhite) ~
+      (arrayHeader <~ optWhite) ~
       (("[" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ "]")) |
         ("(" ~ (optWhite ~> repsep(expression, optWhite ~> "," <~ optWhite) <~ optWhite <~ ")"))) ~
       pos ^^ {
-      case begin ~ (maybeMutability ~ maybeVariability ~ maybeSize) ~ (argsType ~ valueExprs) ~ end => {
+      case begin ~ ((maybeMutability, maybeVariability, size)) ~ (argsType ~ valueExprs) ~ end => {
         val initializingIndividualElements = argsType match { case "[" => true case "(" => false }
         ConstructArrayPE(
           Range(begin, end),
           maybeMutability,
           maybeVariability,
-          maybeSize,
+          size,
           initializingIndividualElements,
           valueExprs)
       }

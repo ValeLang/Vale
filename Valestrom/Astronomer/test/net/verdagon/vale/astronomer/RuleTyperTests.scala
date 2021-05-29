@@ -39,7 +39,7 @@ class RuleTyperTests extends FunSuite with Matchers {
     SimpleEnvironment(
       Map(
         "ImmInterface" -> List(KindTemplataType),
-        "Array" -> List(TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
+        "Array" -> List(TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
         "MutTStruct" -> List(TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
         "MutTInterface" -> List(TemplateTemplataType(List(CoordTemplataType), KindTemplataType)),
         "MutStruct" -> List(KindTemplataType),
@@ -484,7 +484,12 @@ class RuleTyperTests extends FunSuite with Matchers {
           TypedSR(RangeS.testZero,CodeRuneS("Z"),CoordTypeSR),
           EqualsSR(RangeS.testZero,
             TemplexSR(RuneST(RangeS.testZero,CodeRuneS("Z"))),
-            TemplexSR(RepeaterSequenceST(RangeS.testZero,MutabilityST(RangeS.testZero,MutableP), IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
+            TemplexSR(
+              RepeaterSequenceST(
+                RangeS.testZero,
+                MutabilityST(RangeS.testZero,MutableP),
+                VariabilityST(RangeS.testZero,VaryingP),
+                IntST(RangeS.testZero,5),InterpretedST(RangeS.testZero,ShareP,ReadonlyP,NameST(RangeS.testZero, CodeTypeNameS("int"))))))),
         RangeS.testZero,
         List(),
         None)
@@ -519,14 +524,16 @@ class RuleTyperTests extends FunSuite with Matchers {
         List(
           EqualsSR(RangeS.testZero,
             TypedSR(RangeS.testZero,CodeRuneS("K"), KindTypeSR),
-            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(MutabilityST(RangeS.testZero,MutableP), NameST(RangeS.testZero, CodeTypeNameS("int")))))),
+            TemplexSR(
+              CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(MutabilityST(RangeS.testZero,MutableP), VariabilityST(RangeS.testZero,VaryingP), NameST(RangeS.testZero, CodeTypeNameS("int")))))),
           EqualsSR(RangeS.testZero,
             TypedSR(RangeS.testZero,CodeRuneS("K"), KindTypeSR),
-            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(RuneST(RangeS.testZero,CodeRuneS("M")), RuneST(RangeS.testZero,CodeRuneS("T"))))))),
+            TemplexSR(CallST(RangeS.testZero,NameST(RangeS.testZero, CodeTypeNameS("Array")),List(RuneST(RangeS.testZero,CodeRuneS("M")), RuneST(RangeS.testZero,CodeRuneS("V")), RuneST(RangeS.testZero,CodeRuneS("T"))))))),
         RangeS.testZero,
         List(),
         None)
     conclusions.typeByRune(CodeRuneA("M")) shouldEqual MutabilityTemplataType
+    conclusions.typeByRune(CodeRuneA("V")) shouldEqual VariabilityTemplataType
     conclusions.typeByRune(CodeRuneA("T")) shouldEqual CoordTemplataType
   }
 

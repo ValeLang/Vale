@@ -203,7 +203,7 @@ object ExpressionAstronomer {
       case DotCallSE(range, leftS, indexExprS) => {
         val leftA = translateExpression(env, astrouts, leftS)
         val indexExprA = translateExpression(env, astrouts, indexExprS)
-        DotCallAE(range, leftA, indexExprA)
+        IndexAE(range, leftA, indexExprA)
       }
       case FunctionCallSE(rangeS, callableExprS, argsExprsS) => {
         val callableExprA = translateExpression(env, astrouts, callableExprS)

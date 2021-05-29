@@ -39,6 +39,9 @@ class InfererEquator[Env, State](
       case (MutabilityTemplata(leftMutability), MutabilityTemplata(rightMutability)) => {
         (leftMutability == rightMutability)
       }
+      case (VariabilityTemplata(leftVariability), VariabilityTemplata(rightVariability)) => {
+        (leftVariability == rightVariability)
+      }
       case (StringTemplata(leftVal), StringTemplata(righVal)) => {
         (leftVal == righVal)
       }

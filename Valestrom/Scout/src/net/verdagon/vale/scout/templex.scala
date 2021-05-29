@@ -110,6 +110,7 @@ case class BorrowST(
 case class RepeaterSequenceST(
   range: RangeS,
   mutability: ITemplexS,
+  variability: ITemplexS,
   size: ITemplexS,
   element: ITemplexS
 ) extends ITemplexS
@@ -143,8 +144,8 @@ object TemplexSUtils {
       case PackST(_, members) => {
         members.flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
-      case RepeaterSequenceST(_, mutability, size, element) => {
-        List(mutability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
+      case RepeaterSequenceST(_, mutability, variability, size, element) => {
+        List(mutability, variability, size, element).flatMap(getDistinctOrderedRunesForTemplex).distinct
       }
       case ManualSequenceST(_, elements) => {
         elements.flatMap(getDistinctOrderedRunesForTemplex).distinct

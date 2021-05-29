@@ -31,7 +31,13 @@ case class PackPT(range: Range, members: List[ITemplexPT]) extends ITemplexPT
 //case class PermissionedPT(range: Range, permission: PermissionP, inner: ITemplexPT) extends ITemplexPT
 case class PermissionPT(range: Range, permission: PermissionP) extends ITemplexPT
 case class PrototypePT(range: Range, name: NameP, parameters: List[ITemplexPT], returnType: ITemplexPT) extends ITemplexPT
-case class RepeaterSequencePT(range: Range, mutability: ITemplexPT, size: ITemplexPT, element: ITemplexPT) extends ITemplexPT
+case class RepeaterSequencePT(
+  range: Range,
+  mutability: ITemplexPT,
+  variability: ITemplexPT,
+  size: ITemplexPT,
+  element: ITemplexPT
+) extends ITemplexPT
 case class SharePT(range: Range, inner: ITemplexPT) extends ITemplexPT
 case class StringPT(range: Range, str: String) extends ITemplexPT
 case class TypedRunePT(range: Range, rune: NameP, tyype: ITypePR) extends ITemplexPT

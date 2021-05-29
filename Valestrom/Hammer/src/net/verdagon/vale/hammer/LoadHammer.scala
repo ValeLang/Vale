@@ -38,10 +38,10 @@ object LoadHammer {
         case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
           translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, targetOwnership, targetPermission)
         }
-        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+        case UnknownSizeArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneUnknownSizeArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
-        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+        case StaticSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneKnownSizeArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
       }

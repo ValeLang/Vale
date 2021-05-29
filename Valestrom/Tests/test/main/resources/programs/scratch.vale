@@ -964,7 +964,7 @@ struct BoolPT {
 }
 impl ITemplexPT for BoolPT;
 
-// For example, the `imm` in `a Array<imm, int> = ...;`
+// For example, the `imm` in `a Array<imm, final, int> = ...;`
 struct MutabilityPT {
   range Range;
   mutability MutabilityP;

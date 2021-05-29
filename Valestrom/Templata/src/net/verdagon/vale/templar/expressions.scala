@@ -490,12 +490,16 @@ case class ArgLookup2(
 //  }
 //}
 
-case class ArraySequenceLookup2(
+case class StaticSizedArrayLookup2(
   range: RangeS,
     arrayExpr: ReferenceExpression2,
     arrayType: KnownSizeArrayT2,
     indexExpr: ReferenceExpression2,
-    variability: Variability) extends AddressExpression2 {
+    // See RMLRMO for why we dont have a targetOwnership field here.
+    // See RMLHTP why we can have this here.
+    targetPermission: Permission,
+    variability: Variability
+) extends AddressExpression2 {
   vassert(arrayExpr.resultRegister.reference.referend == arrayType)
 
   override def resultRegister = AddressResult2(arrayType.array.memberType)
@@ -510,7 +514,11 @@ case class UnknownSizeArrayLookup2(
     arrayExpr: ReferenceExpression2,
     arrayType: UnknownSizeArrayT2,
     indexExpr: ReferenceExpression2,
-  variability: Variability) extends AddressExpression2 {
+  // See RMLRMO for why we dont have a targetOwnership field here.
+  // See RMLHTP why we can have this here.
+  targetPermission: Permission,
+  variability: Variability
+) extends AddressExpression2 {
   vassert(arrayExpr.resultRegister.reference.referend == arrayType)
 
   override def resultRegister = AddressResult2(arrayType.array.memberType)

@@ -9,7 +9,7 @@ import net.verdagon.vale.vpass
 
 case class CompileErrorExceptionT(err: ICompileErrorT) extends RuntimeException
 
-sealed trait ICompileErrorT
+sealed trait ICompileErrorT { def range: RangeS }
 case class ImmStructCantHaveVaryingMember(range: RangeS, structName: TopLevelCitizenDeclarationNameA, memberName: String) extends ICompileErrorT
 case class CantDowncastUnrelatedTypes(range: RangeS, sourceKind: Kind, targetKind: Kind) extends ICompileErrorT
 case class CantDowncastToInterface(range: RangeS, targetKind: InterfaceRef2) extends ICompileErrorT
@@ -29,16 +29,21 @@ case class CouldntFindFunctionToCallT(range: RangeS, seff: ScoutExpectedFunction
 }
 case class CantUseUnstackifiedLocal(range: RangeS, localId: IVarName2) extends ICompileErrorT
 case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVarName2) extends ICompileErrorT
-case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: Signature2) extends ICompileErrorT
+case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: Signature2) extends ICompileErrorT {
+  override def range: RangeS = newFunctionRange
+}
 case class CantMutateFinalLocal(range: RangeS, localName: IVarNameA) extends ICompileErrorT
 case class CantMutateFinalMember(range: RangeS, fullName2: FullName2[IName2], memberName: FullName2[IVarName2]) extends ICompileErrorT
+case class CantMutateFinalElement(range: RangeS, fullName2: FullName2[IName2]) extends ICompileErrorT
 //case class CantMutateReadonlyMember(range: RangeS, structRef2: StructRef2, memberName: FullName2[IVarName2]) extends ICompileErrorT
 case class CantUseReadonlyReferenceAsReadwrite(range: RangeS) extends ICompileErrorT
 case class LambdaReturnDoesntMatchInterfaceConstructor(range: RangeS) extends ICompileErrorT
 case class IfConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class WhileConditionIsntBoolean(range: RangeS, actualType: Coord) extends ICompileErrorT
 case class CantMoveFromGlobal(range: RangeS, name: String) extends ICompileErrorT
-case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT
+case class InferAstronomerError(err: ICompileErrorA) extends ICompileErrorT {
+  override def range: RangeS = err.range
+}
 case class CantImplStruct(range: RangeS, parent: StructRef2) extends ICompileErrorT
 // REMEMBER: Add any new errors to the "Humanize errors" test
 

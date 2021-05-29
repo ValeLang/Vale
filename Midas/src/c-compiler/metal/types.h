@@ -167,14 +167,17 @@ class RawArrayT {
 public:
   RegionId* regionId;
   Mutability mutability;
+  Variability variability;
   Reference *elementType;
 
   RawArrayT(
       RegionId* regionId_,
       Mutability mutability_,
+      Variability variability_,
       Reference* elementType_) :
       regionId(regionId_),
       mutability(mutability_),
+      variability(variability_),
       elementType(elementType_) {}
 };
 

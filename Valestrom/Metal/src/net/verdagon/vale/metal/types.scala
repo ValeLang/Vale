@@ -158,6 +158,7 @@ case class UnknownSizeArrayDefinitionTH(
 // and lets us handle their code similarly.
 case class RawArrayTH(
   mutability: Mutability,
+  variability: Variability,
   elementType: ReferenceH[ReferendH])
 
 // Place in the original source code that something came from. Useful for uniquely

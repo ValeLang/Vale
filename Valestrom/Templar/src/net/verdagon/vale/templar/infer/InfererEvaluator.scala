@@ -778,7 +778,7 @@ class InfererEvaluator[Env, State](
           }
           case (Some(btt @ ArrayTemplateTemplata()), Some(listOfArgTemplatas)) => {
             val result =
-              templataTemplar.evaluateBuiltinTemplateTemplata(state, range, btt, listOfArgTemplatas, callResultType)
+              templataTemplar.evaluateBuiltinTemplateTemplata(env, state, range, btt, listOfArgTemplatas, callResultType)
             (InferEvaluateSuccess(result, templateDeeplySatisfied && argsDeeplySatisfied))
           }
           case (_, _) => {
@@ -805,13 +805,20 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType) => {
+      case RepeaterSequenceTT(range, mutabilityTemplex, variabilityTemplex, sizeTemplex, elementTemplex, resultType) => {
         val (maybeMutability, mutabilityDeeplySatisfied) =
           evaluateTemplex(env, state, typeByRune, localRunes, inferences, mutabilityTemplex) match {
-            case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Failed to evaluate size", List(iec)))
+            case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Failed to evaluate mutability", List(iec)))
             case (InferEvaluateUnknown(ds)) => (None, ds)
             case (InferEvaluateSuccess(MutabilityTemplata(mutability), ds)) => (Some(mutability), ds)
-            case (InferEvaluateSuccess(notInt, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Size isn't an int: " + notInt, Nil))
+            case (InferEvaluateSuccess(notInt, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Mutability isn't a mutability: " + notInt, Nil))
+          }
+        val (maybeVariability, variabilityDeeplySatisfied) =
+          evaluateTemplex(env, state, typeByRune, localRunes, inferences, variabilityTemplex) match {
+            case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Failed to evaluate variability", List(iec)))
+            case (InferEvaluateUnknown(ds)) => (None, ds)
+            case (InferEvaluateSuccess(VariabilityTemplata(variability), ds)) => (Some(variability), ds)
+            case (InferEvaluateSuccess(notInt, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Variability isn't a variability: " + notInt, Nil))
           }
         val (maybeSize, sizeDeeplySatisfied) =
           evaluateTemplex(env, state, typeByRune, localRunes, inferences, sizeTemplex) match {
@@ -828,11 +835,11 @@ class InfererEvaluator[Env, State](
             case (InferEvaluateSuccess(notCoord, _)) => return (InferEvaluateConflict(inferences.inferences, range, "Element isn't a coord: " + notCoord, Nil))
           }
 
-        (maybeMutability, maybeSize, maybeElement) match {
-          case (Some(mutability), Some(size), Some(element)) => {
+        (maybeMutability, maybeVariability, maybeSize, maybeElement) match {
+          case (Some(mutability), Some(variability), Some(size), Some(element)) => {
             val tuple =
-              templataTemplar.getArraySequenceKind(env, state, range, mutability, size, element, resultType)
-            (InferEvaluateSuccess(tuple, mutabilityDeeplySatisfied && sizeDeeplySatisfied && elementDeeplySatisfied))
+              templataTemplar.getArraySequenceKind(env, state, range, mutability, variability, size, element, resultType)
+            (InferEvaluateSuccess(tuple, mutabilityDeeplySatisfied && variabilityDeeplySatisfied && sizeDeeplySatisfied && elementDeeplySatisfied))
           }
           case _ => {
             // Not satisfied because there's an implicit constraint that these things together make up a valid repeater sequence.
@@ -1330,7 +1337,7 @@ class InfererEvaluator[Env, State](
         }
         InferEvaluateSuccess(members, true)
       }
-      case KnownSizeArrayT2(size, RawArrayT2(memberType, _)) => {
+      case KnownSizeArrayT2(size, RawArrayT2(memberType, _, _)) => {
         // We need to do this check right here because right after this we're making an array of size `size`
         // which we just received as an integer from the user.
         if (size != expectedNumMembers) {

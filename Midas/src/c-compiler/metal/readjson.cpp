@@ -12,6 +12,7 @@ Reference* readReference(MetalCache* cache, const json& reference);
 Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
 Location readLocation(MetalCache* cache, const json& location);
 Mutability readMutability(const json& mutability);
+Variability readVariability(const json& variability);
 
 //template<typename T>
 //concept ReturnsVec = requires(T a) {
@@ -71,10 +72,11 @@ RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
   assert(rawArray["__type"] == "Array");
 
   auto mutability = readMutability(rawArray["mutability"]);
+  auto variability = readVariability(rawArray["variability"]);
   auto elementType = readReference(cache, rawArray["elementType"]);
   auto regionId = mutability == Mutability::IMMUTABLE ? cache->rcImmRegionId : cache->mutRegionId;
 
-  return new RawArrayT(regionId, mutability, elementType);
+  return new RawArrayT(regionId, mutability, variability, elementType);
 }
 
 UnknownSizeArrayT* readUnknownSizeArray(MetalCache* cache, const json& referend) {

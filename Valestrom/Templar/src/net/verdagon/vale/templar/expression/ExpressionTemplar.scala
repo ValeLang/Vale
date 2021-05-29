@@ -51,7 +51,7 @@ class ExpressionTemplar(
     delegate: IExpressionTemplarDelegate) {
   val localHelper = new LocalHelper(opts, dropHelper)
   val callTemplar = new CallTemplar(opts, templataTemplar, convertHelper, localHelper, overloadTemplar)
-  val patternTemplar = new PatternTemplar(opts, profiler, inferTemplar, convertHelper, dropHelper, localHelper)
+  val patternTemplar = new PatternTemplar(opts, profiler, inferTemplar, arrayTemplar, convertHelper, dropHelper, localHelper)
   val blockTemplar = new BlockTemplar(opts, newTemplataStore, dropHelper, localHelper, new IBlockTemplarDelegate {
     override def evaluateAndCoerceToReferenceExpression(
         temputs: Temputs, fate: FunctionEnvironmentBox, expr1: IExpressionAE):
@@ -564,7 +564,13 @@ class ExpressionTemplar(
                   case _ => vimpl(structExpr.referend.toString)
                 }
               }
-              case _ => vimpl()
+              case UnknownSizeArrayLookup2(range, _, arrayType, _, _, _) => {
+                throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayType.name))
+              }
+              case StaticSizedArrayLookup2(range, _, arrayType, _, _, _) => {
+                throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayType.name))
+              }
+              case x => vimpl(x.toString)
             }
           }
 //          destinationExpr2.resultRegister.reference.permission match {
@@ -607,7 +613,7 @@ class ExpressionTemplar(
           // So far, we only allow these when they're immediately called like functions
           vfail("unimplemented")
         }
-        case DotCallAE(range, containerExpr1, indexExpr1) => {
+        case IndexAE(range, containerExpr1, indexExpr1) => {
           val (unborrowedContainerExpr2, returnsFromContainerExpr) =
             evaluate(temputs, fate, containerExpr1);
           val containerExpr2 =
@@ -618,16 +624,11 @@ class ExpressionTemplar(
 
           val exprTemplata =
             containerExpr2.resultRegister.reference.referend match {
-              case at@UnknownSizeArrayT2(_) => {
-                UnknownSizeArrayLookup2(range, containerExpr2, at, indexExpr2, Varying)
+              case usa @ UnknownSizeArrayT2(_) => {
+                arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, indexExpr2, usa)
               }
               case at@KnownSizeArrayT2(_, _) => {
-                ArraySequenceLookup2(
-                  range,
-                  containerExpr2,
-                  at,
-                  indexExpr2,
-                  Final)
+                arrayTemplar.lookupInKnownSizeArray(range, containerExpr2, indexExpr2, at)
               }
               case at@TupleT2(members, understruct) => {
                 indexExpr2 match {
@@ -677,23 +678,12 @@ class ExpressionTemplar(
                 val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                 val memberType = structMember.tyype.expectReferenceMember().reference;
 
-
                 vassert(structDef.members.exists(member => structDef.fullName.addStep(member.name) == memberFullName))
 
-                val index = structDef.members.indexWhere(_.name == memberFullName.last)
-//                val ownershipInClosureStruct = structDef.members(index).tyype.reference.ownership
-
-                val effectiveVariability =
-                  (containerExpr2.resultRegister.reference.permission, structMember.variability) match {
-                    case (Readonly, Final) => Final
-                    case (Readwrite, Final) => Final
-                    case (Readonly, Varying) => Final
-                    case (Readwrite, Varying) => Varying
-                  }
-
-                val targetPermission =
-                  Templar.intersectPermission(
+                val (effectiveVariability, targetPermission) =
+                  Templar.factorVariabilityAndPermission(
                     containerExpr2.resultRegister.reference.permission,
+                    structMember.variability,
                     memberType.permission)
 
                 ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, targetPermission, effectiveVariability)
@@ -705,41 +695,29 @@ class ExpressionTemplar(
                     val memberFullName = structDef.fullName.addStep(structDef.members(memberIndex).name)
                     val memberType = structMember.tyype.expectReferenceMember().reference;
 
-
                     vassert(structDef.members.exists(member => structDef.fullName.addStep(member.name) == memberFullName))
+                    vassert(structDef.members.exists(_.name == memberFullName.last))
 
-                    val index = structDef.members.indexWhere(_.name == memberFullName.last)
-                    val ownershipInClosureStruct = structDef.members(index).tyype.reference.ownership
-
-                    val targetPermission =
-                      Templar.intersectPermission(
+                    val (effectiveVariability, targetPermission) =
+                      Templar.factorVariabilityAndPermission(
                         containerExpr2.resultRegister.reference.permission,
+                        structMember.variability,
                         memberType.permission)
 
-                    ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, targetPermission, structMember.variability)
+                    ReferenceMemberLookup2(range, containerExpr2, memberFullName, memberType, targetPermission, effectiveVariability)
                   }
                 }
               }
               case as@KnownSizeArrayT2(_, _) => {
                 if (memberNameStr.forall(Character.isDigit)) {
-                  ArraySequenceLookup2(
-                    range,
-                    containerExpr2,
-                    as,
-                    IntLiteral2(memberNameStr.toInt),
-                    Final)
+                  arrayTemplar.lookupInKnownSizeArray(range, containerExpr2, IntLiteral2(memberNameStr.toInt), as)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Sequence has no member named " + memberNameStr))
                 }
               }
               case at@UnknownSizeArrayT2(_) => {
                 if (memberNameStr.forall(Character.isDigit)) {
-                  UnknownSizeArrayLookup2(
-                    range,
-                    containerExpr2,
-                    at,
-                    IntLiteral2(memberNameStr.toInt),
-                    Varying)
+                  arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, IntLiteral2(memberNameStr.toInt), at)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Array has no member named " + memberNameStr))
                 }
@@ -792,8 +770,9 @@ class ExpressionTemplar(
               temputs, fate, range, rules, typeByRune, maybeMutabilityRune, maybeVariabilityRune, sizeTE, callableTE)
           (expr2, returnsFromSize ++ returnsFromCallable)
         }
-        case ConstructArrayAE(range, mutabilityTemplex, elementCoordTemplex, generatorPrototypeTemplex, sizeExpr1, generatorExpr1) => {
+        case StaticSizedArrayFromCallableAE(range, mutabilityTemplex, variabilityTemplex, elementCoordTemplex, generatorPrototypeTemplex, sizeExpr1, generatorExpr1) => {
           val (MutabilityTemplata(arrayMutability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, mutabilityTemplex)
+          val (VariabilityTemplata(arrayVariability)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, variabilityTemplex)
           val (CoordTemplata(elementCoord)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, elementCoordTemplex)
           val (PrototypeTemplata(generatorPrototype)) = templataTemplar.evaluateTemplex(fate.snapshot, temputs, generatorPrototypeTemplex)
 
@@ -803,23 +782,9 @@ class ExpressionTemplar(
           val (generatorExpr2, returnsFromGenerator) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, generatorExpr1);
 
-          if (generatorPrototype.returnType != elementCoord) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator return type doesn't agree with array element type!"))
-          }
-          if (generatorPrototype.paramTypes.size != 2) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in 2 args!"))
-          }
-          if (generatorPrototype.paramTypes(0) != generatorExpr2.resultRegister.reference) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator first param doesn't agree with generator expression's result!"))
-          }
-          if (generatorPrototype.paramTypes(1) != Coord(Share, Readonly, Int2())) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in an integer as its second param!"))
-          }
-          if (arrayMutability == Immutable &&
-            Templar.getMutability(temputs, elementCoord.referend) == Mutable) {
-            throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't have an immutable array of mutable elements!"))
-          }
-          val arrayType = arrayTemplar.makeUnknownSizeArrayType(fate.snapshot, temputs, elementCoord, arrayMutability)
+          checkArray(
+            temputs, range, arrayMutability, elementCoord, generatorPrototype, generatorExpr2.resultRegister.reference)
+          val arrayType = arrayTemplar.makeUnknownSizeArrayType(fate.snapshot, temputs, elementCoord, arrayMutability, arrayVariability)
 
           val sizeRefExpr2 = coerceToReferenceExpression(fate, sizeExpr2)
           vassert(sizeRefExpr2.resultRegister.expectReference().reference == Coord(Share, Readonly, Int2()))
@@ -1084,6 +1049,32 @@ class ExpressionTemplar(
         }
       }
     })
+  }
+
+  private def checkArray(
+      temputs: Temputs,
+      range: RangeS,
+      arrayMutability: Mutability,
+      elementCoord: Coord,
+      generatorPrototype: Prototype2,
+      generatorType: Coord
+  ) = {
+    if (generatorPrototype.returnType != elementCoord) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator return type doesn't agree with array element type!"))
+    }
+    if (generatorPrototype.paramTypes.size != 2) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in 2 args!"))
+    }
+    if (generatorPrototype.paramTypes(0) != generatorType) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator first param doesn't agree with generator expression's result!"))
+    }
+    if (generatorPrototype.paramTypes(1) != Coord(Share, Readonly, Int2())) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Generator must take in an integer as its second param!"))
+    }
+    if (arrayMutability == Immutable &&
+      Templar.getMutability(temputs, elementCoord.referend) == Mutable) {
+      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't have an immutable array of mutable elements!"))
+    }
   }
 
   def getOption(temputs: Temputs, fate: FunctionEnvironment, range: RangeS, containedCoord: Coord):

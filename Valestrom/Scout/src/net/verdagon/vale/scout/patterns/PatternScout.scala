@@ -260,6 +260,7 @@ object PatternScout {
         }
       }
       case MutabilityPT(range, mutability) => (List(), MutabilityST(evalRange(range), mutability), None)
+      case VariabilityPT(range, variability) => (List(), VariabilityST(evalRange(range), variability), None)
       case InterpretedPT(range,ownership,permission, innerP) => {
         val (newRules, innerS, _) =
           translatePatternTemplex(env, rulesS, innerP)
@@ -270,11 +271,12 @@ object PatternScout {
         val (newRulesFromArgs, argsMaybeTemplexesS) = translatePatternTemplexes(env, rulesS, argsMaybeTemplexesP)
         (newRulesFromTemplate ++ newRulesFromArgs, CallST(evalRange(range), maybeTemplateS, argsMaybeTemplexesS), None)
       }
-      case RepeaterSequencePT(range,mutabilityP, sizeP, elementP) => {
+      case RepeaterSequencePT(range, mutabilityP, variabilityP, sizeP, elementP) => {
         val (newRulesFromMutability, mutabilityS, _) = translatePatternTemplex(env, rulesS, mutabilityP)
+        val (newRulesFromVariability, variabilityS, _) = translatePatternTemplex(env, rulesS, variabilityP)
         val (newRulesFromSize, sizeS, _) = translatePatternTemplex(env, rulesS, sizeP)
         val (newRulesFromElement, elementS, _) = translatePatternTemplex(env, rulesS, elementP)
-        (newRulesFromMutability ++ newRulesFromSize ++ newRulesFromElement, RepeaterSequenceST(evalRange(range), mutabilityS, sizeS, elementS), None)
+        (newRulesFromMutability ++ newRulesFromVariability ++ newRulesFromSize ++ newRulesFromElement, RepeaterSequenceST(evalRange(range), mutabilityS, variabilityS, sizeS, elementS), None)
       }
       case ManualSequencePT(range,maybeMembersP) => {
         val (newRules, maybeMembersS) = translatePatternTemplexes(env, rulesS, maybeMembersP)

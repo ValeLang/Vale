@@ -145,8 +145,8 @@ class LocalHelper(
                 Unlet2(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ UnknownSizeArrayLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
-              case l @ ArraySequenceLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ UnknownSizeArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ StaticSizedArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
               case l @ ReferenceMemberLookup2(_,_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
               case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
             }
@@ -214,11 +214,11 @@ class LocalHelper(
         val mutability = Templar.getMutability(temputs, understruct2)
         if (mutability == Mutable) Constraint else Share
       }
-      case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => {
+      case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => {
         if (mutability == Mutable) Constraint else Share
       }
-      case UnknownSizeArrayT2(array) => {
-        if (array.mutability == Mutable) Constraint else Share
+      case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => {
+        if (mutability == Mutable) Constraint else Share
       }
       //      case TemplatedClosure2(_, structRef, _) => {
       //        val mutability = Templar.getMutability(temputs, structRef)

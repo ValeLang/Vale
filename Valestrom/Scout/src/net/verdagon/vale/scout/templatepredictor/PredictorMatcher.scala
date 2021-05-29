@@ -27,7 +27,7 @@ object PredictorMatcher {
         args.foreach(matchAgainstTemplexSR(conclusions, _))
       }
       case InterpretedST(_, _, _, inner) => matchAgainstTemplexSR(conclusions, inner)
-      case RepeaterSequenceST(_, mutabilityRule, sizeRule,elementRule) => {
+      case RepeaterSequenceST(_, mutabilityRule, variabilityRule, sizeRule,elementRule) => {
         matchAgainstTemplexSR(conclusions, mutabilityRule)
         matchAgainstTemplexSR(conclusions, sizeRule)
         matchAgainstTemplexSR(conclusions, elementRule)

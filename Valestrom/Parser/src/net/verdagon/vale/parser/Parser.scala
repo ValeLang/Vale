@@ -778,8 +778,7 @@ class ParserCompilation(
   def expectParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = {
     getParseds() match {
       case Err(FailedParse(codeMap, fileCoord, err)) => {
-        println(ParseErrorHumanizer.humanize(codeMap, fileCoord, err))
-        vfail()
+        vfail(ParseErrorHumanizer.humanize(codeMap, fileCoord, err))
       }
       case Ok(x) => x
     }

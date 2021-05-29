@@ -107,6 +107,27 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate an imm struct") {
     val compile = TemplarTestCompilation.test(
       """
+        |struct Vec3 imm { x float; y float; z float; }
+        |fn main() int export {
+        |  v = Vec3(3.0, 4.0, 5.0);
+        |  set v.x = 10.0;
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantMutateFinalMember(_, structRef2, memberName)) => {
+        structRef2.last match {
+          case CitizenName2("Vec3", List()) =>
+        }
+        memberName.last match {
+          case CodeVarName2("x") =>
+        }
+      }
+    }
+  }
+
+  test("Reports when we try to mutate a final member in a struct") {
+    val compile = TemplarTestCompilation.test(
+      """
         |struct Vec3 { x float; y float; z float; }
         |fn main() int export {
         |  v = Vec3(3.0, 4.0, 5.0);
@@ -120,6 +141,42 @@ class TemplarMutateTests extends FunSuite with Matchers {
         }
         memberName.last match {
           case CodeVarName2("x") =>
+        }
+      }
+    }
+  }
+
+  test("Reports when we try to mutate an element in a runtime-sized array of finals") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |fn main() int export {
+        |  arr = [*](10, {_});
+        |  set arr[4] = 10;
+        |  ret 73;
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantMutateFinalElement(_, arrRef2)) => {
+        arrRef2.last match {
+          case UnknownSizeArrayName2(RawArrayName2(Mutable,_)) =>
+        }
+      }
+    }
+  }
+
+  test("Reports when we try to mutate an element in a static-sized array of finals") {
+    val compile = TemplarTestCompilation.test(
+      """
+        |fn main() int export {
+        |  arr = [10]({_});
+        |  set arr[4] = 10;
+        |  ret 73;
+        |}
+        |""".stripMargin)
+    compile.getTemputs() match {
+      case Err(CantMutateFinalElement(_, arrRef2)) => {
+        arrRef2.last match {
+          case KnownSizeArrayName2(10,RawArrayName2(Mutable,_)) =>
         }
       }
     }

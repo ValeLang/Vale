@@ -157,18 +157,22 @@ object TypeHammer {
       type2: KnownSizeArrayT2):
   KnownSizeArrayTH = {
     val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
-    val mutability = Conversions.evaluateMutability(type2.array.mutability)
-    val definition = KnownSizeArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, memberReferenceH))
+    val KnownSizeArrayT2(_, RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
+    val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
+    val mutability = Conversions.evaluateMutability(mutabilityT)
+    val variability = Conversions.evaluateVariability(variabilityT)
+    val definition = KnownSizeArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, variability, memberReferenceH))
     hamuts.addKnownSizeArray(definition)
     KnownSizeArrayTH(name)
   }
 
   def translateUnknownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: UnknownSizeArrayT2): UnknownSizeArrayTH = {
     val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val (memberReferenceH) = TypeHammer.translateReference(hinputs, hamuts, type2.array.memberType)
-    val mutability = Conversions.evaluateMutability(type2.array.mutability)
-    val definition = UnknownSizeArrayDefinitionTH(nameH, RawArrayTH(mutability, memberReferenceH))
+    val UnknownSizeArrayT2(RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
+    val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
+    val mutability = Conversions.evaluateMutability(mutabilityT)
+    val variability = Conversions.evaluateVariability(variabilityT)
+    val definition = UnknownSizeArrayDefinitionTH(nameH, RawArrayTH(mutability, variability, memberReferenceH))
     hamuts.addUnknownSizeArray(definition)
     UnknownSizeArrayTH(nameH)
   }

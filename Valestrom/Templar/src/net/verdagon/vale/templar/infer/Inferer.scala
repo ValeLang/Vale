@@ -46,7 +46,9 @@ trait IInfererDelegate[Env, State] {
 
 //  def getPackKind(env: Env, state: State, members: List[Coord]): (PackT2, Mutability)
 
-  def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2)
+  def getArraySequenceKind(env: Env, state: State, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2)
+
+  def makeUnknownSizeArrayType(env: Env, state: State, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2
 
   def getTupleKind(env: Env, state: State, elements: List[Coord]): TupleT2
 
@@ -134,8 +136,12 @@ object Inferer {
         delegate.evaluateStructTemplata(state, callRange, templata, templateArgs)
       }
 
-      override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-        delegate.getArraySequenceKind(env, state, mutability, size, element)
+      override def getArraySequenceKind(env: Env, state: State, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+        delegate.getArraySequenceKind(env, state, mutability, variability, size, element)
+      }
+
+      override def makeUnknownSizeArrayType(env: Env, state: State, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
+        delegate.makeUnknownSizeArrayType(env, state, type2, arrayMutability, arrayVariability)
       }
 
       override def getTupleKind(env: Env, state: State, elements: List[Coord]): TupleT2 = {

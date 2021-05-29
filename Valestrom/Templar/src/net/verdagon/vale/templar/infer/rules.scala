@@ -154,6 +154,7 @@ case class PrototypeTT(
 case class RepeaterSequenceTT(
   range: RangeS,
   mutability: ITemplexT,
+  variability: ITemplexT,
   size: ITemplexT,
   element: ITemplexT,
   // This is here because we might want to coerce the result. We do this for

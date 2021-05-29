@@ -62,10 +62,19 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
 
   private[parser] def repeaterSeqRulePR: Parser[ITemplexPT] = {
     (pos ~ ("[" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ size ~ element ~ end => RepeaterSequencePT(Range(begin, end), MutabilityPT(Range(begin, begin), MutableP), size, element)
+      case begin ~ size ~ element ~ end => {
+        RepeaterSequencePT(Range(begin, end), MutabilityPT(Range(begin, begin), MutableP), VariabilityPT(Range(begin, begin), FinalP), size, element)
+      }
     }) |
     (pos ~ ("[<" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ ">") ~ ((optWhite ~> ruleTemplexPR) <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
-      case begin ~ mutability ~ size ~ element ~ end => RepeaterSequencePT(Range(begin, end), mutability, size, element)
+      case begin ~ mutability ~ size ~ element ~ end => {
+        RepeaterSequencePT(Range(begin, end), mutability, VariabilityPT(Range(begin, begin), FinalP), size, element)
+      }
+    }) |
+    (pos ~ ("[<" ~> optWhite ~> ruleTemplexPR <~ optWhite <~ ",") ~ (optWhite ~> ruleTemplexPR <~ optWhite <~ ">") ~ ((optWhite ~> ruleTemplexPR) <~ optWhite <~ "*" <~ optWhite) ~ (ruleTemplexPR <~ optWhite <~ "]") ~ pos ^^ {
+      case begin ~ mutability ~ variability ~ size ~ element ~ end => {
+        RepeaterSequencePT(Range(begin, end), mutability, variability, size, element)
+      }
     })
   }
 

@@ -194,8 +194,19 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           structTemplar.getInterfaceRef(temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
         }
 
-        override def makeArraySequenceType(env: IEnvironment, temputs: Temputs, mutability: Mutability, size: Int, type2: Coord): KnownSizeArrayT2 = {
-          arrayTemplar.makeArraySequenceType(env, temputs, mutability, size, type2)
+        override def makeArraySequenceType(
+            env: IEnvironment,
+            temputs: Temputs,
+            mutability: Mutability,
+            variability: Variability,
+            size: Int,
+            type2: Coord
+        ): KnownSizeArrayT2 = {
+          arrayTemplar.makeArraySequenceType(env, temputs, mutability, variability, size, type2)
+        }
+
+        override def makeUnknownSizeArrayType(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
+          arrayTemplar.makeUnknownSizeArrayType(env, state, element, arrayMutability, arrayVariability)
         }
 
         override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2 = {
@@ -264,9 +275,15 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         //        PackTemplar.makePackType(env.globalEnv, state, members)
         //      }
 
-        override def getArraySequenceKind(env: IEnvironment, state: Temputs, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+        override def getArraySequenceKind(env: IEnvironment, state: Temputs, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
           profiler.childFrame("InferTemplarDelegate.getArraySequenceKind", () => {
-            arrayTemplar.makeArraySequenceType(env, state, mutability, size, element)
+            arrayTemplar.makeArraySequenceType(env, state, mutability, variability, size, element)
+          })
+        }
+
+        override def makeUnknownSizeArrayType(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
+          profiler.childFrame("InferTemplarDelegate.makeUnknownSizeArrayType", () => {
+            arrayTemplar.makeUnknownSizeArrayType(env, state, element, arrayMutability, arrayVariability)
           })
         }
 
@@ -797,8 +814,8 @@ object Templar {
       case Bool2() => Immutable
       case Str2() => Immutable
       case Void2() => Immutable
-      case UnknownSizeArrayT2(RawArrayT2(_, mutability)) => mutability
-      case KnownSizeArrayT2(_, RawArrayT2(_, mutability)) => mutability
+      case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => mutability
+      case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
       case sr @ StructRef2(_) => temputs.lookupMutability(sr)
       case ir @ InterfaceRef2(_) => temputs.lookupMutability(ir)
       case PackT2(_, sr) => temputs.lookupMutability(sr)
@@ -817,5 +834,22 @@ object Templar {
       case (Readwrite, Readonly) => Readonly
       case (Readwrite, Readwrite) => Readwrite
     }
+  }
+
+  def factorVariabilityAndPermission(
+    containerPermission: Permission,
+    memberVariability: Variability,
+    memberPermission: Permission):
+  (Variability, Permission) = {
+    val effectiveVariability =
+      (containerPermission, memberVariability) match {
+        case (Readonly, Final) => Final
+        case (Readwrite, Final) => Final
+        case (Readonly, Varying) => Final
+        case (Readwrite, Varying) => Varying
+      }
+
+    val targetPermission = Templar.intersectPermission(containerPermission, memberPermission)
+    (effectiveVariability, targetPermission)
   }
 }

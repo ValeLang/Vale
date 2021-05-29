@@ -24,10 +24,11 @@ object BuiltInFunctions {
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("I")),
         List(CodeRuneA("T")),
-        Set(CodeRuneA("T"), CodeRuneA("XX"), CodeRuneA("__1"), CodeRuneA("I")),
+        Set(CodeRuneA("T"), CodeRuneA("XX"), CodeRuneA("XY"), CodeRuneA("__1"), CodeRuneA("I")),
         Map(
           CodeRuneA("T") -> CoordTemplataType,
           CodeRuneA("XX") -> MutabilityTemplataType,
+          CodeRuneA("XY") -> VariabilityTemplataType,
           CodeRuneA("__1") -> CoordTemplataType,
           CodeRuneA("I") -> CoordTemplataType),
         List(
@@ -44,9 +45,10 @@ object BuiltInFunctions {
                 TemplexAR(PermissionAT(RangeS.internal(-9107), ReadonlyP)),
                 TemplexAR(
                   CallAT(RangeS.internal(-9108),
-                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)),
+                    NameAT(RangeS.internal(-9109),CodeTypeNameA("Array"), TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)),
                     List(
                       RuneAT(RangeS.internal(-9110),CodeRuneA("XX"), MutabilityTemplataType),
+                      RuneAT(RangeS.internal(-9110),CodeRuneA("XY"), VariabilityTemplataType),
                       RuneAT(RangeS.internal(-9111),CodeRuneA("__1"), CoordTemplataType)),
                     KindTemplataType))))),
           EqualsAR(RangeS.internal(-9112),
@@ -69,13 +71,14 @@ object BuiltInFunctions {
         TemplateTemplataType(List(CoordTemplataType), FunctionTemplataType),
         Set(CodeRuneA("I")),
         List(CodeRuneA("N"), CodeRuneA("T")),
-        Set(CodeRuneA("A"), CodeRuneA("N"), CodeRuneA("M"), CodeRuneA("T"), CodeRuneA("I")),
+        Set(CodeRuneA("A"), CodeRuneA("N"), CodeRuneA("M"), CodeRuneA("V"), CodeRuneA("T"), CodeRuneA("I")),
         Map(
           CodeRuneA("A") -> CoordTemplataType,
           CodeRuneA("N") -> IntegerTemplataType,
           CodeRuneA("T") -> CoordTemplataType,
           CodeRuneA("I") -> CoordTemplataType,
-          CodeRuneA("M") -> MutabilityTemplataType),
+          CodeRuneA("M") -> MutabilityTemplataType,
+          CodeRuneA("V") -> VariabilityTemplataType),
         List(
           ParameterA(AtomAP(RangeS.internal(-1338), LocalVariableA(CodeVarNameA("arr"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("A"), None))),
         Some(CodeRuneA("I")),
@@ -91,6 +94,7 @@ object BuiltInFunctions {
                 TemplexAR(
                   RepeaterSequenceAT(RangeS.internal(-9118),
                     RuneAT(RangeS.internal(-9119),CodeRuneA("M"), MutabilityTemplataType),
+                    RuneAT(RangeS.internal(-9119),CodeRuneA("V"), VariabilityTemplataType),
                     RuneAT(RangeS.internal(-9120),CodeRuneA("N"), IntegerTemplataType),
                     RuneAT(RangeS.internal(-9121),CodeRuneA("T"), CoordTemplataType),
                     KindTemplataType))))),

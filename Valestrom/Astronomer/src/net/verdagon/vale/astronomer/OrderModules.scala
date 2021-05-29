@@ -1,6 +1,6 @@
 package net.verdagon.vale.astronomer
 
-import net.verdagon.vale.scout.ProgramS
+import net.verdagon.vale.scout.{ProgramS, RangeS}
 import net.verdagon.vale.{PackageCoordinateMap, vassert}
 
 import scala.collection.immutable.List
@@ -32,7 +32,7 @@ object OrderModules {
         // Find a module that depends on nothing
         dependentToDependeeModule.find(_._2.isEmpty) match {
           case None => {
-            throw CompileErrorExceptionA(CircularModuleDependency(dependeeToDependentModule.keySet))
+            throw CompileErrorExceptionA(CircularModuleDependency(RangeS.internal(-123), dependeeToDependentModule.keySet))
           }
           case Some((thisModule, dependentModules)) => {
             vassert(dependentModules.isEmpty)

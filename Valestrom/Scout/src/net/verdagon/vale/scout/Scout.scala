@@ -12,7 +12,7 @@ import scala.util.parsing.input.OffsetPosition
 
 case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
 
-sealed trait ICompileErrorS
+sealed trait ICompileErrorS { def range: RangeS }
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
 case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS
 case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS
@@ -391,7 +391,7 @@ object Scout {
       case AnonymousRunePT(_) => vwat()
       case NameOrRunePT(NameP(_, name)) => name
       case CallPT(_, template, args) => getHumanName(template)
-      case RepeaterSequencePT(_, mutability, size, element) => vwat()
+      case RepeaterSequencePT(_, mutability, variability, size, element) => vwat()
       case ManualSequencePT(_, members) => vwat()
       case IntPT(_, value) => vwat()
       case BoolPT(_, value) => vwat()

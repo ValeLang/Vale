@@ -1,4 +1,4 @@
 
-fn indices<>(arr &Array<_, _>) Array<imm, int> {
+fn indices<>(arr &Array<_, _, _>) Array<imm, final, int> {
   MakeImmArray(len(arr), {_})
 }

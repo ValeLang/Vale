@@ -375,13 +375,14 @@ object VonHammer {
   }
 
   def vonifyRawArray(t: RawArrayTH): IVonData = {
-    val RawArrayTH(mutability, elementType) = t
+    val RawArrayTH(mutability, variability, elementType) = t
 
     VonObject(
       "Array",
       None,
       Vector(
         VonMember("mutability", vonifyMutability(mutability)),
+        VonMember("variability", vonifyVariability(variability)),
         VonMember("elementType", vonifyCoord(elementType))))
   }
 

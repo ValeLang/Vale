@@ -385,13 +385,18 @@ class RuleTyperEvaluator[Env, State](
 //        }
         vfail()
       }
-      case RepeaterSequenceST(range, mutabilityTemplexS, sizeTemplexS, elementTemplexS) => {
+      case RepeaterSequenceST(range, mutabilityTemplexS, variabilityTemplexS, sizeTemplexS, elementTemplexS) => {
         // It's futile to try and get the templexTs for size and element, since we don't know whether this
         // thing will end up as a kind or coord (only matching can know that) but hey, let's match into
         // them anyway, they might provide some nice intel for our conclusions.
 
           makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, MutabilityTemplataType, mutabilityTemplexS) match {
             case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in mutability part!", Some(rtmc)))
+            case (RuleTyperMatchUnknown()) =>
+            case (RuleTyperMatchSuccess(_)) =>
+          }
+          makeMatcher().matchTypeAgainstTemplexS(state, env, conclusions, VariabilityTemplataType, variabilityTemplexS) match {
+            case (rtmc @ RuleTyperMatchConflict(_, _, _, _)) => return (RuleTyperEvaluateConflict(conclusions.conclusions, range, "Conflict in variability part!", Some(rtmc)))
             case (RuleTyperMatchUnknown()) =>
             case (RuleTyperMatchSuccess(_)) =>
           }
@@ -441,6 +446,7 @@ class RuleTyperEvaluator[Env, State](
         case IntTypeSR => IntegerTemplataType
         case KindTypeSR => KindTemplataType
         case MutabilityTypeSR => MutabilityTemplataType
+        case VariabilityTypeSR => VariabilityTemplataType
         case OwnershipTypeSR => OwnershipTemplataType
         case PermissionTypeSR => PermissionTemplataType
         case PrototypeTypeSR => PrototypeTemplataType

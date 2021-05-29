@@ -11,12 +11,12 @@ class ArrayListTest extends FunSuite with Matchers {
     val compile = RunCompilation.test(
         """
           |struct List<E> rules(E Ref) {
-          |  array! Array<mut, E>;
+          |  array! Array<mut, vary, E>;
           |}
           |fn listLen<E>(list &List<E>) int { len(&list.array) }
           |fn add<E>(list &!List<E>, newElement E) {
           |  newArray =
-          |      [*](listLen(&list) + 1, &!IFunction1<mut, int, int>((index){
+          |      [vary *](listLen(&list) + 1, &!IFunction1<mut, int, int>((index){
           |        = if (index == listLen(&list)) {
           |            = newElement;
           |          } else {
@@ -35,7 +35,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |fn main() int export {
           |  l =
           |      List<int>(
-          |           [*](
+          |           [vary *](
           |               0,
           |               &!IFunction1<mut, int, int>((index){
           |                 index
@@ -57,7 +57,7 @@ class ArrayListTest extends FunSuite with Matchers {
         |fn main() int export {
         |  l =
         |      List<int>(
-        |          MakeArray(
+        |          MakeVaryArray(
         |              0,
         |              (index){
         |                result Opt<int> = Some(index);
@@ -131,7 +131,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |fn main() int export {
           |  l =
           |      List<Marine>(
-          |          MakeArray<Opt<Marine>>(
+          |          MakeVaryArray<Opt<Marine>>(
           |              0,
           |              (index){
           |                result Opt<Marine> = Some(Marine(index));

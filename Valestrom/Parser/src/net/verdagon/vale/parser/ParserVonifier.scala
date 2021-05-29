@@ -527,7 +527,7 @@ object ParserVonifier {
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
-            VonMember("inner", vonifyMutability(mutability))))
+            VonMember("mutability", vonifyMutability(mutability))))
       }
       case NameOrRunePT(rune) => {
         VonObject(
@@ -570,13 +570,14 @@ object ParserVonifier {
             VonMember("range", vonifyRange(range)),
             VonMember("permission", vonifyPermission(permission))))
       }
-      case RepeaterSequencePT(range, mutability, size, element) => {
+      case RepeaterSequencePT(range, mutability, variability, size, element) => {
         VonObject(
           "RepeaterSequenceT",
           None,
           Vector(
             VonMember("range", vonifyRange(range)),
             VonMember("mutability", vonifyTemplex(mutability)),
+            VonMember("variability", vonifyTemplex(variability)),
             VonMember("size", vonifyTemplex(size)),
             VonMember("element", vonifyTemplex(element))))
       }

@@ -72,10 +72,11 @@ case class BlockAE(
   vassert(exprs.nonEmpty)
 }
 
-case class ConstructArrayAE(
+case class StaticSizedArrayFromCallableAE(
     range: RangeS,
     typeTemplex: ITemplexA,
     mutabilityTemplex: ITemplexA,
+    variabilityTemplex: ITemplexA,
     generatorPrototypeTemplex: ITemplexA,
     sizeExpr: IExpressionAE,
     generatorExpr: IExpressionAE) extends IExpressionAE
@@ -145,7 +146,7 @@ case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressio
 
 case class DotAE(range: RangeS, left: IExpressionAE, member: String, borrowContainer: Boolean) extends IExpressionAE
 
-case class DotCallAE(range: RangeS, left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE
+case class IndexAE(range: RangeS, left: IExpressionAE, indexExpr: IExpressionAE) extends IExpressionAE
 
 case class FunctionCallAE(range: RangeS, callableExpr: IExpressionAE, argsExprs1: List[IExpressionAE]) extends IExpressionAE
 

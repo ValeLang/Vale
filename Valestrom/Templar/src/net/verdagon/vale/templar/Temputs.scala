@@ -174,8 +174,8 @@ case class Temputs() {
     interfaceDefsByRef += (interfaceDef.getRef -> interfaceDef)
   }
 
-  def addArraySequence(size: Int, array2: KnownSizeArrayT2): Unit = {
-    arraySequenceTypes += ((size, array2.array) -> array2)
+  def addArraySequence(array2: KnownSizeArrayT2): Unit = {
+    arraySequenceTypes += ((array2.size, array2.array) -> array2)
   }
 
   def addUnknownSizeArray(array2: UnknownSizeArrayT2): Unit = {

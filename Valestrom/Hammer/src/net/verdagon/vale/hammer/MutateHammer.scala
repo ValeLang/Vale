@@ -40,10 +40,10 @@ object MutateHammer {
         case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
           translateAddressibleMemberMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, structExpr2, memberName)
         }
-        case ArraySequenceLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+        case StaticSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneKnownSizeArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
-        case UnknownSizeArrayLookup2(_,arrayExpr2, arrayType, indexExpr2, _) => {
+        case UnknownSizeArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneUnknownSizeArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
       }

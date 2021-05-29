@@ -28,10 +28,18 @@ object TemplexScout {
       case ManualSequencePT(range,members) => ManualSequenceST(evalRange(range), members.map(translateTemplex(env, _)))
       case IntPT(range,num) => IntST(evalRange(range), num)
       case MutabilityPT(range,mutability) => MutabilityST(evalRange(range), mutability)
+      case VariabilityPT(range,variability) => VariabilityST(evalRange(range), variability)
       case CallPT(range,template, args) => CallST(evalRange(range), translateTemplex(env, template), args.map(arg => translateTemplex(env, arg)))
       case NullablePT(range,inner) => NullableST(evalRange(range), translateTemplex(env, inner))
       case InterpretedPT(range,ownership,permission,inner) => InterpretedST(evalRange(range), ownership, permission, translateTemplex(env, inner))
-      case RepeaterSequencePT(range,mutability, size, element) => RepeaterSequenceST(evalRange(range), translateTemplex(env, mutability), translateTemplex(env, size), translateTemplex(env, element))
+      case RepeaterSequencePT(range, mutability, variability, size, element) => {
+        RepeaterSequenceST(
+          evalRange(range),
+          translateTemplex(env, mutability),
+          translateTemplex(env, variability),
+          translateTemplex(env, size),
+          translateTemplex(env, element))
+      }
     }
   }
 }

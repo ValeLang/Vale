@@ -265,6 +265,7 @@ class InfererMatcher[Env, State](
       typeByRune: Map[IRune2, ITemplataType],
     localRunes: Set[IRune2],
     inferences: InferencesBox,
+    range: RangeS,
     expectedTemplate: ITemplexT,
     expectedArgs: List[ITemplexT],
     actualArgs: List[ITemplata]):
@@ -276,6 +277,10 @@ class InfererMatcher[Env, State](
         case (InferMatchSuccess(ds)) => (ds)
       }
     // Check to see that the actual template args match the expected template args
+
+    if (expectedArgs.size != actualArgs.size) {
+      return InferMatchConflict(inferences.inferences, range, "Supplied wrong number of template arguments!", List())
+    }
     val argsDeeplySatisfied =
       expectedArgs.zip(actualArgs).foldLeft((true))({
         case ((deeplySatisfiedSoFar), (expectedArg, actualArg)) => {
@@ -506,21 +511,21 @@ class InfererMatcher[Env, State](
       case (ct @ CallTT(range, _, _, _), KindTemplata(Str2())) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match string against a CallTT, no such rule exists", List()))
       }
-      case (CallTT(range, expectedTemplate, expectedArgs, resultType), KindTemplata(UnknownSizeArrayT2(RawArrayT2(elementArg,mutability)))) => {
+      case (CallTT(range, expectedTemplate, expectedArgs, resultType), KindTemplata(UnknownSizeArrayT2(RawArrayT2(elementArg,mutability, variability)))) => {
         vassert(instance.tyype == resultType)
         matchArrayAgainstCallTT(
-          env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
+          env, state, typeByRune, localRunes, inferences, range, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementArg)))
       }
-      case (CallTT(range, _, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _)))) => {
+      case (CallTT(range, _, _, _), KindTemplata(KnownSizeArrayT2(_, RawArrayT2(_, _, _)))) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against a CallTT, no such rule exists", List()))
       }
       case (CallTT(range, _, _, _), CoordTemplata(Coord(_, _, KnownSizeArrayT2(_, _)))) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match array sequence against a CallTT, no such rule exists", List()))
       }
-      case (CallTT(range, expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(_, _, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability))))) => {
+      case (CallTT(range, expectedTemplate, expectedArgs, resultType), CoordTemplata(Coord(_, _, UnknownSizeArrayT2(RawArrayT2(elementArg,mutability,variability))))) => {
         vassert(instance.tyype == resultType)
         matchArrayAgainstCallTT(
-          env, state, typeByRune, localRunes, inferences, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), CoordTemplata(elementArg)))
+          env, state, typeByRune, localRunes, inferences, range, expectedTemplate, expectedArgs, List(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementArg)))
       }
       case (CallTT(range, expectedTemplate, expectedArgs, resultType), ct @ CoordTemplata(_)) => {
         return (InferMatchConflict(inferences.inferences, range, "Can't match " + ct + " against CallTT", List()))
@@ -540,19 +545,19 @@ class InfererMatcher[Env, State](
 //          })
 //        (InferMatchSuccess(membersDeeplySatisfied))
 //      }
-      case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, _, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability))))) => {
+      case (RepeaterSequenceTT(range, mutabilityTemplex, variabilityTemplex, sizeTemplex, elementTemplex, resultType), CoordTemplata(Coord(ownership, _, KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability, variability))))) => {
         vassert(resultType == CoordTemplataType)
         vcurious(ownership == Share || ownership == Own, "Got a non-share non-own repeater sequence!")
-        matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability)
+        matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, variabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability, variability)
       }
-      case (RepeaterSequenceTT(range, mutabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability)))) => {
+      case (RepeaterSequenceTT(range, mutabilityTemplex, variabilityTemplex, sizeTemplex, elementTemplex, resultType), KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementCoord, mutability, variability)))) => {
         vassert(resultType == KindTemplataType)
-        matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability)
+        matchArraySequenceKind(env, state, typeByRune, localRunes, inferences, mutabilityTemplex, variabilityTemplex, sizeTemplex, elementTemplex, size, elementCoord, mutability, variability)
       }
-      case (RepeaterSequenceTT(range, _, _, _, _), KindTemplata(otherKind)) => {
+      case (RepeaterSequenceTT(range, _, _, _, _, _), KindTemplata(otherKind)) => {
         (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherKind, List()))
       }
-      case (RepeaterSequenceTT(range, _, _, _, _), CoordTemplata(otherCoord)) => {
+      case (RepeaterSequenceTT(range, _, _, _, _, _), CoordTemplata(otherCoord)) => {
         (InferMatchConflict(inferences.inferences, range, "Expected repeater sequence, was: " + otherCoord, List()))
       }
       case (ManualSequenceTT(range, expectedElementTemplexesT, resultType), CoordTemplata(Coord(ownership, _, TupleT2(elements, _)))) => {
@@ -675,14 +680,22 @@ class InfererMatcher[Env, State](
       localRunes: Set[IRune2],
       inferences: InferencesBox,
       mutabilityTemplex: ITemplexT,
+      variabilityTemplex: ITemplexT,
       sizeTemplex: ITemplexT,
       elementTemplex: ITemplexT,
       size: Int,
       elementCoord: Coord,
-      mutability: Mutability):
+      mutability: Mutability,
+      variability: Variability):
   IInferMatchResult = {
     val mutabilityDeeplySatisfied =
       matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, MutabilityTemplata(mutability), mutabilityTemplex) match {
+        case (imc@InferMatchConflict(_, _, _, _)) => return imc
+        case InferMatchSuccess(deeplySatisfied) => (deeplySatisfied)
+      }
+
+    val variabilityDeeplySatisfied =
+      matchTemplataAgainstTemplexTR(env, state, typeByRune, localRunes, inferences, VariabilityTemplata(variability), variabilityTemplex) match {
         case (imc@InferMatchConflict(_, _, _, _)) => return imc
         case InferMatchSuccess(deeplySatisfied) => (deeplySatisfied)
       }
@@ -699,7 +712,7 @@ class InfererMatcher[Env, State](
         case InferMatchSuccess(deeplySatisfied) => (deeplySatisfied)
       }
 
-    val deeplySatisfied = mutabilityDeeplySatisfied && sizeDeeplySatisfied && elementDeeplySatisfied
+    val deeplySatisfied = mutabilityDeeplySatisfied && variabilityDeeplySatisfied && sizeDeeplySatisfied && elementDeeplySatisfied
     InferMatchSuccess(deeplySatisfied)
   }
 

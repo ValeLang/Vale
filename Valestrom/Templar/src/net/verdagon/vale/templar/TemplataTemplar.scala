@@ -36,8 +36,15 @@ trait ITemplataTemplarDelegate {
   InterfaceRef2
 
   def makeArraySequenceType(
-    env: IEnvironment, temputs: Temputs, mutability: Mutability, size: Int, type2: Coord):
+    env: IEnvironment,
+    temputs: Temputs,
+    mutability: Mutability,
+    variability: Variability,
+    size: Int,
+    type2: Coord):
   KnownSizeArrayT2
+
+  def makeUnknownSizeArrayType(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2
 
   def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2
 }
@@ -220,8 +227,12 @@ class TemplataTemplar(
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
-        override def getArraySequenceKind(env: IEnvironment, state: Temputs, mutability: Mutability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-          delegate.makeArraySequenceType(env, state, mutability, size, element)
+        override def getArraySequenceKind(env: IEnvironment, state: Temputs, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+          delegate.makeArraySequenceType(env, state, mutability, variability, size, element)
+        }
+
+        override def makeUnknownSizeArrayType(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
+          delegate.makeUnknownSizeArrayType(env, state, element, arrayMutability, arrayVariability)
         }
 
         override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2 = {

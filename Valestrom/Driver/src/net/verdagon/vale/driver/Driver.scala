@@ -416,7 +416,7 @@ object Driver {
         case Ok(_) => {
         }
         case Err(error) => {
-          System.err.println("#: " + error)
+          System.err.println("Error: " + error)
           System.exit(22)
           vfail()
         }

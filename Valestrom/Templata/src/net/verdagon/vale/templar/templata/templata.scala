@@ -32,7 +32,7 @@ case class KindTemplata(referend: Kind) extends ITemplata {
 }
 case class ArrayTemplateTemplata() extends ITemplata {
   override def order: Int = 3;
-  override def tyype: ITemplataType = TemplateTemplataType(List(MutabilityTemplataType, CoordTemplataType), KindTemplataType)
+  override def tyype: ITemplataType = TemplateTemplataType(List(MutabilityTemplataType, VariabilityTemplataType, CoordTemplataType), KindTemplataType)
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func)

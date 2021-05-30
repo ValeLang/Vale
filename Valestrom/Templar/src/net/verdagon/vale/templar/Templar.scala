@@ -508,7 +508,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         val env0 =
           PackageEnvironment(
             None,
-            FullName2(List(), GlobalPackageName2()),
+            FullName2(PackageCoordinate.BUILTIN, List(), PackageTopLevelName2()),
             newTemplataStore()
                 .addEntries(
                   opts.useOptimization,
@@ -565,9 +565,10 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
               // Do nothing, it's a template
             } else {
               if (isRootFunction(functionS)) {
+                val functionEnvName = FullName2(functionS.range.file.packageCoordinate, List(), PackageTopLevelName2())
                 val _ =
                   functionTemplar.evaluateOrdinaryFunctionFromNonCallForPrototype(
-                    temputs, RangeS.internal(-177), FunctionTemplata(env11, functionS))
+                    temputs, RangeS.internal(-177), FunctionTemplata(env11.copy(fullName = functionEnvName), functionS))
               }
             }
           }
@@ -714,9 +715,9 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
   // (Once we add packages, this will probably change)
   def addInterfaceEnvironmentEntries(
-    env0: PackageEnvironment[GlobalPackageName2],
+    env0: PackageEnvironment[PackageTopLevelName2],
     interfaceA: InterfaceA
-  ): PackageEnvironment[GlobalPackageName2] = {
+  ): PackageEnvironment[PackageTopLevelName2] = {
     val interfaceEnvEntry = InterfaceEnvEntry(interfaceA)
 
     val TopLevelCitizenDeclarationNameA(humanName, codeLocationS) = interfaceA.name
@@ -736,9 +737,9 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
   // (Once we add packages, this will probably change)
   def makeStructEnvironmentEntries(
-    env0: PackageEnvironment[GlobalPackageName2],
+    env0: PackageEnvironment[PackageTopLevelName2],
     structA: StructA
-  ): PackageEnvironment[GlobalPackageName2] = {
+  ): PackageEnvironment[PackageTopLevelName2] = {
     val interfaceEnvEntry = StructEnvEntry(structA)
 
     val env1 = env0.addEntry(opts.useOptimization, NameTranslator.translateNameStep(structA.name), interfaceEnvEntry)

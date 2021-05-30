@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
 import net.verdagon.vale.metal.{Immutable => _, Mutable => _, Variability => _, Varying => _, _}
-import net.verdagon.vale.{vassert, vassertSome, metal => m}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, metal => m}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, FunctionHeader2}
 import net.verdagon.vale.templar.types._
@@ -119,7 +119,7 @@ object StructHammer {
             if (structRef2 != Program2.emptyTupleStructRef) {
               vassertSome(
                 hinputs.functions.find(function => {
-                  function.header.fullName == FullName2(List(), ImmConcreteDestructorName2(structRef2))
+                  function.header.fullName == FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(structRef2))
                 }))
             }
           }
@@ -154,7 +154,7 @@ object StructHammer {
     type2: Coord,
     typeH: ReferenceH[ReferendH]):
   (StructRefH) = {
-    val boxFullName2 = FullName2(List(), CitizenName2(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
+    val boxFullName2 = FullName2(PackageCoordinate.BUILTIN, List(), CitizenName2(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
     val boxFullNameH = NameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefsByRef2.find(_._2.fullName == boxFullNameH) match {
       case Some((_, structDefH)) => (structDefH.getRef)

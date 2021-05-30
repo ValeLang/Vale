@@ -346,7 +346,7 @@ class FunctionTemplarMiddleLayer(
           ImmDropName2(kind)
         }
       }
-    FullName2(name.initSteps, newLastStep)
+    FullName2(name.packageCoord, name.initSteps, newLastStep)
   }
 
   private def getMaybeReturnType(

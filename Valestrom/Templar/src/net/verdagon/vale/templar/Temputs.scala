@@ -190,20 +190,20 @@ case class Temputs() {
     exports += ExportAs2(kind, packageCoord, exportedName)
   }
 
-  def addExternPrototype(packageCoord: PackageCoordinate, prototype2: Prototype2): Unit = {
+  def addExternPrototype(prototype2: Prototype2): Unit = {
     val externName =
       prototype2.fullName.last match {
         case ExternFunctionName2(externName, _) => externName
       }
-    moduleNameToExternNameToExtern.get(packageCoord.module) match {
+    moduleNameToExternNameToExtern.get(prototype2.fullName.packageCoord.module) match {
       case None => {
         moduleNameToExternNameToExtern.put(
-          packageCoord.module,
-          mutable.HashMap(externName -> (packageCoord, prototype2)))
+          prototype2.fullName.packageCoord.module,
+          mutable.HashMap(externName -> (prototype2.fullName.packageCoord, prototype2)))
       }
       case Some(externNameToExtern) => {
         externNameToExtern.get(externName) match {
-          case None => externNameToExtern.put(externName, (packageCoord, prototype2))
+          case None => externNameToExtern.put(externName, (prototype2.fullName.packageCoord, prototype2))
           case Some(_) => vfail("Extern already exists: " + externName)
         }
       }

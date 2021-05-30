@@ -20,6 +20,10 @@ case class RegionH(
   name: String,
   referends: List[ReferendH])
 
+case class Export(
+  nameH: FullNameH,
+  exportedName: String
+)
 
 case class ProgramH(
     // All the interfaces in the program.

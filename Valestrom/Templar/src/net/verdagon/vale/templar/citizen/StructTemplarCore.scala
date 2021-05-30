@@ -21,7 +21,7 @@ class StructTemplarCore(
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
-    val emptyTupleFullName = FullName2(List(), TupleName2(List()))
+    val emptyTupleFullName = FullName2(PackageCoordinate.BUILTIN, List(), TupleName2(List()))
     val emptyTupleEnv = PackageEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
     val structDef2 = StructDefinition2(emptyTupleFullName, List(), false, Immutable, List(), false)
     temputs.declareStruct(structDef2.getRef)

@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata._
-import net.verdagon.vale.{IProfiler, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{IProfiler, PackageCoordinate, vassert, vfail, vimpl, vwat}
 
 import scala.collection.immutable.{List, Map}
 
@@ -113,6 +113,7 @@ case class TemplatasStore(
   //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
 
   def entryToTemplata(env: IEnvironment, entry: IEnvEntry): ITemplata = {
+    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, List(), PackageTopLevelName2()))
     entry match {
       case FunctionEnvEntry(func) => {
         FunctionTemplata(env, func)

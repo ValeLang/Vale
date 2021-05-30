@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, Signature2}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassertSome, vcurious}
+import net.verdagon.vale.{PackageCoordinate, vassertSome, vcurious}
 
 import scala.collection.mutable
 
@@ -79,7 +79,7 @@ object Reachability {
     // that let go of a reference.
     if (structDef.mutability == Immutable && structRef != Program2.emptyTupleStructRef) {
       val destructorSignature =
-        Signature2(FullName2(List(), ImmConcreteDestructorName2(structRef)))
+        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(structRef)))
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     structDef.all({
@@ -99,7 +99,7 @@ object Reachability {
     // that let go of a reference.
     if (interfaceDef.mutability == Immutable) {
       val destructorSignature =
-        Signature2(FullName2(List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, Readonly, interfaceRef))), List(Coord(Share, Readonly, interfaceRef)))))
+        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, Readonly, interfaceRef))), List(Coord(Share, Readonly, interfaceRef)))))
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     interfaceDef.all({
@@ -134,7 +134,7 @@ object Reachability {
     // that let go of a reference.
     if (ksa.array.mutability == Immutable) {
       val destructorSignature =
-        Signature2(FullName2(List(), ImmConcreteDestructorName2(ksa)))
+        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(ksa)))
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
   }
@@ -149,7 +149,7 @@ object Reachability {
     // that let go of a reference.
     if (usa.array.mutability == Immutable) {
       val destructorSignature =
-        Signature2(FullName2(List(), ImmConcreteDestructorName2(usa)))
+        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(usa)))
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
   }

@@ -43,7 +43,7 @@ object NameHammer {
       case ExternFunctionName2(humanName, params) => humanName
       case FunctionName2(humanName, templateArgs, params) => humanName
       case FunctionTemplateName2(humanName, codeLoc) => humanName
-      case GlobalPackageName2() => vwat() // Does this ever make it to hammer?
+      case PackageTopLevelName2() => vwat() // Does this ever make it to hammer?
       case ImmConcreteDestructorName2(kind) => "immConcreteDestructor"
       case ImmConcreteDestructorTemplateName2() => "immConcreteDestructorTemplate"
       case ImmDropName2(kind) => "immDrop"

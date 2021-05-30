@@ -27,7 +27,10 @@ object VonHammer {
       Vector(
         VonMember("interfaces", VonArray(None, interfaces.map(vonifyInterface).toVector)),
         VonMember("structs", VonArray(None, structs.map(vonfiyStruct).toVector)),
-        VonMember("externs", VonArray(None, externs.map(vonifyPrototype).toVector)),
+        VonMember("externFunctions", VonArray(None, externs.map(vonifyPrototype).toVector)),
+        VonMember("exportFunctions", VonArray(None, externs.map(vonifyPrototype).toVector)),
+        VonMember("exportStructs", VonArray(None, externs.map(vonifyPrototype).toVector)),
+        VonMember("exportInterfaces", VonArray(None, externs.map(vonifyPrototype).toVector)),
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),
         VonMember("knownSizeArrays", VonArray(None, knownSizeArrays.map(vonifyKnownSizeArrayDefinition).toVector)),
         VonMember("unknownSizeArrays", VonArray(None, unknownSizeArrays.map(vonifyUnknownSizeArrayDefinition).toVector)),
@@ -1133,7 +1136,7 @@ object VonHammer {
           Vector(
             VonMember(humanName, VonStr(humanName))))
       }
-      case GlobalPackageName2() => {
+      case PackageTopLevelName2() => {
         VonObject(
           "GlobalPackageName",
           None,

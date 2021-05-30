@@ -502,11 +502,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
 
-    vassertSome(hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Int2())))))))
+    vassertSome(hinputs.lookupFunction(Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Int2())))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("bork", List(), List(Coord(Share, Readonly, Str2())))))))
+    vassert(None == hinputs.lookupFunction(Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("bork", List(), List(Coord(Share, Readonly, Str2())))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Str2())))))))
+    vassert(None == hinputs.lookupFunction(Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Str2())))))))
   }
 
 //  test("Test overloading between borrow and own") {

@@ -27,7 +27,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test("fn main() {a! = 3; set a = 4; }")
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
-    main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_, CodeVarName2("a")), Varying, _), _, Varying), IntLiteral2(4)) => })
+    main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_,_, CodeVarName2("a")), Varying, _), _, Varying), IntLiteral2(4)) => })
 
     val lookup = main.only({ case l @ LocalLookup2(range, localVariable, reference, variability) => l })
     val resultCoord = lookup.resultRegister.reference
@@ -158,7 +158,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.last match {
-          case UnknownSizeArrayName2(RawArrayName2(Mutable,_)) =>
+          case RuntimeSizedArrayName2(RawArrayName2(Mutable,_)) =>
         }
       }
     }
@@ -176,7 +176,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.last match {
-          case KnownSizeArrayName2(10,RawArrayName2(Mutable,_)) =>
+          case StaticSizedArrayName2(10,RawArrayName2(Mutable,_)) =>
         }
       }
     }
@@ -197,9 +197,9 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructRef2(FullName2(List(), CitizenName2("Firefly", List())))
+    val fireflyKind = StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Firefly", List())))
     val fireflyCoord = Coord(Own,Readwrite,fireflyKind)
-    val serenityKind = StructRef2(FullName2(List(), CitizenName2("Serenity", List())))
+    val serenityKind = StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Serenity", List())))
     val serenityCoord = Coord(Own,Readwrite,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
@@ -260,13 +260,13 @@ class TemplarMutateTests extends FunSuite with Matchers {
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS.testZero,
-        Signature2(FullName2(List(), FunctionName2("myFunc", List(), List())))))
+        Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("myFunc", List(), List())))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind.fullName,
-        FullName2(List(), CodeVarName2("bork"))))
+        FullName2(PackageCoordinate.TEST_TLD, List(), CodeVarName2("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

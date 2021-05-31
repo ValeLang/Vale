@@ -1,10 +1,10 @@
 package net.verdagon.vale.templar.templata
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.templar.{CitizenName2, CitizenTemplateName2, FunctionName2, FunctionTemplateName2, ICitizenName2, IName2, ImplDeclareName2, NameTranslator}
+import net.verdagon.vale.templar.{CitizenName2, CitizenTemplateName2, FullName2, FunctionName2, FunctionTemplateName2, ICitizenName2, IName2, ImmConcreteDestructorName2, ImmDropName2, ImplDeclareName2, NameTranslator, PackageTopLevelName2}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vfail, vimpl}
+import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl}
 
 import scala.collection.immutable.List
 
@@ -58,8 +58,21 @@ case class FunctionTemplata(
   // structs and interfaces. See NTKPRR for more.
   function: FunctionA
 ) extends ITemplata {
+
   override def order: Int = 6
   override def tyype: ITemplataType = vfail()
+
+//  this match {
+//    case FunctionTemplata(
+//      env,
+//      FunctionA(_, ImmConcreteDestructorNameA(PackageCoordinate(_,List())),_, _, _, _, _, _, _, _, _, _))
+//    if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List(),PackageTopLevelName2()) => vfail()
+//    case _ =>
+//  }
+//  this match {
+//    case FunctionTemplata(env, _) if env.fullName == FullName2(PackageCoordinate.TEST_TLD,List(),PackageTopLevelName2()) => vfail()
+//    case _ =>
+//  }
 
   // Make sure we didn't accidentally code something to include the function's name as
   // the last step.
@@ -80,6 +93,38 @@ case class FunctionTemplata(
   }
 
   def debugString: String = outerEnv.fullName + ":" + function.name
+}
+
+object FunctionTemplata {
+  def make(parentEnv: IEnvironment, function: FunctionA) = {
+    val functionEnvName = FullName2(function.range.file.packageCoordinate, parentEnv.fullName.steps, PackageTopLevelName2())
+    val functionEnv = PackageEnvironment(Some(parentEnv), functionEnvName, TemplatasStore(Map(), Map()))
+    FunctionTemplata(functionEnv, function)
+  }
+}
+
+object StructTemplata {
+  def make(parentEnv: IEnvironment, struct: StructA) = {
+    val structEnvName = FullName2(struct.range.file.packageCoordinate, parentEnv.fullName.steps, PackageTopLevelName2())
+    val structEnv = PackageEnvironment(Some(parentEnv), structEnvName, TemplatasStore(Map(), Map()))
+    StructTemplata(structEnv, struct)
+  }
+}
+
+object InterfaceTemplata {
+  def make(parentEnv: IEnvironment, interface: InterfaceA) = {
+    val interfaceEnvName = FullName2(interface.range.file.packageCoordinate, parentEnv.fullName.steps, PackageTopLevelName2())
+    val interfaceEnv = PackageEnvironment(Some(parentEnv), interfaceEnvName, TemplatasStore(Map(), Map()))
+    InterfaceTemplata(interfaceEnv, interface)
+  }
+}
+
+object ImplTemplata {
+  def make(parentEnv: IEnvironment, impl: ImplA) = {
+    val implEnvName = FullName2(impl.range.file.packageCoordinate, parentEnv.fullName.steps, PackageTopLevelName2())
+    val implEnv = PackageEnvironment(Some(parentEnv), implEnvName, TemplatasStore(Map(), Map()))
+    ImplTemplata(implEnv, impl)
+  }
 }
 
 case class StructTemplata(

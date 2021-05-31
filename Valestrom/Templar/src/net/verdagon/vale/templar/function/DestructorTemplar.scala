@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.function
 import net.verdagon.vale.astronomer.{AbstractAP, AtomAP, CallAR, CodeRuneA, CodeTypeNameA, CodeVarNameA, ComponentsAR, CoordTemplataType, EqualsAR, FunctionA, FunctionNameA, FunctionTemplataType, GeneratedBodyA, GlobalFunctionFamilyNameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmDropImpreciseNameA, ImmDropNameA, ImmInterfaceDestructorImpreciseNameA, ImmInterfaceDestructorNameA, KindTemplataType, LocalVariableA, MutabilityAT, NameAT, OrAR, OverrideAP, OwnershipAT, OwnershipTemplataType, ParameterA, PermissionAT, PermissionTemplataType, RuneAT, TemplateTemplataType, TemplexAR, UserFunctionA}
 import net.verdagon.vale.parser.{FinalP, OwnP, ReadonlyP, ReadwriteP, ShareP}
 import net.verdagon.vale.scout.{CodeLocationS, NotUsed, RangeS, Used}
-import net.verdagon.vale.templar.types._
+import net.verdagon.vale.templar.types.{Coord, _}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar._
@@ -19,26 +19,26 @@ class DestructorTemplar(
     structTemplar: StructTemplar,
     overloadTemplar: OverloadTemplar) {
   def getCitizenDestructor(
-      env: IEnvironment,
-      temputs: Temputs,
-      type2: Coord):
+    env: IEnvironment,
+    temputs: Temputs,
+    type2: Coord):
   (Prototype2) = {
     type2.referend match {
-      case PackT2(_, _) | StructRef2(_) => {// | OrdinaryClosure2(_, _, _) | TemplatedClosure2(_, _, _) => {
+      case PackT2(_, _) | StructRef2(_) => { // | OrdinaryClosure2(_, _, _) | TemplatedClosure2(_, _, _) => {
         overloadTemplar.scoutExpectedFunctionForPrototype(
-            env,
-            temputs,
-            RangeS.internal(-1663),
-            if (type2.ownership == Share) {
-              ImmConcreteDestructorImpreciseNameA()
-            } else {
-              GlobalFunctionFamilyNameA(CallTemplar.MUT_DESTRUCTOR_NAME)
-            },
-            List(),
-            List(ParamFilter(type2, None)),
-            List(),
-            true)  match {
-          case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+          env,
+          temputs,
+          RangeS.internal(-1663),
+          if (type2.ownership == Share) {
+            ImmConcreteDestructorImpreciseNameA()
+          } else {
+            GlobalFunctionFamilyNameA(CallTemplar.MUT_DESTRUCTOR_NAME)
+          },
+          List(),
+          List(ParamFilter(type2, None)),
+          List(),
+          true) match {
+          case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
             throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find concrete destructor!\n" + seff.toString))
           }
           case (ScoutExpectedFunctionSuccess(p)) => (p)
@@ -58,7 +58,7 @@ class DestructorTemplar(
           List(ParamFilter(type2, None)),
           List(),
           true) match {
-          case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+          case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
             throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find interface destructor!\n" + seff.toString))
           }
           case (ScoutExpectedFunctionSuccess(p)) => (p)
@@ -72,7 +72,9 @@ class DestructorTemplar(
     temputs: Temputs,
     type2: Coord):
   (Prototype2) = {
-    type2.referend match { case KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_) => }
+    type2.referend match {
+      case StaticSizedArrayT2(_, _) | RuntimeSizedArrayT2(_) =>
+    }
     overloadTemplar.scoutExpectedFunctionForPrototype(
       env,
       temputs,
@@ -86,7 +88,7 @@ class DestructorTemplar(
       List(ParamFilter(type2, None)),
       List(),
       true) match {
-      case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+      case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find array destructor!\n" + seff.toString))
       }
       case (ScoutExpectedFunctionSuccess(p)) => (p)
@@ -113,43 +115,21 @@ class DestructorTemplar(
       List(ParamFilter(type2, None)),
       List(),
       true) match {
-      case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+      case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(RangeS.internal(-1674), "Couldn't find drop function!\n" + seff.toString))
       }
       case (ScoutExpectedFunctionSuccess(p)) => (p)
     }
   }
 
-  def generateDropFunction(
-    initialBodyEnv: FunctionEnvironment,
-    temputs: Temputs,
-    originFunction1: FunctionA,
-    type2: Coord):
-  (FunctionHeader2) = {
-    val bodyEnv = FunctionEnvironmentBox(initialBodyEnv)
-    val dropExpr2 = drop(bodyEnv, temputs, ArgLookup2(0, type2))
-    val header =
-      FunctionHeader2(
-        bodyEnv.fullName,
-        List(),
-        List(Parameter2(CodeVarName2("x"), None, type2)),
-        Coord(Share, Readonly, Void2()),
-        Some(originFunction1))
-    val function2 = Function2(header, List(), Block2(List(dropExpr2, Return2(VoidLiteral2()))))
-    temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Readonly, Void2()))
-    temputs.addFunction(function2)
-    vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
-    header
-  }
-
   def drop(
-      fate: FunctionEnvironmentBox,
-      temputs: Temputs,
-      undestructedExpr2: ReferenceExpression2):
+    fate: FunctionEnvironmentBox,
+    temputs: Temputs,
+    undestructedExpr2: ReferenceExpression2):
   (ReferenceExpression2) = {
     val resultExpr2 =
       undestructedExpr2.resultRegister.reference match {
-        case r @ Coord(Own, Readwrite, referend) => {
+        case r@Coord(Own, Readwrite, referend) => {
           val destructorPrototype =
             referend match {
               case PackT2(_, understructRef) => {
@@ -158,7 +138,7 @@ class DestructorTemplar(
               case StructRef2(_) | InterfaceRef2(_) => {
                 getCitizenDestructor(fate.snapshot, temputs, r)
               }
-              case KnownSizeArrayT2(_, _) | UnknownSizeArrayT2(_) => {
+              case StaticSizedArrayT2(_, _) | RuntimeSizedArrayT2(_) => {
                 getArrayDestructor(fate.snapshot, temputs, r)
               }
             }
@@ -193,7 +173,7 @@ class DestructorTemplar(
               case Int2() | Str2() | Bool2() | Float2() | Void2() => {
                 Discard2(undestructedExpr2)
               }
-              case as @ KnownSizeArrayT2(_, _) => {
+              case as@StaticSizedArrayT2(_, _) => {
                 val underarrayReference2 =
                   Coord(
                     undestructedExpr2.resultRegister.reference.ownership,
@@ -201,7 +181,7 @@ class DestructorTemplar(
                     as)
                 destroySharedArray(temputs, underarrayReference2)
               }
-              case as @ UnknownSizeArrayT2(_) => {
+              case as@RuntimeSizedArrayT2(_) => {
                 val underarrayReference2 =
                   Coord(
                     undestructedExpr2.resultRegister.reference.ownership,
@@ -230,16 +210,38 @@ class DestructorTemplar(
       }
     vassert(
       resultExpr2.resultRegister.reference == Coord(Share, Readonly, Void2()) ||
-      resultExpr2.resultRegister.reference == Coord(Share, Readonly, Never2()))
+        resultExpr2.resultRegister.reference == Coord(Share, Readonly, Never2()))
     resultExpr2
+  }
+
+  def generateDropFunction(
+    initialBodyEnv: FunctionEnvironment,
+    temputs: Temputs,
+    originFunction1: FunctionA,
+    type2: Coord):
+  (FunctionHeader2) = {
+    val bodyEnv = FunctionEnvironmentBox(initialBodyEnv)
+    val dropExpr2 = drop(bodyEnv, temputs, ArgLookup2(0, type2))
+    val header =
+      FunctionHeader2(
+        bodyEnv.fullName,
+        List(),
+        List(Parameter2(CodeVarName2("x"), None, type2)),
+        Coord(Share, Readonly, Void2()),
+        Some(originFunction1))
+    val function2 = Function2(header, List(), Block2(List(dropExpr2, Return2(VoidLiteral2()))))
+    temputs.declareFunctionReturnType(header.toSignature, Coord(Share, Readonly, Void2()))
+    temputs.addFunction(function2)
+    vassert(temputs.getDeclaredSignatureOrigin(bodyEnv.fullName) == Some(originFunction1.range))
+    header
   }
 
   def generateStructDestructor(
     namedEnv: FunctionEnvironment,
-      temputs: Temputs,
-      originFunction1: FunctionA,
-      params2: List[Parameter2],
-      structRef: StructRef2):
+    temputs: Temputs,
+    originFunction1: FunctionA,
+    params2: List[Parameter2],
+    structRef: StructRef2):
   (FunctionHeader2) = {
     val destructorFullName = namedEnv.fullName
 
@@ -259,8 +261,8 @@ class DestructorTemplar(
         Coord(Share, Readonly, Void2()),
         Some(originFunction1));
 
-      temputs
-          .declareFunctionReturnType(header.toSignature, header.returnType)
+    temputs
+      .declareFunctionReturnType(header.toSignature, header.returnType)
 
     val structArgument = ArgLookup2(0, structType)
     val memberLocalVariables =
@@ -295,12 +297,12 @@ class DestructorTemplar(
     (function2.header)
   }
 
-  def generateArraySequenceDestructor(
+  def generateStaticSizedArrayDestructor(
     env: FunctionEnvironment,
     temputs: Temputs,
     maybeOriginFunction1: Option[FunctionA],
     sequenceRefType2: Coord,
-    sequence: KnownSizeArrayT2):
+    sequence: StaticSizedArrayT2):
   (FunctionHeader2) = {
     opts.debugOut("turn this into just a regular destructor template function? dont see why its special.")
 
@@ -327,7 +329,7 @@ class DestructorTemplar(
         List(),
         List(ParamFilter(ifunctionExpression.resultRegister.reference, None), ParamFilter(sequence.array.memberType, None)),
         List(), true) match {
-        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+        case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => {
           vimpl()
         }
         case ScoutExpectedFunctionSuccess(prototype) => prototype
@@ -344,7 +346,7 @@ class DestructorTemplar(
         List(),
         Block2(
           List(
-            DestroyArraySequenceIntoFunction2(
+            DestroyStaticSizedArrayIntoFunction2(
               ArgLookup2(0, arrayRefType),
               sequence,
               ifunctionExpression,
@@ -356,12 +358,12 @@ class DestructorTemplar(
     function2.header
   }
 
-  def generateUnknownSizeArrayDestructor(
-      env: FunctionEnvironment,
-      temputs: Temputs,
-      maybeOriginFunction1: Option[FunctionA],
-      arrayRefType2: Coord,
-      array: UnknownSizeArrayT2):
+  def generateRuntimeSizedArrayDestructor(
+    env: FunctionEnvironment,
+    temputs: Temputs,
+    maybeOriginFunction1: Option[FunctionA],
+    arrayRefType2: Coord,
+    array: RuntimeSizedArrayT2):
   (FunctionHeader2) = {
     val arrayOwnership = if (array.array.mutability == Mutable) Own else Share
     val arrayBorrowOwnership = if (array.array.mutability == Mutable) Constraint else Share
@@ -383,7 +385,7 @@ class DestructorTemplar(
         List(),
         List(ParamFilter(ifunctionExpression.resultRegister.reference, None), ParamFilter(array.array.memberType, None)),
         List(), true) match {
-        case seff @ ScoutExpectedFunctionFailure(_, _, _, _, _) => {
+        case seff@ScoutExpectedFunctionFailure(_, _, _, _, _) => {
           vimpl(seff.toString)
         }
         case ScoutExpectedFunctionSuccess(prototype) => prototype
@@ -400,15 +402,15 @@ class DestructorTemplar(
         List(),
         Block2(
           List(
-            DestroyUnknownSizeArray2(
+            DestroyRuntimeSizedArray2(
               ArgLookup2(0, arrayRefType2),
               array,
               ifunctionExpression,
               consumerMethod2),
             Return2(VoidLiteral2()))))
 
-      temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)
-      temputs.addFunction(function2)
+    temputs.declareFunctionReturnType(function2.header.toSignature, function2.header.returnType)
+    temputs.addFunction(function2)
     (function2.header)
   }
 
@@ -428,7 +430,7 @@ class DestructorTemplar(
       List(ParamFilter(Coord(Share, Readonly, structRef2), None)),
       List(),
       true) match {
-      case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+      case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
         throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-49), seff))
       }
       case (ScoutExpectedFunctionSuccess(p)) => (p)
@@ -452,7 +454,7 @@ class DestructorTemplar(
         List(ParamFilter(Coord(Share, Readonly, interfaceRef2), None)),
         List(),
         true) match {
-        case (seff @ ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
+        case (seff@ScoutExpectedFunctionFailure(_, _, _, _, _)) => {
           throw CompileErrorExceptionT(CouldntFindFunctionToCallT(RangeS.internal(-48), seff))
         }
         case (ScoutExpectedFunctionSuccess(p)) => (p)
@@ -489,7 +491,6 @@ class DestructorTemplar(
 }
 
 object DestructorTemplar {
-
   def addConcreteDestructor(mutability: Mutability): (FunctionA, IFunctionGenerator) = {
     // Note the virtuality None in the header, and how we filter so this only applies
     // to structs and not interfaces. We use a different template for interface destructors.
@@ -559,12 +560,12 @@ object DestructorTemplar {
               destructorTemplar.generateStructDestructor(
                 env, temputs, maybeOriginFunction1.get, paramCoords, sr)
             }
-            case List(r @ Coord(_, _, as @ KnownSizeArrayT2(_, _))) => {
-              destructorTemplar.generateArraySequenceDestructor(
+            case List(r @ Coord(_, _, as @ StaticSizedArrayT2(_, _))) => {
+              destructorTemplar.generateStaticSizedArrayDestructor(
                 env, temputs, maybeOriginFunction1, r, as)
             }
-            case List(r @ Coord(_, _, ra @ UnknownSizeArrayT2(_))) => {
-              destructorTemplar.generateUnknownSizeArrayDestructor(
+            case List(r @ Coord(_, _, ra @ RuntimeSizedArrayT2(_))) => {
+              destructorTemplar.generateRuntimeSizedArrayDestructor(
                 env, temputs, maybeOriginFunction1, r, ra)
             }
             case _ => {
@@ -816,4 +817,5 @@ object DestructorTemplar {
       }
     (unevaluatedFunctionA, generator)
   }
+
 }

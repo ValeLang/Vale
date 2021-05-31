@@ -10,8 +10,8 @@ class IWeakRefStructsSource {
 public:
   virtual ~IWeakRefStructsSource() = default;
   virtual LLVMTypeRef getStructWeakRefStruct(StructReferend *structReferend) = 0;
-  virtual LLVMTypeRef getKnownSizeArrayWeakRefStruct(KnownSizeArrayT *ksaMT) = 0;
-  virtual LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT *usaMT) = 0;
+  virtual LLVMTypeRef getStaticSizedArrayWeakRefStruct(StaticSizedArrayT *ssaMT) = 0;
+  virtual LLVMTypeRef getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT *rsaMT) = 0;
   virtual LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend *interfaceReferend) = 0;
   virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
 
@@ -43,8 +43,8 @@ public:
   ControlBlock* getControlBlock();
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) override;
-  LLVMTypeRef getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) override;
+  LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) override;
+  LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) override;
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getStringWrapperStruct() override;
@@ -57,10 +57,10 @@ public:
       std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interface) override;
   void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
-  void declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) override;
-  void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) override;
-  void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
-  void defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) override;
+  void declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT) override;
+  void declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) override;
+  void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) override;
+  void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) override;
 
   LLVMTypeRef getControlBlockStruct() {
     return controlBlock.getStruct();
@@ -233,8 +233,8 @@ private:
 
   // These contain a ref count and an array type. Yon references
   // point to these.
-  std::unordered_map<std::string, LLVMTypeRef> knownSizeArrayWrapperStructs;
-  std::unordered_map<std::string, LLVMTypeRef> unknownSizeArrayWrapperStructs;
+  std::unordered_map<std::string, LLVMTypeRef> staticSizedArrayWrapperStructs;
+  std::unordered_map<std::string, LLVMTypeRef> runtimeSizedArrayWrapperStructs;
 
   LLVMTypeRef stringWrapperStructL = nullptr;
   LLVMTypeRef stringInnerStructL = nullptr;
@@ -256,8 +256,8 @@ public:
   ControlBlock* getControlBlock(Referend* referend) override;
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) override;
-  LLVMTypeRef getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) override;
+  LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) override;
+  LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) override;
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
 
@@ -270,14 +270,14 @@ public:
       std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interface) override;
   void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
-  void declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) override;
-  void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) override;
-  void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
-  void defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) override;
+  void declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT) override;
+  void declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) override;
+  void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) override;
+  void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) override;
 
   LLVMTypeRef getStructWeakRefStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) override;
-  LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) override;
+  LLVMTypeRef getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) override;
+  LLVMTypeRef getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) override;
   LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) override;
 
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
@@ -426,9 +426,9 @@ private:
   // These contain a pointer to the weak ref count int, and then a regular interface ref struct.
   std::unordered_map<std::string, LLVMTypeRef> interfaceWeakRefStructs;
   // These contain a pointer to the weak ref count int, and a pointer to the underlying known size array.
-  std::unordered_map<std::string, LLVMTypeRef> knownSizeArrayWeakRefStructs;
+  std::unordered_map<std::string, LLVMTypeRef> staticSizedArrayWeakRefStructs;
   // These contain a pointer to the weak ref count int, and a pointer to the underlying unknown size array.
-  std::unordered_map<std::string, LLVMTypeRef> unknownSizeArrayWeakRefStructs;
+  std::unordered_map<std::string, LLVMTypeRef> runtimeSizedArrayWeakRefStructs;
 };
 
 #endif

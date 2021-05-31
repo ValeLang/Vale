@@ -21,7 +21,7 @@ class StructTemplarCore(
     ancestorHelper: AncestorHelper,
     delegate: IStructTemplarDelegate) {
   def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
-    val emptyTupleFullName = FullName2(List(), TupleName2(List()))
+    val emptyTupleFullName = Program2.emptyTupleStructRef.fullName
     val emptyTupleEnv = PackageEnvironment(Some(env), emptyTupleFullName, newTemplataStore())
     val structDef2 = StructDefinition2(emptyTupleFullName, List(), false, Immutable, List(), false)
     temputs.declareStruct(structDef2.getRef)
@@ -34,7 +34,7 @@ class StructTemplarCore(
     temputs.declarePack(List(), structDef2.getRef)
   }
 
-  def maakeStruct(
+  def makeStruct(
     // The environment that the struct was defined in.
     structRunesEnv: PackageEnvironment[IName2],
     temputs: Temputs,
@@ -98,7 +98,9 @@ class StructTemplarCore(
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      delegate.makeImmConcreteDestructor(temputs, structInnerEnv, structDef2.getRef)
+      temputs.addDestructor(
+        structDef2.getRef,
+        delegate.makeImmConcreteDestructor(temputs, structInnerEnv, structDef2.getRef))
     }
 
     profiler.childFrame("struct ancestor interfaces", () => {
@@ -230,7 +232,9 @@ class StructTemplarCore(
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      delegate.getImmInterfaceDestructor(temputs, interfaceInnerEnv, interfaceDef2.getRef)
+      temputs.addDestructor(
+        interfaceDef2.getRef,
+        delegate.getImmInterfaceDestructor(temputs, interfaceInnerEnv, interfaceDef2.getRef))
     }
 
     profiler.childFrame("interface ancestor interfaces", () => {
@@ -374,7 +378,9 @@ class StructTemplarCore(
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      delegate.getImmConcreteDestructor(temputs, structEnv, closureStructDefinition.getRef)
+      temputs.addDestructor(
+        closureStructDefinition.getRef,
+        delegate.getImmConcreteDestructor(temputs, structEnv, closureStructDefinition.getRef))
     }
 
     val closuredVarsStructRef = closureStructDefinition.getRef;
@@ -417,7 +423,9 @@ class StructTemplarCore(
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (packMutability == Immutable) {
-      delegate.getImmConcreteDestructor(temputs, structInnerEnv, newStructDef.getRef)
+      temputs.addDestructor(
+        newStructDef.getRef,
+        delegate.getImmConcreteDestructor(temputs, structInnerEnv, newStructDef.getRef))
     }
 
     temputs.declarePack(memberCoords, newStructDef.getRef);
@@ -526,7 +534,9 @@ class StructTemplarCore(
 
     // If it's immutable, make sure there's a zero-arg destructor.
     if (mutability == Immutable) {
-      delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
+      temputs.addDestructor(
+        structDef.getRef,
+        delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef))
     }
 
     forwarderFunctionHeaders.zip(callables).zipWithIndex.foreach({
@@ -659,7 +669,9 @@ class StructTemplarCore(
 
     // If it's immutable, make sure there's a zero-arg destructor.
 //    if (mutability == Immutable) {
-      delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef)
+    temputs.addDestructor(
+      structDef.getRef,
+      delegate.getImmConcreteDestructor(temputs, structInnerEnv, structDef.getRef))
 //    }
 
     val forwarderFunction =

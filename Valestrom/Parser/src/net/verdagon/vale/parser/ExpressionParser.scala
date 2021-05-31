@@ -647,7 +647,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
   private[parser] def arrayOrTuple: Parser[IExpressionPE] = {
     // Static arrays have to come before tuples, because the beginning of static array looks kind of like a tuple.
     constructArrayExpr |
-//    runtimeArrayExpr |
+//    runtimeSizedArrayExpr |
     tuupleExpr
   }
 

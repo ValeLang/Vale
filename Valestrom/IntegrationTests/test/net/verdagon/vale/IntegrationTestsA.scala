@@ -658,7 +658,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val hamuts = compilation.getHamuts()
     val (packageCoord, fullNameH) = hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("IntArray")
 //    exportedName shouldEqual List("IntArray")
-    val usa = hamuts.unknownSizeArrays.find(_.name == fullNameH).get
-    usa.rawArray.elementType.kind shouldEqual IntH()
+    val rsa = hamuts.runtimeSizedArrays.find(_.name == fullNameH).get
+    rsa.rawArray.elementType.kind shouldEqual IntH()
   }
 }

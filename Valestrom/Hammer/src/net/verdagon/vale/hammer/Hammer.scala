@@ -151,6 +151,7 @@ object Hammer {
       emptyPackStructRef,
       functions,
       exports,
+      kindToDestructor,
       moduleNameToExternNameToExtern2,
       edgeBlueprintsByInterface,
       edges) = hinputs
@@ -198,27 +199,18 @@ object Hammer {
       val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
       val nameH =
         kindH match {
-          case UnknownSizeArrayTH(name) => name
-          case KnownSizeArrayTH(name) => name
+          case RuntimeSizedArrayTH(name) => name
+          case StaticSizedArrayTH(name) => name
           case StructRefH(name) => name
           case InterfaceRefH(name) => name
         }
       hamuts.addExport(nameH, packageCoord, exportedName)
     })
 
-    val immDestructors2 =
-      functions.filter(function => {
-        function.header.fullName match {
-          case FullName2(List(), ImmConcreteDestructorName2(_)) => true
-          case FullName2(List(), ImmInterfaceDestructorName2(_, _)) => true
-          case _ => false
-        }
-      })
-
     val immDestructorPrototypesH =
-      immDestructors2.map(immDestructor2 => {
-        val kindH = TypeHammer.translateReference(hinputs, hamuts, immDestructor2.header.params.head.tyype).kind
-        val immDestructorPrototypeH = FunctionHammer.translateFunction(hinputs, hamuts, immDestructor2).prototype
+      kindToDestructor.map({ case (kind, destructor) =>
+        val kindH = TypeHammer.translateKind(hinputs, hamuts, kind)
+        val immDestructorPrototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, destructor)
         (kindH -> immDestructorPrototypeH)
       }).toMap
 
@@ -246,8 +238,8 @@ object Hammer {
       hamuts.structDefs,
       externPrototypesH.toList,
       hamuts.functionDefs.values.toList,
-      hamuts.inner.knownSizeArrays,
-      hamuts.inner.unknownSizeArrays,
+      hamuts.inner.staticSizedArrays,
+      hamuts.inner.runtimeSizedArrays,
       immDestructorPrototypesH,
       hamuts.moduleNameToExportedNameToExportee,
       moduleNameToExternNameToExternH,

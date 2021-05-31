@@ -2,8 +2,8 @@ package net.verdagon.vale.hinputs
 
 import net.verdagon.vale.templar.{CitizenName2, Edge2, ExportAs2, FullName2, Function2, FunctionName2, IFunctionName2, Impl2, InterfaceEdgeBlueprint, LambdaCitizenName2, Program2, simpleName}
 import net.verdagon.vale.templar.templata.{FunctionBanner2, Prototype2, Signature2}
-import net.verdagon.vale.templar.types.{InterfaceDefinition2, InterfaceRef2, StructDefinition2, StructRef2}
-import net.verdagon.vale.{PackageCoordinate, vfail}
+import net.verdagon.vale.templar.types.{InterfaceDefinition2, InterfaceRef2, Kind, StructDefinition2, StructRef2}
+import net.verdagon.vale.{PackageCoordinate, vassertSome, vfail}
 
 import scala.collection.immutable.List
 
@@ -15,6 +15,7 @@ case class Hinputs(
   emptyPackStructRef: StructRef2,
   functions: List[Function2],
   exports: List[ExportAs2],
+  kindToDestructor: Map[Kind, Prototype2],
   moduleNameToExternNameToExtern: Map[String, Map[String, (PackageCoordinate, Prototype2)]],
   edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
   edges: List[Edge2]) {
@@ -26,7 +27,7 @@ case class Hinputs(
     }
   }
   def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2 = {
-    interfaces.find(_.getRef == interfaceRef).get
+    vassertSome(interfaces.find(_.getRef == interfaceRef))
   }
   def lookupFunction(signature2: Signature2): Option[Function2] = {
     functions.find(_.header.toSignature == signature2).headOption

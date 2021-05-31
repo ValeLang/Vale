@@ -94,9 +94,9 @@ class InfererEquator[Env, State](
       case KindTemplata(_) =>
       case KindTemplata(StructRef2(_)) =>
       case KindTemplata(InterfaceRef2(_)) =>
-      case KindTemplata(KnownSizeArrayT2(_, _)) =>
+      case KindTemplata(StaticSizedArrayT2(_, _)) =>
       case KindTemplata(PackT2(_, _)) =>
-      case KindTemplata(UnknownSizeArrayT2(_)) =>
+      case KindTemplata(RuntimeSizedArrayT2(_)) =>
       case KindTemplata(_) =>
       case InterfaceTemplata(_, _) =>
       case StructTemplata(_, _) =>
@@ -130,8 +130,8 @@ class InfererEquator[Env, State](
           true
         }
       }
-//      case (ArrayTypeSR, KindTemplata(ArraySequenceT2(_, _))) => true
-//      case (ArrayTypeSR, KindTemplata(UnknownSizeArrayT2(_))) => true
+//      case (ArrayTypeSR, KindTemplata(StaticSizedArrayT2(_, _))) => true
+//      case (ArrayTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
 //      case (StructTypeSR, KindTemplata(StructRef2(_))) => true
 //      case (StructTypeSR, StructTemplata(_, structS)) => {
 //        if (PredictingEvaluator.structIsTemplate(structS)) {
@@ -150,9 +150,9 @@ class InfererEquator[Env, State](
 //          true
 //        }
 //      }
-//      case (SequenceTypeSR, KindTemplata(ArraySequenceT2(_, _))) => true
+//      case (SequenceTypeSR, KindTemplata(StaticSizedArrayT2(_, _))) => true
 //      case (PackTypeSR, KindTemplata(PackT2(_, _))) => true
-//      case (SequenceTypeSR, KindTemplata(UnknownSizeArrayT2(_))) => true
+//      case (SequenceTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
 //      case (CallableTypeSR, KindTemplata(FunctionT2(_, _))) => true
 //      case (CallableTypeSR, KindTemplata(StructRef2(_))) => {
 //        // do we want to consider closures here? i think so?

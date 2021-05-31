@@ -50,22 +50,22 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
     ancestorInterfaceRef: InterfaceRef2):
   (Option[Int])
 
-  def getArraySequenceKind(
+  def getStaticSizedArrayKind(
     env: Env,
     state: State,
     mutability: Mutability,
     variability: Variability,
     size: Int,
     element: Coord):
-  (KnownSizeArrayT2)
+  (StaticSizedArrayT2)
 
-  def makeUnknownSizeArrayType(
+  def getRuntimeSizedArrayKind(
     env: Env,
     state: State,
     type2: Coord,
     arrayMutability: Mutability,
     arrayVariability: Variability):
-  UnknownSizeArrayT2
+  RuntimeSizedArrayT2
 
   def getTupleKind(
     env: Env,
@@ -138,7 +138,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
         val CoordTemplata(elementType2) = evaluateTemplex(env, state, elementTemplexS)
 
-        val kind = KindTemplata(KnownSizeArrayT2(size, RawArrayT2(elementType2, mutability, variability)))
+        val kind = KindTemplata(delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, elementType2))
         coerce(state, range, kind, tyype)
       }
       case InterpretedAT(range, ownershipS, permissionS, innerType1) => {
@@ -173,7 +173,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           }
           case ArrayTemplateTemplata() => {
             val List(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementCoord)) = templateArgsTemplatas
-            val result = UnknownSizeArrayT2(RawArrayT2(elementCoord, mutability, variability))
+            val result = RuntimeSizedArrayT2(RawArrayT2(elementCoord, mutability, variability))
             vimpl() // we should be calling into arraytemplar for that ^
             coerce(state, range, KindTemplata(result), resultType)
           }
@@ -370,10 +370,10 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     val ownership = if (mutability == Mutable) ownershipIfMutable else Share
     val permission = if (mutability == Mutable) Readwrite else Readonly
     referend match {
-      case a @ UnknownSizeArrayT2(array) => {
+      case a @ RuntimeSizedArrayT2(array) => {
         Coord(ownership, permission, a)
       }
-      case a @ KnownSizeArrayT2(_, RawArrayT2(_, mutability, variability)) => {
+      case a @ StaticSizedArrayT2(_, RawArrayT2(_, mutability, variability)) => {
         Coord(ownership, permission, a)
       }
       case a @ PackT2(_, underlyingStruct) => {
@@ -445,7 +445,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     expectedType: ITemplataType):
   (ITemplata) = {
     val List(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementType)) = templateArgs
-    val arrayKindTemplata = delegate.makeUnknownSizeArrayType(env, state, elementType, mutability, variability)
+    val arrayKindTemplata = delegate.getRuntimeSizedArrayKind(env, state, elementType, mutability, variability)
     val templata =
       coerce(state, range, KindTemplata(arrayKindTemplata), expectedType)
     (templata)
@@ -464,7 +464,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 //    (templata)
 //  }
 
-  def getArraySequenceKind(
+  def getStaticSizedArrayKind(
     env: Env,
     state: State,
     callRange: RangeS,
@@ -475,7 +475,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     expectedType: ITemplataType):
   (ITemplata) = {
     val uncoercedTemplata =
-      delegate.getArraySequenceKind(env, state, mutability, variability, size, element)
+      delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, element)
     val templata =
       coerce(state, callRange, KindTemplata(uncoercedTemplata), expectedType)
     (templata)
@@ -653,11 +653,11 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         permissionMatches && citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
       }
       case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
-      case (KindTemplata(UnknownSizeArrayT2(_)), ArrayTemplateTemplata()) => true
-      case (CoordTemplata(Coord(Share | Own, Readonly, UnknownSizeArrayT2(_))), ArrayTemplateTemplata()) => true
+      case (KindTemplata(RuntimeSizedArrayT2(_)), ArrayTemplateTemplata()) => true
+      case (CoordTemplata(Coord(Share | Own, Readonly, RuntimeSizedArrayT2(_))), ArrayTemplateTemplata()) => true
       case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
-      case (ArrayTemplateTemplata(), KindTemplata(UnknownSizeArrayT2(_))) => true
-      case (ArrayTemplateTemplata(), CoordTemplata(Coord(Share | Own, Readonly, UnknownSizeArrayT2(_)))) => true
+      case (ArrayTemplateTemplata(), KindTemplata(RuntimeSizedArrayT2(_))) => true
+      case (ArrayTemplateTemplata(), CoordTemplata(Coord(Share | Own, Readonly, RuntimeSizedArrayT2(_)))) => true
       case _ => false
     }
   }

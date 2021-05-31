@@ -1,4 +1,4 @@
-// immutable unknown-size-array
+// immutable runtime-size-array length
 
 // fn Arr<M, F>(n int, generator &F) Array<M, T>
 // rules(M Mutability, T Ref, Prot("__call", (&F, int), T))
@@ -7,6 +7,6 @@
 // }
 
 fn main() int export {
-  a = [imm *](5, {_});
-  = a[3];
+  a = [*](5, {_});
+  = len(&a);
 }

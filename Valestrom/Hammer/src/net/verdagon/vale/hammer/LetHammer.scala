@@ -233,14 +233,14 @@ object LetHammer {
     }
   }
 
-  def translateDestructureArraySequence(
+  def translateDestructureStaticSizedArray(
     hinputs: Hinputs,
     hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    des2: DestroyArraySequenceIntoLocals2
+    des2: DestroyStaticSizedArrayIntoLocals2
   ): ExpressionH[ReferendH] = {
-    val DestroyArraySequenceIntoLocals2(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
+    val DestroyStaticSizedArrayIntoLocals2(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, sourceExpr2);
@@ -269,8 +269,8 @@ object LetHammer {
         .unzip
 
     val stackNode =
-        DestroyKnownSizeArrayIntoLocalsH(
-          sourceExprResultLine.expectKnownSizeArrayAccess(),
+        DestroyStaticSizedArrayIntoLocalsH(
+          sourceExprResultLine.expectStaticSizedArrayAccess(),
           localTypes,
           localIndices.toVector)
 

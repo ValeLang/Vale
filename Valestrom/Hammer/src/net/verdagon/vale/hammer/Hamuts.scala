@@ -41,12 +41,12 @@ case class HamutsBox(var inner: Hamuts) {
     inner = inner.addInterface(interfaceRef2, interfaceDefH)
   }
 
-  def addKnownSizeArray(knownSizeArrayDefinitionTH: KnownSizeArrayDefinitionTH): Unit = {
-    inner = inner.addKnownSizeArray(knownSizeArrayDefinitionTH)
+  def addStaticSizedArray(staticSizedArrayDefinitionTH: StaticSizedArrayDefinitionTH): Unit = {
+    inner = inner.addStaticSizedArray(staticSizedArrayDefinitionTH)
   }
 
-  def addUnknownSizeArray(unknownSizeArrayDefinitionTH: UnknownSizeArrayDefinitionTH): Unit = {
-    inner = inner.addUnknownSizeArray(unknownSizeArrayDefinitionTH)
+  def addRuntimeSizedArray(runtimeSizedArrayDefinitionTH: RuntimeSizedArrayDefinitionTH): Unit = {
+    inner = inner.addRuntimeSizedArray(runtimeSizedArrayDefinitionTH)
   }
 
   def forwardDeclareFunction(functionRef2: Prototype2, functionRefH: FunctionRefH): Unit = {
@@ -67,11 +67,11 @@ case class HamutsBox(var inner: Hamuts) {
     id
   }
 
-  def getKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): KnownSizeArrayDefinitionTH = {
-    inner.getKnownSizeArray(knownSizeArrayTH)
+  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+    inner.getStaticSizedArray(staticSizedArrayTH)
   }
-  def getUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): UnknownSizeArrayDefinitionTH = {
-    inner.getUnknownSizeArray(unknownSizeArrayTH)
+  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+    inner.getRuntimeSizedArray(runtimeSizedArrayTH)
   }
 }
 
@@ -81,8 +81,8 @@ case class Hamuts(
     structRefsByRef2: Map[StructRef2, StructRefH],
     structDefsByRef2: Map[StructRef2, StructDefinitionH],
     structDefs: List[StructDefinitionH],
-    knownSizeArrays: List[KnownSizeArrayDefinitionTH],
-    unknownSizeArrays: List[UnknownSizeArrayDefinitionTH],
+    staticSizedArrays: List[StaticSizedArrayDefinitionTH],
+    runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH],
     interfaceRefs: Map[InterfaceRef2, InterfaceRefH],
     interfaceDefs: Map[InterfaceRef2, InterfaceDefinitionH],
     functionRefs: Map[Prototype2, FunctionRefH],
@@ -94,8 +94,8 @@ case class Hamuts(
       structRefsByRef2 + (structRef2 -> structRefH),
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -110,8 +110,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2 + (structRef2 -> structDefH),
       structDefs :+ structDefH,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -125,8 +125,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs :+ structDefH,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -140,8 +140,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs + (interfaceRef2 -> interfaceRefH),
       interfaceDefs,
       functionRefs,
@@ -156,8 +156,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs + (interfaceRef2 -> interfaceDefH),
       functionRefs,
@@ -171,8 +171,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs + (functionRef2 -> functionRefH),
@@ -188,8 +188,8 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -217,38 +217,38 @@ case class Hamuts(
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays,
+      staticSizedArrays,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
       functionDefs)
   }
 
-  def addKnownSizeArray(knownSizeArrayDefinitionTH: KnownSizeArrayDefinitionTH): Hamuts = {
+  def addStaticSizedArray(staticSizedArrayDefinitionTH: StaticSizedArrayDefinitionTH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
       moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays :+ knownSizeArrayDefinitionTH,
-      unknownSizeArrays,
+      staticSizedArrays :+ staticSizedArrayDefinitionTH,
+      runtimeSizedArrays,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
       functionDefs)
   }
 
-  def addUnknownSizeArray(unknownSizeArrayDefinitionTH: UnknownSizeArrayDefinitionTH): Hamuts = {
+  def addRuntimeSizedArray(runtimeSizedArrayDefinitionTH: RuntimeSizedArrayDefinitionTH): Hamuts = {
     Hamuts(
       idByFullNameByHumanName,
       moduleNameToExportedNameToExportee,
       structRefsByRef2,
       structDefsByRef2,
       structDefs,
-      knownSizeArrays,
-      unknownSizeArrays :+ unknownSizeArrayDefinitionTH,
+      staticSizedArrays,
+      runtimeSizedArrays :+ runtimeSizedArrayDefinitionTH,
       interfaceRefs,
       interfaceDefs,
       functionRefs,
@@ -279,8 +279,8 @@ case class Hamuts(
         structRefsByRef2,
         structDefsByRef2,
         structDefs,
-        knownSizeArrays,
-        unknownSizeArrays,
+        staticSizedArrays,
+        runtimeSizedArrays,
         interfaceRefs,
         interfaceDefs,
         functionRefs,
@@ -288,11 +288,11 @@ case class Hamuts(
     (newHamuts, id)
   }
 
-  def getKnownSizeArray(knownSizeArrayTH: KnownSizeArrayTH): KnownSizeArrayDefinitionTH = {
-    knownSizeArrays.find(_.name == knownSizeArrayTH.name).get
+  def getStaticSizedArray(staticSizedArrayTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+    staticSizedArrays.find(_.name == staticSizedArrayTH.name).get
   }
-  def getUnknownSizeArray(unknownSizeArrayTH: UnknownSizeArrayTH): UnknownSizeArrayDefinitionTH = {
-    unknownSizeArrays.find(_.name == unknownSizeArrayTH.name).get
+  def getRuntimeSizedArray(runtimeSizedArrayTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+    runtimeSizedArrays.find(_.name == runtimeSizedArrayTH.name).get
   }
 
 }

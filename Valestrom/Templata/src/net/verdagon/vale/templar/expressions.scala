@@ -370,7 +370,7 @@ case class UnreachableMootE2(innerExpr: ReferenceExpression2) extends ReferenceE
 case class StaticArrayFromValues2(
     elements: List[ReferenceExpression2],
     resultReference: Coord,
-    arrayType: KnownSizeArrayT2) extends ReferenceExpression2 {
+    arrayType: StaticSizedArrayT2) extends ReferenceExpression2 {
   override def resultRegister = ReferenceResult2(resultReference)
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ elements.flatMap(_.all(func)) ++ arrayType.all(func)
@@ -493,7 +493,7 @@ case class ArgLookup2(
 case class StaticSizedArrayLookup2(
   range: RangeS,
     arrayExpr: ReferenceExpression2,
-    arrayType: KnownSizeArrayT2,
+    arrayType: StaticSizedArrayT2,
     indexExpr: ReferenceExpression2,
     // See RMLRMO for why we dont have a targetOwnership field here.
     // See RMLHTP why we can have this here.
@@ -509,10 +509,10 @@ case class StaticSizedArrayLookup2(
   }
 }
 
-case class UnknownSizeArrayLookup2(
+case class RuntimeSizedArrayLookup2(
   range: RangeS,
     arrayExpr: ReferenceExpression2,
-    arrayType: UnknownSizeArrayT2,
+    arrayType: RuntimeSizedArrayT2,
     indexExpr: ReferenceExpression2,
   // See RMLRMO for why we dont have a targetOwnership field here.
   // See RMLHTP why we can have this here.
@@ -681,7 +681,7 @@ case class Construct2(
 // Note: the functionpointercall's last argument is a Placeholder2,
 // it's up to later stages to replace that with an actual index
 case class ConstructArray2(
-    arrayType: UnknownSizeArrayT2,
+    arrayType: RuntimeSizedArrayT2,
     sizeExpr: ReferenceExpression2,
     generator: ReferenceExpression2,
     generatorMethod: Prototype2
@@ -700,7 +700,7 @@ case class ConstructArray2(
 }
 
 case class StaticArrayFromCallable2(
-  arrayType: KnownSizeArrayT2,
+  arrayType: StaticSizedArrayT2,
   generator: ReferenceExpression2,
   generatorMethod: Prototype2
 ) extends ReferenceExpression2 {
@@ -719,11 +719,11 @@ case class StaticArrayFromCallable2(
 
 // Note: the functionpointercall's last argument is a Placeholder2,
 // it's up to later stages to replace that with an actual index
-// This returns nothing, as opposed to DrainArraySequence2 which returns a
+// This returns nothing, as opposed to DrainStaticSizedArray2 which returns a
 // sequence of results from the call.
-case class DestroyArraySequenceIntoFunction2(
+case class DestroyStaticSizedArrayIntoFunction2(
     arrayExpr: ReferenceExpression2,
-    arrayType: KnownSizeArrayT2,
+    arrayType: StaticSizedArrayT2,
     consumer: ReferenceExpression2,
     consumerMethod: Prototype2) extends ReferenceExpression2 {
   override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
@@ -736,14 +736,14 @@ case class DestroyArraySequenceIntoFunction2(
 // We destroy both Share and Own things
 // If the struct contains any addressibles, those die immediately and aren't stored
 // in the destination variables, which is why it's a list of ReferenceLocalVariable2.
-case class DestroyArraySequenceIntoLocals2(
+case class DestroyStaticSizedArrayIntoLocals2(
   expr: ReferenceExpression2,
-  arraySeq: KnownSizeArrayT2,
+  staticSizedArray: StaticSizedArrayT2,
   destinationReferenceVariables: List[ReferenceLocalVariable2]
 ) extends ReferenceExpression2 {
   override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
 
-  vassert(expr.referend == arraySeq)
+  vassert(expr.referend == staticSizedArray)
   if (expr.resultRegister.reference.ownership == Constraint) {
     vfail("wot")
   }
@@ -753,9 +753,9 @@ case class DestroyArraySequenceIntoLocals2(
   }
 }
 
-case class DestroyUnknownSizeArray2(
+case class DestroyRuntimeSizedArray2(
     arrayExpr: ReferenceExpression2,
-    arrayType: UnknownSizeArrayT2,
+    arrayType: RuntimeSizedArrayT2,
     consumer: ReferenceExpression2,
     consumerMethod: Prototype2
 ) extends ReferenceExpression2 {

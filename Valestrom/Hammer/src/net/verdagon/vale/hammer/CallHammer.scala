@@ -91,21 +91,21 @@ object CallHammer {
         hinputs, hamuts, constructArray2.resultRegister.reference)
 
     val (arrayTypeH) =
-      TypeHammer.translateUnknownSizeArray(hinputs, hamuts, arrayType2)
-    vassert(arrayRefTypeH.expectUnknownSizeArrayReference().kind == arrayTypeH)
+      TypeHammer.translateRuntimeSizedArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
 
-    val elementType = hamuts.getUnknownSizeArray(arrayTypeH).rawArray.elementType
+    val elementType = hamuts.getRuntimeSizedArray(arrayTypeH).rawArray.elementType
 
     val generatorMethodH =
       FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
 
     val constructArrayCallNode =
-        ConstructUnknownSizeArrayH(
+        ConstructRuntimeSizedArrayH(
           sizeRegisterId.expectIntAccess(),
           generatorRegisterId,
           generatorMethodH,
           elementType,
-          arrayRefTypeH.expectUnknownSizeArrayReference())
+          arrayRefTypeH.expectRuntimeSizedArrayReference())
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds ++ sizeDeferreds)
@@ -129,10 +129,10 @@ object CallHammer {
         hinputs, hamuts, exprTE.resultRegister.reference)
 
     val (arrayTypeH) =
-      TypeHammer.translateKnownSizeArray(hinputs, hamuts, arrayType2)
-    vassert(arrayRefTypeH.expectKnownSizeArrayReference().kind == arrayTypeH)
+      TypeHammer.translateStaticSizedArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectStaticSizedArrayReference().kind == arrayTypeH)
 
-    val elementType = hamuts.getKnownSizeArray(arrayTypeH).rawArray.elementType
+    val elementType = hamuts.getStaticSizedArray(arrayTypeH).rawArray.elementType
 
     val generatorMethodH =
       FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
@@ -142,26 +142,26 @@ object CallHammer {
         generatorRegisterId,
         generatorMethodH,
         elementType,
-        arrayRefTypeH.expectKnownSizeArrayReference())
+        arrayRefTypeH.expectStaticSizedArrayReference())
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds)
   }
 
-  def translateDestroyArraySequence(
+  def translateDestroyStaticSizedArray(
       hinputs: Hinputs,
       hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
-      das2: DestroyArraySequenceIntoFunction2):
+      das2: DestroyStaticSizedArrayIntoFunction2):
   ExpressionH[ReferendH] = {
-    val DestroyArraySequenceIntoFunction2(arrayExpr2, arraySequenceType, consumerExpr2, consumerMethod2) = das2;
+    val DestroyStaticSizedArrayIntoFunction2(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
 
     val (arrayTypeH) =
-      TypeHammer.translateKnownSizeArray(hinputs, hamuts, arraySequenceType)
+      TypeHammer.translateStaticSizedArray(hinputs, hamuts, staticSizedArrayType)
     val (arrayRefTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, arrayExpr2.resultRegister.reference)
-    vassert(arrayRefTypeH.expectKnownSizeArrayReference().kind == arrayTypeH)
+    vassert(arrayRefTypeH.expectStaticSizedArrayReference().kind == arrayTypeH)
 
     val (arrayExprResultLine, arrayExprDeferreds) =
       ExpressionHammer.translate(
@@ -171,45 +171,45 @@ object CallHammer {
       ExpressionHammer.translate(
         hinputs, hamuts, currentFunctionHeader, locals, consumerExpr2);
 
-    val knownSizeArrayDef = hamuts.getKnownSizeArray(arrayTypeH)
+    val staticSizedArrayDef = hamuts.getStaticSizedArray(arrayTypeH)
 
     val consumerInterfaceRef = consumerCallableResultLine.expectInterfaceAccess().resultType.kind;
     val consumerInterfaceDef = vassertSome(hamuts.interfaceDefs.values.find(_.getRef == consumerInterfaceRef))
     vassert(consumerInterfaceDef.methods.head.prototypeH.params.size == 2)
     vassert(consumerInterfaceDef.methods.head.prototypeH.params(0).kind == consumerInterfaceRef)
-    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == knownSizeArrayDef.rawArray.elementType)
+    vassert(consumerInterfaceDef.methods.head.prototypeH.params(1) == staticSizedArrayDef.rawArray.elementType)
 
     val consumerMethod =
       FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
 
-    val destroyArraySequenceCallNode =
-        DestroyKnownSizeArrayIntoFunctionH(
-          arrayExprResultLine.expectKnownSizeArrayAccess(),
+    val destroyStaticSizedArrayCallNode =
+        DestroyStaticSizedArrayIntoFunctionH(
+          arrayExprResultLine.expectStaticSizedArrayAccess(),
           consumerCallableResultLine.expectInterfaceAccess(),
           consumerMethod,
-          knownSizeArrayDef.rawArray.elementType,
-          knownSizeArrayDef.size)
+          staticSizedArrayDef.rawArray.elementType,
+          staticSizedArrayDef.size)
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, currentFunctionHeader, locals, destroyArraySequenceCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, destroyStaticSizedArrayCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
   }
 
-  def translateDestroyUnknownSizeArray(
+  def translateDestroyRuntimeSizedArray(
     hinputs: Hinputs,
     hamuts: HamutsBox,
       currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    das2: DestroyUnknownSizeArray2):
+    das2: DestroyRuntimeSizedArray2):
   ExpressionH[ReferendH] = {
-    val DestroyUnknownSizeArray2(arrayExpr2, unknownSizeArrayType2, consumerExpr2, consumerMethod2) = das2;
+    val DestroyRuntimeSizedArray2(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
 
-//    val UnknownSizeArrayT2(RawArrayT2(memberType2, mutability)) = unknownSizeArrayType2
+//    val RuntimeSizedArrayT2(RawArrayT2(memberType2, mutability)) = runtimeSizedArrayType2
 
     val (arrayTypeH) =
-      TypeHammer.translateUnknownSizeArray(hinputs, hamuts, unknownSizeArrayType2)
+      TypeHammer.translateRuntimeSizedArray(hinputs, hamuts, runtimeSizedArrayType2)
     val (arrayRefTypeH) =
       TypeHammer.translateReference(hinputs, hamuts, arrayExpr2.resultRegister.reference)
-    vassert(arrayRefTypeH.expectUnknownSizeArrayReference().kind == arrayTypeH)
+    vassert(arrayRefTypeH.expectRuntimeSizedArrayReference().kind == arrayTypeH)
 
     val (arrayExprResultLine, arrayExprDeferreds) =
       ExpressionHammer.translate(
@@ -223,19 +223,19 @@ object CallHammer {
       FunctionHammer.translatePrototype(hinputs, hamuts, consumerMethod2)
 
     val elementType =
-      hamuts.getUnknownSizeArray(
-          arrayExprResultLine.expectUnknownSizeArrayAccess().resultType.kind)
+      hamuts.getRuntimeSizedArray(
+          arrayExprResultLine.expectRuntimeSizedArrayAccess().resultType.kind)
         .rawArray.elementType
 
-    val destroyArraySequenceCallNode =
-        DestroyUnknownSizeArrayH(
-          arrayExprResultLine.expectUnknownSizeArrayAccess(),
+    val destroyStaticSizedArrayCallNode =
+        DestroyRuntimeSizedArrayH(
+          arrayExprResultLine.expectRuntimeSizedArrayAccess(),
           consumerCallableResultLine.expectInterfaceAccess(),
           consumerMethod,
           elementType)
 
     ExpressionHammer.translateDeferreds(
-      hinputs, hamuts, currentFunctionHeader, locals, destroyArraySequenceCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
+      hinputs, hamuts, currentFunctionHeader, locals, destroyStaticSizedArrayCallNode, consumerCallableDeferreds ++ arrayExprDeferreds)
   }
 
   def translateIf(

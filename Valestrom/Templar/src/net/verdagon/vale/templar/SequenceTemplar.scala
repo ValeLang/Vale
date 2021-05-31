@@ -22,10 +22,10 @@ class SequenceTemplar(
 //      val memberType = types2.toSet.head
 //      // Theyre all the same type, so make it an array.
 //      val mutability = StructTemplar.getCompoundTypeMutability(List(memberType))
-//      val arraySequenceType = arrayTemplar.makeArraySequenceType(env.snapshot, temputs, mutability, types2.size, memberType)
-//      val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
-//      val permission = if (arraySequenceType.array.mutability == Mutable) Readwrite else Readonly
-//      val finalExpr = ArraySequenceE2(exprs2, Coord(ownership, permission, arraySequenceType), arraySequenceType)
+//      val staticSizedArrayType = arrayTemplar.getStaticSizedArrayKind(env.snapshot, temputs, mutability, types2.size, memberType)
+//      val ownership = if (staticSizedArrayType.array.mutability == Mutable) Own else Share
+//      val permission = if (staticSizedArrayType.array.mutability == Mutable) Readwrite else Readonly
+//      val finalExpr = StaticSizedArrayE2(exprs2, Coord(ownership, permission, staticSizedArrayType), staticSizedArrayType)
 //      (finalExpr)
 //    } else {
       val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)

@@ -9,10 +9,12 @@ import scala.collection.mutable
 class Reachables(
   val functions: mutable.Set[Signature2],
   val structs: mutable.Set[StructRef2],
+  val staticSizedArrays: mutable.Set[StaticSizedArrayT2],
+  val runtimeSizedArrays: mutable.Set[RuntimeSizedArrayT2],
   val interfaces: mutable.Set[InterfaceRef2],
   val edges: mutable.Set[Edge2]
 ) {
-  def size = functions.size + structs.size + interfaces.size + edges.size
+  def size = functions.size + structs.size + staticSizedArrays.size + runtimeSizedArrays.size + interfaces.size + edges.size
 }
 
 object Reachability {
@@ -31,7 +33,7 @@ object Reachability {
       })
     val exposedStructs = structs.filter(_.attributes.exists({ case Export2(_) => true }))
     val exposedInterfaces = interfaces.filter(_.attributes.exists({ case Export2(_) => true }))
-    val reachables = new Reachables(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
+    val reachables = new Reachables(mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set(), mutable.Set())
     var sizeBefore = 0
     do {
       vcurious(sizeBefore == 0) // do we ever need multiple iterations, or is the DFS good enough?
@@ -53,11 +55,11 @@ object Reachability {
       case FunctionCall2(calleePrototype, _) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case ConstructArray2(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case StaticArrayFromCallable2(_, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
-      case DestroyArraySequenceIntoFunction2(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case DestroyStaticSizedArrayIntoFunction2(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case sr @ StructRef2(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceRef2(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
-      case ksa @ KnownSizeArrayT2(_, _) => visitKnownSizeArray(program, edgeBlueprints, edges, reachables, ksa)
-      case usa @ UnknownSizeArrayT2(_) => visitUnknownSizeArray(program, edgeBlueprints, edges, reachables, usa)
+      case ssa @ StaticSizedArrayT2(_, _) => visitStaticSizedArray(program, edgeBlueprints, edges, reachables, ssa)
+      case rsa @ RuntimeSizedArrayT2(_) => visitRuntimeSizedArray(program, edgeBlueprints, edges, reachables, rsa)
       case LockWeak2(_, _, someConstructor, noneConstructor) => {
         visitFunction(program, edgeBlueprints, edges, reachables, someConstructor.toSignature)
         visitFunction(program, edgeBlueprints, edges, reachables, noneConstructor.toSignature)
@@ -78,8 +80,7 @@ object Reachability {
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
     if (structDef.mutability == Immutable && structRef != Program2.emptyTupleStructRef) {
-      val destructorSignature =
-        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(structRef)))
+      val destructorSignature = program.getDestructor(structRef).toSignature
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     structDef.all({
@@ -98,8 +99,7 @@ object Reachability {
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
     if (interfaceDef.mutability == Immutable) {
-      val destructorSignature =
-        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, Readonly, interfaceRef))), List(Coord(Share, Readonly, interfaceRef)))))
+      val destructorSignature = program.getDestructor(interfaceRef).toSignature
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     interfaceDef.all({
@@ -124,32 +124,42 @@ object Reachability {
     })
   }
 
-  def visitKnownSizeArray(
+  def visitStaticSizedArray(
     program: Temputs,
     edgeBlueprints: List[InterfaceEdgeBlueprint],
     edges: List[Edge2],
     reachables: Reachables,
-    ksa: KnownSizeArrayT2): Unit = {
+    ssa: StaticSizedArrayT2
+  ): Unit = {
+    if (reachables.staticSizedArrays.contains(ssa)) {
+      return
+    }
+    reachables.staticSizedArrays.add(ssa)
+
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
-    if (ksa.array.mutability == Immutable) {
-      val destructorSignature =
-        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(ksa)))
+    if (ssa.array.mutability == Immutable) {
+      val destructorSignature = program.getDestructor(ssa).toSignature
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
   }
 
-  def visitUnknownSizeArray(
+  def visitRuntimeSizedArray(
     program: Temputs,
     edgeBlueprints: List[InterfaceEdgeBlueprint],
     edges: List[Edge2],
     reachables: Reachables,
-    usa: UnknownSizeArrayT2): Unit = {
+    rsa: RuntimeSizedArrayT2
+  ): Unit = {
+    if (reachables.runtimeSizedArrays.contains(rsa)) {
+      return
+    }
+    reachables.runtimeSizedArrays.add(rsa)
+
     // Make sure the destructor got in, because for immutables, it's implicitly called by lots of instructions
     // that let go of a reference.
-    if (usa.array.mutability == Immutable) {
-      val destructorSignature =
-        Signature2(FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(usa)))
+    if (rsa.array.mutability == Immutable) {
+      val destructorSignature = program.getDestructor(rsa).toSignature
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
   }

@@ -158,7 +158,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.last match {
-          case UnknownSizeArrayName2(RawArrayName2(Mutable,_)) =>
+          case RuntimeSizedArrayName2(RawArrayName2(Mutable,_)) =>
         }
       }
     }
@@ -176,7 +176,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.last match {
-          case KnownSizeArrayName2(10,RawArrayName2(Mutable,_)) =>
+          case StaticSizedArrayName2(10,RawArrayName2(Mutable,_)) =>
         }
       }
     }

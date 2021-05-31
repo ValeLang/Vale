@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.LocalVariableA
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, FunctionEnvironmentBox, ILocalVariable2, ReferenceLocalVariable2}
-import net.verdagon.vale.templar.function.DropHelper
+import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.templata.Conversions
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar._
@@ -14,7 +14,7 @@ import scala.collection.immutable.List
 
 class LocalHelper(
     opts: TemplarOptions,
-  dropHelper: DropHelper) {
+  destructorTemplar: DestructorTemplar) {
 
   def makeTemporaryLocal(
     temputs: Temputs,
@@ -40,7 +40,7 @@ class LocalHelper(
 
     val unlet = unletLocal(fate, rlv)
     val destructExpr2 =
-      dropHelper.drop(fate, temputs, unlet)
+      destructorTemplar.drop(fate, temputs, unlet)
     vassert(destructExpr2.referend == Void2())
 
     // No Discard here because the destructor already returns void.
@@ -64,7 +64,7 @@ class LocalHelper(
       case head :: tail => {
         val unlet = unletLocal(fate, head)
         val maybeHeadExpr2 =
-          dropHelper.drop(fate, temputs, unlet)
+          destructorTemplar.drop(fate, temputs, unlet)
         val tailExprs2 =
           unletAll(temputs, fate, tail)
         (maybeHeadExpr2 :: tailExprs2)
@@ -145,7 +145,7 @@ class LocalHelper(
                 Unlet2(lv)
               }
               // See CSHROOR for why these aren't just Readwrite.
-              case l @ UnknownSizeArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
+              case l @ RuntimeSizedArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
               case l @ StaticSizedArrayLookup2(_, _, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
               case l @ ReferenceMemberLookup2(_,_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
               case l @ AddressMemberLookup2(_, _, _, _, _) => SoftLoad2(l, Constraint, a.resultRegister.reference.permission)
@@ -214,10 +214,10 @@ class LocalHelper(
         val mutability = Templar.getMutability(temputs, understruct2)
         if (mutability == Mutable) Constraint else Share
       }
-      case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => {
+      case StaticSizedArrayT2(_, RawArrayT2(_, mutability, _)) => {
         if (mutability == Mutable) Constraint else Share
       }
-      case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => {
+      case RuntimeSizedArrayT2(RawArrayT2(_, mutability, _)) => {
         if (mutability == Mutable) Constraint else Share
       }
       //      case TemplatedClosure2(_, structRef, _) => {

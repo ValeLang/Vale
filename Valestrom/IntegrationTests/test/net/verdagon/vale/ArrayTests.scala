@@ -61,7 +61,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable static array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immksafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immssafromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -74,7 +74,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable static array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutksafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutssafromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -87,7 +87,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable static array from values") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immksafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immssafromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -100,7 +100,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable static array from values") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutksafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutssafromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -124,7 +124,7 @@ class ArrayTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case UnknownSizeArrayLookup2(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookup2(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual Mutable
       }
     })
@@ -133,11 +133,11 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable runtime array from lambda") {
-    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/immusafromcallable.vale"))
+    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/immrsafromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case UnknownSizeArrayLookup2(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookup2(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual Immutable
       }
     })
@@ -146,11 +146,11 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable runtime array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutusafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutrsafromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case UnknownSizeArrayLookup2(_,_,arrayType, _, _, _) => {
+      case RuntimeSizedArrayLookup2(_,_,arrayType, _, _, _) => {
         arrayType.array.mutability shouldEqual Mutable
       }
     })
@@ -209,7 +209,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
+      case ConstructArray2(RuntimeSizedArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
@@ -232,7 +232,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
+      case ConstructArray2(RuntimeSizedArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
@@ -280,7 +280,7 @@ class ArrayTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("MakeImmArray")
     main.only({
-      case ConstructArray2(UnknownSizeArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
+      case ConstructArray2(RuntimeSizedArrayT2(RawArrayT2(Coord(Share, Readonly, Int2()), Immutable, _)), _, _, _) =>
     })
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
@@ -367,7 +367,6 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(7)
   }
 
-  // Known failure 2020-08-20
   test("Capture") {
     val compile = RunCompilation.test(
       """
@@ -534,7 +533,6 @@ class ArrayTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(30)
   }
 
-  // Known failure 2020-08-05
   test("Array foreach") {
     val compile = RunCompilation.test(
       """

@@ -27,7 +27,7 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
-  test("Test inferring a borrowed known size array") {
+  test("Test inferring a borrowed static sized array") {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }
@@ -40,7 +40,7 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(10)
   }
-  test("Test inferring an owning known size array") {
+  test("Test inferring an owning static sized array") {
     val compile = RunCompilation.test(
       """
         |struct Muta { hp int; }

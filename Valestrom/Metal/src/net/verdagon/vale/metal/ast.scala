@@ -8,7 +8,7 @@ import scala.collection.immutable.ListMap
 object ProgramH {
   val emptyTupleStructRef =
     // If the templar ever decides to change this things name, update this to match templar's.
-    StructRefH(FullNameH("Tup0", 0, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
+    StructRefH(FullNameH("Tup0", 0, List(VonStr(""), VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
   def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
 
@@ -34,8 +34,8 @@ case class ProgramH(
     externs: List[PrototypeH],
     // All of the user defined functions (and some from the compiler itself).
     functions: List[FunctionH],
-    knownSizeArrays: List[KnownSizeArrayDefinitionTH],
-    unknownSizeArrays: List[UnknownSizeArrayDefinitionTH],
+    staticSizedArrays: List[StaticSizedArrayDefinitionTH],
+    runtimeSizedArrays: List[RuntimeSizedArrayDefinitionTH],
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.

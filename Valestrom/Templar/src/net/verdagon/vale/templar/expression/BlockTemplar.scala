@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.expression
 import net.verdagon.vale.astronomer.{BlockAE, IExpressionAE}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.DropHelper
+import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.vassert
 
@@ -20,7 +20,7 @@ trait IBlockTemplarDelegate {
 class BlockTemplar(
     opts: TemplarOptions,
     newTemplataStore: () => TemplatasStore,
-    dropHelper: DropHelper,
+    destructorTemplar: DestructorTemplar,
     localHelper: LocalHelper,
     delegate: IBlockTemplarDelegate) {
   // This is NOT USED FOR EVERY BLOCK!
@@ -149,7 +149,7 @@ class BlockTemplar(
             // This isn't the last expression
             perhapsUndestructedFirstExpr2.resultRegister.referend match {
               case Void2() => perhapsUndestructedFirstExpr2
-              case _ => dropHelper.drop(fate, temputs, perhapsUndestructedFirstExpr2)
+              case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
             }
           }
 

@@ -29,10 +29,10 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     temputs.lookupFunction("as").only({
       case as @ AsSubtype2(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.resultRegister.reference match {
-          case Coord(Constraint,Readonly,InterfaceRef2(FullName2(List(),CitizenName2("IShip",List())))) =>
+          case Coord(Constraint,Readonly,InterfaceRef2(FullName2(_, List(),CitizenName2("IShip",List())))) =>
         }
         targetSubtype match {
-          case StructRef2(FullName2(List(),CitizenName2("Raza",List()))) =>
+          case StructRef2(FullName2(_, List(),CitizenName2("Raza",List()))) =>
         }
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
@@ -40,7 +40,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
               Own,Readwrite,
               InterfaceRef2(
                 FullName2(
-                  List(),
+                  _, List(),
                   CitizenName2(
                     "Result",
                     List(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
@@ -49,13 +49,13 @@ class TemplarVirtualTests extends FunSuite with Matchers {
           case CoordTemplata(
             Coord(
               Constraint,Readonly,
-              StructRef2(FullName2(List(),CitizenName2("Raza",List()))))) =>
+              StructRef2(FullName2(_, List(),CitizenName2("Raza",List()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
             Coord(
               Constraint,Readonly,
-              InterfaceRef2(FullName2(List(),CitizenName2("IShip",List()))))) =>
+              InterfaceRef2(FullName2(_, List(),CitizenName2("IShip",List()))))) =>
         }
         vassert(okConstructor.paramTypes.head.referend == targetSubtype)
         vassert(errConstructor.paramTypes.head == sourceExpr.resultRegister.reference)

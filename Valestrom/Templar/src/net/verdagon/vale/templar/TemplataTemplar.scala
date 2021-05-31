@@ -35,16 +35,16 @@ trait ITemplataTemplarDelegate {
     uncoercedTemplateArgs: List[ITemplata]):
   InterfaceRef2
 
-  def makeArraySequenceType(
+  def getStaticSizedArrayKind(
     env: IEnvironment,
     temputs: Temputs,
     mutability: Mutability,
     variability: Variability,
     size: Int,
     type2: Coord):
-  KnownSizeArrayT2
+  StaticSizedArrayT2
 
-  def makeUnknownSizeArrayType(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2
+  def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): RuntimeSizedArrayT2
 
   def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2
 }
@@ -216,7 +216,7 @@ class TemplataTemplar(
         //if (arrayMutability == Immutable && elementMutability == Mutable) {
         //  throw new Exception("Can't have an immutable array of mutables")
         //}
-        //val arrayType = UnknownSizeArrayT2(RawArrayT2(elementCoord, arrayMutability))
+        //val arrayType = RuntimeSizedArrayT2(RawArrayT2(elementCoord, arrayMutability))
         //(state, ReferendTemplata(arrayType))
 
         override def getAncestorInterfaceDistance(
@@ -227,12 +227,12 @@ class TemplataTemplar(
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
-        override def getArraySequenceKind(env: IEnvironment, state: Temputs, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-          delegate.makeArraySequenceType(env, state, mutability, variability, size, element)
+        override def getStaticSizedArrayKind(env: IEnvironment, state: Temputs, mutability: Mutability, variability: Variability, size: Int, element: Coord): (StaticSizedArrayT2) = {
+          delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, element)
         }
 
-        override def makeUnknownSizeArrayType(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
-          delegate.makeUnknownSizeArrayType(env, state, element, arrayMutability, arrayVariability)
+        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): RuntimeSizedArrayT2 = {
+          delegate.getRuntimeSizedArrayKind(env, state, element, arrayMutability, arrayVariability)
         }
 
         override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2 = {

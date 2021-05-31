@@ -249,7 +249,10 @@ class FunctionTemplarClosureOrLightLayer(
     BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
   }
 
-  private def makeNameWithClosureds(outerEnv: IEnvironment, functionName: IFunctionDeclarationNameA) = {
+  private def makeNameWithClosureds(
+    outerEnv: IEnvironment,
+    functionName: IFunctionDeclarationNameA
+  ): FullName2[BuildingFunctionNameWithClosureds2] = {
     outerEnv.fullName.addStep(
       BuildingFunctionNameWithClosureds2(
         NameTranslator.translateFunctionNameToTemplateName(functionName)))

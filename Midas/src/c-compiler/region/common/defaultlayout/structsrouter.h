@@ -19,8 +19,8 @@ public:
 
   LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
   LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) override;
-  LLVMTypeRef getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) override;
+  LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) override;
+  LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) override;
   LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
   LLVMTypeRef getStringWrapperStruct() override;
@@ -34,10 +34,10 @@ public:
       std::vector<LLVMValueRef> functions) override;
   void declareInterface(InterfaceDefinition* interfaceM) override;
   void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) override;
-  void declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) override;
-  void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) override;
-  void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) override;
-  void defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) override;
+  void declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT) override;
+  void declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) override;
+  void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) override;
+  void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) override;
 
   ControlBlockPtrLE getConcreteControlBlockPtr(
       AreaAndFileAndLine from,
@@ -161,8 +161,8 @@ public:
     : getWeakRefStructsSource(getWeakRefStructsSource_) {}
 
   LLVMTypeRef getStructWeakRefStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) override;
-  LLVMTypeRef getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) override;
+  LLVMTypeRef getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) override;
+  LLVMTypeRef getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) override;
   LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) override;
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
   LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override;

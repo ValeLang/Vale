@@ -3,7 +3,7 @@ package net.verdagon.vale.templar
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.templata.{Prototype2, Signature2}
-import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Never2, RawArrayT2, Share, StructDefinition2, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.templar.types.{CitizenDefinition2, CitizenRef2, Coord, Immutable, InterfaceDefinition2, InterfaceRef2, Kind, StaticSizedArrayT2, Mutability, Never2, RawArrayT2, Share, StructDefinition2, StructRef2, RuntimeSizedArrayT2}
 import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.{List, Map}
@@ -51,10 +51,12 @@ case class Temputs() {
   // Only PackTemplar can make a PackT2.
   private val packTypes: mutable.HashMap[List[Coord], StructRef2] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
-  private val arraySequenceTypes: mutable.HashMap[(Int, RawArrayT2), KnownSizeArrayT2] = mutable.HashMap()
+  private val staticSizedArrayTypes: mutable.HashMap[(Int, RawArrayT2), StaticSizedArrayT2] = mutable.HashMap()
   // Only ArrayTemplar can make an RawArrayT2.
-  private val unknownSizeArrayTypes: mutable.HashMap[RawArrayT2, UnknownSizeArrayT2] = mutable.HashMap()
-  
+  private val runtimeSizedArrayTypes: mutable.HashMap[RawArrayT2, RuntimeSizedArrayT2] = mutable.HashMap()
+
+  private val kindToDestructor: mutable.HashMap[Kind, Prototype2] = mutable.HashMap()
+
   def lookupFunction(signature2: Signature2): Option[Function2] = {
     functions.find(_.header.toSignature == signature2)
   }
@@ -174,12 +176,12 @@ case class Temputs() {
     interfaceDefsByRef += (interfaceDef.getRef -> interfaceDef)
   }
 
-  def addArraySequence(array2: KnownSizeArrayT2): Unit = {
-    arraySequenceTypes += ((array2.size, array2.array) -> array2)
+  def addStaticSizedArray(array2: StaticSizedArrayT2): Unit = {
+    staticSizedArrayTypes += ((array2.size, array2.array) -> array2)
   }
 
-  def addUnknownSizeArray(array2: UnknownSizeArrayT2): Unit = {
-    unknownSizeArrayTypes += (array2.array -> array2)
+  def addRuntimeSizedArray(array2: RuntimeSizedArrayT2): Unit = {
+    runtimeSizedArrayTypes += (array2.array -> array2)
   }
 
   def addImpl(structRef2: StructRef2, interfaceRef2: InterfaceRef2): Unit = {
@@ -190,24 +192,34 @@ case class Temputs() {
     exports += ExportAs2(kind, packageCoord, exportedName)
   }
 
-  def addExternPrototype(packageCoord: PackageCoordinate, prototype2: Prototype2): Unit = {
+  def addExternPrototype(prototype2: Prototype2): Unit = {
     val externName =
       prototype2.fullName.last match {
         case ExternFunctionName2(externName, _) => externName
       }
-    moduleNameToExternNameToExtern.get(packageCoord.module) match {
+    moduleNameToExternNameToExtern.get(prototype2.fullName.packageCoord.module) match {
       case None => {
         moduleNameToExternNameToExtern.put(
-          packageCoord.module,
-          mutable.HashMap(externName -> (packageCoord, prototype2)))
+          prototype2.fullName.packageCoord.module,
+          mutable.HashMap(externName -> (prototype2.fullName.packageCoord, prototype2)))
       }
       case Some(externNameToExtern) => {
         externNameToExtern.get(externName) match {
-          case None => externNameToExtern.put(externName, (packageCoord, prototype2))
+          case None => externNameToExtern.put(externName, (prototype2.fullName.packageCoord, prototype2))
           case Some(_) => vfail("Extern already exists: " + externName)
         }
       }
     }
+  }
+
+  def addDestructor(kind: Kind, destructor: Prototype2): Unit = {
+    vassert(!kindToDestructor.contains(kind))
+    vassert(prototypeDeclared(destructor.fullName).nonEmpty)
+    kindToDestructor.put(kind, destructor)
+  }
+
+  def getDestructor(kind: Kind): Prototype2 = {
+    vassertSome(kindToDestructor.get(kind))
   }
 
   def structDeclared(fullName: FullName2[ICitizenName2]): Option[StructRef2] = {
@@ -289,9 +301,12 @@ case class Temputs() {
   def getAllInterfaces(): Iterable[InterfaceDefinition2] = interfaceDefsByRef.values
   def getAllFunctions(): Iterable[Function2] = functions
   def getAllImpls(): Iterable[Impl2] = impls
+  def getAllStaticSizedArrays(): Iterable[StaticSizedArrayT2] = staticSizedArrayTypes.values
+  def getAllRuntimeSizedArrays(): Iterable[RuntimeSizedArrayT2] = runtimeSizedArrayTypes.values
+  def getKindToDestructorMap(): Map[Kind, Prototype2] = kindToDestructor.toMap
 
-  def getArraySequenceType(size: Int, array: RawArrayT2): Option[KnownSizeArrayT2] = {
-    arraySequenceTypes.get((size, array))
+  def getStaticSizedArrayType(size: Int, array: RawArrayT2): Option[StaticSizedArrayT2] = {
+    staticSizedArrayTypes.get((size, array))
   }
   def getEnvForFunctionSignature(sig: Signature2): FunctionEnvironment = {
     envByFunctionSignature(sig)
@@ -320,8 +335,8 @@ case class Temputs() {
   def getStructDefForRef(sr: StructRef2): StructDefinition2 = {
     structDefsByRef(sr)
   }
-  def getUnknownSizeArray(array: RawArrayT2): Option[UnknownSizeArrayT2] = {
-    unknownSizeArrayTypes.get(array)
+  def getRuntimeSizedArray(array: RawArrayT2): Option[RuntimeSizedArrayT2] = {
+    runtimeSizedArrayTypes.get(array)
   }
   def getExternPrototypes: Map[String, Map[String, (PackageCoordinate, Prototype2)]] = {
     moduleNameToExternNameToExtern.map({ case (moduleName, externNameToExtern) =>

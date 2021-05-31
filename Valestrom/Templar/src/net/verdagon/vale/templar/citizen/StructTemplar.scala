@@ -39,7 +39,7 @@ trait IStructTemplarDelegate {
     temputs: Temputs,
     env: IEnvironment,
     structRef2: StructRef2):
-  Unit
+  Prototype2
 
   def getImmInterfaceDestructorOverride(
     temputs: Temputs,

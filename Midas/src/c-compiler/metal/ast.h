@@ -45,8 +45,8 @@ class Program {
 public:
     std::unordered_map<std::string, InterfaceDefinition*> interfaces;
     std::unordered_map<std::string, StructDefinition*> structs;
-    std::unordered_map<std::string, KnownSizeArrayDefinitionT*> knownSizeArrays;
-    std::unordered_map<std::string, UnknownSizeArrayDefinitionT*> unknownSizeArrays;
+    std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays;
+    std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays;
     // Get rid of this; since there's no IDs anymore we can have a stable
     // hardcoded NameH("__Pack", Some(List()), None, None).
     StructReferend* emptyTupleStructRef;
@@ -58,8 +58,8 @@ public:
     Program(
         std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
         std::unordered_map<std::string, StructDefinition*> structs_,
-        std::unordered_map<std::string, KnownSizeArrayDefinitionT*> knownSizeArrays_,
-        std::unordered_map<std::string, UnknownSizeArrayDefinitionT*> unknownSizeArrays_,
+        std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays_,
+        std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays_,
         StructReferend* emptyTupleStructRef_,
         std::unordered_map<std::string, Prototype*> externs_,
         std::unordered_map<std::string, Function*> functions_,
@@ -67,8 +67,8 @@ public:
         std::unordered_map<Name*, std::vector<std::string>, AddressHasher<Name*>> fullNameToExportedNames_) :
       interfaces(move(interfaces_)),
       structs(move(structs_)),
-      knownSizeArrays(move(knownSizeArrays_)),
-      unknownSizeArrays(move(unknownSizeArrays_)),
+      staticSizedArrays(move(staticSizedArrays_)),
+      runtimeSizedArrays(move(runtimeSizedArrays_)),
       emptyTupleStructRef(emptyTupleStructRef_),
       externs(move(externs_)),
       functions(move(functions_)),
@@ -89,14 +89,14 @@ public:
     assert(iter != interfaces.end());
     return iter->second;
   }
-  KnownSizeArrayDefinitionT* getKnownSizeArray(Name* name) {
-    auto iter = knownSizeArrays.find(name->name);
-    assert(iter != knownSizeArrays.end());
+  StaticSizedArrayDefinitionT* getStaticSizedArray(Name* name) {
+    auto iter = staticSizedArrays.find(name->name);
+    assert(iter != staticSizedArrays.end());
     return iter->second;
   }
-  UnknownSizeArrayDefinitionT* getUnknownSizeArray(Name* name) {
-    auto iter = unknownSizeArrays.find(name->name);
-    assert(iter != unknownSizeArrays.end());
+  RuntimeSizedArrayDefinitionT* getRuntimeSizedArray(Name* name) {
+    auto iter = runtimeSizedArrays.find(name->name);
+    assert(iter != runtimeSizedArrays.end());
     return iter->second;
   }
   Prototype* getImmDestructor(Referend* referend) {

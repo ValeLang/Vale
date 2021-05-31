@@ -1,4 +1,4 @@
-// immutable unknown-size-array
+// immutable runtime-size-array
 
 struct MyIntIdentity {}
 impl IFunction1<mut, int, int> for MyIntIdentity;

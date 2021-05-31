@@ -49,8 +49,8 @@ case class ReferenceH[+T <: ReferendH](
       vassert(location == YonderH)
     }
     case StructRefH(name) => {
-      val isBox = name.toFullString.startsWith("C(\"__Box\"")
-      val isTup = name.toFullString.startsWith("Tup")
+      val isBox = name.toFullString.startsWith("\"\":C(\"__Box\"")
+      val isTup = name.toFullString.startsWith("\"\":Tup")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)
@@ -66,17 +66,17 @@ case class ReferenceH[+T <: ReferendH](
   }
 
   // Convenience function for casting this to a Reference which the compiler knows
-  // points at a known size array.
-  def expectKnownSizeArrayReference() = {
+  // points at a static sized array.
+  def expectStaticSizedArrayReference() = {
     kind match {
-      case atH @ KnownSizeArrayTH(_) => ReferenceH[KnownSizeArrayTH](ownership, location, permission, atH)
+      case atH @ StaticSizedArrayTH(_) => ReferenceH[StaticSizedArrayTH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
-  // points at an unknown size array.
-  def expectUnknownSizeArrayReference() = {
+  // points at an unstatic sized array.
+  def expectRuntimeSizedArrayReference() = {
     kind match {
-      case atH @ UnknownSizeArrayTH(_) => ReferenceH[UnknownSizeArrayTH](ownership, location, permission, atH)
+      case atH @ RuntimeSizedArrayTH(_) => ReferenceH[RuntimeSizedArrayTH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
@@ -122,14 +122,14 @@ case class StructRefH(
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class KnownSizeArrayTH(
+case class StaticSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
 ) extends ReferendH
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
-case class KnownSizeArrayDefinitionTH(
+case class StaticSizedArrayDefinitionTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The size of the array.
@@ -137,24 +137,24 @@ case class KnownSizeArrayDefinitionTH(
   // The underlying array.
   rawArray: RawArrayTH
 ) {
-  def referend = KnownSizeArrayTH(name)
+  def referend = StaticSizedArrayTH(name)
 }
 
-case class UnknownSizeArrayTH(
+case class RuntimeSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
 ) extends ReferendH
 
-case class UnknownSizeArrayDefinitionTH(
+case class RuntimeSizedArrayDefinitionTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
   // The underlying array.
   rawArray: RawArrayTH
 ) {
-  def referend = UnknownSizeArrayTH(name)
+  def referend = RuntimeSizedArrayTH(name)
 }
 
-// This is not a referend, but instead has the common fields of UnknownSizeArrayTH/KnownSizeArrayTH,
+// This is not a referend, but instead has the common fields of RuntimeSizedArrayTH/StaticSizedArrayTH,
 // and lets us handle their code similarly.
 case class RawArrayTH(
   mutability: Mutability,

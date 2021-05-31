@@ -363,6 +363,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     val identifyingTemplatas = identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
     val newName =
       FullName2(
+        fullName.packageCoord,
         fullName.initSteps,
         BuildingFunctionNameWithClosuredsAndTemplateArgs2(
           fullName.last.templateName, identifyingTemplatas))

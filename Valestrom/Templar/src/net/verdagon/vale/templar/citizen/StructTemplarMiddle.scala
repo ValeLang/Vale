@@ -46,7 +46,7 @@ class StructTemplarMiddle(
         opts.useOptimization,
         templatasByRune.map({ case (rune, templata) => (rune, List(TemplataEnvEntry(templata))) }))
     val structDefinition2 =
-      core.maakeStruct(
+      core.makeStruct(
         localEnv, temputs, structS, coercedFinalTemplateArgs2);
 
     (structDefinition2.getRef)

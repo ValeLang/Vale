@@ -58,14 +58,14 @@ LLVMTypeRef ReferendStructs::getWrapperStruct(StructReferend* structReferend) {
   assert(structIter != wrapperStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) {
-  auto structIter = knownSizeArrayWrapperStructs.find(ksaMT->name->name);
-  assert(structIter != knownSizeArrayWrapperStructs.end());
+LLVMTypeRef ReferendStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
+  auto structIter = staticSizedArrayWrapperStructs.find(ssaMT->name->name);
+  assert(structIter != staticSizedArrayWrapperStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) {
-  auto structIter = unknownSizeArrayWrapperStructs.find(usaMT->name->name);
-  assert(structIter != unknownSizeArrayWrapperStructs.end());
+LLVMTypeRef ReferendStructs::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
+  auto structIter = runtimeSizedArrayWrapperStructs.find(rsaMT->name->name);
+  assert(structIter != runtimeSizedArrayWrapperStructs.end());
   return structIter->second;
 }
 LLVMTypeRef ReferendStructs::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
@@ -116,11 +116,11 @@ LLVMTypeRef WeakableReferendStructs::getInnerStruct(StructReferend* structRefere
 LLVMTypeRef WeakableReferendStructs::getWrapperStruct(StructReferend* structReferend) {
   return referendStructs.getWrapperStruct(structReferend);
 }
-LLVMTypeRef WeakableReferendStructs::getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) {
-  return referendStructs.getKnownSizeArrayWrapperStruct(ksaMT);
+LLVMTypeRef WeakableReferendStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
+  return referendStructs.getStaticSizedArrayWrapperStruct(ssaMT);
 }
-LLVMTypeRef WeakableReferendStructs::getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) {
-  return referendStructs.getUnknownSizeArrayWrapperStruct(usaMT);
+LLVMTypeRef WeakableReferendStructs::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
+  return referendStructs.getRuntimeSizedArrayWrapperStruct(rsaMT);
 }
 LLVMTypeRef WeakableReferendStructs::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
   return referendStructs.getInterfaceRefStruct(interfaceReferend);
@@ -133,14 +133,14 @@ LLVMTypeRef WeakableReferendStructs::getStructWeakRefStruct(StructReferend* stru
   assert(structIter != structWeakRefStructs.end());
   return structIter->second;
 }
-LLVMTypeRef WeakableReferendStructs::getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) {
-  auto structIter = knownSizeArrayWeakRefStructs.find(ksaMT->name->name);
-  assert(structIter != knownSizeArrayWeakRefStructs.end());
+LLVMTypeRef WeakableReferendStructs::getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) {
+  auto structIter = staticSizedArrayWeakRefStructs.find(ssaMT->name->name);
+  assert(structIter != staticSizedArrayWeakRefStructs.end());
   return structIter->second;
 }
-LLVMTypeRef WeakableReferendStructs::getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) {
-  auto structIter = unknownSizeArrayWeakRefStructs.find(usaMT->name->name);
-  assert(structIter != unknownSizeArrayWeakRefStructs.end());
+LLVMTypeRef WeakableReferendStructs::getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) {
+  auto structIter = runtimeSizedArrayWeakRefStructs.find(rsaMT->name->name);
+  assert(structIter != runtimeSizedArrayWeakRefStructs.end());
   return structIter->second;
 }
 LLVMTypeRef WeakableReferendStructs::getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) {
@@ -267,24 +267,24 @@ void ReferendStructs::defineInterface(
 }
 
 
-void ReferendStructs::declareKnownSizeArray(
-    KnownSizeArrayDefinitionT* knownSizeArrayMT) {
+void ReferendStructs::declareStaticSizedArray(
+    StaticSizedArrayDefinitionT* staticSizedArrayMT) {
 
-  auto countedStruct = LLVMStructCreateNamed(globalState->context, knownSizeArrayMT->name->name.c_str());
-  knownSizeArrayWrapperStructs.emplace(knownSizeArrayMT->name->name, countedStruct);
+  auto countedStruct = LLVMStructCreateNamed(globalState->context, staticSizedArrayMT->name->name.c_str());
+  staticSizedArrayWrapperStructs.emplace(staticSizedArrayMT->name->name, countedStruct);
 }
 
-void ReferendStructs::declareUnknownSizeArray(
-    UnknownSizeArrayDefinitionT* unknownSizeArrayMT) {
-  auto countedStruct = LLVMStructCreateNamed(globalState->context, (unknownSizeArrayMT->name->name + "rc").c_str());
-  unknownSizeArrayWrapperStructs.emplace(unknownSizeArrayMT->name->name, countedStruct);
+void ReferendStructs::declareRuntimeSizedArray(
+    RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
+  auto countedStruct = LLVMStructCreateNamed(globalState->context, (runtimeSizedArrayMT->name->name + "rc").c_str());
+  runtimeSizedArrayWrapperStructs.emplace(runtimeSizedArrayMT->name->name, countedStruct);
 }
 
-void ReferendStructs::defineUnknownSizeArray(
-    UnknownSizeArrayDefinitionT* unknownSizeArrayMT,
+void ReferendStructs::defineRuntimeSizedArray(
+    RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT,
     LLVMTypeRef elementLT) {
 
-  auto unknownSizeArrayWrapperStruct = getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->referend);
+  auto runtimeSizedArrayWrapperStruct = getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT->referend);
   auto innerArrayLT = LLVMArrayType(elementLT, 0);
 
   std::vector<LLVMTypeRef> elementsL;
@@ -295,15 +295,15 @@ void ReferendStructs::defineUnknownSizeArray(
 
   elementsL.push_back(innerArrayLT);
 
-  LLVMStructSetBody(unknownSizeArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
+  LLVMStructSetBody(runtimeSizedArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
 }
 
-void ReferendStructs::defineKnownSizeArray(
-    KnownSizeArrayDefinitionT* knownSizeArrayMT,
+void ReferendStructs::defineStaticSizedArray(
+    StaticSizedArrayDefinitionT* staticSizedArrayMT,
     LLVMTypeRef elementLT) {
-  auto knownSizeArrayWrapperStruct = getKnownSizeArrayWrapperStruct(knownSizeArrayMT->referend);
+  auto staticSizedArrayWrapperStruct = getStaticSizedArrayWrapperStruct(staticSizedArrayMT->referend);
 
-  auto innerArrayLT = LLVMArrayType(elementLT, knownSizeArrayMT->size);
+  auto innerArrayLT = LLVMArrayType(elementLT, staticSizedArrayMT->size);
 
   std::vector<LLVMTypeRef> elementsL;
 
@@ -311,7 +311,7 @@ void ReferendStructs::defineKnownSizeArray(
 
   elementsL.push_back(innerArrayLT);
 
-  LLVMStructSetBody(knownSizeArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
+  LLVMStructSetBody(staticSizedArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
 }
 
 
@@ -332,10 +332,10 @@ WrapperPtrLE ReferendStructs::makeWrapperPtr(
   } else if (dynamic_cast<InterfaceReferend*>(referend)) {
     // can we even get a wrapper struct for an interface?
     assert(false);
-  } else if (dynamic_cast<KnownSizeArrayT*>(referend)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(referend)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(referend)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(referend)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
   } else if (dynamic_cast<Str*>(referend)) {
@@ -361,10 +361,10 @@ WrapperPtrLE ReferendStructs::makeWrapperPtrWithoutChecking(
     wrapperStructLT = getWrapperStruct(structReferend);
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
     assert(false); // can we even get a wrapper struct for an interface?
-  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(referend)) {
-    wrapperStructLT = getKnownSizeArrayWrapperStruct(ksaMT);
-  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(referend)) {
-    wrapperStructLT = getUnknownSizeArrayWrapperStruct(usaMT);
+  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(referend)) {
+    wrapperStructLT = getStaticSizedArrayWrapperStruct(ssaMT);
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(referend)) {
+    wrapperStructLT = getRuntimeSizedArrayWrapperStruct(rsaMT);
   } else if (auto strMT = dynamic_cast<Str*>(referend)) {
     wrapperStructLT = stringWrapperStructL;
   } else assert(false);
@@ -523,13 +523,13 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
             from, functionState, builder, referenceM,
             globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(referendM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
             globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(referendM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
@@ -560,10 +560,10 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
   } else if (dynamic_cast<StructReferend*>(referendM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(referendM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(referendM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
@@ -588,10 +588,10 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtrWithoutChecking(
   } else if (dynamic_cast<StructReferend*>(referendM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<KnownSizeArrayT*>(referendM)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(referendM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<UnknownSizeArrayT*>(referendM)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(referendM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else if (dynamic_cast<Str*>(referendM)) {
@@ -761,57 +761,57 @@ void WeakableReferendStructs::defineInterface(
 }
 
 
-void WeakableReferendStructs::declareKnownSizeArray(
-    KnownSizeArrayDefinitionT* knownSizeArrayMT) {
-  referendStructs.declareKnownSizeArray(knownSizeArrayMT);
+void WeakableReferendStructs::declareStaticSizedArray(
+    StaticSizedArrayDefinitionT* staticSizedArrayMT) {
+  referendStructs.declareStaticSizedArray(staticSizedArrayMT);
 
   auto weakRefStructL =
       LLVMStructCreateNamed(
-          globalState->context, (knownSizeArrayMT->name->name + "w").c_str());
-  assert(knownSizeArrayWeakRefStructs.count(knownSizeArrayMT->name->name) == 0);
-  knownSizeArrayWeakRefStructs.emplace(knownSizeArrayMT->name->name, weakRefStructL);
+          globalState->context, (staticSizedArrayMT->name->name + "w").c_str());
+  assert(staticSizedArrayWeakRefStructs.count(staticSizedArrayMT->name->name) == 0);
+  staticSizedArrayWeakRefStructs.emplace(staticSizedArrayMT->name->name, weakRefStructL);
 }
 
-void WeakableReferendStructs::declareUnknownSizeArray(
-    UnknownSizeArrayDefinitionT* unknownSizeArrayMT) {
-  referendStructs.declareUnknownSizeArray(unknownSizeArrayMT);
+void WeakableReferendStructs::declareRuntimeSizedArray(
+    RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
+  referendStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
 
   auto weakRefStructL =
       LLVMStructCreateNamed(
-          globalState->context, (unknownSizeArrayMT->name->name + "w").c_str());
-  assert(unknownSizeArrayWeakRefStructs.count(unknownSizeArrayMT->name->name) == 0);
-  unknownSizeArrayWeakRefStructs.emplace(unknownSizeArrayMT->name->name, weakRefStructL);
+          globalState->context, (runtimeSizedArrayMT->name->name + "w").c_str());
+  assert(runtimeSizedArrayWeakRefStructs.count(runtimeSizedArrayMT->name->name) == 0);
+  runtimeSizedArrayWeakRefStructs.emplace(runtimeSizedArrayMT->name->name, weakRefStructL);
 }
 
-void WeakableReferendStructs::defineUnknownSizeArray(
-    UnknownSizeArrayDefinitionT* unknownSizeArrayMT,
+void WeakableReferendStructs::defineRuntimeSizedArray(
+    RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT,
     LLVMTypeRef elementLT) {
   assert(weakRefHeaderStructL);
 
-  referendStructs.defineUnknownSizeArray(unknownSizeArrayMT, elementLT);
+  referendStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
 
-  auto unknownSizeArrayWrapperStruct = getUnknownSizeArrayWrapperStruct(unknownSizeArrayMT->referend);
+  auto runtimeSizedArrayWrapperStruct = getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT->referend);
 
-  auto arrayWeakRefStructL = getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT->referend);
+  auto arrayWeakRefStructL = getRuntimeSizedArrayWeakRefStruct(runtimeSizedArrayMT->referend);
   std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
   arrayWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
-  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(unknownSizeArrayWrapperStruct, 0));
+  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(runtimeSizedArrayWrapperStruct, 0));
   LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
 }
 
-void WeakableReferendStructs::defineKnownSizeArray(
-    KnownSizeArrayDefinitionT* knownSizeArrayMT,
+void WeakableReferendStructs::defineStaticSizedArray(
+    StaticSizedArrayDefinitionT* staticSizedArrayMT,
     LLVMTypeRef elementLT) {
   assert(weakRefHeaderStructL);
 
-  referendStructs.defineKnownSizeArray(knownSizeArrayMT, elementLT);
+  referendStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 
-  auto knownSizeArrayWrapperStruct = getKnownSizeArrayWrapperStruct(knownSizeArrayMT->referend);
+  auto staticSizedArrayWrapperStruct = getStaticSizedArrayWrapperStruct(staticSizedArrayMT->referend);
 
-  auto arrayWeakRefStructL = getKnownSizeArrayWeakRefStruct(knownSizeArrayMT->referend);
+  auto arrayWeakRefStructL = getStaticSizedArrayWeakRefStruct(staticSizedArrayMT->referend);
   std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
   arrayWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
-  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(knownSizeArrayWrapperStruct, 0));
+  arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(staticSizedArrayWrapperStruct, 0));
   LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
 }
 
@@ -822,10 +822,10 @@ WeakFatPtrLE WeakableReferendStructs::makeWeakFatPtr(Reference* referenceM_, LLV
     assert(
         LLVMTypeOf(ptrLE) == weakVoidRefStructL ||
             LLVMTypeOf(ptrLE) == getInterfaceWeakRefStruct(interfaceReferendM));
-  } else if (auto ksaT = dynamic_cast<KnownSizeArrayT*>(referenceM_->referend)) {
-    assert(LLVMTypeOf(ptrLE) == getKnownSizeArrayWeakRefStruct(ksaT));
-  } else if (auto usaT = dynamic_cast<UnknownSizeArrayT*>(referenceM_->referend)) {
-    assert(LLVMTypeOf(ptrLE) == getUnknownSizeArrayWeakRefStruct(usaT));
+  } else if (auto ssaT = dynamic_cast<StaticSizedArrayT*>(referenceM_->referend)) {
+    assert(LLVMTypeOf(ptrLE) == getStaticSizedArrayWeakRefStruct(ssaT));
+  } else if (auto rsaT = dynamic_cast<RuntimeSizedArrayT*>(referenceM_->referend)) {
+    assert(LLVMTypeOf(ptrLE) == getRuntimeSizedArrayWeakRefStruct(rsaT));
   } else {
     assert(false);
   }

@@ -516,41 +516,41 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
 
-WeakFatPtrLE HybridGenerationalMemory::assembleKnownSizeArrayWeakRef(
+WeakFatPtrLE HybridGenerationalMemory::assembleStaticSizedArrayWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceKSAMT,
-    KnownSizeArrayT* knownSizeArrayMT,
-    Reference* targetKSAWeakRefMT,
+    Reference* sourceSSAMT,
+    StaticSizedArrayT* staticSizedArrayMT,
+    Reference* targetSSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   LLVMValueRef genLE = nullptr;
-  if (sourceKSAMT->ownership == Ownership::OWN) {
-    auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceKSAMT, sourceRefLE);
+  if (sourceSSAMT->ownership == Ownership::OWN) {
+    auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceSSAMT, sourceRefLE);
     if (limitMode) {
       genLE = constI64LE(globalState, 0);
     } else {
-      genLE = getGenerationFromControlBlockPtr(globalState, builder, referendStructsSource, sourceKSAMT->referend,
+      genLE = getGenerationFromControlBlockPtr(globalState, builder, referendStructsSource, sourceSSAMT->referend,
           controlBlockPtrLE);
     }
-  } else if (sourceKSAMT->ownership == Ownership::BORROW) {
+  } else if (sourceSSAMT->ownership == Ownership::BORROW) {
     assert(false); // impl
   } else {
     assert(false);
   }
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, knownSizeArrayMT, genLE);
+  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, staticSizedArrayMT, genLE);
 
   auto weakRefStructLT =
-      weakRefStructsSource->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT);
+      weakRefStructsSource->getStaticSizedArrayWeakRefStruct(staticSizedArrayMT);
   return fatWeaks.assembleWeakFatPtr(
-      functionState, builder, targetKSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
+      functionState, builder, targetSSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
 
-WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(
+WeakFatPtrLE HybridGenerationalMemory::assembleRuntimeSizedArrayWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceType,
-    UnknownSizeArrayT* unknownSizeArrayMT,
-    Reference* targetUSAWeakRefMT,
+    RuntimeSizedArrayT* runtimeSizedArrayMT,
+    Reference* targetRSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   LLVMValueRef genLE = nullptr;
   if (sourceType->ownership == Ownership::OWN) {
@@ -566,12 +566,12 @@ WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(
   } else {
     assert(false);
   }
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, unknownSizeArrayMT, genLE);
+  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, runtimeSizedArrayMT, genLE);
 
   auto weakRefStructLT =
-      weakRefStructsSource->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
+      weakRefStructsSource->getRuntimeSizedArrayWeakRefStruct(runtimeSizedArrayMT);
   return fatWeaks.assembleWeakFatPtr(
-      functionState, builder, targetUSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
+      functionState, builder, targetRSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
 
 LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
@@ -801,19 +801,19 @@ Ref HybridGenerationalMemory::assembleWeakRef(
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
+  } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->referend)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
-        assembleKnownSizeArrayWeakRef(
-            functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
+        assembleStaticSizedArrayWeakRef(
+            functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
+  } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->referend)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
-        assembleUnknownSizeArrayWeakRef(
-            functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);
+        assembleRuntimeSizedArrayWeakRef(
+            functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }

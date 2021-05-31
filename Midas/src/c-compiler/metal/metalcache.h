@@ -76,8 +76,8 @@ public:
       floats(0, addressNumberer->makeHasher<RegionId*>()),
       nevers(0, addressNumberer->makeHasher<RegionId*>()),
       rawArrays(0, addressNumberer->makeHasher<Reference*>()),
-      unknownSizeArrays(0, addressNumberer->makeHasher<Name*>()),
-      knownSizeArrays(0, addressNumberer->makeHasher<Name*>()),
+      runtimeSizedArrays(0, addressNumberer->makeHasher<Name*>()),
+      staticSizedArrays(0, addressNumberer->makeHasher<Name*>()),
       unconvertedReferences(0, addressNumberer->makeHasher<Referend*>()),
       prototypes(0, addressNumberer->makeHasher<Name*>()),
       interfaceMethods(0, addressNumberer->makeHasher<Prototype*>()),
@@ -152,18 +152,18 @@ public:
         [&]() { return new InterfaceReferend(structName); });
   }
 
-  UnknownSizeArrayT* getUnknownSizeArray(Name* name) {
+  RuntimeSizedArrayT* getRuntimeSizedArray(Name* name) {
     return makeIfNotPresent(
-        &unknownSizeArrays,
+        &runtimeSizedArrays,
         name,
-        [&](){ return new UnknownSizeArrayT(name); });
+        [&](){ return new RuntimeSizedArrayT(name); });
   }
 
-  KnownSizeArrayT* getKnownSizeArray(Name* name) {
+  StaticSizedArrayT* getStaticSizedArray(Name* name) {
     return makeIfNotPresent(
-        &knownSizeArrays,
+        &staticSizedArrays,
         name,
-        [&](){ return new KnownSizeArrayT(name); });
+        [&](){ return new StaticSizedArrayT(name); });
   }
 
   Name* getName(std::string nameStr) {
@@ -230,8 +230,8 @@ public:
               RawArrayT*>,
           AddressHasher<RegionId*>>,
       AddressHasher<Reference*>> rawArrays;
-  std::unordered_map<Name*, UnknownSizeArrayT*, AddressHasher<Name*>> unknownSizeArrays;
-  std::unordered_map<Name*, KnownSizeArrayT*, AddressHasher<Name*>> knownSizeArrays;
+  std::unordered_map<Name*, RuntimeSizedArrayT*, AddressHasher<Name*>> runtimeSizedArrays;
+  std::unordered_map<Name*, StaticSizedArrayT*, AddressHasher<Name*>> staticSizedArrays;
   std::unordered_map<
       Referend*,
       std::unordered_map<

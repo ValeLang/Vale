@@ -60,15 +60,15 @@ RegionId *ResilientV3::getRegionId() {
   return regionId;
 }
 
-Ref ResilientV3::constructKnownSizeArray(
+Ref ResilientV3::constructStaticSizedArray(
     Ref regionInstanceRef,
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *referenceM,
-    KnownSizeArrayT *referendM) {
-  auto ksaDef = globalState->program->getKnownSizeArray(referendM->name);
+    StaticSizedArrayT *referendM) {
+  auto ssaDef = globalState->program->getStaticSizedArray(referendM->name);
   auto resultRef =
-      ::constructKnownSizeArray(
+      ::constructStaticSizedArray(
           globalState, functionState, builder, referenceM, referendM, &referendStructs,
           [this, functionState, referenceM, referendM](LLVMBuilderRef innerBuilder,
                                                        ControlBlockPtrLE controlBlockPtrLE) {
@@ -130,8 +130,8 @@ void ResilientV3::alias(
     // Do nothing for these, they're always inlined and copied.
   } else if (dynamic_cast<InterfaceReferend *>(sourceRnd) ||
              dynamic_cast<StructReferend *>(sourceRnd) ||
-             dynamic_cast<KnownSizeArrayT *>(sourceRnd) ||
-             dynamic_cast<UnknownSizeArrayT *>(sourceRnd) ||
+             dynamic_cast<StaticSizedArrayT *>(sourceRnd) ||
+             dynamic_cast<RuntimeSizedArrayT *>(sourceRnd) ||
              dynamic_cast<Str *>(sourceRnd)) {
     if (sourceRef->ownership == Ownership::OWN) {
       // We might be loading a member as an own if we're destructuring.
@@ -297,34 +297,34 @@ Ref ResilientV3::upcastWeak(
   return wrap(this, targetInterfaceTypeM, resultWeakInterfaceFatPtr);
 }
 
-void ResilientV3::declareKnownSizeArray(
-    KnownSizeArrayDefinitionT *knownSizeArrayMT) {
-  globalState->regionIdByReferend.emplace(knownSizeArrayMT->referend, getRegionId());
+void ResilientV3::declareStaticSizedArray(
+    StaticSizedArrayDefinitionT *staticSizedArrayMT) {
+  globalState->regionIdByReferend.emplace(staticSizedArrayMT->referend, getRegionId());
 
-  referendStructs.declareKnownSizeArray(knownSizeArrayMT);
+  referendStructs.declareStaticSizedArray(staticSizedArrayMT);
 }
 
-void ResilientV3::declareUnknownSizeArray(
-    UnknownSizeArrayDefinitionT *unknownSizeArrayMT) {
-  globalState->regionIdByReferend.emplace(unknownSizeArrayMT->referend, getRegionId());
+void ResilientV3::declareRuntimeSizedArray(
+    RuntimeSizedArrayDefinitionT *runtimeSizedArrayMT) {
+  globalState->regionIdByReferend.emplace(runtimeSizedArrayMT->referend, getRegionId());
 
-  referendStructs.declareUnknownSizeArray(unknownSizeArrayMT);
+  referendStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
 }
 
-void ResilientV3::defineUnknownSizeArray(
-    UnknownSizeArrayDefinitionT *unknownSizeArrayMT) {
+void ResilientV3::defineRuntimeSizedArray(
+    RuntimeSizedArrayDefinitionT *runtimeSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(unknownSizeArrayMT->rawArray->elementType)
-          ->translateType(unknownSizeArrayMT->rawArray->elementType);
-  referendStructs.defineUnknownSizeArray(unknownSizeArrayMT, elementLT);
+      globalState->getRegion(runtimeSizedArrayMT->rawArray->elementType)
+          ->translateType(runtimeSizedArrayMT->rawArray->elementType);
+  referendStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
 }
 
-void ResilientV3::defineKnownSizeArray(
-    KnownSizeArrayDefinitionT *knownSizeArrayMT) {
+void ResilientV3::defineStaticSizedArray(
+    StaticSizedArrayDefinitionT *staticSizedArrayMT) {
   auto elementLT =
-      globalState->getRegion(knownSizeArrayMT->rawArray->elementType)
-          ->translateType(knownSizeArrayMT->rawArray->elementType);
-  referendStructs.defineKnownSizeArray(knownSizeArrayMT, elementLT);
+      globalState->getRegion(staticSizedArrayMT->rawArray->elementType)
+          ->translateType(staticSizedArrayMT->rawArray->elementType);
+  referendStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 
 void ResilientV3::declareStruct(
@@ -456,22 +456,22 @@ std::tuple<LLVMValueRef, LLVMValueRef> ResilientV3::explodeInterfaceRef(
   }
 }
 
-Ref ResilientV3::getUnknownSizeArrayLength(
+Ref ResilientV3::getRuntimeSizedArrayLength(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *usaRefMT,
+    Reference *rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
-  switch (usaRefMT->ownership) {
+  switch (rsaRefMT->ownership) {
     case Ownership::SHARE:
     case Ownership::OWN: {
-      return getUnknownSizeArrayLengthStrong(globalState, functionState, builder, &referendStructs, usaRefMT, arrayRef);
+      return getRuntimeSizedArrayLengthStrong(globalState, functionState, builder, &referendStructs, rsaRefMT, arrayRef);
     }
     case Ownership::BORROW: {
       auto wrapperPtrLE =
           lockWeakRef(
-              FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
-      return ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
+              FL(), functionState, builder, rsaRefMT, arrayRef, arrayKnownLive);
+      return ::getRuntimeSizedArrayLength(globalState, functionState, builder, wrapperPtrLE);
     }
     case Ownership::WEAK:
       assert(false); // VIR never loads from a weak ref
@@ -607,50 +607,50 @@ void ResilientV3::fillControlBlock(
       typeName, &hgmWeaks);
 }
 
-LoadResult ResilientV3::loadElementFromKSA(
+LoadResult ResilientV3::loadElementFromSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *ksaRefMT,
-    KnownSizeArrayT *ksaMT,
+    Reference *ssaRefMT,
+    StaticSizedArrayT *ssaMT,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto ksaDef = globalState->program->getKnownSizeArray(ksaMT->name);
-  return resilientloadElementFromKSA(
-      globalState, functionState, builder, ksaRefMT, ksaMT, ksaDef->size, ksaDef->rawArray->mutability,
-      ksaDef->rawArray->elementType, arrayRef, arrayKnownLive, indexRef, &referendStructs);
+  auto ssaDef = globalState->program->getStaticSizedArray(ssaMT->name);
+  return resilientloadElementFromSSA(
+      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->size, ssaDef->rawArray->mutability,
+      ssaDef->rawArray->elementType, arrayRef, arrayKnownLive, indexRef, &referendStructs);
 }
 
-LoadResult ResilientV3::loadElementFromUSA(
+LoadResult ResilientV3::loadElementFromRSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *usaRefMT,
-    UnknownSizeArrayT *usaMT,
+    Reference *rsaRefMT,
+    RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto usaDef = globalState->program->getUnknownSizeArray(usaMT->name);
-  return resilientLoadElementFromUSAWithoutUpgrade(
-      globalState, functionState, builder, &referendStructs, usaRefMT, usaDef->rawArray->mutability,
-      usaDef->rawArray->elementType, usaMT, arrayRef, arrayKnownLive, indexRef);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT->name);
+  return resilientLoadElementFromRSAWithoutUpgrade(
+      globalState, functionState, builder, &referendStructs, rsaRefMT, rsaDef->rawArray->mutability,
+      rsaDef->rawArray->elementType, rsaMT, arrayRef, arrayKnownLive, indexRef);
 }
 
-Ref ResilientV3::storeElementInUSA(
+Ref ResilientV3::storeElementInRSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *usaRefMT,
-    UnknownSizeArrayT *usaMT,
+    Reference *rsaRefMT,
+    RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  auto usaDef = globalState->program->getUnknownSizeArray(usaMT->name);
-  auto arrayWrapperPtrLE = lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
-  auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT->name);
+  auto arrayWrapperPtrLE = lockWeakRef(FL(), functionState, builder, rsaRefMT, arrayRef, arrayKnownLive);
+  auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   buildFlare(FL(), globalState, functionState, builder);
   return ::swapElement(
-      globalState, functionState, builder, usaRefMT->location, usaDef->rawArray->elementType, sizeRef,
+      globalState, functionState, builder, rsaRefMT->location, rsaDef->rawArray->elementType, sizeRef,
       arrayElementsPtrLE,
       indexRef, elementRef);
 }
@@ -693,28 +693,28 @@ void ResilientV3::deallocate(
   innerDeallocate(from, globalState, functionState, &referendStructs, builder, refMT, ref);
 }
 
-Ref ResilientV3::constructUnknownSizeArray(
+Ref ResilientV3::constructRuntimeSizedArray(
     Ref regionInstanceRef,
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *usaMT,
-    UnknownSizeArrayT *unknownSizeArrayT,
+    Reference *rsaMT,
+    RuntimeSizedArrayT *runtimeSizedArrayT,
     Ref sizeRef,
     const std::string &typeName) {
-  auto usaWrapperPtrLT =
-      referendStructs.getUnknownSizeArrayWrapperStruct(unknownSizeArrayT);
-  auto usaDef = globalState->program->getUnknownSizeArray(unknownSizeArrayT->name);
-  auto elementType = globalState->program->getUnknownSizeArray(unknownSizeArrayT->name)->rawArray->elementType;
-  auto usaElementLT = globalState->getRegion(elementType)->translateType(elementType);
+  auto rsaWrapperPtrLT =
+      referendStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT->name);
+  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT->name)->rawArray->elementType;
+  auto rsaElementLT = globalState->getRegion(elementType)->translateType(elementType);
   auto resultRef =
-      ::constructUnknownSizeArray(
-          globalState, functionState, builder, &referendStructs, usaMT, usaDef->rawArray->elementType,
-          unknownSizeArrayT,
-          usaWrapperPtrLT, usaElementLT, sizeRef, typeName,
-          [this, functionState, unknownSizeArrayT, typeName](
+      ::constructRuntimeSizedArray(
+          globalState, functionState, builder, &referendStructs, rsaMT, rsaDef->rawArray->elementType,
+          runtimeSizedArrayT,
+          rsaWrapperPtrLT, rsaElementLT, sizeRef, typeName,
+          [this, functionState, runtimeSizedArrayT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
-                FL(), functionState, innerBuilder, unknownSizeArrayT, controlBlockPtrLE, typeName);
+                FL(), functionState, innerBuilder, runtimeSizedArrayT, controlBlockPtrLE, typeName);
           });
   // We dont increment here, see SRCAO
   return resultRef;
@@ -800,22 +800,22 @@ std::string ResilientV3::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
     }
   } else if (auto interfaceMT = dynamic_cast<InterfaceReferend *>(refMT->referend)) {
     return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
-  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
-    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(usaMT->name) + "Ref";
-  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(refMT->referend)) {
-    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ksaMT->name) + "Ref";
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(rsaMT->name) + "Ref";
+  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ssaMT->name) + "Ref";
   } else {
     assert(false);
   }
 }
 
-void ResilientV3::generateUnknownSizeArrayDefsC(
+void ResilientV3::generateRuntimeSizedArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
-    UnknownSizeArrayDefinitionT* usaDefM) {
-  if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    RuntimeSizedArrayDefinitionT* rsaDefM) {
+  if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    for (auto baseName : globalState->program->getExportedNames(usaDefM->name)) {
+    for (auto baseName : globalState->program->getExportedNames(rsaDefM->name)) {
       auto refTypeName = baseName + "Ref";
       std::stringstream s;
       s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused; } " << refTypeName << ";" << std::endl;
@@ -824,13 +824,13 @@ void ResilientV3::generateUnknownSizeArrayDefsC(
   }
 }
 
-void ResilientV3::generateKnownSizeArrayDefsC(
+void ResilientV3::generateStaticSizedArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
-    KnownSizeArrayDefinitionT* ksaDefM) {
-  if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    StaticSizedArrayDefinitionT* ssaDefM) {
+  if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    for (auto baseName : globalState->program->getExportedNames(ksaDefM->name)) {
+    for (auto baseName : globalState->program->getExportedNames(ssaDefM->name)) {
       auto refTypeName = baseName + "Ref";
       std::stringstream s;
       s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused; } " << refTypeName << ";" << std::endl;
@@ -920,58 +920,58 @@ Ref ResilientV3::encryptAndSendFamiliarReference(
   return sourceRef;
 }
 
-void ResilientV3::initializeElementInUSA(
+void ResilientV3::initializeElementInRSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *usaRefMT,
-    UnknownSizeArrayT *usaMT,
-    Ref usaRef,
+    Reference *rsaRefMT,
+    RuntimeSizedArrayT *rsaMT,
+    Ref rsaRef,
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  ::initializeElementInUSA(globalState, functionState, builder, &referendStructs, usaMT, usaRefMT, usaRef, indexRef,
+  ::initializeElementInRSA(globalState, functionState, builder, &referendStructs, rsaMT, rsaRefMT, rsaRef, indexRef,
                            elementRef);
 }
 
-Ref ResilientV3::deinitializeElementFromUSA(
+Ref ResilientV3::deinitializeElementFromRSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *usaRefMT,
-    UnknownSizeArrayT *usaMT,
+    Reference *rsaRefMT,
+    RuntimeSizedArrayT *rsaMT,
     Ref arrayRef,
     bool arrayRefKnownLive,
     Ref indexRef) {
-  auto usaDef = globalState->program->getUnknownSizeArray(usaMT->name);
-  return resilientLoadElementFromUSAWithoutUpgrade(
-      globalState, functionState, builder, &referendStructs, usaRefMT, usaDef->rawArray->mutability,
-      usaDef->rawArray->elementType, usaMT, arrayRef, true, indexRef).move();
+  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT->name);
+  return resilientLoadElementFromRSAWithoutUpgrade(
+      globalState, functionState, builder, &referendStructs, rsaRefMT, rsaDef->rawArray->mutability,
+      rsaDef->rawArray->elementType, rsaMT, arrayRef, true, indexRef).move();
 }
 
-void ResilientV3::initializeElementInKSA(
+void ResilientV3::initializeElementInSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *ksaRefMT,
-    KnownSizeArrayT *ksaMT,
+    Reference *ssaRefMT,
+    StaticSizedArrayT *ssaMT,
     Ref arrayRef,
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  auto ksaDef = globalState->program->getKnownSizeArray(ksaMT->name);
+  auto ssaDef = globalState->program->getStaticSizedArray(ssaMT->name);
   auto arrayWrapperPtrLE =
       referendStructs.makeWrapperPtr(
-          FL(), functionState, builder, ksaRefMT,
-          globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef));
-  auto sizeRef = globalState->constI64(ksaDef->size);
-  auto arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+          FL(), functionState, builder, ssaRefMT,
+          globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
+  auto sizeRef = globalState->constI64(ssaDef->size);
+  auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElement(
-      globalState, functionState, builder, ksaRefMT->location, ksaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+      globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
-Ref ResilientV3::deinitializeElementFromKSA(
+Ref ResilientV3::deinitializeElementFromSSA(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Reference *ksaRefMT,
-    KnownSizeArrayT *ksaMT,
+    Reference *ssaRefMT,
+    StaticSizedArrayT *ssaMT,
     Ref arrayRef,
     bool arrayRefKnownLive,
     Ref indexRef) {

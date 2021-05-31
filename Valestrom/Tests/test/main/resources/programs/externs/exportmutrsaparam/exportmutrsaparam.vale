@@ -5,6 +5,6 @@ fn getMutIntArrayLen(arr &Array<mut, vary, int>) int export { arr.len() }
 fn getMutIntArrayElem(arr &Array<mut, vary, int>, i int) int export { arr[i] }
 
 fn main() int export {
-  a = [mut *](5, {_});
+  a = [mut vary *](5, {_});
   = sumBytes(&a);
 }

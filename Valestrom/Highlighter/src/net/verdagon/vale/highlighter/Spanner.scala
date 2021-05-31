@@ -189,6 +189,9 @@ object Spanner {
       case TuplePE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
       }
+      case PackPE(range, elements) => {
+        makeSpan(Seq, range, elements.map(forExpression))
+      }
       case ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) => {
         makeSpan(
           ConstructArray,

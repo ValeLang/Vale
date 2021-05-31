@@ -194,27 +194,27 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       }
     }
   }
-  for (auto p : program->knownSizeArrays) {
-    auto ksaDefM = p.second;
+  for (auto p : program->staticSizedArrays) {
+    auto ssaDefM = p.second;
     // can we think of this in terms of regions? it's kind of like we're
     // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(ksaDefM->name)) {
-      if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateKnownSizeArrayDefsC(&cByExportedName, ksaDefM);
+    if (globalState->program->isExported(ssaDefM->name)) {
+      if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateStaticSizedArrayDefsC(&cByExportedName, ssaDefM);
       } else {
-        globalState->mutRegion->generateKnownSizeArrayDefsC(&cByExportedName, ksaDefM);
+        globalState->mutRegion->generateStaticSizedArrayDefsC(&cByExportedName, ssaDefM);
       }
     }
   }
-  for (auto p : program->unknownSizeArrays) {
-    auto usaDefM = p.second;
+  for (auto p : program->runtimeSizedArrays) {
+    auto rsaDefM = p.second;
     // can we think of this in terms of regions? it's kind of like we're
     // generating some stuff for the outside to point inside.
-    if (globalState->program->isExported(usaDefM->name)) {
-      if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-        globalState->linearRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
+    if (globalState->program->isExported(rsaDefM->name)) {
+      if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+        globalState->linearRegion->generateRuntimeSizedArrayDefsC(&cByExportedName, rsaDefM);
       } else {
-        globalState->mutRegion->generateUnknownSizeArrayDefsC(&cByExportedName, usaDefM);
+        globalState->mutRegion->generateRuntimeSizedArrayDefsC(&cByExportedName, rsaDefM);
       }
     }
   }
@@ -510,21 +510,21 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
+  for (auto p : program->staticSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareKnownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareStaticSizedArray(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareKnownSizeArray(arrayM);
+      globalState->linearRegion->declareStaticSizedArray(arrayM);
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
+  for (auto p : program->runtimeSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareUnknownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareRuntimeSizedArray(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareUnknownSizeArray(arrayM);
+      globalState->linearRegion->declareRuntimeSizedArray(arrayM);
     }
   }
 
@@ -546,21 +546,21 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
+  for (auto p : program->staticSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareKnownSizeArrayExtraFunctions(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareStaticSizedArrayExtraFunctions(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareKnownSizeArrayExtraFunctions(arrayM);
+      globalState->linearRegion->declareStaticSizedArrayExtraFunctions(arrayM);
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
+  for (auto p : program->runtimeSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->declareUnknownSizeArrayExtraFunctions(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->declareRuntimeSizedArrayExtraFunctions(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->declareUnknownSizeArrayExtraFunctions(arrayM);
+      globalState->linearRegion->declareRuntimeSizedArrayExtraFunctions(arrayM);
     }
   }
 
@@ -601,21 +601,21 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
+  for (auto p : program->staticSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineKnownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->defineStaticSizedArray(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineKnownSizeArray(arrayM);
+      globalState->linearRegion->defineStaticSizedArray(arrayM);
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
+  for (auto p : program->runtimeSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineUnknownSizeArray(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->defineRuntimeSizedArray(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineUnknownSizeArray(arrayM);
+      globalState->linearRegion->defineRuntimeSizedArray(arrayM);
     }
   }
 
@@ -638,21 +638,21 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     }
   }
 
-  for (auto p : program->knownSizeArrays) {
+  for (auto p : program->staticSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineKnownSizeArrayExtraFunctions(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->defineStaticSizedArrayExtraFunctions(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineKnownSizeArrayExtraFunctions(arrayM);
+      globalState->linearRegion->defineStaticSizedArrayExtraFunctions(arrayM);
     }
   }
 
-  for (auto p : program->unknownSizeArrays) {
+  for (auto p : program->runtimeSizedArrays) {
     auto name = p.first;
     auto arrayM = p.second;
-    globalState->getRegion(arrayM->rawArray->regionId)->defineUnknownSizeArrayExtraFunctions(arrayM);
+    globalState->getRegion(arrayM->rawArray->regionId)->defineRuntimeSizedArrayExtraFunctions(arrayM);
     if (arrayM->rawArray->mutability == Mutability::IMMUTABLE) {
-      globalState->linearRegion->defineUnknownSizeArrayExtraFunctions(arrayM);
+      globalState->linearRegion->defineRuntimeSizedArrayExtraFunctions(arrayM);
     }
   }
 

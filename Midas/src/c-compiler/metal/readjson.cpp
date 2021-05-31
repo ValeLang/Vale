@@ -79,36 +79,36 @@ RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
   return new RawArrayT(regionId, mutability, variability, elementType);
 }
 
-UnknownSizeArrayT* readUnknownSizeArray(MetalCache* cache, const json& referend) {
+RuntimeSizedArrayT* readRuntimeSizedArray(MetalCache* cache, const json& referend) {
   auto name = readName(cache, referend["name"]);
 
-  return cache->getUnknownSizeArray(name);
+  return cache->getRuntimeSizedArray(name);
 }
 
-UnknownSizeArrayDefinitionT* readUnknownSizeArrayDefinition(MetalCache* cache, const json& usa) {
-  auto name = readName(cache, usa["name"]);
-  auto referend = readUnknownSizeArray(cache, usa["referend"]);
-  auto rawArray = readRawArray(cache, usa["array"]);
+RuntimeSizedArrayDefinitionT* readRuntimeSizedArrayDefinition(MetalCache* cache, const json& rsa) {
+  auto name = readName(cache, rsa["name"]);
+  auto referend = readRuntimeSizedArray(cache, rsa["referend"]);
+  auto rawArray = readRawArray(cache, rsa["array"]);
 
-  return new UnknownSizeArrayDefinitionT(name, referend, rawArray);
+  return new RuntimeSizedArrayDefinitionT(name, referend, rawArray);
 }
 
-KnownSizeArrayT* readKnownSizeArray(MetalCache* cache, const json& referend) {
+StaticSizedArrayT* readStaticSizedArray(MetalCache* cache, const json& referend) {
   auto name = readName(cache, referend["name"]);
 
   return makeIfNotPresent(
-      &cache->knownSizeArrays,
+      &cache->staticSizedArrays,
       name,
-      [&](){ return new KnownSizeArrayT(name); });
+      [&](){ return new StaticSizedArrayT(name); });
 }
 
-KnownSizeArrayDefinitionT* readKnownSizeArrayDefinition(MetalCache* cache, const json& ksa) {
-  auto name = readName(cache, ksa["name"]);
-  auto referend = readKnownSizeArray(cache, ksa["referend"]);
-  auto rawArray = readRawArray(cache, ksa["array"]);
-  auto size = ksa["size"].get<int>();
+StaticSizedArrayDefinitionT* readStaticSizedArrayDefinition(MetalCache* cache, const json& ssa) {
+  auto name = readName(cache, ssa["name"]);
+  auto referend = readStaticSizedArray(cache, ssa["referend"]);
+  auto rawArray = readRawArray(cache, ssa["array"]);
+  auto size = ssa["size"].get<int>();
 
-  return new KnownSizeArrayDefinitionT(name, referend, size, rawArray);
+  return new StaticSizedArrayDefinitionT(name, referend, size, rawArray);
 }
 
 Referend* readReferend(MetalCache* cache, const json& referend) {
@@ -125,10 +125,10 @@ Referend* readReferend(MetalCache* cache, const json& referend) {
     return readStructReferend(cache, referend);
   } else if (referend["__type"] == "Never") {
     return cache->never;
-  } else if (referend["__type"] == "UnknownSizeArray") {
-    return readUnknownSizeArray(cache, referend);
-  } else if (referend["__type"] == "KnownSizeArray") {
-    return readKnownSizeArray(cache, referend);
+  } else if (referend["__type"] == "RuntimeSizedArray") {
+    return readRuntimeSizedArray(cache, referend);
+  } else if (referend["__type"] == "StaticSizedArray") {
+    return readStaticSizedArray(cache, referend);
   } else if (referend["__type"] == "InterfaceId") {
     return readInterfaceReferend(cache, referend);
   } else {
@@ -361,23 +361,23 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new NewArrayFromValues(
         readArray(cache, expression["sourceExprs"], readExpression),
         readReference(cache, expression["resultType"]),
-        readKnownSizeArray(cache, expression["resultReferend"]));
-  } else if (type == "KnownSizeArrayLoad") {
-    return new KnownSizeArrayLoad(
+        readStaticSizedArray(cache, expression["resultReferend"]));
+  } else if (type == "StaticSizedArrayLoad") {
+    return new StaticSizedArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readKnownSizeArray(cache, expression["arrayReferend"]),
+        readStaticSizedArray(cache, expression["arrayReferend"]),
         expression["arrayKnownLive"],
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["resultType"]),
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readReference(cache, expression["expectedElementType"]),
         expression["arraySize"]);
-  } else if (type == "UnknownSizeArrayLoad") {
-    return new UnknownSizeArrayLoad(
+  } else if (type == "RuntimeSizedArrayLoad") {
+    return new RuntimeSizedArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readUnknownSizeArray(cache, expression["arrayReferend"]),
+        readRuntimeSizedArray(cache, expression["arrayReferend"]),
         expression["arrayKnownLive"],
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["indexType"]),
@@ -385,11 +385,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["resultType"]),
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readReference(cache, expression["expectedElementType"]));
-  } else if (type == "UnknownSizeArrayStore") {
-    return new UnknownSizeArrayStore(
+  } else if (type == "RuntimeSizedArrayStore") {
+    return new RuntimeSizedArrayStore(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readUnknownSizeArray(cache, expression["arrayReferend"]),
+        readRuntimeSizedArray(cache, expression["arrayReferend"]),
         expression["arrayKnownLive"],
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["indexType"]),
@@ -397,8 +397,8 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         readReferend(cache, expression["sourceReferend"]));
-  } else if (type == "ConstructUnknownSizeArray") {
-    return new ConstructUnknownSizeArray(
+  } else if (type == "ConstructRuntimeSizedArray") {
+    return new ConstructRuntimeSizedArray(
         readExpression(cache, expression["sizeExpr"]),
         readReference(cache, expression["sizeType"]),
         readReferend(cache, expression["sizeReferend"]),
@@ -418,11 +418,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
         readReference(cache, expression["elementType"]));
-  } else if (type == "DestroyUnknownSizeArray") {
-    return new DestroyUnknownSizeArray(
+  } else if (type == "DestroyRuntimeSizedArray") {
+    return new DestroyRuntimeSizedArray(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readUnknownSizeArray(cache, expression["arrayReferend"]),
+        readRuntimeSizedArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
         readInterfaceReferend(cache, expression["consumerReferend"]),
@@ -440,11 +440,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readStructReferend(cache, expression["sourceStructReferend"]),
         readReference(cache, expression["targetInterfaceType"]),
         readInterfaceReferend(cache, expression["targetInterfaceReferend"]));
-  } else if (type == "DestroyKnownSizeArrayIntoFunction") {
-    return new DestroyKnownSizeArrayIntoFunction(
+  } else if (type == "DestroyStaticSizedArrayIntoFunction") {
+    return new DestroyStaticSizedArrayIntoFunction(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readKnownSizeArray(cache, expression["arrayReferend"]),
+        readStaticSizedArray(cache, expression["arrayReferend"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
         readPrototype(cache, expression["consumerMethod"]),
@@ -605,27 +605,27 @@ Program* readProgram(MetalCache* cache, const json& program) {
             auto s = readStruct(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      readArrayIntoMap<std::string, KnownSizeArrayDefinitionT*>(
+      readArrayIntoMap<std::string, StaticSizedArrayDefinitionT*>(
           cache,
           std::hash<std::string>(),
-          program["knownSizeArrays"],
+          program["staticSizedArrays"],
           [](MetalCache* cache, json j){
-            auto s = readKnownSizeArrayDefinition(cache, j);
+            auto s = readStaticSizedArrayDefinition(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      readArrayIntoMap<std::string, UnknownSizeArrayDefinitionT*>(
+      readArrayIntoMap<std::string, RuntimeSizedArrayDefinitionT*>(
           cache,
           std::hash<std::string>(),
-          program["unknownSizeArrays"],
+          program["runtimeSizedArrays"],
           [](MetalCache* cache, json j){
-            auto s = readUnknownSizeArrayDefinition(cache, j);
+            auto s = readRuntimeSizedArrayDefinition(cache, j);
             return std::make_pair(s->name->name, s);
           }),
       readStructReferend(cache, program["emptyTupleStructReferend"]),
       readArrayIntoMap<std::string, Prototype*>(
           cache,
           std::hash<std::string>(),
-          program["externs"],
+          program["externFunctions"],
           [](MetalCache* cache, json j){
             auto f = readPrototype(cache, j);
             return std::make_pair(f->name->name, f);

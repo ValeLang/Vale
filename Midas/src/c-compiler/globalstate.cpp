@@ -187,10 +187,10 @@ Name* GlobalState::getReferendName(Referend* referend) {
     return structReferend->fullName;
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
     return interfaceReferend->fullName;
-  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(referend)) {
-    return ksaMT->name;
-  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(referend)) {
-    return usaMT->name;
+  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(referend)) {
+    return ssaMT->name;
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(referend)) {
+    return rsaMT->name;
   } else assert(false);
   return nullptr;
 }

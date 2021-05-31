@@ -28,8 +28,8 @@ object InfererTestUtils {
       case StructRef2(FullName2(_, _, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
       case InterfaceRef2(FullName2(_, _, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
       case InterfaceRef2(FullName2(_, _, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
-      case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
-      case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => mutability
+      case StaticSizedArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
+      case RuntimeSizedArrayT2(RawArrayT2(_, mutability, _)) => mutability
     }
   }
 }
@@ -120,11 +120,11 @@ class FakeTemplataTemplarInnerDelegate extends ITemplataTemplarInnerDelegate[Sim
     vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
   }
 
-  override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
+  override def getStaticSizedArrayKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, variability: Variability, size: Int, element: Coord): (StaticSizedArrayT2) = {
     vfail()
   }
-  override def makeUnknownSizeArrayType(env: SimpleEnvironment, state: FakeState, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): UnknownSizeArrayT2 = {
-    UnknownSizeArrayT2(RawArrayT2(type2, arrayMutability, arrayVariability))
+  override def getRuntimeSizedArrayKind(env: SimpleEnvironment, state: FakeState, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability): RuntimeSizedArrayT2 = {
+    RuntimeSizedArrayT2(RawArrayT2(type2, arrayMutability, arrayVariability))
   }
   override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[Coord]): TupleT2 = {
     vfail()
@@ -267,8 +267,8 @@ class InfererTests extends FunSuite with Matchers {
       TemplataEnvEntry(CoordTemplata(Coord(Weak, Readonly, StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("MutStruct", List())))))))
     entries = entries.addEntry(true, CitizenName2("MutStructWeakRW", List()),
       TemplataEnvEntry(CoordTemplata(Coord(Weak, Readwrite, StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("MutStruct", List())))))))
-    entries = entries.addEntry(true, CitizenName2("MutArraySequenceOf4Int", List()),
-      TemplataEnvEntry(KindTemplata(KnownSizeArrayT2(4, RawArrayT2(Coord(Share, Readonly, Int2()), Mutable, Varying)))))
+    entries = entries.addEntry(true, CitizenName2("MutStaticSizedArrayOf4Int", List()),
+      TemplataEnvEntry(KindTemplata(StaticSizedArrayT2(4, RawArrayT2(Coord(Share, Readonly, Int2()), Mutable, Varying)))))
     // Tuples are normally addressed by TupleNameT, but that's a detail this test doesn't need to care about.
     entries = entries.addEntry(true, CitizenName2("IntAndBoolTupName", List()),
       TemplataEnvEntry(
@@ -293,8 +293,8 @@ class InfererTests extends FunSuite with Matchers {
             case InterfaceRef2(FullName2(_, _, CitizenName2(humanName, _))) if humanName.startsWith("Mut") => Mutable
             case InterfaceRef2(FullName2(_, _, CitizenName2(humanName, _))) if humanName.startsWith("Imm") => Immutable
             case Int2() | Void2() | Bool2() => Immutable
-            case KnownSizeArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
-            case UnknownSizeArrayT2(RawArrayT2(_, mutability, _)) => mutability
+            case StaticSizedArrayT2(_, RawArrayT2(_, mutability, _)) => mutability
+            case RuntimeSizedArrayT2(RawArrayT2(_, mutability, _)) => mutability
             case TupleT2(_, StructRef2(FullName2(_, _, CitizenName2(humanName, _)))) if humanName.startsWith("Imm") => Immutable
             case _ => vfail()
           }
@@ -336,8 +336,8 @@ class InfererTests extends FunSuite with Matchers {
             case StructTemplata(_,structName(TopLevelCitizenDeclarationNameA("MutTStruct", _))) => TemplateTemplataType(List(CoordTemplataType), KindTemplataType)
           }
         }
-        override def getArraySequenceKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, variability: Variability, size: Int, element: Coord): (KnownSizeArrayT2) = {
-          (KnownSizeArrayT2(size, RawArrayT2(element, mutability, variability)))
+        override def getStaticSizedArrayKind(env: SimpleEnvironment, state: FakeState, mutability: Mutability, variability: Variability, size: Int, element: Coord): (StaticSizedArrayT2) = {
+          (StaticSizedArrayT2(size, RawArrayT2(element, mutability, variability)))
         }
 
         override def getTupleKind(env: SimpleEnvironment, state: FakeState, elements: List[Coord]): TupleT2 = {
@@ -967,7 +967,7 @@ class InfererTests extends FunSuite with Matchers {
         None,
         true)
     inferencesD.templatasByRune(CodeRune2("Z")) shouldEqual
-      CoordTemplata(Coord(Share, Readonly,KnownSizeArrayT2(5,RawArrayT2(Coord(Share, Readonly,Int2()),Immutable,Final))))
+      CoordTemplata(Coord(Share, Readonly,StaticSizedArrayT2(5,RawArrayT2(Coord(Share, Readonly,Int2()),Immutable,Final))))
   }
 
   test("Test matching array sequence as coord") {
@@ -977,7 +977,7 @@ class InfererTests extends FunSuite with Matchers {
         FakeState(),
         List(
           EqualsTR(RangeS.testZero,
-            TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutArraySequenceOf4Int"), CoordTemplataType)),
+            TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutStaticSizedArrayOf4Int"), CoordTemplataType)),
             TemplexTR(
               RepeaterSequenceTT(RangeS.testZero,
                 RuneTT(RangeS.testZero,CodeRune2("M"), MutabilityTemplataType),
@@ -1005,7 +1005,7 @@ class InfererTests extends FunSuite with Matchers {
         FakeState(),
         List(
           EqualsTR(RangeS.testZero,
-            TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutArraySequenceOf4Int"), KindTemplataType)),
+            TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutStaticSizedArrayOf4Int"), KindTemplataType)),
             TemplexTR(
               RepeaterSequenceTT(RangeS.testZero,
                 RuneTT(RangeS.testZero,CodeRune2("M"), MutabilityTemplataType),

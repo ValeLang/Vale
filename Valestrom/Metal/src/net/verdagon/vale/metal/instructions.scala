@@ -24,17 +24,17 @@ sealed trait ExpressionH[+T <: ReferendH] {
       }
     }
   }
-  def expectUnknownSizeArrayAccess(): ExpressionH[UnknownSizeArrayTH] = {
+  def expectRuntimeSizedArrayAccess(): ExpressionH[RuntimeSizedArrayTH] = {
     resultType match {
-      case ReferenceH(_, _, _, x @ UnknownSizeArrayTH(_)) => {
-        this.asInstanceOf[ExpressionH[UnknownSizeArrayTH]]
+      case ReferenceH(_, _, _, x @ RuntimeSizedArrayTH(_)) => {
+        this.asInstanceOf[ExpressionH[RuntimeSizedArrayTH]]
       }
     }
   }
-  def expectKnownSizeArrayAccess(): ExpressionH[KnownSizeArrayTH] = {
+  def expectStaticSizedArrayAccess(): ExpressionH[StaticSizedArrayTH] = {
     resultType match {
-      case ReferenceH(_, _, _, x @ KnownSizeArrayTH(_)) => {
-        this.asInstanceOf[ExpressionH[KnownSizeArrayTH]]
+      case ReferenceH(_, _, _, x @ StaticSizedArrayTH(_)) => {
+        this.asInstanceOf[ExpressionH[StaticSizedArrayTH]]
       }
     }
   }
@@ -150,9 +150,9 @@ case class DestroyH(
 // local variables.
 // This creates those local variables, much as a StackifyH would, and puts into them
 // the values from the dying struct instance.
-case class DestroyKnownSizeArrayIntoLocalsH(
+case class DestroyStaticSizedArrayIntoLocalsH(
   // The expressions to take the struct from.
-  structExpression: ExpressionH[KnownSizeArrayTH],
+  structExpression: ExpressionH[StaticSizedArrayTH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
   localTypes: List[ReferenceH[ReferendH]],
@@ -300,20 +300,20 @@ case class MemberLoadH(
 case class NewArrayFromValuesH(
   // The resulting type of the array.
   // TODO: See if we can infer this from the types in the expressions.
-  resultType: ReferenceH[KnownSizeArrayTH],
+  resultType: ReferenceH[StaticSizedArrayTH],
   // The expressions from which we'll get the values to put into the array.
   sourceExpressions: List[ExpressionH[ReferendH]]
-) extends ExpressionH[KnownSizeArrayTH]
+) extends ExpressionH[StaticSizedArrayTH]
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
 // the position specified by the integer in indexExpression. The old value from the
 // array is moved out into expressionsId.
 // This is for the kind of array whose size we know at compile time, the kind that
 // doesn't need to carry around a size. For the corresponding instruction for the
-// unknown-size-at-compile-time array, see UnknownSizeArrayStoreH.
-case class KnownSizeArrayStoreH(
+// unknown-size-at-compile-time array, see RuntimeSizedArrayStoreH.
+case class StaticSizedArrayStoreH(
   // Expression containing the array whose element we'll swap out.
-  arrayExpression: ExpressionH[KnownSizeArrayTH],
+  arrayExpression: ExpressionH[StaticSizedArrayTH],
   // Expression containing the index of the element we'll swap out.
   indexExpression: ExpressionH[IntH],
   // Expression containing the value we'll swap into the array.
@@ -326,10 +326,10 @@ case class KnownSizeArrayStoreH(
 // array is moved out into expressionsId.
 // This is for the kind of array whose size we don't know at compile time, the kind
 // that needs to carry around a size. For the corresponding instruction for the
-// known-size-at-compile-time array, see KnownSizeArrayStoreH.
-case class UnknownSizeArrayStoreH(
+// known-size-at-compile-time array, see StaticSizedArrayStoreH.
+case class RuntimeSizedArrayStoreH(
   // Expression containing the array whose element we'll swap out.
-  arrayExpression: ExpressionH[UnknownSizeArrayTH],
+  arrayExpression: ExpressionH[RuntimeSizedArrayTH],
   // Expression containing the index of the element we'll swap out.
   indexExpression: ExpressionH[IntH],
   // Expression containing the value we'll swap into the array.
@@ -341,10 +341,10 @@ case class UnknownSizeArrayStoreH(
 // the result in expressionsId. This can never move a reference, only alias it.
 // This is for the kind of array whose size we don't know at compile time, the kind
 // that needs to carry around a size. For the corresponding instruction for the
-// known-size-at-compile-time array, see KnownSizeArrayLoadH.
-case class UnknownSizeArrayLoadH(
+// known-size-at-compile-time array, see StaticSizedArrayLoadH.
+case class RuntimeSizedArrayLoadH(
   // Expression containing the array whose element we'll read.
-  arrayExpression: ExpressionH[UnknownSizeArrayTH],
+  arrayExpression: ExpressionH[RuntimeSizedArrayTH],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
   // The ownership to load as. For example, we might load a constraint reference from a
@@ -373,10 +373,10 @@ case class UnknownSizeArrayLoadH(
 // the result in expressionsId. This can never move a reference, only alias it.
 // This is for the kind of array whose size we know at compile time, the kind that
 // doesn't need to carry around a size. For the corresponding instruction for the
-// known-size-at-compile-time array, see KnownSizeArrayStoreH.
-case class KnownSizeArrayLoadH(
+// known-size-at-compile-time array, see StaticSizedArrayStoreH.
+case class StaticSizedArrayLoadH(
   // Expression containing the array whose element we'll read.
-  arrayExpression: ExpressionH[KnownSizeArrayTH],
+  arrayExpression: ExpressionH[StaticSizedArrayTH],
   // Expression containing the index of the element we'll read.
   indexExpression: ExpressionH[IntH],
   // The ownership to load as. For example, we might load a constraint reference from a
@@ -517,7 +517,7 @@ case class ReturnH(
 // Constructs an unknown-size array, whose length is the integer from sizeExpression,
 // whose values are generated from the function from generatorExpression. Puts the
 // result in a new expressions.
-case class ConstructUnknownSizeArrayH(
+case class ConstructRuntimeSizedArrayH(
   // Expression containing the size of the new array.
   sizeExpression: ExpressionH[IntH],
   // Expression containing the IFunction<int, T> interface reference which we'll
@@ -533,8 +533,8 @@ case class ConstructUnknownSizeArrayH(
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
-  resultType: ReferenceH[UnknownSizeArrayTH]
-) extends ExpressionH[UnknownSizeArrayTH] {
+  resultType: ReferenceH[RuntimeSizedArrayTH]
+) extends ExpressionH[RuntimeSizedArrayTH] {
   vassert(
     generatorExpression.resultType.ownership == BorrowH ||
       generatorExpression.resultType.ownership == ShareH)
@@ -557,18 +557,18 @@ case class StaticArrayFromCallableH(
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
-  resultType: ReferenceH[KnownSizeArrayTH]
-) extends ExpressionH[KnownSizeArrayTH] {
+  resultType: ReferenceH[StaticSizedArrayTH]
+) extends ExpressionH[StaticSizedArrayTH] {
   vassert(
     generatorExpression.resultType.ownership == BorrowH ||
       generatorExpression.resultType.ownership == ShareH)
 }
 
 // Destroys an array previously created with NewArrayFromValuesH.
-case class DestroyKnownSizeArrayIntoFunctionH(
+case class DestroyStaticSizedArrayIntoFunctionH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
-  arrayExpression: ExpressionH[KnownSizeArrayTH],
+  arrayExpression: ExpressionH[StaticSizedArrayTH],
   // Expression containing the IFunction<T, Void> interface reference which we'll
   // call to destroy each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which
@@ -583,11 +583,11 @@ case class DestroyKnownSizeArrayIntoFunctionH(
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 
-// Destroys an array previously created with ConstructUnknownSizeArrayH.
-case class DestroyUnknownSizeArrayH(
+// Destroys an array previously created with ConstructRuntimeSizedArrayH.
+case class DestroyRuntimeSizedArrayH(
   // Expression containing the array we'll destroy.
   // This is an owning reference.
-  arrayExpression: ExpressionH[UnknownSizeArrayTH],
+  arrayExpression: ExpressionH[RuntimeSizedArrayTH],
   // Expression containing the IFunction<T, Void> interface reference which we'll
   // call to destroy each element of the array.
   // More specifically, we'll call the "__call" function on the interface, which

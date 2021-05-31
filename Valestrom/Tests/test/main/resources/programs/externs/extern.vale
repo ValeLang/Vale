@@ -1,4 +1,5 @@
-fn sqrt(x float) float extern;
+
+import math.*;
 
 fn main() int export {
   int(sqrt(float(16)))

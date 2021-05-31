@@ -7,7 +7,7 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.env.{IEnvironment, PackageEnvironment}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{FileCoordinate, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail, vimpl, vwat}
 import net.verdagon.von.{IVonData, VonArray, VonInt, VonMember, VonObject, VonStr}
 
 import scala.collection.immutable.List
@@ -52,7 +52,7 @@ object NameHammer {
       case ImmInterfaceDestructorTemplateName2() => "immInterfaceDestructorTemplate"
       case ImplDeclareName2(subCitizenHumanName, codeLoc) => "impl" + subCitizenHumanName
       case ImplicitRune2(parentName, name) => "implicitRune" + name
-      case KnownSizeArrayName2(size, arr) => "ksa" + size
+      case StaticSizedArrayName2(size, arr) => "ssa" + size
       case LambdaCitizenName2(codeLoc) => "lam"
       case LambdaTemplateName2(codeLoc) => "lamTemplate"
       case LetImplicitRune2(codeLoc, name) => "letImplicitRune" + name
@@ -70,7 +70,7 @@ object NameHammer {
       case TemplarPatternMemberName2(num, memberIndex) => "patMemName" + num + "_" + memberIndex
       case TemplarTemporaryVarName2(num) => "tempVarName" + num
       case TupleName2(members) => "Tup" + members.size
-      case UnknownSizeArrayName2(arr) => "usa"
+      case RuntimeSizedArrayName2(arr) => "rsa"
       case UnnamedLocalName2(codeLoc) => "unnamedLocal"
     }
   }
@@ -80,7 +80,10 @@ object NameHammer {
     hamuts: HamutsBox,
     fullName2: FullName2[IName2]
   ): FullNameH = {
-    val newNameParts = fullName2.steps.map(step => VonHammer.translateName(hinputs, hamuts, step))
+    val FullName2(PackageCoordinate(project, packageSteps), _, _) = fullName2
+    val newNameParts =
+      (VonStr(project) :: packageSteps.map(VonStr)) ++
+      fullName2.steps.map(step => VonHammer.translateName(hinputs, hamuts, step))
     val readableName = getReadableName(fullName2.last)
     val id =
       if (fullName2.last.isInstanceOf[ExternFunctionName2]) {

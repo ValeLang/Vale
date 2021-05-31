@@ -20,7 +20,7 @@ class HammerTests extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
 
     vassert(hamuts.getAllUserFunctions.size == 1)
-    hamuts.getAllUserFunctions.head.prototype.fullName.toFullString() shouldEqual """F("main")"""
+    hamuts.getAllUserFunctions.head.prototype.fullName.toFullString() shouldEqual """"test":F("main")"""
   }
 
 //  // Make sure a ListNode struct made it out
@@ -48,13 +48,13 @@ class HammerTests extends FunSuite with Matchers {
         |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
     val hamuts = compile.getHamuts()
-    hamuts.interfaces.find(_.fullName.toFullString() == """C("MyOption",[TR(R(*,<,#,i))])""").get;
+    hamuts.interfaces.find(_.fullName.toFullString() == """"test":C("MyOption",[TR(R(*,<,#,i))])""").get;
 
-    val mySome = hamuts.structs.find(_.fullName.toFullString() == """C("MySome",[TR(R(*,<,#,i))])""").get;
+    val mySome = hamuts.structs.find(_.fullName.toFullString() == """"test":C("MySome",[TR(R(*,<,#,i))])""").get;
     vassert(mySome.members.size == 1);
     vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH()))
 
-    val myNone = hamuts.structs.find(_.fullName.toFullString() == """C("MyNone",[TR(R(*,<,#,i))])""").get;
+    val myNone = hamuts.structs.find(_.fullName.toFullString() == """"test":C("MyNone",[TR(R(*,<,#,i))])""").get;
     vassert(myNone.members.isEmpty);
   }
 

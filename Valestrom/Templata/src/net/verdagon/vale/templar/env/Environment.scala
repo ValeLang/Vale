@@ -113,18 +113,12 @@ case class TemplatasStore(
   //  private var entriesByHumanName = Map[String, List[IEnvEntry]]()
 
   def entryToTemplata(env: IEnvironment, entry: IEnvEntry): ITemplata = {
-    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, List(), PackageTopLevelName2()))
+//    vassert(env.fullName != FullName2(PackageCoordinate.BUILTIN, List(), PackageTopLevelName2()))
     entry match {
-      case FunctionEnvEntry(func) => {
-        FunctionTemplata(env, func)
-      }
-      case StructEnvEntry(struct) => {
-        StructTemplata(PackageEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), struct)
-      }
-      case InterfaceEnvEntry(interface) => {
-        InterfaceTemplata(PackageEnvironment(Some(env), env.fullName, TemplatasStore(Map(), Map())), interface)
-      }
-      case ImplEnvEntry(impl) => ImplTemplata(env, impl)
+      case FunctionEnvEntry(func) => FunctionTemplata.make(env, func)
+      case StructEnvEntry(struct) => StructTemplata.make(env, struct)
+      case InterfaceEnvEntry(interface) => InterfaceTemplata.make(env, interface)
+      case ImplEnvEntry(impl) => ImplTemplata.make(env, impl)
       case TemplataEnvEntry(templata) => templata
     }
   }

@@ -699,8 +699,8 @@ class Heap(in_vivemDout: PrintStream) {
 //  }
 
   def addUninitializedArray(
-      arrayDefinitionTH: UnknownSizeArrayDefinitionTH,
-      arrayRefType: ReferenceH[UnknownSizeArrayTH],
+      arrayDefinitionTH: RuntimeSizedArrayDefinitionTH,
+      arrayRefType: ReferenceH[RuntimeSizedArrayTH],
       size: Int):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.rawArray.elementType, size, Vector())
@@ -709,8 +709,8 @@ class Heap(in_vivemDout: PrintStream) {
   }
 
   def addArray(
-    arrayDefinitionTH: KnownSizeArrayDefinitionTH,
-    arrayRefType: ReferenceH[KnownSizeArrayTH],
+    arrayDefinitionTH: StaticSizedArrayDefinitionTH,
+    arrayRefType: ReferenceH[StaticSizedArrayTH],
     memberRefs: List[ReferenceV]):
   (ReferenceV, ArrayInstanceV) = {
     val instance = ArrayInstanceV(arrayRefType, arrayDefinitionTH.rawArray.elementType, memberRefs.size, memberRefs.toVector)
@@ -755,12 +755,12 @@ class Heap(in_vivemDout: PrintStream) {
           vfail("Expected " + structRefH + " but was " + structDefH)
         }
       }
-      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ UnknownSizeArrayTH(_)) => {
+      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ RuntimeSizedArrayTH(_)) => {
         if (typeH.kind != arrayH) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }
       }
-      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ KnownSizeArrayTH(_)) => {
+      case (ArrayInstanceV(typeH, actualElementTypeH, _, _), arrayH @ StaticSizedArrayTH(_)) => {
         if (typeH.kind != arrayH) {
           vfail("Expected " + arrayH + " but was " + typeH)
         }

@@ -22,8 +22,8 @@ class Never;
 class InterfaceReferend;
 class StructReferend;
 class RawArrayT;
-class KnownSizeArrayT;
-class UnknownSizeArrayT;
+class StaticSizedArrayT;
+class RuntimeSizedArrayT;
 
 enum class Ownership {
   OWN,
@@ -182,26 +182,26 @@ public:
 };
 
 // Interned
-class KnownSizeArrayT : public Referend {
+class StaticSizedArrayT : public Referend {
 public:
   Name* name;
 
-  KnownSizeArrayT(
+  StaticSizedArrayT(
       Name* name_) :
       name(name_) {}
 
 };
 
-class KnownSizeArrayDefinitionT {
+class StaticSizedArrayDefinitionT {
 public:
   Name* name;
-  KnownSizeArrayT* referend;
+  StaticSizedArrayT* referend;
   int size;
   RawArrayT* rawArray;
 
-  KnownSizeArrayDefinitionT(
+  StaticSizedArrayDefinitionT(
       Name* name_,
-      KnownSizeArrayT* referend_,
+      StaticSizedArrayT* referend_,
       int size_,
       RawArrayT* rawArray_) :
       name(name_),
@@ -214,25 +214,25 @@ public:
 
 
 // Interned
-class UnknownSizeArrayT : public Referend {
+class RuntimeSizedArrayT : public Referend {
 public:
   Name* name;
 
-  UnknownSizeArrayT(
+  RuntimeSizedArrayT(
       Name* name_) :
       name(name_) {}
 
 };
 
-class UnknownSizeArrayDefinitionT {
+class RuntimeSizedArrayDefinitionT {
 public:
   Name* name;
-  UnknownSizeArrayT* referend;
+  RuntimeSizedArrayT* referend;
   RawArrayT* rawArray;
 
-  UnknownSizeArrayDefinitionT(
+  RuntimeSizedArrayDefinitionT(
       Name* name_,
-      UnknownSizeArrayT* referend_,
+      RuntimeSizedArrayT* referend_,
       RawArrayT* rawArray_) :
       name(name_),
       referend(referend_),

@@ -27,17 +27,17 @@ LLVMValueRef checkIndexInBounds(
   return indexLE;
 }
 
-LLVMValueRef getKnownSizeArrayContentsPtr(
+LLVMValueRef getStaticSizedArrayContentsPtr(
     LLVMBuilderRef builder,
-    WrapperPtrLE knownSizeArrayWrapperPtrLE) {
+    WrapperPtrLE staticSizedArrayWrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
-      knownSizeArrayWrapperPtrLE.refLE,
+      staticSizedArrayWrapperPtrLE.refLE,
       1, // Array is after the control block.
-      "ksaElemsPtr");
+      "ssaElemsPtr");
 }
 
-LLVMValueRef getUnknownSizeArrayContentsPtr(
+LLVMValueRef getRuntimeSizedArrayContentsPtr(
     LLVMBuilderRef builder,
     WrapperPtrLE arrayWrapperPtrLE) {
 
@@ -45,19 +45,19 @@ LLVMValueRef getUnknownSizeArrayContentsPtr(
       builder,
       arrayWrapperPtrLE.refLE,
       2, // Array is after the control block and length.
-      "usaElemsPtr");
+      "rsaElemsPtr");
 }
 
-LLVMValueRef getUnknownSizeArrayLengthPtr(
+LLVMValueRef getRuntimeSizedArrayLengthPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    WrapperPtrLE unknownSizeArrayWrapperPtrLE) {
+    WrapperPtrLE runtimeSizedArrayWrapperPtrLE) {
   auto resultLE =
       LLVMBuildStructGEP(
           builder,
-          unknownSizeArrayWrapperPtrLE.refLE,
+          runtimeSizedArrayWrapperPtrLE.refLE,
           1, // Length is after the control block and before contents.
-          "usaLenPtr");
+          "rsaLenPtr");
   assert(LLVMTypeOf(resultLE) == LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0));
   return resultLE;
 }

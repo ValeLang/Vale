@@ -75,15 +75,15 @@ public:
       InterfaceReferend* targetInterfaceReferendM,
       Reference* targetInterfaceTypeM) override;
 
-  void declareKnownSizeArray(KnownSizeArrayDefinitionT* ksaDefM) override;
-  void defineKnownSizeArray(KnownSizeArrayDefinitionT* ksaDefM) override;
-  void declareKnownSizeArrayExtraFunctions(KnownSizeArrayDefinitionT* ksaDef) override;
-  void defineKnownSizeArrayExtraFunctions(KnownSizeArrayDefinitionT* ksaDef) override;
+  void declareStaticSizedArray(StaticSizedArrayDefinitionT* ssaDefM) override;
+  void defineStaticSizedArray(StaticSizedArrayDefinitionT* ssaDefM) override;
+  void declareStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) override;
+  void defineStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) override;
 
-  void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* usaDefM) override;
-  void declareUnknownSizeArrayExtraFunctions(UnknownSizeArrayDefinitionT* usaDefM) override;
-  void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* usaDefM) override;
-  void defineUnknownSizeArrayExtraFunctions(UnknownSizeArrayDefinitionT* usaDefM) override;
+  void declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* rsaDefM) override;
+  void declareRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) override;
+  void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* rsaDefM) override;
+  void defineRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
   void declareStruct(StructDefinition* structDefM) override;
   void declareStructExtraFunctions(StructDefinition* structDefM) override;
@@ -197,25 +197,25 @@ public:
 
   // Returns a LLVMValueRef for a ref to the string object.
   // The caller should then use getStringBytesPtr to then fill the string's contents.
-  Ref constructKnownSizeArray(
+  Ref constructStaticSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      KnownSizeArrayT* referendM) override;
+      StaticSizedArrayT* referendM) override;
 
   // should expose a dereference thing instead
-//  LLVMValueRef getKnownSizeArrayElementsPtr(
+//  LLVMValueRef getStaticSizedArrayElementsPtr(
 //      LLVMBuilderRef builder,
-//      LLVMValueRef knownSizeArrayWrapperPtrLE) override;
-//  LLVMValueRef getUnknownSizeArrayElementsPtr(
+//      LLVMValueRef staticSizedArrayWrapperPtrLE) override;
+//  LLVMValueRef getRuntimeSizedArrayElementsPtr(
 //      LLVMBuilderRef builder,
-//      LLVMValueRef unknownSizeArrayWrapperPtrLE) override;
+//      LLVMValueRef runtimeSizedArrayWrapperPtrLE) override;
 
-  Ref getUnknownSizeArrayLength(
+  Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
+      Reference* rsaRefMT,
       Ref arrayRef,
       bool arrayKnownLive) override;
 
@@ -246,29 +246,29 @@ public:
       Reference* refMT,
       Ref ref) override;
 
-  LoadResult loadElementFromKSA(
+  LoadResult loadElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
+      Reference* ssaRefMT,
+      StaticSizedArrayT* ssaMT,
       Ref arrayRef,
       bool arrayKnownLive,
       Ref indexRef) override;
-  LoadResult loadElementFromUSA(
+  LoadResult loadElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayKnownLive,
       Ref indexRef) override;
 
 
-  Ref storeElementInUSA(
+  Ref storeElementInRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayKnownLive,
       Ref indexRef,
@@ -283,49 +283,49 @@ public:
       Ref ref) override;
 
 
-  Ref constructUnknownSizeArray(
+  Ref constructRuntimeSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaMT,
-      UnknownSizeArrayT* unknownSizeArrayT,
+      Reference* rsaMT,
+      RuntimeSizedArrayT* runtimeSizedArrayT,
       Ref sizeRef,
       const std::string& typeName) override;
 
-  void initializeElementInUSA(
+  void initializeElementInRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef,
       Ref elementRef) override;
 
-  Ref deinitializeElementFromUSA(
+  Ref deinitializeElementFromRSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaRefMT,
-      UnknownSizeArrayT* usaMT,
+      Reference* rsaRefMT,
+      RuntimeSizedArrayT* rsaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef) override;
 
-  void initializeElementInKSA(
+  void initializeElementInSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
+      Reference* ssaRefMT,
+      StaticSizedArrayT* ssaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef,
       Ref elementRef) override;
 
-  Ref deinitializeElementFromKSA(
+  Ref deinitializeElementFromSSA(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* ksaRefMT,
-      KnownSizeArrayT* ksaMT,
+      Reference* ssaRefMT,
+      StaticSizedArrayT* ssaMT,
       Ref arrayRef,
       bool arrayRefKnownLive,
       Ref indexRef) override;
@@ -345,12 +345,12 @@ public:
       LLVMValueRef sourceCharsPtrLE,
       Ref dryRunBoolRef);
 
-  Ref innerConstructKnownSizeArray(
+  Ref innerConstructStaticSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      KnownSizeArrayT* referendM,
+      StaticSizedArrayT* referendM,
       Ref dryRunBoolRef);
 
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
@@ -361,10 +361,10 @@ public:
       std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;
   void generateInterfaceDefsC(
       std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
-  void generateKnownSizeArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, KnownSizeArrayDefinitionT* ksaDefM) override;
-  void generateUnknownSizeArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, UnknownSizeArrayDefinitionT* usaDefM) override;
+  void generateStaticSizedArrayDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, StaticSizedArrayDefinitionT* ssaDefM) override;
+  void generateRuntimeSizedArrayDefsC(
+      std::unordered_map<std::string, std::string>* cByExportedName, RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
   Reference* getExternalType(
@@ -416,7 +416,7 @@ public:
 
   // Temporary, gets the corresponding Linear type reference.
   Referend* linearizeReferend(Referend* referendMT);
-  KnownSizeArrayT* unlinearizeKSA(KnownSizeArrayT* referendMT);
+  StaticSizedArrayT* unlinearizeSSA(StaticSizedArrayT* referendMT);
   StructReferend* unlinearizeStructReferend(StructReferend* referendMT);
   InterfaceReferend* unlinearizeInterfaceReferend(InterfaceReferend* referendMT);
   StructReferend* linearizeStructReferend(StructReferend* referendMT);
@@ -457,12 +457,12 @@ private:
   void defineEdgeSerializeFunction(Edge* edge);
 
 
-  Ref innerConstructUnknownSizeArray(
+  Ref innerConstructRuntimeSizedArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* usaMT,
-      UnknownSizeArrayT* unknownSizeArrayT,
+      Reference* rsaMT,
+      RuntimeSizedArrayT* runtimeSizedArrayT,
       Ref sizeRef,
       const std::string& typeName,
       Ref dryRunBoolRef);

@@ -11,12 +11,12 @@ class ParseSamplesTests extends FunSuite with Matchers with Collector with TestP
   test("programs/weaks/weakFromCRefStruct.vale") { compileProgramWithComments(Tests.loadExpected("programs/weaks/weakFromCRefStruct.vale")) }
   test("programs/weaks/weakFromLocalCRefStruct.vale") { compileProgramWithComments(Tests.loadExpected("programs/weaks/weakFromLocalCRefStruct.vale")) }
   test("programs/addret.vale") { compileProgramWithComments(Tests.loadExpected("programs/addret.vale")) }
-  test("programs/arrays/immusa.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/immusa.vale")) }
-  test("programs/arrays/immusalen.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/immusalen.vale")) }
-  test("programs/arrays/immksafromvalues.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/immksafromvalues.vale")) }
-  test("programs/arrays/mutusa.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/mutusa.vale")) }
-  test("programs/arrays/mutusalen.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/mutusalen.vale")) }
-  test("programs/arrays/swapmutusadestroy.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/swapmutusadestroy.vale")) }
+  test("programs/arrays/immrsa.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/immrsa.vale")) }
+  test("programs/arrays/immrsalen.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/immrsalen.vale")) }
+  test("programs/arrays/immssafromvalues.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/immssafromvalues.vale")) }
+  test("programs/arrays/mutrsa.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/mutrsa.vale")) }
+  test("programs/arrays/mutrsalen.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/mutrsalen.vale")) }
+  test("programs/arrays/swapmutrsadestroy.vale") { compileProgramWithComments(Tests.loadExpected("programs/arrays/swapmutrsadestroy.vale")) }
   test("programs/constraintRef.vale") { compileProgramWithComments(Tests.loadExpected("programs/constraintRef.vale")) }
   test("optutils/optutils.vale") { compileProgramWithComments(Tests.loadExpected("optutils/optutils.vale")) }
   test("programs/if/if.vale") { compileProgramWithComments(Tests.loadExpected("programs/if/if.vale")) }

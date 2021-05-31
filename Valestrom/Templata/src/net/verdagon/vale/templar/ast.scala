@@ -48,7 +48,7 @@ case class Edge2(
   methods: List[Prototype2])
 
 object Program2 {
-  val emptyTupleStructRef = StructRef2(FullName2(List(), TupleName2(List())))
+  val emptyTupleStructRef = StructRef2(FullName2(PackageCoordinate.BUILTIN, List(), TupleName2(List())))
   val emptyTupleType: PackT2 = PackT2(List(), Program2.emptyTupleStructRef)
   val emptyTupleReference: Coord = Coord(Share, Readonly, emptyTupleType)
   val emptyPackExpression: PackE2 = PackE2(List(), Coord(Share, Readonly, Program2.emptyTupleType), Program2.emptyTupleType)

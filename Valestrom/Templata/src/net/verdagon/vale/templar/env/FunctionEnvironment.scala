@@ -215,10 +215,6 @@ case class FunctionEnvironmentBox(var functionEnvironment: FunctionEnvironment) 
     functionEnvironment = functionEnvironment.copy(maybeReturnType = returnType)
   }
 
-  def setFullName(fullName: FullName2[IFunctionName2]): Unit = {
-    functionEnvironment = functionEnvironment.copy(fullName = fullName)
-  }
-
   def addVariables(newVars: List[IVariable2]): Unit= {
     functionEnvironment = functionEnvironment.addVariables(newVars)
   }

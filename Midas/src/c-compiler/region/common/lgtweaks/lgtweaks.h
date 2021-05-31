@@ -48,20 +48,20 @@ public:
       StructReferend* structReferendM,
       WrapperPtrLE objPtrLE);
 
-  WeakFatPtrLE assembleKnownSizeArrayWeakRef(
+  WeakFatPtrLE assembleStaticSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* sourceKSAMT,
-      KnownSizeArrayT* knownSizeArrayMT,
-      Reference* targetKSAWeakRefMT,
+      Reference* sourceSSAMT,
+      StaticSizedArrayT* staticSizedArrayMT,
+      Reference* targetSSAWeakRefMT,
       WrapperPtrLE objPtrLE);
 
-  WeakFatPtrLE assembleUnknownSizeArrayWeakRef(
+  WeakFatPtrLE assembleRuntimeSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceType,
-      UnknownSizeArrayT* unknownSizeArrayMT,
-      Reference* targetUSAWeakRefMT,
+      RuntimeSizedArrayT* runtimeSizedArrayMT,
+      Reference* targetRSAWeakRefMT,
       WrapperPtrLE sourceRefLE);
 
   LLVMValueRef lockLgtiFatPtr(

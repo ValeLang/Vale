@@ -60,9 +60,9 @@ object ExpressionHammer {
         // return a void.
         (destroyH, List())
       }
-      case des2 @ DestroyArraySequenceIntoLocals2(_, _, _) => {
+      case des2 @ DestroyStaticSizedArrayIntoLocals2(_, _, _) => {
         val destructureH =
-            LetHammer.translateDestructureArraySequence(hinputs, hamuts, currentFunctionHeader, locals, des2)
+            LetHammer.translateDestructureStaticSizedArray(hinputs, hamuts, currentFunctionHeader, locals, des2)
         // Templar destructures put things in local variables (even though hammer itself
         // uses registers internally to make that happen).
         // Since all the members landed in locals, we still need something to return, so we
@@ -193,7 +193,7 @@ object ExpressionHammer {
         val (resultLines, deferreds) =
           translateExpressions(hinputs, hamuts, currentFunctionHeader, locals, exprs);
         val (underlyingArrayH) =
-          TypeHammer.translateKnownSizeArray(hinputs, hamuts, arrayType2);
+          TypeHammer.translateStaticSizedArray(hinputs, hamuts, arrayType2);
 
         val (arrayReferenceH) =
           TypeHammer.translateReference(hinputs, hamuts, arrayReference2)
@@ -201,7 +201,7 @@ object ExpressionHammer {
 
         val newStructNode =
           NewArrayFromValuesH(
-            arrayReferenceH.expectKnownSizeArrayReference(),
+            arrayReferenceH.expectStaticSizedArrayReference(),
             resultLines)
 
         val newStructAndDeferredsExprH =
@@ -427,18 +427,18 @@ object ExpressionHammer {
         (argNode, List())
       }
 
-      case das2 @ DestroyArraySequenceIntoFunction2(_, _, _, _) => {
+      case das2 @ DestroyStaticSizedArrayIntoFunction2(_, _, _, _) => {
         val dasH =
-            CallHammer.translateDestroyArraySequence(
+            CallHammer.translateDestroyStaticSizedArray(
               hinputs, hamuts, currentFunctionHeader, locals, das2)
         (dasH, List())
       }
 
-      case das2 @ DestroyUnknownSizeArray2(_, _, _, _) => {
-        val dusaH =
-            CallHammer.translateDestroyUnknownSizeArray(
+      case das2 @ DestroyRuntimeSizedArray2(_, _, _, _) => {
+        val drsaH =
+            CallHammer.translateDestroyRuntimeSizedArray(
               hinputs, hamuts, currentFunctionHeader, locals, das2)
-        (dusaH, List())
+        (drsaH, List())
       }
 
       case UnreachableMootE2(innerExpr) => {

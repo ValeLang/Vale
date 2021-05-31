@@ -2,27 +2,38 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata.{CodeLocation2, CoordTemplata, ITemplata, Queriable2}
-import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Readonly, Share, StructRef2, UnknownSizeArrayT2}
-import net.verdagon.vale.{vassert, vpass, vwat}
+import net.verdagon.vale.templar.types.{Coord, Int2, InterfaceRef2, Kind, StaticSizedArrayT2, Mutability, Readonly, Share, StructRef2, RuntimeSizedArrayT2}
+import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vpass, vwat}
+
+import scala.collection.immutable.List
 
 // Scout's/Astronomer's name parts correspond to where they are in the source code,
 // but Templar's correspond more to what packages and stamped functions / structs
 // they're in. See TNAD.
 
-case class FullName2[+T <: IName2](initSteps: List[IName2], last: T) extends Queriable2 {
-  // GlobalPackageName2 is just here because names have to have a last step.
-  vassert(!initSteps.contains(GlobalPackageName2()))
+case class FullName2[+T <: IName2](
+  packageCoord: PackageCoordinate,
+  initSteps: List[IName2],
+  last: T
+) extends Queriable2 {
+  // PackageTopLevelName2 is just here because names have to have a last step.
+  vassert(!initSteps.contains(PackageTopLevelName2()))
+
+  this match {
+    case FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("main", List(), List())) =>
+    case _ =>
+  }
 
   def steps: List[IName2] = {
     last match {
-      case GlobalPackageName2() => initSteps
+      case PackageTopLevelName2() => initSteps
       case _ => initSteps :+ last
     }
   }
   def addStep[Y <: IName2](newLast: Y): FullName2[Y] = {
-    FullName2[Y](steps, newLast)
+    FullName2[Y](packageCoord, steps, newLast)
   }
-  def init: FullName2[IName2] = FullName2[IName2](initSteps.init, initSteps.last)
+  def init: FullName2[IName2] = FullName2[IName2](packageCoord, initSteps.init, initSteps.last)
 
   def all[X](func: PartialFunction[Queriable2, X]): List[X] = {
     List(this).collect(func) ++ initSteps.flatMap(_.all(func)) ++ last.all(func)
@@ -55,8 +66,8 @@ case class LetName2(codeLocation: CodeLocation2) extends IName2 { def order = 2;
 case class ExportAsName2(codeLocation: CodeLocation2) extends IName2 { def order = 2; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ codeLocation.all(func) } }
 
 case class RawArrayName2(mutability: Mutability, elementType: Coord) extends IName2 { def order = 40; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ elementType.all(func) } }
-case class KnownSizeArrayName2(size: Int, arr: RawArrayName2) extends IName2 { def order = 42; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ arr.all(func) } }
-case class UnknownSizeArrayName2(arr: RawArrayName2) extends IName2 { def order = 47; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ arr.all(func) } }
+case class StaticSizedArrayName2(size: Int, arr: RawArrayName2) extends IName2 { def order = 42; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ arr.all(func) } }
+case class RuntimeSizedArrayName2(arr: RawArrayName2) extends IName2 { def order = 47; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) ++ arr.all(func) } }
 sealed trait IVarName2 extends IName2
 case class TemplarBlockResultVarName2(num: Int) extends IVarName2 { def order = 18; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class TemplarFunctionResultVarName2() extends IVarName2 { def order = 19; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
@@ -72,7 +83,9 @@ case class CodeVarName2(name: String) extends IVarName2 { def order = 6; def all
 case class AnonymousSubstructMemberName2(index: Int) extends IVarName2 { def order = 24; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class PrimitiveName2(humanName: String) extends IName2 { def order = 26; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 // Only made in templar
-case class GlobalPackageName2() extends IName2 { def order = 25; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class PackageTopLevelName2() extends IName2 { def order = 25; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class ProjectName2(name: String) extends IName2 { def order = 51; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class PackageName2(name: String) extends IName2 { def order = 52; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 
 // We use this one to look for impls, which are disambiguated by the above ImplDeclareName2
 //case class ImplImpreciseName2() extends IName2 { def order = 22; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
@@ -247,6 +260,7 @@ case class CitizenName2(
 case class TupleName2(
   members: List[Coord]
 ) extends ICitizenName2 {
+  vpass()
   override def templateArgs: List[ITemplata] = members.map(CoordTemplata)
   def order = 16;
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

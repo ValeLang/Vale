@@ -41,17 +41,17 @@ object MutateHammer {
           translateAddressibleMemberMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, structExpr2, memberName)
         }
         case StaticSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
-          translateMundaneKnownSizeArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
+          translateMundaneStaticSizedArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
-        case UnknownSizeArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
-          translateMundaneUnknownSizeArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
+        case RuntimeSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
+          translateMundaneRuntimeSizedArrayMutate(hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, arrayExpr2, indexExpr2)
         }
       }
 
     translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, oldValueAccess, sourceDeferreds ++ destinationDeferreds)
   }
 
-  private def translateMundaneUnknownSizeArrayMutate(
+  private def translateMundaneRuntimeSizedArrayMutate(
     hinputs: Hinputs,
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
@@ -65,13 +65,13 @@ object MutateHammer {
     val (indexExprResultLine, indexDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val resultType =
-      hamuts.getUnknownSizeArray(
-        destinationResultLine.expectUnknownSizeArrayAccess().resultType.kind)
+      hamuts.getRuntimeSizedArray(
+        destinationResultLine.expectRuntimeSizedArrayAccess().resultType.kind)
         .rawArray.elementType
     // We're storing into a regular reference element of an array.
     val storeNode =
-        UnknownSizeArrayStoreH(
-          destinationResultLine.expectUnknownSizeArrayAccess(),
+        RuntimeSizedArrayStoreH(
+          destinationResultLine.expectRuntimeSizedArrayAccess(),
           indexExprResultLine.expectIntAccess(),
           sourceExprResultLine,
           resultType)
@@ -79,7 +79,7 @@ object MutateHammer {
     (storeNode, destinationDeferreds ++ indexDeferreds)
   }
 
-  private def translateMundaneKnownSizeArrayMutate(
+  private def translateMundaneStaticSizedArrayMutate(
                                                     hinputs: Hinputs,
                                                     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
@@ -93,13 +93,13 @@ object MutateHammer {
     val (indexExprResultLine, indexDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
     val resultType =
-      hamuts.getKnownSizeArray(
-        destinationResultLine.expectKnownSizeArrayAccess().resultType.kind)
+      hamuts.getStaticSizedArray(
+        destinationResultLine.expectStaticSizedArrayAccess().resultType.kind)
         .rawArray.elementType
     // We're storing into a regular reference element of an array.
     val storeNode =
-        KnownSizeArrayStoreH(
-          destinationResultLine.expectKnownSizeArrayAccess(),
+        StaticSizedArrayStoreH(
+          destinationResultLine.expectStaticSizedArrayAccess(),
           indexExprResultLine.expectIntAccess(),
           sourceExprResultLine,
           resultType)

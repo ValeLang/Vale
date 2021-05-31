@@ -38,11 +38,11 @@ object LoadHammer {
         case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
           translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, targetOwnership, targetPermission)
         }
-        case UnknownSizeArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
-          translateMundaneUnknownSizeArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
+        case RuntimeSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
+          translateMundaneRuntimeSizedArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
         case StaticSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
-          translateMundaneKnownSizeArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
+          translateMundaneStaticSizedArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
       }
 
@@ -51,7 +51,7 @@ object LoadHammer {
     (loadedAccessH, sourceDeferreds)
   }
 
-  private def translateMundaneUnknownSizeArrayLoad(
+  private def translateMundaneRuntimeSizedArrayLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
@@ -66,7 +66,7 @@ object LoadHammer {
 
     val (arrayResultLine, arrayDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
-    val arrayAccess = arrayResultLine.expectUnknownSizeArrayAccess()
+    val arrayAccess = arrayResultLine.expectRuntimeSizedArrayAccess()
 
     val (indexExprResultLine, indexDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
@@ -74,8 +74,8 @@ object LoadHammer {
 
     vassert(targetOwnership == BorrowH || targetOwnership == ShareH)
 
-    val usa = hamuts.getUnknownSizeArray(arrayAccess.resultType.kind)
-    val expectedElementType = usa.rawArray.elementType
+    val rsa = hamuts.getRuntimeSizedArray(arrayAccess.resultType.kind)
+    val expectedElementType = rsa.rawArray.elementType
     val resultType = {
       val location =
         (targetOwnership, expectedElementType.location) match {
@@ -88,7 +88,7 @@ object LoadHammer {
 
     // We're storing into a regular reference element of an array.
     val loadedNodeH =
-        UnknownSizeArrayLoadH(
+        RuntimeSizedArrayLoadH(
           arrayAccess,
           indexAccess,
           targetOwnership,
@@ -99,7 +99,7 @@ object LoadHammer {
     (loadedNodeH, arrayDeferreds ++ indexDeferreds)
   }
 
-  private def translateMundaneKnownSizeArrayLoad(
+  private def translateMundaneStaticSizedArrayLoad(
     hinputs: Hinputs,
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
@@ -114,7 +114,7 @@ object LoadHammer {
 
     val (arrayResultLine, arrayDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
-    val arrayAccess = arrayResultLine.expectKnownSizeArrayAccess()
+    val arrayAccess = arrayResultLine.expectStaticSizedArrayAccess()
 
     val (indexExprResultLine, indexDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, indexExpr2);
@@ -122,8 +122,8 @@ object LoadHammer {
 
     vassert(targetOwnership == m.BorrowH || targetOwnership == m.ShareH)
 
-    val ksa = hamuts.getKnownSizeArray(arrayAccess.resultType.kind)
-    val expectedElementType = ksa.rawArray.elementType
+    val ssa = hamuts.getStaticSizedArray(arrayAccess.resultType.kind)
+    val expectedElementType = ssa.rawArray.elementType
     val resultType = {
       val location =
         (targetOwnership, expectedElementType.location) match {
@@ -136,13 +136,13 @@ object LoadHammer {
 
     // We're storing into a regular reference element of an array.
     val loadedNodeH =
-        KnownSizeArrayLoadH(
+        StaticSizedArrayLoadH(
           arrayAccess,
           indexAccess,
           targetOwnership,
           targetPermission,
           expectedElementType,
-          ksa.size,
+          ssa.size,
           resultType)
 
     (loadedNodeH, arrayDeferreds ++ indexDeferreds)

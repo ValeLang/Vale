@@ -52,14 +52,14 @@ LLVMValueRef upcastThinPtr(
 }
 
 LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend) {
-  if (auto ksaMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
-    auto knownSizeArrayCountedStructLT =
-        structs->getKnownSizeArrayWrapperStruct(ksaMT);
-    return LLVMPointerType(knownSizeArrayCountedStructLT, 0);
-  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
-    auto unknownSizeArrayCountedStructLT =
-        structs->getUnknownSizeArrayWrapperStruct(usaMT);
-    return LLVMPointerType(unknownSizeArrayCountedStructLT, 0);
+  if (auto ssaMT = dynamic_cast<StaticSizedArrayT *>(referend)) {
+    auto staticSizedArrayCountedStructLT =
+        structs->getStaticSizedArrayWrapperStruct(ssaMT);
+    return LLVMPointerType(staticSizedArrayCountedStructLT, 0);
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT *>(referend)) {
+    auto runtimeSizedArrayCountedStructLT =
+        structs->getRuntimeSizedArrayWrapperStruct(rsaMT);
+    return LLVMPointerType(runtimeSizedArrayCountedStructLT, 0);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
     auto countedStructL = structs->getWrapperStruct(structReferend);
     return LLVMPointerType(countedStructL, 0);
@@ -74,10 +74,10 @@ LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsS
 }
 
 LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend) {
-  if (auto ksaMT = dynamic_cast<KnownSizeArrayT *>(referend)) {
-    return weakRefStructs->getKnownSizeArrayWeakRefStruct(ksaMT);
-  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT *>(referend)) {
-    return weakRefStructs->getUnknownSizeArrayWeakRefStruct(usaMT);
+  if (auto ssaMT = dynamic_cast<StaticSizedArrayT *>(referend)) {
+    return weakRefStructs->getStaticSizedArrayWeakRefStruct(ssaMT);
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT *>(referend)) {
+    return weakRefStructs->getRuntimeSizedArrayWeakRefStruct(rsaMT);
   } else if (auto structReferend = dynamic_cast<StructReferend *>(referend)) {
     return weakRefStructs->getStructWeakRefStruct(structReferend);
   } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend *>(referend)) {
@@ -172,12 +172,12 @@ LLVMValueRef insertStrongRc(
       "controlBlockWithRc");
 }
 
-LoadResult loadElementFromKSAInner(
+LoadResult loadElementFromSSAInner(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
+    Reference* ssaRefMT,
+    StaticSizedArrayT* ssaMT,
     int size,
     Reference* elementType,
     Ref indexRef,
@@ -346,78 +346,78 @@ void innerDeallocate(
   }
 }
 
-void fillKnownSizeArray(
+void fillStaticSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
-    Ref ksaRef,
+    Reference* ssaRefMT,
+    StaticSizedArrayT* ssaMT,
+    Ref ssaRef,
     const std::vector<Ref>& elementRefs) {
 
   for (int i = 0; i < elementRefs.size(); i++) {
-    globalState->getRegion(ksaRefMT)->initializeElementInKSA(
-        functionState, builder, ksaRefMT, ksaMT, ksaRef, true, globalState->constI64(i), elementRefs[i]);
+    globalState->getRegion(ssaRefMT)->initializeElementInSSA(
+        functionState, builder, ssaRefMT, ssaMT, ssaRef, true, globalState->constI64(i), elementRefs[i]);
   }
 }
 
-void fillUnknownSizeArray(
+void fillRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
+    Reference* rsaRefMT,
+    RuntimeSizedArrayT* rsaMT,
     Reference* elementType,
     Reference* generatorType,
     Prototype* generatorMethod,
     Ref generatorLE,
     Ref sizeLE,
-    Ref usaRef) {
+    Ref rsaRef) {
 
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
-      [globalState, functionState, usaRefMT, usaMT, generatorMethod, generatorType, usaRef, generatorLE](
+      [globalState, functionState, rsaRefMT, rsaMT, generatorMethod, generatorType, rsaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
-            AFL("ConstructUSA generate iteration"),
+            AFL("ConstructRSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
 
         auto elementRef =
             buildCall(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
-        globalState->getRegion(usaMT)->initializeElementInUSA(
-            functionState, bodyBuilder, usaRefMT, usaMT, usaRef, true, indexRef, elementRef);
+        globalState->getRegion(rsaMT)->initializeElementInRSA(
+            functionState, bodyBuilder, rsaRefMT, rsaMT, rsaRef, true, indexRef, elementRef);
       });
 }
 
-void fillKnownSizeArrayFromCallable(
+void fillStaticSizedArrayFromCallable(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
+    Reference* ssaRefMT,
+    StaticSizedArrayT* ssaMT,
     Reference* elementType,
     Reference* generatorType,
     Prototype* generatorMethod,
     Ref generatorLE,
     Ref sizeLE,
-    Ref ksaRef) {
+    Ref ssaRef) {
 
   intRangeLoop(
       globalState, functionState, builder, sizeLE,
-      [globalState, functionState, ksaRefMT, ksaMT, generatorMethod, generatorType, ksaRef, generatorLE](
+      [globalState, functionState, ssaRefMT, ssaMT, generatorMethod, generatorType, ssaRef, generatorLE](
           Ref indexRef, LLVMBuilderRef bodyBuilder) {
         globalState->getRegion(generatorType)->alias(
-            AFL("ConstructKSA generate iteration"),
+            AFL("ConstructSSA generate iteration"),
             functionState, bodyBuilder, generatorType, generatorLE);
         std::vector<Ref> argExprsLE = { generatorLE, indexRef };
 
         auto elementRef =
             buildCall(
                 globalState, functionState, bodyBuilder, generatorMethod, argExprsLE);
-        globalState->getRegion(ksaMT)->initializeElementInKSA(
-            functionState, bodyBuilder, ksaRefMT, ksaMT, ksaRef, true, indexRef, elementRef);
+        globalState->getRegion(ssaMT)->initializeElementInSSA(
+            functionState, bodyBuilder, ssaRefMT, ssaMT, ssaRef, true, indexRef, elementRef);
       });
 }
 
@@ -695,22 +695,22 @@ Ref transmuteWeakRef(
   return targetWeakRef;
 }
 
-LLVMValueRef mallocUnknownSizeArray(
+LLVMValueRef mallocRuntimeSizedArray(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    LLVMTypeRef usaWrapperLT,
-    LLVMTypeRef usaElementLT,
+    LLVMTypeRef rsaWrapperLT,
+    LLVMTypeRef rsaElementLT,
     LLVMValueRef lengthLE) {
   auto sizeBytesLE =
       LLVMBuildAdd(
           builder,
-          constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, usaWrapperLT)),
+          constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, rsaWrapperLT)),
           LLVMBuildMul(
               builder,
-              constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(usaElementLT, 1))),
+              constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(rsaElementLT, 1))),
               lengthLE,
               ""),
-          "usaMallocSizeBytes");
+          "rsaMallocSizeBytes");
 
   auto newWrapperPtrLE = callMalloc(globalState, builder, sizeBytesLE);
 
@@ -728,7 +728,7 @@ LLVMValueRef mallocUnknownSizeArray(
   return LLVMBuildBitCast(
       builder,
       newWrapperPtrLE,
-      LLVMPointerType(usaWrapperLT, 0),
+      LLVMPointerType(rsaWrapperLT, 0),
       "newstruct");
 }
 
@@ -749,13 +749,13 @@ Ref transmutePtr(
 }
 
 
-Ref getUnknownSizeArrayLength(
+Ref getRuntimeSizedArrayLength(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE arrayRefLE) {
-  auto lengthPtrLE = getUnknownSizeArrayLengthPtr(globalState, builder, arrayRefLE);
-  auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "usaLen");
+  auto lengthPtrLE = getRuntimeSizedArrayLengthPtr(globalState, builder, arrayRefLE);
+  auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "rsaLen");
   return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, intLE);
 }
 
@@ -1092,17 +1092,17 @@ Ref normalLocalStore(GlobalState* globalState, FunctionState* functionState, LLV
 
 // Returns a LLVMValueRef for a ref to the string object.
 // The caller should then use getStringBytesPtr to then fill the string's contents.
-Ref constructKnownSizeArray(
+Ref constructStaticSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* refM,
-    KnownSizeArrayT* ksaMT,
+    StaticSizedArrayT* ssaMT,
     IReferendStructsSource* referendStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
 
   auto structLT =
-      referendStructs->getKnownSizeArrayWrapperStruct(ksaMT);
+      referendStructs->getStaticSizedArrayWrapperStruct(ssaMT);
   auto newStructLE =
       referendStructs->makeWrapperPtr(
           FL(), functionState, builder, refM,
@@ -1146,13 +1146,13 @@ void regularCheckValidReference(
     assert(false);
 }
 
-LoadResult regularLoadElementFromUSAWithoutUpgrade(
+LoadResult regularLoadElementFromRSAWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* usaRefMT,
-    UnknownSizeArrayT* usaMT,
+    Reference* rsaRefMT,
+    RuntimeSizedArrayT* rsaMT,
     Mutability mutability,
     Reference* elementType,
     Ref arrayRef,
@@ -1160,43 +1160,43 @@ LoadResult regularLoadElementFromUSAWithoutUpgrade(
     Ref indexRef) {
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, usaRefMT,
-          globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
-  auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
+          FL(), functionState, builder, rsaRefMT,
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+  auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, wrapperPtrLE);
   auto arrayElementsPtrLE =
-      getUnknownSizeArrayContentsPtr(builder,
+      getRuntimeSizedArrayContentsPtr(builder,
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, usaRefMT,
-              globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef)));
+              FL(), functionState, builder, rsaRefMT,
+              globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef)));
   buildFlare(FL(), globalState, functionState, builder);
   return loadElement(
       globalState, functionState, builder, arrayElementsPtrLE, elementType, sizeRef, indexRef);
 }
 
-LoadResult resilientLoadElementFromUSAWithoutUpgrade(
+LoadResult resilientLoadElementFromRSAWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* usaRefMT,
+    Reference* rsaRefMT,
     Mutability mutability,
     Reference* elementType,
-    UnknownSizeArrayT* usaMT,
+    RuntimeSizedArrayT* rsaMT,
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  switch (usaRefMT->ownership) {
+  switch (rsaRefMT->ownership) {
     case Ownership::SHARE:
     case Ownership::OWN: {
       auto wrapperPtrLE =
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, usaRefMT,
-              globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, arrayRef));
-      auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
-      auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder,
+              FL(), functionState, builder, rsaRefMT,
+              globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, arrayRef));
+      auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, wrapperPtrLE);
+      auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder,
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, usaRefMT,
-              globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT,
+              FL(), functionState, builder, rsaRefMT,
+              globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT,
                   arrayRef)));
       buildFlare(FL(), globalState, functionState, builder);
       return loadElement(
@@ -1204,13 +1204,13 @@ LoadResult resilientLoadElementFromUSAWithoutUpgrade(
     }
     case Ownership::BORROW: {
       auto wrapperPtrLE =
-          globalState->getRegion(usaRefMT)->lockWeakRef(
-              FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive);
-      auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
+          globalState->getRegion(rsaRefMT)->lockWeakRef(
+              FL(), functionState, builder, rsaRefMT, arrayRef, arrayKnownLive);
+      auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, wrapperPtrLE);
       auto arrayElementsPtrLE =
-          getUnknownSizeArrayContentsPtr(
+          getRuntimeSizedArrayContentsPtr(
               builder,
-              globalState->getRegion(usaRefMT)->lockWeakRef(FL(), functionState, builder, usaRefMT, arrayRef, arrayKnownLive));
+              globalState->getRegion(rsaRefMT)->lockWeakRef(FL(), functionState, builder, rsaRefMT, arrayRef, arrayKnownLive));
       buildFlare(FL(), globalState, functionState, builder);
       return loadElement(
           globalState, functionState, builder, arrayElementsPtrLE, elementType,
@@ -1223,83 +1223,83 @@ LoadResult resilientLoadElementFromUSAWithoutUpgrade(
   }
 }
 
-Ref regularStoreElementInKSA(
+Ref regularStoreElementInSSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* ksaRefMT,
+    Reference* ssaRefMT,
     Reference* elementType,
     int size,
     Ref arrayRef,
     Ref indexRef,
     Ref elementRef) {
   auto arrayElementsPtrLE =
-      getKnownSizeArrayContentsPtr(
+      getStaticSizedArrayContentsPtr(
           builder,
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, ksaRefMT,
-              globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+              FL(), functionState, builder, ssaRefMT,
+              globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef)));
   buildFlare(FL(), globalState, functionState, builder);
   return swapElement(
-      globalState, functionState, builder, ksaRefMT->location,
+      globalState, functionState, builder, ssaRefMT->location,
       elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
 }
 
-void regularInitializeElementInKSA(
+void regularInitializeElementInSSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* ksaRefMT,
+    Reference* ssaRefMT,
     Reference* elementType,
     int size,
     Ref arrayRef,
     Ref indexRef,
     Ref elementRef) {
   auto arrayElementsPtrLE =
-      getKnownSizeArrayContentsPtr(
+      getStaticSizedArrayContentsPtr(
           builder,
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, ksaRefMT,
-              globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
+              FL(), functionState, builder, ssaRefMT,
+              globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef)));
   buildFlare(FL(), globalState, functionState, builder);
   initializeElement(
-      globalState, functionState, builder, ksaRefMT->location,
+      globalState, functionState, builder, ssaRefMT->location,
       elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
 }
 
-Ref constructUnknownSizeArray(
+Ref constructRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* usaMT,
+    Reference* rsaMT,
     Reference* elementType,
-    UnknownSizeArrayT* unknownSizeArrayT,
-    LLVMTypeRef usaWrapperPtrLT,
-    LLVMTypeRef usaElementLT,
+    RuntimeSizedArrayT* runtimeSizedArrayT,
+    LLVMTypeRef rsaWrapperPtrLT,
+    LLVMTypeRef rsaElementLT,
     Ref sizeRef,
     const std::string& typeName,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
-  buildFlare(FL(), globalState, functionState, builder, "Constructing USA!");
+  buildFlare(FL(), globalState, functionState, builder, "Constructing RSA!");
 
   auto sizeLE =
       globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(FL(),
           functionState, builder, globalState->metalCache->intRef, sizeRef);
-  auto ptrLE = mallocUnknownSizeArray(globalState, builder, usaWrapperPtrLT, usaElementLT, sizeLE);
-  auto usaWrapperPtrLE =
-      referendStructs->makeWrapperPtr(FL(), functionState, builder, usaMT, ptrLE);
+  auto ptrLE = mallocRuntimeSizedArray(globalState, builder, rsaWrapperPtrLT, rsaElementLT, sizeLE);
+  auto rsaWrapperPtrLE =
+      referendStructs->makeWrapperPtr(FL(), functionState, builder, rsaMT, ptrLE);
   fillControlBlock(
       builder,
-      referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, usaMT, usaWrapperPtrLE));
-  LLVMBuildStore(builder, sizeLE, getUnknownSizeArrayLengthPtr(globalState, builder, usaWrapperPtrLE));
-  auto refLE = wrap(globalState->getRegion(usaMT), usaMT, usaWrapperPtrLE.refLE);
+      referendStructs->getConcreteControlBlockPtr(FL(), functionState, builder, rsaMT, rsaWrapperPtrLE));
+  LLVMBuildStore(builder, sizeLE, getRuntimeSizedArrayLengthPtr(globalState, builder, rsaWrapperPtrLE));
+  auto refLE = wrap(globalState->getRegion(rsaMT), rsaMT, rsaWrapperPtrLE.refLE);
 
   if (globalState->opt->census) {
     auto objIdLE =
-        globalState->getRegion(usaMT)
-            ->getCensusObjectId(FL(), functionState, builder, usaMT, refLE);
+        globalState->getRegion(rsaMT)
+            ->getCensusObjectId(FL(), functionState, builder, rsaMT, refLE);
     auto addrIntLE = ptrToIntLE(globalState, builder, ptrLE);
     buildFlare(
         FL(), globalState, functionState, builder,
@@ -1412,12 +1412,12 @@ Ref upcastWeak(
       targetInterfaceTypeM);
 }
 
-LoadResult regularloadElementFromKSA(
+LoadResult regularloadElementFromSSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
+    Reference* ssaRefMT,
+    StaticSizedArrayT* ssaMT,
     Reference* elementType,
     int arraySize,
     Mutability mutability,
@@ -1426,22 +1426,22 @@ LoadResult regularloadElementFromKSA(
     Ref indexRef,
     IReferendStructsSource* referendStructs) {
   LLVMValueRef arrayElementsPtrLE =
-      getKnownSizeArrayContentsPtr(
+      getStaticSizedArrayContentsPtr(
           builder,
           referendStructs->makeWrapperPtr(
-              FL(), functionState, builder, ksaRefMT,
-              globalState->getRegion(ksaRefMT)
-                  ->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
-  return loadElementFromKSAInner(
-      globalState, functionState, builder, ksaRefMT, ksaMT, arraySize, elementType, indexRef, arrayElementsPtrLE);
+              FL(), functionState, builder, ssaRefMT,
+              globalState->getRegion(ssaRefMT)
+                  ->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef)));
+  return loadElementFromSSAInner(
+      globalState, functionState, builder, ssaRefMT, ssaMT, arraySize, elementType, indexRef, arrayElementsPtrLE);
 }
 
-LoadResult resilientloadElementFromKSA(
+LoadResult resilientloadElementFromSSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* ksaRefMT,
-    KnownSizeArrayT* ksaMT,
+    Reference* ssaRefMT,
+    StaticSizedArrayT* ssaMT,
     int size,
     Mutability mutability,
     Reference* elementType,
@@ -1449,24 +1449,24 @@ LoadResult resilientloadElementFromKSA(
     bool arrayKnownLive,
     Ref indexRef,
     IReferendStructsSource* referendStructs) {
-  switch (ksaRefMT->ownership) {
+  switch (ssaRefMT->ownership) {
     case Ownership::SHARE:
     case Ownership::OWN: {
       LLVMValueRef arrayElementsPtrLE =
-          getKnownSizeArrayContentsPtr(
+          getStaticSizedArrayContentsPtr(
               builder,
               referendStructs->makeWrapperPtr(
-                  FL(), functionState, builder, ksaRefMT,
-                  globalState->getRegion(ksaRefMT)
-                      ->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef)));
-      return loadElementFromKSAInner(
-          globalState, functionState, builder, ksaRefMT, ksaMT, size, elementType, indexRef, arrayElementsPtrLE);
+                  FL(), functionState, builder, ssaRefMT,
+                  globalState->getRegion(ssaRefMT)
+                      ->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef)));
+      return loadElementFromSSAInner(
+          globalState, functionState, builder, ssaRefMT, ssaMT, size, elementType, indexRef, arrayElementsPtrLE);
     }
     case Ownership::BORROW: {
       LLVMValueRef arrayElementsPtrLE =
-          getKnownSizeArrayContentsPtr(
-              builder, globalState->getRegion(ksaRefMT)->lockWeakRef(FL(), functionState, builder, ksaRefMT, arrayRef, arrayKnownLive));
-      return loadElementFromKSAInner(globalState, functionState, builder, ksaRefMT, ksaMT, size, elementType, indexRef, arrayElementsPtrLE);
+          getStaticSizedArrayContentsPtr(
+              builder, globalState->getRegion(ssaRefMT)->lockWeakRef(FL(), functionState, builder, ssaRefMT, arrayRef, arrayKnownLive));
+      return loadElementFromSSAInner(globalState, functionState, builder, ssaRefMT, ssaMT, size, elementType, indexRef, arrayElementsPtrLE);
     }
     case Ownership::WEAK:
       assert(false); // VIR never loads from a weak ref
@@ -1528,19 +1528,19 @@ void gmFillControlBlock(
       controlBlockPtrLE.refLE);
 }
 
-Ref getUnknownSizeArrayLengthStrong(
+Ref getRuntimeSizedArrayLengthStrong(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    Reference* usaRefMT,
+    Reference* rsaRefMT,
     Ref arrayRef) {
   auto wrapperPtrLE =
       referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, usaRefMT,
-          globalState->getRegion(usaRefMT)->checkValidReference(
-              FL(), functionState, builder, usaRefMT, arrayRef));
-  return ::getUnknownSizeArrayLength(globalState, functionState, builder, wrapperPtrLE);
+          FL(), functionState, builder, rsaRefMT,
+          globalState->getRegion(rsaRefMT)->checkValidReference(
+              FL(), functionState, builder, rsaRefMT, arrayRef));
+  return ::getRuntimeSizedArrayLength(globalState, functionState, builder, wrapperPtrLE);
 }
 
 LoadResult regularLoadStrongMember(
@@ -1773,26 +1773,26 @@ LLVMValueRef getInterfaceMethodFunctionPtrFromItable(
 }
 
 
-void initializeElementInUSA(
+void initializeElementInRSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     IReferendStructsSource* referendStructs,
-    UnknownSizeArrayT* usaMT,
-    Reference* usaRefMT,
-    Ref usaRef,
+    RuntimeSizedArrayT* rsaMT,
+    Reference* rsaRefMT,
+    Ref rsaRef,
     Ref indexRef,
     Ref elementRef) {
-  auto usaDef = globalState->program->getUnknownSizeArray(usaMT->name);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT->name);
   auto arrayWrapperPtrLE =
       referendStructs->makeWrapperPtr(
-          FL(), functionState, builder, usaRefMT,
-          globalState->getRegion(usaRefMT)->checkValidReference(FL(), functionState, builder, usaRefMT, usaRef));
-  auto sizeRef = ::getUnknownSizeArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
-  auto arrayElementsPtrLE = getUnknownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+          FL(), functionState, builder, rsaRefMT,
+          globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
+  auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
+  auto arrayElementsPtrLE = getRuntimeSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElement(
-      globalState, functionState, builder, usaRefMT->location,
-      usaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
+      globalState, functionState, builder, rsaRefMT->location,
+      rsaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref normalLocalLoad(GlobalState* globalState, FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr) {

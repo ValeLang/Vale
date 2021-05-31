@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.UseP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.DropHelper
+import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.infer.infer.{InferSolveFailure, InferSolveSuccess}
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
@@ -24,7 +24,7 @@ class PatternTemplar(
     inferTemplar: InferTemplar,
     arrayTemplar: ArrayTemplar,
     convertHelper: ConvertHelper,
-    dropHelper: DropHelper,
+    destructorTemplar: DestructorTemplar,
     localHelper: LocalHelper) {
   // Note: This will unlet/drop the input expressions. Be warned.
   // patternInputExprs2 is a list of reference expression because they're coming in from
@@ -184,7 +184,7 @@ class PatternTemplar(
                 temputs, fate, range, listOfMaybeDestructureMemberPatterns, structType2, reinterpretExpr2)
             (lets0 ++ innerLets)
           }
-          case KnownSizeArrayT2(size, RawArrayT2(_, _, _)) => {
+          case StaticSizedArrayT2(size, RawArrayT2(_, _, _)) => {
             if (size != listOfMaybeDestructureMemberPatterns.size) {
               throw CompileErrorExceptionT(RangedInternalErrorT(range, "Wrong num exprs!"))
             }
@@ -327,7 +327,7 @@ class PatternTemplar(
     // for each member, unlet its local and pass it to the subpattern.
 
     val arrSeqRef2 = inputArraySeqExpr.resultRegister.reference
-    val Coord(arrSeqRefOwnership, arrSeqRefPermission, arraySeqT @ KnownSizeArrayT2(numElements, RawArrayT2(elementType, arrayMutability, _))) = arrSeqRef2
+    val Coord(arrSeqRefOwnership, arrSeqRefPermission, staticSizedArrayT @ StaticSizedArrayT2(numElements, RawArrayT2(elementType, arrayMutability, _))) = arrSeqRef2
 
     val memberTypes = (0 until numElements).toList.map(_ => elementType)
 
@@ -337,8 +337,8 @@ class PatternTemplar(
       case Own => {
         val memberLocalVariables = makeLocals(fate, counter, memberTypes)
         val destroy =
-          DestroyArraySequenceIntoLocals2(
-            inputArraySeqExpr, arraySeqT, memberLocalVariables)
+          DestroyStaticSizedArrayIntoLocals2(
+            inputArraySeqExpr, staticSizedArrayT, memberLocalVariables)
         val lets = makeLetsForOwn(temputs, fate, innerPatternMaybes, memberLocalVariables)
         (destroy :: lets)
       }
@@ -356,7 +356,7 @@ class PatternTemplar(
             .flatMap({
               case (((innerPattern, memberType), index)) => {
                 val addrExpr =
-                  arrayTemplar.lookupInKnownSizeArray(range, inputArraySeqExpr, IntLiteral2(index), arraySeqT)
+                  arrayTemplar.lookupInStaticSizedArray(range, inputArraySeqExpr, IntLiteral2(index), staticSizedArrayT)
                 val loadExpr = SoftLoad2(addrExpr, Share, Readonly)
                 innerNonCheckingTranslate(temputs, fate, innerPattern, loadExpr)
               }
@@ -364,7 +364,7 @@ class PatternTemplar(
 
         val packUnlet = localHelper.unletLocal(fate, arrSeqLocalVariable)
         val dropExpr =
-          dropHelper.drop(fate, temputs, packUnlet)
+          destructorTemplar.drop(fate, temputs, packUnlet)
 
         ((arrSeqLet :: innerLets) :+ dropExpr)
       }
@@ -446,7 +446,7 @@ class PatternTemplar(
 
         val packUnlet = localHelper.unletLocal(fate, packLocalVariable)
         val dropExpr =
-          dropHelper.drop(fate, temputs, packUnlet)
+          destructorTemplar.drop(fate, temputs, packUnlet)
 
         ((packLet :: innerLets) :+ dropExpr)
       }

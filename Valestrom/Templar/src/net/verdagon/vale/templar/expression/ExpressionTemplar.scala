@@ -8,7 +8,7 @@ import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, 
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
-import net.verdagon.vale.templar.function.DropHelper
+import net.verdagon.vale.templar.function.DestructorTemplar
 import net.verdagon.vale.templar.function.FunctionTemplar.{EvaluateFunctionFailure, EvaluateFunctionSuccess, IEvaluateFunctionResult}
 import net.verdagon.vale.templar.templata.{TemplataTemplar, _}
 import net.verdagon.vale.templar.types._
@@ -46,13 +46,13 @@ class ExpressionTemplar(
     ancestorHelper: AncestorHelper,
     sequenceTemplar: SequenceTemplar,
     overloadTemplar: OverloadTemplar,
-    dropHelper: DropHelper,
+    destructorTemplar: DestructorTemplar,
     convertHelper: ConvertHelper,
     delegate: IExpressionTemplarDelegate) {
-  val localHelper = new LocalHelper(opts, dropHelper)
+  val localHelper = new LocalHelper(opts, destructorTemplar)
   val callTemplar = new CallTemplar(opts, templataTemplar, convertHelper, localHelper, overloadTemplar)
-  val patternTemplar = new PatternTemplar(opts, profiler, inferTemplar, arrayTemplar, convertHelper, dropHelper, localHelper)
-  val blockTemplar = new BlockTemplar(opts, newTemplataStore, dropHelper, localHelper, new IBlockTemplarDelegate {
+  val patternTemplar = new PatternTemplar(opts, profiler, inferTemplar, arrayTemplar, convertHelper, destructorTemplar, localHelper)
+  val blockTemplar = new BlockTemplar(opts, newTemplataStore, destructorTemplar, localHelper, new IBlockTemplarDelegate {
     override def evaluateAndCoerceToReferenceExpression(
         temputs: Temputs, fate: FunctionEnvironmentBox, expr1: IExpressionAE):
     (ReferenceExpression2, Set[Coord]) = {
@@ -564,7 +564,7 @@ class ExpressionTemplar(
                   case _ => vimpl(structExpr.referend.toString)
                 }
               }
-              case UnknownSizeArrayLookup2(range, _, arrayType, _, _, _) => {
+              case RuntimeSizedArrayLookup2(range, _, arrayType, _, _, _) => {
                 throw CompileErrorExceptionT(CantMutateFinalElement(range, arrayType.name))
               }
               case StaticSizedArrayLookup2(range, _, arrayType, _, _, _) => {
@@ -624,11 +624,11 @@ class ExpressionTemplar(
 
           val exprTemplata =
             containerExpr2.resultRegister.reference.referend match {
-              case usa @ UnknownSizeArrayT2(_) => {
-                arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, indexExpr2, usa)
+              case rsa @ RuntimeSizedArrayT2(_) => {
+                arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, indexExpr2, rsa)
               }
-              case at@KnownSizeArrayT2(_, _) => {
-                arrayTemplar.lookupInKnownSizeArray(range, containerExpr2, indexExpr2, at)
+              case at@StaticSizedArrayT2(_, _) => {
+                arrayTemplar.lookupInStaticSizedArray(range, containerExpr2, indexExpr2, at)
               }
               case at@TupleT2(members, understruct) => {
                 indexExpr2 match {
@@ -708,14 +708,14 @@ class ExpressionTemplar(
                   }
                 }
               }
-              case as@KnownSizeArrayT2(_, _) => {
+              case as@StaticSizedArrayT2(_, _) => {
                 if (memberNameStr.forall(Character.isDigit)) {
-                  arrayTemplar.lookupInKnownSizeArray(range, containerExpr2, IntLiteral2(memberNameStr.toInt), as)
+                  arrayTemplar.lookupInStaticSizedArray(range, containerExpr2, IntLiteral2(memberNameStr.toInt), as)
                 } else {
                   throw CompileErrorExceptionT(RangedInternalErrorT(range, "Sequence has no member named " + memberNameStr))
                 }
               }
-              case at@UnknownSizeArrayT2(_) => {
+              case at@RuntimeSizedArrayT2(_) => {
                 if (memberNameStr.forall(Character.isDigit)) {
                   arrayTemplar.lookupInUnknownSizedArray(range, containerExpr2, IntLiteral2(memberNameStr.toInt), at)
                 } else {
@@ -784,7 +784,7 @@ class ExpressionTemplar(
 
           checkArray(
             temputs, range, arrayMutability, elementCoord, generatorPrototype, generatorExpr2.resultRegister.reference)
-          val arrayType = arrayTemplar.makeUnknownSizeArrayType(fate.snapshot, temputs, elementCoord, arrayMutability, arrayVariability)
+          val arrayType = arrayTemplar.getRuntimeSizedArrayKind(fate.snapshot, temputs, elementCoord, arrayMutability, arrayVariability)
 
           val sizeRefExpr2 = coerceToReferenceExpression(fate, sizeExpr2)
           vassert(sizeRefExpr2.resultRegister.expectReference().reference == Coord(Share, Readonly, Int2()))
@@ -995,7 +995,7 @@ class ExpressionTemplar(
                   }))
               }
               case interfaceRef @ InterfaceRef2(_) => {
-                dropHelper.drop(fate, temputs, innerExpr2)
+                destructorTemplar.drop(fate, temputs, innerExpr2)
               }
               case _ => vfail("Can't destruct type: " + innerExpr2.referend)
             }

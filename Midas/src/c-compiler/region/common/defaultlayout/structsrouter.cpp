@@ -17,11 +17,11 @@ LLVMTypeRef ReferendStructsRouter::getInnerStruct(StructReferend* structReferend
 LLVMTypeRef ReferendStructsRouter::getWrapperStruct(StructReferend* structReferend) {
   return getReferendStructsSource(structReferend)->getWrapperStruct(structReferend);
 }
-LLVMTypeRef ReferendStructsRouter::getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) {
-  return getReferendStructsSource(ksaMT)->getKnownSizeArrayWrapperStruct(ksaMT);
+LLVMTypeRef ReferendStructsRouter::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
+  return getReferendStructsSource(ssaMT)->getStaticSizedArrayWrapperStruct(ssaMT);
 }
-LLVMTypeRef ReferendStructsRouter::getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) {
-  return getReferendStructsSource(usaMT)->getUnknownSizeArrayWrapperStruct(usaMT);
+LLVMTypeRef ReferendStructsRouter::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
+  return getReferendStructsSource(rsaMT)->getRuntimeSizedArrayWrapperStruct(rsaMT);
 }
 LLVMTypeRef ReferendStructsRouter::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
   return getReferendStructsSource(interfaceReferend)->getInterfaceRefStruct(interfaceReferend);
@@ -53,17 +53,17 @@ void ReferendStructsRouter::declareInterface(InterfaceDefinition* interfaceM) {
 void ReferendStructsRouter::defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) {
   return getReferendStructsSource(interface->referend)->defineInterface(interface, interfaceMethodTypesL);
 }
-void ReferendStructsRouter::declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) {
-  return getReferendStructsSource(knownSizeArrayMT->referend)->declareKnownSizeArray(knownSizeArrayMT);
+void ReferendStructsRouter::declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT) {
+  return getReferendStructsSource(staticSizedArrayMT->referend)->declareStaticSizedArray(staticSizedArrayMT);
 }
-void ReferendStructsRouter::declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) {
-  return getReferendStructsSource(unknownSizeArrayMT->referend)->declareUnknownSizeArray(unknownSizeArrayMT);
+void ReferendStructsRouter::declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
+  return getReferendStructsSource(runtimeSizedArrayMT->referend)->declareRuntimeSizedArray(runtimeSizedArrayMT);
 }
-void ReferendStructsRouter::defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) {
-  return getReferendStructsSource(unknownSizeArrayMT->referend)->defineUnknownSizeArray(unknownSizeArrayMT, elementLT);
+void ReferendStructsRouter::defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) {
+  return getReferendStructsSource(runtimeSizedArrayMT->referend)->defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
 }
-void ReferendStructsRouter::defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) {
-  return getReferendStructsSource(knownSizeArrayMT->referend)->defineKnownSizeArray(knownSizeArrayMT, elementLT);
+void ReferendStructsRouter::defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) {
+  return getReferendStructsSource(staticSizedArrayMT->referend)->defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 
 ControlBlockPtrLE ReferendStructsRouter::getConcreteControlBlockPtr(
@@ -212,11 +212,11 @@ LLVMValueRef ReferendStructsRouter::getStrongRcFromControlBlockPtr(
 LLVMTypeRef WeakRefStructsRouter::getStructWeakRefStruct(StructReferend* structReferend) {
   return getWeakRefStructsSource(structReferend)->getStructWeakRefStruct(structReferend);
 }
-LLVMTypeRef WeakRefStructsRouter::getKnownSizeArrayWeakRefStruct(KnownSizeArrayT* ksaMT) {
-  return getWeakRefStructsSource(ksaMT)->getKnownSizeArrayWeakRefStruct(ksaMT);
+LLVMTypeRef WeakRefStructsRouter::getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) {
+  return getWeakRefStructsSource(ssaMT)->getStaticSizedArrayWeakRefStruct(ssaMT);
 }
-LLVMTypeRef WeakRefStructsRouter::getUnknownSizeArrayWeakRefStruct(UnknownSizeArrayT* usaMT) {
-  return getWeakRefStructsSource(usaMT)->getUnknownSizeArrayWeakRefStruct(usaMT);
+LLVMTypeRef WeakRefStructsRouter::getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) {
+  return getWeakRefStructsSource(rsaMT)->getRuntimeSizedArrayWeakRefStruct(rsaMT);
 }
 LLVMTypeRef WeakRefStructsRouter::getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) {
   return getWeakRefStructsSource(interfaceReferend)->getInterfaceWeakRefStruct(interfaceReferend);

@@ -108,7 +108,7 @@ static opt_arg_t args[] =
     OPT_ARGS_FINISH
 };
 
-static void usage()
+static void rsage()
 {
     printf("%s\n%s\n%s\n%s\n%s\n%s", // for complying with -Woverlength-strings
         "valec [OPTIONS] <source_file>\n"
@@ -180,7 +180,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
     opt_state_t s;
     int id;
     int ok = 1;
-    int print_usage = 0;
+    int print_rsage = 0;
     int i;
 
     // options->limit = PASS_ALL;
@@ -201,7 +201,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             return 0;
 
         case OPT_HELP:
-            usage();
+            rsage();
             return 0;
 
         case OPT_DEBUG: opt->release = 0; break;
@@ -303,7 +303,7 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
           break;
         }
 
-        default: usage(); return -1;
+        default: rsage(); return -1;
         }
     }
 
@@ -311,14 +311,14 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
         if (argv[i][0] == '-') {
             printf("Unrecognised option: %s\n", argv[i]);
             ok = 0;
-            print_usage = 1;
+            print_rsage = 1;
         }
     }
 
     if (!ok) {
         // errors_print(opt.check.errors);
-        if (print_usage)
-            usage();
+        if (print_rsage)
+            rsage();
         return -1;
     }
     return 1;

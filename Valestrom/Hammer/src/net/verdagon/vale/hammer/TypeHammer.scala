@@ -86,8 +86,8 @@ object TypeHammer {
       // to the Templar.
       case p @ PackT2(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
       case p @ TupleT2(_, underlyingStruct) => StructHammer.translateStructRef(hinputs, hamuts, underlyingStruct)
-      case a @ KnownSizeArrayT2(_, _) => translateKnownSizeArray(hinputs, hamuts, a)
-      case a @ UnknownSizeArrayT2(_) => translateUnknownSizeArray(hinputs, hamuts, a)
+      case a @ StaticSizedArrayT2(_, _) => translateStaticSizedArray(hinputs, hamuts, a)
+      case a @ RuntimeSizedArrayT2(_) => translateRuntimeSizedArray(hinputs, hamuts, a)
     }
   }
 
@@ -105,7 +105,7 @@ object TypeHammer {
         case (Share, OverloadSet(_, _, _)) => InlineH
         case (Share, PackT2(_, _)) => InlineH
         case (Share, TupleT2(_, _)) => InlineH
-        case (Share, StructRef2(FullName2(_, TupleName2(_)))) => InlineH
+        case (Share, StructRef2(FullName2(_, _, TupleName2(_)))) => InlineH
         case (Share, Void2()) => InlineH
         case (Share, Int2()) => InlineH
         case (Share, Bool2()) => InlineH
@@ -151,29 +151,29 @@ object TypeHammer {
     }
   }
 
-  def translateKnownSizeArray(
+  def translateStaticSizedArray(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      type2: KnownSizeArrayT2):
-  KnownSizeArrayTH = {
+      type2: StaticSizedArrayT2):
+  StaticSizedArrayTH = {
     val name = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val KnownSizeArrayT2(_, RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
+    val StaticSizedArrayT2(_, RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
     val mutability = Conversions.evaluateMutability(mutabilityT)
     val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = KnownSizeArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, variability, memberReferenceH))
-    hamuts.addKnownSizeArray(definition)
-    KnownSizeArrayTH(name)
+    val definition = StaticSizedArrayDefinitionTH(name, type2.size, RawArrayTH(mutability, variability, memberReferenceH))
+    hamuts.addStaticSizedArray(definition)
+    StaticSizedArrayTH(name)
   }
 
-  def translateUnknownSizeArray(hinputs: Hinputs, hamuts: HamutsBox, type2: UnknownSizeArrayT2): UnknownSizeArrayTH = {
+  def translateRuntimeSizedArray(hinputs: Hinputs, hamuts: HamutsBox, type2: RuntimeSizedArrayT2): RuntimeSizedArrayTH = {
     val nameH = NameHammer.translateFullName(hinputs, hamuts, type2.name)
-    val UnknownSizeArrayT2(RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
+    val RuntimeSizedArrayT2(RawArrayT2(memberType, mutabilityT, variabilityT)) = type2
     val memberReferenceH = TypeHammer.translateReference(hinputs, hamuts, memberType)
     val mutability = Conversions.evaluateMutability(mutabilityT)
     val variability = Conversions.evaluateVariability(variabilityT)
-    val definition = UnknownSizeArrayDefinitionTH(nameH, RawArrayTH(mutability, variability, memberReferenceH))
-    hamuts.addUnknownSizeArray(definition)
-    UnknownSizeArrayTH(nameH)
+    val definition = RuntimeSizedArrayDefinitionTH(nameH, RawArrayTH(mutability, variability, memberReferenceH))
+    hamuts.addRuntimeSizedArray(definition)
+    RuntimeSizedArrayTH(nameH)
   }
 }

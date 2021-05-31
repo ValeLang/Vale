@@ -49,8 +49,8 @@ class ArrayTemplar(
     val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
     val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _)).getOrElse(Final)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val ksaMT = KnownSizeArrayT2(size, RawArrayT2(prototype.returnType, mutability, variability))
-    val expr2 = StaticArrayFromCallable2(ksaMT, callableTE, prototype)
+    val ssaMT = getStaticSizedArrayKind(fate.snapshot, temputs, mutability, variability, size, prototype.returnType)
+    val expr2 = StaticArrayFromCallable2(ssaMT, callableTE, prototype)
     expr2
   }
 
@@ -70,8 +70,8 @@ class ArrayTemplar(
     val mutability = maybeMutabilityRune.map(getArrayMutability(templatas, _)).getOrElse(Mutable)
     val variability = maybeVariabilityRune.map(getArrayVariability(templatas, _)).getOrElse(Final)
     val prototype = overloadTemplar.getArrayGeneratorPrototype(temputs, fate, range, callableTE)
-    val usaMT = makeUnknownSizeArrayType(fate.snapshot, temputs, prototype.returnType, mutability, variability)
-    val expr2 = ConstructArray2(usaMT, sizeTE, callableTE, prototype)
+    val rsaMT = getRuntimeSizedArrayKind(fate.snapshot, temputs, prototype.returnType, mutability, variability)
+    val expr2 = ConstructArray2(rsaMT, sizeTE, callableTE, prototype)
     expr2
   }
 
@@ -108,58 +108,60 @@ class ArrayTemplar(
       }
     }
 
-    val arraySequenceType = makeArraySequenceType(fate.snapshot, temputs, mutability, variability, exprs2.size, memberType)
-    val ownership = if (arraySequenceType.array.mutability == Mutable) Own else Share
-    val permission = if (arraySequenceType.array.mutability == Mutable) Readwrite else Readonly
-    val finalExpr = StaticArrayFromValues2(exprs2, Coord(ownership, permission, arraySequenceType), arraySequenceType)
+    val staticSizedArrayType = getStaticSizedArrayKind(fate.snapshot, temputs, mutability, variability, exprs2.size, memberType)
+    val ownership = if (staticSizedArrayType.array.mutability == Mutable) Own else Share
+    val permission = if (staticSizedArrayType.array.mutability == Mutable) Readwrite else Readonly
+    val finalExpr = StaticArrayFromValues2(exprs2, Coord(ownership, permission, staticSizedArrayType), staticSizedArrayType)
     (finalExpr)
   }
 
-  def makeArraySequenceType(
+  def getStaticSizedArrayKind(
     env: IEnvironment,
     temputs: Temputs,
     mutability: Mutability,
     variability: Variability,
     size: Int,
     type2: Coord):
-  (KnownSizeArrayT2) = {
+  (StaticSizedArrayT2) = {
 //    val tupleMutability =
 //      StructTemplarCore.getCompoundTypeMutability(temputs, List(type2))
 //    val tupleMutability = Templar.getMutability(temputs, type2.referend)
     val rawArrayT2 = RawArrayT2(type2, mutability, variability)
 
-    temputs.getArraySequenceType(size, rawArrayT2) match {
-      case Some(arraySequenceT2) => (arraySequenceT2)
+    temputs.getStaticSizedArrayType(size, rawArrayT2) match {
+      case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val arraySeqType = KnownSizeArrayT2(size, rawArrayT2)
-        temputs.addArraySequence(arraySeqType)
-        val arraySeqOwnership = if (mutability == Mutable) Own else Share
-        val arraySeqPermission = if (mutability == Mutable) Readwrite else Readonly
-        val arraySequenceRefType2 = Coord(arraySeqOwnership, arraySeqPermission, arraySeqType)
-        val prototype = delegate.getArrayDestructor(env, temputs, arraySequenceRefType2)
-        (arraySeqType)
+        val staticSizedArrayType = StaticSizedArrayT2(size, rawArrayT2)
+        temputs.addStaticSizedArray(staticSizedArrayType)
+        val staticSizedArrayOwnership = if (mutability == Mutable) Own else Share
+        val staticSizedArrayPermission = if (mutability == Mutable) Readwrite else Readonly
+        val staticSizedArrayRefType2 = Coord(staticSizedArrayOwnership, staticSizedArrayPermission, staticSizedArrayType)
+        val prototype = delegate.getArrayDestructor(env, temputs, staticSizedArrayRefType2)
+        temputs.addDestructor(staticSizedArrayType, prototype)
+        (staticSizedArrayType)
       }
     }
   }
 
-  def makeUnknownSizeArrayType(env: IEnvironment, temputs: Temputs, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability):
-  (UnknownSizeArrayT2) = {
+  def getRuntimeSizedArrayKind(env: IEnvironment, temputs: Temputs, type2: Coord, arrayMutability: Mutability, arrayVariability: Variability):
+  (RuntimeSizedArrayT2) = {
     val rawArrayT2 = RawArrayT2(type2, arrayMutability, arrayVariability)
 
-    temputs.getUnknownSizeArray(rawArrayT2) match {
-      case Some(arraySequenceT2) => (arraySequenceT2)
+    temputs.getRuntimeSizedArray(rawArrayT2) match {
+      case Some(staticSizedArrayT2) => (staticSizedArrayT2)
       case None => {
-        val runtimeArrayType = UnknownSizeArrayT2(rawArrayT2)
-        temputs.addUnknownSizeArray(runtimeArrayType)
-        val runtimeArrayRefType2 =
+        val runtimeSizedArrayType = RuntimeSizedArrayT2(rawArrayT2)
+        temputs.addRuntimeSizedArray(runtimeSizedArrayType)
+        val runtimeSizedArrayRefType2 =
           Coord(
             if (arrayMutability == Mutable) Own else Share,
             if (arrayMutability == Mutable) Readwrite else Readonly,
-            runtimeArrayType)
+            runtimeSizedArrayType)
         val prototype =
           delegate.getArrayDestructor(
-            env, temputs, runtimeArrayRefType2)
-        (runtimeArrayType)
+            env, temputs, runtimeSizedArrayRefType2)
+        temputs.addDestructor(runtimeSizedArrayType, prototype)
+        (runtimeSizedArrayType)
       }
     }
   }
@@ -178,7 +180,7 @@ class ArrayTemplar(
     m
   }
 
-  def lookupInKnownSizeArray(range: RangeS, containerExpr2: ReferenceExpression2, indexExpr2: ReferenceExpression2, at: KnownSizeArrayT2) = {
+  def lookupInStaticSizedArray(range: RangeS, containerExpr2: ReferenceExpression2, indexExpr2: ReferenceExpression2, at: StaticSizedArrayT2) = {
     val RawArrayT2(memberType, mutability, variability) = at.array
     val (effectiveVariability, targetPermission) =
       Templar.factorVariabilityAndPermission(
@@ -192,15 +194,15 @@ class ArrayTemplar(
     range: RangeS,
     containerExpr2: ReferenceExpression2,
     indexExpr2: ReferenceExpression2,
-    usa: UnknownSizeArrayT2
-  ): UnknownSizeArrayLookup2 = {
-    val RawArrayT2(memberType, mutability, variability) = usa.array
+    rsa: RuntimeSizedArrayT2
+  ): RuntimeSizedArrayLookup2 = {
+    val RawArrayT2(memberType, mutability, variability) = rsa.array
     val (effectiveVariability, targetPermission) =
       Templar.factorVariabilityAndPermission(
         containerExpr2.resultRegister.reference.permission,
         variability,
         memberType.permission)
-    UnknownSizeArrayLookup2(range, containerExpr2, usa, indexExpr2, targetPermission, effectiveVariability)
+    RuntimeSizedArrayLookup2(range, containerExpr2, rsa, indexExpr2, targetPermission, effectiveVariability)
   }
 
 }

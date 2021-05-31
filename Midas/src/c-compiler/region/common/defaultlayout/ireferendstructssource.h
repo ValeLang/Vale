@@ -7,8 +7,8 @@ public:
   virtual ControlBlock* getControlBlock(Referend* referend) = 0;
   virtual LLVMTypeRef getInnerStruct(StructReferend* structReferend) = 0;
   virtual LLVMTypeRef getWrapperStruct(StructReferend* structReferend) = 0;
-  virtual LLVMTypeRef getKnownSizeArrayWrapperStruct(KnownSizeArrayT* ksaMT) = 0;
-  virtual LLVMTypeRef getUnknownSizeArrayWrapperStruct(UnknownSizeArrayT* usaMT) = 0;
+  virtual LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) = 0;
+  virtual LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) = 0;
   virtual LLVMTypeRef getStringWrapperStruct() = 0;
   virtual LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) = 0;
   virtual LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) = 0;
@@ -21,10 +21,10 @@ public:
       std::vector<LLVMValueRef> functions) = 0;
   virtual void declareInterface(InterfaceDefinition* interface) = 0;
   virtual void defineInterface(InterfaceDefinition* interface, std::vector<LLVMTypeRef> interfaceMethodTypesL) = 0;
-  virtual void declareKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT) = 0;
-  virtual void declareUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT) = 0;
-  virtual void defineUnknownSizeArray(UnknownSizeArrayDefinitionT* unknownSizeArrayMT, LLVMTypeRef elementLT) = 0;
-  virtual void defineKnownSizeArray(KnownSizeArrayDefinitionT* knownSizeArrayMT, LLVMTypeRef elementLT) = 0;
+  virtual void declareStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT) = 0;
+  virtual void declareRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) = 0;
+  virtual void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) = 0;
+  virtual void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) = 0;
 
   virtual ControlBlockPtrLE getConcreteControlBlockPtr(
       AreaAndFileAndLine from,

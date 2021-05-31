@@ -8,7 +8,7 @@ public:
   // never get there.
   // We arbitrarily use a zero-len array of i57, because it's zero sized and very
   // unlikely to be used anywhere else.
-  // See usages of this int to see where we make those zero-len arrays of these.
+  // See rsages of this int to see where we make those zero-len arrays of these.
   static constexpr int NEVER_INT_BITS = 57;
 
 

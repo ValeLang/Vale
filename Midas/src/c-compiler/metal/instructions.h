@@ -285,19 +285,19 @@ class NewArrayFromValues : public Expression {
 public:
   std::vector<Expression*> sourceExprs;
   Reference* arrayRefType;
-  KnownSizeArrayT* arrayReferend;
+  StaticSizedArrayT* arrayReferend;
 
   NewArrayFromValues(
       std::vector<Expression*> sourceExprs_,
       Reference* arrayRefType_,
-      KnownSizeArrayT* arrayReferend_) :
+      StaticSizedArrayT* arrayReferend_) :
       sourceExprs(sourceExprs_),
       arrayRefType(arrayRefType_),
       arrayReferend(arrayReferend_) {}
 };
 
 
-class KnownSizeArrayStore : public Expression {
+class StaticSizedArrayStore : public Expression {
 public:
   Expression* arrayExpr;
   Expression* indexExpr;
@@ -305,11 +305,11 @@ public:
 };
 
 
-class UnknownSizeArrayStore : public Expression {
+class RuntimeSizedArrayStore : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  UnknownSizeArrayT* arrayReferend;
+  RuntimeSizedArrayT* arrayReferend;
   bool arrayKnownLive;
   Expression* indexExpr;
   Reference* indexType;
@@ -318,10 +318,10 @@ public:
   Reference* sourceType;
   Referend* sourceReferend;
 
-  UnknownSizeArrayStore(
+  RuntimeSizedArrayStore(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      UnknownSizeArrayT* arrayReferend_,
+      RuntimeSizedArrayT* arrayReferend_,
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* indexType_,
@@ -342,11 +342,11 @@ public:
 };
 
 
-class UnknownSizeArrayLoad : public Expression {
+class RuntimeSizedArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  UnknownSizeArrayT* arrayReferend;
+  RuntimeSizedArrayT* arrayReferend;
   bool arrayKnownLive;
   Expression* indexExpr;
   Reference* indexType;
@@ -355,10 +355,10 @@ public:
   Ownership targetOwnership;
   Reference* arrayElementType;
 
-  UnknownSizeArrayLoad(
+  RuntimeSizedArrayLoad(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      UnknownSizeArrayT* arrayReferend_,
+      RuntimeSizedArrayT* arrayReferend_,
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* indexType_,
@@ -379,11 +379,11 @@ public:
 };
 
 
-class KnownSizeArrayLoad : public Expression {
+class StaticSizedArrayLoad : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  KnownSizeArrayT* arrayReferend;
+  StaticSizedArrayT* arrayReferend;
   bool arrayKnownLive;
   Expression* indexExpr;
   Reference* resultType;
@@ -391,10 +391,10 @@ public:
   Reference* arrayElementType;
   int arraySize;
 
-  KnownSizeArrayLoad(
+  StaticSizedArrayLoad(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      KnownSizeArrayT* arrayReferend_,
+      StaticSizedArrayT* arrayReferend_,
       bool arrayKnownLive_,
       Expression* indexExpr_,
       Reference* resultType_,
@@ -526,7 +526,7 @@ public:
 };
 
 
-class ConstructUnknownSizeArray : public Expression {
+class ConstructRuntimeSizedArray : public Expression {
 public:
   Expression* sizeExpr;
   Reference* sizeType;
@@ -539,7 +539,7 @@ public:
   Reference* arrayRefType;
   Reference* elementType;
 
-  ConstructUnknownSizeArray(
+  ConstructRuntimeSizedArray(
       Expression* sizeExpr_,
       Reference* sizeType_,
       Referend* sizeReferend_,
@@ -589,11 +589,11 @@ public:
       elementType(elementType_) {}
 };
 
-class DestroyKnownSizeArrayIntoFunction : public Expression {
+class DestroyStaticSizedArrayIntoFunction : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  KnownSizeArrayT* arrayReferend;
+  StaticSizedArrayT* arrayReferend;
   Expression* consumerExpr;
   Reference* consumerType;
   Prototype* consumerMethod;
@@ -601,10 +601,10 @@ public:
   Reference* elementType;
   int arraySize;
 
-  DestroyKnownSizeArrayIntoFunction(
+  DestroyStaticSizedArrayIntoFunction(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      KnownSizeArrayT* arrayReferend_,
+      StaticSizedArrayT* arrayReferend_,
       Expression* consumerExpr_,
       Reference* consumerType_,
       Prototype* consumerMethod_,
@@ -622,27 +622,27 @@ public:
     arraySize(arraySize_) {}
 };
 
-class DestroyKnownSizeArrayIntoLocals : public Expression {
+class DestroyStaticSizedArrayIntoLocals : public Expression {
 public:
   Expression* arrayExpr;
   Expression* consumerExpr;
 };
 
-class DestroyUnknownSizeArray : public Expression {
+class DestroyRuntimeSizedArray : public Expression {
 public:
   Expression* arrayExpr;
   Reference* arrayType;
-  UnknownSizeArrayT* arrayReferend;
+  RuntimeSizedArrayT* arrayReferend;
   Expression* consumerExpr;
   Reference* consumerType;
   InterfaceReferend* consumerReferend;
   Prototype* consumerMethod;
   bool consumerKnownLive;
 
-  DestroyUnknownSizeArray(
+  DestroyRuntimeSizedArray(
       Expression* arrayExpr_,
       Reference* arrayType_,
-      UnknownSizeArrayT* arrayReferend_,
+      RuntimeSizedArrayT* arrayReferend_,
       Expression* consumerExpr_,
       Reference* consumerType_,
       InterfaceReferend* consumerReferend_,

@@ -34,7 +34,7 @@ class VivemTests extends FunSuite with Matchers {
         FullNameH(
           "__addIntInt",
           0,
-          List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
+          List(VonStr(""),VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
         List(ReferenceH(ShareH,InlineH,ReadonlyH,IntH()), ReferenceH(ShareH,InlineH,ReadonlyH,IntH())),
         ReferenceH(ShareH,InlineH,ReadonlyH,IntH()))
     val main =

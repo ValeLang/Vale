@@ -23,12 +23,12 @@ fn HashSet<K, H, E>(hasher H, equator E, capacity int) HashSet<K, H, E> {
 }
 
 fn HashSet<K, H, E, M, N>(
-    valuesKSA &[<M> N * K],
+    valuesSSA &[<M> N * K],
     hasher H,
     equator E)
 HashSet<K, H, E> {
   this = HashSet<K, H, E>(hasher, equator, 0);
-  each (valuesKSA) (v){
+  each (valuesSSA) (v){
     if (not this.has(v)) {
       this!.add(v);
     }

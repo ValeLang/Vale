@@ -9,8 +9,8 @@ LinearStructs::LinearStructs(GlobalState* globalState_)
   : globalState(globalState_),
     interfaceRefStructsL(0, globalState->addressNumberer->makeHasher<InterfaceReferend*>()),
     structStructsL(0, globalState->addressNumberer->makeHasher<StructReferend*>()),
-    knownSizeArrayStructsL(0, globalState->addressNumberer->makeHasher<KnownSizeArrayT*>()),
-    unknownSizeArrayStructsL(0, globalState->addressNumberer->makeHasher<UnknownSizeArrayT*>()),
+    staticSizedArrayStructsL(0, globalState->addressNumberer->makeHasher<StaticSizedArrayT*>()),
+    runtimeSizedArrayStructsL(0, globalState->addressNumberer->makeHasher<RuntimeSizedArrayT*>()),
     orderedStructsByInterface(0, globalState_->addressNumberer->makeHasher<InterfaceReferend*>()) {
 
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -33,15 +33,15 @@ LLVMTypeRef LinearStructs::getStructStruct(StructReferend* structReferend) {
   return structIter->second;
 }
 
-LLVMTypeRef LinearStructs::getKnownSizeArrayStruct(KnownSizeArrayT* ksaMT) {
-  auto structIter = knownSizeArrayStructsL.find(ksaMT);
-  assert(structIter != knownSizeArrayStructsL.end());
+LLVMTypeRef LinearStructs::getStaticSizedArrayStruct(StaticSizedArrayT* ssaMT) {
+  auto structIter = staticSizedArrayStructsL.find(ssaMT);
+  assert(structIter != staticSizedArrayStructsL.end());
   return structIter->second;
 }
 
-LLVMTypeRef LinearStructs::getUnknownSizeArrayStruct(UnknownSizeArrayT* usaMT) {
-  auto structIter = unknownSizeArrayStructsL.find(usaMT);
-  assert(structIter != unknownSizeArrayStructsL.end());
+LLVMTypeRef LinearStructs::getRuntimeSizedArrayStruct(RuntimeSizedArrayT* rsaMT) {
+  auto structIter = runtimeSizedArrayStructsL.find(rsaMT);
+  assert(structIter != runtimeSizedArrayStructsL.end());
   return structIter->second;
 }
 
@@ -91,16 +91,16 @@ void LinearStructs::declareInterface(InterfaceReferend* interface) {
   // No need to make interface table structs, there are no itables for Linear.
 }
 
-void LinearStructs::declareKnownSizeArray(
-    KnownSizeArrayT* knownSizeArrayMT) {
-  auto countedStruct = LLVMStructCreateNamed(globalState->context, knownSizeArrayMT->name->name.c_str());
-  knownSizeArrayStructsL.emplace(knownSizeArrayMT, countedStruct);
+void LinearStructs::declareStaticSizedArray(
+    StaticSizedArrayT* staticSizedArrayMT) {
+  auto countedStruct = LLVMStructCreateNamed(globalState->context, staticSizedArrayMT->name->name.c_str());
+  staticSizedArrayStructsL.emplace(staticSizedArrayMT, countedStruct);
 }
 
-void LinearStructs::declareUnknownSizeArray(
-    UnknownSizeArrayT* unknownSizeArrayMT) {
-  auto countedStruct = LLVMStructCreateNamed(globalState->context, (unknownSizeArrayMT->name->name + "rc").c_str());
-  unknownSizeArrayStructsL.emplace(unknownSizeArrayMT, countedStruct);
+void LinearStructs::declareRuntimeSizedArray(
+    RuntimeSizedArrayT* runtimeSizedArrayMT) {
+  auto countedStruct = LLVMStructCreateNamed(globalState->context, (runtimeSizedArrayMT->name->name + "rc").c_str());
+  runtimeSizedArrayStructsL.emplace(runtimeSizedArrayMT, countedStruct);
 }
 
 void LinearStructs::defineStruct(
@@ -119,26 +119,26 @@ void LinearStructs::defineEdge(
     std::vector<LLVMValueRef> functions) {
 }
 
-void LinearStructs::defineUnknownSizeArray(
-    UnknownSizeArrayT* unknownSizeArrayMT,
+void LinearStructs::defineRuntimeSizedArray(
+    RuntimeSizedArrayT* runtimeSizedArrayMT,
     LLVMTypeRef elementLT) {
-  auto unknownSizeArrayStruct = getUnknownSizeArrayStruct(unknownSizeArrayMT);
+  auto runtimeSizedArrayStruct = getRuntimeSizedArrayStruct(runtimeSizedArrayMT);
   std::vector<LLVMTypeRef> elementsL;
   elementsL.push_back(LLVMInt64TypeInContext(globalState->context));
   elementsL.push_back(LLVMArrayType(elementLT, 0));
-  LLVMStructSetBody(unknownSizeArrayStruct, elementsL.data(), elementsL.size(), false);
+  LLVMStructSetBody(runtimeSizedArrayStruct, elementsL.data(), elementsL.size(), false);
 }
 
-void LinearStructs::defineKnownSizeArray(
-    KnownSizeArrayT* knownSizeArrayMT,
+void LinearStructs::defineStaticSizedArray(
+    StaticSizedArrayT* staticSizedArrayMT,
     int size,
     LLVMTypeRef elementLT) {
-  auto knownSizeArrayStruct = getKnownSizeArrayStruct(knownSizeArrayMT);
+  auto staticSizedArrayStruct = getStaticSizedArrayStruct(staticSizedArrayMT);
   auto innerArrayLT = LLVMArrayType(elementLT, size);
 
   std::vector<LLVMTypeRef> elementsL;
   elementsL.push_back(innerArrayLT);
-  LLVMStructSetBody(knownSizeArrayStruct, elementsL.data(), elementsL.size(), false);
+  LLVMStructSetBody(staticSizedArrayStruct, elementsL.data(), elementsL.size(), false);
 }
 
 
@@ -174,14 +174,14 @@ LLVMValueRef LinearStructs::getStringBytesPtr(
   return firstCharPtrLE;
 }
 
-LLVMValueRef LinearStructs::getUnknownSizeArrayElementsPtr(
+LLVMValueRef LinearStructs::getRuntimeSizedArrayElementsPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
   return LLVMBuildStructGEP(builder, ptrLE, 1, "elementsPtr");
 }
 
-LLVMValueRef LinearStructs::getKnownSizeArrayElementsPtr(
+LLVMValueRef LinearStructs::getStaticSizedArrayElementsPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {

@@ -264,36 +264,36 @@ WeakFatPtrLE LgtWeaks::assembleStructWeakRef(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
 
-WeakFatPtrLE LgtWeaks::assembleKnownSizeArrayWeakRef(
+WeakFatPtrLE LgtWeaks::assembleStaticSizedArrayWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceKSAMT,
-    KnownSizeArrayT* knownSizeArrayMT,
-    Reference* targetKSAWeakRefMT,
+    Reference* sourceSSAMT,
+    StaticSizedArrayT* staticSizedArrayMT,
+    Reference* targetSSAWeakRefMT,
     WrapperPtrLE objPtrLE) {
   // impl
   assert(false);
   exit(1);
 }
 
-WeakFatPtrLE LgtWeaks::assembleUnknownSizeArrayWeakRef(
+WeakFatPtrLE LgtWeaks::assembleRuntimeSizedArrayWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceType,
-    UnknownSizeArrayT* unknownSizeArrayMT,
-    Reference* targetUSAWeakRefMT,
+    RuntimeSizedArrayT* runtimeSizedArrayMT,
+    Reference* targetRSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   auto controlBlockPtrLE =
       referendStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, sourceType, sourceRefLE);
   auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType, controlBlockPtrLE);
   auto targetGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, unknownSizeArrayMT, lgtiLE, targetGenLE);
+  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, runtimeSizedArrayMT, lgtiLE, targetGenLE);
 
   auto weakRefStructLT =
-      weakRefStructsSource->getUnknownSizeArrayWeakRefStruct(unknownSizeArrayMT);
+      weakRefStructsSource->getRuntimeSizedArrayWeakRefStruct(runtimeSizedArrayMT);
   return fatWeaks_.assembleWeakFatPtr(
-      functionState, builder, targetUSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
+      functionState, builder, targetRSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
 
 LLVMValueRef LgtWeaks::lockLgtiFatPtr(
@@ -579,19 +579,19 @@ Ref LgtWeaks::assembleWeakRef(
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto knownSizeArray = dynamic_cast<KnownSizeArrayT*>(sourceType->referend)) {
+  } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->referend)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
-        assembleKnownSizeArrayWeakRef(
-            functionState, builder, sourceType, knownSizeArray, targetType, sourceWrapperPtrLE);
+        assembleStaticSizedArrayWeakRef(
+            functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto unknownSizeArray = dynamic_cast<UnknownSizeArrayT*>(sourceType->referend)) {
+  } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->referend)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
     auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
-        assembleUnknownSizeArrayWeakRef(
-            functionState, builder, sourceType, unknownSizeArray, targetType, sourceWrapperPtrLE);
+        assembleRuntimeSizedArrayWeakRef(
+            functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else assert(false);
 }

@@ -3,7 +3,7 @@ package net.verdagon.vale.hammer
 import net.verdagon.vale.hammer.NameHammer.translateFileCoordinate
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{vassert, vfail, vimpl, metal => m}
+import net.verdagon.vale.{PackageCoordinate, vassert, vfail, vimpl, metal => m}
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar._
@@ -12,19 +12,36 @@ import net.verdagon.von._
 
 object VonHammer {
   def vonifyProgram(program: ProgramH): IVonData = {
-    val ProgramH(interfaces, structs, externs, functions, staticSizedArrays, runtimeSizedArrays, immDestructorsByKind, moduleNameToExportedNameToExportee, moduleNameToExternedNameToExtern, regions) = program
-
-    val fullNameToExportedNames =
-      moduleNameToExportedNameToExportee.flatMap({ case (moduleName, exportedNameToExportee) =>
-        exportedNameToExportee.map({ case (exportedName, (packageCoord, fullName)) =>
-          (moduleName, exportedName, packageCoord, fullName)
-        })
-      }).groupBy(_._4).mapValues(_.map(_._2).toList)
+    val ProgramH(packages) = program
 
     VonObject(
       "Program",
       None,
       Vector(
+        VonMember(
+          "packages",
+          VonArray(
+            None,
+            packages.flatMap({ case (packageCoord, paackage) => vonifyPackage(packageCoord, paackage) }).toVector))))
+  }
+
+  def vonifyPackage(packageCoord: PackageCoordinate, paackage: PackageH): IVonData = {
+    val PackageH(interfaces, structs, externs, functions, staticSizedArrays, runtimeSizedArrays, immDestructorsByKind, exportNameToFullName, externNameToFullName) = paackage
+
+//    val exports =
+//      exportNameToFullName.map({ case (moduleName, exportNameToExportee) =>
+//        exportNameToExportee.map({ case (exportName, (packageCoord, fullName)) =>
+//          (moduleName, (exportName, packageCoord, fullName))
+//        })
+//      })
+//
+//    expo
+
+    VonObject(
+      "Package",
+      None,
+      Vector(
+        VonMember("name", NameHammer.translatePackageCoordinate(packageCoord)),
         VonMember("interfaces", VonArray(None, interfaces.map(vonifyInterface).toVector)),
         VonMember("structs", VonArray(None, structs.map(vonfiyStruct).toVector)),
         VonMember("externFunctions", VonArray(None, externs.map(vonifyPrototype).toVector)),
@@ -48,84 +65,29 @@ object VonHammer {
                   VonMember("destructor", vonifyPrototype(destructor))))
             }))),
         VonMember(
-          "moduleNameToExportedNameToExportee",
+          "exportNameToFullName",
           VonArray(
             None,
-            moduleNameToExportedNameToExportee.toVector.map({ case (moduleName, exportedNameToExportee) =>
+            exportNameToFullName.toVector.map({ case (exportName, fullName) =>
               VonObject(
                 "Entry",
                 None,
                 Vector(
-                  VonMember("moduleName", VonStr(moduleName)),
-                  VonMember(
-                    "exportedNameToExportee",
-                    VonArray(
-                      None,
-                      exportedNameToExportee.toVector.map({ case (exportedName, (packageCoord, fullName)) =>
-                        VonObject(
-                          "Entry",
-                          None,
-                          Vector(
-                            VonMember("exportedName", VonStr(exportedName)),
-                            VonMember("module", VonStr(moduleName)),
-                            VonMember(
-                              "packageSteps",
-                              VonArray(
-                                None,
-                                packageCoord.packages.map(VonStr).toVector)),
-                            VonMember("fullName", VonStr(fullName.toReadableString))))
-                      })))))
+                  VonMember("exportName", VonStr(exportName)),
+                  VonMember("fullName", VonStr(fullName.toReadableString))))
             }))),
         VonMember(
-          "fullNameToExportedNames",
+          "externNameToExtern",
           VonArray(
             None,
-            fullNameToExportedNames.toVector.map({ case (fullName, exportedNames) =>
+            externNameToFullName.toVector.map({ case (externName, fullName) =>
               VonObject(
                 "Entry",
                 None,
                 Vector(
-                  VonMember("fullName", VonStr(fullName.toReadableString)),
-                  VonMember(
-                    "exportedNames",
-                    VonArray(
-                      None,
-                      exportedNames.map(VonStr).toVector))))
-            }))),
-        VonMember(
-          "moduleNameToExternedNameToExtern",
-          VonArray(
-            None,
-            moduleNameToExternedNameToExtern.toVector.map({ case (moduleName, externedNameToExtern) =>
-              VonObject(
-                "Entry",
-                None,
-                Vector(
-                  VonMember("moduleName", VonStr(moduleName)),
-                  VonMember(
-                    "externedNameToExtern",
-                    VonArray(
-                      None,
-                      externedNameToExtern.toVector.map({ case (externedName, (packageCoord, fullName)) =>
-                        VonObject(
-                          "Entry",
-                          None,
-                          Vector(
-                            VonMember("externedName", VonStr(externedName)),
-                            VonMember("module", VonStr(moduleName)),
-                            VonMember(
-                              "packageSteps",
-                              VonArray(
-                                None,
-                                packageCoord.packages.map(VonStr).toVector)),
-                            VonMember("fullName", VonStr(fullName.toReadableString))))
-                      })))))
-            }))),
-        VonMember(
-          "regions",
-          VonArray(
-            None,
-            regions.map(vonifyRegion).toVector))))
+                  VonMember("externName", VonStr(externName)),
+                  VonMember("fullName", VonStr(fullName.toReadableString))))
+            })))))
   }
 
   def vonifyRegion(region: RegionH): IVonData = {
@@ -906,7 +868,7 @@ object VonHammer {
   }
 
   def vonifyTemplarName(hinputs: Hinputs, hamuts: HamutsBox, fullName2: FullName2[IName2]): VonStr = {
-    val str = FullNameH.namePartsToString(fullName2.steps.map(step => translateName(hinputs, hamuts, step)))
+    val str = FullNameH.namePartsToString(fullName2.packageCoord, fullName2.steps.map(step => translateName(hinputs, hamuts, step)))
     VonStr(str)
   }
 

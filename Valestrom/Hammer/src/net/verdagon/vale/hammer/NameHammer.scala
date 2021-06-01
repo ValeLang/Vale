@@ -80,18 +80,22 @@ object NameHammer {
     hamuts: HamutsBox,
     fullName2: FullName2[IName2]
   ): FullNameH = {
-    val FullName2(PackageCoordinate(project, packageSteps), _, _) = fullName2
+    val FullName2(packageCoord @ PackageCoordinate(project, packageSteps), _, _) = fullName2
     val newNameParts =
-      (VonStr(project) :: packageSteps.map(VonStr)) ++
+//      (VonStr(project) :: packageSteps.map(VonStr)) ++
       fullName2.steps.map(step => VonHammer.translateName(hinputs, hamuts, step))
-    val readableName = getReadableName(fullName2.last)
+    val readableName =
+//      (if (packageCoord.module != "") packageCoord.module + "." else "") +
+//      packageSteps.map(_ + ".") +
+      getReadableName(fullName2.last)
+
     val id =
       if (fullName2.last.isInstanceOf[ExternFunctionName2]) {
         -1
       } else {
-        hamuts.getNameId(readableName, newNameParts)
+        hamuts.getNameId(readableName, packageCoord, newNameParts)
       }
-    FullNameH(readableName, id, newNameParts)
+    FullNameH(readableName, id, packageCoord, newNameParts)
   }
 
   // Adds a step to the name.
@@ -101,8 +105,8 @@ object NameHammer {
     s: String):
   FullNameH = {
     val newNameParts = fullName.parts :+ VonStr(s)
-    val id = hamuts.getNameId(s, newNameParts)
-    FullNameH(s, id, newNameParts)
+    val id = hamuts.getNameId(s, fullName.packageCoordinate, newNameParts)
+    FullNameH(s, id, fullName.packageCoordinate, newNameParts)
   }
 
   def translateCodeLocation(location: CodeLocation2): VonObject = {
@@ -118,11 +122,21 @@ object NameHammer {
   def translateFileCoordinate(coord: FileCoordinate): VonObject = {
     val FileCoordinate(module, paackage, filename) = coord
     VonObject(
-      "CodeLocation",
+      "FileCoordinate",
       None,
       Vector(
         VonMember("module", VonStr(module)),
         VonMember("paackage", VonArray(None, paackage.map(VonStr).toVector)),
         VonMember("filename", VonStr(filename))))
+  }
+
+  def translatePackageCoordinate(coord: PackageCoordinate): VonObject = {
+    val PackageCoordinate(module, paackage) = coord
+    VonObject(
+      "PackageCoordinate",
+      None,
+      Vector(
+        VonMember("module", VonStr(module)),
+        VonMember("paackage", VonArray(None, paackage.map(VonStr).toVector))))
   }
 }

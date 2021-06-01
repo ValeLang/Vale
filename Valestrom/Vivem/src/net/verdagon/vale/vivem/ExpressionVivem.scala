@@ -1,7 +1,7 @@
 package net.verdagon.vale.vivem
 
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{Err, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat, metal => m}
+import net.verdagon.vale.{Err, PackageCoordinate, Result, vassert, vassertSome, vcurious, vfail, vimpl, vwat, metal => m}
 
 import scala.collection.mutable
 
@@ -16,7 +16,7 @@ object ExpressionVivem {
 
   def makeVoid(programH: ProgramH, heap: Heap, callId: CallId) = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
-    val emptyPackStructDefH = vassertSome(programH.structs.find(_.getRef == emptyPackStructRefH))
+    val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
     val void = heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List())
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), void)
     void
@@ -290,7 +290,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (lock call)")
 
-          val function = programH.functions.find(_.prototype == okConstructor).get
+          val function = programH.lookupFunction(okConstructor)
           // The receiver should increment with their own arg referrers.
           heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, sourceRef.ownership), sourceRef)
 
@@ -306,7 +306,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (lock call)")
 
-          val function = programH.functions.find(_.prototype == errConstructor).get
+          val function = programH.lookupFunction(errConstructor)
           // The receiver should increment with their own arg referrers.
           heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, sourceRef.ownership), sourceRef)
 
@@ -335,7 +335,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (lock call)")
 
-          val function = programH.functions.find(_.prototype == someConstructor).get
+          val function = programH.lookupFunction(someConstructor)
           // The receiver should increment with their own arg referrers.
           heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, weakRef.ownership), weakRef)
 
@@ -353,7 +353,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (lock call)")
 
-          val function = programH.functions.find(_.prototype == noneConstructor).get
+          val function = programH.lookupFunction(noneConstructor)
 
           val (calleeCallId, retuurn) =
             FunctionVivem.executeFunction(
@@ -502,7 +502,7 @@ object ExpressionVivem {
         heap.removeLocal(varAddress, local.typeH)
         NodeContinue(reference)
       }
-      case CallH(functionRef, argsExprs) => {
+      case CallH(prototypeH, argsExprs) => {
         val argRefs =
           argsExprs.zipWithIndex.map({ case (argExpr, i) =>
             executeNode(programH, stdin, stdout, heap, expressionId.addStep(i), argExpr) match {
@@ -515,15 +515,15 @@ object ExpressionVivem {
             }
           })
 
-        if (programH.functions.find(_.prototype == functionRef).get.isExtern) {
-          val externFunction = FunctionVivem.getExternFunction(programH, functionRef)
+        if (programH.lookupFunction(prototypeH).isExtern) {
+          val externFunction = FunctionVivem.getExternFunction(programH, prototypeH)
 
           val resultRef =
             externFunction(
               new AdapterForExterns(
                 programH,
                 heap,
-                CallId(expressionId.callId.callDepth + 1, functionRef),
+                CallId(expressionId.callId.callDepth + 1, prototypeH),
                 stdin,
                 stdout),
               argRefs.toVector)
@@ -539,8 +539,7 @@ object ExpressionVivem {
           heap.vivemDout.println()
           heap.vivemDout.println("  " * expressionId.callId.callDepth + "Making new stack frame (call)")
 
-          val function =
-            programH.functions.find(_.prototype == functionRef).get
+          val function = programH.lookupFunction(prototypeH)
 
           // The receiver should increment with their own arg referrers.
           argRefs.foreach(r => heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, r.ownership), r))
@@ -582,7 +581,7 @@ object ExpressionVivem {
         NodeContinue(returnRef)
       }
       case NewStructH(argsExprs, targetMemberNames, structRefH) => {
-        val structDefH = vassertSome(programH.structs.find(_.getRef == structRefH.kind))
+        val structDefH = programH.lookupStruct(structRefH.kind)
 
         val memberReferences =
           argsExprs.zipWithIndex.map({ case (argExpr, i) =>
@@ -619,7 +618,7 @@ object ExpressionVivem {
 
         elementRefs.foreach(r => heap.decrementReferenceRefCount(RegisterToObjectReferrer(callId, r.ownership), r))
 
-        val ssaDef = programH.staticSizedArrays.find(_.name == arrayRefType.kind.name).get
+        val ssaDef = programH.lookupStaticSizedArray(arrayRefType.kind)
         val (arrayReference, arrayInstance) =
           heap.addArray(ssaDef, arrayRefType, elementRefs)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
@@ -767,7 +766,7 @@ object ExpressionVivem {
           }
         val sizeReferend = heap.dereference(sizeReference)
         val IntV(size) = sizeReferend;
-        val rsaDef = programH.runtimeSizedArrays.find(_.name == arrayRefType.kind.name).get
+        val rsaDef = programH.lookupRuntimeSizedArray(arrayRefType.kind)
         val (arrayReference, arrayInstance) =
           heap.addUninitializedArray(rsaDef, arrayRefType, size)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
@@ -796,7 +795,7 @@ object ExpressionVivem {
       }
 
       case cac @ StaticArrayFromCallableH(generatorExpr, generatorPrototype, _, arrayRefType) => {
-        val ssaDef = programH.staticSizedArrays.find(_.name == arrayRefType.kind.name).get
+        val ssaDef = programH.lookupStaticSizedArray(arrayRefType.kind)
 
         val generatorReference =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), generatorExpr) match {
@@ -848,7 +847,7 @@ object ExpressionVivem {
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         val consumerInterfaceDefH =
-          programH.interfaces.find(_.getRef == consumerInterfaceExpr.resultType.kind).get
+          programH.lookupInterface(consumerInterfaceExpr.resultType.kind)
 
         (0 until arraySize).foreach(ascendingI => {
           val i = arraySize - ascendingI - 1
@@ -921,8 +920,7 @@ object ExpressionVivem {
         heap.ensureRefCount(arrayReference, None, None, 0)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
-        val consumerInterfaceDefH =
-          programH.interfaces.find(_.getRef == consumerInterfaceExpr.resultType.kind).get
+        val consumerInterfaceDefH = programH.lookupInterface(consumerInterfaceExpr.resultType.kind)
 
         val size =
           heap.dereference(arrayReference) match {
@@ -991,7 +989,7 @@ object ExpressionVivem {
     size: Int,
     receiver: (Int, ReferenceV) => Unit):
   Unit = {
-    val generatorFunction = vassertSome(programH.functions.find(_.prototype == generatorPrototype))
+    val generatorFunction = programH.lookupFunction(generatorPrototype)
 
     (0 until size).foreach(i => {
       heap.vivemDout.println()
@@ -1051,7 +1049,7 @@ object ExpressionVivem {
     val structReference = ReferenceV(actualStruct, actualStruct, actualOwnership, actualLocation, actualPermission, allocNum)
 
     val prototypeH = edge.structPrototypesByInterfaceMethod.values.toList(indexInEdge)
-    val functionH = programH.functions.find(_.prototype == prototypeH).get;
+    val functionH = programH.lookupFunction(prototypeH)
 
     val actualPrototype = functionH.prototype
     val expectedPrototype = functionType
@@ -1115,8 +1113,8 @@ object ExpressionVivem {
             case ir @ InterfaceRefH(_) => {
               heap.vivemDout.println()
               heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard icall)")
-              val prototypeH = programH.immDestructorsByKind(expectedReference.kind)
-              val indexInEdge = programH.interfaces.find(_.getRef == ir).get.methods.indexWhere(_.prototypeH == prototypeH)
+              val prototypeH = programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind(expectedReference.kind)
+              val indexInEdge = programH.lookupInterface(ir).methods.indexWhere(_.prototypeH == prototypeH)
               vassert(indexInEdge >= 0)
               val (functionH, (calleeCallId, retuurn)) =
                 executeInterfaceFunction(programH, stdin, stdout, heap, List(actualReference), 0, ir, indexInEdge, prototypeH)
@@ -1128,8 +1126,8 @@ object ExpressionVivem {
             case StructRefH(_) | RuntimeSizedArrayTH(_) | StaticSizedArrayTH(_) => {
               heap.vivemDout.println()
               heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (discard call)")
-              val prototypeH = programH.immDestructorsByKind(expectedReference.kind)
-              val functionH = programH.functions.find(_.prototype == prototypeH).get
+              val prototypeH = vassertSome(programH.lookupPackage(expectedReference.kind.packageCoord).immDestructorsByKind.get(expectedReference.kind))
+              val functionH = programH.lookupFunction(prototypeH)
               val (calleeCallId, retuurn) =
                 FunctionVivem.executeFunction(
                   programH, stdin, stdout, heap, Vector(actualReference), functionH)

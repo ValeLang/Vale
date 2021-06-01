@@ -496,7 +496,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
-        val programsA = packageToProgramA.moduleToPackagesToFilenameToContents.values.flatMap(_.values)
+        val programsA = packageToProgramA.moduleToPackagesToContents.values.flatMap(_.values)
 
         val structsA = programsA.flatMap(_.structs)
         val interfacesA = programsA.flatMap(_.interfaces)

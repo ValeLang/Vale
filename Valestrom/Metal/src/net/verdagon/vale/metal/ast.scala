@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vcurious, vfail, vimpl}
+import net.verdagon.vale.{PackageCoordinate, PackageCoordinateMap, vassert, vassertSome, vcurious, vfail, vimpl}
 import net.verdagon.von.{IVonData, JsonSyntax, VonArray, VonMember, VonObject, VonPrinter, VonStr, VonSyntax}
 
 import scala.collection.immutable.ListMap
@@ -8,7 +8,7 @@ import scala.collection.immutable.ListMap
 object ProgramH {
   val emptyTupleStructRef =
     // If the templar ever decides to change this things name, update this to match templar's.
-    StructRefH(FullNameH("Tup0", 0, List(VonStr(""), VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
+    StructRefH(FullNameH("Tup0", 0, PackageCoordinate.BUILTIN, List(VonObject("Tup",None,Vector(VonMember("members",VonArray(None,Vector())))))))
 
   def emptyTupleStructType = ReferenceH(ShareH, InlineH, ReadonlyH, emptyTupleStructRef)
 
@@ -25,7 +25,7 @@ case class Export(
   exportedName: String
 )
 
-case class ProgramH(
+case class PackageH(
     // All the interfaces in the program.
     interfaces: List[InterfaceDefinitionH],
     // All the structs in the program.
@@ -41,12 +41,13 @@ case class ProgramH(
     // which should be called when we drop a reference to an immutable object.
     immDestructorsByKind: Map[ReferendH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    moduleNameToExportedNameToExportee: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
+    exportNameToFullName: Map[String, FullNameH],
     // Translations for backends to use if they need to export a name.
-    moduleNameToExternNameToExtern: Map[String, Map[String, (PackageCoordinate, FullNameH)]],
-    // All the regions and their referends. There will always be one in here
-    // since every program has at least one region.
-    regions: List[RegionH]) {
+    externNameToFullName: Map[String, FullNameH],
+//    // All the regions and their referends. There will always be one in here
+//    // since every program has at least one region.
+//    regions: List[RegionH]
+) {
 
   // These are convenience functions for the tests to look up various functions.
   def externFunctions = functions.filter(_.isExtern)
@@ -61,17 +62,10 @@ case class ProgramH(
   // Function must be at the top level of the program.
   def lookupFunction(readableName: String) = {
     val matches =
-        (List() ++
-          (moduleNameToExportedNameToExportee.flatMap({
-          case (moduleName, exportedNameToExportee) => {
-            exportedNameToExportee.get(readableName) match {
-              case None => List()
-              case Some((packageCoord, exporteeFullName)) => List(exporteeFullName)
-            }
-          }
-        })) ++
+      (List() ++
+        exportNameToFullName.get(readableName).toList ++
         functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName))
-          .distinct
+        .distinct
     vassert(matches.nonEmpty)
     vassert(matches.size <= 1)
     functions.find(_.prototype.fullName == matches.head).get
@@ -91,6 +85,35 @@ case class ProgramH(
     val matches = interfaces.filter(_.fullName.readableName == humanName)
     vassert(matches.size == 1)
     matches.head
+  }
+}
+
+case class ProgramH(
+  packages: PackageCoordinateMap[PackageH]) {
+
+
+  def lookupPackage(packageCoordinate: PackageCoordinate): PackageH = {
+    vassertSome(packages.get(packageCoordinate))
+  }
+  def lookupFunction(prototype: PrototypeH): FunctionH = {
+    val paackage = lookupPackage(prototype.fullName.packageCoordinate)
+    paackage.functions.find(_.fullName == prototype.fullName).get
+  }
+  def lookupStruct(structRefH: StructRefH): StructDefinitionH = {
+    val paackage = lookupPackage(structRefH.fullName.packageCoordinate)
+    paackage.structs.find(_.getRef == structRefH).get
+  }
+  def lookupInterface(interfaceRefH: InterfaceRefH): InterfaceDefinitionH = {
+    val paackage = lookupPackage(interfaceRefH.fullName.packageCoordinate)
+    paackage.interfaces.find(_.getRef == interfaceRefH).get
+  }
+  def lookupStaticSizedArray(ssaTH: StaticSizedArrayTH): StaticSizedArrayDefinitionTH = {
+    val paackage = lookupPackage(ssaTH.name.packageCoordinate)
+    paackage.staticSizedArrays.find(_.name == ssaTH.name).get
+  }
+  def lookupRuntimeSizedArray(rsaTH: RuntimeSizedArrayTH): RuntimeSizedArrayDefinitionTH = {
+    val paackage = lookupPackage(rsaTH.name.packageCoordinate)
+    paackage.runtimeSizedArrays.find(_.name == rsaTH.name).get
   }
 }
 
@@ -217,15 +240,16 @@ case class FullNameH(
     readableName: String,
     // -1 means extern and we wont suffix the readableName with the ID.
     id: Int,
+    packageCoordinate: PackageCoordinate,
     parts: List[IVonData]) {
   def toReadableString(): String = {
     readableName + (if (id >= 0) "_" + id else "")
   }
-  def toFullString(): String = { FullNameH.namePartsToString(parts) }
+  def toFullString(): String = { FullNameH.namePartsToString(packageCoordinate, parts) }
 }
 
 object FullNameH {
-  def namePartsToString(parts: List[IVonData]) = {
-    parts.map(MetalPrinter.print).mkString(":")
+  def namePartsToString(packageCoordinate: PackageCoordinate, parts: List[IVonData]) = {
+    packageCoordinate.module + "::" + packageCoordinate.packages.map(_ + "::").mkString("") + parts.map(MetalPrinter.print).mkString(":")
   }
 }

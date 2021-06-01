@@ -35,7 +35,7 @@ class LoadTests extends FunSuite with Matchers with Collector {
 
   // Known failure 2020-11-16
   test("round trip") {
-    val originalFile = Parser.runParser("""fn main() { 42 }""").get()
+    val originalFile = Parser.runParser("""fn main() export { 42 }""").get()
     val von = ParserVonifier.vonifyFile(originalFile)
     val json = new VonPrinter(JsonSyntax, 120).print(von)
     val loadedFile = ParsedLoader.load(json).get()

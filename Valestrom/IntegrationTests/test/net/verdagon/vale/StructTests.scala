@@ -9,7 +9,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine {}
-        |fn main() {
+        |fn main() export {
         |  Marine();
         |}
       """.stripMargin)
@@ -27,7 +27,7 @@ class StructTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { hp int; }
-        |fn main() {
+        |fn main() export {
         |  Marine(9);
         |}
       """.stripMargin)
@@ -96,7 +96,7 @@ class StructTests extends FunSuite with Matchers {
         |  println("Destroying marine!");
         |  Marine(weapon) = marine;
         |}
-        |fn main() {
+        |fn main() export {
         |  Marine(Weapon());
         |}
       """.stripMargin)
@@ -132,7 +132,7 @@ class StructTests extends FunSuite with Matchers {
         |  set marine.weapon.owner = None<&Marine>();
         |  Marine(weapon) = marine;
         |}
-        |fn main() {
+        |fn main() export {
         |  m = Marine(Weapon("Sword", None<&Marine>()));
         |  set m.weapon.owner = Some(&m);
         |  set m.weapon = Weapon("Spear", Some(&m));

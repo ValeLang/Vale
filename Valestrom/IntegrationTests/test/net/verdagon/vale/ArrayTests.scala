@@ -423,7 +423,7 @@ class ArrayTests extends FunSuite with Matchers {
           |struct MyIntIdentity {}
           |impl IFunction1<mut, int, int> for MyIntIdentity;
           |fn __call(this &!MyIntIdentity impl IFunction1<mut, int, int>, i int) int { i }
-          |fn main() {
+          |fn main() export {
           |  m = MyIntIdentity();
           |  arr = MakeArray(10, &!m);
           |  lam = { print(str(arr.6)); };
@@ -564,7 +564,7 @@ class ArrayTests extends FunSuite with Matchers {
         """
           |import array.make.*;
           |import array.each.*;
-          |fn main() {
+          |fn main() export {
           |  planets = []["Venus", "Earth", "Mars"];
           |  each planets (planet){
           |    print(planet);

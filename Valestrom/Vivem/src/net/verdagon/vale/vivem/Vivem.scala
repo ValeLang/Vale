@@ -71,7 +71,14 @@ object Vivem {
       vivemDout: PrintStream,
       stdin: () => String,
       stdout: String => Unit): IVonData = {
-    val main = programH.lookupFunction("main")
+    val main =
+      programH.packages.flatMap({ case (packageCoord, paackage) =>
+        paackage.exportNameToFullName.get("main").map(fullName => paackage.functions.find(_.fullName == fullName).get).toList
+      }).flatten match {
+        case List() => vfail()
+        case List(m) => m
+        case _ => vfail()
+      }
 
     val callId = CallId(0, main.prototype)
 

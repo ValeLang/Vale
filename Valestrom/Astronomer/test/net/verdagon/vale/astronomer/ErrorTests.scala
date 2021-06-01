@@ -61,7 +61,7 @@ class ErrorTests extends FunSuite with Matchers  {
   test("Report type not found") {
     val compilation =
       new Compilation(
-      """fn main() {
+      """fn main() export {
         |  a Bork = 5;
         |}
         |""".stripMargin)
@@ -82,7 +82,7 @@ class ErrorTests extends FunSuite with Matchers  {
           |fn moo<A>(x int) {
           |  42
           |}
-          |fn main() {
+          |fn main() export {
           |  moo();
           |}
           |""".stripMargin)

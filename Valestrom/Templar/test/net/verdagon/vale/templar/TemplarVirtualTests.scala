@@ -72,7 +72,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |impl IBork for Bork;
         |
         |fn rebork(virtual result &IBork) bool { true }
-        |fn main() {
+        |fn main() export {
         |  rebork(&Bork());
         |}
         |""".stripMargin)

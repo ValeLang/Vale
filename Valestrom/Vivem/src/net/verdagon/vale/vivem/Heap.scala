@@ -34,7 +34,7 @@ class AdapterForExterns(
 
   def makeVoid(): ReferenceV = {
     val emptyPackStructRefH = ProgramH.emptyTupleStructRef
-    val emptyPackStructDefH = vassertSome(programH.structs.find(_.getRef == emptyPackStructRefH))
+    val emptyPackStructDefH = programH.lookupStruct(emptyPackStructRefH)
     heap.newStruct(emptyPackStructDefH, ReferenceH(ShareH, InlineH, ReadonlyH, emptyPackStructRefH), List())
   }
 }

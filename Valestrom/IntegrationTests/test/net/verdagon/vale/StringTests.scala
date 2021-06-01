@@ -8,7 +8,7 @@ class StringTests extends FunSuite with Matchers {
   test("Simple string") {
     val compile = RunCompilation.test(
       """
-        |fn main() str {
+        |fn main() str export {
         |  "sprogwoggle"
         |}
       """.stripMargin)
@@ -22,7 +22,7 @@ class StringTests extends FunSuite with Matchers {
   test("String with escapes") {
     val compile = RunCompilation.test(
       """
-        |fn main() str {
+        |fn main() str export {
         |  "sprog\nwoggle"
         |}
         |""".stripMargin)
@@ -36,7 +36,7 @@ class StringTests extends FunSuite with Matchers {
   test("String with hex escape") {
     val compile = RunCompilation.test(
       """
-        |fn main() str {
+        |fn main() str export {
         |  "sprog\u001bwoggle"
         |}
         |""".stripMargin)
@@ -61,7 +61,7 @@ class StringTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       "fn +(s str, i int) str { s + str(i) }\n" +
       "fn ns(i int) int { i }\n" +
-      "fn main() str { \"\"\"bl\"{ns(4)}rg\"\"\" }")
+      "fn main() str export { \"\"\"bl\"{ns(4)}rg\"\"\" }")
 
     compile.evalForReferend(Vector()) shouldEqual VonStr("bl\"4rg")
   }
@@ -111,7 +111,7 @@ class StringTests extends FunSuite with Matchers {
           |  = newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
           |}
           |
-          |fn main() int {
+          |fn main() int export {
           |  "hello".slice().slice(1, 4).len()
           |}
           |""".stripMargin)

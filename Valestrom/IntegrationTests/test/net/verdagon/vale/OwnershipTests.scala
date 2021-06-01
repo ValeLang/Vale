@@ -63,7 +63,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |  Muta() = m;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  Muta();
         |}
       """.stripMargin)
@@ -110,7 +110,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |  Muta() = m;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  a = Muta();
         |}
       """.stripMargin)
@@ -138,7 +138,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |fn moo(m ^Muta) {
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  a = Muta();
         |  moo(a);
         |}
@@ -218,7 +218,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { }
-        |fn main() {
+        |fn main() export {
         |  __checkvarrc(&Muta(), 1)
         |}
       """.stripMargin)
@@ -234,7 +234,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Muta { }
-        |fn main() {
+        |fn main() export {
         |  a = Muta();
         |  __checkvarrc(&a, 1);
         |}

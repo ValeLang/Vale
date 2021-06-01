@@ -16,7 +16,7 @@ case class Hinputs(
   functions: List[Function2],
   exports: List[ExportAs2],
   kindToDestructor: Map[Kind, Prototype2],
-  moduleNameToExternNameToExtern: Map[String, Map[String, (PackageCoordinate, Prototype2)]],
+  packageToExternNameToExtern: Map[PackageCoordinate, Map[String, Prototype2]],
   edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
   edges: List[Edge2]) {
 

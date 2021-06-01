@@ -44,7 +44,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Reports defining same-name variable") {
-    compileProgramForError("fn main() { x = 4; x = 5; }") match {
+    compileProgramForError("fn main() export { x = 4; x = 5; }") match {
       case VariableNameAlreadyExists(_, CodeVarNameS("x")) =>
     }
   }

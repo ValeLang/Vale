@@ -93,7 +93,7 @@ class IfTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() str {
+        |fn main() str export {
         |  m = Marine(5);
         |  = if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
@@ -173,7 +173,7 @@ class IfTests extends FunSuite with Matchers {
         |  bork Bork;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  zork! = 0;
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));

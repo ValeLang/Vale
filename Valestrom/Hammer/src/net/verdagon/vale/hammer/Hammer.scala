@@ -152,7 +152,7 @@ object Hammer {
       functions,
       exports,
       kindToDestructor,
-      moduleNameToExternNameToExtern2,
+      packageToExternNameToExtern2,
       edgeBlueprintsByInterface,
       edges) = hinputs
 
@@ -164,10 +164,9 @@ object Hammer {
     // We generate the names here first, so that externs get the first chance at having
     // ID 0 for each name, which means we dont need to add _1 _2 etc to the end of them,
     // and they'll match up with the actual outside names.
-    val moduleNameToExternNameToPrototypeH =
-      moduleNameToExternNameToExtern2.map({ case (moduleName, externNameToExtern) =>
-        moduleName ->
-          externNameToExtern.map({ case (externName, (packageCoord, prototype2)) =>
+    val packageToExternNameToPrototypeH =
+      packageToExternNameToExtern2.mapValues(externNameToExtern => {
+          externNameToExtern.map({ case (externName, prototype2) =>
             val fullNameH = NameHammer.translateFullName(hinputs, hamuts, prototype2.fullName)
             val humanName =
               prototype2.fullName.last match {
@@ -178,15 +177,12 @@ object Hammer {
               vfail("Name conflict, two externs with the same name!")
             }
             val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype2)
-            (externName -> (packageCoord, prototypeH))
+            (externName -> prototypeH)
           })
       })
-    val moduleNameToExternNameToExternH =
-      moduleNameToExternNameToPrototypeH.mapValues(
-        _.mapValues({ case (packageCoord, prototypeH) => (packageCoord, prototypeH.fullName) }))
 
     val externPrototypesH =
-      moduleNameToExternNameToPrototypeH.values.flatMap(_.values).map(_._2)
+      packageToExternNameToPrototypeH.values.flatMap(_.values.toList)
 
     StructHammer.translateInterfaces(hinputs, hamuts);
     StructHammer.translateStructs(hinputs, hamuts)
@@ -233,17 +229,47 @@ object Hammer {
 //      vfail()
 //    }
 
-    ProgramH(
-      hamuts.interfaceDefs.values.toList,
-      hamuts.structDefs,
-      externPrototypesH.toList,
-      hamuts.functionDefs.values.toList,
-      hamuts.inner.staticSizedArrays,
-      hamuts.inner.runtimeSizedArrays,
-      immDestructorPrototypesH,
-      hamuts.moduleNameToExportedNameToExportee,
-      moduleNameToExternNameToExternH,
-      List())
+    val packageToInterfaceDefs = hamuts.interfaceDefs.groupBy(_._1.fullName.packageCoord)
+    val packageToStructDefs = hamuts.structDefs.groupBy(_.fullName.packageCoordinate)
+    val packageToExternPrototypes = externPrototypesH.groupBy(_.fullName.packageCoordinate)
+    val packageToFunctionDefs = hamuts.functionDefs.groupBy(_._1.fullName.packageCoord).mapValues(_.values.toList)
+    val packageToStaticSizedArrays = hamuts.staticSizedArrays.groupBy(_.name.packageCoordinate)
+    val packageToRuntimeSizedArrays = hamuts.runtimeSizedArrays.groupBy(_.name.packageCoordinate)
+    val packageToImmDestructorPrototypes = immDestructorPrototypesH.groupBy(_._1.packageCoord)
+    val packageToExportNameToFullName = hamuts.packageCoordToExportNameToFullName
+    val packageToExternNameToFullName = packageToExternNameToPrototypeH.mapValues(_.mapValues(_.fullName))
+
+    val allPackageCoords =
+      packageToInterfaceDefs.keySet ++
+      packageToStructDefs.keySet ++
+      packageToExternPrototypes.keySet ++
+      packageToFunctionDefs.keySet ++
+      packageToStaticSizedArrays.keySet ++
+      packageToRuntimeSizedArrays.keySet ++
+      packageToImmDestructorPrototypes.keySet ++
+      packageToExportNameToFullName.keySet ++
+      packageToExternNameToFullName.keySet
+
+    val packages =
+      allPackageCoords.toList.map(packageCoord => {
+        packageCoord ->
+          PackageH(
+            packageToInterfaceDefs.getOrElse(packageCoord, Map()).values.toList,
+            packageToStructDefs.getOrElse(packageCoord, List()),
+            packageToExternPrototypes.getOrElse(packageCoord, List()).toList,
+            packageToFunctionDefs.getOrElse(packageCoord, List()),
+            packageToStaticSizedArrays.getOrElse(packageCoord, List()),
+            packageToRuntimeSizedArrays.getOrElse(packageCoord, List()),
+            packageToImmDestructorPrototypes.getOrElse(packageCoord, Map()),
+            packageToExportNameToFullName.getOrElse(packageCoord, Map()),
+            packageToExternNameToFullName.getOrElse(packageCoord, Map()))
+      }).toMap
+        .groupBy(_._1.module)
+        .mapValues(packageCoordToPackage => {
+          packageCoordToPackage.map({ case (packageCoord, paackage) => (packageCoord.packages, paackage) }).toMap
+        })
+
+    ProgramH(PackageCoordinateMap(packages))
   }
 
   def exportName(hamuts: HamutsBox, packageCoord: PackageCoordinate, fullName2: FullName2[IName2], fullNameH: FullNameH) = {
@@ -253,10 +279,15 @@ object Hammer {
         case CitizenName2(humanName, _) => humanName
         case _ => vfail("Can't export something that doesn't have a human readable name!")
       }
-    hamuts.moduleNameToExportedNameToExportee.get(exportedName) match {
+    hamuts.packageCoordToExportNameToFullName.get(packageCoord) match {
       case None =>
-      case Some(existingFullName) => {
-        vfail("Can't export " + fullNameH + " as " + exportedName + ", that exported name already taken by " + existingFullName)
+      case Some(exportNameToFullName) => {
+        exportNameToFullName.get(exportedName) match {
+          case None =>
+          case Some(existingFullName) => {
+            vfail("Can't export " + fullNameH + " as " + exportedName + ", that exported name already taken by " + existingFullName)
+          }
+        }
       }
     }
     hamuts.addExport(fullNameH, packageCoord, exportedName)

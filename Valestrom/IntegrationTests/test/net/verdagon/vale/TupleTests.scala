@@ -40,7 +40,7 @@ class TupleTests extends FunSuite with Matchers {
       """
         |fn moo(a [int, int]) int { a.1 }
         |
-        |fn main() int {
+        |fn main() int export {
         |  moo([3, 4])
         |}
         |""".stripMargin)

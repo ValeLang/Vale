@@ -1,7 +1,7 @@
 package net.verdagon.vale.vivem
 
 import net.verdagon.vale.metal._
-import net.verdagon.vale.{metal => m}
+import net.verdagon.vale.{PackageCoordinate, PackageCoordinateMap, metal => m}
 import net.verdagon.von.{VonArray, VonInt, VonMember, VonObject, VonStr}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -13,13 +13,17 @@ class VivemTests extends FunSuite with Matchers {
           FullNameH(
             "main",
             0,
+            PackageCoordinate.TEST_TLD,
             List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH())),
         true,
         false,
         false,
         List(UserFunctionH),
         BlockH(ConstantI64H(7)))
-    val programH = ProgramH(List(), List(), List(), List(main), List(), List(), Map(), Map(), Map(), List())
+    val programH =
+      ProgramH(
+        PackageCoordinateMap(Map())
+          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(), List(main), List(), List(), Map(), Map("main" -> main.fullName), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(7)
@@ -34,7 +38,8 @@ class VivemTests extends FunSuite with Matchers {
         FullNameH(
           "__addIntInt",
           0,
-          List(VonStr(""),VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
+          PackageCoordinate.BUILTIN,
+          List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
         List(ReferenceH(ShareH,InlineH,ReadonlyH,IntH()), ReferenceH(ShareH,InlineH,ReadonlyH,IntH())),
         ReferenceH(ShareH,InlineH,ReadonlyH,IntH()))
     val main =
@@ -43,6 +48,7 @@ class VivemTests extends FunSuite with Matchers {
           FullNameH(
             "main",
             0,
+            PackageCoordinate.TEST_TLD,
             List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH())),
         true,
         false,
@@ -66,7 +72,11 @@ class VivemTests extends FunSuite with Matchers {
         true,
         List(),
         BlockH(ConstantI64H(133337)))
-    val programH = ProgramH(List(), List(), List(), List(main, addExtern), List(), List(), Map(), Map(), Map(), List())
+    val programH =
+      ProgramH(
+        PackageCoordinateMap(Map())
+          .add(PackageCoordinate.BUILTIN, PackageH(List(), List(), List(), List(addExtern), List(), List(), Map(), Map(), Map()))
+          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(), List(main), List(), List(), Map(), Map("main" -> main.fullName), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(159)

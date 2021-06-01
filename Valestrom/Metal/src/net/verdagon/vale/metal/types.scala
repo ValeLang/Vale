@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{FileCoordinate, vassert, vfail}
+import net.verdagon.vale.{FileCoordinate, PackageCoordinate, vassert, vfail}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -49,8 +49,8 @@ case class ReferenceH[+T <: ReferendH](
       vassert(location == YonderH)
     }
     case StructRefH(name) => {
-      val isBox = name.toFullString.startsWith("\"\":C(\"__Box\"")
-      val isTup = name.toFullString.startsWith("\"\":Tup")
+      val isBox = name.toFullString.startsWith("::C(\"__Box\"")
+      val isTup = name.toFullString.startsWith("::Tup")
 
       if (isBox) {
         vassert(ownership == OwnH || ownership == BorrowH)
@@ -96,36 +96,54 @@ case class ReferenceH[+T <: ReferendH](
 }
 
 // A value, a thing that can be pointed at. See ReferenceH for more information.
-sealed trait ReferendH
+sealed trait ReferendH {
+  def packageCoord: PackageCoordinate
+}
 
-case class IntH() extends ReferendH
-case class BoolH() extends ReferendH
-case class StrH() extends ReferendH
-case class FloatH() extends ReferendH
+case class IntH() extends ReferendH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class BoolH() extends ReferendH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class StrH() extends ReferendH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
+case class FloatH() extends ReferendH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
 // A primitive which can never be instantiated. If something returns this, it
 // means that it will never actually return. For example, the return type of
 // __panic() is a NeverH.
 // TODO: This feels weird being a referend in metal. Figure out a way to not
 // have this? Perhaps replace all referends with Optional[Optional[ReferendH]],
 // where None is never, Some(None) is Void, and Some(Some(_)) is a normal thing.
-case class NeverH() extends ReferendH
+case class NeverH() extends ReferendH {
+  override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
+}
 
 case class InterfaceRefH(
   // Unique identifier for the interface.
   fullName: FullNameH
-) extends ReferendH
+) extends ReferendH {
+  override def packageCoord: PackageCoordinate = fullName.packageCoordinate
+}
 
 case class StructRefH(
   // Unique identifier for the interface.
   fullName: FullNameH
-) extends ReferendH
+) extends ReferendH {
+  override def packageCoord: PackageCoordinate = fullName.packageCoordinate
+}
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
 case class StaticSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
-) extends ReferendH
+) extends ReferendH {
+  override def packageCoord: PackageCoordinate = name.packageCoordinate
+}
 
 // An array whose size is known at compile time, and therefore doesn't need to
 // carry around its size at runtime.
@@ -143,7 +161,9 @@ case class StaticSizedArrayDefinitionTH(
 case class RuntimeSizedArrayTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.
   name: FullNameH,
-) extends ReferendH
+) extends ReferendH {
+  override def packageCoord: PackageCoordinate = name.packageCoordinate
+}
 
 case class RuntimeSizedArrayDefinitionTH(
   // This is useful for naming the Midas struct that wraps this array and its ref count.

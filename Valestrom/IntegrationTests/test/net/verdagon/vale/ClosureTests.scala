@@ -217,7 +217,7 @@ class ClosureTests extends FunSuite with Matchers {
   test("Read from inside a closure inside a closure") {
     val compile = RunCompilation.test(
       """
-        |fn main() int {
+        |fn main() int export {
         |  x = 42;
         |  = { { x }() }();
         |}

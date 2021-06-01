@@ -90,7 +90,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Taking an argument and returning it") {
-    val compile = RunCompilation.test("fn main(a int) int {a}")
+    val compile = RunCompilation.test("fn main(a int) export int {a}")
     compile.evalForReferend(Vector(IntV(5))) shouldEqual VonInt(5)
   }
 
@@ -100,7 +100,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Tests adding two floats") {
-    val compile = RunCompilation.test("fn main() float { +(2.5, 3.5) }")
+    val compile = RunCompilation.test("fn main() float export { +(2.5, 3.5) }")
     compile.evalForReferend(Vector()) shouldEqual VonFloat(6.0f)
   }
 
@@ -156,7 +156,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = RunCompilation.test("fn main() {a! = 3; set a = 4; }")
+    val compile = RunCompilation.test("fn main() export {a! = 3; set a = 4; }")
     compile.run(Vector())
   }
 
@@ -184,15 +184,15 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn doAThing<T>(s SomeStruct<T>) { }
         |impl<T> MyInterface<T> for SomeStruct<T>;
         |
-        |fn main(a SomeStruct<int>) {
+        |fn main(a SomeStruct<int>) export {
         |  doAThing<int>(a);
         |}
       """.stripMargin)
-    val hamuts = compile.getHamuts()
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val heap = new Heap(System.out)
     val ref =
       heap.add(m.OwnH, YonderH, ReadwriteH, StructInstanceV(
-        hamuts.lookupStruct("SomeStruct"),
+        packageH.lookupStruct("SomeStruct"),
         Some(Vector())))
     compile.run(heap, Vector(ref))
   }
@@ -297,7 +297,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
       """
         |struct MyThing { value int; }
         |fn moo() MyThing { MyThing(4) }
-        |fn main() { moo(); }
+        |fn main() export { moo(); }
       """.stripMargin)
     compile.run(Vector())
   }
@@ -496,7 +496,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn bork(x str) { print(x); }
         |fn helperFunc(x int) { print(x); }
         |fn helperFunc(x str) { print(x); }
-        |fn main() {
+        |fn main() export {
         |  helperFunc(4);
         |}
         |""".stripMargin)
@@ -533,7 +533,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Test returning empty seq") {
     val compile = RunCompilation.test(
-      """fn main() [] {
+      """fn main() [] export {
         |  []
         |}
         |""".stripMargin)
@@ -555,13 +555,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
 
-    val hamuts = compile.getHamuts()
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List()))
 
     // The extern we make should have the name we expect
-    vassert(hamuts.externs.exists(_.fullName.readableName == "sqrt"))
+    vassert(packageH.externs.exists(_.fullName.readableName == "sqrt"))
 
     // We also made an internal function that contains an extern call
-    val externSqrt = hamuts.lookupFunction("sqrt")
+    val externSqrt = packageH.lookupFunction("sqrt")
     vassert(externSqrt.isExtern)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(4)
@@ -656,9 +656,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("exporting array") {
     val compilation = RunCompilation.test("export Array<mut, vary, int> as IntArray;")
     val hamuts = compilation.getHamuts()
-    val (packageCoord, fullNameH) = hamuts.moduleNameToExportedNameToExportee(FileCoordinateMap.TEST_MODULE)("IntArray")
-//    exportedName shouldEqual List("IntArray")
-    val rsa = hamuts.runtimeSizedArrays.find(_.name == fullNameH).get
+    val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
+    val fullNameH = testPackage.exportNameToFullName("IntArray")
+
+    val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
+    val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.name == fullNameH))
     rsa.rawArray.elementType.kind shouldEqual IntH()
   }
 }

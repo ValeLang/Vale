@@ -42,7 +42,8 @@ class HammerTest extends FunSuite with Matchers {
           |}
           |""".stripMargin)
     val hamuts = compile.getHamuts()
-    val main = hamuts.functions.find(_.`export`).get
+    val main = hamuts.lookupPackage(PackageCoordinate.TEST_TLD).lookupFunction("main")
+    vassert(main.`export`)
     val stackifies = recursiveCollect(main, { case s @ StackifyH(_, _, _) => s })
     val localIds = stackifies.map(_.local.id.number).sorted
     localIds shouldEqual localIds.distinct

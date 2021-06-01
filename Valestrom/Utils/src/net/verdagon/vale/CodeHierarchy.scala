@@ -194,14 +194,25 @@ trait IPackageResolver[T] {
 }
 
 case class PackageCoordinateMap[Contents](
-  moduleToPackagesToFilenameToContents: Map[String, Map[List[String], Contents]]) {
+  moduleToPackagesToContents: Map[String, Map[List[String], Contents]]) {
+
   def add(module: String, packages: List[String], contents: Contents):
   PackageCoordinateMap[Contents] = {
-    val packagesToContents = moduleToPackagesToFilenameToContents.getOrElse(module, Map())
+    val packagesToContents = moduleToPackagesToContents.getOrElse(module, Map())
     vassert(!packagesToContents.contains(packages))
     val newPackagesToFilenameToContents = packagesToContents + (packages -> contents)
-    val newModuleToPackagesToFilenameToContents = moduleToPackagesToFilenameToContents + (module -> newPackagesToFilenameToContents)
+    val newModuleToPackagesToFilenameToContents = moduleToPackagesToContents + (module -> newPackagesToFilenameToContents)
     PackageCoordinateMap(newModuleToPackagesToFilenameToContents)
+  }
+
+  def add(packageCoordinate: PackageCoordinate, contents: Contents):
+  PackageCoordinateMap[Contents] = {
+    add(packageCoordinate.module, packageCoordinate.packages, contents)
+  }
+
+  def get(packageCoord: PackageCoordinate): Option[Contents] = {
+    val PackageCoordinate(module, packageSteps) = packageCoord
+    moduleToPackagesToContents.getOrElse(module, Map()).get(packageSteps)
   }
 
   def test[T](contents: T): PackageCoordinateMap[T] = {
@@ -209,7 +220,15 @@ case class PackageCoordinateMap[Contents](
   }
 
   def expectOne(): Contents = {
-    val List(only) = moduleToPackagesToFilenameToContents.values.flatMap(_.values)
+    val List(only) = moduleToPackagesToContents.values.flatMap(_.values)
     only
+  }
+
+  def flatMap[T](func: (PackageCoordinate, Contents) => T): Iterable[T] = {
+    moduleToPackagesToContents.flatMap({ case (module, packagesToFilenameToContents) =>
+      packagesToFilenameToContents.map({ case (packages, contents) =>
+        func(PackageCoordinate(module, packages), contents)
+      })
+    })
   }
 }

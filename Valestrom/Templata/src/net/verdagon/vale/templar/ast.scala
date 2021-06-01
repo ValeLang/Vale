@@ -4,7 +4,7 @@ import net.verdagon.vale.astronomer.FunctionA
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vwat}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, vpass, vwat}
 
 import scala.collection.immutable._
 import scala.collection.mutable
@@ -33,6 +33,8 @@ case class ExportAs2(
   packageCoordinate: PackageCoordinate,
   exportedName: String
 ) extends Queriable2 {
+  vpass()
+
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     tyype.all(func)
   }

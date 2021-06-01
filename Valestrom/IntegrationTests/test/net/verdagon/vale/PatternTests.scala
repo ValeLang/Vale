@@ -73,7 +73,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test(
       """
         |
-        |struct Vec3 { x int; y int; z int; } fn main() { refuelB(Vec3(1, 2, 3), 2); }
+        |struct Vec3 { x int; y int; z int; } fn main() export { refuelB(Vec3(1, 2, 3), 2); }
         |// Using above Vec3
         |
         |// Without destructuring:

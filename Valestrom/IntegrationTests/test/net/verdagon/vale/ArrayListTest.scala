@@ -200,7 +200,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() {
+          |fn main() export {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));
@@ -227,7 +227,7 @@ class ArrayListTest extends FunSuite with Matchers {
           |import panicutils.*;
           |struct Marine { hp int; }
           |
-          |fn main() {
+          |fn main() export {
           |  l = List<Marine>();
           |  add(&!l, Marine(5));
           |  add(&!l, Marine(7));

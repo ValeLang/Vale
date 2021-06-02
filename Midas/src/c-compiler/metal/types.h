@@ -6,8 +6,11 @@
 #include <vector>
 #include <cassert>
 
+#include "name.h"
+
 // Defined elsewhere
 class Name;
+class PackageCoordinate;
 class CodeLocation;
 
 // Defined in this file
@@ -64,10 +67,11 @@ enum class Variability {
 };
 
 struct RegionId {
+  PackageCoordinate* packageCoord;
   std::string id;
 
-  RegionId(std::string id_) :
-      id(id_) {}
+  RegionId(PackageCoordinate* packageCoord_, std::string id_) :
+      packageCoord(packageCoord_), id(id_) {}
 };
 
 // Interned
@@ -102,6 +106,7 @@ public:
 class Referend {
 public:
     virtual ~Referend() {}
+    virtual PackageCoordinate* getPackageCoordinate() const = 0;
 };
 
 class Int : public Referend {
@@ -110,6 +115,8 @@ public:
 
   Int(RegionId* regionId_) :
       regionId(regionId_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
 class Bool : public Referend {
@@ -118,6 +125,8 @@ public:
 
   Bool(RegionId* regionId_) :
       regionId(regionId_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
 class Str : public Referend {
@@ -126,6 +135,8 @@ public:
 
   Str(RegionId* regionId_) :
       regionId(regionId_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
 class Float : public Referend {
@@ -134,6 +145,8 @@ public:
 
   Float(RegionId* regionId_) :
       regionId(regionId_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
 class Never : public Referend {
@@ -142,6 +155,8 @@ public:
 
   Never(RegionId* regionId_) :
       regionId(regionId_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
 class InterfaceReferend : public Referend {
@@ -150,6 +165,8 @@ public:
 
   InterfaceReferend(Name* fullName_) :
       fullName(fullName_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return fullName->packageCoord; }
 
 };
 
@@ -160,6 +177,8 @@ public:
 
     StructReferend(Name* fullName_) :
         fullName(fullName_) {}
+
+  PackageCoordinate* getPackageCoordinate() const override { return fullName->packageCoord; }
 };
 
 // Interned
@@ -190,6 +209,7 @@ public:
       Name* name_) :
       name(name_) {}
 
+  PackageCoordinate* getPackageCoordinate() const override { return name->packageCoord; }
 };
 
 class StaticSizedArrayDefinitionT {
@@ -222,6 +242,7 @@ public:
       Name* name_) :
       name(name_) {}
 
+  PackageCoordinate* getPackageCoordinate() const override { return name->packageCoord; }
 };
 
 class RuntimeSizedArrayDefinitionT {

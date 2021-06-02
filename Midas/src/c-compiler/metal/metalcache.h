@@ -82,13 +82,15 @@ public:
       prototypes(0, addressNumberer->makeHasher<Name*>()),
       interfaceMethods(0, addressNumberer->makeHasher<Prototype*>()),
       locals(0, addressNumberer->makeHasher<VariableId*>()) {
-    rcImmRegionId = getRegionId("rcimm");
-    linearRegionId = getRegionId("linear");
-    unsafeRegionId = getRegionId("unsafe");
-    assistRegionId = getRegionId("assist");
-    naiveRcRegionId = getRegionId("naiverc");
-    resilientV3RegionId = getRegionId("resilientv3");
-    resilientV4RegionId = getRegionId("resilientv4");
+
+    builtinPackageCoord = getPackageCoordinate("", {});
+    rcImmRegionId = getRegionId(builtinPackageCoord, "rcimm");
+    linearRegionId = getRegionId(builtinPackageCoord, "linear");
+    unsafeRegionId = getRegionId(builtinPackageCoord, "unsafe");
+    assistRegionId = getRegionId(builtinPackageCoord, "assist");
+    naiveRcRegionId = getRegionId(builtinPackageCoord, "naiverc");
+    resilientV3RegionId = getRegionId(builtinPackageCoord, "resilientv3");
+    resilientV4RegionId = getRegionId(builtinPackageCoord, "resilientv4");
 
     innt = getInt(rcImmRegionId);
     intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
@@ -101,6 +103,15 @@ public:
     never = getNever(rcImmRegionId);
     neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
 //    regionReferend = getStructReferend(getName("__Region"));
+  }
+
+  PackageCoordinate* getPackageCoordinate(const std::string& projectName, const std::vector<std::string>& packageSteps) {
+
+
+    return makeIfNotPresent(
+        &packageCoords[projectName],
+        packageSteps,
+        [&](){ return new PackageCoordinate{projectName, packageSteps}; });
   }
 
   Int* getInt(RegionId* regionId) {
@@ -166,18 +177,18 @@ public:
         [&](){ return new StaticSizedArrayT(name); });
   }
 
-  Name* getName(std::string nameStr) {
+  Name* getName(PackageCoordinate* packageCoordinate, std::string nameStr) {
     return makeIfNotPresent(
-        &names,
+        &names[packageCoordinate],
         nameStr,
-        [&](){ return new Name(nameStr); });
+        [&](){ return new Name(packageCoordinate, nameStr); });
   }
 
-  RegionId* getRegionId(std::string nameStr) {
+  RegionId* getRegionId(PackageCoordinate* packageCoordinate, std::string nameStr) {
     return makeIfNotPresent(
         &regionIds,
         nameStr,
-        [&](){ return new RegionId(nameStr); });
+        [&](){ return new RegionId(packageCoordinate, nameStr); });
   }
 
   Reference* getReference(Ownership ownership, Location location, Referend* referend) {
@@ -212,8 +223,9 @@ public:
   std::unordered_map<std::string, RegionId*> regionIds;
   std::unordered_map<Name*, StructReferend*, AddressHasher<Name*>> structReferends;
   std::unordered_map<Name*, InterfaceReferend*, AddressHasher<Name*>> interfaceReferends;
-  std::unordered_map<std::string, Name*> names;
+  std::unordered_map<PackageCoordinate*, std::unordered_map<std::string, Name*>, AddressHasher<PackageCoordinate*>> names;
 
+  std::unordered_map<std::string, std::unordered_map<std::vector<std::string>, PackageCoordinate*, PackageCoordinate::StringVectorHasher, PackageCoordinate::StringVectorEquator>> packageCoords;
   std::unordered_map<RegionId*, Int*, AddressHasher<RegionId*>> ints;
   std::unordered_map<RegionId*, Bool*, AddressHasher<RegionId*>> bools;
   std::unordered_map<RegionId*, Str*, AddressHasher<RegionId*>> strs;
@@ -270,6 +282,7 @@ public:
 
 //  I8* i8 = new I8();
 //  Reference* i8Ref = nullptr;
+  PackageCoordinate* builtinPackageCoord = nullptr;
   Int* innt = nullptr;
   Reference* intRef = nullptr;
   Bool* boool = nullptr;

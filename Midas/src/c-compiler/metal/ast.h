@@ -1,6 +1,7 @@
 #ifndef VALE_AST_H_
 #define VALE_AST_H_
 
+#include "name.h"
 #include "types.h"
 #include "addresshasher.h"
 
@@ -34,46 +35,21 @@ class Function;
 class Prototype;
 class Name;
 
-class Name {
+class Package {
 public:
-  std::string name;
+  std::unordered_map<std::string, InterfaceDefinition*> interfaces;
+  std::unordered_map<std::string, StructDefinition*> structs;
+  std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays;
+  std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays;
+  // Get rid of this; since there's no IDs anymore we can have a stable
+  // hardcoded NameH("__Pack", Some(List()), None, None).
+  StructReferend* emptyTupleStructRef;
+  std::unordered_map<std::string, Prototype*> externs;
+  std::unordered_map<std::string, Function*> functions;
+  std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind;
 
-  Name(const std::string& name_) : name(name_) {}
-};
-
-class Program {
-public:
-    std::unordered_map<std::string, InterfaceDefinition*> interfaces;
-    std::unordered_map<std::string, StructDefinition*> structs;
-    std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays;
-    std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays;
-    // Get rid of this; since there's no IDs anymore we can have a stable
-    // hardcoded NameH("__Pack", Some(List()), None, None).
-    StructReferend* emptyTupleStructRef;
-    std::unordered_map<std::string, Prototype*> externs;
-    std::unordered_map<std::string, Function*> functions;
-    std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind;
-    std::unordered_map<Name*, std::vector<std::string>, AddressHasher<Name*>> fullNameToExportedNames;
-
-    Program(
-        std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
-        std::unordered_map<std::string, StructDefinition*> structs_,
-        std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays_,
-        std::unordered_map<std::string, RuntimeSizedArrayDefinitionT*> runtimeSizedArrays_,
-        StructReferend* emptyTupleStructRef_,
-        std::unordered_map<std::string, Prototype*> externs_,
-        std::unordered_map<std::string, Function*> functions_,
-        std::unordered_map<Referend*, Prototype*, AddressHasher<Referend*>> immDestructorsByKind_,
-        std::unordered_map<Name*, std::vector<std::string>, AddressHasher<Name*>> fullNameToExportedNames_) :
-      interfaces(move(interfaces_)),
-      structs(move(structs_)),
-      staticSizedArrays(move(staticSizedArrays_)),
-      runtimeSizedArrays(move(runtimeSizedArrays_)),
-      emptyTupleStructRef(emptyTupleStructRef_),
-      externs(move(externs_)),
-      functions(move(functions_)),
-      immDestructorsByKind(move(immDestructorsByKind_)),
-      fullNameToExportedNames(move(fullNameToExportedNames_)) {}
+  std::unordered_map<std::string, Name*> exportNameToFullName;
+  std::unordered_map<Name*, std::string, AddressHasher<Name*>> fullNameToExportName;
 
 
   StructDefinition* getStruct(Name* name) {
@@ -105,32 +81,66 @@ public:
     return iter->second;
   }
   bool isExported(Name* name) {
-    auto exportedNameI = fullNameToExportedNames.find(name);
-    return exportedNameI != fullNameToExportedNames.end();
+    auto exportedNameI = fullNameToExportName.find(name);
+    return exportedNameI != fullNameToExportName.end();
   }
-  std::vector<std::string> getExportedNames(Name* name) {
-    auto exportedNameI = fullNameToExportedNames.find(name);
-    if (exportedNameI == fullNameToExportedNames.end()) {
+  std::string getExportedName(Name* name) {
+    auto exportedNameI = fullNameToExportName.find(name);
+    if (exportedNameI == fullNameToExportName.end()) {
       std::cerr << "No exported name for " << name->name << std::endl;
       assert(false);
     }
     return exportedNameI->second;
   }
-  std::string getMemberArbitraryExportNameSeeMMEDT(Name* name) {
-    auto names = getExportedNames(name);
-    assert(names.size() > 0);
-    // In the future, we should make this choose the name that was exported
-    // by this module itself. See MMEDT.
-    return names[0];
-  }
 
   bool isExportedAs(Name* name, const std::string& exportName) {
-    auto exportedNamesI = fullNameToExportedNames.find(name);
-    if (exportedNamesI == fullNameToExportedNames.end()) {
+    auto exportedNamesI = fullNameToExportName.find(name);
+    if (exportedNamesI == fullNameToExportName.end()) {
       return false;
     }
-    auto& exportedNames = exportedNamesI->second;
-    return std::find(exportedNames.begin(), exportedNames.end(), exportName) != exportedNames.end();
+    return exportedNamesI->second == exportName;
+  }
+};
+
+class Program {
+public:
+  std::unordered_map<PackageCoordinate*, Package*, PackageCoordinate::Hasher, PackageCoordinate::Equator> packages;
+
+  Package* getPackage(PackageCoordinate* packageCoord) {
+    auto iter = packages.find(packageCoord);
+    assert(iter != packages.end());
+    return iter->second;
+  }
+
+  StructDefinition* getStruct(Name* name) {
+    return getPackage(name->packageCoord)->getStruct(name);
+  }
+  InterfaceDefinition* getInterface(Name* name) {
+    return getPackage(name->packageCoord)->getInterface(name);
+  }
+  StaticSizedArrayDefinitionT* getStaticSizedArray(Name* name) {
+    return getPackage(name->packageCoord)->getStaticSizedArray(name);
+  }
+  RuntimeSizedArrayDefinitionT* getRuntimeSizedArray(Name* name) {
+    return getPackage(name->packageCoord)->getRuntimeSizedArray(name);
+  }
+  Prototype* getImmDestructor(Referend* referend) {
+    return getPackage(referend->getPackageCoordinate())->getImmDestructor(referend);
+  }
+  bool isExported(Name* name) {
+    return getPackage(name->packageCoord)->isExported(name);
+  }
+//  std::vector<std::string> getExportedNames(Name* name) {
+//    auto exportedNameI = fullNameToExportedNames.find(name);
+//    if (exportedNameI == fullNameToExportedNames.end()) {
+//      std::cerr << "No exported name for " << name->name << std::endl;
+//      assert(false);
+//    }
+//    return exportedNameI->second;
+//  }
+
+  bool isExportedAs(Name* name, const std::string& exportName) {
+    return getPackage(name->packageCoord)->isExportedAs(name, exportName);
   }
 };
 

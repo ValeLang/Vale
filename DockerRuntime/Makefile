@@ -3,7 +3,7 @@ build:
 	@docker rmi vale:latest vale:1.0.0 || true
 	@docker build -t vale:latest -t vale:1.0.0 .
 
-run:
+run: build
 	@echo Running Vale docker image...
 	@docker stop testVale > /dev/null 2>&1 && docker rm testVale > /dev/null 2>&1 || true
 	@docker run --name testVale -it vale:latest

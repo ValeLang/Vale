@@ -12,13 +12,13 @@ build-windows:
 
 build-docker:
 	@echo Building Vale Compiler docker image...
-	@docker rmi vale_compilerlatest vale_compiler1.0.0 || true
-	@docker build -t vale_compiler:latest -t vale_compiler1.0.0 .
+	@docker rmi vale_compiler:latest vale_compiler:1.0.0 || true
+	@docker build -t vale_compiler:latest -t vale_compiler:1.0.0 .
 
 run-docker:
 	@echo Running Vale docker image...
 	@docker stop testValeCompiler > /dev/null 2>&1 && docker rm testValeCompiler > /dev/null 2>&1 || true
-	@docker run --name testValeCompiler -it vale_compilerlatest
+	@docker run --name testValeCompiler -it vale_compiler:latest
 
 # Explore a docker container (running or not) - this is useful for debuggin when docker image hits the fan...
 # 1. create image (snapshot) from container filesystem

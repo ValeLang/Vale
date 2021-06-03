@@ -18,6 +18,7 @@ RUN rm -r BenchmarkRL samples README.txt
 
 COPY entrypoint.sh .
 # Copy user's source code into the docker image
-COPY src/*.vale src
+# COPY src/*.vale src/
+RUN mkdir src
 
 ENTRYPOINT [ "sh", "entrypoint.sh"]

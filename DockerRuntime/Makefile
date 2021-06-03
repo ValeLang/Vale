@@ -1,5 +1,6 @@
 build:
 	@echo Building Vale docker image...
+	@docker rm testVale || true
 	@docker rmi vale:latest vale:1.0.0 || true
 	@docker build -t vale:latest -t vale:1.0.0 .
 

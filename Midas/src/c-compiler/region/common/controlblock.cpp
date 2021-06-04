@@ -5,7 +5,7 @@
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   return LLVMBuildLoad(
@@ -13,7 +13,7 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          structs->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
+          structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
           "typeNameStrPtrPtr"),
       "typeNameStrPtr");
 }

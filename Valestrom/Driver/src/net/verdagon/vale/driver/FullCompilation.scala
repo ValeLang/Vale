@@ -9,7 +9,7 @@ import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, ImportP,
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS, Scout}
 import net.verdagon.vale.templar.{ICompileErrorT, Templar, TemplarErrorHumanizer, Temputs}
 import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, Ok, PackageCoordinate, PackageCoordinateMap, Result, vassert, vassertSome, vfail, vimpl, vwat}
-import net.verdagon.vale.vivem.{Heap, PrimitiveReferendV, ReferenceV, Vivem}
+import net.verdagon.vale.vivem.{Heap, PrimitiveKindV, ReferenceV, Vivem}
 import net.verdagon.von.{IVonData, JsonSyntax, VonPrinter}
 
 import scala.collection.immutable.List

@@ -53,7 +53,7 @@ public:
       Reference* sourceInterfaceRefMT,
       Ref sourceInterfaceRef,
       bool sourceRefKnownLive,
-      Referend* targetReferend,
+      Kind* targetKind,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
@@ -70,9 +70,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Reference* sourceStructTypeM,
-      InterfaceReferend* targetInterfaceReferendM,
+      InterfaceKind* targetInterfaceKindM,
       Reference* targetInterfaceTypeM) override;
 
   void declareStaticSizedArray(StaticSizedArrayDefinitionT* ssaDefM) override;
@@ -181,11 +181,11 @@ public:
       LLVMBuilderRef builder,
 
       Reference* sourceStructMT,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) override;
+      InterfaceKind* targetInterfaceKindM) override;
 
   WrapperPtrLE lockWeakRef(
       AreaAndFileAndLine from,
@@ -202,7 +202,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      StaticSizedArrayT* referendM) override;
+      StaticSizedArrayT* kindM) override;
 
   // should expose a dereference thing instead
 //  LLVMValueRef getStaticSizedArrayElementsPtr(
@@ -350,21 +350,25 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      StaticSizedArrayT* referendM,
+      StaticSizedArrayT* kindM,
       Ref dryRunBoolRef);
 
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
 
-  std::string getMemberArbitraryRefNameCSeeMMEDT(
-      Reference* refMT) override;
-  void generateStructDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;
-  void generateInterfaceDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
-  void generateStaticSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StaticSizedArrayDefinitionT* ssaDefM) override;
-  void generateRuntimeSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, RuntimeSizedArrayDefinitionT* rsaDefM) override;
+  std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
+
+  std::string generateStructDefsC(
+    Package* currentPackage,
+      StructDefinition* refMT) override;
+  std::string generateInterfaceDefsC(
+    Package* currentPackage,
+      InterfaceDefinition* refMT) override;
+  std::string generateStaticSizedArrayDefsC(
+    Package* currentPackage,
+      StaticSizedArrayDefinitionT* ssaDefM) override;
+  std::string generateRuntimeSizedArrayDefsC(
+    Package* currentPackage,
+      RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
   Reference* getExternalType(
@@ -403,7 +407,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IReferendStructsSource* referendStructs,
+      IKindStructsSource* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);
 
@@ -415,16 +419,16 @@ public:
   void defineExtraFunctions() override;
 
   // Temporary, gets the corresponding Linear type reference.
-  Referend* linearizeReferend(Referend* referendMT);
-  StaticSizedArrayT* unlinearizeSSA(StaticSizedArrayT* referendMT);
-  StructReferend* unlinearizeStructReferend(StructReferend* referendMT);
-  InterfaceReferend* unlinearizeInterfaceReferend(InterfaceReferend* referendMT);
-  StructReferend* linearizeStructReferend(StructReferend* referendMT);
-  InterfaceReferend* linearizeInterfaceReferend(InterfaceReferend* referendMT);
+  Kind* linearizeKind(Kind* kindMT);
+  StaticSizedArrayT* unlinearizeSSA(StaticSizedArrayT* kindMT);
+  StructKind* unlinearizeStructKind(StructKind* kindMT);
+  InterfaceKind* unlinearizeInterfaceKind(InterfaceKind* kindMT);
+  StructKind* linearizeStructKind(StructKind* kindMT);
+  InterfaceKind* linearizeInterfaceKind(InterfaceKind* kindMT);
   Reference* linearizeReference(Reference* immRcRefMT);
   Reference* unlinearizeReference(Reference* hostRefMT);
 
-  Weakability getReferendWeakability(Referend* referend) override;
+  Weakability getKindWeakability(Kind* kind) override;
 
   LLVMValueRef getInterfaceMethodFunctionPtr(
       FunctionState* functionState,
@@ -451,9 +455,9 @@ public:
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) override {}
 
 private:
-  void declareConcreteSerializeFunction(Referend* valeReferendM);
-  void defineConcreteSerializeFunction(Referend* valeReferendM);
-  void declareInterfaceSerializeFunction(InterfaceReferend* valeReferend);
+  void declareConcreteSerializeFunction(Kind* valeKindM);
+  void defineConcreteSerializeFunction(Kind* valeKindM);
+  void declareInterfaceSerializeFunction(InterfaceKind* valeKind);
   void defineEdgeSerializeFunction(Edge* edge);
 
 
@@ -467,13 +471,13 @@ private:
       const std::string& typeName,
       Ref dryRunBoolRef);
 
-  Prototype* getSerializePrototype(Referend* valeReferend);
-  Prototype* getSerializeThunkPrototype(StructReferend* structReferend, InterfaceReferend* interfaceReferend);
+  Prototype* getSerializePrototype(Kind* valeKind);
+  Prototype* getSerializeThunkPrototype(StructKind* structKind, InterfaceKind* interfaceKind);
 
   LLVMValueRef predictShallowSize(
       LLVMBuilderRef builder,
-      Referend* referend,
-      // Ignored if referend isn't an array or string.
+      Kind* kind,
+      // Ignored if kind isn't an array or string.
       // If it's a string, this will be the length of the string.
       // If it's an array, this will be the number of elements.
       LLVMValueRef lenIntLE);
@@ -485,12 +489,12 @@ private:
       LLVMBuilderRef builder,
       Reference* desiredStructMT);
 
-  InterfaceMethod* getSerializeInterfaceMethod(Referend* valeReferend);
+  InterfaceMethod* getSerializeInterfaceMethod(Kind* valeKind);
 
   Ref callSerialize(
       FunctionState *functionState,
       LLVMBuilderRef builder,
-      Referend* valeReferend,
+      Kind* valeKind,
       Ref regionInstanceRef,
       Ref objectRef,
       Ref dryRunBoolRef);
@@ -500,7 +504,7 @@ private:
   Ref topLevelSerialize(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* valeReferend,
+      Kind* valeKind,
       Ref ref);
 
   void bumpDestinationOffset(
@@ -529,9 +533,9 @@ private:
       LLVMBuilderRef builder,
       LLVMValueRef regionInstancePtrLE);
 
-  void addMappedReferend(Referend* valeReferend, Referend* hostReferend) {
-    hostReferendByValeReferend.emplace(valeReferend, hostReferend);
-    valeReferendByHostReferend.emplace(hostReferend, valeReferend);
+  void addMappedKind(Kind* valeKind, Kind* hostKind) {
+    hostKindByValeKind.emplace(valeKind, hostKind);
+    valeKindByHostKind.emplace(hostKind, valeKind);
   }
 
   GlobalState* globalState = nullptr;
@@ -539,23 +543,23 @@ private:
   LinearStructs structs;
 
   std::unordered_map<
-      Referend*,
-      Referend*,
-      AddressHasher<Referend*>> hostReferendByValeReferend;
+      Kind*,
+      Kind*,
+      AddressHasher<Kind*>> hostKindByValeKind;
   std::unordered_map<
-      Referend*,
-      Referend*,
-      AddressHasher<Referend*>> valeReferendByHostReferend;
+      Kind*,
+      Kind*,
+      AddressHasher<Kind*>> valeKindByHostKind;
 
   std::string namePrefix = "__Linear";
 
-  StructReferend* regionReferend = nullptr;
+  StructKind* regionKind = nullptr;
   Reference* regionRefMT = nullptr;
 
-  StructReferend* startMetadataReferend = nullptr;
+  StructKind* startMetadataKind = nullptr;
   Reference* startMetadataRefMT = nullptr;
 
-  StructReferend* rootMetadataReferend = nullptr;
+  StructKind* rootMetadataKind = nullptr;
   Reference* rootMetadataRefMT = nullptr;
 
   Str* linearStr = nullptr;

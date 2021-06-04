@@ -149,11 +149,13 @@ void translateFunction(
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    Function* functionM,
-    bool skipExporting);
+    Function* functionM);
+
+void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,
+    Package* package,
     Prototype* prototypeM);
 
 //LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);

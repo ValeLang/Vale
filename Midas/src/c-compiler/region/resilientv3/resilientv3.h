@@ -43,9 +43,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Reference* sourceStructTypeM,
-      InterfaceReferend* targetInterfaceReferendM,
+      InterfaceKind* targetInterfaceKindM,
       Reference* targetInterfaceTypeM) override;
 
   Ref upcast(
@@ -53,11 +53,11 @@ public:
       LLVMBuilderRef builder,
 
       Reference* sourceStructMT,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) override;
+      InterfaceKind* targetInterfaceKindM) override;
 
 
   void defineStaticSizedArray(
@@ -104,7 +104,7 @@ public:
       Reference* sourceInterfaceRefMT,
       Ref sourceInterfaceRefLE,
       bool sourceRefKnownLive,
-      Referend* targetReferend,
+      Kind* targetKind,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
@@ -115,7 +115,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      StaticSizedArrayT* referendM) override;
+      StaticSizedArrayT* kindM) override;
 
   // should expose a dereference thing instead
 //  LLVMValueRef getStaticSizedArrayElementsPtr(
@@ -367,7 +367,7 @@ public:
 //      FunctionState* functionState,
 //      LLVMBuilderRef builder,
 //      Location location,
-//      LLVMTypeRef referendLT) override;
+//      LLVMTypeRef kindLT) override;
 
 //  LLVMValueRef mallocRuntimeSizedArray(
 //      LLVMBuilderRef builder,
@@ -380,58 +380,62 @@ public:
 //    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
 //  }
   // TODO get rid of these once refactor is done
-//  ControlBlock* getControlBlock(Referend* referend) override {
-//    return referendStructs.getControlBlock(referend);
+//  ControlBlock* getControlBlock(Kind* kind) override {
+//    return kindStructs.getControlBlock(kind);
 //  }
-//  IReferendStructsSource* getReferendStructsSource() override {
-//    return &referendStructs;
+//  IKindStructsSource* getKindStructsSource() override {
+//    return &kindStructs;
 //  }
 //  IWeakRefStructsSource* getWeakRefStructsSource() override {
 //    return &weakRefStructs;
 //  }
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     auto strWrapperPtrLE =
-        referendStructs.makeWrapperPtr(
+        kindStructs.makeWrapperPtr(
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
                 FL(), functionState, builder, globalState->metalCache->strRef, ref));
-    return referendStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
+    return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
   }
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     auto strWrapperPtrLE =
-        referendStructs.makeWrapperPtr(
+        kindStructs.makeWrapperPtr(
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
                 FL(), functionState, builder, globalState->metalCache->strRef, ref));
-    return referendStructs.getStringLen(functionState, builder, strWrapperPtrLE);
+    return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
-//  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override {
-//    return mutWeakableStructs.getWeakRefHeaderStruct(referend);
+//  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
+//    return mutWeakableStructs.getWeakRefHeaderStruct(kind);
 //  }
-//  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override {
-//    return mutWeakableStructs.getWeakVoidRefStruct(referend);
+//  LLVMTypeRef getWeakVoidRefStruct(Kind* kind) override {
+//    return mutWeakableStructs.getWeakVoidRefStruct(kind);
 //  }
   void fillControlBlock(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       ControlBlockPtrLE controlBlockPtrLE,
       const std::string& typeName);
 
 
-  std::string getMemberArbitraryRefNameCSeeMMEDT(
-      Reference* refMT) override;
-  void generateStructDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;
-  void generateInterfaceDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
-  void generateStaticSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StaticSizedArrayDefinitionT* ssaDefM) override;
-  void generateRuntimeSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, RuntimeSizedArrayDefinitionT* rsaDefM) override;
+
+  std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
+  std::string generateStructDefsC(
+    Package* currentPackage,
+      StructDefinition* refMT) override;
+  std::string generateInterfaceDefsC(
+    Package* currentPackage,
+      InterfaceDefinition* refMT) override;
+  std::string generateStaticSizedArrayDefsC(
+    Package* currentPackage,
+      StaticSizedArrayDefinitionT* ssaDefM) override;
+  std::string generateRuntimeSizedArrayDefsC(
+    Package* currentPackage,
+      RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
   Reference* getExternalType(Reference* refMT) override;
 
@@ -464,7 +468,7 @@ public:
   void declareExtraFunctions() override {}
   void defineExtraFunctions() override {}
 
-  Weakability getReferendWeakability(Referend* referend) override;
+  Weakability getKindWeakability(Kind* kind) override;
 
   void declareStructExtraFunctions(StructDefinition* structDefM) override {}
   void declareStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) override {}
@@ -486,15 +490,15 @@ protected:
 
   RegionId* regionId;
 
-  WeakableReferendStructs mutWeakableStructs;
+  WeakableKindStructs mutWeakableStructs;
 
-  ReferendStructsRouter referendStructs;
+  KindStructsRouter kindStructs;
   WeakRefStructsRouter weakRefStructs;
 
   FatWeaks fatWeaks;
   HybridGenerationalMemory hgmWeaks;
 
-  // TODO see if we can just use referendStructs/weakRefStructs instead of having these?
+  // TODO see if we can just use kindStructs/weakRefStructs instead of having these?
 //  WeakFatPtrLEMaker weakFatPtrMaker;
 //  InterfaceFatPtrLEMaker interfaceFatPtrMaker;
 //  ControlBlockPtrLEMaker controlBlockPtrMaker;

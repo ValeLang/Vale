@@ -36,7 +36,7 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
             if (index != virtualIndex) {
               paramType
             } else {
-              paramType.copy(referend = superInterfaceRef2)
+              paramType.copy(kind = superInterfaceRef2)
             }
           })
 

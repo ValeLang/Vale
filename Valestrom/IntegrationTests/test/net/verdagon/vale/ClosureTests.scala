@@ -103,7 +103,7 @@ class ClosureTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Test closure's local variables") {
@@ -171,7 +171,7 @@ class ClosureTests extends FunSuite with Matchers {
       case LocalLookup2(_,ReferenceLocalVariable2(FullName2(_, _,ClosureParamName2()),Final,_),_, _) =>
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Mutates from inside a closure") {
@@ -205,25 +205,25 @@ class ClosureTests extends FunSuite with Matchers {
       case AddressibleLocalVariable2(_, Varying, _) =>
     }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Mutates from inside a closure inside a closure") {
     val compile = RunCompilation.test("fn main() int export { x! = 4; { { set x = x + 1; }!(); }!(); = x; }")
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Read from inside a closure inside a closure") {
     val compile = RunCompilation.test(
       """
-        |fn main() int {
+        |fn main() int export {
         |  x = 42;
         |  = { { x }() }();
         |}
         |""".stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Mutable lambda") {
@@ -240,6 +240,6 @@ class ClosureTests extends FunSuite with Matchers {
         }
       }).get
     vassert(closureStruct.mutability == Mutable)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 }

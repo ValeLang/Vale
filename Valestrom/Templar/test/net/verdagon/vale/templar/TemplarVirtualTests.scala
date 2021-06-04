@@ -57,7 +57,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
               Constraint,Readonly,
               InterfaceRef2(FullName2(_, List(),CitizenName2("IShip",List()))))) =>
         }
-        vassert(okConstructor.paramTypes.head.referend == targetSubtype)
+        vassert(okConstructor.paramTypes.head.kind == targetSubtype)
         vassert(errConstructor.paramTypes.head == sourceExpr.resultRegister.reference)
         as
       }
@@ -72,7 +72,7 @@ class TemplarVirtualTests extends FunSuite with Matchers {
         |impl IBork for Bork;
         |
         |fn rebork(virtual result &IBork) bool { true }
-        |fn main() {
+        |fn main() export {
         |  rebork(&Bork());
         |}
         |""".stripMargin)

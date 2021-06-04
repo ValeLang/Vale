@@ -23,7 +23,7 @@ object ExpressionHammer {
       currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       expr2: Expression2
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     expr2 match {
       case IntLiteral2(value) => {
         (ConstantI64H(value), List())
@@ -415,7 +415,7 @@ object ExpressionHammer {
             translateDeferreds(hinputs, hamuts, currentFunctionHeader, locals, innerExprResultLine, innerDeferreds)
 
         vassert(
-          innerExpr.resultRegister.referend == Never2() ||
+          innerExpr.resultRegister.kind == Never2() ||
           innerExpr.resultRegister.reference == currentFunctionHeader.returnType)
         (ReturnH(innerWithDeferreds), List())
       }
@@ -511,9 +511,9 @@ object ExpressionHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    originalExpr: ExpressionH[ReferendH],
+    originalExpr: ExpressionH[KindH],
     deferreds: List[Expression2]):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     if (deferreds.isEmpty) {
       return originalExpr
     }
@@ -555,7 +555,7 @@ object ExpressionHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       exprs2: List[Expression2]):
-  (List[ExpressionH[ReferendH]], List[Expression2]) = {
+  (List[ExpressionH[KindH]], List[Expression2]) = {
     exprs2 match {
       case Nil => (List(), List())
       case firstExpr :: restExprs => {
@@ -576,7 +576,7 @@ object ExpressionHammer {
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     exprs2: List[Expression2]):
-  List[ExpressionH[ReferendH]] = {
+  List[ExpressionH[KindH]] = {
     exprs2 match {
       case Nil => List()
       case firstExpr :: restExprs => {

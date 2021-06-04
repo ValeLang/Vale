@@ -496,7 +496,7 @@ class ScoutTests extends FunSuite with Matchers {
   test("Reports when we forget set") {
     val err = compileForError(
       """
-        |fn main() {
+        |fn main() export {
         |  x = "world!";
         |  x = "changed";
         |}

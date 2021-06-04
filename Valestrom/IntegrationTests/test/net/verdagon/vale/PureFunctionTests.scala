@@ -29,6 +29,6 @@ class PureFunctionTests extends FunSuite with Matchers {
           |  = pfunc(&s);
           |}
           |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
 }

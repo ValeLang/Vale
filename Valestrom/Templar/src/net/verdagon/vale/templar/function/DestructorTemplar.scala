@@ -23,7 +23,7 @@ class DestructorTemplar(
     temputs: Temputs,
     type2: Coord):
   (Prototype2) = {
-    type2.referend match {
+    type2.kind match {
       case PackT2(_, _) | StructRef2(_) => { // | OrdinaryClosure2(_, _, _) | TemplatedClosure2(_, _, _) => {
         overloadTemplar.scoutExpectedFunctionForPrototype(
           env,
@@ -72,7 +72,7 @@ class DestructorTemplar(
     temputs: Temputs,
     type2: Coord):
   (Prototype2) = {
-    type2.referend match {
+    type2.kind match {
       case StaticSizedArrayT2(_, _) | RuntimeSizedArrayT2(_) =>
     }
     overloadTemplar.scoutExpectedFunctionForPrototype(
@@ -129,9 +129,9 @@ class DestructorTemplar(
   (ReferenceExpression2) = {
     val resultExpr2 =
       undestructedExpr2.resultRegister.reference match {
-        case r@Coord(Own, Readwrite, referend) => {
+        case r@Coord(Own, Readwrite, kind) => {
           val destructorPrototype =
-            referend match {
+            kind match {
               case PackT2(_, understructRef) => {
                 getCitizenDestructor(fate.snapshot, temputs, Coord(Own, Readwrite, understructRef))
               }
@@ -168,7 +168,7 @@ class DestructorTemplar(
 
 
           val unshareExpr2 =
-            undestructedExpr2.resultRegister.reference.referend match {
+            undestructedExpr2.resultRegister.reference.kind match {
               case Never2() => undestructedExpr2
               case Int2() | Str2() | Bool2() | Float2() | Void2() => {
                 Discard2(undestructedExpr2)
@@ -190,15 +190,15 @@ class DestructorTemplar(
                 destroySharedArray(temputs, underarrayReference2)
               }
               case OverloadSet(overloadSetEnv, name, voidStructRef) => {
-                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(referend = voidStructRef)
+                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(kind = voidStructRef)
                 destroySharedCitizen(temputs, understructReference2)
               }
               case PackT2(_, understruct2) => {
-                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(referend = understruct2)
+                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(kind = understruct2)
                 destroySharedCitizen(temputs, understructReference2)
               }
               case TupleT2(_, understruct2) => {
-                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(referend = understruct2)
+                val understructReference2 = undestructedExpr2.resultRegister.reference.copy(kind = understruct2)
                 destroySharedCitizen(temputs, understructReference2)
               }
               case StructRef2(_) | InterfaceRef2(_) => {

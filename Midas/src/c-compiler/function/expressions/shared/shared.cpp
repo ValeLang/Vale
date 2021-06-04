@@ -58,7 +58,7 @@ LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* referendStructsSource,
+    IKindStructsSource* kindStructsSource,
     LLVMBuilderRef builder,
     Ref exprRef,
     Reference* refM,
@@ -78,8 +78,8 @@ LLVMValueRef adjustStrongRc(
   }
 
   auto controlBlockPtrLE =
-      referendStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
-  auto rcPtrLE = referendStructsSource->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtrLE);
+      kindStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
+  auto rcPtrLE = kindStructsSource->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
   auto newRc = adjustCounter(globalState, builder, rcPtrLE, amount);
 //  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
@@ -88,7 +88,7 @@ LLVMValueRef adjustStrongRc(
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {
@@ -218,9 +218,9 @@ Ref buildInterfaceCall(
     int virtualParamIndex) {
   auto virtualParamMT = prototype->params[virtualParamIndex];
 
-  auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(virtualParamMT->referend);
-  assert(interfaceReferendM);
-//  int indexInEdge = globalState->getInterfaceMethod(interfaceReferendM, prototype);
+  auto interfaceKindM = dynamic_cast<InterfaceKind*>(virtualParamMT->kind);
+  assert(interfaceKindM);
+//  int indexInEdge = globalState->getInterfaceMethod(interfaceKindM, prototype);
 
   auto virtualArgRef = argRefs[virtualParamIndex];
 
@@ -243,7 +243,7 @@ Ref buildInterfaceCall(
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
-  buildFlare(FL(), globalState, functionState, builder, interfaceReferendM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
+  buildFlare(FL(), globalState, functionState, builder, interfaceKindM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
 
 //  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
 //  auto funcPtrPtrLE =
@@ -337,7 +337,7 @@ Ref buildCall(
   auto resultRef = wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLE);
   globalState->getRegion(prototype->returnType)->checkValidReference(FL(), functionState, builder, prototype->returnType, resultRef);
 
-  if (prototype->returnType->referend == globalState->metalCache->never) {
+  if (prototype->returnType->kind == globalState->metalCache->never) {
     buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
     buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));

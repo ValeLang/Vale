@@ -45,8 +45,8 @@ Ref translateIf(
           FL(), functionState, builder, iff->commonSupertype, resultLE);
 
 
-  bool thenContinues = iff->thenResultType->referend != globalState->metalCache->never;
-  bool elseContinues = iff->elseResultType->referend != globalState->metalCache->never;
+  bool thenContinues = iff->thenResultType->kind != globalState->metalCache->never;
+  bool elseContinues = iff->elseResultType->kind != globalState->metalCache->never;
 
   auto thenUnstackifiedParentLocalIds = thenBlockState.getParentLocalIdsThatSelfUnstackified();
   auto elseUnstackifiedParentLocalIds = elseBlockState.getParentLocalIdsThatSelfUnstackified();

@@ -1058,7 +1058,7 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT)
       return baseName + "*";
     }
   } else {
-    std::cerr << "Unimplemented type in immutables' getMemberArbitraryRefNameCSeeMMEDT: "
+    std::cerr << "Unimplemented type in immutables' getExportName: "
               << typeid(*hostRefMT->kind).name() << std::endl;
     assert(false);
   }

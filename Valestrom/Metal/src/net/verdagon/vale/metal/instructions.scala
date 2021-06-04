@@ -4,7 +4,7 @@ import net.verdagon.vale.templar.{FullName2, IVarName2, LetNormal2}
 import net.verdagon.vale.{vassert, vcurious, vfail, vwat}
 
 // Common trait for all instructions.
-sealed trait ExpressionH[+T <: ReferendH] {
+sealed trait ExpressionH[+T <: KindH] {
   def resultType: ReferenceH[T]
 
   // Convenience functions for accessing this expression as the kind returning
@@ -90,21 +90,21 @@ case class ConstantF64H(
 // There can only be one of these per argument; this conceptually destroys
 // the containing argument and produces its value.
 case class ArgumentH(
-  resultType: ReferenceH[ReferendH],
+  resultType: ReferenceH[KindH],
   // The index of the argument, starting at 0.
   argumentIndex: Int
-) extends ExpressionH[ReferendH]
+) extends ExpressionH[KindH]
 
 // Takes a value from the source expression and puts it into a local
 // variable on the stack.
 case class StackifyH(
   // The expressions to read a value from.
-  sourceExpr: ExpressionH[ReferendH],
+  sourceExpr: ExpressionH[KindH],
   // Describes the local we're making.
   local: Local,
   // Name of the local variable. Used for debugging.
   name: Option[FullNameH]
-) extends ExpressionH[ReferendH] {
+) extends ExpressionH[KindH] {
   vassert(sourceExpr.resultType.kind == NeverH() ||
     sourceExpr.resultType == local.typeH)
 
@@ -118,11 +118,11 @@ case class UnstackifyH(
   // Describes the local we're pulling from. This is equal to the corresponding
   // StackifyH's `local` member.
   local: Local
-) extends ExpressionH[ReferendH] {
+) extends ExpressionH[KindH] {
   // Panics if this is ever not the case.
   vcurious(local.typeH == resultType)
 
-  override def resultType: ReferenceH[ReferendH] = local.typeH
+  override def resultType: ReferenceH[KindH] = local.typeH
 }
 
 // Takes a struct from the given expressions, and destroys it.
@@ -135,7 +135,7 @@ case class DestroyH(
   structExpression: ExpressionH[StructRefH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-  localTypes: List[ReferenceH[ReferendH]],
+  localTypes: List[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local],
 ) extends ExpressionH[StructRefH] {
@@ -155,7 +155,7 @@ case class DestroyStaticSizedArrayIntoLocalsH(
   structExpression: ExpressionH[StaticSizedArrayTH],
   // A list of types, one for each local variable we'll make.
   // TODO: If the vcurious below doesn't panic, get rid of this redundant member.
-  localTypes: List[ReferenceH[ReferendH]],
+  localTypes: List[ReferenceH[KindH]],
   // The locals to put the struct's members into.
   localIndices: Vector[Local]
 ) extends ExpressionH[StructRefH] {
@@ -195,11 +195,11 @@ case class LocalStoreH(
   // The existing local to store into.
   local: Local,
   // The expressions to get the source reference from.
-  sourceExpression: ExpressionH[ReferendH],
+  sourceExpression: ExpressionH[KindH],
   // Name of the local variable, for debug purposes.
   localName: FullNameH
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = local.typeH
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = local.typeH
 }
 
 // Takes a reference from the given local variable, and puts it into a new expressions.
@@ -218,10 +218,10 @@ case class LocalLoadH(
   targetPermission: PermissionH,
   // Name of the local variable, for debug purposes.
   localName: FullNameH
-) extends ExpressionH[ReferendH] {
+) extends ExpressionH[KindH] {
   vassert(targetOwnership != OwnH) // must unstackify to get an owning reference
 
-  override def resultType: ReferenceH[ReferendH] = {
+  override def resultType: ReferenceH[KindH] = {
     val location =
       (targetOwnership, local.typeH.location) match {
         case (BorrowH, _) => YonderH
@@ -236,13 +236,13 @@ case class LocalLoadH(
 // Turns a constraint ref into a weak ref.
 case class NarrowPermissionH(
   // Expression containing the constraint reference to turn into a weak ref.
-  refExpression: ExpressionH[ReferendH],
+  refExpression: ExpressionH[KindH],
   // The permission of the resulting reference. This doesn't have to
   // match the ownership of the source reference. For example, we might want
   // to load a constraint reference from an owning local.
   targetPermission: PermissionH,
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = {
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = {
     val ReferenceH(ownership, location, permission, kind) = refExpression.resultType
     (permission, targetPermission) match {
       case (ReadwriteH, ReadonlyH) =>
@@ -255,16 +255,16 @@ case class NarrowPermissionH(
 // Takes a reference from the given "source" expressions, and swaps it into the given
 // struct's member. The member's old reference is put into a new expressions.
 case class MemberStoreH(
-  resultType: ReferenceH[ReferendH],
+  resultType: ReferenceH[KindH],
   // Expression containing a reference to the struct whose member we will swap.
   structExpression: ExpressionH[StructRefH],
   // Which member to swap out, starting at 0.
   memberIndex: Int,
   // Expression containing the new value for the struct's member.
-  sourceExpression: ExpressionH[ReferendH],
+  sourceExpression: ExpressionH[KindH],
   // Name of the member, for debug purposes.
   memberName: FullNameH
-) extends ExpressionH[ReferendH]
+) extends ExpressionH[KindH]
 
 // Takes a reference from the given "struct" expressions, and copies it into a new
 // expressions. This can never move a reference, only alias it.
@@ -282,12 +282,12 @@ case class MemberLoadH(
 //  targetPermission: PermissionH,
   // The type we expect the member to be. This can easily be looked up, but is provided
   // here to be convenient for LLVM.
-  expectedMemberType: ReferenceH[ReferendH],
+  expectedMemberType: ReferenceH[KindH],
   // The type of the resulting reference.
-  resultType: ReferenceH[ReferendH],
+  resultType: ReferenceH[KindH],
   // Member's name, for debug purposes.
   memberName: FullNameH
-) extends ExpressionH[ReferendH] {
+) extends ExpressionH[KindH] {
 //  vassert(resultType.ownership == targetOwnership)
 //  vassert(resultType.permission == targetPermission)
 
@@ -302,7 +302,7 @@ case class NewArrayFromValuesH(
   // TODO: See if we can infer this from the types in the expressions.
   resultType: ReferenceH[StaticSizedArrayTH],
   // The expressions from which we'll get the values to put into the array.
-  sourceExpressions: List[ExpressionH[ReferendH]]
+  sourceExpressions: List[ExpressionH[KindH]]
 ) extends ExpressionH[StaticSizedArrayTH]
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
@@ -317,9 +317,9 @@ case class StaticSizedArrayStoreH(
   // Expression containing the index of the element we'll swap out.
   indexExpression: ExpressionH[IntH],
   // Expression containing the value we'll swap into the array.
-  sourceExpression: ExpressionH[ReferendH],
-  resultType: ReferenceH[ReferendH],
-) extends ExpressionH[ReferendH]
+  sourceExpression: ExpressionH[KindH],
+  resultType: ReferenceH[KindH],
+) extends ExpressionH[KindH]
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
 // the position specified by the integer in indexExpression. The old value from the
@@ -333,9 +333,9 @@ case class RuntimeSizedArrayStoreH(
   // Expression containing the index of the element we'll swap out.
   indexExpression: ExpressionH[IntH],
   // Expression containing the value we'll swap into the array.
-  sourceExpression: ExpressionH[ReferendH],
-  resultType: ReferenceH[ReferendH],
-) extends ExpressionH[ReferendH]
+  sourceExpression: ExpressionH[KindH],
+  resultType: ReferenceH[KindH],
+) extends ExpressionH[KindH]
 
 // Loads from the array in arrayExpression at the index in indexExpression, and stores
 // the result in expressionsId. This can never move a reference, only alias it.
@@ -354,11 +354,11 @@ case class RuntimeSizedArrayLoadH(
   // match the ownership of the source reference. For example, we might want
   // to load a constraint reference from an owning local.
   targetPermission: PermissionH,
-  expectedElementType: ReferenceH[ReferendH],
-  resultType: ReferenceH[ReferendH],
-) extends ExpressionH[ReferendH] {
+  expectedElementType: ReferenceH[KindH],
+  resultType: ReferenceH[KindH],
+) extends ExpressionH[KindH] {
 //
-//  override def resultType: ReferenceH[ReferendH] = {
+//  override def resultType: ReferenceH[KindH] = {
 //    val location =
 //      (targetOwnership, arrayExpression.resultType.kind.rawArray.elementType.location) match {
 //        case (BorrowH, _) => YonderH
@@ -386,12 +386,12 @@ case class StaticSizedArrayLoadH(
   // match the ownership of the source reference. For example, we might want
   // to load a constraint reference from an owning local.
   targetPermission: PermissionH,
-  expectedElementType: ReferenceH[ReferendH],
+  expectedElementType: ReferenceH[KindH],
   arraySize: Int,
-  resultType: ReferenceH[ReferendH],
-) extends ExpressionH[ReferendH] {
+  resultType: ReferenceH[KindH],
+) extends ExpressionH[KindH] {
 
-//  override def resultType: ReferenceH[ReferendH] = {
+//  override def resultType: ReferenceH[KindH] = {
 //    val location =
 //      (targetOwnership, arrayExpression.resultType.kind.rawArray.elementType.location) match {
 //        case (BorrowH, _) => YonderH
@@ -407,9 +407,9 @@ case class CallH(
   // Identifies which function to call.
   function: PrototypeH,
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: List[ExpressionH[ReferendH]]
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = function.returnType
+  argsExpressions: List[ExpressionH[KindH]]
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = function.returnType
 }
 
 // Calls a function defined in some other module.
@@ -417,15 +417,15 @@ case class ExternCallH(
   // Identifies which function to call.
   function: PrototypeH,
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: List[ExpressionH[ReferendH]]
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = function.returnType
+  argsExpressions: List[ExpressionH[KindH]]
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = function.returnType
 }
 
 // Calls a function on an interface.
 case class InterfaceCallH(
   // Expressions containing the arguments to pass to the function.
-  argsExpressions: List[ExpressionH[ReferendH]],
+  argsExpressions: List[ExpressionH[KindH]],
   // Which parameter has the interface whose table we'll read to get the function.
   virtualParamIndex: Int,
   // The type of the interface.
@@ -438,8 +438,8 @@ case class InterfaceCallH(
   // difference is that this prototype will have an interface at the virtualParamIndex'th
   // parameter, and the function that is eventually called will have a struct there.
   functionType: PrototypeH
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = functionType.returnType
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = functionType.returnType
   vassert(indexInEdge >= 0)
 }
 
@@ -452,20 +452,20 @@ case class IfH(
   conditionBlock: ExpressionH[BoolH],
   // The block to run if conditionBlock results in a true. The result of this block will be
   // put into expressionsId.
-  thenBlock: ExpressionH[ReferendH],
+  thenBlock: ExpressionH[KindH],
   // The block to run if conditionBlock results in a false. The result of this block will be
   // put into expressionsId.
-  elseBlock: ExpressionH[ReferendH],
+  elseBlock: ExpressionH[KindH],
 
-  commonSupertype: ReferenceH[ReferendH],
-) extends ExpressionH[ReferendH] {
+  commonSupertype: ReferenceH[KindH],
+) extends ExpressionH[KindH] {
   (thenBlock.resultType.kind, elseBlock.resultType.kind) match {
     case (NeverH(), _) =>
     case (_, NeverH()) =>
     case (a, b) if a == b =>
     case _ => vwat()
   }
-  override def resultType: ReferenceH[ReferendH] = commonSupertype
+  override def resultType: ReferenceH[KindH] = commonSupertype
 }
 
 // A while loop. Continuously runs bodyBlock until it returns false.
@@ -479,8 +479,8 @@ case class WhileH(
 // A collection of instructions. The last one will be used as the block's result.
 case class ConsecutorH(
   // The instructions to run.
-  nodes: List[ExpressionH[ReferendH]],
-) extends ExpressionH[ReferendH] {
+  nodes: List[ExpressionH[KindH]],
+) extends ExpressionH[KindH] {
   // We should simplify these away
   vassert(nodes.nonEmpty)
   // The init ones should always return void structs.
@@ -494,22 +494,22 @@ case class ConsecutorH(
     }
   }
 
-  override def resultType: ReferenceH[ReferendH] = nodes.last.resultType
+  override def resultType: ReferenceH[KindH] = nodes.last.resultType
 }
 
 // An expression where all locals declared inside will be destroyed by the time we exit.
 case class BlockH(
   // The instructions to run. This will probably be a consecutor.
-  inner: ExpressionH[ReferendH],
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = inner.resultType
+  inner: ExpressionH[KindH],
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = inner.resultType
 }
 
 // Ends the current function and returns a reference. A function will always end
 // with a return statement.
 case class ReturnH(
   // The expressions to read from, whose value we'll return from the function.
-  sourceExpression: ExpressionH[ReferendH]
+  sourceExpression: ExpressionH[KindH]
 ) extends ExpressionH[NeverH] {
   override def resultType: ReferenceH[NeverH] = ReferenceH(ShareH, InlineH, ReadonlyH, NeverH())
 }
@@ -525,11 +525,11 @@ case class ConstructRuntimeSizedArrayH(
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  generatorExpression: ExpressionH[ReferendH],
+  generatorExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
 
-  elementType: ReferenceH[ReferendH],
+  elementType: ReferenceH[KindH],
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
@@ -549,11 +549,11 @@ case class StaticArrayFromCallableH(
   // More specifically, we'll call the "__call" function on the interface, which
   // should be the only function on it.
   // This is a constraint reference.
-  generatorExpression: ExpressionH[ReferendH],
+  generatorExpression: ExpressionH[KindH],
   // The prototype for the "__call" function to call on the interface for each element.
   generatorMethod: PrototypeH,
 
-  elementType: ReferenceH[ReferendH],
+  elementType: ReferenceH[KindH],
   // The resulting type of the array.
   // TODO: Remove this, it's redundant with the generatorExpression's interface's
   // only method's return type.
@@ -577,7 +577,7 @@ case class DestroyStaticSizedArrayIntoFunctionH(
   consumerExpression: ExpressionH[InterfaceRefH],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
-  arrayElementType: ReferenceH[ReferendH],
+  arrayElementType: ReferenceH[KindH],
   arraySize: Int
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
@@ -596,7 +596,7 @@ case class DestroyRuntimeSizedArrayH(
   consumerExpression: ExpressionH[InterfaceRefH],
   // The prototype for the "__call" function to call on the interface for each element.
   consumerMethod: PrototypeH,
-  arrayElementType: ReferenceH[ReferendH],
+  arrayElementType: ReferenceH[KindH],
 ) extends ExpressionH[StructRefH] {
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
@@ -604,7 +604,7 @@ case class DestroyRuntimeSizedArrayH(
 // Creates a new struct instance.
 case class NewStructH(
   // Expressions containing the values we'll use as members of the new struct.
-  sourceExpressions: List[ExpressionH[ReferendH]],
+  sourceExpressions: List[ExpressionH[KindH]],
   // Names of the members of the struct, in order.
   targetMemberNames: List[FullNameH],
   // The type of struct we'll create.
@@ -614,7 +614,7 @@ case class NewStructH(
 // Gets the length of an unknown-sized array.
 case class ArrayLengthH(
   // Expression containing the array whose length we'll get.
-  sourceExpression: ExpressionH[ReferendH],
+  sourceExpression: ExpressionH[KindH],
 ) extends ExpressionH[IntH] {
   override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH())
 }
@@ -622,52 +622,52 @@ case class ArrayLengthH(
 // Turns a constraint ref into a weak ref.
 case class WeakAliasH(
   // Expression containing the constraint reference to turn into a weak ref.
-  refExpression: ExpressionH[ReferendH],
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
+  refExpression: ExpressionH[KindH],
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = ReferenceH(WeakH, YonderH, refExpression.resultType.permission, refExpression.resultType.kind)
 }
 
 // Checks if the given args are the same instance.
 case class IsSameInstanceH(
-  leftExpression: ExpressionH[ReferendH],
-  rightExpression: ExpressionH[ReferendH],
-) extends ExpressionH[ReferendH] {
-  override def resultType: ReferenceH[ReferendH] = ReferenceH(ShareH, InlineH, ReadonlyH, BoolH())
+  leftExpression: ExpressionH[KindH],
+  rightExpression: ExpressionH[KindH],
+) extends ExpressionH[KindH] {
+  override def resultType: ReferenceH[KindH] = ReferenceH(ShareH, InlineH, ReadonlyH, BoolH())
 }
 
 // Tries to downcast to the specified subtype and wrap in a Some.
 // If it fails, will result in a None.
 case class AsSubtypeH(
   // Expression whose result we'll try to downcast
-  sourceExpression: ExpressionH[ReferendH],
+  sourceExpression: ExpressionH[KindH],
   // The subtype to try and cast the source to.
-  targetType: ReferendH,
+  targetType: KindH,
   // Should be an owned ref to optional of something
   resultType: ReferenceH[InterfaceRefH],
   // Function to give a ref to to make a Some(ref)
   someConstructor: PrototypeH,
   // Function to make a None of the right type
   noneConstructor: PrototypeH,
-) extends ExpressionH[ReferendH]
+) extends ExpressionH[KindH]
 
 // Locks a weak ref to turn it into an optional of borrow ref.
 case class LockWeakH(
   // Expression containing the array whose length we'll get.
-  sourceExpression: ExpressionH[ReferendH],
+  sourceExpression: ExpressionH[KindH],
   // Should be an owned ref to optional of borrow ref of something
   resultType: ReferenceH[InterfaceRefH],
   // Function to give a borrow ref to to make a Some(borrow ref)
   someConstructor: PrototypeH,
   // Function to make a None of the right type
   noneConstructor: PrototypeH,
-) extends ExpressionH[ReferendH]
+) extends ExpressionH[KindH]
 
 // Only used for the VM, or a debug mode. Checks that the reference count
 // is as we expected.
 // This instruction can be safely ignored, it's mainly here for tests.
 case class CheckRefCountH(
   // Expression containing the reference whose ref count we'll measure.
-  refExpression: ExpressionH[ReferendH],
+  refExpression: ExpressionH[KindH],
   // The type of ref count to check.
   category: RefCountCategory,
   // Expression containing a number, so we can assert it's equal to the object's
@@ -690,7 +690,7 @@ case object RegisterRefCount extends RefCountCategory
 
 // See DINSIE for why this isn't three instructions, and why we don't have the
 // destructor prototype in it.
-case class DiscardH(sourceExpression: ExpressionH[ReferendH]) extends ExpressionH[StructRefH] {
+case class DiscardH(sourceExpression: ExpressionH[KindH]) extends ExpressionH[StructRefH] {
   sourceExpression.resultType.ownership match {
     case BorrowH | ShareH | WeakH =>
   }
@@ -711,8 +711,8 @@ trait IExpressionH {
     }
   }
 }
-case class ReferenceExpressionH(reference: ReferenceH[ReferendH]) extends IExpressionH
-case class AddressExpressionH(reference: ReferenceH[ReferendH]) extends IExpressionH
+case class ReferenceExpressionH(reference: ReferenceH[KindH]) extends IExpressionH
+case class AddressExpressionH(reference: ReferenceH[KindH]) extends IExpressionH
 
 // Identifies a local variable.
 case class Local(
@@ -723,7 +723,7 @@ case class Local(
   variability: Variability,
 
   // The type of the reference this local variable has.
-  typeH: ReferenceH[ReferendH],
+  typeH: ReferenceH[KindH],
 
   // Usually filled by catalyst, for Midas' benefit. Used in HGM.
   keepAlive: Boolean)

@@ -28,15 +28,43 @@ case class Impl2(
   }
 }
 
-case class ExportAs2(
+case class KindExport2(
   tyype: Kind,
   packageCoordinate: PackageCoordinate,
   exportedName: String
 ) extends Queriable2 {
-  vpass()
-
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     tyype.all(func)
+  }
+}
+
+case class FunctionExport2(
+  prototype: Prototype2,
+  packageCoordinate: PackageCoordinate,
+  exportedName: String
+) extends Queriable2 {
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    prototype.all(func)
+  }
+}
+
+case class KindExtern2(
+  tyype: Kind,
+  packageCoordinate: PackageCoordinate,
+  externName: String
+) extends Queriable2 {
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    tyype.all(func)
+  }
+}
+
+case class FunctionExtern2(
+  prototype: Prototype2,
+  packageCoordinate: PackageCoordinate,
+  externName: String
+) extends Queriable2 {
+  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+    prototype.all(func)
   }
 }
 
@@ -88,8 +116,8 @@ case class Function2(
   body: ReferenceExpression2) extends Queriable2 {
 
   vassert(
-    body.resultRegister.referend == Never2() ||
-    header.returnType.referend == Never2() ||
+    body.resultRegister.kind == Never2() ||
+    header.returnType.kind == Never2() ||
     body.resultRegister.reference == header.returnType)
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

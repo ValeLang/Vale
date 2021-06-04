@@ -68,8 +68,9 @@ class MetalCache {
 public:
   explicit MetalCache(AddressNumberer* addressNumberer_) :
       addressNumberer(addressNumberer_),
-      structReferends(0, addressNumberer->makeHasher<Name*>()),
-      interfaceReferends(0, addressNumberer->makeHasher<Name*>()),
+      structKinds(0, addressNumberer->makeHasher<Name*>()),
+      interfaceKinds(0, addressNumberer->makeHasher<Name*>()),
+      names(0, addressNumberer->makeHasher<PackageCoordinate*>()),
       ints(0, addressNumberer->makeHasher<RegionId*>()),
       bools(0, addressNumberer->makeHasher<RegionId*>()),
       strs(0, addressNumberer->makeHasher<RegionId*>()),
@@ -78,7 +79,7 @@ public:
       rawArrays(0, addressNumberer->makeHasher<Reference*>()),
       runtimeSizedArrays(0, addressNumberer->makeHasher<Name*>()),
       staticSizedArrays(0, addressNumberer->makeHasher<Name*>()),
-      unconvertedReferences(0, addressNumberer->makeHasher<Referend*>()),
+      unconvertedReferences(0, addressNumberer->makeHasher<Kind*>()),
       prototypes(0, addressNumberer->makeHasher<Name*>()),
       interfaceMethods(0, addressNumberer->makeHasher<Prototype*>()),
       locals(0, addressNumberer->makeHasher<VariableId*>()) {
@@ -102,7 +103,7 @@ public:
     strRef = getReference(Ownership::SHARE, Location::YONDER, str);
     never = getNever(rcImmRegionId);
     neverRef = getReference(Ownership::SHARE, Location::INLINE, never);
-//    regionReferend = getStructReferend(getName("__Region"));
+//    regionKind = getStructKind(getName("__Region"));
   }
 
   PackageCoordinate* getPackageCoordinate(const std::string& projectName, const std::vector<std::string>& packageSteps) {
@@ -149,18 +150,18 @@ public:
         [&](){ return new Never(regionId); });
   }
 
-  StructReferend* getStructReferend(Name* structName) {
+  StructKind* getStructKind(Name* structName) {
     return makeIfNotPresent(
-        &structReferends,
+        &structKinds,
         structName,
-        [&]() { return new StructReferend(structName); });
+        [&]() { return new StructKind(structName); });
   }
 
-  InterfaceReferend* getInterfaceReferend(Name* structName) {
+  InterfaceKind* getInterfaceKind(Name* structName) {
     return makeIfNotPresent(
-        &interfaceReferends,
+        &interfaceKinds,
         structName,
-        [&]() { return new InterfaceReferend(structName); });
+        [&]() { return new InterfaceKind(structName); });
   }
 
   RuntimeSizedArrayT* getRuntimeSizedArray(Name* name) {
@@ -191,11 +192,11 @@ public:
         [&](){ return new RegionId(packageCoordinate, nameStr); });
   }
 
-  Reference* getReference(Ownership ownership, Location location, Referend* referend) {
+  Reference* getReference(Ownership ownership, Location location, Kind* kind) {
     return makeIfNotPresent<Location, Reference*>(
-        &unconvertedReferences[referend][ownership],
+        &unconvertedReferences[kind][ownership],
         location,
-        [&](){ return new Reference(ownership, location, referend); });
+        [&](){ return new Reference(ownership, location, kind); });
   }
 
   Prototype* getPrototype(Name* name, Reference* returnType, std::vector<Reference*> paramTypes) {
@@ -221,8 +222,8 @@ public:
   AddressNumberer* addressNumberer;
 
   std::unordered_map<std::string, RegionId*> regionIds;
-  std::unordered_map<Name*, StructReferend*, AddressHasher<Name*>> structReferends;
-  std::unordered_map<Name*, InterfaceReferend*, AddressHasher<Name*>> interfaceReferends;
+  std::unordered_map<Name*, StructKind*, AddressHasher<Name*>> structKinds;
+  std::unordered_map<Name*, InterfaceKind*, AddressHasher<Name*>> interfaceKinds;
   std::unordered_map<PackageCoordinate*, std::unordered_map<std::string, Name*>, AddressHasher<PackageCoordinate*>> names;
 
   std::unordered_map<std::string, std::unordered_map<std::vector<std::string>, PackageCoordinate*, PackageCoordinate::StringVectorHasher, PackageCoordinate::StringVectorEquator>> packageCoords;
@@ -245,13 +246,13 @@ public:
   std::unordered_map<Name*, RuntimeSizedArrayT*, AddressHasher<Name*>> runtimeSizedArrays;
   std::unordered_map<Name*, StaticSizedArrayT*, AddressHasher<Name*>> staticSizedArrays;
   std::unordered_map<
-      Referend*,
+      Kind*,
       std::unordered_map<
           Ownership,
           std::unordered_map<
               Location,
               Reference*>>,
-      AddressHasher<Referend*>> unconvertedReferences;
+      AddressHasher<Kind*>> unconvertedReferences;
 
 
   using PrototypeByParamListMap =
@@ -293,15 +294,15 @@ public:
   Reference* strRef = nullptr;
   Never* never = nullptr;
   Reference* neverRef = nullptr;
-  StructReferend* emptyTupleStruct = nullptr;
+  StructKind* emptyTupleStruct = nullptr;
   Reference* emptyTupleStructRef = nullptr;
-  // This is a central referend that holds a region's data.
+  // This is a central kind that holds a region's data.
   // These will hold for example the bump pointer for an arena region,
   // or a free list pointer for HGM.
   // We hand these in to methods like allocate, deallocate, etc.
   // Right now we just use it to hold the bump pointer for linear regions.
   // Otherwise, for now, we're just handing in Nevers.
-//  StructReferend* regionReferend = nullptr;
+//  StructKind* regionKind = nullptr;
 };
 
 

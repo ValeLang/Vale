@@ -104,7 +104,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupFunction("moo")
-    packageH.exportNameToFullName("moo") shouldEqual moo.fullName
+    packageH.exportNameToFunction("moo") shouldEqual moo.prototype
   }
 
   test("Tests export struct") {
@@ -114,7 +114,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupStruct("Moo")
-    packageH.exportNameToFullName("Moo") shouldEqual moo.fullName
+    packageH.exportNameToKind("Moo") shouldEqual moo.getRef
   }
 
   test("Tests export struct twice") {
@@ -125,8 +125,8 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupStruct("Moo")
-    packageH.exportNameToFullName("Moo") shouldEqual moo.fullName
-    packageH.exportNameToFullName("Bork") shouldEqual moo.fullName
+    packageH.exportNameToKind("Moo") shouldEqual moo.getRef
+    packageH.exportNameToKind("Bork") shouldEqual moo.getRef
   }
 
   test("Tests export interface") {
@@ -136,7 +136,7 @@ class HammerTests extends FunSuite with Matchers {
         |""".stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val moo = packageH.lookupInterface("Moo")
-    packageH.exportNameToFullName("Moo") shouldEqual moo.fullName
+    packageH.exportNameToKind("Moo") shouldEqual moo.getRef
   }
 
   test("Tests exports from two modules, different names") {
@@ -153,10 +153,10 @@ class HammerTests extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
 
     val packageA = hamuts.lookupPackage(PackageCoordinate("moduleA", List()))
-    val fullNameA = vassertSome(packageA.exportNameToFullName.get("StructA"))
+    val fullNameA = vassertSome(packageA.exportNameToKind.get("StructA"))
 
     val packageB = hamuts.lookupPackage(PackageCoordinate("moduleB", List()))
-    val fullNameB = vassertSome(packageB.exportNameToFullName.get("StructB"))
+    val fullNameB = vassertSome(packageB.exportNameToKind.get("StructB"))
 
     vassert(fullNameA != fullNameB)
   }
@@ -176,10 +176,10 @@ class HammerTests extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
 
     val packageA = hamuts.lookupPackage(PackageCoordinate("moduleA", List()))
-    val fullNameA = vassertSome(packageA.exportNameToFullName.get("StructA"))
+    val fullNameA = vassertSome(packageA.exportNameToKind.get("StructA"))
 
     val packageB = hamuts.lookupPackage(PackageCoordinate("moduleB", List()))
-    val fullNameB = vassertSome(packageB.exportNameToFullName.get("StructA"))
+    val fullNameB = vassertSome(packageB.exportNameToKind.get("StructA"))
 
     vassert(fullNameA != fullNameB)
   }

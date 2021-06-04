@@ -11,7 +11,7 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
 
 
-ReferendStructs::ReferendStructs(GlobalState* globalState_, ControlBlock controlBlock_)
+KindStructs::KindStructs(GlobalState* globalState_, ControlBlock controlBlock_)
   : globalState(globalState_),
     controlBlock(controlBlock_) {
 
@@ -42,52 +42,52 @@ ReferendStructs::ReferendStructs(GlobalState* globalState_, ControlBlock control
   }
 }
 
-ControlBlock* ReferendStructs::getControlBlock() {
+ControlBlock* KindStructs::getControlBlock() {
   return &controlBlock;
 }
-ControlBlock* ReferendStructs::getControlBlock(Referend* referend) {
+ControlBlock* KindStructs::getControlBlock(Kind* kind) {
   return &controlBlock;
 }
-LLVMTypeRef ReferendStructs::getInnerStruct(StructReferend* structReferend) {
-  auto structIter = innerStructs.find(structReferend->fullName->name);
+LLVMTypeRef KindStructs::getInnerStruct(StructKind* structKind) {
+  auto structIter = innerStructs.find(structKind->fullName->name);
   assert(structIter != innerStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getWrapperStruct(StructReferend* structReferend) {
-  auto structIter = wrapperStructs.find(structReferend->fullName->name);
+LLVMTypeRef KindStructs::getWrapperStruct(StructKind* structKind) {
+  auto structIter = wrapperStructs.find(structKind->fullName->name);
   assert(structIter != wrapperStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
+LLVMTypeRef KindStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
   auto structIter = staticSizedArrayWrapperStructs.find(ssaMT->name->name);
   assert(structIter != staticSizedArrayWrapperStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
+LLVMTypeRef KindStructs::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
   auto structIter = runtimeSizedArrayWrapperStructs.find(rsaMT->name->name);
   assert(structIter != runtimeSizedArrayWrapperStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
-  auto structIter = interfaceRefStructs.find(interfaceReferend->fullName->name);
+LLVMTypeRef KindStructs::getInterfaceRefStruct(InterfaceKind* interfaceKind) {
+  auto structIter = interfaceRefStructs.find(interfaceKind->fullName->name);
   assert(structIter != interfaceRefStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getInterfaceTableStruct(InterfaceReferend* interfaceReferend) {
-  auto structIter = interfaceTableStructs.find(interfaceReferend->fullName->name);
+LLVMTypeRef KindStructs::getInterfaceTableStruct(InterfaceKind* interfaceKind) {
+  auto structIter = interfaceTableStructs.find(interfaceKind->fullName->name);
   assert(structIter != interfaceTableStructs.end());
   return structIter->second;
 }
-LLVMTypeRef ReferendStructs::getStringWrapperStruct() {
+LLVMTypeRef KindStructs::getStringWrapperStruct() {
   return stringWrapperStructL;
 }
 
-WeakableReferendStructs::WeakableReferendStructs(
+WeakableKindStructs::WeakableKindStructs(
   GlobalState* globalState_,
   ControlBlock controlBlock,
   LLVMTypeRef weakRefHeaderStructL_)
 : globalState(globalState_),
-  referendStructs(globalState_, std::move(controlBlock)),
+  kindStructs(globalState_, std::move(controlBlock)),
   weakRefHeaderStructL(weakRefHeaderStructL_) {
 
   assert(weakRefHeaderStructL);
@@ -104,47 +104,47 @@ WeakableReferendStructs::WeakableReferendStructs(
   LLVMStructSetBody(weakVoidRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
 
-ControlBlock* WeakableReferendStructs::getControlBlock(Referend* referend) {
-  return referendStructs.getControlBlock(referend);
+ControlBlock* WeakableKindStructs::getControlBlock(Kind* kind) {
+  return kindStructs.getControlBlock(kind);
 }
-ControlBlock* WeakableReferendStructs::getControlBlock() {
-  return referendStructs.getControlBlock();
+ControlBlock* WeakableKindStructs::getControlBlock() {
+  return kindStructs.getControlBlock();
 }
-LLVMTypeRef WeakableReferendStructs::getInnerStruct(StructReferend* structReferend) {
-  return referendStructs.getInnerStruct(structReferend);
+LLVMTypeRef WeakableKindStructs::getInnerStruct(StructKind* structKind) {
+  return kindStructs.getInnerStruct(structKind);
 }
-LLVMTypeRef WeakableReferendStructs::getWrapperStruct(StructReferend* structReferend) {
-  return referendStructs.getWrapperStruct(structReferend);
+LLVMTypeRef WeakableKindStructs::getWrapperStruct(StructKind* structKind) {
+  return kindStructs.getWrapperStruct(structKind);
 }
-LLVMTypeRef WeakableReferendStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
-  return referendStructs.getStaticSizedArrayWrapperStruct(ssaMT);
+LLVMTypeRef WeakableKindStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
+  return kindStructs.getStaticSizedArrayWrapperStruct(ssaMT);
 }
-LLVMTypeRef WeakableReferendStructs::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
-  return referendStructs.getRuntimeSizedArrayWrapperStruct(rsaMT);
+LLVMTypeRef WeakableKindStructs::getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) {
+  return kindStructs.getRuntimeSizedArrayWrapperStruct(rsaMT);
 }
-LLVMTypeRef WeakableReferendStructs::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
-  return referendStructs.getInterfaceRefStruct(interfaceReferend);
+LLVMTypeRef WeakableKindStructs::getInterfaceRefStruct(InterfaceKind* interfaceKind) {
+  return kindStructs.getInterfaceRefStruct(interfaceKind);
 }
-LLVMTypeRef WeakableReferendStructs::getInterfaceTableStruct(InterfaceReferend* interfaceReferend) {
-  return referendStructs.getInterfaceRefStruct(interfaceReferend);
+LLVMTypeRef WeakableKindStructs::getInterfaceTableStruct(InterfaceKind* interfaceKind) {
+  return kindStructs.getInterfaceRefStruct(interfaceKind);
 }
-LLVMTypeRef WeakableReferendStructs::getStructWeakRefStruct(StructReferend* structReferend) {
-  auto structIter = structWeakRefStructs.find(structReferend->fullName->name);
+LLVMTypeRef WeakableKindStructs::getStructWeakRefStruct(StructKind* structKind) {
+  auto structIter = structWeakRefStructs.find(structKind->fullName->name);
   assert(structIter != structWeakRefStructs.end());
   return structIter->second;
 }
-LLVMTypeRef WeakableReferendStructs::getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) {
+LLVMTypeRef WeakableKindStructs::getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) {
   auto structIter = staticSizedArrayWeakRefStructs.find(ssaMT->name->name);
   assert(structIter != staticSizedArrayWeakRefStructs.end());
   return structIter->second;
 }
-LLVMTypeRef WeakableReferendStructs::getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) {
+LLVMTypeRef WeakableKindStructs::getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) {
   auto structIter = runtimeSizedArrayWeakRefStructs.find(rsaMT->name->name);
   assert(structIter != runtimeSizedArrayWeakRefStructs.end());
   return structIter->second;
 }
-LLVMTypeRef WeakableReferendStructs::getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) {
-  auto interfaceIter = interfaceWeakRefStructs.find(interfaceReferend->fullName->name);
+LLVMTypeRef WeakableKindStructs::getInterfaceWeakRefStruct(InterfaceKind* interfaceKind) {
+  auto interfaceIter = interfaceWeakRefStructs.find(interfaceKind->fullName->name);
   assert(interfaceIter != interfaceWeakRefStructs.end());
   return interfaceIter->second;
 }
@@ -156,14 +156,14 @@ LLVMTypeRef WeakableReferendStructs::getInterfaceWeakRefStruct(InterfaceReferend
 
 
 
-void ReferendStructs::defineStruct(
-    StructReferend* structReferend,
+void KindStructs::defineStruct(
+    StructKind* structKind,
     std::vector<LLVMTypeRef> membersLT) {
-  LLVMTypeRef valStructL = getInnerStruct(structReferend);
+  LLVMTypeRef valStructL = getInnerStruct(structKind);
   LLVMStructSetBody(
       valStructL, membersLT.data(), membersLT.size(), false);
 
-  LLVMTypeRef wrapperStructL = getWrapperStruct(structReferend);
+  LLVMTypeRef wrapperStructL = getWrapperStruct(structKind);
   std::vector<LLVMTypeRef> wrapperStructMemberTypesL;
 
   // First member is a ref counts struct. We don't include the int directly
@@ -177,7 +177,7 @@ void ReferendStructs::defineStruct(
       wrapperStructL, wrapperStructMemberTypesL.data(), wrapperStructMemberTypesL.size(), false);
 }
 
-void ReferendStructs::declareStruct(StructReferend* structM) {
+void KindStructs::declareStruct(StructKind* structM) {
 
   auto innerStructL =
       LLVMStructCreateNamed(
@@ -193,7 +193,7 @@ void ReferendStructs::declareStruct(StructReferend* structM) {
 }
 
 
-void ReferendStructs::declareEdge(
+void KindStructs::declareEdge(
     Edge* edge) {
 
   auto interfaceTableStructL =
@@ -208,7 +208,7 @@ void ReferendStructs::declareEdge(
   globalState->interfaceTablePtrs.emplace(edge, itablePtr);
 }
 
-void ReferendStructs::defineEdge(
+void KindStructs::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
     std::vector<LLVMValueRef> functions) {
@@ -226,7 +226,7 @@ void ReferendStructs::defineEdge(
   LLVMSetInitializer(itablePtr,  itableLE);
 }
 
-void ReferendStructs::declareInterface(InterfaceDefinition* interface) {
+void KindStructs::declareInterface(InterfaceDefinition* interface) {
   assert(interfaceTableStructs.count(interface->name->name) == 0);
   auto interfaceTableStructL =
       LLVMStructCreateNamed(
@@ -256,35 +256,35 @@ void ReferendStructs::declareInterface(InterfaceDefinition* interface) {
   interfaceRefStructs.emplace(interface->name->name, interfaceRefStructL);
 }
 
-void ReferendStructs::defineInterface(
+void KindStructs::defineInterface(
     InterfaceDefinition* interface,
     std::vector<LLVMTypeRef> interfaceMethodTypesL) {
   LLVMTypeRef itableStruct =
-      getInterfaceTableStruct(interface->referend);
+      getInterfaceTableStruct(interface->kind);
 
   LLVMStructSetBody(
       itableStruct, interfaceMethodTypesL.data(), interfaceMethodTypesL.size(), false);
 }
 
 
-void ReferendStructs::declareStaticSizedArray(
+void KindStructs::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
 
   auto countedStruct = LLVMStructCreateNamed(globalState->context, staticSizedArrayMT->name->name.c_str());
   staticSizedArrayWrapperStructs.emplace(staticSizedArrayMT->name->name, countedStruct);
 }
 
-void ReferendStructs::declareRuntimeSizedArray(
+void KindStructs::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   auto countedStruct = LLVMStructCreateNamed(globalState->context, (runtimeSizedArrayMT->name->name + "rc").c_str());
   runtimeSizedArrayWrapperStructs.emplace(runtimeSizedArrayMT->name->name, countedStruct);
 }
 
-void ReferendStructs::defineRuntimeSizedArray(
+void KindStructs::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT,
     LLVMTypeRef elementLT) {
 
-  auto runtimeSizedArrayWrapperStruct = getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT->referend);
+  auto runtimeSizedArrayWrapperStruct = getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT->kind);
   auto innerArrayLT = LLVMArrayType(elementLT, 0);
 
   std::vector<LLVMTypeRef> elementsL;
@@ -298,10 +298,10 @@ void ReferendStructs::defineRuntimeSizedArray(
   LLVMStructSetBody(runtimeSizedArrayWrapperStruct, elementsL.data(), elementsL.size(), false);
 }
 
-void ReferendStructs::defineStaticSizedArray(
+void KindStructs::defineStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT,
     LLVMTypeRef elementLT) {
-  auto staticSizedArrayWrapperStruct = getStaticSizedArrayWrapperStruct(staticSizedArrayMT->referend);
+  auto staticSizedArrayWrapperStruct = getStaticSizedArrayWrapperStruct(staticSizedArrayMT->kind);
 
   auto innerArrayLT = LLVMArrayType(elementLT, staticSizedArrayMT->size);
 
@@ -315,30 +315,30 @@ void ReferendStructs::defineStaticSizedArray(
 }
 
 
-WrapperPtrLE ReferendStructs::makeWrapperPtr(
+WrapperPtrLE KindStructs::makeWrapperPtr(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* referenceM,
     LLVMValueRef ptrLE) {
   assert(ptrLE != nullptr);
-  Referend* referend = referenceM->referend;
+  Kind* kind = referenceM->kind;
 
   WrapperPtrLE wrapperPtrLE = makeWrapperPtrWithoutChecking(checkerAFL, functionState, builder, referenceM, ptrLE);
 
-  if (dynamic_cast<StructReferend*>(referend)) {
+  if (dynamic_cast<StructKind*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-  } else if (dynamic_cast<InterfaceReferend*>(referend)) {
+  } else if (dynamic_cast<InterfaceKind*>(kind)) {
     // can we even get a wrapper struct for an interface?
     assert(false);
-  } else if (dynamic_cast<StaticSizedArrayT*>(referend)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-  } else if (dynamic_cast<RuntimeSizedArrayT*>(referend)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
-  } else if (dynamic_cast<Str*>(referend)) {
+  } else if (dynamic_cast<Str*>(kind)) {
     auto controlBlockPtrLE = getConcreteControlBlockPtr(checkerAFL, functionState, builder, referenceM, wrapperPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE.refLE);
   } else assert(false);
@@ -347,7 +347,7 @@ WrapperPtrLE ReferendStructs::makeWrapperPtr(
 }
 
 
-WrapperPtrLE ReferendStructs::makeWrapperPtrWithoutChecking(
+WrapperPtrLE KindStructs::makeWrapperPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -355,17 +355,17 @@ WrapperPtrLE ReferendStructs::makeWrapperPtrWithoutChecking(
     LLVMValueRef ptrLE) {
   assert(ptrLE != nullptr);
 
-  Referend* referend = referenceM->referend;
+  Kind* kind = referenceM->kind;
   LLVMTypeRef wrapperStructLT = nullptr;
-  if (auto structReferend = dynamic_cast<StructReferend*>(referend)) {
-    wrapperStructLT = getWrapperStruct(structReferend);
-  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
+  if (auto structKind = dynamic_cast<StructKind*>(kind)) {
+    wrapperStructLT = getWrapperStruct(structKind);
+  } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(kind)) {
     assert(false); // can we even get a wrapper struct for an interface?
-  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(referend)) {
+  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
     wrapperStructLT = getStaticSizedArrayWrapperStruct(ssaMT);
-  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(referend)) {
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
     wrapperStructLT = getRuntimeSizedArrayWrapperStruct(rsaMT);
-  } else if (auto strMT = dynamic_cast<Str*>(referend)) {
+  } else if (auto strMT = dynamic_cast<Str*>(kind)) {
     wrapperStructLT = stringWrapperStructL;
   } else assert(false);
   assert(LLVMTypeOf(ptrLE) == LLVMPointerType(wrapperStructLT, 0));
@@ -375,15 +375,15 @@ WrapperPtrLE ReferendStructs::makeWrapperPtrWithoutChecking(
   return wrapperPtrLE;
 }
 
-InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtrWithoutChecking(
+InterfaceFatPtrLE KindStructs::makeInterfaceFatPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* referenceM_,
     LLVMValueRef ptrLE) {
-  auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(referenceM_->referend);
-  assert(interfaceReferendM);
-  assert(LLVMTypeOf(ptrLE) == getInterfaceRefStruct(interfaceReferendM));
+  auto interfaceKindM = dynamic_cast<InterfaceKind*>(referenceM_->kind);
+  assert(interfaceKindM);
+  assert(LLVMTypeOf(ptrLE) == getInterfaceRefStruct(interfaceKindM));
 
   auto interfaceFatPtrLE = InterfaceFatPtrLE(referenceM_, ptrLE);
 
@@ -393,7 +393,7 @@ InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtrWithoutChecking(
   return interfaceFatPtrLE;
 }
 
-InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtr(
+InterfaceFatPtrLE KindStructs::makeInterfaceFatPtr(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -408,44 +408,44 @@ InterfaceFatPtrLE ReferendStructs::makeInterfaceFatPtr(
   return interfaceFatPtrLE;
 }
 
-ControlBlockPtrLE ReferendStructs::makeControlBlockPtr(
+ControlBlockPtrLE KindStructs::makeControlBlockPtr(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     LLVMValueRef controlBlockPtrLE) {
-  auto result = makeControlBlockPtrWithoutChecking(checkerAFL, functionState, builder, referendM, controlBlockPtrLE);
+  auto result = makeControlBlockPtrWithoutChecking(checkerAFL, functionState, builder, kindM, controlBlockPtrLE);
   buildAssertCensusContains(checkerAFL, globalState, functionState, builder, controlBlockPtrLE);
   return result;
 }
 
-ControlBlockPtrLE ReferendStructs::makeControlBlockPtrWithoutChecking(
+ControlBlockPtrLE KindStructs::makeControlBlockPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     LLVMValueRef controlBlockPtrLE) {
   auto actualTypeOfControlBlockPtrLE = LLVMTypeOf(controlBlockPtrLE);
-  auto expectedControlBlockStructL = getControlBlock(referendM)->getStruct();
+  auto expectedControlBlockStructL = getControlBlock(kindM)->getStruct();
   auto expectedControlBlockStructPtrL = LLVMPointerType(expectedControlBlockStructL, 0);
   assert(actualTypeOfControlBlockPtrLE == expectedControlBlockStructPtrL);
 
-  return ControlBlockPtrLE(referendM, controlBlockPtrLE);
+  return ControlBlockPtrLE(kindM, controlBlockPtrLE);
 }
 
 
-LLVMValueRef ReferendStructs::getStringBytesPtr(
+LLVMValueRef KindStructs::getStringBytesPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE ptrLE) {
   return getCharsPtrFromWrapperPtr(globalState, builder, ptrLE);
 }
 
-LLVMValueRef ReferendStructs::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
+LLVMValueRef KindStructs::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
   return getLenFromStrWrapperPtr(builder, ptrLE);
 }
 
-ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtr(
+ControlBlockPtrLE KindStructs::getConcreteControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -454,11 +454,11 @@ ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtr(
   // Control block is always the 0th element of every concrete struct.
   return makeControlBlockPtr(
       from, functionState, builder,
-      wrapperPtrLE.refM->referend,
+      wrapperPtrLE.refM->kind,
       LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
 }
 
-ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtrWithoutChecking(
+ControlBlockPtrLE KindStructs::getConcreteControlBlockPtrWithoutChecking(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -467,75 +467,75 @@ ControlBlockPtrLE ReferendStructs::getConcreteControlBlockPtrWithoutChecking(
   // Control block is always the 0th element of every concrete struct.
   return makeControlBlockPtrWithoutChecking(
       from, functionState, builder,
-      wrapperPtrLE.refM->referend,
+      wrapperPtrLE.refM->kind,
       LLVMBuildStructGEP(builder, wrapperPtrLE.refLE, 0, "controlPtr"));
 }
 
 
 
-ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
+ControlBlockPtrLE KindStructs::getControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
   // Interface fat pointer's first element points directly at the control block,
   // and we dont have to cast it. We would have to cast if we were accessing the
   // actual object though.
   return makeControlBlockPtr(
       from, functionState, builder,
-      interfaceFatPtrLE.refM->referend,
+      interfaceFatPtrLE.refM->kind,
       LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
 }
 
-ControlBlockPtrLE ReferendStructs::getControlBlockPtrWithoutChecking(
+ControlBlockPtrLE KindStructs::getControlBlockPtrWithoutChecking(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
   // Interface fat pointer's first element points directly at the control block,
   // and we dont have to cast it. We would have to cast if we were accessing the
   // actual object though.
   return makeControlBlockPtrWithoutChecking(
       from, functionState, builder,
-      interfaceFatPtrLE.refM->referend,
+      interfaceFatPtrLE.refM->kind,
       LLVMBuildExtractValue(builder, interfaceFatPtrLE.refLE, 0, "controlPtr"));
 }
 
-ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
+ControlBlockPtrLE KindStructs::getControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     Ref ref,
     Reference* referenceM) {
-  auto referendM = referenceM->referend;
-  if (dynamic_cast<InterfaceReferend*>(referendM)) {
+  auto kindM = referenceM->kind;
+  if (dynamic_cast<InterfaceKind*>(kindM)) {
     auto referenceLE =
         makeInterfaceFatPtr(
             from, functionState, builder, referenceM,
             globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
-    return getControlBlockPtr(from, functionState, builder, referendM, referenceLE);
-  } else if (dynamic_cast<StructReferend*>(referendM)) {
+    return getControlBlockPtr(from, functionState, builder, kindM, referenceLE);
+  } else if (dynamic_cast<StructKind*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
             globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<StaticSizedArrayT*>(referendM)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
             globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<RuntimeSizedArrayT*>(referendM)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
             globalState->getRegion(referenceM)->checkValidReference(from, functionState, builder, referenceM, ref));
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<Str*>(referendM)) {
+  } else if (dynamic_cast<Str*>(kindM)) {
     auto referenceLE =
         makeWrapperPtr(
             from, functionState, builder, referenceM,
@@ -546,27 +546,27 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
   }
 }
 
-ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
+ControlBlockPtrLE KindStructs::getControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef ref,
     Reference* referenceM) {
-  auto referendM = referenceM->referend;
-  if (dynamic_cast<InterfaceReferend*>(referendM)) {
+  auto kindM = referenceM->kind;
+  if (dynamic_cast<InterfaceKind*>(kindM)) {
     auto referenceLE = makeInterfaceFatPtr(from, functionState, builder, referenceM, ref);
-    return getControlBlockPtr(from, functionState, builder, referendM, referenceLE);
-  } else if (dynamic_cast<StructReferend*>(referendM)) {
+    return getControlBlockPtr(from, functionState, builder, kindM, referenceLE);
+  } else if (dynamic_cast<StructKind*>(kindM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<StaticSizedArrayT*>(referendM)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<RuntimeSizedArrayT*>(referendM)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<Str*>(referendM)) {
+  } else if (dynamic_cast<Str*>(kindM)) {
     auto referenceLE = makeWrapperPtr(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtr(from, functionState, builder, referenceM, referenceLE);
   } else {
@@ -574,27 +574,27 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtr(
   }
 }
 
-ControlBlockPtrLE ReferendStructs::getControlBlockPtrWithoutChecking(
+ControlBlockPtrLE KindStructs::getControlBlockPtrWithoutChecking(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef ref,
     Reference* referenceM) {
-  auto referendM = referenceM->referend;
-  if (dynamic_cast<InterfaceReferend*>(referendM)) {
+  auto kindM = referenceM->kind;
+  if (dynamic_cast<InterfaceKind*>(kindM)) {
     auto referenceLE = makeInterfaceFatPtrWithoutChecking(from, functionState, builder, referenceM, ref);
-    return getControlBlockPtrWithoutChecking(from, functionState, builder, referendM, referenceLE);
-  } else if (dynamic_cast<StructReferend*>(referendM)) {
+    return getControlBlockPtrWithoutChecking(from, functionState, builder, kindM, referenceLE);
+  } else if (dynamic_cast<StructKind*>(kindM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<StaticSizedArrayT*>(referendM)) {
+  } else if (dynamic_cast<StaticSizedArrayT*>(kindM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<RuntimeSizedArrayT*>(referendM)) {
+  } else if (dynamic_cast<RuntimeSizedArrayT*>(kindM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
-  } else if (dynamic_cast<Str*>(referendM)) {
+  } else if (dynamic_cast<Str*>(kindM)) {
     auto referenceLE = makeWrapperPtrWithoutChecking(from, functionState, builder, referenceM, ref);
     return getConcreteControlBlockPtrWithoutChecking(from, functionState, builder, referenceM, referenceLE);
   } else {
@@ -603,9 +603,9 @@ ControlBlockPtrLE ReferendStructs::getControlBlockPtrWithoutChecking(
 }
 
 
-LLVMValueRef ReferendStructs::getStructContentsPtr(
+LLVMValueRef KindStructs::getStructContentsPtr(
     LLVMBuilderRef builder,
-    Referend* referend,
+    Kind* kind,
     WrapperPtrLE wrapperPtrLE) {
   return LLVMBuildStructGEP(
       builder,
@@ -615,7 +615,7 @@ LLVMValueRef ReferendStructs::getStructContentsPtr(
 }
 
 
-LLVMValueRef ReferendStructs::getVoidPtrFromInterfacePtr(
+LLVMValueRef KindStructs::getVoidPtrFromInterfacePtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
@@ -623,14 +623,14 @@ LLVMValueRef ReferendStructs::getVoidPtrFromInterfacePtr(
   assert(LLVMTypeOf(virtualArgLE.refLE) == globalState->getRegion(virtualParamMT)->translateType(virtualParamMT));
   return LLVMBuildPointerCast(
       builder,
-      getControlBlockPtr(FL(), functionState, builder, virtualParamMT->referend, virtualArgLE).refLE,
+      getControlBlockPtr(FL(), functionState, builder, virtualParamMT->kind, virtualArgLE).refLE,
       LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
       "objAsVoidPtr");
 }
 
-LLVMValueRef ReferendStructs::getObjIdFromControlBlockPtr(
+LLVMValueRef KindStructs::getObjIdFromControlBlockPtr(
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->census);
   return LLVMBuildLoad(
@@ -638,12 +638,12 @@ LLVMValueRef ReferendStructs::getObjIdFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          getControlBlock(referendM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
+          getControlBlock(kindM)->getMemberIndex(ControlBlockMember::CENSUS_OBJ_ID),
           "objIdPtr"),
       "objId");
 }
 
-LLVMValueRef ReferendStructs::getStrongRcFromControlBlockPtr(
+LLVMValueRef KindStructs::getStrongRcFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE structExpr) {
@@ -666,7 +666,7 @@ LLVMValueRef ReferendStructs::getStrongRcFromControlBlockPtr(
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
-LLVMValueRef ReferendStructs::getStrongRcPtrFromControlBlockPtr(
+LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
@@ -687,19 +687,19 @@ LLVMValueRef ReferendStructs::getStrongRcPtrFromControlBlockPtr(
   return LLVMBuildStructGEP(
       builder,
       controlBlockPtr.refLE,
-      getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::STRONG_RC),
+      getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::STRONG_RC),
       "rcPtr");
 }
 
 
 
 
-void WeakableReferendStructs::defineStruct(
-    StructReferend* struuct,
+void WeakableKindStructs::defineStruct(
+    StructKind* struuct,
     std::vector<LLVMTypeRef> membersLT) {
   assert(weakRefHeaderStructL);
 
-  referendStructs.defineStruct(struuct, membersLT);
+  kindStructs.defineStruct(struuct, membersLT);
 
   LLVMTypeRef wrapperStructL = getWrapperStruct(struuct);
 
@@ -710,8 +710,8 @@ void WeakableReferendStructs::defineStruct(
   LLVMStructSetBody(structWeakRefStructL, structWeakRefStructMemberTypesL.data(), structWeakRefStructMemberTypesL.size(), false);
 }
 
-void WeakableReferendStructs::declareStruct(StructReferend* structM) {
-  referendStructs.declareStruct(structM);
+void WeakableKindStructs::declareStruct(StructKind* structM) {
+  kindStructs.declareStruct(structM);
 
   auto structWeakRefStructL =
       LLVMStructCreateNamed(
@@ -721,20 +721,20 @@ void WeakableReferendStructs::declareStruct(StructReferend* structM) {
 }
 
 
-void WeakableReferendStructs::declareEdge(
+void WeakableKindStructs::declareEdge(
     Edge* edge) {
-  referendStructs.declareEdge(edge);
+  kindStructs.declareEdge(edge);
 }
 
-void WeakableReferendStructs::defineEdge(
+void WeakableKindStructs::defineEdge(
     Edge* edge,
     std::vector<LLVMTypeRef> interfaceFunctionsLT,
     std::vector<LLVMValueRef> functions) {
-  referendStructs.defineEdge(edge, interfaceFunctionsLT, functions);
+  kindStructs.defineEdge(edge, interfaceFunctionsLT, functions);
 }
 
-void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
-  referendStructs.declareInterface(interface);
+void WeakableKindStructs::declareInterface(InterfaceDefinition* interface) {
+  kindStructs.declareInterface(interface);
 
   auto interfaceWeakRefStructL =
       LLVMStructCreateNamed(
@@ -744,7 +744,7 @@ void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
   interfaceWeakRefStructs.emplace(interface->name->name, interfaceWeakRefStructL);
 
 
-  LLVMTypeRef refStructL = getInterfaceRefStruct(interface->referend);
+  LLVMTypeRef refStructL = getInterfaceRefStruct(interface->kind);
 
   std::vector<LLVMTypeRef> interfaceWeakRefStructMemberTypesL;
   interfaceWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
@@ -752,18 +752,18 @@ void WeakableReferendStructs::declareInterface(InterfaceDefinition* interface) {
   LLVMStructSetBody(interfaceWeakRefStructL, interfaceWeakRefStructMemberTypesL.data(), interfaceWeakRefStructMemberTypesL.size(), false);
 }
 
-void WeakableReferendStructs::defineInterface(
+void WeakableKindStructs::defineInterface(
     InterfaceDefinition* interface,
     std::vector<LLVMTypeRef> interfaceMethodTypesL) {
   assert(weakRefHeaderStructL);
 
-  referendStructs.defineInterface(interface, interfaceMethodTypesL);
+  kindStructs.defineInterface(interface, interfaceMethodTypesL);
 }
 
 
-void WeakableReferendStructs::declareStaticSizedArray(
+void WeakableKindStructs::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
-  referendStructs.declareStaticSizedArray(staticSizedArrayMT);
+  kindStructs.declareStaticSizedArray(staticSizedArrayMT);
 
   auto weakRefStructL =
       LLVMStructCreateNamed(
@@ -772,9 +772,9 @@ void WeakableReferendStructs::declareStaticSizedArray(
   staticSizedArrayWeakRefStructs.emplace(staticSizedArrayMT->name->name, weakRefStructL);
 }
 
-void WeakableReferendStructs::declareRuntimeSizedArray(
+void WeakableKindStructs::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
-  referendStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
+  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
 
   auto weakRefStructL =
       LLVMStructCreateNamed(
@@ -783,48 +783,48 @@ void WeakableReferendStructs::declareRuntimeSizedArray(
   runtimeSizedArrayWeakRefStructs.emplace(runtimeSizedArrayMT->name->name, weakRefStructL);
 }
 
-void WeakableReferendStructs::defineRuntimeSizedArray(
+void WeakableKindStructs::defineRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT,
     LLVMTypeRef elementLT) {
   assert(weakRefHeaderStructL);
 
-  referendStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
 
-  auto runtimeSizedArrayWrapperStruct = getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT->referend);
+  auto runtimeSizedArrayWrapperStruct = getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT->kind);
 
-  auto arrayWeakRefStructL = getRuntimeSizedArrayWeakRefStruct(runtimeSizedArrayMT->referend);
+  auto arrayWeakRefStructL = getRuntimeSizedArrayWeakRefStruct(runtimeSizedArrayMT->kind);
   std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
   arrayWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
   arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(runtimeSizedArrayWrapperStruct, 0));
   LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
 }
 
-void WeakableReferendStructs::defineStaticSizedArray(
+void WeakableKindStructs::defineStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT,
     LLVMTypeRef elementLT) {
   assert(weakRefHeaderStructL);
 
-  referendStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
+  kindStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 
-  auto staticSizedArrayWrapperStruct = getStaticSizedArrayWrapperStruct(staticSizedArrayMT->referend);
+  auto staticSizedArrayWrapperStruct = getStaticSizedArrayWrapperStruct(staticSizedArrayMT->kind);
 
-  auto arrayWeakRefStructL = getStaticSizedArrayWeakRefStruct(staticSizedArrayMT->referend);
+  auto arrayWeakRefStructL = getStaticSizedArrayWeakRefStruct(staticSizedArrayMT->kind);
   std::vector<LLVMTypeRef> arrayWeakRefStructMemberTypesL;
   arrayWeakRefStructMemberTypesL.push_back(weakRefHeaderStructL);
   arrayWeakRefStructMemberTypesL.push_back(LLVMPointerType(staticSizedArrayWrapperStruct, 0));
   LLVMStructSetBody(arrayWeakRefStructL, arrayWeakRefStructMemberTypesL.data(), arrayWeakRefStructMemberTypesL.size(), false);
 }
 
-WeakFatPtrLE WeakableReferendStructs::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
-  if (auto structReferendM = dynamic_cast<StructReferend*>(referenceM_->referend)) {
-    assert(LLVMTypeOf(ptrLE) == getStructWeakRefStruct(structReferendM));
-  } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(referenceM_->referend)) {
+WeakFatPtrLE WeakableKindStructs::makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) {
+  if (auto structKindM = dynamic_cast<StructKind*>(referenceM_->kind)) {
+    assert(LLVMTypeOf(ptrLE) == getStructWeakRefStruct(structKindM));
+  } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(referenceM_->kind)) {
     assert(
         LLVMTypeOf(ptrLE) == weakVoidRefStructL ||
-            LLVMTypeOf(ptrLE) == getInterfaceWeakRefStruct(interfaceReferendM));
-  } else if (auto ssaT = dynamic_cast<StaticSizedArrayT*>(referenceM_->referend)) {
+            LLVMTypeOf(ptrLE) == getInterfaceWeakRefStruct(interfaceKindM));
+  } else if (auto ssaT = dynamic_cast<StaticSizedArrayT*>(referenceM_->kind)) {
     assert(LLVMTypeOf(ptrLE) == getStaticSizedArrayWeakRefStruct(ssaT));
-  } else if (auto rsaT = dynamic_cast<RuntimeSizedArrayT*>(referenceM_->referend)) {
+  } else if (auto rsaT = dynamic_cast<RuntimeSizedArrayT*>(referenceM_->kind)) {
     assert(LLVMTypeOf(ptrLE) == getRuntimeSizedArrayWeakRefStruct(rsaT));
   } else {
     assert(false);
@@ -832,13 +832,13 @@ WeakFatPtrLE WeakableReferendStructs::makeWeakFatPtr(Reference* referenceM_, LLV
   return WeakFatPtrLE(referenceM_, ptrLE);
 }
 
-WeakFatPtrLE WeakableReferendStructs::downcastWeakFatPtr(
+WeakFatPtrLE WeakableKindStructs::downcastWeakFatPtr(
     LLVMBuilderRef builder,
-    StructReferend* targetStructReferend,
+    StructKind* targetStructKind,
     Reference* targetRefMT,
     LLVMValueRef sourceWeakFatPtrLE) {
-  assert(targetRefMT->referend == targetStructReferend);
-  auto weakRefVoidStructLT = getWeakVoidRefStruct(targetStructReferend);
+  assert(targetRefMT->kind == targetStructKind);
+  auto weakRefVoidStructLT = getWeakVoidRefStruct(targetStructKind);
   assert(LLVMTypeOf(sourceWeakFatPtrLE) == weakRefVoidStructLT);
 
   auto weakRefHeaderStruct =
@@ -847,11 +847,11 @@ WeakFatPtrLE WeakableReferendStructs::downcastWeakFatPtr(
       LLVMBuildExtractValue(builder, sourceWeakFatPtrLE, 1, "objVoidPtr");
 
   auto underlyingStructPtrLT =
-      LLVMPointerType(referendStructs.getWrapperStruct(targetStructReferend), 0);
+      LLVMPointerType(kindStructs.getWrapperStruct(targetStructKind), 0);
   auto underlyingStructPtrLE =
       LLVMBuildBitCast(builder, objVoidPtrLE, underlyingStructPtrLT, "subtypePtr");
 
-  auto resultStructRefLT = getStructWeakRefStruct(targetStructReferend);
+  auto resultStructRefLT = getStructWeakRefStruct(targetStructKind);
   auto resultStructRefLE = LLVMGetUndef(resultStructRefLT);
   resultStructRefLE = LLVMBuildInsertValue(builder, resultStructRefLE, weakRefHeaderStruct, 0, "withHeader");
   resultStructRefLE = LLVMBuildInsertValue(builder, resultStructRefLE, underlyingStructPtrLE, 1, "withBoth");
@@ -860,153 +860,153 @@ WeakFatPtrLE WeakableReferendStructs::downcastWeakFatPtr(
   return targetWeakRef;
 }
 
-ControlBlockPtrLE WeakableReferendStructs::getConcreteControlBlockPtr(
+ControlBlockPtrLE WeakableKindStructs::getConcreteControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* reference,
     WrapperPtrLE wrapperPtrLE) {
-  return referendStructs.getConcreteControlBlockPtr(from, functionState, builder, reference, wrapperPtrLE);
+  return kindStructs.getConcreteControlBlockPtr(from, functionState, builder, reference, wrapperPtrLE);
 }
 
-LLVMTypeRef WeakableReferendStructs::getStringWrapperStruct() {
-  return referendStructs.getStringWrapperStruct();
+LLVMTypeRef WeakableKindStructs::getStringWrapperStruct() {
+  return kindStructs.getStringWrapperStruct();
 }
 
-WrapperPtrLE WeakableReferendStructs::makeWrapperPtr(
+WrapperPtrLE WeakableKindStructs::makeWrapperPtr(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* referenceM,
     LLVMValueRef ptrLE) {
-  return referendStructs.makeWrapperPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
+  return kindStructs.makeWrapperPtr(checkerAFL, functionState, builder, referenceM, ptrLE);
 }
 
-InterfaceFatPtrLE WeakableReferendStructs::makeInterfaceFatPtr(
+InterfaceFatPtrLE WeakableKindStructs::makeInterfaceFatPtr(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* referenceM_,
     LLVMValueRef ptrLE) {
-  return referendStructs.makeInterfaceFatPtr(checkerAFL, functionState, builder, referenceM_, ptrLE);
+  return kindStructs.makeInterfaceFatPtr(checkerAFL, functionState, builder, referenceM_, ptrLE);
 }
 
-InterfaceFatPtrLE WeakableReferendStructs::makeInterfaceFatPtrWithoutChecking(
+InterfaceFatPtrLE WeakableKindStructs::makeInterfaceFatPtrWithoutChecking(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* referenceM_,
     LLVMValueRef ptrLE) {
-  return referendStructs.makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM_, ptrLE);
+  return kindStructs.makeInterfaceFatPtrWithoutChecking(checkerAFL, functionState, builder, referenceM_, ptrLE);
 }
 
-//ControlBlockPtrLE WeakableReferendStructs::makeControlBlockPtr(
+//ControlBlockPtrLE WeakableKindStructs::makeControlBlockPtr(
 //    AreaAndFileAndLine checkerAFL,
 //    FunctionState* functionState,
 //    LLVMBuilderRef builder,
-//    Referend* referendM,
+//    Kind* kindM,
 //    LLVMValueRef controlBlockPtrLE) {
-//  return referendStructs.makeControlBlockPtr(checkerAFL, functionState, builder, referendM, controlBlockPtrLE);
+//  return kindStructs.makeControlBlockPtr(checkerAFL, functionState, builder, kindM, controlBlockPtrLE);
 //}
 
-LLVMValueRef WeakableReferendStructs::getStringBytesPtr(
+LLVMValueRef WeakableKindStructs::getStringBytesPtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WrapperPtrLE ptrLE) {
-  return referendStructs.getStringBytesPtr(functionState, builder, ptrLE);
+  return kindStructs.getStringBytesPtr(functionState, builder, ptrLE);
 }
 
-LLVMValueRef WeakableReferendStructs::getStringLen(
+LLVMValueRef WeakableKindStructs::getStringLen(
     FunctionState* functionState, LLVMBuilderRef builder, WrapperPtrLE ptrLE) {
-  return referendStructs.getStringLen(functionState, builder, ptrLE);
+  return kindStructs.getStringLen(functionState, builder, ptrLE);
 }
 
 
-ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtr(
+ControlBlockPtrLE WeakableKindStructs::getControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
-  return referendStructs.getControlBlockPtr(from, functionState, builder, referendM, interfaceFatPtrLE);
+  return kindStructs.getControlBlockPtr(from, functionState, builder, kindM, interfaceFatPtrLE);
 }
 
-ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtrWithoutChecking(
+ControlBlockPtrLE WeakableKindStructs::getControlBlockPtrWithoutChecking(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     InterfaceFatPtrLE interfaceFatPtrLE) {
-  return referendStructs.getControlBlockPtrWithoutChecking(from, functionState, builder, referendM, interfaceFatPtrLE);
+  return kindStructs.getControlBlockPtrWithoutChecking(from, functionState, builder, kindM, interfaceFatPtrLE);
 }
 
-ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtr(
+ControlBlockPtrLE WeakableKindStructs::getControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     Ref ref,
     Reference* referenceM) {
-  return referendStructs.getControlBlockPtr(from, functionState, builder, ref, referenceM);
+  return kindStructs.getControlBlockPtr(from, functionState, builder, ref, referenceM);
 }
 
-ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtr(
+ControlBlockPtrLE WeakableKindStructs::getControlBlockPtr(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef ref,
     Reference* referenceM) {
-  return referendStructs.getControlBlockPtr(from, functionState, builder, ref, referenceM);
+  return kindStructs.getControlBlockPtr(from, functionState, builder, ref, referenceM);
 }
 
-ControlBlockPtrLE WeakableReferendStructs::getControlBlockPtrWithoutChecking(
+ControlBlockPtrLE WeakableKindStructs::getControlBlockPtrWithoutChecking(
     AreaAndFileAndLine from,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     // This will be a pointer if a mutable struct, or a fat ref if an interface.
     LLVMValueRef ref,
     Reference* referenceM) {
-  return referendStructs.getControlBlockPtrWithoutChecking(from, functionState, builder, ref, referenceM);
+  return kindStructs.getControlBlockPtrWithoutChecking(from, functionState, builder, ref, referenceM);
 }
 
-LLVMValueRef WeakableReferendStructs::getStructContentsPtr(
+LLVMValueRef WeakableKindStructs::getStructContentsPtr(
     LLVMBuilderRef builder,
-    Referend* referend,
+    Kind* kind,
     WrapperPtrLE wrapperPtrLE) {
-  return referendStructs.getStructContentsPtr(builder, referend, wrapperPtrLE);
+  return kindStructs.getStructContentsPtr(builder, kind, wrapperPtrLE);
 }
 
-LLVMValueRef WeakableReferendStructs::getVoidPtrFromInterfacePtr(
+LLVMValueRef WeakableKindStructs::getVoidPtrFromInterfacePtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* virtualParamMT,
     InterfaceFatPtrLE virtualArgLE) {
-  return referendStructs.getVoidPtrFromInterfacePtr(
+  return kindStructs.getVoidPtrFromInterfacePtr(
       functionState, builder, virtualParamMT, virtualArgLE);
 }
 
-LLVMValueRef WeakableReferendStructs::getObjIdFromControlBlockPtr(
+LLVMValueRef WeakableKindStructs::getObjIdFromControlBlockPtr(
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
-  return referendStructs.getObjIdFromControlBlockPtr(builder, referendM, controlBlockPtr);
+  return kindStructs.getObjIdFromControlBlockPtr(builder, kindM, controlBlockPtr);
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
 // Strong means owning or borrow or shared; things that control the lifetime.
-LLVMValueRef WeakableReferendStructs::getStrongRcPtrFromControlBlockPtr(
+LLVMValueRef WeakableKindStructs::getStrongRcPtrFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
-  return referendStructs.getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
+  return kindStructs.getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtr);
 }
 
 // See CRCISFAORC for why we don't take in a mutability.
 // Strong means owning or borrow or shared; things that control the lifetime.
-LLVMValueRef WeakableReferendStructs::getStrongRcFromControlBlockPtr(
+LLVMValueRef WeakableKindStructs::getStrongRcFromControlBlockPtr(
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
-  return referendStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
+  return kindStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
 }

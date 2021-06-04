@@ -13,14 +13,14 @@ case class ConstraintViolatedException(msg: String) extends Throwable
 object Vivem {
   def executeWithPrimitiveArgs(
       programH: ProgramH,
-      externalArgumentReferends: Vector[PrimitiveReferendV],
+      externalArgumentKinds: Vector[PrimitiveKindV],
       vivemDout: PrintStream,
       stdin: () => String,
       stdout: String => Unit): IVonData = {
     val heap = new Heap(vivemDout)
     val argReferences =
-      externalArgumentReferends.map(argReferend => {
-        heap.add(ShareH, InlineH, ReadonlyH, argReferend);
+      externalArgumentKinds.map(argKind => {
+        heap.add(ShareH, InlineH, ReadonlyH, argKind);
       });
     innerExecute(programH, argReferences, heap, vivemDout, stdin, stdout)
   }
@@ -73,7 +73,7 @@ object Vivem {
       stdout: String => Unit): IVonData = {
     val main =
       programH.packages.flatMap({ case (packageCoord, paackage) =>
-        paackage.exportNameToFullName.get("main").map(fullName => paackage.functions.find(_.fullName == fullName).get).toList
+        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toList
       }).flatten match {
         case List() => vfail()
         case List(m) => m

@@ -89,9 +89,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Reference* sourceStructTypeM,
-      InterfaceReferend* targetInterfaceReferendM,
+      InterfaceKind* targetInterfaceKindM,
       Reference* targetInterfaceTypeM) = 0;
 
   virtual Ref upcast(
@@ -99,11 +99,11 @@ public:
       LLVMBuilderRef builder,
 
       Reference* sourceStructMT,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) = 0;
+      InterfaceKind* targetInterfaceKindM) = 0;
 
   virtual Ref lockWeak(
       FunctionState* functionState,
@@ -128,7 +128,7 @@ public:
       Reference* sourceInterfaceRefMT,
       Ref sourceInterfaceRefLE,
       bool sourceRefKnownLive,
-      Referend* targetReferend,
+      Kind* targetKind,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
 
@@ -137,7 +137,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      StaticSizedArrayT* referendM) = 0;
+      StaticSizedArrayT* kindM) = 0;
 
   virtual Ref getRuntimeSizedArrayLength(
       FunctionState* functionState,
@@ -162,16 +162,25 @@ public:
 
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
-  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
-      Reference* refMT) = 0;
-  virtual void generateStructDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) = 0;
-  virtual void generateInterfaceDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) = 0;
-  virtual void generateStaticSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StaticSizedArrayDefinitionT* ssaDefM) = 0;
-  virtual void generateRuntimeSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, RuntimeSizedArrayDefinitionT* rsaDefM) = 0;
+
+  virtual std::string getExportName(
+      Package* package,
+      Reference* reference) = 0;
+
+//  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
+//      Reference* refMT) = 0;
+  virtual std::string generateStructDefsC(
+    Package* currentPackage,
+      StructDefinition* refMT) = 0;
+  virtual std::string generateInterfaceDefsC(
+    Package* currentPackage,
+      InterfaceDefinition* refMT) = 0;
+  virtual std::string generateStaticSizedArrayDefsC(
+    Package* currentPackage,
+      StaticSizedArrayDefinitionT* ssaDefM) = 0;
+  virtual std::string generateRuntimeSizedArrayDefsC(
+    Package* currentPackage,
+      RuntimeSizedArrayDefinitionT* rsaDefM) = 0;
 
   virtual void declareStruct(StructDefinition* structM) = 0;
   virtual void declareStructExtraFunctions(StructDefinition* structM) = 0;
@@ -394,7 +403,7 @@ public:
 
   virtual RegionId* getRegionId() = 0;
 
-  virtual Weakability getReferendWeakability(Referend* referend) = 0;
+  virtual Weakability getKindWeakability(Kind* kind) = 0;
 
   virtual LLVMValueRef stackify(
       FunctionState* functionState, LLVMBuilderRef builder, Local* local, Ref refToStore,

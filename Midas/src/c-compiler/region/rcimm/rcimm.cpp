@@ -15,16 +15,16 @@ void fillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName) {
-  LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(referendM)->getStruct());
+  LLVMValueRef newControlBlockLE = LLVMGetUndef(structs->getControlBlock(kindM)->getStruct());
   newControlBlockLE =
       fillControlBlockCensusFields(
-          from, globalState, functionState, structs, builder, referendM, newControlBlockLE, typeName);
-  newControlBlockLE = insertStrongRc(globalState, builder, structs, referendM, newControlBlockLE);
+          from, globalState, functionState, structs, builder, kindM, newControlBlockLE, typeName);
+  newControlBlockLE = insertStrongRc(globalState, builder, structs, kindM, newControlBlockLE);
   LLVMBuildStore(builder, newControlBlockLE, controlBlockPtrLE.refLE);
 }
 
@@ -44,7 +44,7 @@ ControlBlock makeImmControlBlock(GlobalState* globalState) {
 
 RCImm::RCImm(GlobalState* globalState_)
   : globalState(globalState_),
-    referendStructs(globalState, makeImmControlBlock(globalState)) {
+    kindStructs(globalState, makeImmControlBlock(globalState)) {
 }
 
 RegionId* RCImm::getRegionId() {
@@ -57,25 +57,25 @@ void RCImm::alias(
     LLVMBuilderRef builder,
     Reference* sourceRef,
     Ref ref) {
-  auto sourceRnd = sourceRef->referend;
+  auto sourceRnd = sourceRef->kind;
 
   if (dynamic_cast<Int *>(sourceRnd) ||
       dynamic_cast<Bool *>(sourceRnd) ||
       dynamic_cast<Float *>(sourceRnd)) {
     // Do nothing for these, they're always inlined and copied.
-  } else if (dynamic_cast<InterfaceReferend *>(sourceRnd) ||
-             dynamic_cast<StructReferend *>(sourceRnd) ||
+  } else if (dynamic_cast<InterfaceKind *>(sourceRnd) ||
+             dynamic_cast<StructKind *>(sourceRnd) ||
              dynamic_cast<StaticSizedArrayT *>(sourceRnd) ||
              dynamic_cast<RuntimeSizedArrayT *>(sourceRnd) ||
              dynamic_cast<Str *>(sourceRnd)) {
     if (sourceRef->location == Location::INLINE) {
       // Do nothing, we can just let inline structs disappear
     } else {
-      adjustStrongRc(from, globalState, functionState, &referendStructs, builder, ref, sourceRef, 1);
+      adjustStrongRc(from, globalState, functionState, &kindStructs, builder, ref, sourceRef, 1);
     }
   } else {
     std::cerr << "Unimplemented type in acquireReference: "
-              << typeid(*sourceRef->referend).name() << std::endl;
+              << typeid(*sourceRef->kind).name() << std::endl;
     assert(false);
   }
 }
@@ -118,12 +118,12 @@ Ref RCImm::asSubtype(
     Reference* sourceInterfaceRefMT,
     Ref sourceInterfaceRef,
     bool sourceRefKnownLive,
-    Referend* targetReferend,
+    Kind* targetKind,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   return regularDowncast(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM, constraintRefM,
-      sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetReferend, buildThen, buildElse);
+      sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetKind, buildThen, buildElse);
 }
 
 LLVMTypeRef RCImm::translateType(Reference* referenceM) {
@@ -148,9 +148,9 @@ LLVMValueRef RCImm::getCensusObjectId(
     return constI64LE(globalState, -1);
   } else {
     auto controlBlockPtrLE =
-        referendStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
+        kindStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
     auto exprLE =
-        referendStructs.getObjIdFromControlBlockPtr(builder, refM->referend, controlBlockPtrLE);
+        kindStructs.getObjIdFromControlBlockPtr(builder, refM->kind, controlBlockPtrLE);
     return exprLE;
   }
 }
@@ -159,9 +159,9 @@ Ref RCImm::upcastWeak(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WeakFatPtrLE sourceRefLE,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     Reference* sourceStructTypeM,
-    InterfaceReferend* targetInterfaceReferendM,
+    InterfaceKind* targetInterfaceKindM,
     Reference* targetInterfaceTypeM) {
   assert(false);
   exit(1);
@@ -169,13 +169,13 @@ Ref RCImm::upcastWeak(
 
 void RCImm::declareStruct(
     StructDefinition* structM) {
-  globalState->regionIdByReferend.emplace(structM->referend, getRegionId());
+  globalState->regionIdByKind.emplace(structM->kind, getRegionId());
 
-  referendStructs.declareStruct(structM->referend);
+  kindStructs.declareStruct(structM->kind);
 }
 
 void RCImm::declareStructExtraFunctions(StructDefinition* structDefM) {
-  declareConcreteUnserializeFunction(structDefM->referend);
+  declareConcreteUnserializeFunction(structDefM->kind);
 }
 
 void RCImm::defineStruct(
@@ -186,22 +186,22 @@ void RCImm::defineStruct(
         globalState->getRegion(structM->members[i]->type)
             ->translateType(structM->members[i]->type));
   }
-  referendStructs.defineStruct(structM->referend, innerStructMemberTypesL);
+  kindStructs.defineStruct(structM->kind, innerStructMemberTypesL);
 }
 
 void RCImm::defineStructExtraFunctions(StructDefinition* structDefM) {
-  defineConcreteUnserializeFunction(structDefM->referend);
+  defineConcreteUnserializeFunction(structDefM->kind);
 }
 
 void RCImm::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* ssaDefM) {
-  globalState->regionIdByReferend.emplace(ssaDefM->referend, getRegionId());
+  globalState->regionIdByKind.emplace(ssaDefM->kind, getRegionId());
 
-  referendStructs.declareStaticSizedArray(ssaDefM);
+  kindStructs.declareStaticSizedArray(ssaDefM);
 }
 
 void RCImm::declareStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) {
-  declareConcreteUnserializeFunction(ssaDef->referend);
+  declareConcreteUnserializeFunction(ssaDef->kind);
 }
 
 void RCImm::defineStaticSizedArray(
@@ -209,22 +209,22 @@ void RCImm::defineStaticSizedArray(
   auto elementLT =
       translateType(
           staticSizedArrayMT->rawArray->elementType);
-  referendStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
+  kindStructs.defineStaticSizedArray(staticSizedArrayMT, elementLT);
 }
 
 void RCImm::defineStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) {
-  defineConcreteUnserializeFunction(ssaDef->referend);
+  defineConcreteUnserializeFunction(ssaDef->kind);
 }
 
 void RCImm::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  globalState->regionIdByReferend.emplace(rsaDefM->referend, getRegionId());
+  globalState->regionIdByKind.emplace(rsaDefM->kind, getRegionId());
 
-  referendStructs.declareRuntimeSizedArray(rsaDefM);
+  kindStructs.declareRuntimeSizedArray(rsaDefM);
 }
 
 void RCImm::declareRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) {
-  declareConcreteUnserializeFunction(rsaDefM->referend);
+  declareConcreteUnserializeFunction(rsaDefM->kind);
 }
 
 void RCImm::defineRuntimeSizedArray(
@@ -232,38 +232,38 @@ void RCImm::defineRuntimeSizedArray(
   auto elementLT =
       translateType(
           runtimeSizedArrayMT->rawArray->elementType);
-  referendStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
+  kindStructs.defineRuntimeSizedArray(runtimeSizedArrayMT, elementLT);
 }
 
 void RCImm::defineRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) {
-  defineConcreteUnserializeFunction(rsaDefM->referend);
+  defineConcreteUnserializeFunction(rsaDefM->kind);
 }
 
 void RCImm::declareInterface(
     InterfaceDefinition* interfaceM) {
-  globalState->regionIdByReferend.emplace(interfaceM->referend, getRegionId());
+  globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
 
-  referendStructs.declareInterface(interfaceM);
+  kindStructs.declareInterface(interfaceM);
 }
 
 void RCImm::declareInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
-  declareInterfaceUnserializeFunction(interfaceDefM->referend);
+  declareInterfaceUnserializeFunction(interfaceDefM->kind);
 }
 
 void RCImm::defineInterface(
     InterfaceDefinition* interfaceM) {
-  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->referend);
-  referendStructs.defineInterface(interfaceM, interfaceMethodTypesL);
+  auto interfaceMethodTypesL = globalState->getInterfaceFunctionTypes(interfaceM->kind);
+  kindStructs.defineInterface(interfaceM, interfaceMethodTypesL);
 }
 
 void RCImm::defineInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
 }
 
 void RCImm::declareEdge(Edge* edge) {
-  referendStructs.declareEdge(edge);
+  kindStructs.declareEdge(edge);
 
-  auto hostStructMT = globalState->linearRegion->linearizeStructReferend(edge->structName);
-  auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceReferend(edge->interfaceName);
+  auto hostStructMT = globalState->linearRegion->linearizeStructKind(edge->structName);
+  auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceKind(edge->interfaceName);
 
   auto interfaceMethod = getUnserializeInterfaceMethod(edge->interfaceName);
   auto thunkPrototype = getUnserializeThunkPrototype(edge->structName, edge->interfaceName);
@@ -273,11 +273,11 @@ void RCImm::declareEdge(Edge* edge) {
 }
 
 void RCImm::defineEdge(Edge* edge) {
-  auto interfaceM = globalState->program->getInterface(edge->interfaceName->fullName);
+  auto interfaceM = globalState->program->getInterface(edge->interfaceName);
 
   auto interfaceFunctionsLT = globalState->getInterfaceFunctionTypes(edge->interfaceName);
   auto edgeFunctionsL = globalState->getEdgeFunctions(edge);
-  referendStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
+  kindStructs.defineEdge(edge, interfaceFunctionsLT, edgeFunctionsL);
 
   defineEdgeUnserializeFunction(edge);
 }
@@ -346,7 +346,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> RCImm::explodeInterfaceRef(
     Reference* virtualParamMT,
     Ref virtualArgRef) {
   return explodeStrongInterfaceRef(
-      globalState, functionState, builder, &referendStructs, virtualParamMT, virtualArgRef);
+      globalState, functionState, builder, &kindStructs, virtualParamMT, virtualArgRef);
 }
 
 
@@ -380,12 +380,12 @@ Ref RCImm::getIsAliveFromWeakRef(
 
 LLVMValueRef RCImm::getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
   auto strWrapperPtrLE =
-      referendStructs.makeWrapperPtr(
+      kindStructs.makeWrapperPtr(
           FL(), functionState, builder,
           globalState->metalCache->strRef,
           checkValidReference(
               FL(), functionState, builder, globalState->metalCache->strRef, ref));
-  return referendStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
+  return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
 }
 
 Ref RCImm::allocate(
@@ -395,14 +395,14 @@ Ref RCImm::allocate(
     LLVMBuilderRef builder,
     Reference* desiredReference,
     const std::vector<Ref>& memberRefs) {
-  auto structReferend = dynamic_cast<StructReferend*>(desiredReference->referend);
-  auto structM = globalState->program->getStruct(structReferend->fullName);
+  auto structKind = dynamic_cast<StructKind*>(desiredReference->kind);
+  auto structM = globalState->program->getStruct(structKind);
   auto resultRef =
       innerAllocate(
-          FL(), globalState, functionState, builder, desiredReference, &referendStructs, memberRefs, Weakability::WEAKABLE,
+          FL(), globalState, functionState, builder, desiredReference, &kindStructs, memberRefs, Weakability::WEAKABLE,
           [this, functionState, desiredReference, structM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
-                FL(), globalState, functionState, &referendStructs, innerBuilder, desiredReference->referend,
+                FL(), globalState, functionState, &kindStructs, innerBuilder, desiredReference->kind,
                 controlBlockPtrLE, structM->name->name);
           });
   // Dont need to alias here because the RC starts at 1, see SRCAO
@@ -414,12 +414,12 @@ Ref RCImm::upcast(
     LLVMBuilderRef builder,
 
     Reference* sourceStructMT,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     Ref sourceRefLE,
 
     Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM) {
-  return upcastStrong(globalState, functionState, builder, &referendStructs, sourceStructMT, sourceStructReferendM, sourceRefLE, targetInterfaceTypeM, targetInterfaceReferendM);
+    InterfaceKind* targetInterfaceKindM) {
+  return upcastStrong(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
 }
 
 WrapperPtrLE RCImm::lockWeakRef(
@@ -438,22 +438,22 @@ Ref RCImm::constructStaticSizedArray(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* referenceM,
-    StaticSizedArrayT* referendM) {
+    StaticSizedArrayT* kindM) {
   auto resultRef =
       ::constructStaticSizedArray(
-          globalState, functionState, builder, referenceM, referendM, &referendStructs,
-          [this, functionState, referenceM, referendM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
+          globalState, functionState, builder, referenceM, kindM, &kindStructs,
+          [this, functionState, referenceM, kindM](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
 //            fillControlBlock(
 //                FL(),
 //                functionState,
 //                innerBuilder,
-//                referenceM->referend,
-//                referendM->rawArray->mutability,
+//                referenceM->kind,
+//                kindM->rawArray->mutability,
 //                controlBlockPtrLE,
-//                referendM->name->name);
+//                kindM->name->name);
             fillControlBlock(
-                FL(), globalState, functionState, &referendStructs, innerBuilder, referendM, controlBlockPtrLE,
-                referendM->name->name);
+                FL(), globalState, functionState, &kindStructs, innerBuilder, kindM, controlBlockPtrLE,
+                kindM->name->name);
           });
   // Dont need to alias here because the RC starts at 1, see SRCAO
   return resultRef;
@@ -465,7 +465,7 @@ Ref RCImm::getRuntimeSizedArrayLength(
     Reference* rsaRefMT,
     Ref arrayRef,
     bool arrayKnownLive) {
-  return getRuntimeSizedArrayLengthStrong(globalState, functionState, builder, &referendStructs, rsaRefMT, arrayRef);
+  return getRuntimeSizedArrayLengthStrong(globalState, functionState, builder, &kindStructs, rsaRefMT, arrayRef);
 }
 
 LLVMValueRef RCImm::checkValidReference(
@@ -485,7 +485,7 @@ LLVMValueRef RCImm::checkValidReference(
   assert(LLVMTypeOf(refLE) == globalState->getRegion(refM)->translateType(refM));
 
   if (globalState->opt->census) {
-    checkValidReference(checkerAFL, functionState, builder, &referendStructs, refM, refLE);
+    checkValidReference(checkerAFL, functionState, builder, &kindStructs, refM, refLE);
   }
   return refLE;
 }
@@ -516,9 +516,9 @@ void RCImm::checkInlineStructType(
     Reference* refMT,
     Ref ref) {
   auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
-  auto structReferend = dynamic_cast<StructReferend*>(refMT->referend);
-  assert(structReferend);
-  assert(LLVMTypeOf(argLE) == referendStructs.getInnerStruct(structReferend));
+  auto structKind = dynamic_cast<StructKind*>(refMT->kind);
+  assert(structKind);
+  assert(LLVMTypeOf(argLE) == kindStructs.getInnerStruct(structKind));
 }
 
 LoadResult RCImm::loadElementFromSSA(
@@ -529,9 +529,9 @@ LoadResult RCImm::loadElementFromSSA(
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto ssaDef = globalState->program->getStaticSizedArray(ssaMT->name);
+  auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
   return regularloadElementFromSSA(
-      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->rawArray->elementType, ssaDef->size, ssaDef->rawArray->mutability, arrayRef, arrayKnownLive, indexRef, &referendStructs);
+      globalState, functionState, builder, ssaRefMT, ssaMT, ssaDef->rawArray->elementType, ssaDef->size, ssaDef->rawArray->mutability, arrayRef, arrayKnownLive, indexRef, &kindStructs);
 }
 
 LoadResult RCImm::loadElementFromRSA(
@@ -542,9 +542,9 @@ LoadResult RCImm::loadElementFromRSA(
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT->name);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &referendStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef,
+      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef,
       arrayKnownLive, indexRef);
 }
 
@@ -556,9 +556,9 @@ Ref RCImm::deinitializeElementFromRSA(
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef) {
-  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT->name);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
   return regularLoadElementFromRSAWithoutUpgrade(
-      globalState, functionState, builder, &referendStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef,
+      globalState, functionState, builder, &kindStructs, rsaRefMT, rsaMT, rsaDef->rawArray->mutability, rsaDef->rawArray->elementType, arrayRef,
       arrayKnownLive, indexRef).move();
 }
 
@@ -585,11 +585,11 @@ void RCImm::initializeElementInRSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  auto elementType = globalState->program->getRuntimeSizedArray(rsaMT->name)->rawArray->elementType;
+  auto elementType = globalState->program->getRuntimeSizedArray(rsaMT)->rawArray->elementType;
   buildFlare(FL(), globalState, functionState, builder);
 
   auto arrayWrapperPtrLE =
-      referendStructs.makeWrapperPtr(
+      kindStructs.makeWrapperPtr(
           FL(), functionState, builder, rsaRefMT,
           globalState->getRegion(rsaRefMT)->checkValidReference(FL(), functionState, builder, rsaRefMT, rsaRef));
   auto sizeRef = ::getRuntimeSizedArrayLength(globalState, functionState, builder, arrayWrapperPtrLE);
@@ -605,7 +605,7 @@ void RCImm::deallocate(
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref) {
-  innerDeallocate(from, globalState, functionState, &referendStructs, builder, refMT, ref);
+  innerDeallocate(from, globalState, functionState, &kindStructs, builder, refMT, ref);
 }
 
 
@@ -618,19 +618,19 @@ Ref RCImm::constructRuntimeSizedArray(
     Ref sizeRef,
     const std::string& typeName) {
   auto rsaWrapperPtrLT =
-      referendStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
-  auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT->name);
-  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT->name)->rawArray->elementType;
+      kindStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayT);
+  auto rsaDef = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT);
+  auto elementType = globalState->program->getRuntimeSizedArray(runtimeSizedArrayT)->rawArray->elementType;
   auto rsaElementLT = globalState->getRegion(elementType)->translateType(elementType);
   buildFlare(FL(), globalState, functionState, builder);
   auto resultRef =
       ::constructRuntimeSizedArray(
-          globalState, functionState, builder, &referendStructs, rsaMT, rsaDef->rawArray->elementType, runtimeSizedArrayT,
+          globalState, functionState, builder, &kindStructs, rsaMT, rsaDef->rawArray->elementType, runtimeSizedArrayT,
           rsaWrapperPtrLT, rsaElementLT, sizeRef, typeName,
           [this, functionState, runtimeSizedArrayT, rsaMT, typeName](
               LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
-                FL(), globalState, functionState, &referendStructs, innerBuilder, runtimeSizedArrayT, controlBlockPtrLE,
+                FL(), globalState, functionState, &kindStructs, innerBuilder, runtimeSizedArrayT, controlBlockPtrLE,
                 typeName);
           });
   buildFlare(FL(), globalState, functionState, builder);
@@ -647,13 +647,13 @@ Ref RCImm::mallocStr(
     LLVMValueRef sourceCharsPtrLE) {
   auto resultRef =
       wrap(this, globalState->metalCache->strRef, ::mallocStr(
-          globalState, functionState, builder, lengthLE, sourceCharsPtrLE, &referendStructs,
+          globalState, functionState, builder, lengthLE, sourceCharsPtrLE, &kindStructs,
           [this, functionState](LLVMBuilderRef innerBuilder, ControlBlockPtrLE controlBlockPtrLE) {
 //            fillControlBlock(
 //                FL(), functionState, innerBuilder, globalState->metalCache->str,
 //                Mutability::IMMUTABLE, controlBlockPtrLE, "Str");
             fillControlBlock(
-                FL(), globalState, functionState, &referendStructs, innerBuilder, globalState->metalCache->str, controlBlockPtrLE,
+                FL(), globalState, functionState, &kindStructs, innerBuilder, globalState->metalCache->str, controlBlockPtrLE,
                 "str");
           }));
   // Dont need to alias here because the RC starts at 1, see SRCAO
@@ -662,12 +662,12 @@ Ref RCImm::mallocStr(
 
 LLVMValueRef RCImm::getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) {
   auto strWrapperPtrLE =
-      referendStructs.makeWrapperPtr(
+      kindStructs.makeWrapperPtr(
           FL(), functionState, builder,
           globalState->metalCache->strRef,
           checkValidReference(
               FL(), functionState, builder, globalState->metalCache->strRef, ref));
-  return referendStructs.getStringLen(functionState, builder, strWrapperPtrLE);
+  return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
 }
 
 void RCImm::discard(
@@ -678,7 +678,7 @@ void RCImm::discard(
     Reference* sourceMT,
     Ref sourceRef) {
   buildFlare(FL(), globalState, functionState, builder);
-  auto sourceRnd = sourceMT->referend;
+  auto sourceRnd = sourceMT->kind;
 
   buildFlare(FL(), globalState, functionState, builder, typeid(*sourceRnd).name());
 
@@ -692,7 +692,7 @@ void RCImm::discard(
     assert(sourceMT->ownership == Ownership::SHARE);
     auto rcLE =
         adjustStrongRc(
-            from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
+            from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
     buildFlare(from, globalState, functionState, builder, "Str RC: ", rcLE);
     buildIf(
         globalState, functionState,
@@ -701,9 +701,9 @@ void RCImm::discard(
         [this, from, globalState, functionState, sourceRef, sourceMT](
             LLVMBuilderRef thenBuilder) {
           buildFlare(from, globalState, functionState, thenBuilder, "Freeing shared str!");
-          innerDeallocate(from, globalState, functionState, &referendStructs, thenBuilder, sourceMT, sourceRef);
+          innerDeallocate(from, globalState, functionState, &kindStructs, thenBuilder, sourceMT, sourceRef);
         });
-  } else if (auto interfaceRnd = dynamic_cast<InterfaceReferend *>(sourceRnd)) {
+  } else if (auto interfaceRnd = dynamic_cast<InterfaceKind *>(sourceRnd)) {
     buildFlare(FL(), globalState, functionState, builder);
     assert(sourceMT->ownership == Ownership::SHARE);
     if (sourceMT->location == Location::INLINE) {
@@ -711,14 +711,14 @@ void RCImm::discard(
     } else {
       auto rcLE =
           adjustStrongRc(
-              from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
+              from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
       buildIf(
           globalState, functionState,
           builder,
           isZeroLE(builder, rcLE),
           [globalState, functionState, sourceRef, interfaceRnd, sourceMT](
               LLVMBuilderRef thenBuilder) {
-            auto immDestructor = globalState->program->getImmDestructor(sourceMT->referend);
+            auto immDestructor = globalState->program->getImmDestructor(sourceMT->kind);
 
 //            auto virtualArgRefMT = functionType->params[virtualParamIndex];
 //            auto virtualArgRef = argsLE[virtualParamIndex];
@@ -730,11 +730,11 @@ void RCImm::discard(
                 globalState, functionState, thenBuilder, immDestructor, methodFunctionPtrLE, {sourceRef}, 0);
           });
     }
-  } else if (dynamic_cast<StructReferend *>(sourceRnd) ||
+  } else if (dynamic_cast<StructKind *>(sourceRnd) ||
       dynamic_cast<StaticSizedArrayT *>(sourceRnd) ||
       dynamic_cast<RuntimeSizedArrayT *>(sourceRnd)) {
     buildFlare(FL(), globalState, functionState, builder);
-    if (auto sr = dynamic_cast<StructReferend *>(sourceRnd)) {
+    if (auto sr = dynamic_cast<StructKind *>(sourceRnd)) {
       buildFlare(FL(), globalState, functionState, builder, sr->fullName->name);
     }
     assert(sourceMT->ownership == Ownership::SHARE);
@@ -745,7 +745,7 @@ void RCImm::discard(
       buildFlare(FL(), globalState, functionState, builder);
       auto rcLE =
           adjustStrongRc(
-              from, globalState, functionState, &referendStructs, builder, sourceRef, sourceMT, -1);
+              from, globalState, functionState, &kindStructs, builder, sourceRef, sourceMT, -1);
       buildFlare(FL(), globalState, functionState, builder, rcLE);
       buildIf(
           globalState, functionState,
@@ -753,7 +753,7 @@ void RCImm::discard(
           isZeroLE(builder, rcLE),
           [from, globalState, functionState, sourceRef, sourceMT](LLVMBuilderRef thenBuilder) {
             buildFlare(FL(), globalState, functionState, thenBuilder);
-            auto immDestructor = globalState->program->getImmDestructor(sourceMT->referend);
+            auto immDestructor = globalState->program->getImmDestructor(sourceMT->kind);
             auto funcL = globalState->getFunction(immDestructor->name);
 
             auto sourceLE =
@@ -765,7 +765,7 @@ void RCImm::discard(
     }
   } else {
     std::cerr << "Unimplemented type in discard: "
-        << typeid(*sourceMT->referend).name() << std::endl;
+        << typeid(*sourceMT->kind).name() << std::endl;
     assert(false);
   }
   buildFlare(FL(), globalState, functionState, builder);
@@ -776,41 +776,41 @@ LLVMTypeRef RCImm::translateType(GlobalState* globalState, Reference* referenceM
   if (primitives.isPrimitive(referenceM)) {
     return primitives.translatePrimitive(globalState, referenceM);
   } else {
-    if (dynamic_cast<Str *>(referenceM->referend) != nullptr) {
+    if (dynamic_cast<Str *>(referenceM->kind) != nullptr) {
       assert(referenceM->location != Location::INLINE);
       assert(referenceM->ownership == Ownership::SHARE);
-      return LLVMPointerType(referendStructs.getStringWrapperStruct(), 0);
-    } else if (auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT *>(referenceM->referend)) {
+      return LLVMPointerType(kindStructs.getStringWrapperStruct(), 0);
+    } else if (auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT *>(referenceM->kind)) {
       assert(referenceM->location != Location::INLINE);
-      auto staticSizedArrayCountedStructLT = referendStructs.getStaticSizedArrayWrapperStruct(staticSizedArrayMT);
+      auto staticSizedArrayCountedStructLT = kindStructs.getStaticSizedArrayWrapperStruct(staticSizedArrayMT);
       return LLVMPointerType(staticSizedArrayCountedStructLT, 0);
     } else if (auto runtimeSizedArrayMT =
-        dynamic_cast<RuntimeSizedArrayT *>(referenceM->referend)) {
+        dynamic_cast<RuntimeSizedArrayT *>(referenceM->kind)) {
       assert(referenceM->location != Location::INLINE);
       auto runtimeSizedArrayCountedStructLT =
-          referendStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT);
+          kindStructs.getRuntimeSizedArrayWrapperStruct(runtimeSizedArrayMT);
       return LLVMPointerType(runtimeSizedArrayCountedStructLT, 0);
-    } else if (auto structReferend =
-        dynamic_cast<StructReferend *>(referenceM->referend)) {
+    } else if (auto structKind =
+        dynamic_cast<StructKind *>(referenceM->kind)) {
       if (referenceM->location == Location::INLINE) {
-        auto innerStructL = referendStructs.getInnerStruct(structReferend);
+        auto innerStructL = kindStructs.getInnerStruct(structKind);
         return innerStructL;
       } else {
-        auto countedStructL = referendStructs.getWrapperStruct(structReferend);
+        auto countedStructL = kindStructs.getWrapperStruct(structKind);
         return LLVMPointerType(countedStructL, 0);
       }
-    } else if (auto interfaceReferend =
-        dynamic_cast<InterfaceReferend *>(referenceM->referend)) {
+    } else if (auto interfaceKind =
+        dynamic_cast<InterfaceKind *>(referenceM->kind)) {
       assert(referenceM->location != Location::INLINE);
       auto interfaceRefStructL =
-          referendStructs.getInterfaceRefStruct(interfaceReferend);
+          kindStructs.getInterfaceRefStruct(interfaceKind);
       return interfaceRefStructL;
-    } else if (dynamic_cast<Never*>(referenceM->referend)) {
+    } else if (dynamic_cast<Never*>(referenceM->kind)) {
       auto result = LLVMPointerType(makeNeverType(globalState), 0);
       assert(LLVMTypeOf(globalState->neverPtr) == result);
       return result;
     } else {
-      std::cerr << "Unimplemented type: " << typeid(*referenceM->referend).name() << std::endl;
+      std::cerr << "Unimplemented type: " << typeid(*referenceM->kind).name() << std::endl;
       assert(false);
       return nullptr;
     }
@@ -818,24 +818,24 @@ LLVMTypeRef RCImm::translateType(GlobalState* globalState, Reference* referenceM
 }
 
 
-LLVMTypeRef RCImm::getControlBlockStruct(Referend* referend) {
-  if (auto structReferend = dynamic_cast<StructReferend*>(referend)) {
-    auto structM = globalState->program->getStruct(structReferend->fullName);
+LLVMTypeRef RCImm::getControlBlockStruct(Kind* kind) {
+  if (auto structKind = dynamic_cast<StructKind*>(kind)) {
+    auto structM = globalState->program->getStruct(structKind);
     assert(structM->mutability == Mutability::IMMUTABLE);
-  } else if (auto interfaceReferend = dynamic_cast<InterfaceReferend*>(referend)) {
-    auto interfaceM = globalState->program->getInterface(interfaceReferend->fullName);
+  } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(kind)) {
+    auto interfaceM = globalState->program->getInterface(interfaceKind);
     assert(interfaceM->mutability == Mutability::IMMUTABLE);
-  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(referend)) {
-    auto ssaDef = globalState->program->getStaticSizedArray(ssaMT->name);
+  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
+    auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
     assert(ssaDef->rawArray->mutability == Mutability::IMMUTABLE);
-  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(referend)) {
-    auto rsaDef = globalState->program->getStaticSizedArray(rsaMT->name);
+  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
+    auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
     assert(rsaDef->rawArray->mutability == Mutability::IMMUTABLE);
-  } else if (auto strMT = dynamic_cast<Str*>(referend)) {
+  } else if (auto strMT = dynamic_cast<Str*>(kind)) {
   } else {
     assert(false);
   }
-  return referendStructs.getControlBlockStruct();
+  return kindStructs.getControlBlockStruct();
 }
 
 
@@ -856,7 +856,7 @@ LoadResult RCImm::loadMember(
         LLVMBuildExtractValue(builder, innerStructLE, memberIndex, memberName.c_str());
     return LoadResult{wrap(globalState->getRegion(expectedMemberType), expectedMemberType, memberLE)};
   } else {
-    return regularLoadStrongMember(globalState, functionState, builder, &referendStructs, structRefMT, structRef, memberIndex, expectedMemberType, targetType, memberName);
+    return regularLoadStrongMember(globalState, functionState, builder, &kindStructs, structRefMT, structRef, memberIndex, expectedMemberType, targetType, memberName);
   }
 }
 
@@ -864,54 +864,50 @@ void RCImm::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* refM,
     LLVMValueRef refLE) {
-  regularCheckValidReference(checkerAFL, globalState, functionState, builder, referendStructs, refM, refLE);
+  regularCheckValidReference(checkerAFL, globalState, functionState, builder, kindStructs, refM, refLE);
 }
 
-std::string RCImm::getMemberArbitraryRefNameCSeeMMEDT(Reference* sourceMT) {
-  assert(false);
-  exit(1);
-}
+//std::string RCImm::getMemberArbitraryRefNameCSeeMMEDT(Reference* sourceMT) {
+//  assert(false);
+//  exit(1);
+//}
 
-void RCImm::generateStructDefsC(
-    std::unordered_map<std::string, std::string>* cByExportedName,
+std::string RCImm::generateStructDefsC(
+    Package* currentPackage,
+
     StructDefinition* structDefM) {
   assert(false);
+  return "";
 }
 
-void RCImm::generateInterfaceDefsC(std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* interfaceDefM) {
+std::string RCImm::generateInterfaceDefsC(
+    Package* currentPackage, InterfaceDefinition* interfaceDefM) {
   assert(false);
+  return "";
 }
 
-void RCImm::generateRuntimeSizedArrayDefsC(
-    std::unordered_map<std::string, std::string>* cByExportedName,
+std::string RCImm::generateRuntimeSizedArrayDefsC(
+    Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
   if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    for (auto baseName : globalState->program->getExportedNames(rsaDefM->name)) {
-      auto refTypeName = baseName + "Ref";
-      std::stringstream s;
-      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
-      cByExportedName->insert(std::make_pair(baseName, s.str()));
-    }
+    auto name = currentPackage->getKindExportName(rsaDefM->kind);
+    return std::string() + "typedef struct " + name + " { void* unused; } " + name + ";\n";
   }
 }
 
-void RCImm::generateStaticSizedArrayDefsC(
-    std::unordered_map<std::string, std::string>* cByExportedName,
+std::string RCImm::generateStaticSizedArrayDefsC(
+    Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
   if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    for (auto baseName : globalState->program->getExportedNames(ssaDefM->name)) {
-      auto refTypeName = baseName + "Ref";
-      std::stringstream s;
-      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
-      cByExportedName->insert(std::make_pair(baseName, s.str()));
-    }
+    auto name = currentPackage->getKindExportName(ssaDefM->kind);
+    return std::string() + "typedef struct " + name + " { void* unused; } " + name + ";\n";
   }
 }
 
@@ -934,16 +930,16 @@ Ref RCImm::receiveUnencryptedAlienReference(
   assert(sourceRegion == globalState->linearRegion);
   auto sourceRefLE = sourceRegion->checkValidReference(FL(), functionState, builder, hostRefMT, sourceRef);
 
-  if (dynamic_cast<Int*>(hostRefMT->referend)) {
+  if (dynamic_cast<Int*>(hostRefMT->kind)) {
     return wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
-  } else if (dynamic_cast<Bool*>(hostRefMT->referend)) {
+  } else if (dynamic_cast<Bool*>(hostRefMT->kind)) {
     auto asI1LE =
         LLVMBuildTrunc(
             builder, sourceRefLE, LLVMInt1TypeInContext(globalState->context), "boolAsI1");
     return wrap(this, valeRefMT, asI1LE);
-  } else if (dynamic_cast<Float*>(hostRefMT->referend)) {
+  } else if (dynamic_cast<Float*>(hostRefMT->kind)) {
     return wrap(globalState->getRegion(hostRefMT), valeRefMT, sourceRefLE);
-  } else if (dynamic_cast<Str*>(hostRefMT->referend)) {
+  } else if (dynamic_cast<Str*>(hostRefMT->kind)) {
     auto strLenLE = sourceRegion->getStringLen(functionState, builder, sourceRef);
     auto strLenBytesPtrLE = sourceRegion->getStringBytesPtr(functionState, builder, sourceRef);
 
@@ -956,11 +952,11 @@ Ref RCImm::receiveUnencryptedAlienReference(
     sourceRegion->dealias(FL(), functionState, builder, hostRefMT, sourceRef);
 
     return vstrRef;
-  } else if (dynamic_cast<Str*>(hostRefMT->referend) ||
-             dynamic_cast<StructReferend*>(hostRefMT->referend) ||
-             dynamic_cast<InterfaceReferend*>(hostRefMT->referend) ||
-             dynamic_cast<StaticSizedArrayT*>(hostRefMT->referend) ||
-             dynamic_cast<RuntimeSizedArrayT*>(hostRefMT->referend)) {
+  } else if (dynamic_cast<Str*>(hostRefMT->kind) ||
+             dynamic_cast<StructKind*>(hostRefMT->kind) ||
+             dynamic_cast<InterfaceKind*>(hostRefMT->kind) ||
+             dynamic_cast<StaticSizedArrayT*>(hostRefMT->kind) ||
+             dynamic_cast<RuntimeSizedArrayT*>(hostRefMT->kind)) {
     if (hostRefMT->location == Location::INLINE) {
       if (hostRefMT == globalState->metalCache->emptyTupleStructRef) {
         auto emptyTupleRefMT = globalState->linearRegion->unlinearizeReference(globalState->metalCache->emptyTupleStructRef);
@@ -969,7 +965,7 @@ Ref RCImm::receiveUnencryptedAlienReference(
         assert(false);
       }
     } else {
-      return topLevelUnserialize(functionState, builder, valeRefMT->referend, sourceRef);
+      return topLevelUnserialize(functionState, builder, valeRefMT->kind, sourceRef);
     }
   } else assert(false);
 
@@ -1007,11 +1003,11 @@ void RCImm::initializeElementInSSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT->name);
+  auto ssaDefM = globalState->program->getStaticSizedArray(ssaMT);
   auto elementType = ssaDefM->rawArray->elementType;
   buildFlare(FL(), globalState, functionState, builder);
   regularInitializeElementInSSA(
-      globalState, functionState, builder, &referendStructs, ssaRefMT,
+      globalState, functionState, builder, &kindStructs, ssaRefMT,
       elementType, ssaDefM->size, ssaRef, indexRef, elementRef);
 }
 
@@ -1027,7 +1023,7 @@ Ref RCImm::deinitializeElementFromSSA(
   exit(1);
 }
 
-Weakability RCImm::getReferendWeakability(Referend* referend) {
+Weakability RCImm::getKindWeakability(Kind* kind) {
   return Weakability::NON_WEAKABLE;
 }
 
@@ -1065,23 +1061,23 @@ void RCImm::defineEdgeUnserializeFunction(Edge* edge) {
 
         auto valeStructRef = buildCall(globalState, functionState, builder, structPrototype, {hostObjectRef});
 
-        auto valeInterfaceReferend = dynamic_cast<InterfaceReferend*>(thunkPrototype->returnType->referend);
-        assert(valeInterfaceReferend);
-        auto valeStructReferend = dynamic_cast<StructReferend*>(structPrototype->returnType->referend);
-        assert(valeStructReferend);
+        auto valeInterfaceKind = dynamic_cast<InterfaceKind*>(thunkPrototype->returnType->kind);
+        assert(valeInterfaceKind);
+        auto valeStructKind = dynamic_cast<StructKind*>(structPrototype->returnType->kind);
+        assert(valeStructKind);
 
         auto interfaceRef =
             upcast(
-                functionState, builder, structPrototype->returnType, valeStructReferend,
-                valeStructRef, thunkPrototype->returnType, valeInterfaceReferend);
+                functionState, builder, structPrototype->returnType, valeStructKind,
+                valeStructRef, thunkPrototype->returnType, valeInterfaceKind);
         auto interfaceRefLE = checkValidReference(FL(), functionState, builder, thunkPrototype->returnType, interfaceRef);
         LLVMBuildRet(builder, interfaceRefLE);
       });
 }
 
-void RCImm::declareInterfaceUnserializeFunction(InterfaceReferend* valeInterface) {
-  auto hostReferend = globalState->linearRegion->linearizeReferend(valeInterface);
-  auto hostInterface = dynamic_cast<InterfaceReferend*>(hostReferend);
+void RCImm::declareInterfaceUnserializeFunction(InterfaceKind* valeInterface) {
+  auto hostKind = globalState->linearRegion->linearizeKind(valeInterface);
+  auto hostInterface = dynamic_cast<InterfaceKind*>(hostKind);
   auto interfaceMethod = getUnserializeInterfaceMethod(valeInterface);
   globalState->addInterfaceExtraMethod(hostInterface, interfaceMethod);
 }
@@ -1089,24 +1085,24 @@ void RCImm::declareInterfaceUnserializeFunction(InterfaceReferend* valeInterface
 Ref RCImm::topLevelUnserialize(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Referend* valeReferend,
+    Kind* valeKind,
     Ref ref) {
-  return callUnserialize(functionState, builder, valeReferend, ref);
+  return callUnserialize(functionState, builder, valeKind, ref);
 }
 
-InterfaceMethod* RCImm::getUnserializeInterfaceMethod(Referend* valeReferend) {
+InterfaceMethod* RCImm::getUnserializeInterfaceMethod(Kind* valeKind) {
   return globalState->metalCache->getInterfaceMethod(
-      getUnserializePrototype(valeReferend), 0);
+      getUnserializePrototype(valeKind), 0);
 }
 
 Ref RCImm::callUnserialize(
     FunctionState *functionState,
     LLVMBuilderRef builder,
-    Referend* valeReferend,
+    Kind* valeKind,
     Ref objectRef) {
-  auto prototype = getUnserializePrototype(valeReferend);
-  if (auto valeInterfaceMT = dynamic_cast<InterfaceReferend*>(valeReferend)) {
-    auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceReferend(valeInterfaceMT);
+  auto prototype = getUnserializePrototype(valeKind);
+  if (auto valeInterfaceMT = dynamic_cast<InterfaceKind*>(valeKind)) {
+    auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceKind(valeInterfaceMT);
     auto hostVirtualArgRefMT = prototype->params[0];
     int indexInEdge = globalState->getInterfaceMethodIndex(hostInterfaceMT, prototype);
     auto methodFunctionPtrLE =
@@ -1118,41 +1114,41 @@ Ref RCImm::callUnserialize(
   }
 }
 
-Prototype* RCImm::getUnserializePrototype(Referend* valeReferend) {
+Prototype* RCImm::getUnserializePrototype(Kind* valeKind) {
   auto boolMT = globalState->metalCache->boolRef;
   auto valeRefMT =
       globalState->metalCache->getReference(
-          Ownership::SHARE, Location::YONDER, valeReferend);
+          Ownership::SHARE, Location::YONDER, valeKind);
   auto hostRefMT = globalState->linearRegion->linearizeReference(valeRefMT);
   return globalState->metalCache->getPrototype(globalState->unserializeName, valeRefMT, {hostRefMT});
 }
 
-Prototype* RCImm::getUnserializeThunkPrototype(StructReferend* valeStructReferend, InterfaceReferend* valeInterfaceReferend) {
+Prototype* RCImm::getUnserializeThunkPrototype(StructKind* valeStructKind, InterfaceKind* valeInterfaceKind) {
   auto boolMT = globalState->metalCache->boolRef;
   auto valeStructRefMT =
       globalState->metalCache->getReference(
-          Ownership::SHARE, Location::YONDER, valeStructReferend);
+          Ownership::SHARE, Location::YONDER, valeStructKind);
   auto hostStructRefMT = globalState->linearRegion->linearizeReference(valeStructRefMT);
   auto valeInterfaceRefMT =
       globalState->metalCache->getReference(
-          Ownership::SHARE, Location::YONDER, valeInterfaceReferend);
+          Ownership::SHARE, Location::YONDER, valeInterfaceKind);
   auto hostInterfaceRefMT = globalState->linearRegion->linearizeReference(valeInterfaceRefMT);
   return globalState->metalCache->getPrototype(
       globalState->unserializeThunkName, valeInterfaceRefMT,
       {hostStructRefMT});
 }
 
-void RCImm::declareConcreteUnserializeFunction(Referend* valeReferend) {
-  auto prototype = getUnserializePrototype(valeReferend);
-  auto nameL = globalState->unserializeName->name + "__" + globalState->getReferendName(valeReferend)->name;
+void RCImm::declareConcreteUnserializeFunction(Kind* valeKind) {
+  auto prototype = getUnserializePrototype(valeKind);
+  auto nameL = globalState->unserializeName->name + "__" + globalState->getKindName(valeKind)->name;
   declareExtraFunction(globalState, prototype, nameL);
 }
 
-void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
+void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
   auto intMT = globalState->metalCache->intRef;
   auto boolMT = globalState->metalCache->boolRef;
 
-  auto prototype = getUnserializePrototype(valeReferend);
+  auto prototype = getUnserializePrototype(valeKind);
 
   auto unserializeMemberOrElement =
       [this](
@@ -1164,26 +1160,26 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
         auto hostMemberLE =
             globalState->getRegion(hostMemberRefMT)->checkValidReference(
                 FL(), functionState, builder, hostMemberRefMT, hostMemberRef);
-        if (dynamic_cast<Int*>(hostMemberRefMT->referend)) {
+        if (dynamic_cast<Int*>(hostMemberRefMT->kind)) {
           return wrap(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, hostMemberLE);
-        } else if (dynamic_cast<Bool*>(hostMemberRefMT->referend)) {
+        } else if (dynamic_cast<Bool*>(hostMemberRefMT->kind)) {
           auto resultLE = LLVMBuildTrunc(builder, hostMemberLE, LLVMInt1TypeInContext(globalState->context), "boolAsI1");
           return wrap(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, resultLE);
-        } else if (dynamic_cast<Float*>(hostMemberRefMT->referend)) {
+        } else if (dynamic_cast<Float*>(hostMemberRefMT->kind)) {
           return wrap(globalState->getRegion(valeMemberRefMT), valeMemberRefMT, hostMemberLE);
         } else if (
-            dynamic_cast<Str*>(hostMemberRefMT->referend) ||
-            dynamic_cast<StructReferend*>(hostMemberRefMT->referend) ||
-            dynamic_cast<StaticSizedArrayT*>(hostMemberRefMT->referend) ||
-            dynamic_cast<RuntimeSizedArrayT*>(hostMemberRefMT->referend)) {
+            dynamic_cast<Str*>(hostMemberRefMT->kind) ||
+            dynamic_cast<StructKind*>(hostMemberRefMT->kind) ||
+            dynamic_cast<StaticSizedArrayT*>(hostMemberRefMT->kind) ||
+            dynamic_cast<RuntimeSizedArrayT*>(hostMemberRefMT->kind)) {
           auto destinationMemberRef =
               callUnserialize(
-                  functionState, builder, valeMemberRefMT->referend, hostMemberRef);
+                  functionState, builder, valeMemberRefMT->kind, hostMemberRef);
           return destinationMemberRef;
-        } else if (dynamic_cast<InterfaceReferend*>(hostMemberRefMT->referend)) {
+        } else if (dynamic_cast<InterfaceKind*>(hostMemberRefMT->kind)) {
           auto destinationMemberRef =
               callUnserialize(
-                  functionState, builder, valeMemberRefMT->referend, hostMemberRef);
+                  functionState, builder, valeMemberRefMT->kind, hostMemberRef);
           return destinationMemberRef;
         } else assert(false);
       };
@@ -1196,10 +1192,10 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
 
         auto hostObjectRef = wrap(globalState->getRegion(hostObjectRefMT), hostObjectRefMT, LLVMGetParam(functionState->containingFuncL, 0));
 
-        if (auto valeStructReferend = dynamic_cast<StructReferend*>(valeObjectRefMT->referend)) {
-          auto hostStructReferend = dynamic_cast<StructReferend*>(hostObjectRefMT->referend);
-          assert(hostStructReferend);
-          auto valeStructDefM = globalState->program->getStruct(valeStructReferend->fullName);
+        if (auto valeStructKind = dynamic_cast<StructKind*>(valeObjectRefMT->kind)) {
+          auto hostStructKind = dynamic_cast<StructKind*>(hostObjectRefMT->kind);
+          assert(hostStructKind);
+          auto valeStructDefM = globalState->program->getStruct(valeStructKind);
 
           std::vector<Ref> memberRefs;
 
@@ -1225,7 +1221,7 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
           auto resultRefLE = checkValidReference(FL(), functionState, builder, valeObjectRefMT, resultRef);
 
           LLVMBuildRet(builder, resultRefLE);
-        } else if (dynamic_cast<Str*>(valeObjectRefMT->referend)) {
+        } else if (dynamic_cast<Str*>(valeObjectRefMT->kind)) {
           auto lengthLE = globalState->getRegion(hostObjectRefMT)->getStringLen(functionState, builder, hostObjectRef);
           auto sourceBytesPtrLE = globalState->getRegion(hostObjectRefMT)->getStringBytesPtr(functionState, builder, hostObjectRef);
 
@@ -1234,9 +1230,9 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
           buildFlare(FL(), globalState, functionState, builder, "done storing");
 
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, globalState->metalCache->strRef, strRef));
-        } else if (auto valeUsaMT = dynamic_cast<RuntimeSizedArrayT*>(valeObjectRefMT->referend)) {
+        } else if (auto valeUsaMT = dynamic_cast<RuntimeSizedArrayT*>(valeObjectRefMT->kind)) {
           auto valeUsaRefMT = valeObjectRefMT;
-          auto hostUsaMT = dynamic_cast<RuntimeSizedArrayT*>(hostObjectRefMT->referend);
+          auto hostUsaMT = dynamic_cast<RuntimeSizedArrayT*>(hostObjectRefMT->kind);
           assert(hostUsaMT);
           auto hostUsaRefMT = hostObjectRefMT;
 
@@ -1246,7 +1242,7 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
               constructRuntimeSizedArray(
                   makeEmptyTupleRef(globalState),
                   functionState, builder, valeUsaRefMT, valeUsaMT, lengthRef, "serializedrsa");
-          auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeUsaMT->name)->rawArray->elementType;
+          auto valeMemberRefMT = globalState->program->getRuntimeSizedArray(valeUsaMT)->rawArray->elementType;
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
 
           intRangeLoopReverse(
@@ -1265,8 +1261,8 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
               });
 
           LLVMBuildRet(builder, checkValidReference(FL(), functionState, builder, valeUsaRefMT, valeUsaRef));
-        } else if (auto valeKsaMT = dynamic_cast<StaticSizedArrayT*>(valeObjectRefMT->referend)) {
-          auto hostKsaMT = dynamic_cast<StaticSizedArrayT*>(hostObjectRefMT->referend);
+        } else if (auto valeKsaMT = dynamic_cast<StaticSizedArrayT*>(valeObjectRefMT->kind)) {
+          auto hostKsaMT = dynamic_cast<StaticSizedArrayT*>(hostObjectRefMT->kind);
           assert(hostKsaMT);
           auto valeKsaRefMT = valeObjectRefMT;
           auto hostKsaRefMT = hostObjectRefMT;
@@ -1275,7 +1271,7 @@ void RCImm::defineConcreteUnserializeFunction(Referend* valeReferend) {
               constructStaticSizedArray(
                   makeEmptyTupleRef(globalState),
                   functionState, builder, valeKsaRefMT, valeKsaMT);
-          auto valeKsaDefM = globalState->program->getStaticSizedArray(valeKsaMT->name);
+          auto valeKsaDefM = globalState->program->getStaticSizedArray(valeKsaMT);
           int length = valeKsaDefM->size;
           auto valeMemberRefMT = valeKsaDefM->rawArray->elementType;
 
@@ -1333,4 +1329,15 @@ Ref RCImm::loadLocal(FunctionState* functionState, LLVMBuilderRef builder, Local
 
 Ref RCImm::localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) {
   return normalLocalStore(globalState, functionState, builder, local, localAddr, refToStore);
+}
+
+std::string RCImm::getExportName(
+    Package* package,
+    Reference* reference) {
+  assert(false);
+//  if (dynamic_cast<InterfaceKind*>(reference->kind)) {
+//    return package->getKindExportName(reference->kind);
+//  } else {
+//    return package->getKindExportName(reference->kind) + (reference->location == Location::YONDER ? "*" : "");
+//  }
 }

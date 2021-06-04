@@ -7,11 +7,11 @@
 
 LinearStructs::LinearStructs(GlobalState* globalState_)
   : globalState(globalState_),
-    interfaceRefStructsL(0, globalState->addressNumberer->makeHasher<InterfaceReferend*>()),
-    structStructsL(0, globalState->addressNumberer->makeHasher<StructReferend*>()),
+    interfaceRefStructsL(0, globalState->addressNumberer->makeHasher<InterfaceKind*>()),
+    structStructsL(0, globalState->addressNumberer->makeHasher<StructKind*>()),
     staticSizedArrayStructsL(0, globalState->addressNumberer->makeHasher<StaticSizedArrayT*>()),
     runtimeSizedArrayStructsL(0, globalState->addressNumberer->makeHasher<RuntimeSizedArrayT*>()),
-    orderedStructsByInterface(0, globalState_->addressNumberer->makeHasher<InterfaceReferend*>()) {
+    orderedStructsByInterface(0, globalState_->addressNumberer->makeHasher<InterfaceKind*>()) {
 
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
   auto int8LT = LLVMInt8TypeInContext(globalState->context);
@@ -24,10 +24,10 @@ LinearStructs::LinearStructs(GlobalState* globalState_)
   LLVMStructSetBody(stringStructLT, memberTypesL.data(), memberTypesL.size(), false);
 }
 
-LLVMTypeRef LinearStructs::getStructStruct(StructReferend* structReferend) {
-  auto structIter = structStructsL.find(structReferend);
+LLVMTypeRef LinearStructs::getStructStruct(StructKind* structKind) {
+  auto structIter = structStructsL.find(structKind);
   if (structIter == structStructsL.end()) {
-    std::cerr << "Don't have the struct struct for " << structReferend->fullName->name << std::endl;
+    std::cerr << "Don't have the struct struct for " << structKind->fullName->name << std::endl;
     exit(1);
   }
   return structIter->second;
@@ -45,8 +45,8 @@ LLVMTypeRef LinearStructs::getRuntimeSizedArrayStruct(RuntimeSizedArrayT* rsaMT)
   return structIter->second;
 }
 
-LLVMTypeRef LinearStructs::getInterfaceRefStruct(InterfaceReferend* interfaceReferend) {
-  auto iter = interfaceRefStructsL.find(interfaceReferend);
+LLVMTypeRef LinearStructs::getInterfaceRefStruct(InterfaceKind* interfaceKind) {
+  auto iter = interfaceRefStructsL.find(interfaceKind);
   assert(iter != interfaceRefStructsL.end());
   return iter->second;
 }
@@ -55,7 +55,7 @@ LLVMTypeRef LinearStructs::getStringStruct() {
   return stringStructLT;
 }
 
-void LinearStructs::declareStruct(StructReferend* structM) {
+void LinearStructs::declareStruct(StructKind* structM) {
   auto structL =
       LLVMStructCreateNamed(
           globalState->context, structM->fullName->name.c_str());
@@ -63,17 +63,17 @@ void LinearStructs::declareStruct(StructReferend* structM) {
   structStructsL.emplace(structM, structL);
 }
 
-void LinearStructs::declareEdge(StructReferend* structReferend, InterfaceReferend* interfaceReferend) {
+void LinearStructs::declareEdge(StructKind* structKind, InterfaceKind* interfaceKind) {
   // There aren't edges per se, just tag numbers. That's all we have to do here.
 
   // Creates one if it doesnt already exist.
-  auto* os = &orderedStructsByInterface[interfaceReferend];
+  auto* os = &orderedStructsByInterface[interfaceKind];
 
-  assert(std::count(os->begin(), os->end(), structReferend) == 0);
-  os->push_back(structReferend);
+  assert(std::count(os->begin(), os->end(), structKind) == 0);
+  os->push_back(structKind);
 }
 
-void LinearStructs::declareInterface(InterfaceReferend* interface) {
+void LinearStructs::declareInterface(InterfaceKind* interface) {
   assert(interfaceRefStructsL.count(interface) == 0);
 
   auto interfaceRefStructL =
@@ -104,13 +104,13 @@ void LinearStructs::declareRuntimeSizedArray(
 }
 
 void LinearStructs::defineStruct(
-    StructReferend* struuct,
+    StructKind* struuct,
     std::vector<LLVMTypeRef> membersLT) {
   LLVMTypeRef structL = getStructStruct(struuct);
   LLVMStructSetBody(structL, membersLT.data(), membersLT.size(), false);
 }
 
-void LinearStructs::defineInterface(InterfaceReferend *interface) {
+void LinearStructs::defineInterface(InterfaceKind *interface) {
 }
 
 void LinearStructs::defineEdge(
@@ -148,9 +148,9 @@ InterfaceFatPtrLE LinearStructs::makeInterfaceFatPtr(
     LLVMBuilderRef builder,
     Reference* referenceM_,
     LLVMValueRef ptrLE) {
-  auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(referenceM_->referend);
-  assert(interfaceReferendM);
-  assert(LLVMTypeOf(ptrLE) == getInterfaceRefStruct(interfaceReferendM));
+  auto interfaceKindM = dynamic_cast<InterfaceKind*>(referenceM_->kind);
+  assert(interfaceKindM);
+  assert(LLVMTypeOf(ptrLE) == getInterfaceRefStruct(interfaceKindM));
 
   auto interfaceFatPtrLE = InterfaceFatPtrLE(referenceM_, ptrLE);
 

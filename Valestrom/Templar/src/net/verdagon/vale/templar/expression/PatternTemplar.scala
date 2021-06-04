@@ -153,7 +153,7 @@ class PatternTemplar(
           localHelper.softLoad(
             fate, range, LocalLookup2(range, export, inputExpr.resultRegister.reference, Final), UseP)
 
-        expectedCoord.referend match {
+        expectedCoord.kind match {
           case StructRef2(_) => {
             // Example:
             //   struct Marine { bork: Bork; }
@@ -206,8 +206,8 @@ class PatternTemplar(
 //        // Our resulting variable will have this ownership
 //        val expectedCitizenDef2 =
 //          expectedCitizenRef2 match {
-//            case ReferendTemplata(sr @ StructRef2(_)) => temputs.lookupCitizen(sr)
-//            case ReferendTemplata(ir @ InterfaceRef2(_)) => temputs.lookupCitizen(ir)
+//            case KindTemplata(sr @ StructRef2(_)) => temputs.lookupCitizen(sr)
+//            case KindTemplata(ir @ InterfaceRef2(_)) => temputs.lookupCitizen(ir)
 //          }
 //
 //        val expectedOwnership =
@@ -235,7 +235,7 @@ class PatternTemplar(
 //            unborrowedTargetReference
 //          } else {
 ////            if (expectBorrow) {
-////              Coord(Borrow, unborrowedTargetReference.referend)
+////              Coord(Borrow, unborrowedTargetReference.kind)
 ////            } else {
 //              unborrowedTargetReference
 ////            }
@@ -427,7 +427,7 @@ class PatternTemplar(
                 val memberPermissionInStruct = structDef2.members(index).tyype.reference.permission
                 val resultOwnership = if (memberCoord.ownership == Own) Constraint else memberCoord.ownership
                 val resultPermission = Templar.intersectPermission(memberPermissionInStruct, structPermission)
-//                val resultCoord = Coord(resultOwnership, resultPermission, memberCoord.referend)
+//                val resultCoord = Coord(resultOwnership, resultPermission, memberCoord.kind)
 
                 val loadExpr =
                   SoftLoad2(

@@ -212,7 +212,7 @@ class FunctionTemplarCore(
 
         val externFullName = FullName2(fullName.packageCoord, List(), ExternFunctionName2(humanName, params))
         val externPrototype = Prototype2(externFullName, header.returnType)
-        temputs.addExternPrototype(externPrototype)
+        temputs.addFunctionExtern(externPrototype, fullName.packageCoord, humanName)
 
         val argLookups =
           header.params.zipWithIndex.map({ case (param2, index) => ArgLookup2(index, param2.tyype) })

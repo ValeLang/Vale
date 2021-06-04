@@ -20,18 +20,18 @@ Ref translateNewArrayFromValues(
   auto elementsLE =
       translateExpressions(
           globalState, functionState, blockState, builder, newArrayFromValues->sourceExprs);
-  auto ssaDefM = globalState->program->getStaticSizedArray(newArrayFromValues->arrayReferend->name);
+  auto ssaDefM = globalState->program->getStaticSizedArray(newArrayFromValues->arrayKind);
   for (auto elementLE : elementsLE) {
     globalState->getRegion(ssaDefM->rawArray->elementType)
         ->checkValidReference(
             FL(), functionState, builder, ssaDefM->rawArray->elementType, elementLE);
   }
 
-  auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(newArrayFromValues->arrayRefType->referend);
+  auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(newArrayFromValues->arrayRefType->kind);
 
   if (newArrayFromValues->arrayRefType->location == Location::INLINE) {
 //        auto valStructL =
-//            globalState->getInnerStruct(structReferend->fullName);
+//            globalState->getInnerStruct(structKind->fullName);
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
     assert(false);
@@ -43,7 +43,7 @@ Ref translateNewArrayFromValues(
             functionState,
             builder,
             newArrayFromValues->arrayRefType,
-            newArrayFromValues->arrayReferend);
+            newArrayFromValues->arrayKind);
     fillStaticSizedArray(
         globalState,
         functionState,

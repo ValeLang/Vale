@@ -136,7 +136,7 @@ object NameHammer {
       "PackageCoordinate",
       None,
       Vector(
-        VonMember("module", VonStr(module)),
-        VonMember("paackage", VonArray(None, paackage.map(VonStr).toVector))))
+        VonMember("project", VonStr(module)),
+        VonMember("packageSteps", VonArray(None, paackage.map(VonStr).toVector))))
   }
 }

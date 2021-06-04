@@ -163,7 +163,7 @@ class InfererEquator[Env, State](
 //        vfail()
 //      }
 //      case (CallableTypeSR, KindTemplata(_)) => {
-//        // Gotta check if the referend is callable
+//        // Gotta check if the kind is callable
 //        vfail("unimplemented")
 //      }
 //      case _ => false

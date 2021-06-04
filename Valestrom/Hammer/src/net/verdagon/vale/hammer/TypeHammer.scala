@@ -62,7 +62,7 @@ object TypeHammer {
   //  }
 
   def translateKind(hinputs: Hinputs, hamuts: HamutsBox, tyype: Kind):
-  (ReferendH) = {
+  (KindH) = {
     tyype match {
       case Never2() => NeverH()
       case Int2() => IntH()
@@ -95,7 +95,7 @@ object TypeHammer {
       hinputs: Hinputs,
       hamuts: HamutsBox,
       coord: Coord):
-  (ReferenceH[ReferendH]) = {
+  (ReferenceH[KindH]) = {
     val Coord(ownership, permission, innerType) = coord;
     val location = {
       (ownership, innerType) match {
@@ -127,7 +127,7 @@ object TypeHammer {
       hinputs: Hinputs,
       hamuts: HamutsBox,
       references2: List[Coord]):
-  (List[ReferenceH[ReferendH]]) = {
+  (List[ReferenceH[KindH]]) = {
     references2 match {
       case Nil => Nil
       case headReference2 :: tailPointers2 => {
@@ -145,7 +145,7 @@ object TypeHammer {
 //    }
 //  }
 
-  def checkConversion(expected: ReferenceH[ReferendH], actual: ReferenceH[ReferendH]): Unit = {
+  def checkConversion(expected: ReferenceH[KindH], actual: ReferenceH[KindH]): Unit = {
     if (actual != expected) {
       vfail("Expected a " + expected + " but was a " + actual);
     }

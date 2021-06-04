@@ -41,7 +41,7 @@ class LocalHelper(
     val unlet = unletLocal(fate, rlv)
     val destructExpr2 =
       destructorTemplar.drop(fate, temputs, unlet)
-    vassert(destructExpr2.referend == Void2())
+    vassert(destructExpr2.kind == Void2())
 
     // No Discard here because the destructor already returns void.
 
@@ -91,7 +91,7 @@ class LocalHelper(
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
     }
 
-    val mutable = Templar.getMutability(temputs, referenceType2.referend)
+    val mutable = Templar.getMutability(temputs, referenceType2.kind)
     val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, localVariableA)
 
     val fullVarName = fate.fullName.addStep(varId)
@@ -193,13 +193,13 @@ class LocalHelper(
 
   def borrowSoftLoad(temputs: Temputs, expr2: AddressExpression2):
   ReferenceExpression2 = {
-    val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.referend)
+    val ownership = getBorrowOwnership(temputs, expr2.resultRegister.reference.kind)
     SoftLoad2(expr2, ownership, expr2.resultRegister.reference.permission)
   }
 
-  def getBorrowOwnership(temputs: Temputs, referend: Kind):
+  def getBorrowOwnership(temputs: Temputs, kind: Kind):
   Ownership = {
-    referend match {
+    kind match {
       case Int2() => Share
       case Bool2() => Share
       case Float2() => Share

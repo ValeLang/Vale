@@ -1,19 +1,19 @@
 #ifndef REGION_COMMON_DEFAULTLAYOUT_IREFERENDSTRUCTSSOURCE_H_
 #define REGION_COMMON_DEFAULTLAYOUT_IREFERENDSTRUCTSSOURCE_H_
 
-class IReferendStructsSource {
+class IKindStructsSource {
 public:
-  virtual ~IReferendStructsSource() = default;
-  virtual ControlBlock* getControlBlock(Referend* referend) = 0;
-  virtual LLVMTypeRef getInnerStruct(StructReferend* structReferend) = 0;
-  virtual LLVMTypeRef getWrapperStruct(StructReferend* structReferend) = 0;
+  virtual ~IKindStructsSource() = default;
+  virtual ControlBlock* getControlBlock(Kind* kind) = 0;
+  virtual LLVMTypeRef getInnerStruct(StructKind* structKind) = 0;
+  virtual LLVMTypeRef getWrapperStruct(StructKind* structKind) = 0;
   virtual LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) = 0;
   virtual LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) = 0;
   virtual LLVMTypeRef getStringWrapperStruct() = 0;
-  virtual LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) = 0;
-  virtual LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) = 0;
-  virtual void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) = 0;
-  virtual void declareStruct(StructReferend* structM) = 0;
+  virtual LLVMTypeRef getInterfaceRefStruct(InterfaceKind* interfaceKind) = 0;
+  virtual LLVMTypeRef getInterfaceTableStruct(InterfaceKind* interfaceKind) = 0;
+  virtual void defineStruct(StructKind* structM, std::vector<LLVMTypeRef> membersLT) = 0;
+  virtual void declareStruct(StructKind* structM) = 0;
   virtual void declareEdge(Edge* edge) = 0;
   virtual void defineEdge(
       Edge* edge,
@@ -59,7 +59,7 @@ public:
 //      AreaAndFileAndLine checkerAFL,
 //      FunctionState* functionState,
 //      LLVMBuilderRef builder,
-//      Referend* referendM,
+//      Kind* kindM,
 //      LLVMValueRef controlBlockPtrLE) = 0;
 
   virtual LLVMValueRef getStringBytesPtr(
@@ -75,14 +75,14 @@ public:
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       InterfaceFatPtrLE interfaceFatPtrLE) = 0;
 
   virtual ControlBlockPtrLE getControlBlockPtrWithoutChecking(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       InterfaceFatPtrLE interfaceFatPtrLE) = 0;
 
   virtual ControlBlockPtrLE getControlBlockPtr(
@@ -111,7 +111,7 @@ public:
 
   virtual LLVMValueRef getStructContentsPtr(
       LLVMBuilderRef builder,
-      Referend* referend,
+      Kind* kind,
       WrapperPtrLE wrapperPtrLE) = 0;
 
   virtual LLVMValueRef getVoidPtrFromInterfacePtr(
@@ -122,7 +122,7 @@ public:
 
   virtual LLVMValueRef getObjIdFromControlBlockPtr(
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       ControlBlockPtrLE controlBlockPtr) = 0;
 
   // See CRCISFAORC for why we don't take in a mutability.

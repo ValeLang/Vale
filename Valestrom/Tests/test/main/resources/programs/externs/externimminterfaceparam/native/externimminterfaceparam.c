@@ -6,16 +6,16 @@
 #include "Seaship.h"
 #include "IShip.h"
 
-int64_t getShipFuel(IShip s) {
+int64_t tmod_getShipFuel(tmod_IShip s) {
   int64_t result = 0;
   switch (s.type) {
-    case IShip_Seaship: {
-      Seaship* ship = (Seaship*)s.obj;
+    case tmod_IShip_Type_Seaship: {
+      tmod_Seaship* ship = (tmod_Seaship*)s.obj;
       result = ship->leftFuel + ship->rightFuel;
       break;
     }
-    case IShip_Spaceship: {
-      Spaceship* ship = (Spaceship*)s.obj;
+    case tmod_IShip_Type_Spaceship: {
+      tmod_Spaceship* ship = (tmod_Spaceship*)s.obj;
       result = ship->fuel;
       break;
     }

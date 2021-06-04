@@ -2,7 +2,7 @@ package net.verdagon.vale.hammer
 
 import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
 import net.verdagon.vale.metal.{Immutable => _, Mutable => _, Variability => _, Varying => _, _}
-import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, metal => m}
+import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, metal => m}
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, FunctionHeader2}
 import net.verdagon.vale.templar.types._
@@ -81,8 +81,16 @@ object StructHammer {
         hamuts.addInterface(interfaceRef2, interfaceDefH)
         vassert(interfaceDefH.getRef == temporaryInterfaceRefH)
 
-        if (maybeExport.nonEmpty) {
-          Hammer.exportName(hamuts, maybeExport.get, interfaceDef2.fullName, interfaceDefH.fullName)
+        maybeExport match {
+          case None =>
+          case Some(exportPackageCoord) => {
+            val exportedName =
+              interfaceRef2.fullName.last match {
+                case CitizenName2(humanName, _) => humanName
+                case _ => vfail("Can't export something that doesn't have a human readable name!")
+              }
+            hamuts.addKindExport(interfaceDefH.getRef, exportPackageCoord, exportedName)
+          }
         }
 
         (interfaceDefH.getRef)
@@ -138,8 +146,16 @@ object StructHammer {
         hamuts.addStructOriginatingFromTemplar(structRef2, structDefH)
         vassert(structDefH.getRef == temporaryStructRefH)
 
-        if (maybeExport.nonEmpty) {
-          Hammer.exportName(hamuts, maybeExport.get, structDef2.fullName, structDefH.fullName)
+        maybeExport match {
+          case None =>
+          case Some(exportPackageCoord) => {
+            val exportedName =
+              structRef2.fullName.last match {
+                case CitizenName2(humanName, _) => humanName
+                case _ => vfail("Can't export something that doesn't have a human readable name!")
+              }
+            hamuts.addKindExport(structDefH.getRef, exportPackageCoord, exportedName)
+          }
         }
 
         (structDefH.getRef)
@@ -152,7 +168,7 @@ object StructHammer {
     hamuts: HamutsBox,
     conceptualVariability: Variability,
     type2: Coord,
-    typeH: ReferenceH[ReferendH]):
+    typeH: ReferenceH[KindH]):
   (StructRefH) = {
     val boxFullName2 = FullName2(PackageCoordinate.BUILTIN, List(), CitizenName2(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
     val boxFullNameH = NameHammer.translateFullName(hinputs, hamuts, boxFullName2)

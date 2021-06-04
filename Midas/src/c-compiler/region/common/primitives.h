@@ -13,22 +13,22 @@ public:
 
 
   bool isPrimitive(Reference* referenceM) {
-    return dynamic_cast<Int *>(referenceM->referend) != nullptr ||
-        dynamic_cast<Bool *>(referenceM->referend) != nullptr ||
-        dynamic_cast<Float *>(referenceM->referend) != nullptr;
+    return dynamic_cast<Int *>(referenceM->kind) != nullptr ||
+        dynamic_cast<Bool *>(referenceM->kind) != nullptr ||
+        dynamic_cast<Float *>(referenceM->kind) != nullptr;
   }
 
   LLVMTypeRef translatePrimitive(GlobalState* globalState, Reference* referenceM) {
-    if (dynamic_cast<Int*>(referenceM->referend) != nullptr) {
+    if (dynamic_cast<Int*>(referenceM->kind) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMInt64TypeInContext(globalState->context);
-    } else if (dynamic_cast<Bool*>(referenceM->referend) != nullptr) {
+    } else if (dynamic_cast<Bool*>(referenceM->kind) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMInt1TypeInContext(globalState->context);
-    } else if (dynamic_cast<Float*>(referenceM->referend) != nullptr) {
+    } else if (dynamic_cast<Float*>(referenceM->kind) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMDoubleTypeInContext(globalState->context);
-    } else if (dynamic_cast<Never*>(referenceM->referend) != nullptr) {
+    } else if (dynamic_cast<Never*>(referenceM->kind) != nullptr) {
       return LLVMArrayType(LLVMIntTypeInContext(globalState->context, NEVER_INT_BITS), 0);
     } else {
       assert(false);

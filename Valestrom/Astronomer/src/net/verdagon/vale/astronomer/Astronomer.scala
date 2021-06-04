@@ -21,12 +21,12 @@ case class Environment(
     typeByRune: Map[IRuneA, ITemplataType],
     locals: List[LocalVariableA]) {
 
-  val structsS: List[StructS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.structs)).toList
-  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
-  val implsS: List[ImplS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.impls)).toList
-  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
-  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.exports)).toList
-  val imports: List[ImportS] = codeMap.moduleToPackagesToFilenameToContents.values.flatMap(_.values.flatMap(_.imports)).toList
+  val structsS: List[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toList
+  val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
+  val implsS: List[ImplS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.impls)).toList
+  val functionsS: List[FunctionS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.implementedFunctions)).toList
+  val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toList
+  val imports: List[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toList
 
   def addLocals(newLocals: List[LocalVariableA]): Environment = {
     Environment(maybeName, maybeParentEnv, primitives, codeMap, typeByRune, locals ++ newLocals)

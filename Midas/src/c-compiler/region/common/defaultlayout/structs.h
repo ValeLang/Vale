@@ -3,53 +3,53 @@
 
 #include <globalstate.h>
 #include "region/common/controlblock.h"
-#include "ireferendstructssource.h"
+#include "ikindstructssource.h"
 
 
 class IWeakRefStructsSource {
 public:
   virtual ~IWeakRefStructsSource() = default;
-  virtual LLVMTypeRef getStructWeakRefStruct(StructReferend *structReferend) = 0;
+  virtual LLVMTypeRef getStructWeakRefStruct(StructKind *structKind) = 0;
   virtual LLVMTypeRef getStaticSizedArrayWeakRefStruct(StaticSizedArrayT *ssaMT) = 0;
   virtual LLVMTypeRef getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT *rsaMT) = 0;
-  virtual LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend *interfaceReferend) = 0;
+  virtual LLVMTypeRef getInterfaceWeakRefStruct(InterfaceKind *interfaceKind) = 0;
   virtual WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) = 0;
 
-  virtual LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) = 0;
+  virtual LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) = 0;
   // This is a weak ref to a void*. When we're calling an interface method on a weak,
   // we have no idea who the receiver is. They'll receive this struct as the correctly
   // typed flavor of it (from structWeakRefStructs).
-  virtual LLVMTypeRef getWeakVoidRefStruct(Referend* referend) = 0;
+  virtual LLVMTypeRef getWeakVoidRefStruct(Kind* kind) = 0;
 
   virtual WeakFatPtrLE downcastWeakFatPtr(
       LLVMBuilderRef builder,
-      StructReferend* targetStructReferend,
+      StructKind* targetStructKind,
       Reference* targetRefMT,
       LLVMValueRef sourceWeakFatPtrLE) = 0;
 };
 
 
-// This is a collection of layouts and LLVM types for all sorts of NON-WEAKABLE referends.
-// We feed it referends, and it defines structs for us.
+// This is a collection of layouts and LLVM types for all sorts of NON-WEAKABLE kinds.
+// We feed it kinds, and it defines structs for us.
 // In every mode, immStructs and non-weakable muts use this *directly*.
 // (Keep in mind, resilient modes have no non-weakable muts)
 // Note how we said *directly* above. This is also used *indirectly* by WeakableStructs, who
 // puts somet extra things into the ControlBlock for its own weakability purposes.
-class ReferendStructs : public IReferendStructsSource {
+class KindStructs : public IKindStructsSource {
 public:
-  ReferendStructs(GlobalState* globalState_, ControlBlock controlBlock_);
+  KindStructs(GlobalState* globalState_, ControlBlock controlBlock_);
 
-  ControlBlock* getControlBlock(Referend* referend) override;
+  ControlBlock* getControlBlock(Kind* kind) override;
   ControlBlock* getControlBlock();
-  LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
+  LLVMTypeRef getInnerStruct(StructKind* structKind) override;
+  LLVMTypeRef getWrapperStruct(StructKind* structKind) override;
   LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) override;
   LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) override;
-  LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
-  LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
+  LLVMTypeRef getInterfaceRefStruct(InterfaceKind* interfaceKind) override;
+  LLVMTypeRef getInterfaceTableStruct(InterfaceKind* interfaceKind) override;
   LLVMTypeRef getStringWrapperStruct() override;
-  void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) override;
-  void declareStruct(StructReferend* structM) override;
+  void defineStruct(StructKind* structM, std::vector<LLVMTypeRef> membersLT) override;
+  void declareStruct(StructKind* structM) override;
   void declareEdge(Edge* edge) override;
   void defineEdge(
       Edge* edge,
@@ -72,7 +72,7 @@ public:
 
   LLVMValueRef getObjIdFromControlBlockPtr(
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) override;
 
   WrapperPtrLE makeWrapperPtr(
@@ -100,7 +100,7 @@ public:
 //      AreaAndFileAndLine checkerAFL,
 //      FunctionState* functionState,
 //      LLVMBuilderRef builder,
-//      Referend* referendM,
+//      Kind* kindM,
 //      LLVMValueRef controlBlockPtrLE) override;
 
   LLVMValueRef getStringBytesPtr(
@@ -120,14 +120,14 @@ public:
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       InterfaceFatPtrLE interfaceFatPtrLE) override;
 
   ControlBlockPtrLE getControlBlockPtrWithoutChecking(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       InterfaceFatPtrLE interfaceFatPtrLE) override;
 
   ControlBlockPtrLE getControlBlockPtr(
@@ -173,7 +173,7 @@ public:
 
   LLVMValueRef getStructContentsPtr(
       LLVMBuilderRef builder,
-      Referend* referend,
+      Kind* kind,
       WrapperPtrLE wrapperPtrLE) override;
 
 
@@ -188,14 +188,14 @@ private:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       LLVMValueRef controlBlockPtrLE);
 
   ControlBlockPtrLE makeControlBlockPtrWithoutChecking(
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       LLVMValueRef controlBlockPtrLE);
 
   WrapperPtrLE makeWrapperPtrWithoutChecking(
@@ -240,29 +240,29 @@ private:
   LLVMTypeRef stringInnerStructL = nullptr;
 };
 
-// This is a collection of layouts and LLVM types for all sorts of WEAKABLE referends.
-// We feed it referends, and it defines structs for us.
+// This is a collection of layouts and LLVM types for all sorts of WEAKABLE kinds.
+// We feed it kinds, and it defines structs for us.
 // In every mode, weakable muts use this directly.
 // In every mode, immStructs and non-weakable muts DONT use this directly.
 // (Keep in mind, in resilient modes, all muts are weakable)
-class WeakableReferendStructs : public IReferendStructsSource, public IWeakRefStructsSource {
+class WeakableKindStructs : public IKindStructsSource, public IWeakRefStructsSource {
 public:
-  WeakableReferendStructs(
+  WeakableKindStructs(
       GlobalState* globalState_,
       ControlBlock controlBlock,
       LLVMTypeRef weakRefHeaderStructL_);
 
   ControlBlock* getControlBlock();
-  ControlBlock* getControlBlock(Referend* referend) override;
-  LLVMTypeRef getInnerStruct(StructReferend* structReferend) override;
-  LLVMTypeRef getWrapperStruct(StructReferend* structReferend) override;
+  ControlBlock* getControlBlock(Kind* kind) override;
+  LLVMTypeRef getInnerStruct(StructKind* structKind) override;
+  LLVMTypeRef getWrapperStruct(StructKind* structKind) override;
   LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) override;
   LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) override;
-  LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend) override;
-  LLVMTypeRef getInterfaceTableStruct(InterfaceReferend* interfaceReferend) override;
+  LLVMTypeRef getInterfaceRefStruct(InterfaceKind* interfaceKind) override;
+  LLVMTypeRef getInterfaceTableStruct(InterfaceKind* interfaceKind) override;
 
-  void defineStruct(StructReferend* structM, std::vector<LLVMTypeRef> membersLT) override;
-  void declareStruct(StructReferend* structM) override;
+  void defineStruct(StructKind* structM, std::vector<LLVMTypeRef> membersLT) override;
+  void declareStruct(StructKind* structM) override;
   void declareEdge(Edge* edge) override;
   void defineEdge(
       Edge* edge,
@@ -275,15 +275,15 @@ public:
   void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) override;
   void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) override;
 
-  LLVMTypeRef getStructWeakRefStruct(StructReferend* structReferend) override;
+  LLVMTypeRef getStructWeakRefStruct(StructKind* structKind) override;
   LLVMTypeRef getStaticSizedArrayWeakRefStruct(StaticSizedArrayT* ssaMT) override;
   LLVMTypeRef getRuntimeSizedArrayWeakRefStruct(RuntimeSizedArrayT* rsaMT) override;
-  LLVMTypeRef getInterfaceWeakRefStruct(InterfaceReferend* interfaceReferend) override;
+  LLVMTypeRef getInterfaceWeakRefStruct(InterfaceKind* interfaceKind) override;
 
   WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override;
   WeakFatPtrLE downcastWeakFatPtr(
       LLVMBuilderRef builder,
-      StructReferend* targetStructReferend,
+      StructKind* targetStructKind,
       Reference* targetRefMT,
       LLVMValueRef sourceWeakFatPtrLE) override;
 
@@ -321,7 +321,7 @@ public:
 //      AreaAndFileAndLine checkerAFL,
 //      FunctionState* functionState,
 //      LLVMBuilderRef builder,
-//      Referend* referendM,
+//      Kind* kindM,
 //      LLVMValueRef controlBlockPtrLE) override;
 
   LLVMValueRef getStringBytesPtr(
@@ -336,14 +336,14 @@ public:
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       InterfaceFatPtrLE interfaceFatPtrLE) override;
 
   ControlBlockPtrLE getControlBlockPtrWithoutChecking(
       AreaAndFileAndLine from,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       InterfaceFatPtrLE interfaceFatPtrLE) override;
 
   ControlBlockPtrLE getControlBlockPtr(
@@ -372,7 +372,7 @@ public:
 
   LLVMValueRef getStructContentsPtr(
       LLVMBuilderRef builder,
-      Referend* referend,
+      Kind* kind,
       WrapperPtrLE wrapperPtrLE) override;
 
   LLVMValueRef getVoidPtrFromInterfacePtr(
@@ -383,7 +383,7 @@ public:
 
   LLVMValueRef getObjIdFromControlBlockPtr(
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       ControlBlockPtrLE controlBlockPtr) override;
 
   // See CRCISFAORC for why we don't take in a mutability.
@@ -400,20 +400,20 @@ public:
       Reference* refM,
       ControlBlockPtrLE controlBlockPtr) override;
 
-  LLVMTypeRef getWeakRefHeaderStruct(Referend* referend) override {
+  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
     return weakRefHeaderStructL;
   }
   // This is a weak ref to a void*. When we're calling an interface method on a weak,
   // we have no idea who the receiver is. They'll receive this struct as the correctly
   // typed flavor of it (from structWeakRefStructs).
-  LLVMTypeRef getWeakVoidRefStruct(Referend* referend) override {
+  LLVMTypeRef getWeakVoidRefStruct(Kind* kind) override {
     return weakVoidRefStructL;
   }
 
 private:
   GlobalState* globalState = nullptr;
 
-  ReferendStructs referendStructs;
+  KindStructs kindStructs;
 
   LLVMTypeRef weakRefHeaderStructL = nullptr; // contains generation and maybe gen index
   // This is a weak ref to a void*. When we're calling an interface method on a weak,

@@ -21,35 +21,35 @@ trait IExpressionResult2 extends Queriable2 {
     }
   }
   def underlyingReference: Coord
-  def referend: Kind
+  def kind: Kind
 }
 case class AddressResult2(reference: Coord) extends IExpressionResult2 {
   override def underlyingReference: Coord = reference
-  override def referend = reference.referend
+  override def kind = reference.kind
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
 case class ReferenceResult2(reference: Coord) extends IExpressionResult2 {
   override def underlyingReference: Coord = reference
-  override def referend = reference.referend
+  override def kind = reference.kind
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
     List(this).collect(func) ++ reference.all(func)
   }
 }
 trait Expression2 extends Queriable2 {
   def resultRegister: IExpressionResult2
-  def referend: Kind
+  def kind: Kind
 }
 trait ReferenceExpression2 extends Expression2 {
   override def resultRegister: ReferenceResult2
-  override def referend = resultRegister.reference.referend
+  override def kind = resultRegister.reference.kind
 }
 // This is an Expression2 because we sometimes take an address and throw it
 // directly into a struct (closures!), which can have addressible members.
 trait AddressExpression2 extends Expression2 {
   override def resultRegister: AddressResult2
-  override def referend = resultRegister.reference.referend
+  override def kind = resultRegister.reference.kind
 
   def range: RangeS
 
@@ -125,7 +125,7 @@ case class WeakAlias2(
   vassert(innerExpr.resultRegister.reference.ownership == Constraint)
 
   override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(Coord(Weak, innerExpr.resultRegister.reference.permission, innerExpr.referend))
+    ReferenceResult2(Coord(Weak, innerExpr.resultRegister.reference.permission, innerExpr.kind))
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -221,12 +221,12 @@ case class If2(
 
   vassert(conditionResultCoord == Coord(Share, Readonly, Bool2()))
   vassert(
-    thenResultCoord.referend == Never2() ||
-      elseResultCoord.referend == Never2() ||
+    thenResultCoord.kind == Never2() ||
+      elseResultCoord.kind == Never2() ||
       thenResultCoord == elseResultCoord)
 
   private val commonSupertype =
-    if (thenResultCoord.referend == Never2()) {
+    if (thenResultCoord.kind == Never2()) {
       elseResultCoord
     } else {
       thenResultCoord
@@ -303,8 +303,8 @@ case class Block2(
 
   // If there's a Never2() anywhere, then the entire block should end in an unreachable
   // or panic or something.
-  if (exprs.exists(_.referend == Never2())) {
-    vassert(exprs.last.referend == Never2())
+  if (exprs.exists(_.kind == Never2())) {
+    vassert(exprs.last.kind == Never2())
   }
 
   vassert(exprs.collect({
@@ -322,7 +322,7 @@ case class Block2(
 case class Consecutor2(exprs: List[ReferenceExpression2]) extends ReferenceExpression2 {
   // Everything but the last should result in a Void.
   // The last can be anything, even a Void or a Never.
-  exprs.init.foreach(expr => vassert(expr.referend == Void2()))
+  exprs.init.foreach(expr => vassert(expr.kind == Void2()))
 
   def lastReferenceExpr = exprs.last
   override def resultRegister = lastReferenceExpr.resultRegister
@@ -500,7 +500,7 @@ case class StaticSizedArrayLookup2(
     targetPermission: Permission,
     variability: Variability
 ) extends AddressExpression2 {
-  vassert(arrayExpr.resultRegister.reference.referend == arrayType)
+  vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
   override def resultRegister = AddressResult2(arrayType.array.memberType)
 
@@ -519,7 +519,7 @@ case class RuntimeSizedArrayLookup2(
   targetPermission: Permission,
   variability: Variability
 ) extends AddressExpression2 {
-  vassert(arrayExpr.resultRegister.reference.referend == arrayType)
+  vassert(arrayExpr.resultRegister.reference.kind == arrayType)
 
   override def resultRegister = AddressResult2(arrayType.array.memberType)
 
@@ -653,7 +653,7 @@ case class TemplarReinterpret2(
   override def resultRegister = ReferenceResult2(resultReference)
 
   // Unless it's a Never...
-  if (expr.resultRegister.reference.referend != Never2()) {
+  if (expr.resultRegister.reference.kind != Never2()) {
     if (resultReference.ownership != expr.resultRegister.reference.ownership) {
       // Cant reinterpret to a different ownership!
       vfail("wat");
@@ -743,7 +743,7 @@ case class DestroyStaticSizedArrayIntoLocals2(
 ) extends ReferenceExpression2 {
   override def resultRegister: ReferenceResult2 = ReferenceResult2(Coord(Share, Readonly, Void2()))
 
-  vassert(expr.referend == staticSizedArray)
+  vassert(expr.kind == staticSizedArray)
   if (expr.resultRegister.reference.ownership == Constraint) {
     vfail("wot")
   }
@@ -807,7 +807,7 @@ case class SoftLoad2(
   vassert((targetOwnership == Share) == (expr.resultRegister.reference.ownership == Share))
   vassert(targetOwnership != Own) // need to unstackify or destroy to get an owning reference
   // This is just here to try the asserts inside Coord's constructor
-  Coord(targetOwnership, targetPermission, expr.resultRegister.reference.referend)
+  Coord(targetOwnership, targetPermission, expr.resultRegister.reference.kind)
 
   (expr.resultRegister.reference.permission, targetPermission) match {
     case (Readonly, Readonly) =>
@@ -818,7 +818,7 @@ case class SoftLoad2(
   }
 
   override def resultRegister: ReferenceResult2 = {
-    ReferenceResult2(Coord(targetOwnership, targetPermission, expr.resultRegister.reference.referend))
+    ReferenceResult2(Coord(targetOwnership, targetPermission, expr.resultRegister.reference.kind))
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {

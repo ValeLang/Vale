@@ -114,7 +114,7 @@ class TemplarTests extends FunSuite with Matchers {
 //        """
 //          |struct Ship { }
 //          |fn moo<T>(a &!T) &!T { a }
-//          |fn main() {
+//          |fn main() export {
 //          |  s = Ship();
 //          |  t = moo(&s);
 //          |}
@@ -326,7 +326,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  Muta() = m;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  a = Muta();
         |}
       """.stripMargin)
@@ -348,7 +348,7 @@ class TemplarTests extends FunSuite with Matchers {
         |  SomeStruct<T>(t)
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  doAThing(4);
         |}
         |""".stripMargin
@@ -500,7 +500,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |struct MyThing { value int; }
         |fn moo() MyThing { MyThing(4) }
-        |fn main() { moo(); }
+        |fn main() export { moo(); }
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
@@ -567,7 +567,7 @@ class TemplarTests extends FunSuite with Matchers {
         innerExpr.resultRegister.only({
           case StructRef2(simpleName("Toyota")) =>
         })
-        vassert(up.resultRegister.reference.referend == InterfaceRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Car", List()))))
+        vassert(up.resultRegister.reference.kind == InterfaceRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Car", List()))))
       }
     })
   }
@@ -590,7 +590,7 @@ class TemplarTests extends FunSuite with Matchers {
       """
         |fn moo<T> () rules(T Ref) { }
         |
-        |fn main() {
+        |fn main() export {
         |	moo<int>();
         |}
       """.stripMargin)
@@ -824,7 +824,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn helperFunc<T>(x T) {
         |  { print(x); }();
         |}
-        |fn main() {
+        |fn main() export {
         |  helperFunc(4);
         |  helperFunc("bork");
         |}
@@ -848,7 +848,7 @@ class TemplarTests extends FunSuite with Matchers {
         |fn helperFunc(x str) {
         |  { print(x); }();
         |}
-        |fn main() {
+        |fn main() export {
         |  helperFunc(4);
         |  helperFunc("bork");
         |}
@@ -998,7 +998,7 @@ class TemplarTests extends FunSuite with Matchers {
           |interface AFunction1<P> rules(P Ref) {
           |  fn __call(virtual this &AFunction1<P>, a P) int;
           |}
-          |fn main() {
+          |fn main() export {
           |  arr = &AFunction1<int>((_){ true });
           |}
           |""".stripMargin)

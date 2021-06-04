@@ -36,9 +36,9 @@ class CallTemplar(
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
       givenArgsExprs2: List[ReferenceExpression2]):
   (FunctionCall2) = {
-    callableExpr.resultRegister.reference.referend match {
+    callableExpr.resultRegister.reference.kind match {
       case Never2() | Bool2() => {
-        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.resultRegister.reference.referend))
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.resultRegister.reference.kind))
       }
       case structRef @ StructRef2(_) => {
         evaluateClosureCall(
@@ -98,7 +98,7 @@ class CallTemplar(
 //
 //        val argsPointerTypes2 = argsExprs2.map(_.resultRegister.expectReference().reference)
 //
-//        val callableType = callableExpr.resultRegister.reference.referend.asInstanceOf[FunctionT2]
+//        val callableType = callableExpr.resultRegister.reference.kind.asInstanceOf[FunctionT2]
 //
 //        checkTypes(temputs, callableType.paramTypes, argsPointerTypes2, exact = true);
 //

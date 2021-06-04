@@ -18,7 +18,7 @@ object MutateHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       mutate2: Mutate2):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val Mutate2(destinationExpr2, sourceExpr2) = mutate2
 
     val (sourceExprResultLine, sourceDeferreds) =
@@ -56,10 +56,10 @@ object MutateHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
     arrayExpr2: ReferenceExpression2,
     indexExpr2: ReferenceExpression2
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
@@ -84,10 +84,10 @@ object MutateHammer {
                                                     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
                                                     locals: LocalsBox,
-                                                    sourceExprResultLine: ExpressionH[ReferendH],
+                                                    sourceExprResultLine: ExpressionH[KindH],
                                                     arrayExpr2: ReferenceExpression2,
                                                     indexExpr2: ReferenceExpression2
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2);
     val (indexExprResultLine, indexDeferreds) =
@@ -112,15 +112,15 @@ object MutateHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
     structExpr2: ReferenceExpression2,
     memberName: FullName2[IVarName2]
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
-      structExpr2.resultRegister.reference.referend match {
+      structExpr2.resultRegister.reference.kind match {
         case sr @ StructRef2(_) => sr
         case TupleT2(_, sr) => sr
         case PackT2(_, sr) => sr
@@ -176,15 +176,15 @@ object MutateHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
     structExpr2: ReferenceExpression2,
     memberName: FullName2[IVarName2]
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val (destinationResultLine, destinationDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
-      structExpr2.resultRegister.reference.referend match {
+      structExpr2.resultRegister.reference.kind match {
         case sr @ StructRef2(_) => sr
       }
     val structDef2 = hinputs.lookupStruct(structRef2)
@@ -211,12 +211,12 @@ object MutateHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[ReferendH],
-    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
+    sourceResultPointerTypeH: ReferenceH[KindH],
     varId: FullName2[IVarName2],
     variability: Variability,
     reference: Coord
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val local = locals.get(varId).get
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
@@ -248,9 +248,9 @@ object MutateHammer {
                                            hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
                                            locals: LocalsBox,
-                                           sourceExprResultLine: ExpressionH[ReferendH],
+                                           sourceExprResultLine: ExpressionH[KindH],
                                            varId: FullName2[IVarName2]
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val local = locals.get(varId).get
     vassert(!locals.unstackifiedVars.contains(local.id))
     val newStoreNode =

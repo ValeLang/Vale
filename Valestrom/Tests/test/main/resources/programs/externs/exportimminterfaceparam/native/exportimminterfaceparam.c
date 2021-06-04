@@ -7,8 +7,8 @@
 #include "IShip.h"
 #include "expGetShipFuel.h"
 
-extern int64_t expGetShipFuel(IShip s);
+extern int64_t tmod_expGetShipFuel(tmod_IShip s);
 
-int64_t extGetShipFuel(IShip s) {
-  return expGetShipFuel(s);
+extern int64_t tmod_extGetShipFuel(tmod_IShip s) {
+  return tmod_expGetShipFuel(s);
 }

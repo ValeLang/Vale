@@ -547,7 +547,7 @@ class StructTemplarCore(
           })
 
         // The args for the call inside the forwarding function.
-        val lambdaCoord = Coord(if (lambda.ownership == Share) Share else Constraint, lambda.permission, lambda.referend)
+        val lambdaCoord = Coord(if (lambda.ownership == Share) Share else Constraint, lambda.permission, lambda.kind)
         val forwardedCallArgs = (lambdaCoord :: forwarderHeader.paramTypes.tail).map(ParamFilter(_, None))
 
 //        start here
@@ -595,7 +595,7 @@ class StructTemplarCore(
             ArgLookup2(index + 1, param.tyype)
           })
 
-        if (lambdaFunctionPrototype.returnType.referend != Never2() &&
+        if (lambdaFunctionPrototype.returnType.kind != Never2() &&
           forwarderHeader.returnType != lambdaFunctionPrototype.returnType) {
           throw CompileErrorExceptionT(LambdaReturnDoesntMatchInterfaceConstructor(range))
         }

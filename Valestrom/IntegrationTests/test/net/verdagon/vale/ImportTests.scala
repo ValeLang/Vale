@@ -36,7 +36,7 @@ class ImportTests extends FunSuite with Matchers {
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests non-imported module isn't brought in") {
@@ -66,7 +66,7 @@ class ImportTests extends FunSuite with Matchers {
 
     vassert(!compile.getParseds().getOrDie().moduleToPackagesToFilenameToContents.contains("moduleB"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests import with paackage") {
@@ -96,7 +96,7 @@ class ImportTests extends FunSuite with Matchers {
           .or(Tests.getPackageToResourceResolver),
         FullCompilationOptions())
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests import of directory with no vale files") {
@@ -121,7 +121,7 @@ class ImportTests extends FunSuite with Matchers {
           .or({ case PackageCoordinate("moduleB", List("bork")) => Some(Map()) }),
     FullCompilationOptions())
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 }

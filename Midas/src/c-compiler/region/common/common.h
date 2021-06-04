@@ -12,27 +12,27 @@ LLVMValueRef weakStructPtrToGenWeakInterfacePtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     LLVMValueRef sourceRefLE,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     Reference* sourceStructTypeM,
-    InterfaceReferend* targetInterfaceReferendM,
+    InterfaceKind* targetInterfaceKindM,
     Reference* targetInterfaceTypeM);
 
 LLVMValueRef upcastThinPtr(
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* referendStructsSource,
+    IKindStructsSource* kindStructsSource,
     LLVMBuilderRef builder,
 
     Reference* sourceStructTypeM,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     WrapperPtrLE sourceRefLE,
 
     Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM);
+    InterfaceKind* targetInterfaceKindM);
 
-LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IReferendStructsSource* structs, Referend* referend);
+LLVMTypeRef translateReferenceSimple(GlobalState* globalState, IKindStructsSource* structs, Kind* kind);
 
-LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Referend* referend);
+LLVMTypeRef translateWeakReference(GlobalState* globalState, IWeakRefStructsSource* weakRefStructs, Kind* kind);
 
 
 
@@ -55,17 +55,17 @@ LLVMValueRef fillControlBlockCensusFields(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     LLVMValueRef newControlBlockLE,
     const std::string& typeName);
 
 LLVMValueRef insertStrongRc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* structs,
-    Referend* referendM,
+    IKindStructsSource* structs,
+    Kind* kindM,
     LLVMValueRef newControlBlockLE);
 
 void buildCheckGen(
@@ -90,9 +90,9 @@ LLVMValueRef makeInterfaceRefStruct(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* structs,
-    StructReferend* sourceStructReferendM,
-    InterfaceReferend* targetInterfaceReferendM,
+    IKindStructsSource* structs,
+    StructKind* sourceStructKindM,
+    InterfaceKind* targetInterfaceKindM,
     ControlBlockPtrLE controlBlockPtrLE);
 
 LLVMValueRef getTablePtrFromInterfaceRef(
@@ -107,7 +107,7 @@ void innerDeallocate(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* referendStrutsSource,
+    IKindStructsSource* kindStrutsSource,
     LLVMBuilderRef builder,
     Reference* refMT,
     Ref ref);
@@ -151,14 +151,14 @@ WrapperPtrLE mallocStr(
     LLVMBuilderRef builder,
     LLVMValueRef lengthLE,
     LLVMValueRef sourceCharsPtrLE,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock);
 LLVMValueRef mallocKnownSize(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Location location,
-    LLVMTypeRef referendLT);
+    LLVMTypeRef kindLT);
 void fillInnerStruct(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -169,7 +169,7 @@ void fillInnerStruct(
 Ref constructWrappedStruct(
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* referendStructsSource,
+    IKindStructsSource* kindStructsSource,
     LLVMBuilderRef builder,
     LLVMTypeRef structL,
     Reference* structTypeM,
@@ -190,7 +190,7 @@ Ref innerAllocate(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* desiredReference,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     const std::vector<Ref>& memberRefs,
     Weakability effectiveWeakability,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock);
@@ -253,11 +253,11 @@ Ref resilientDowncast(
     Reference *resultOptTypeM,
     Reference *sourceInterfaceRefMT,
     Ref &sourceInterfaceRef,
-    Referend *targetReferend,
+    Kind *targetKind,
     const std::function<Ref(LLVMBuilderRef, Ref)> &buildThen,
     std::function<Ref(LLVMBuilderRef)> &buildElse,
-    StructReferend *targetStructReferend,
-    InterfaceReferend *sourceInterfaceReferend);
+    StructKind *targetStructKind,
+    InterfaceKind *sourceInterfaceKind);
 ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState);
 ControlBlock makeResilientV3WeakableControlBlock(GlobalState* globalState);
 ControlBlock makeMutNonWeakableControlBlock(GlobalState* globalState, RegionId* regionId);
@@ -279,7 +279,7 @@ Ref constructStaticSizedArray(
     LLVMBuilderRef builder,
     Reference* refM,
     StaticSizedArrayT* ssaMT,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock);
 
 
@@ -288,7 +288,7 @@ void regularCheckValidReference(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* refM,
     LLVMValueRef refLE);
 
@@ -296,7 +296,7 @@ LoadResult regularLoadElementFromRSAWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* rsaRefMT,
     RuntimeSizedArrayT* rsaMT,
     Mutability mutability,
@@ -309,7 +309,7 @@ LoadResult resilientLoadElementFromRSAWithoutUpgrade(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* rsaRefMT,
     Mutability mutability,
     Reference* elementType,
@@ -322,7 +322,7 @@ Ref regularStoreElementInSSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* rsaRefMT,
     Reference* elementType,
     int size,
@@ -334,7 +334,7 @@ void regularInitializeElementInSSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* ssaRefMT,
     Reference* elementType,
     int size,
@@ -346,7 +346,7 @@ Ref constructRuntimeSizedArray(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* rsaMT,
     Reference* elementType,
     RuntimeSizedArrayT* runtimeSizedArrayT,
@@ -360,7 +360,7 @@ LoadResult regularLoadStrongMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* structRefMT,
     Ref structRef,
     int memberIndex,
@@ -372,7 +372,7 @@ LoadResult regularLoadMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* structRefMT,
     Ref structRef,
     int memberIndex,
@@ -385,7 +385,7 @@ LoadResult resilientLoadWeakMember(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -398,12 +398,12 @@ Ref upcastStrong(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* sourceStructMT,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     Ref sourceRefLE,
     Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM);
+    InterfaceKind* targetInterfaceKindM);
 
 Ref upcastWeak(
     GlobalState* globalState,
@@ -411,10 +411,10 @@ Ref upcastWeak(
     LLVMBuilderRef builder,
     IWeakRefStructsSource* weakRefStructs,
     Reference* sourceStructMT,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     Ref sourceRefLE,
     Reference* targetInterfaceTypeM,
-    InterfaceReferend* targetInterfaceReferendM);
+    InterfaceKind* targetInterfaceKindM);
 
 LoadResult regularloadElementFromSSA(
     GlobalState* globalState,
@@ -428,7 +428,7 @@ LoadResult regularloadElementFromSSA(
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef,
-    IReferendStructsSource* referendStructs);
+    IKindStructsSource* kindStructs);
 
 LoadResult resilientloadElementFromSSA(
     GlobalState* globalState,
@@ -442,16 +442,16 @@ LoadResult resilientloadElementFromSSA(
     Ref arrayRef,
     bool arrayKnownLive,
     Ref indexRef,
-    IReferendStructsSource* referendStructs);
+    IKindStructsSource* kindStructs);
 
 
 void regularFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName,
     WrcWeaks* wrcWeaks);
@@ -460,9 +460,9 @@ void gmFillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     LLVMBuilderRef builder,
-    Referend* referendM,
+    Kind* kindM,
     ControlBlockPtrLE controlBlockPtrLE,
     const std::string& typeName,
     HybridGenerationalMemory* hgmWeaks);
@@ -471,7 +471,7 @@ Ref getRuntimeSizedArrayLengthStrong(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* rsaRefMT,
     Ref arrayRef);
 
@@ -479,7 +479,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeStrongInterfaceRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* virtualParamMT,
     Ref virtualArgRef);
 
@@ -487,7 +487,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> explodeWeakInterfaceRef(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     FatWeaks* fatWeaks,
     IWeakRefStructsSource* weakRefStructs,
     Reference* virtualParamMT,
@@ -499,7 +499,7 @@ void storeMemberStrong(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -511,7 +511,7 @@ void storeMemberWeak(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     Reference* structRefMT,
     Ref structRef,
     bool structKnownLive,
@@ -523,7 +523,7 @@ void storeMemberWeak(
 Ref regularWeakAlias(
     GlobalState* globalState,
     FunctionState* functionState,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     WrcWeaks* wrcWeaks,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
@@ -565,7 +565,7 @@ void initializeElementInRSA(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* referendStructs,
+    IKindStructsSource* kindStructs,
     RuntimeSizedArrayT* rsaMT,
     Reference* rsaRefMT,
     Ref rsaRef,
@@ -589,7 +589,7 @@ Ref regularDowncast(
     Reference* sourceInterfaceRefMT,
     Ref sourceInterfaceRef,
     bool sourceRefKnownLive,
-    Referend* targetReferend,
+    Kind* targetKind,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse);
 

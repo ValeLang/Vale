@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "Bogglewoggle.h"
-#include "Flamscrankle.h"
+#include "tmod/Bogglewoggle.h"
+#include "tmod/Flamscrankle.h"
 
 extern int64_t tmod_expFunc(tmod_Flamscrankle* flam);
 

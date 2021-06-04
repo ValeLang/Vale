@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "ImmIntArray.h"
+#include "tmod/ImmIntArray.h"
 
 extern int64_t tmod_expSumBytes(tmod_ImmIntArray* arr);
 

@@ -22,13 +22,13 @@ object ExpressionVivem {
     void
   }
 
-  def makePrimitive(heap: Heap, callId: CallId, location: LocationH, referend: ReferendV) = {
-    val ref = heap.allocateTransient(ShareH, location, ReadonlyH, referend)
+  def makePrimitive(heap: Heap, callId: CallId, location: LocationH, kind: KindV) = {
+    val ref = heap.allocateTransient(ShareH, location, ReadonlyH, kind)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, ShareH), ref)
     ref
   }
 
-  def takeArgument(heap: Heap, callId: CallId, argumentIndex: Int, resultType: ReferenceH[ReferendH]) = {
+  def takeArgument(heap: Heap, callId: CallId, argumentIndex: Int, resultType: ReferenceH[KindH]) = {
     val ref = heap.takeArgument(callId, argumentIndex, resultType)
     heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, resultType.ownership), ref)
     ref
@@ -43,7 +43,7 @@ object ExpressionVivem {
   def upcast(sourceReference: ReferenceV, targetInterfaceRef: InterfaceRefH): ReferenceV = {
     ReferenceV(
       sourceReference.actualKind,
-      RRReferend(targetInterfaceRef),
+      RRKind(targetInterfaceRef),
       sourceReference.ownership,
       sourceReference.location,
       sourceReference.permission,
@@ -56,7 +56,7 @@ object ExpressionVivem {
     stdout: (String => Unit),
     heap: Heap,
     expressionId: ExpressionId,
-    node: ExpressionH[ReferendH] // rename to expression
+    node: ExpressionH[KindH] // rename to expression
   ): INodeExecuteResult = {
     heap.vivemDout.print("<" + node.getClass.getSimpleName + "> ")
     val result = executeNodeInner(programH, stdin, stdout, heap, expressionId, node)
@@ -70,7 +70,7 @@ object ExpressionVivem {
                    stdout: (String => Unit),
                    heap: Heap,
                    expressionId: ExpressionId,
-                   node: ExpressionH[ReferendH] // rename to expression
+                   node: ExpressionH[KindH] // rename to expression
   ): INodeExecuteResult = {
     val callId = expressionId.callId
 
@@ -276,14 +276,14 @@ object ExpressionVivem {
 
         NodeContinue(weakRef)
       }
-      case AsSubtypeH(sourceExpr, targetReferend, resultType, okConstructor, errConstructor) => {
+      case AsSubtypeH(sourceExpr, targetKind, resultType, okConstructor, errConstructor) => {
         val sourceRef =
           executeNode(programH, stdin, stdout, heap, expressionId.addStep(0), sourceExpr) match {
             case r @ NodeReturn(_) => return r
             case NodeContinue(r) => r
           }
 
-        if (sourceRef.actualKind.hamut == targetReferend) {
+        if (sourceRef.actualKind.hamut == targetKind) {
 //          val newRef = ReferenceH(BorrowH, YonderH, sourceExpr.resultType.permission, sourceExpr.resultType.kind)
           val refAliasedAsSubtype = heap.alias(sourceRef, sourceExpr.resultType, okConstructor.params.head)
 
@@ -624,7 +624,7 @@ object ExpressionVivem {
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         heap.vivemDout.print(" o" + arrayReference.num + "=")
-        heap.printReferend(arrayInstance)
+        heap.printKind(arrayInstance)
         NodeContinue(arrayReference)
       }
 
@@ -724,8 +724,8 @@ object ExpressionVivem {
             case r @ NodeReturn(_) => return r
             case NodeContinue(r) => r
           }
-        val conditionReferend = heap.dereference(conditionReference)
-        val BoolV(conditionValue) = conditionReferend;
+        val conditionKind = heap.dereference(conditionReference)
+        val BoolV(conditionValue) = conditionKind;
 
         discard(programH, heap, stdout, stdin, callId, conditionBlock.resultType, conditionReference)
 
@@ -751,8 +751,8 @@ object ExpressionVivem {
               case r @ NodeReturn(_) => return r
               case NodeContinue(r) => r
             }
-          val conditionReferend = heap.dereference(conditionReference)
-          val BoolV(conditionValue) = conditionReferend;
+          val conditionKind = heap.dereference(conditionReference)
+          val BoolV(conditionValue) = conditionKind;
           discard(programH, heap, stdout, stdin, callId, bodyBlock.resultType, conditionReference)
           continue = conditionValue
         }
@@ -764,8 +764,8 @@ object ExpressionVivem {
             case r @ NodeReturn(_) => return r
             case NodeContinue(r) => r
           }
-        val sizeReferend = heap.dereference(sizeReference)
-        val IntV(size) = sizeReferend;
+        val sizeKind = heap.dereference(sizeReference)
+        val IntV(size) = sizeKind;
         val rsaDef = programH.lookupRuntimeSizedArray(arrayRefType.kind)
         val (arrayReference, arrayInstance) =
           heap.addUninitializedArray(rsaDef, arrayRefType, size)
@@ -789,7 +789,7 @@ object ExpressionVivem {
         discard(programH, heap, stdout, stdin, callId, sizeExpr.resultType, sizeReference)
 
         heap.vivemDout.print(" o" + arrayReference.num + "=")
-        heap.printReferend(arrayInstance)
+        heap.printKind(arrayInstance)
 
         NodeContinue(arrayReference)
       }
@@ -820,7 +820,7 @@ object ExpressionVivem {
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         heap.vivemDout.print(" o" + arrayReference.num + "=")
-        heap.printReferend(arrayInstance)
+        heap.printKind(arrayInstance)
         NodeContinue(arrayReference)
       }
 
@@ -1087,7 +1087,7 @@ object ExpressionVivem {
     stdout: String => Unit,
     stdin: () => String,
     callId: CallId,
-    expectedReference: ReferenceH[ReferendH],
+    expectedReference: ReferenceH[KindH],
     actualReference: ReferenceV
   ): Unit = {
 

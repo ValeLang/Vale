@@ -11,7 +11,7 @@ class LgtWeaks {
 public:
   LgtWeaks(
       GlobalState* globalState,
-      IReferendStructsSource* referendStructsSource,
+      IKindStructsSource* kindStructsSource,
       IWeakRefStructsSource* weakRefStructsSource,
       bool elideChecksForKnownLive);
 
@@ -26,9 +26,9 @@ public:
       FunctionState *functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend *sourceStructReferendM,
+      StructKind *sourceStructKindM,
       Reference *sourceStructTypeM,
-      InterfaceReferend *targetInterfaceReferendM,
+      InterfaceKind *targetInterfaceKindM,
       Reference *targetInterfaceTypeM);
 
   // Makes a non-weak interface ref into a weak interface ref
@@ -37,7 +37,7 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceType,
       Reference* targetType,
-      InterfaceReferend* interfaceReferendM,
+      InterfaceKind* interfaceKindM,
       InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
   WeakFatPtrLE assembleStructWeakRef(
@@ -45,7 +45,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structTypeM,
       Reference* targetTypeM,
-      StructReferend* structReferendM,
+      StructKind* structKindM,
       WrapperPtrLE objPtrLE);
 
   WeakFatPtrLE assembleStaticSizedArrayWeakRef(
@@ -110,8 +110,8 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IReferendStructsSource* structs,
-      Referend* referendM,
+      IKindStructsSource* structs,
+      Kind* kindM,
       LLVMValueRef controlBlockLE);
 
   WeakFatPtrLE weakInterfaceRefToWeakStructRef(
@@ -137,7 +137,7 @@ private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
       IWeakRefStructsSource* weakRefStructsSource,
-      Referend* referend,
+      Kind* kind,
       WeakFatPtrLE weakRefLE);
 
   LLVMValueRef getLgtiFromWeakRef(
@@ -168,7 +168,7 @@ private:
 
   GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
-  IReferendStructsSource* referendStructsSource;
+  IKindStructsSource* kindStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
   bool elideChecksForKnownLive;
 

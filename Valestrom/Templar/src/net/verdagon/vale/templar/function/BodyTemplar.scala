@@ -155,7 +155,7 @@ class BodyTemplar(
         case None => lastUnconvertedUnreturnedExpr
         case Some(expectedResultType) => {
           if (templataTemplar.isTypeTriviallyConvertible(temputs, lastUnconvertedUnreturnedExpr.resultRegister.reference, expectedResultType)) {
-            if (lastUnconvertedUnreturnedExpr.referend == Never2()) {
+            if (lastUnconvertedUnreturnedExpr.kind == Never2()) {
               lastUnconvertedUnreturnedExpr
             } else {
               convertHelper.convert(funcOuterEnv.snapshot, temputs, body1.range, lastUnconvertedUnreturnedExpr, expectedResultType);
@@ -168,7 +168,7 @@ class BodyTemplar(
 
 
     // If the function doesn't end in a ret, then add one for it.
-    val lastExpr = if (lastUnreturnedExpr.referend == Never2()) lastUnreturnedExpr else Return2(lastUnreturnedExpr)
+    val lastExpr = if (lastUnreturnedExpr.kind == Never2()) lastUnreturnedExpr else Return2(lastUnreturnedExpr)
     // Add that result type to the returns, since we just added a Return for it.
     val returnsMaybeWithNever = returnsFromInsideMaybeWithNever + lastUnreturnedExpr.resultRegister.reference
     // If we already had a return, then the above will add a Never to the returns, but that's fine, it will be filtered

@@ -31,7 +31,7 @@ class OwnershipTests extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Owning ref method call") {
@@ -48,7 +48,7 @@ class OwnershipTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("When statement result is an owning ref, calls destructor") {
@@ -95,7 +95,7 @@ class OwnershipTests extends FunSuite with Matchers {
     val main = compile.expectTemputs().lookupFunction("main")
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
 
-    compile.evalForReferendAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
+    compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
   }
 
   test("Calls destructor on local var") {
@@ -187,7 +187,7 @@ class OwnershipTests extends FunSuite with Matchers {
     main.only({ case FunctionCall2(functionName(CallTemplar.MUT_DESTRUCTOR_NAME), _) => })
     main.all({ case FunctionCall2(_, _) => }).size shouldEqual 2
 
-    compile.evalForReferendAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
+    compile.evalForKindAndStdout(Vector()) shouldEqual (VonInt(10), "Destroying!\n")
   }
 
   test("Gets from temporary struct a member's member") {
@@ -204,7 +204,7 @@ class OwnershipTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
 
   // test that when we create a block closure, we hoist to the beginning its constructor,
@@ -281,7 +281,7 @@ class OwnershipTests extends FunSuite with Matchers {
 //        |}
 //      """.stripMargin)
 //
-//    compile.evalForReferend(Vector()) shouldEqual VonInt(1)
+//    compile.evalForKind(Vector()) shouldEqual VonInt(1)
 //  }
 //
 //  test("Wingman catches hanging borrow") {
@@ -299,7 +299,7 @@ class OwnershipTests extends FunSuite with Matchers {
 //      """.stripMargin)
 //
 //    try {
-//      compile.evalForReferend(Vector())
+//      compile.evalForKind(Vector())
 //      fail();
 //    } catch {
 //      case VivemPanic("Dangling borrow") =>

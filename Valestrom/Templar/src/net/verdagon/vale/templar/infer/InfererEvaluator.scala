@@ -173,7 +173,7 @@ class InfererEvaluator[Env, State](
     val patternCoordRune2 = NameTranslator.translateRune(patternCoordRuneA)
 
     val (rulesFromType, runesAddedForType) =
-      paramFilterInstance.tyype.referend match {
+      paramFilterInstance.tyype.kind match {
         case c: CitizenRef2 => {
           val ancestorInterfaces = delegate.getAncestorInterfaces(state, c)
           val selfAndAncestors = List(c) ++ ancestorInterfaces
@@ -264,7 +264,7 @@ class InfererEvaluator[Env, State](
     paramLocation: List[Int]
   ): IInferEvaluateResult[List[IRulexTR]] = {
     val incomingMembers =
-      getMemberCoords(state, inferences, incomingContainerCoord.referend, invocationRange, patternDestructures.size) match {
+      getMemberCoords(state, inferences, incomingContainerCoord.kind, invocationRange, patternDestructures.size) match {
         case iec@InferEvaluateConflict(_, _, _, _) => return InferEvaluateConflict(inferences.inferences, invocationRange, "Failed getting incomingMembers for destructure", List(iec))
         case InferEvaluateSuccess(m, true) => m
       }
@@ -531,7 +531,7 @@ class InfererEvaluator[Env, State](
           }
 
         val List(KindTemplata(kind)) = argTemplatas
-        val coord = templataTemplar.pointifyReferend(state, kind, Own)
+        val coord = templataTemplar.pointifyKind(state, kind, Own)
         (InferEvaluateSuccess(CoordTemplata(coord), deeplySatisfied))
       }
       case "passThroughIfConcrete" => {

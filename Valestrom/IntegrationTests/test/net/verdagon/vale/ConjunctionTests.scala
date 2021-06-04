@@ -6,12 +6,12 @@ import org.scalatest.{FunSuite, Matchers}
 class ConjunctionTests extends FunSuite with Matchers {
   test("And") {
     val compile = RunCompilation.test("fn main() bool export {true and true}")
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
   test("Or") {
     val compile = RunCompilation.test("fn main() bool export {true or false}")
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
   test("And short-circuiting") {

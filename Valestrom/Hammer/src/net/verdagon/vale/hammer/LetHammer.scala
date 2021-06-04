@@ -18,7 +18,7 @@ object LetHammer {
       currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       let2: LetNormal2):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val LetNormal2(localVariable, sourceExpr2) = let2
 
     val (sourceExprResultLine, deferreds) =
@@ -48,7 +48,7 @@ object LetHammer {
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     let2: LetAndLend2):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val LetAndLend2(localVariable, sourceExpr2) = let2
 
     val (sourceExprResultLine, deferreds) =
@@ -77,12 +77,12 @@ object LetHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[ReferendH],
-    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
+    sourceResultPointerTypeH: ReferenceH[KindH],
     varId: FullName2[IVarName2],
     variability: Variability,
     reference: Coord):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val (boxStructRefH) =
       StructHammer.makeBox(hinputs, hamuts, variability, reference, sourceResultPointerTypeH)
     val expectedLocalBoxType = ReferenceH(m.OwnH, YonderH, ReadwriteH, boxStructRefH)
@@ -105,13 +105,13 @@ object LetHammer {
       currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     sourceExpr2: ReferenceExpression2,
-    sourceExprResultLine: ExpressionH[ReferendH],
-    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
+    sourceResultPointerTypeH: ReferenceH[KindH],
     let2: LetAndLend2,
     varId: FullName2[IVarName2],
     variability: Variability,
     reference: Coord):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val stackifyH =
       translateAddressibleLet(
         hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
@@ -134,8 +134,8 @@ object LetHammer {
     hamuts: HamutsBox,
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
-    sourceExprResultLine: ExpressionH[ReferendH],
-    sourceResultPointerTypeH: ReferenceH[ReferendH],
+    sourceExprResultLine: ExpressionH[KindH],
+    sourceResultPointerTypeH: ReferenceH[KindH],
     varId: FullName2[IVarName2],
     variability: Variability):
   StackifyH = {
@@ -155,12 +155,12 @@ object LetHammer {
       currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       sourceExpr2: ReferenceExpression2,
-      sourceExprResultLine: ExpressionH[ReferendH],
-      sourceResultPointerTypeH: ReferenceH[ReferendH],
+      sourceExprResultLine: ExpressionH[KindH],
+      sourceResultPointerTypeH: ReferenceH[KindH],
       let2: LetAndLend2,
       varId: FullName2[IVarName2],
       variability: Variability):
-    ExpressionH[ReferendH] = {
+    ExpressionH[KindH] = {
 
       val stackifyH =
         translateMundaneLet(
@@ -193,7 +193,7 @@ object LetHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       unlet2: Unlet2):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val local =
       locals.get(unlet2.variable.id) match {
         case None => {
@@ -239,7 +239,7 @@ object LetHammer {
       currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     des2: DestroyStaticSizedArrayIntoLocals2
-  ): ExpressionH[ReferendH] = {
+  ): ExpressionH[KindH] = {
     val DestroyStaticSizedArrayIntoLocals2(sourceExpr2, arrSeqT, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
@@ -284,7 +284,7 @@ object LetHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       des2: Destroy2):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val Destroy2(sourceExpr2, structRef2, destinationReferenceLocalVariables) = des2
 
     val (sourceExprResultLine, sourceExprDeferreds) =
@@ -304,7 +304,7 @@ object LetHammer {
     // We put List() here to make sure that we've consumed all the destination
     // reference local variables.
     val (List(), localTypes, localIndices) =
-      structDef2.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[ReferendH]](), List[Local]()))({
+      structDef2.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[KindH]](), List[Local]()))({
         case ((remainingDestinationReferenceLocalVariables, previousLocalTypes, previousLocalIndices), member2) => {
           member2.tyype match {
             case ReferenceMemberType2(memberRefType2) => {

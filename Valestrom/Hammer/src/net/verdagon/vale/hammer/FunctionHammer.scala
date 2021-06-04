@@ -64,8 +64,16 @@ object FunctionHammer {
         val functionH = FunctionH(prototypeH, maybeExportNsCoord.nonEmpty, isAbstract, isExtern, attrsH, bodyH);
         hamuts.addFunction(header.toPrototype, functionH)
 
-        if (maybeExportNsCoord.nonEmpty) {
-          Hammer.exportName(hamuts, maybeExportNsCoord.get, function2.header.fullName, prototypeH.fullName)
+        maybeExportNsCoord match {
+          case None =>
+          case Some(exportPackageCoord) => {
+            val exportedName =
+              humanName.last match {
+                case FunctionName2(humanName, _, _) => humanName
+                case _ => vfail("Can't export something that doesn't have a human readable name!")
+              }
+            hamuts.addFunctionExport(prototypeH, exportPackageCoord, exportedName)
+          }
         }
 
         (temporaryFunctionRefH)

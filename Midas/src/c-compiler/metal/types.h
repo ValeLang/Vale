@@ -15,15 +15,15 @@ class CodeLocation;
 
 // Defined in this file
 class Reference;
-class Referend;
+class Kind;
 class Int;
 class Bool;
 class Str;
 class Void;
 class Float;
 class Never;
-class InterfaceReferend;
-class StructReferend;
+class InterfaceKind;
+class StructKind;
 class RawArrayT;
 class StaticSizedArrayT;
 class RuntimeSizedArrayT;
@@ -79,18 +79,18 @@ class Reference {
 public:
   Ownership ownership;
   Location location;
-  Referend* referend;
+  Kind* kind;
 //  std::string debugStr;
 
   Reference(
       Ownership ownership_,
       Location location_,
-      Referend* referend_
+      Kind* kind_
 //      , const std::string& debugStr_
   ) :
       ownership(ownership_),
       location(location_),
-      referend(referend_)
+      kind(kind_)
 //    , debugStr(debugStr_)
   {
 
@@ -103,13 +103,13 @@ public:
   std::string str() { return ""; }
 };
 
-class Referend {
+class Kind {
 public:
-    virtual ~Referend() {}
+    virtual ~Kind() {}
     virtual PackageCoordinate* getPackageCoordinate() const = 0;
 };
 
-class Int : public Referend {
+class Int : public Kind {
 public:
   RegionId* regionId;
 
@@ -119,7 +119,7 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
-class Bool : public Referend {
+class Bool : public Kind {
 public:
   RegionId* regionId;
 
@@ -129,7 +129,7 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
-class Str : public Referend {
+class Str : public Kind {
 public:
   RegionId* regionId;
 
@@ -139,7 +139,7 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
-class Float : public Referend {
+class Float : public Kind {
 public:
   RegionId* regionId;
 
@@ -149,7 +149,7 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
-class Never : public Referend {
+class Never : public Kind {
 public:
   RegionId* regionId;
 
@@ -159,11 +159,11 @@ public:
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };
 
-class InterfaceReferend : public Referend {
+class InterfaceKind : public Kind {
 public:
     Name* fullName;
 
-  InterfaceReferend(Name* fullName_) :
+  InterfaceKind(Name* fullName_) :
       fullName(fullName_) {}
 
   PackageCoordinate* getPackageCoordinate() const override { return fullName->packageCoord; }
@@ -171,11 +171,11 @@ public:
 };
 
 // Interned
-class StructReferend : public Referend {
+class StructKind : public Kind {
 public:
     Name* fullName;
 
-    StructReferend(Name* fullName_) :
+    StructKind(Name* fullName_) :
         fullName(fullName_) {}
 
   PackageCoordinate* getPackageCoordinate() const override { return fullName->packageCoord; }
@@ -201,7 +201,7 @@ public:
 };
 
 // Interned
-class StaticSizedArrayT : public Referend {
+class StaticSizedArrayT : public Kind {
 public:
   Name* name;
 
@@ -215,17 +215,17 @@ public:
 class StaticSizedArrayDefinitionT {
 public:
   Name* name;
-  StaticSizedArrayT* referend;
+  StaticSizedArrayT* kind;
   int size;
   RawArrayT* rawArray;
 
   StaticSizedArrayDefinitionT(
       Name* name_,
-      StaticSizedArrayT* referend_,
+      StaticSizedArrayT* kind_,
       int size_,
       RawArrayT* rawArray_) :
       name(name_),
-      referend(referend_),
+      kind(kind_),
       size(size_),
       rawArray(rawArray_) {}
 
@@ -234,7 +234,7 @@ public:
 
 
 // Interned
-class RuntimeSizedArrayT : public Referend {
+class RuntimeSizedArrayT : public Kind {
 public:
   Name* name;
 
@@ -248,15 +248,15 @@ public:
 class RuntimeSizedArrayDefinitionT {
 public:
   Name* name;
-  RuntimeSizedArrayT* referend;
+  RuntimeSizedArrayT* kind;
   RawArrayT* rawArray;
 
   RuntimeSizedArrayDefinitionT(
       Name* name_,
-      RuntimeSizedArrayT* referend_,
+      RuntimeSizedArrayT* kind_,
       RawArrayT* rawArray_) :
       name(name_),
-      referend(referend_),
+      kind(kind_),
       rawArray(rawArray_) {}
 
 };

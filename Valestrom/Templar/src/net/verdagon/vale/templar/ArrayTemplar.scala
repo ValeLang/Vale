@@ -125,7 +125,7 @@ class ArrayTemplar(
   (StaticSizedArrayT2) = {
 //    val tupleMutability =
 //      StructTemplarCore.getCompoundTypeMutability(temputs, List(type2))
-//    val tupleMutability = Templar.getMutability(temputs, type2.referend)
+//    val tupleMutability = Templar.getMutability(temputs, type2.kind)
     val rawArrayT2 = RawArrayT2(type2, mutability, variability)
 
     temputs.getStaticSizedArrayType(size, rawArrayT2) match {

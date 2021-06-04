@@ -12,11 +12,11 @@ public:
   HybridGenerationalMemory(
       GlobalState* globalState_,
       ControlBlock* controlBlock_,
-      IReferendStructsSource* referendStructsSource_,
+      IKindStructsSource* kindStructsSource_,
       IWeakRefStructsSource* weakRefStructsSource_,
       bool elideChecksForKnownLive_,
       bool limitMode_,
-      StructReferend* anyMT);
+      StructKind* anyMT);
 
   void mainSetup(FunctionState* functionState, LLVMBuilderRef builder);
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder);
@@ -33,9 +33,9 @@ public:
       FunctionState *functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend *sourceStructReferendM,
+      StructKind *sourceStructKindM,
       Reference *sourceStructTypeM,
-      InterfaceReferend *targetInterfaceReferendM,
+      InterfaceKind *targetInterfaceKindM,
       Reference *targetInterfaceTypeM);
 
   // Makes a non-weak interface ref into a weak interface ref
@@ -44,7 +44,7 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceType,
       Reference* targetType,
-      InterfaceReferend* interfaceReferendM,
+      InterfaceKind* interfaceKindM,
       InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
   WeakFatPtrLE assembleStructWeakRef(
@@ -52,7 +52,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structTypeM,
       Reference* targetTypeM,
-      StructReferend* structReferendM,
+      StructKind* structKindM,
       WrapperPtrLE objPtrLE);
 
   WeakFatPtrLE assembleStaticSizedArrayWeakRef(
@@ -117,7 +117,7 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* referendM,
+      Kind* kindM,
       LLVMValueRef controlBlockLE);
 
   WeakFatPtrLE weakInterfaceRefToWeakStructRef(
@@ -148,7 +148,7 @@ private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
       IWeakRefStructsSource* weakRefStructsSource,
-      Referend* referend,
+      Kind* kind,
       WeakFatPtrLE weakRefLE);
 
   Prototype* makeCleanupLoopFunction();
@@ -163,7 +163,7 @@ private:
   GlobalState* globalState = nullptr;
   ControlBlock* controlBlock = nullptr;
   FatWeaks fatWeaks;
-  IReferendStructsSource* referendStructsSource;
+  IKindStructsSource* kindStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 
   LLVMBuilderRef setupBuilder = nullptr;
@@ -184,9 +184,9 @@ private:
   // This is so we have an object whose tethered bit we can modify but no other part of it.
   LLVMValueRef halfProtectedI8PtrPtrLE = nullptr;
 
-  StructReferend* anyMT = nullptr;
+  StructKind* anyMT = nullptr;
 
-  std::unordered_map<Referend*, LLVMValueRef, AddressHasher<Referend*>> globalNullPtrPtrByReferend;
+  std::unordered_map<Kind*, LLVMValueRef, AddressHasher<Kind*>> globalNullPtrPtrByKind;
 };
 
 #endif

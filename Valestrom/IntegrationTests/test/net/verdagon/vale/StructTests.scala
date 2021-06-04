@@ -20,7 +20,7 @@ class StructTests extends FunSuite with Matchers {
   test("Constructor with this") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/structs/constructor.vale"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
 
   test("Make struct") {
@@ -37,12 +37,12 @@ class StructTests extends FunSuite with Matchers {
 
   test("Make struct and get member") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/structs/getMember.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Mutate struct") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/structs/mutate.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Normal destructure") {
@@ -59,7 +59,7 @@ class StructTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Sugar destructure") {
@@ -76,7 +76,7 @@ class StructTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Destroy members at right times") {
@@ -172,7 +172,7 @@ class StructTests extends FunSuite with Matchers {
       """.stripMargin)
 
     try {
-      compile.evalForReferend(Vector())
+      compile.evalForKind(Vector())
       vfail() // It should panic instead
     } catch {
       case PanicException() =>
@@ -189,6 +189,6 @@ class StructTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 }

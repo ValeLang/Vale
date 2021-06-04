@@ -932,7 +932,7 @@ std::string ResilientV4::generateStaticSizedArrayDefsC(
   if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind);
+    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
     return std::string() + "typedef struct " + name + " { uint64_t unused0; void* unused; } " + name + ";\n";
   }
 }
@@ -944,7 +944,7 @@ std::string ResilientV4::generateStructDefsC(
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind);
+    auto name = currentPackage->getKindExportName(structDefM->kind, true);
     return std::string() + "typedef struct " + name + " { uint64_t unused0; void* unused; } " + name + ";\n";
   }
 }
@@ -956,7 +956,7 @@ std::string ResilientV4::generateInterfaceDefsC(
   if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(interfaceDefM->kind);
+    auto name = currentPackage->getKindExportName(interfaceDefM->kind, true);
     return std::string() + "typedef struct " + name + " { uint64_t unused0; void* unused1; void* unused2; } " + name + ";\n";
   }
 }
@@ -1323,6 +1323,7 @@ Ref ResilientV4::localStore(
 
 std::string ResilientV4::getExportName(
     Package* package,
-    Reference* reference) {
-  return package->getKindExportName(reference->kind) + (reference->location == Location::YONDER ? "Ref" : "");
+    Reference* reference,
+    bool includeProjectName) {
+  return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
 }

@@ -151,10 +151,11 @@ LLVMValueRef declareFunction(
     GlobalState* globalState,
     Function* functionM);
 
-void exportFunction(GlobalState* globalState, Package* package, Function* functionM, std::string exportName);
+void exportFunction(GlobalState* globalState, Package* package, Function* functionM);
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,
+    Package* package,
     Prototype* prototypeM);
 
 //LLVMTypeRef translateExternType(GlobalState* globalState, Reference* reference);

@@ -404,7 +404,8 @@ public:
 
   std::string getExportName(
       Package* package,
-      Reference* reference) override;
+      Reference* reference,
+      bool includeProjectName) override;
   std::string generateStructDefsC(
     Package* currentPackage,
       StructDefinition* refMT) override;

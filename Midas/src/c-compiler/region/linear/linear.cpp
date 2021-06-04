@@ -1007,7 +1007,7 @@ void Linear::checkValidReference(
 //  return package->getKindExportName(reference->kind) + (reference->location == Location::YONDER ? "Ref" : "");
 //}
 
-std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT) {
+std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT, bool includeProjectName) {
   assert(valeKindByHostKind.find(hostRefMT->kind) != valeKindByHostKind.end());
 
   auto hostMT = hostRefMT->kind;
@@ -1023,7 +1023,7 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT)
     auto valeMT = valeKindByHostKind.find(hostMT)->second;
     auto valeInterfaceMT = dynamic_cast<InterfaceKind*>(valeMT);
     assert(valeInterfaceMT);
-    auto baseName = currentPackage->getKindExportName(valeInterfaceMT);
+    auto baseName = currentPackage->getKindExportName(valeInterfaceMT, includeProjectName);
     assert(hostRefMT->ownership == Ownership::SHARE);
 //    if (hostRefMT->location == Location::INLINE) {
       return baseName;
@@ -1037,7 +1037,7 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT)
     if (valeStructMT == globalState->metalCache->emptyTupleStruct) {
       return "void";
     }
-    auto baseName = currentPackage->getKindExportName(valeStructMT);
+    auto baseName = currentPackage->getKindExportName(valeStructMT, includeProjectName);
     assert(hostRefMT->ownership == Ownership::SHARE);
     if (hostRefMT->location == Location::INLINE) {
       return baseName;
@@ -1050,7 +1050,7 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT)
     auto valeMT = valeKindByHostKind.find(hostMT)->second;
     auto valeUsaMT = dynamic_cast<RuntimeSizedArrayT*>(valeMT);
     assert(valeUsaMT);
-    auto baseName = currentPackage->getKindExportName(valeUsaMT);
+    auto baseName = currentPackage->getKindExportName(valeUsaMT, includeProjectName);
     assert(hostRefMT->ownership == Ownership::SHARE);
     if (hostRefMT->location == Location::INLINE) {
       return baseName;
@@ -1067,14 +1067,14 @@ std::string Linear::getExportName(Package* currentPackage, Reference* hostRefMT)
 std::string Linear::generateStructDefsC(
     Package* currentPackage,
     StructDefinition* structDefM) {
-  auto name = currentPackage->getKindExportName(structDefM->kind);
+  auto name = currentPackage->getKindExportName(structDefM->kind, true);
   std::stringstream s;
   s << "typedef struct " << name << " { " << std::endl;
   for (int i = 0; i < structDefM->members.size(); i++) {
     auto member = structDefM->members[i];
     auto hostMT = hostKindByValeKind.find(member->type->kind)->second;
     auto hostRefMT = globalState->metalCache->getReference(member->type->ownership, member->type->location, hostMT);
-    s << "  " << getExportName(currentPackage, hostRefMT) << " " << member->name << ";" << std::endl;
+    s << "  " << getExportName(currentPackage, hostRefMT, true) << " " << member->name << ";" << std::endl;
   }
   s << "} " << name << ";" << std::endl;
   return s.str();
@@ -1085,7 +1085,7 @@ std::string Linear::generateInterfaceDefsC(
     InterfaceDefinition* interfaceDefM) {
     std::stringstream s;
 
-  auto interfaceName = currentPackage->getKindExportName(interfaceDefM->kind);
+  auto interfaceName = currentPackage->getKindExportName(interfaceDefM->kind, true);
 
   auto hostKind = hostKindByValeKind.find(interfaceDefM->kind)->second;
   auto hostInterfaceKind = dynamic_cast<InterfaceKind*>(hostKind);
@@ -1096,7 +1096,7 @@ std::string Linear::generateInterfaceDefsC(
     auto valeKind = valeKindByHostKind.find(hostStructKind)->second;
     auto valeStructKind = dynamic_cast<StructKind*>(valeKind);
     assert(valeStructKind);
-    s << "  " << interfaceName << "_Type_" << currentPackage->getKindExportName(valeStructKind) << "," << std::endl;
+    s << "  " << interfaceName << "_Type_" << currentPackage->getKindExportName(valeStructKind, false) << "," << std::endl;
   }
   s << "} " << interfaceName << "_Type;" << std::endl;
   s << "typedef struct " << interfaceName << " {" << std::endl;
@@ -1115,7 +1115,7 @@ std::string Linear::generateRuntimeSizedArrayDefsC(
 //  // by this module itself. See MMEDT.
 //  auto name = names[0];
 
-  auto rsaName = currentPackage->getKindExportName(rsaDefM->kind);
+  auto rsaName = currentPackage->getKindExportName(rsaDefM->kind, true);
 
   auto valeMemberRefMT = rsaDefM->rawArray->elementType;
   auto hostMemberRefMT = linearizeReference(valeMemberRefMT);
@@ -1125,7 +1125,7 @@ std::string Linear::generateRuntimeSizedArrayDefsC(
   s << "typedef struct " << rsaName << " {" << std::endl;
   s << "  uint64_t length;" << std::endl;
 //  s << "  " << currentPackage->getKindExportName(hostMemberRefMT->kind) << " elements[0];" << std::endl;
-  s << "  " << getExportName(currentPackage, hostMemberRefMT) << " elements[0];" << std::endl;
+  s << "  " << getExportName(currentPackage, hostMemberRefMT, true) << " elements[0];" << std::endl;
   s << "} " << rsaName << ";" << std::endl;
   return s.str();
 }

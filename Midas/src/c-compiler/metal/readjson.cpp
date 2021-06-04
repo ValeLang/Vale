@@ -613,6 +613,7 @@ Package* readPackage(MetalCache* cache, const json& program) {
   assert(program["__type"] == "Package");
   return new Package(
       cache->addressNumberer,
+      readPackageCoordinate(cache, program["packageCoordinate"]),
       readArrayIntoMap<std::string, InterfaceDefinition*>(
           cache,
           std::hash<std::string>(),

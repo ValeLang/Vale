@@ -29,7 +29,7 @@ LLVMValueRef declareFunction(
   return valeFunctionL;
 }
 
-void exportFunction(GlobalState* globalState, Package* package, Function* functionM, std::string exportName) {
+void exportFunction(GlobalState* globalState, Package* package, Function* functionM) {
   std::vector<LLVMTypeRef> exportParamTypesL;
   for (auto valeRefMT : functionM->prototype->params) {
     auto hostRefMT = globalState->getRegion(valeRefMT)->getExternalType(valeRefMT);
@@ -44,6 +44,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   LLVMTypeRef exportFunctionTypeL =
       LLVMFunctionType(exportReturnTypeL, exportParamTypesL.data(), exportParamTypesL.size(), 0);
 
+  auto exportName = package->getFunctionExportName(functionM->prototype);
   // The full name should end in _0, _1, etc. The exported name shouldnt.
   assert(exportName != functionM->prototype->name->name);
   // This is a thunk function that correctly aliases the objects that come in from the
@@ -127,6 +128,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,
+    Package* package,
     Prototype* prototypeM) {
   std::vector<LLVMTypeRef> paramTypesL;
   for (auto valeParamRefMT : prototypeM->params) {
@@ -145,7 +147,7 @@ LLVMValueRef declareExternFunction(
     returnTypeL = globalState->getRegion(hostRetRefMT)->translateType(hostRetRefMT);
   }
 
-  auto nameL = prototypeM->name->name;
+  auto nameL = package->getFunctionExternName(prototypeM);
 
   LLVMTypeRef functionTypeL =
       LLVMFunctionType(returnTypeL, paramTypesL.data(), paramTypesL.size(), 0);

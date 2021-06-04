@@ -895,7 +895,7 @@ std::string RCImm::generateRuntimeSizedArrayDefsC(
   if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind);
+    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
     return std::string() + "typedef struct " + name + " { void* unused; } " + name + ";\n";
   }
 }
@@ -906,7 +906,7 @@ std::string RCImm::generateStaticSizedArrayDefsC(
   if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind);
+    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
     return std::string() + "typedef struct " + name + " { void* unused; } " + name + ";\n";
   }
 }
@@ -1333,7 +1333,8 @@ Ref RCImm::localStore(FunctionState* functionState, LLVMBuilderRef builder, Loca
 
 std::string RCImm::getExportName(
     Package* package,
-    Reference* reference) {
+    Reference* reference,
+    bool includeProjectName) {
   assert(false);
 //  if (dynamic_cast<InterfaceKind*>(reference->kind)) {
 //    return package->getKindExportName(reference->kind);

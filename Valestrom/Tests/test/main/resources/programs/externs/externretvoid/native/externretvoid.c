@@ -3,6 +3,6 @@
 #include "MyBox.h"
 #include "changeInBox.h"
 
-void runExtCommand(MyBoxRef b) {
-  changeInBox(b);
+void tmod_runExtCommand(tmod_MyBoxRef b) {
+  tmod_changeInBox(b);
 }

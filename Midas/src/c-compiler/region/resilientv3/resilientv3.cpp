@@ -815,7 +815,7 @@ std::string ResilientV3::generateRuntimeSizedArrayDefsC(
   if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind);
+    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused; } " + name + "Ref;\n";
   }
 }
@@ -826,7 +826,7 @@ std::string ResilientV3::generateStaticSizedArrayDefsC(
   if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind);
+    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused; } " + name + "Ref;\n";
   }
 }
@@ -838,7 +838,7 @@ std::string ResilientV3::generateStructDefsC(
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind);
+    auto name = currentPackage->getKindExportName(structDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused; } " + name + "Ref;\n";
   }
 }
@@ -850,7 +850,7 @@ std::string ResilientV3::generateInterfaceDefsC(
   if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(interfaceDefM->kind);
+    auto name = currentPackage->getKindExportName(interfaceDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused1; void* unused2; } " + name + "Ref;\n";
   }
 }
@@ -1010,6 +1010,7 @@ Ref ResilientV3::localStore(FunctionState* functionState, LLVMBuilderRef builder
 
 std::string ResilientV3::getExportName(
     Package* package,
-    Reference* reference) {
-  return package->getKindExportName(reference->kind) + (reference->location == Location::YONDER ? "Ref" : "");
+    Reference* reference,
+    bool includeProjectName) {
+  return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
 }

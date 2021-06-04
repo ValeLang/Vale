@@ -5,13 +5,13 @@
 #include <vector>
 
 struct PackageCoordinate {
-  std::string moduleName;
+  std::string projectName;
   std::vector<std::string> packageSteps;
 
   PackageCoordinate(
       const std::string& moduleName_,
       const std::vector<std::string>& packageSteps_) :
-      moduleName(moduleName_),
+      projectName(moduleName_),
       packageSteps(packageSteps_)
   {}
 
@@ -37,14 +37,14 @@ struct PackageCoordinate {
   struct Hasher {
     size_t operator()(const PackageCoordinate *a) const {
       size_t hash = 0;
-      hash = hash * 37 + std::hash<std::string>()(a->moduleName);
+      hash = hash * 37 + std::hash<std::string>()(a->projectName);
       hash = hash * 41 + StringVectorHasher()(a->packageSteps);
       return hash;
     }
   };
   struct Equator {
     bool operator()(const PackageCoordinate* a, const PackageCoordinate* b) const {
-      if (a->moduleName != b->moduleName)
+      if (a->projectName != b->projectName)
         return false;
       if (!StringVectorEquator()(a->packageSteps, b->packageSteps))
         return false;

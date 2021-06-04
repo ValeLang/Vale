@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "Spaceship.h"
-#include "Seaship.h"
-#include "IShip.h"
+#include "tmod/Spaceship.h"
+#include "tmod/Seaship.h"
+#include "tmod/IShip.h"
 
 int64_t tmod_getShipFuel(tmod_IShip s) {
   int64_t result = 0;

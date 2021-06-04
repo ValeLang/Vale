@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "Spaceship.h"
-#include "ImmSpaceshipArray.h"
+#include "tmod/Spaceship.h"
+#include "tmod/ImmSpaceshipArray.h"
 
 size_t nextMultipleOf16(size_t x) {
   return ((x - 1) | 15) + 1;

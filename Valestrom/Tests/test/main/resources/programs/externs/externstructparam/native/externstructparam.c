@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "Spaceship.h"
+#include "tmod/Spaceship.h"
 
 //typedef struct {
 //  uint64_t ignore_1; // generation. if 0xFF, this is the owning reference.

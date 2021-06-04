@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-#include "MyBox.h"
-#include "changeInBox.h"
+#include "tmod/MyBox.h"
+#include "tmod/changeInBox.h"
 
 void tmod_runExtCommand(tmod_MyBoxRef b) {
   tmod_changeInBox(b);

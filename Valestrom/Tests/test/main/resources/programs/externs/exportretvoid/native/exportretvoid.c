@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "donothing.h"
+#include "tmod/donothing.h"
 
 void tmod_runExtCommand() {
   tmod_donothing();

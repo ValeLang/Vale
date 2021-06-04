@@ -14,12 +14,12 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
 LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
     IWeakRefStructsSource* weakRefStructsSource,
-    Referend* referend,
+    Kind* kind,
     WeakFatPtrLE weakRefLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
          globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, weakRefLE);
-  assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(referend));
+  assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(kind));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
 }
 
@@ -53,11 +53,11 @@ static LLVMValueRef makeLgtiHeader(
     GlobalState* globalState,
     IWeakRefStructsSource* weakRefStructsSource,
     LLVMBuilderRef builder,
-    Referend* referend,
+    Kind* kind,
     LLVMValueRef lgtiLE,
     LLVMValueRef targetGenLE) {
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
-  auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(referend));
+  auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(kind));
   headerLE = LLVMBuildInsertValue(builder, headerLE, lgtiLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI, "headerWithLgti");
   headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
   return headerLE;
@@ -98,7 +98,7 @@ LLVMValueRef LgtWeaks::getActualGenFromLGT(
 static LLVMValueRef getLgtiFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* structs,
+    IKindStructsSource* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
@@ -112,7 +112,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            structs->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::LGTI),
+            structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::LGTI),
             "lgtiPtr");
     return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
   }
@@ -120,12 +120,12 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
 
 LgtWeaks::LgtWeaks(
     GlobalState* globalState_,
-    IReferendStructsSource* referendStructsSource_,
+    IKindStructsSource* kindStructsSource_,
     IWeakRefStructsSource* weakRefStructsSource_,
     bool elideChecksForKnownLive_)
   : globalState(globalState_),
     fatWeaks_(globalState_, weakRefStructsSource_),
-    referendStructsSource(referendStructsSource_),
+    kindStructsSource(kindStructsSource_),
     weakRefStructsSource(weakRefStructsSource_),
     elideChecksForKnownLive(elideChecksForKnownLive_) {
 //  auto voidLT = LLVMVoidTypeInContext(globalState->context);
@@ -175,9 +175,9 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     WeakFatPtrLE sourceRefLE,
-    StructReferend* sourceStructReferendM,
+    StructKind* sourceStructKindM,
     Reference* sourceStructTypeM,
-    InterfaceReferend* targetInterfaceReferendM,
+    InterfaceKind* targetInterfaceKindM,
     Reference* targetInterfaceTypeM) {
   switch (globalState->opt->regionOverride) {
     case RegionOverride::FAST:
@@ -194,21 +194,21 @@ WeakFatPtrLE LgtWeaks::weakStructPtrToLgtiWeakInterfacePtr(
 //  checkValidReference(
 //      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
   auto controlBlockPtr =
-      referendStructsSource->getConcreteControlBlockPtr(
+      kindStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, sourceStructTypeM,
-          referendStructsSource->makeWrapperPtr(
+          kindStructsSource->makeWrapperPtr(
               FL(), functionState, builder, sourceStructTypeM,
               fatWeaks_.getInnerRefFromWeakRef(
                   functionState, builder, sourceStructTypeM, sourceRefLE)));
 
   auto interfaceRefLT =
       weakRefStructsSource->getInterfaceWeakRefStruct(
-          targetInterfaceReferendM);
+          targetInterfaceKindM);
   auto headerLE = fatWeaks_.getHeaderFromWeakRef(builder, sourceRefLE);
 
   auto innerRefLE =
       makeInterfaceRefStruct(
-          globalState, functionState, builder, referendStructsSource, sourceStructReferendM, targetInterfaceReferendM, controlBlockPtr);
+          globalState, functionState, builder, kindStructsSource, sourceStructKindM, targetInterfaceKindM, controlBlockPtr);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetInterfaceTypeM, interfaceRefLT, headerLE, innerRefLE);
@@ -221,21 +221,21 @@ WeakFatPtrLE LgtWeaks::assembleInterfaceWeakRef(
     LLVMBuilderRef builder,
     Reference* sourceType,
     Reference* targetType,
-    InterfaceReferend* interfaceReferendM,
+    InterfaceKind* interfaceKindM,
     InterfaceFatPtrLE sourceInterfaceFatPtrLE) {
   assert(sourceType->ownership == Ownership::OWN || sourceType->ownership == Ownership::SHARE);
   // curious, if its a borrow, do we just return sourceRefLE?
 
   auto controlBlockPtrLE =
-      referendStructsSource->getControlBlockPtr(
-          FL(), functionState, builder, interfaceReferendM, sourceInterfaceFatPtrLE);
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType,
+      kindStructsSource->getControlBlockPtr(
+          FL(), functionState, builder, interfaceKindM, sourceInterfaceFatPtrLE);
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, kindStructsSource, sourceType,
       controlBlockPtrLE);
   auto currentGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, interfaceReferendM, lgtiLE, currentGenLE);
+  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, interfaceKindM, lgtiLE, currentGenLE);
 
   auto weakRefStructLT =
-      weakRefStructsSource->getInterfaceWeakRefStruct(interfaceReferendM);
+      weakRefStructsSource->getInterfaceWeakRefStruct(interfaceKindM);
 
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetType, weakRefStructLT, headerLE, sourceInterfaceFatPtrLE.refLE);
@@ -246,20 +246,20 @@ WeakFatPtrLE LgtWeaks::assembleStructWeakRef(
     LLVMBuilderRef builder,
     Reference* structTypeM,
     Reference* targetTypeM,
-    StructReferend* structReferendM,
+    StructKind* structKindM,
     WrapperPtrLE objPtrLE) {
   assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
   // curious, if its a borrow, do we just return sourceRefLE?
 
   auto controlBlockPtrLE =
-      referendStructsSource->getConcreteControlBlockPtr(
+      kindStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, structTypeM, objPtrLE);
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, structTypeM, controlBlockPtrLE);
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, kindStructsSource, structTypeM, controlBlockPtrLE);
   buildFlare(FL(), globalState, functionState, builder, lgtiLE);
   auto currentGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, structReferendM, lgtiLE, currentGenLE);
+  auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, structKindM, lgtiLE, currentGenLE);
   auto weakRefStructLT =
-      weakRefStructsSource->getStructWeakRefStruct(structReferendM);
+      weakRefStructsSource->getStructWeakRefStruct(structKindM);
   return fatWeaks_.assembleWeakFatPtr(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
@@ -284,9 +284,9 @@ WeakFatPtrLE LgtWeaks::assembleRuntimeSizedArrayWeakRef(
     Reference* targetRSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   auto controlBlockPtrLE =
-      referendStructsSource->getConcreteControlBlockPtr(
+      kindStructsSource->getConcreteControlBlockPtr(
           FL(), functionState, builder, sourceType, sourceRefLE);
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, sourceType, controlBlockPtrLE);
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, kindStructsSource, sourceType, controlBlockPtrLE);
   auto targetGenLE = getActualGenFromLGT(functionState, builder, lgtiLE);
   auto headerLE = makeLgtiHeader(globalState, weakRefStructsSource, builder, runtimeSizedArrayMT, lgtiLE, targetGenLE);
 
@@ -385,7 +385,7 @@ void LgtWeaks::innerNoteWeakableDestroyed(
     LLVMBuilderRef builder,
     Reference* concreteRefM,
     ControlBlockPtrLE controlBlockPtrLE) {
-  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, referendStructsSource, concreteRefM,
+  auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, kindStructsSource, concreteRefM,
       controlBlockPtrLE);
   auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
   adjustCounter(globalState, builder, ptrToActualGenLE, 1);
@@ -432,7 +432,7 @@ LLVMValueRef LgtWeaks::getIsAliveFromWeakFatPtr(
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else {
     // Get target generation from the ref
-    auto targetGenLE = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->referend, weakFatPtrLE);
+    auto targetGenLE = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->kind, weakFatPtrLE);
 
     // Get actual generation from the table
     auto lgtiLE = getLgtiFromWeakRef(builder, weakFatPtrLE);
@@ -479,15 +479,15 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
 LLVMValueRef LgtWeaks::fillWeakableControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* structs,
-    Referend* referendM,
+    IKindStructsSource* structs,
+    Kind* kindM,
     LLVMValueRef controlBlockLE) {
   auto geniLE = getNewLgti(functionState, builder);
   return LLVMBuildInsertValue(
       builder,
       controlBlockLE,
       geniLE,
-      structs->getControlBlock(referendM)->getMemberIndex(ControlBlockMember::LGTI),
+      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::LGTI),
       "controlBlockWithLgti");
 }
 
@@ -500,7 +500,7 @@ WeakFatPtrLE LgtWeaks::weakInterfaceRefToWeakStructRef(
 
   // The object might not exist, so skip the check.
   auto interfaceFatPtrLE =
-      referendStructsSource->makeInterfaceFatPtrWithoutChecking(
+      kindStructsSource->makeInterfaceFatPtrWithoutChecking(
           FL(), functionState, builder,
           weakInterfaceRefMT, // It's still conceptually weak even though its not in a weak pointer.
           fatWeaks_.getInnerRefFromWeakRef(
@@ -509,8 +509,8 @@ WeakFatPtrLE LgtWeaks::weakInterfaceRefToWeakStructRef(
               weakInterfaceRefMT,
               weakInterfaceFatPtrLE));
   auto controlBlockPtrLE =
-      referendStructsSource->getControlBlockPtrWithoutChecking(
-          FL(), functionState, builder, weakInterfaceRefMT->referend, interfaceFatPtrLE);
+      kindStructsSource->getControlBlockPtrWithoutChecking(
+          FL(), functionState, builder, weakInterfaceRefMT->kind, interfaceFatPtrLE);
 
   // Now, reassemble a weak void* ref to the struct.
   auto weakVoidStructRefLE =
@@ -545,13 +545,13 @@ void LgtWeaks::buildCheckWeakRef(
   buildCheckLgti(builder, lgtiLE);
   // We check that the generation is <= to what's in the actual object.
   auto actualGen = getActualGenFromLGT(functionState, builder, lgtiLE);
-  auto targetGen = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->referend, weakFatPtrLE);
+  auto targetGen = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->kind, weakFatPtrLE);
   buildCheckGen(globalState, functionState, builder, targetGen, actualGen);
 
   // This will also run for objects which have since died, which is fine.
-  if (auto interfaceReferendM = dynamic_cast<InterfaceReferend *>(weakRefM->referend)) {
+  if (auto interfaceKindM = dynamic_cast<InterfaceKind *>(weakRefM->kind)) {
     auto interfaceFatPtrLE =
-        referendStructsSource->makeInterfaceFatPtrWithoutChecking(
+        kindStructsSource->makeInterfaceFatPtrWithoutChecking(
             checkerAFL, functionState, builder, weakRefM, innerLE);
     auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
     buildAssertCensusContains(checkerAFL, globalState, functionState, builder, itablePtrLE);
@@ -565,30 +565,30 @@ Ref LgtWeaks::assembleWeakRef(
     Reference* targetType,
     Ref sourceRef) {
   // Now we need to package it up into a weak ref.
-  if (auto structReferend = dynamic_cast<StructReferend*>(sourceType->referend)) {
+  if (auto structKind = dynamic_cast<StructKind*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStructWeakRef(
-            functionState, builder, sourceType, targetType, structReferend, sourceWrapperPtrLE);
+            functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto interfaceReferendM = dynamic_cast<InterfaceReferend*>(sourceType->referend)) {
+  } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceInterfaceFatPtrLE = referendStructsSource->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceInterfaceFatPtrLE = kindStructsSource->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
-            functionState, builder, sourceType, targetType, interfaceReferendM, sourceInterfaceFatPtrLE);
+            functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->referend)) {
+  } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
-  } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->referend)) {
+  } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = referendStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);

@@ -60,8 +60,8 @@ class BlockTemplar(
     val unreversedVariablesToDestruct = getUnmovedVariablesIntroducedSince(startingFate, fate)
 
     val unresultifiedUndestructedExpressions =
-      if (unneveredUnresultifiedUndestructedExpressions.exists(_.referend == Never2()) &&
-          unneveredUnresultifiedUndestructedExpressions.last.referend != Never2()) {
+      if (unneveredUnresultifiedUndestructedExpressions.exists(_.kind == Never2()) &&
+          unneveredUnresultifiedUndestructedExpressions.last.kind != Never2()) {
         unneveredUnresultifiedUndestructedExpressions :+ UnreachableMootE2(VoidLiteral2())
       } else {
         unneveredUnresultifiedUndestructedExpressions
@@ -70,7 +70,7 @@ class BlockTemplar(
     val newExpressionsList =
       if (unreversedVariablesToDestruct.isEmpty) {
         unresultifiedUndestructedExpressions
-      } else if (unresultifiedUndestructedExpressions.last.referend == Never2()) {
+      } else if (unresultifiedUndestructedExpressions.last.kind == Never2()) {
         val moots = mootAll(temputs, fate, unreversedVariablesToDestruct)
         unresultifiedUndestructedExpressions ++ moots
       } else {
@@ -147,7 +147,7 @@ class BlockTemplar(
             (perhapsUndestructedFirstExpr2) // Do nothing
           } else {
             // This isn't the last expression
-            perhapsUndestructedFirstExpr2.resultRegister.referend match {
+            perhapsUndestructedFirstExpr2.resultRegister.kind match {
               case Void2() => perhapsUndestructedFirstExpr2
               case _ => destructorTemplar.drop(fate, temputs, perhapsUndestructedFirstExpr2)
             }

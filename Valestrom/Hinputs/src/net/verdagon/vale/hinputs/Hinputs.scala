@@ -1,6 +1,6 @@
 package net.verdagon.vale.hinputs
 
-import net.verdagon.vale.templar.{CitizenName2, Edge2, ExportAs2, FullName2, Function2, FunctionName2, IFunctionName2, Impl2, InterfaceEdgeBlueprint, LambdaCitizenName2, Program2, simpleName}
+import net.verdagon.vale.templar.{CitizenName2, Edge2, FullName2, Function2, FunctionExport2, FunctionExtern2, FunctionName2, IFunctionName2, Impl2, InterfaceEdgeBlueprint, KindExport2, KindExtern2, LambdaCitizenName2, Program2, simpleName}
 import net.verdagon.vale.templar.templata.{FunctionBanner2, Prototype2, Signature2}
 import net.verdagon.vale.templar.types.{InterfaceDefinition2, InterfaceRef2, Kind, StructDefinition2, StructRef2}
 import net.verdagon.vale.{PackageCoordinate, vassertSome, vfail}
@@ -10,15 +10,17 @@ import scala.collection.immutable.List
 case class ETable2(struct: StructRef2, table: TetrisTable[InterfaceRef2, InterfaceRef2])
 
 case class Hinputs(
-  interfaces: List[InterfaceDefinition2],
-  structs: List[StructDefinition2],
-  emptyPackStructRef: StructRef2,
-  functions: List[Function2],
-  exports: List[ExportAs2],
-  kindToDestructor: Map[Kind, Prototype2],
-  packageToExternNameToExtern: Map[PackageCoordinate, Map[String, Prototype2]],
-  edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
-  edges: List[Edge2]) {
+    interfaces: List[InterfaceDefinition2],
+    structs: List[StructDefinition2],
+    emptyPackStructRef: StructRef2,
+    functions: List[Function2],
+    kindToDestructor: Map[Kind, Prototype2],
+    edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
+    edges: List[Edge2],
+    kindExports: List[KindExport2],
+    functionExports: List[FunctionExport2],
+    kindExterns: List[KindExtern2],
+    functionExterns: List[FunctionExtern2]) {
 
   def lookupStruct(structRef: StructRef2): StructDefinition2 = {
     structs.find(_.getRef == structRef) match {

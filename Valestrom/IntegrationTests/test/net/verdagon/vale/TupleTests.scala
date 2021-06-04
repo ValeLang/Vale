@@ -15,23 +15,23 @@ class TupleTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Simple tuple with one int") {
     val compile = RunCompilation.test( "fn main() int export { [9].0 }")
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").header.returnType.referend shouldEqual Int2()
+    temputs.lookupFunction("main").header.returnType.kind shouldEqual Int2()
     // Funny story, theres no such thing as a one element tuple! It becomes a one element array.
     temputs.lookupFunction("main").only({ case TupleE2(_, _, _) => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Tuple with two things") {
     val compile = RunCompilation.test( "fn main() bool export { [9, true].1 }")
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
 
@@ -44,7 +44,7 @@ class TupleTests extends FunSuite with Matchers {
         |  moo([3, 4])
         |}
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   // todo: indexing into it with a variable, to get a union type

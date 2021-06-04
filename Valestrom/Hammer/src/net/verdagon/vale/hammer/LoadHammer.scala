@@ -19,7 +19,7 @@ object LoadHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       load2: SoftLoad2):
-  (ExpressionH[ReferendH], List[Expression2]) = {
+  (ExpressionH[KindH], List[Expression2]) = {
     val SoftLoad2(sourceExpr2, targetOwnership, targetPermission) = load2
 
     val (loadedAccessH, sourceDeferreds) =
@@ -60,7 +60,7 @@ object LoadHammer {
       indexExpr2: ReferenceExpression2,
       targetOwnershipT: t.Ownership,
       targetPermissionT: t.Permission,
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
@@ -108,7 +108,7 @@ object LoadHammer {
     indexExpr2: ReferenceExpression2,
     targetOwnershipT: t.Ownership,
     targetPermissionT: t.Permission,
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
@@ -158,12 +158,12 @@ object LoadHammer {
       expectedType2: Coord,
       targetOwnershipT: t.Ownership,
       targetPermissionT: t.Permission,
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
-      structExpr2.resultRegister.reference.referend match {
+      structExpr2.resultRegister.reference.kind match {
         case sr @ StructRef2(_) => sr
         case TupleT2(_, sr) => sr
         case PackT2(_, sr) => sr
@@ -225,7 +225,7 @@ object LoadHammer {
 //      resultCoord: Coord,
       targetOwnershipT: t.Ownership,
       targetPermissionT: t.Permission,
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
@@ -235,7 +235,7 @@ object LoadHammer {
 //      TypeHammer.translateReference(hinputs, hamuts, resultCoord);
 
     val structRef2 =
-      structExpr2.resultRegister.reference.referend match {
+      structExpr2.resultRegister.reference.kind match {
         case sr @ StructRef2(_) => sr
         case TupleT2(_, sr) => sr
         case PackT2(_, sr) => sr
@@ -269,7 +269,7 @@ object LoadHammer {
       localReference2: Coord,
       targetOwnershipT: t.Ownership,
       targetPermissionT: t.Permission,
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val local = locals.get(varId).get
     vassert(!locals.unstackifiedVars.contains(local.id))
 
@@ -313,7 +313,7 @@ object LoadHammer {
       expectedType2: Coord,
       targetOwnershipT: t.Ownership,
       targetPermissionT: t.Permission,
-  ): (ExpressionH[ReferendH], List[Expression2]) = {
+  ): (ExpressionH[KindH], List[Expression2]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
@@ -345,7 +345,7 @@ object LoadHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       lookup2: LocalLookup2):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val LocalLookup2(_,localVar, type2, _) = lookup2;
     vassert(type2 == localVar.reference)
 
@@ -375,14 +375,14 @@ object LoadHammer {
     currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       lookup2: AddressMemberLookup2):
-  (ExpressionH[ReferendH], List[Expression2]) = {
+  (ExpressionH[KindH], List[Expression2]) = {
     val AddressMemberLookup2(_,structExpr2, memberName, resultType2, _) = lookup2;
 
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
-      structExpr2.resultRegister.reference.referend match {
+      structExpr2.resultRegister.reference.kind match {
         case sr @ StructRef2(_) => sr
         case TupleT2(_, sr) => sr
         case PackT2(_, sr) => sr
@@ -431,7 +431,7 @@ object LoadHammer {
     (loadBoxNode, structDeferreds)
   }
 
-  def getBorrowedLocation(memberType: ReferenceH[ReferendH]) = {
+  def getBorrowedLocation(memberType: ReferenceH[KindH]) = {
     (memberType.ownership, memberType.location) match {
       case (OwnH, _) => YonderH
       case (BorrowH, _) => YonderH

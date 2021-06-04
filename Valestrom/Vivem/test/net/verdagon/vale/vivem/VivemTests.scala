@@ -23,7 +23,7 @@ class VivemTests extends FunSuite with Matchers {
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
-          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(), List(main), List(), List(), Map(), Map("main" -> main.fullName), Map())))
+          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(main), List(), List(), Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(7)
@@ -75,8 +75,8 @@ class VivemTests extends FunSuite with Matchers {
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
-          .add(PackageCoordinate.BUILTIN, PackageH(List(), List(), List(), List(addExtern), List(), List(), Map(), Map(), Map()))
-          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(), List(main), List(), List(), Map(), Map("main" -> main.fullName), Map())))
+          .add(PackageCoordinate.BUILTIN, PackageH(List(), List(), List(addExtern), List(), List(), Map(), Map(), Map(), Map("__addIntInt" -> addPrototype), Map()))
+          .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(main), List(), List(), Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)
     result shouldEqual VonInt(159)

@@ -10,7 +10,7 @@ object TemplataNamer {
   // with the same signature because of this.
 
   def getReferenceIdentifierName(reference: Coord): String = {
-    val Coord(ownership, permission, referend) = reference;
+    val Coord(ownership, permission, kind) = reference;
     val ownershipString =
       ownership match {
         case Share => ""//"*"
@@ -24,7 +24,7 @@ object TemplataNamer {
         case Readwrite => "!"
 //        case ExclusiveReadwrite => "!!"
       }
-    ownershipString + permissionString + getReferendIdentifierName(referend)
+    ownershipString + permissionString + getKindIdentifierName(kind)
   }
 
   def stringifyTemplateArgs(templateArgs: List[ITemplata]): String = {
@@ -59,12 +59,12 @@ object TemplataNamer {
       case LambdaCitizenName2(codeLocation) => "ᛊ" + codeLocation
       case AnonymousSubstructName2(thing) =>
       case TupleName2(members) => "tup#"
-      case ImmDropName2(kind) => "drop*" + getReferendIdentifierName(kind)
+      case ImmDropName2(kind) => "drop*" + getKindIdentifierName(kind)
       case x => vimpl(x.toString)
     }).mkString(".")
   }
 
-  def getReferendIdentifierName(tyype: Kind): String = {
+  def getKindIdentifierName(tyype: Kind): String = {
     tyype match {
       case Int2() => "int"//"𝒾"
       case Float2() => "float"//"𝒻"
@@ -76,7 +76,7 @@ object TemplataNamer {
       case RuntimeSizedArrayT2(array) => "𝔸" + getReferenceIdentifierName(array.memberType)
       case StaticSizedArrayT2(size, arrayT2) => "𝔸" + size + getReferenceIdentifierName(arrayT2.memberType)
       case PackT2(_, underlyingStruct) => {
-        getReferendIdentifierName(underlyingStruct)
+        getKindIdentifierName(underlyingStruct)
       }
       case StructRef2(fullName) => "𝕊" + getFullNameIdentifierName(fullName)
       case InterfaceRef2(fullName) => "𝕋" + getFullNameIdentifierName(fullName)
@@ -88,7 +88,7 @@ object TemplataNamer {
 
   private def getIdentifierName(tyype: ITemplata): String = {
     tyype match {
-      case KindTemplata(referend) => "ㄊ" + getReferendIdentifierName(referend)
+      case KindTemplata(kind) => "ㄊ" + getKindIdentifierName(kind)
       case CoordTemplata(reference) => "ㄊ" + getReferenceIdentifierName(reference)
       case MutabilityTemplata(Mutable) => "ㄊmut"
       case MutabilityTemplata(Immutable) => "ㄊimm"
@@ -110,7 +110,7 @@ object TemplataNamer {
       (virtuality match {
         case None => ""
         case Some(Abstract2) => " abstract"
-        case Some(Override2(kind)) => " impl " + getReferendIdentifierName(kind)
+        case Some(Override2(kind)) => " impl " + getKindIdentifierName(kind)
       })
   }
 }

@@ -23,8 +23,8 @@ case class Temputs() {
   private val functions: mutable.ArrayBuffer[Function2] = mutable.ArrayBuffer()
   private val envByFunctionSignature: mutable.HashMap[Signature2, FunctionEnvironment] = mutable.HashMap()
 
-  // Prototypes for extern functions
-  private val packageToExternNameToExtern: mutable.HashMap[PackageCoordinate, mutable.HashMap[String, Prototype2]] = mutable.HashMap()
+//  // Prototypes for extern functions
+//  private val packageToExternNameToExtern: mutable.HashMap[PackageCoordinate, mutable.HashMap[String, Prototype2]] = mutable.HashMap()
 
   // One must fill this in when putting things into declaredStructs/Interfaces.
   private val mutabilitiesByCitizenRef: mutable.HashMap[CitizenRef2, Mutability] = mutable.HashMap()
@@ -46,7 +46,10 @@ case class Temputs() {
 
   private val impls: mutable.ArrayBuffer[Impl2] = mutable.ArrayBuffer()
 
-  private val exports: mutable.ArrayBuffer[ExportAs2] = mutable.ArrayBuffer()
+  private val kindExports: mutable.ArrayBuffer[KindExport2] = mutable.ArrayBuffer()
+  private val functionExports: mutable.ArrayBuffer[FunctionExport2] = mutable.ArrayBuffer()
+  private val kindExterns: mutable.ArrayBuffer[KindExtern2] = mutable.ArrayBuffer()
+  private val functionExterns: mutable.ArrayBuffer[FunctionExtern2] = mutable.ArrayBuffer()
 
   // Only PackTemplar can make a PackT2.
   private val packTypes: mutable.HashMap[List[Coord], StructRef2] = mutable.HashMap()
@@ -90,12 +93,12 @@ case class Temputs() {
   def addFunction(function: Function2): Unit = {
     vassert(declaredSignatures.contains(function.header.toSignature))
     vassert(
-      function.body.resultRegister.reference.referend == Never2() ||
+      function.body.resultRegister.reference.kind == Never2() ||
       function.body.resultRegister.reference == function.header.returnType)
     function.all({
       case Return2(innerExpr) => {
         vassert(
-          innerExpr.resultRegister.reference.referend == Never2() ||
+          innerExpr.resultRegister.reference.kind == Never2() ||
           innerExpr.resultRegister.reference == function.header.returnType)
       }
     })
@@ -188,28 +191,20 @@ case class Temputs() {
     impls += Impl2(structRef2, interfaceRef2)
   }
 
-  def addExport(kind: Kind, packageCoord: PackageCoordinate, exportedName: String): Unit = {
-    exports += ExportAs2(kind, packageCoord, exportedName)
+  def addKindExport(kind: Kind, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    kindExports += KindExport2(kind, packageCoord, exportedName)
   }
 
-  def addExternPrototype(prototype2: Prototype2): Unit = {
-    val externName =
-      prototype2.fullName.last match {
-        case ExternFunctionName2(externName, _) => externName
-      }
-    packageToExternNameToExtern.get(prototype2.fullName.packageCoord) match {
-      case None => {
-        packageToExternNameToExtern.put(
-          prototype2.fullName.packageCoord,
-          mutable.HashMap(externName -> prototype2))
-      }
-      case Some(externNameToExtern) => {
-        externNameToExtern.get(externName) match {
-          case None => externNameToExtern.put(externName, prototype2)
-          case Some(_) => vfail("Extern already exists: " + externName)
-        }
-      }
-    }
+  def addFunctionExport(function: Prototype2, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    functionExports += FunctionExport2(function, packageCoord, exportedName)
+  }
+
+  def addKindExtern(kind: Kind, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    kindExterns += KindExtern2(kind, packageCoord, exportedName)
+  }
+
+  def addFunctionExtern(function: Prototype2, packageCoord: PackageCoordinate, exportedName: String): Unit = {
+    functionExterns += FunctionExtern2(function, packageCoord, exportedName)
   }
 
   def addDestructor(kind: Kind, destructor: Prototype2): Unit = {
@@ -338,12 +333,16 @@ case class Temputs() {
   def getRuntimeSizedArray(array: RawArrayT2): Option[RuntimeSizedArrayT2] = {
     runtimeSizedArrayTypes.get(array)
   }
-  def getExternPrototypes: Map[PackageCoordinate, Map[String, Prototype2]] = {
-    packageToExternNameToExtern.map({ case (moduleName, externNameToExtern) =>
-      (moduleName -> externNameToExtern.toMap)
-    }).toMap
+  def getKindExports: List[KindExport2] = {
+    kindExports.toList
   }
-  def getExports: List[ExportAs2] = {
-    exports.toList
+  def getFunctionExports: List[FunctionExport2] = {
+    functionExports.toList
+  }
+  def getKindExterns: List[KindExtern2] = {
+    kindExterns.toList
+  }
+  def getFunctionExterns: List[FunctionExtern2] = {
+    functionExterns.toList
   }
 }

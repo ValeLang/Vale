@@ -55,7 +55,7 @@ public:
       Reference* sourceInterfaceRefMT,
       Ref sourceInterfaceRef,
       bool sourceRefKnownLive,
-      Referend* targetReferend,
+      Kind* targetKind,
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
@@ -72,9 +72,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Reference* sourceStructTypeM,
-      InterfaceReferend* targetInterfaceReferendM,
+      InterfaceKind* targetInterfaceKindM,
       Reference* targetInterfaceTypeM) override;
 
   void declareStruct(StructDefinition* structM) override;
@@ -186,11 +186,11 @@ public:
       LLVMBuilderRef builder,
 
       Reference* sourceStructMT,
-      StructReferend* sourceStructReferendM,
+      StructKind* sourceStructKindM,
       Ref sourceRefLE,
 
       Reference* targetInterfaceTypeM,
-      InterfaceReferend* targetInterfaceReferendM) override;
+      InterfaceKind* targetInterfaceKindM) override;
 
   WrapperPtrLE lockWeakRef(
       AreaAndFileAndLine from,
@@ -207,7 +207,7 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* referenceM,
-      StaticSizedArrayT* referendM) override;
+      StaticSizedArrayT* kindM) override;
 
   // should expose a dereference thing instead
 //  LLVMValueRef getStaticSizedArrayElementsPtr(
@@ -346,16 +346,20 @@ public:
 
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
 
-  std::string getMemberArbitraryRefNameCSeeMMEDT(
-      Reference* refMT) override;
-  void generateStructDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;
-  void generateInterfaceDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, InterfaceDefinition* refMT) override;
-  void generateStaticSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, StaticSizedArrayDefinitionT* ssaDefM) override;
-  void generateRuntimeSizedArrayDefsC(
-      std::unordered_map<std::string, std::string>* cByExportedName, RuntimeSizedArrayDefinitionT* rsaDefM) override;
+
+  std::string getExportName(Package* currentPackage, Reference* refMT) override;
+  std::string generateStructDefsC(
+    Package* currentPackage,
+      StructDefinition* refMT) override;
+  std::string generateInterfaceDefsC(
+    Package* currentPackage,
+      InterfaceDefinition* refMT) override;
+  std::string generateStaticSizedArrayDefsC(
+    Package* currentPackage,
+      StaticSizedArrayDefinitionT* ssaDefM) override;
+  std::string generateRuntimeSizedArrayDefsC(
+    Package* currentPackage,
+      RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
   Reference* getExternalType(
@@ -392,7 +396,7 @@ public:
 
   LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM);
 
-  LLVMTypeRef getControlBlockStruct(Referend* referend);
+  LLVMTypeRef getControlBlockStruct(Kind* kind);
 
 
   LoadResult loadMember(
@@ -409,11 +413,11 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IReferendStructsSource* referendStructs,
+      IKindStructsSource* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);
 
-  Weakability getReferendWeakability(Referend* referend) override;
+  Weakability getKindWeakability(Kind* kind) override;
 
   LLVMValueRef getInterfaceMethodFunctionPtr(
       FunctionState* functionState,
@@ -423,8 +427,8 @@ public:
       int indexInEdge) override;
 
   // This is public so that linear can get at it to stick it in a vtable.
-  Prototype* getUnserializePrototype(Referend* valeReferend);
-  Prototype* getUnserializeThunkPrototype(StructReferend* structReferend, InterfaceReferend* interfaceReferend);
+  Prototype* getUnserializePrototype(Kind* valeKind);
+  Prototype* getUnserializeThunkPrototype(StructKind* structKind, InterfaceKind* interfaceKind);
 
   LLVMValueRef stackify(
       FunctionState* functionState,
@@ -443,17 +447,17 @@ public:
   void mainCleanup(FunctionState* functionState, LLVMBuilderRef builder) override {}
 
 private:
-  void declareConcreteUnserializeFunction(Referend* valeReferendM);
-  void defineConcreteUnserializeFunction(Referend* valeReferendM);
-  void declareInterfaceUnserializeFunction(InterfaceReferend* valeReferend);
+  void declareConcreteUnserializeFunction(Kind* valeKindM);
+  void defineConcreteUnserializeFunction(Kind* valeKindM);
+  void declareInterfaceUnserializeFunction(InterfaceKind* valeKind);
   void defineEdgeUnserializeFunction(Edge* edge);
 
-  InterfaceMethod* getUnserializeInterfaceMethod(Referend* valeReferend);
+  InterfaceMethod* getUnserializeInterfaceMethod(Kind* valeKind);
 
   Ref callUnserialize(
       FunctionState *functionState,
       LLVMBuilderRef builder,
-      Referend* valeReferend,
+      Kind* valeKind,
       Ref objectRef);
 
   // Does the entire serialization process: measuring the length, allocating a buffer, and
@@ -461,12 +465,12 @@ private:
   Ref topLevelUnserialize(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Referend* valeReferend,
+      Kind* valeKind,
       Ref ref);
 
   GlobalState* globalState = nullptr;
 
-  ReferendStructs referendStructs;
+  KindStructs kindStructs;
 
   DefaultPrimitives primitives;
 };

@@ -149,8 +149,9 @@ void translateFunction(
 
 LLVMValueRef declareFunction(
     GlobalState* globalState,
-    Function* functionM,
-    bool skipExporting);
+    Function* functionM);
+
+void exportFunction(GlobalState* globalState, Package* package, Function* functionM, std::string exportName);
 
 LLVMValueRef declareExternFunction(
     GlobalState* globalState,

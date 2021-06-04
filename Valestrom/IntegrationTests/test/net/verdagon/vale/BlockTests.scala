@@ -21,7 +21,7 @@ class BlockTests extends FunSuite with Matchers {
     val main = scoutput.lookupFunction("main")
     main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(BlockSE(_, _,_), _)))) => }
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable") {
     val compile = RunCompilation.test(
@@ -41,7 +41,7 @@ class BlockTests extends FunSuite with Matchers {
       case LocalVariable1(CodeVarNameS("y"), FinalP, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed) =>
     }
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable, another variable outside with same name") {
     val compile = RunCompilation.test(
@@ -56,6 +56,6 @@ class BlockTests extends FunSuite with Matchers {
       """.stripMargin)
     val scoutput = compile.getScoutput().getOrDie()
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 }

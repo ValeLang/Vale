@@ -17,7 +17,7 @@ object CallHammer {
     locals: LocalsBox,
     prototype2: Prototype2,
     argsExprs2: List[ReferenceExpression2]):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val (argsResultLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
@@ -44,7 +44,7 @@ object CallHammer {
       function: Prototype2,
       args: List[Expression2],
       resultType2: Coord):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val returnType2 = function.returnType
     val paramTypes = function.paramTypes
     val (argLines, argsDeferreds) =
@@ -75,7 +75,7 @@ object CallHammer {
       currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       constructArray2: ConstructArray2):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val ConstructArray2(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
 
     val (sizeRegisterId, sizeDeferreds) =
@@ -117,7 +117,7 @@ object CallHammer {
     currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     exprTE: StaticArrayFromCallable2):
-  (ExpressionH[ReferendH]) = {
+  (ExpressionH[KindH]) = {
     val StaticArrayFromCallable2(arrayType2, generatorExpr2, generatorMethod) = exprTE;
 
     val (generatorRegisterId, generatorDeferreds) =
@@ -154,7 +154,7 @@ object CallHammer {
       currentFunctionHeader: FunctionHeader2,
       locals: LocalsBox,
       das2: DestroyStaticSizedArrayIntoFunction2):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val DestroyStaticSizedArrayIntoFunction2(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
 
     val (arrayTypeH) =
@@ -200,7 +200,7 @@ object CallHammer {
       currentFunctionHeader: FunctionHeader2,
     locals: LocalsBox,
     das2: DestroyRuntimeSizedArray2):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val DestroyRuntimeSizedArray2(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
 
 //    val RuntimeSizedArrayT2(RawArrayT2(memberType2, mutability)) = runtimeSizedArrayType2
@@ -244,7 +244,7 @@ object CallHammer {
     currentFunctionHeader: FunctionHeader2,
     parentLocals: LocalsBox,
     if2: If2):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val If2(condition2, thenBlock2, elseBlock2) = if2
 
     val (conditionBlockH, List()) =
@@ -330,7 +330,7 @@ object CallHammer {
       superFunctionHeader: FunctionHeader2,
       resultType2: Coord,
       argsExprs2: List[Expression2]):
-  ExpressionH[ReferendH] = {
+  ExpressionH[KindH] = {
     val (argLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
@@ -438,8 +438,8 @@ object CallHammer {
 //      firstVirtualParamIndex: Int,
 //      firstVirtualParamInterface: InterfaceRefH,
 //      functionTypeH: FunctionTH,
-//      argLines: List[NodeH[ReferendH]]):
-//  (Vector[NodeH], Option[NodeH[ReferendH]]) = {
+//      argLines: List[NodeH[KindH]]):
+//  (Vector[NodeH], Option[NodeH[KindH]]) = {
 //    val interfaceId = firstVirtualParamInterface.interfaceId
 //
 //    val edgeBlueprint =

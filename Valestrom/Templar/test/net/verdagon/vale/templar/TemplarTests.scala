@@ -567,7 +567,7 @@ class TemplarTests extends FunSuite with Matchers {
         innerExpr.resultRegister.only({
           case StructRef2(simpleName("Toyota")) =>
         })
-        vassert(up.resultRegister.reference.referend == InterfaceRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Car", List()))))
+        vassert(up.resultRegister.reference.kind == InterfaceRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Car", List()))))
       }
     })
   }

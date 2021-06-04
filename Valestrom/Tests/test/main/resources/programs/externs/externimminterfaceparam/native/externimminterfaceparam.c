@@ -9,12 +9,12 @@
 int64_t getShipFuel(IShip s) {
   int64_t result = 0;
   switch (s.type) {
-    case IShip_Seaship: {
+    case IShip_Type_Seaship: {
       Seaship* ship = (Seaship*)s.obj;
       result = ship->leftFuel + ship->rightFuel;
       break;
     }
-    case IShip_Spaceship: {
+    case IShip_Type_Spaceship: {
       Spaceship* ship = (Spaceship*)s.obj;
       result = ship->fuel;
       break;

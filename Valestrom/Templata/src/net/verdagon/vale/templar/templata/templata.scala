@@ -22,12 +22,12 @@ case class CoordTemplata(reference: Coord) extends ITemplata {
     List(this).collect(func) ++ reference.all(func)
   }
 }
-case class KindTemplata(referend: Kind) extends ITemplata {
+case class KindTemplata(kind: Kind) extends ITemplata {
   override def order: Int = 2;
   override def tyype: ITemplataType = KindTemplataType
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ referend.all(func)
+    List(this).collect(func) ++ kind.all(func)
   }
 }
 case class ArrayTemplateTemplata() extends ITemplata {

@@ -18,7 +18,7 @@ object ProgramH {
 
 case class RegionH(
   name: String,
-  referends: List[ReferendH])
+  kinds: List[KindH])
 
 case class Export(
   nameH: FullNameH,
@@ -30,8 +30,8 @@ case class PackageH(
     interfaces: List[InterfaceDefinitionH],
     // All the structs in the program.
     structs: List[StructDefinitionH],
-    // All the externs that we're calling into from the program.
-    externs: List[PrototypeH],
+//    // All the externs that we're calling into from the program.
+//    externs: List[PrototypeH],
     // All of the user defined functions (and some from the compiler itself).
     functions: List[FunctionH],
     staticSizedArrays: List[StaticSizedArrayDefinitionTH],
@@ -39,14 +39,15 @@ case class PackageH(
     // Used for native compilation only, not JVM/CLR/JS/iOS.
     // These are pointing into the specific functions (in the `functions` field)
     // which should be called when we drop a reference to an immutable object.
-    immDestructorsByKind: Map[ReferendH, PrototypeH],
+    immDestructorsByKind: Map[KindH, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    exportNameToFullName: Map[String, FullNameH],
+    exportNameToFunction: Map[String, PrototypeH],
     // Translations for backends to use if they need to export a name.
-    externNameToFullName: Map[String, FullNameH],
-//    // All the regions and their referends. There will always be one in here
-//    // since every program has at least one region.
-//    regions: List[RegionH]
+    exportNameToKind: Map[String, KindH],
+    // Translations for backends to use if they need to export a name.
+    externNameToFunction: Map[String, PrototypeH],
+    // Translations for backends to use if they need to export a name.
+    externNameToKind: Map[String, KindH]
 ) {
 
   // These are convenience functions for the tests to look up various functions.
@@ -63,12 +64,12 @@ case class PackageH(
   def lookupFunction(readableName: String) = {
     val matches =
       (List() ++
-        exportNameToFullName.get(readableName).toList ++
-        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype.fullName))
+        exportNameToFunction.get(readableName).toList ++
+        functions.filter(_.prototype.fullName.readableName == readableName).map(_.prototype))
         .distinct
     vassert(matches.nonEmpty)
     vassert(matches.size <= 1)
-    functions.find(_.prototype.fullName == matches.head).get
+    functions.find(_.prototype == matches.head).get
   }
 
   // Convenience function for the tests to look up a struct.
@@ -154,7 +155,7 @@ case class StructMemberH(
   // This isn't wired up to anything, feel free to ignore it.
   variability: Variability,
   // The type of the member.
-  tyype: ReferenceH[ReferendH])
+  tyype: ReferenceH[KindH])
 
 // An interface definition containing name, methods, etc.
 case class InterfaceDefinitionH(
@@ -222,7 +223,7 @@ case class FunctionH(
   attributes: List[IFunctionAttributeH],
 
   // The body of the function that contains the actual instructions.
-  body: ExpressionH[ReferendH]) {
+  body: ExpressionH[KindH]) {
 
   def fullName = prototype.fullName
   def isUserFunction = attributes.contains(UserFunctionH)
@@ -231,8 +232,8 @@ case class FunctionH(
 // A wrapper around a function's name, which also has its params and return type.
 case class PrototypeH(
   fullName: FullNameH,
-  params: List[ReferenceH[ReferendH]],
-  returnType: ReferenceH[ReferendH]
+  params: List[ReferenceH[KindH]],
+  returnType: ReferenceH[KindH]
 )
 
 // A unique name for something in the program.
@@ -242,9 +243,9 @@ case class FullNameH(
     id: Int,
     packageCoordinate: PackageCoordinate,
     parts: List[IVonData]) {
-  def toReadableString(): String = {
-    readableName + (if (id >= 0) "_" + id else "")
-  }
+//  def toReadableString(): String = {
+//    readableName + (if (id >= 0) "_" + id else "")
+//  }
   def toFullString(): String = { FullNameH.namePartsToString(packageCoordinate, parts) }
 }
 

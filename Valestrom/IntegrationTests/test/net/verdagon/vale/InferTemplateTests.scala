@@ -25,7 +25,7 @@ class InferTemplateTests extends FunSuite with Matchers {
     moo.header.fullName.last.templateArgs shouldEqual
       List(CoordTemplata(Coord(Own,Readwrite,StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(),CitizenName2("Muta",List()))))), CoordTemplata(Coord(Constraint,Readonly,StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(),CitizenName2("Muta",List()))))))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
   test("Test inferring a borrowed static sized array") {
     val compile = RunCompilation.test(
@@ -38,7 +38,7 @@ class InferTemplateTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
   test("Test inferring an owning static sized array") {
     val compile = RunCompilation.test(
@@ -51,6 +51,6 @@ class InferTemplateTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(10)
+    compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }
 }

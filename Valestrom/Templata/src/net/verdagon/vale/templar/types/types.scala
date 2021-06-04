@@ -122,8 +122,8 @@ case object Yonder extends Location {
 }
 
 
-case class Coord(ownership: Ownership, permission: Permission, referend: Kind) extends Queriable2 {
-  referend match {
+case class Coord(ownership: Ownership, permission: Permission, kind: Kind) extends Queriable2 {
+  kind match {
     case Int2() | Bool2() | Str2() | Float2() | Void2() | Never2() => {
       vassert(ownership == Share)
     }
@@ -138,7 +138,7 @@ case class Coord(ownership: Ownership, permission: Permission, referend: Kind) e
   }
 
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
-    List(this).collect(func) ++ ownership.all(func) ++ referend.all(func)
+    List(this).collect(func) ++ ownership.all(func) ++ kind.all(func)
   }
 }
 sealed trait Kind extends Queriable2 {
@@ -429,12 +429,12 @@ object ReferenceComparator extends Ordering[Coord] {
     if (orderDiff != 0) {
       orderDiff
     } else {
-      ReferendComparator.compare(a.referend, b.referend)
+      KindComparator.compare(a.kind, b.kind)
     }
   }
 }
 
-object ReferendComparator extends Ordering[Kind] {
+object KindComparator extends Ordering[Kind] {
   override def compare(a: Kind, b: Kind): Int = {
     val orderDiff = a.order compare b.order;
     if (orderDiff != 0) {

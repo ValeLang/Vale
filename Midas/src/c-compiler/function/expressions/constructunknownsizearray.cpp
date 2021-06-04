@@ -19,13 +19,13 @@ Ref translateConstructRuntimeSizedArray(
 
   auto generatorType = constructRuntimeSizedArray->generatorType;
   auto generatorExpr = constructRuntimeSizedArray->generatorExpr;
-  auto sizeReferend = constructRuntimeSizedArray->sizeReferend;
+  auto sizeKind = constructRuntimeSizedArray->sizeKind;
   auto sizeExpr = constructRuntimeSizedArray->sizeExpr;
   auto sizeType = constructRuntimeSizedArray->sizeType;
   auto elementType = constructRuntimeSizedArray->elementType;
   auto arrayRefType = constructRuntimeSizedArray->arrayRefType;
 
-  auto runtimeSizedArrayMT = dynamic_cast<RuntimeSizedArrayT*>(constructRuntimeSizedArray->arrayRefType->referend);
+  auto runtimeSizedArrayMT = dynamic_cast<RuntimeSizedArrayT*>(constructRuntimeSizedArray->arrayRefType->kind);
 
   auto sizeRef = translateExpression(globalState, functionState, blockState, builder, sizeExpr);
 

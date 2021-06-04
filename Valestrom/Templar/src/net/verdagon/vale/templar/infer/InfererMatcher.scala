@@ -110,7 +110,7 @@ class InfererMatcher[Env, State](
     }
   }
 
-  private[infer] def matchReferend2AgainstRuneSP(
+  private[infer] def matchKind2AgainstRuneSP(
     env: Env,
     state: State,
       typeByRune: Map[IRune2, ITemplataType],
@@ -147,7 +147,7 @@ class InfererMatcher[Env, State](
   (IInferMatchResult) = {
 
     val structMemberTypes =
-      delegate.lookupMemberTypes(state, instance.referend, expectedNumMembers = parts.size) match {
+      delegate.lookupMemberTypes(state, instance.kind, expectedNumMembers = parts.size) match {
         case None => throw CompileErrorExceptionT(RangedInternalErrorT(range, "this thing cant be destructured, has no member types!"))
         case Some(x) => x
       }
@@ -202,7 +202,7 @@ class InfererMatcher[Env, State](
         case (Some(Abstract2), _) => return (InferMatchConflict(inferences.inferences, patternRange, s"ParamFilter virtuality didn't match rule:\n${instance.virtuality}\n${virtuality}", List()))
         case (Some(Override2(instanceSuperInterfaceRef2)), Some(OverrideSP(range, kindRuneS))) => {
           val kindRuneA = Astronomer.translateRune(kindRuneS)
-          matchReferend2AgainstRuneSP(env, state, typeByRune, localRunes, inferences, range, instanceSuperInterfaceRef2, NameTranslator.translateRune(kindRuneA)) match {
+          matchKind2AgainstRuneSP(env, state, typeByRune, localRunes, inferences, range, instanceSuperInterfaceRef2, NameTranslator.translateRune(kindRuneA)) match {
             case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ds)) => (ds)
           }
@@ -852,11 +852,11 @@ class InfererMatcher[Env, State](
     }
 
     instance match {
-      case KindTemplata(actualReferend) => {
+      case KindTemplata(actualKind) => {
         vcheck(components.size == 1, "Wrong number of components for kind")
         val List(mutabilityRule) = components
 
-        val actualMutability = delegate.getMutability(state, actualReferend)
+        val actualMutability = delegate.getMutability(state, actualKind)
         matchTemplataAgainstRulexTR(
           env, state, typeByRune, localRunes, inferences, MutabilityTemplata(actualMutability), mutabilityRule)
       }
@@ -875,7 +875,7 @@ class InfererMatcher[Env, State](
             case imc @ InferMatchConflict(_, _, _, _) => return imc
             case (InferMatchSuccess(ods)) => (ods)
           }
-        val actualKind = KindTemplata(actualReference.referend)
+        val actualKind = KindTemplata(actualReference.kind)
         val kindDeeplySatisfied =
           matchTemplataAgainstRulexTR(env, state, typeByRune, localRunes, inferences, actualKind, kindRule) match {
             case imc @ InferMatchConflict(_, _, _, _) => return imc
@@ -1024,7 +1024,7 @@ class InfererMatcher[Env, State](
 //        .flatMap(interfaceRef2 => {
 //          println("dont do this?")
 //          val subTemplar = new InferTemplarMatcher(env, State, delegate, rules, inferences)
-//          if (subTemplar.matchReferend2AgainstReferendRefSP(interfaceRef2, Some(overrideRule.tyype))) {
+//          if (subTemplar.matchKind2AgainstKindRefSP(interfaceRef2, Some(overrideRule.tyype))) {
 //            List((interfaceRef2, subTemplar))
 //          } else {
 //            List()

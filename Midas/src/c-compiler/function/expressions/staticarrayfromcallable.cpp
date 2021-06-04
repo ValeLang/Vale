@@ -21,9 +21,9 @@ Ref translateStaticArrayFromCallable(
   auto generatorExpr = staticArrayFromCallable->generatorExpr;
   auto elementType = staticArrayFromCallable->elementType;
   auto arrayRefType = staticArrayFromCallable->arrayRefType;
-  auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(staticArrayFromCallable->arrayRefType->referend);
+  auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(staticArrayFromCallable->arrayRefType->kind);
 
-  auto ssaDefMT = globalState->program->getStaticSizedArray(staticSizedArrayMT->name);
+  auto ssaDefMT = globalState->program->getStaticSizedArray(staticSizedArrayMT);
   auto sizeRef = globalState->constI64(ssaDefMT->size);
 
   auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
@@ -33,7 +33,7 @@ Ref translateStaticArrayFromCallable(
   std::unique_ptr<Ref> result;
   if (staticArrayFromCallable->arrayRefType->location == Location::INLINE) {
 //        auto valStructL =
-//            globalState->getInnerStruct(structReferend->fullName);
+//            globalState->getInnerStruct(structKind->fullName);
 //        return constructInnerStruct(
 //            builder, structM, valStructL, membersLE);
     assert(false);

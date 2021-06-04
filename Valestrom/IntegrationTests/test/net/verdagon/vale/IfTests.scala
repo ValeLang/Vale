@@ -22,7 +22,7 @@ class IfTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case If2(_, _, _) => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Simple false branch returning an int") {
@@ -33,7 +33,7 @@ class IfTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Ladder") {
@@ -56,7 +56,7 @@ class IfTests extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Moving from inside if") {
@@ -86,14 +86,14 @@ class IfTests extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("If with complex condition") {
     val compile = RunCompilation.test(
       """
         |struct Marine { x int; }
-        |fn main() str {
+        |fn main() str export {
         |  m = Marine(5);
         |  = if (m.x == 5) { "#" }
         |  else if (0 == 0) { "?" }
@@ -105,7 +105,7 @@ class IfTests extends FunSuite with Matchers {
     val ifs = temputs.lookupFunction("main").all({ case if2 @ If2(_, _, _) => if2 })
     ifs.foreach(iff => iff.resultRegister.reference shouldEqual Coord(Share, Readonly, Str2()))
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("#")
+    compile.evalForKind(Vector()) shouldEqual VonStr("#")
   }
 
   test("Ret from inside if will destroy locals") {
@@ -173,7 +173,7 @@ class IfTests extends FunSuite with Matchers {
         |  bork Bork;
         |}
         |
-        |fn main() {
+        |fn main() export {
         |  zork! = 0;
         |  while (zork < 4) {
         |    moo = Moo(Bork(5));
@@ -194,7 +194,7 @@ class IfTests extends FunSuite with Matchers {
 
   test("If nevers") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/if/ifnevers.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Toast") {
@@ -213,7 +213,7 @@ class IfTests extends FunSuite with Matchers {
         |""".stripMargin)
 
     val main = compile.expectTemputs().lookupFunction("main")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 }

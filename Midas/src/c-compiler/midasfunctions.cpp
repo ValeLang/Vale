@@ -5,19 +5,19 @@
 
 //void declareExtraInterfaceMethod(
 //    GlobalState* globalState,
-//    InterfaceReferend* referend,
+//    InterfaceKind* kind,
 //    InterfaceMethod* newMethod,
-//    std::function<Prototype*(StructReferend*)> declarer,
-//    std::function<void(StructReferend*, Prototype*)> bodyGenerator) {
+//    std::function<Prototype*(StructKind*)> declarer,
+//    std::function<void(StructKind*, Prototype*)> bodyGenerator) {
 //  auto program = globalState->program;
 //
 //  std::vector<Prototype*> substructPrototypes;
 //
-//  globalState->addInterfaceExtraMethod(referend, newMethod);
+//  globalState->addInterfaceExtraMethod(kind, newMethod);
 //
 //  for (auto nameAndStruct : globalState->program->structs) {
 //    for (auto edge : nameAndStruct.second->edges) {
-//      if (edge->interfaceName == referend) {
+//      if (edge->interfaceName == kind) {
 //        auto substruct = edge->structName;
 //
 //        Reference *substructReference = nullptr;
@@ -40,8 +40,8 @@
 //
 //  for (auto substructPrototype : substructPrototypes) {
 //    auto substruct =
-//        dynamic_cast<StructReferend*>(
-//            substructPrototype->params[newMethod->virtualParamIndex]->referend);
+//        dynamic_cast<StructKind*>(
+//            substructPrototype->params[newMethod->virtualParamIndex]->kind);
 //    assert(substruct);
 //    bodyGenerator(substruct, substructPrototype);
 //  }

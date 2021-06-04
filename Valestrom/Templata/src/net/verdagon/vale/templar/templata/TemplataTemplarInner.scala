@@ -101,16 +101,16 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 //  (Coord) = {
 //    templata match {
 //      case CoordTemplata(reference) => (reference)
-//      case KindTemplata(referend) => {
-//        (pointifyReferend(state, referend, ownershipIfMutable))
+//      case KindTemplata(kind) => {
+//        (pointifyKind(state, kind, ownershipIfMutable))
 //      }
 //      case st @ StructTemplata(_, _) => {
 //        val kind = delegate.evaluateStructTemplata(state, st, List())
-//        (pointifyReferend(state, kind, ownershipIfMutable))
+//        (pointifyKind(state, kind, ownershipIfMutable))
 //      }
 //      case it @ InterfaceTemplata(_, _) => {
 //        val kind = delegate.evaluateInterfaceTemplata(state, it, List())
-//        (pointifyReferend(state, kind, ownershipIfMutable))
+//        (pointifyKind(state, kind, ownershipIfMutable))
 //      }
 //      case _ => vfail("not yet")
 //    }
@@ -365,11 +365,11 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     true
   }
 
-  def pointifyReferend(state: State, referend: Kind, ownershipIfMutable: Ownership): Coord = {
-    val mutability = delegate.getMutability(state, referend)
+  def pointifyKind(state: State, kind: Kind, ownershipIfMutable: Ownership): Coord = {
+    val mutability = delegate.getMutability(state, kind)
     val ownership = if (mutability == Mutable) ownershipIfMutable else Share
     val permission = if (mutability == Mutable) Readwrite else Readonly
-    referend match {
+    kind match {
       case a @ RuntimeSizedArrayT2(array) => {
         Coord(ownership, permission, a)
       }
@@ -403,8 +403,8 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     }
   }
 
-//  def pointifyReferends(state: State, valueTypes: List[Kind], ownershipIfMutable: Ownership): List[Coord] = {
-//    valueTypes.map(valueType => pointifyReferend(state, valueType, ownershipIfMutable))
+//  def pointifyKinds(state: State, valueTypes: List[Kind], ownershipIfMutable: Ownership): List[Coord] = {
+//    valueTypes.map(valueType => pointifyKind(state, valueType, ownershipIfMutable))
 //  }
 
 

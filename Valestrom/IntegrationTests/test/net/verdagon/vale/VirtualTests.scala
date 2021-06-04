@@ -141,31 +141,31 @@ class VirtualTests extends FunSuite with Matchers {
           |}
         """.stripMargin)
     val temputs = compile.getHamuts()
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Successful constraint downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastConstraintSuccessful.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Failed constraint downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastConstraintFailed.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Successful owning downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastOwningSuccessful.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Failed owning downcast with as") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/downcast/downcastOwningFailed.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 }

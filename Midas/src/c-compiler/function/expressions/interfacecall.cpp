@@ -49,7 +49,7 @@ Ref translateInterfaceCall(
   globalState->getRegion(call->functionType->returnType)
       ->checkValidReference(FL(), functionState, builder, call->functionType->returnType, resultLE);
 
-  if (call->functionType->returnType->referend == globalState->metalCache->never) {
+  if (call->functionType->returnType->kind == globalState->metalCache->never) {
     return wrap(
         globalState->getRegion(globalState->metalCache->neverRef),
         globalState->metalCache->neverRef,

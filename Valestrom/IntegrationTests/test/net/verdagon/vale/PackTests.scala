@@ -19,7 +19,7 @@ class PackTests extends FunSuite with Matchers {
     val main = temputs.lookupFunction("main")
     main.all({ case TupleE2(List(_, _, _), _, _) => }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Nested seqs") {
@@ -42,7 +42,7 @@ class PackTests extends FunSuite with Matchers {
         _) =>
     }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
   test("Nested tuples") {
@@ -58,7 +58,7 @@ class PackTests extends FunSuite with Matchers {
     val main = temputs.lookupFunction("main")
     main .all({ case TupleE2(List(_, TupleE2(List(_, _), _, _)), _, _) => }).size shouldEqual 1
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
 }

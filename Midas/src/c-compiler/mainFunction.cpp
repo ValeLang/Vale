@@ -33,7 +33,7 @@ Prototype* makeValeMainFunction(
   auto voidPtrLT = LLVMPointerType(int8LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
 
-  auto valeMainName = globalState->metalCache->getName("__Vale_Main");
+  auto valeMainName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_Main");
   auto valeMainProto =
       globalState->metalCache->getPrototype(valeMainName, globalState->metalCache->intRef, {});
   declareAndDefineExtraFunction(
@@ -117,13 +117,13 @@ Prototype* makeValeMainFunction(
         }
         buildFlare(FL(), globalState, functionState, entryBuilder);
 
-        if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->emptyTupleStruct) {
+        if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->emptyTupleStruct) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
-        } else if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->innt) {
+        } else if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->innt) {
           buildFlare(FL(), globalState, functionState, entryBuilder, userMainResultLE);
           LLVMBuildRet(entryBuilder, userMainResultLE);
-        } else if (userMainFunctionPrototype->returnType->referend == globalState->metalCache->never) {
+        } else if (userMainFunctionPrototype->returnType->kind == globalState->metalCache->never) {
           buildFlare(FL(), globalState, functionState, entryBuilder);
           LLVMBuildRet(entryBuilder, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, true));
         } else {

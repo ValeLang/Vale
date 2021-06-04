@@ -24,7 +24,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   }
 
   test("Test mutating a local var") {
-    val compile = TemplarTestCompilation.test("fn main() {a! = 3; set a = 4; }")
+    val compile = TemplarTestCompilation.test("fn main() export {a! = 3; set a = 4; }")
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
     main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_,_, CodeVarName2("a")), Varying, _), _, Varying), IntLiteral2(4)) => })
@@ -40,7 +40,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
         """
           |struct Engine { fuel int; }
           |struct Spaceship { engine! Engine; }
-          |fn main() {
+          |fn main() export {
           |  ship = Spaceship(Engine(10));
           |  set ship.engine = Engine(15);
           |}
@@ -66,7 +66,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |struct XNone<T> rules(T Ref) { }
         |impl<T> IXOption<T> for XNone<T>;
         |
-        |fn main() {
+        |fn main() export {
         |  m! IXOption<int> = XNone<int>();
         |  set m = XSome(6);
         |}
@@ -91,7 +91,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |struct Marine {
         |  weapon! IXOption<int>;
         |}
-        |fn main() {
+        |fn main() export {
         |  m = Marine(XNone<int>());
         |  set m.weapon = XSome(6);
         |}
@@ -185,7 +185,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
   test("Reports when we try to mutate a local variable with wrong type") {
     val compile = TemplarTestCompilation.test(
       """
-        |fn main() {
+        |fn main() export {
         |  a! = 5;
         |  set a = "blah";
         |}

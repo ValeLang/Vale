@@ -8,7 +8,7 @@ class StringTests extends FunSuite with Matchers {
   test("Simple string") {
     val compile = RunCompilation.test(
       """
-        |fn main() str {
+        |fn main() str export {
         |  "sprogwoggle"
         |}
       """.stripMargin)
@@ -16,13 +16,13 @@ class StringTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case StrLiteral2("sprogwoggle") => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("sprogwoggle")
+    compile.evalForKind(Vector()) shouldEqual VonStr("sprogwoggle")
   }
 
   test("String with escapes") {
     val compile = RunCompilation.test(
       """
-        |fn main() str {
+        |fn main() str export {
         |  "sprog\nwoggle"
         |}
         |""".stripMargin)
@@ -30,13 +30,13 @@ class StringTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({ case StrLiteral2("sprog\nwoggle") => })
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("sprog\nwoggle")
+    compile.evalForKind(Vector()) shouldEqual VonStr("sprog\nwoggle")
   }
 
   test("String with hex escape") {
     val compile = RunCompilation.test(
       """
-        |fn main() str {
+        |fn main() str export {
         |  "sprog\u001bwoggle"
         |}
         |""".stripMargin)
@@ -48,22 +48,22 @@ class StringTests extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("sprog\u001bwoggle")
+    compile.evalForKind(Vector()) shouldEqual VonStr("sprog\u001bwoggle")
   }
 
   test("String length") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/strings/strlen.vale"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(11)
+    compile.evalForKind(Vector()) shouldEqual VonInt(11)
   }
 
   test("String interpolate") {
     val compile = RunCompilation.test(
       "fn +(s str, i int) str { s + str(i) }\n" +
       "fn ns(i int) int { i }\n" +
-      "fn main() str { \"\"\"bl\"{ns(4)}rg\"\"\" }")
+      "fn main() str export { \"\"\"bl\"{ns(4)}rg\"\"\" }")
 
-    compile.evalForReferend(Vector()) shouldEqual VonStr("bl\"4rg")
+    compile.evalForKind(Vector()) shouldEqual VonStr("bl\"4rg")
   }
 
   test("Slice a slice") {
@@ -111,11 +111,11 @@ class StringTests extends FunSuite with Matchers {
           |  = newStrSlice(s.string, newGlyphBeginOffset, newGlyphEndOffset);
           |}
           |
-          |fn main() int {
+          |fn main() int export {
           |  "hello".slice().slice(1, 4).len()
           |}
           |""".stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 }

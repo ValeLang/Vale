@@ -15,7 +15,7 @@ size_t floorMultipleOf16(size_t x) {
   return x & ~0xF;
 }
 
-int64_t extFunc(Flamscrankle* flam) {
+int64_t tmod_extFunc(tmod_Flamscrankle* flam) {
   // Make sure the root pointer is at a multiple of 16.
   // If this fails, that means we have a bug, or malloc is breaking our assumptions
   // about alignment.
@@ -26,7 +26,7 @@ int64_t extFunc(Flamscrankle* flam) {
 
   size_t flamAddr = (size_t)(void*)flam;
   // AP = And Padding; to get the next multiple of 16 from the end of the Flamscrankle.
-  size_t flamAPEndAddr = nextMultipleOf16(flamAddr + sizeof(Flamscrankle));
+  size_t flamAPEndAddr = nextMultipleOf16(flamAddr + sizeof(tmod_Flamscrankle));
 
   // The root object (Flamscrankle here) always has a 16B "metadata block" before it, which contains
   // the start address and the size of the message.
@@ -35,11 +35,11 @@ int64_t extFunc(Flamscrankle* flam) {
 
   // Bogglewoggle is before the Flamscrankle, but at a multiple of 16.
   size_t bogAPEndAddr = rootMetadataAddr;
-  size_t bogAddr = floorMultipleOf16(bogAPEndAddr - sizeof(Bogglewoggle));
+  size_t bogAddr = floorMultipleOf16(bogAPEndAddr - sizeof(tmod_Bogglewoggle));
 
   // Spigglewigget is before the Bogglewoggle, but at a multiple of 16.
   size_t spigAPEndAddr = bogAddr;
-  size_t spigAddr = floorMultipleOf16(spigAPEndAddr - sizeof(Spigglewigget));
+  size_t spigAddr = floorMultipleOf16(spigAPEndAddr - sizeof(tmod_Spigglewigget));
 
   // Start metadata is before the Spigglewigget, but at a multiple of 16.
   size_t startMetadataAPEndAddr = spigAddr;

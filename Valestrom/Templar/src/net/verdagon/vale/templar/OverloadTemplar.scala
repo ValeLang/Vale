@@ -369,7 +369,7 @@ class OverloadTemplar(
   private def getParamEnvironments(temputs: Temputs, paramFilters: List[ParamFilter]):
   List[IEnvironment] = {
     paramFilters.flatMap({ case ParamFilter(tyype, virtuality) =>
-      (tyype.referend match {
+      (tyype.kind match {
         case sr @ StructRef2(_) => List(temputs.getEnvForStructRef(sr))
         case ir @ InterfaceRef2(_) => List(temputs.getEnvForInterfaceRef(ir))
         case _ => List()

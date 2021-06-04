@@ -74,12 +74,12 @@ class TemplataTemplar(
     makeInner().evaluateTemplexes(env, temputs, templexes)
   }
 
-  def pointifyReferend(
+  def pointifyKind(
     temputs: Temputs,
-    referend: Kind,
+    kind: Kind,
     ownershipIfMutable: Ownership):
   Coord = {
-    makeInner().pointifyReferend(temputs, referend, ownershipIfMutable)
+    makeInner().pointifyKind(temputs, kind, ownershipIfMutable)
   }
 
   def isTypeConvertible(
@@ -143,7 +143,7 @@ class TemplataTemplar(
 //      case Some(osb) => {
 //        val structRef =
 //          StructTemplar.getStructRef(env.globalEnv, temputs, osb)
-//        return (Some(ReferendTemplata(structRef)))
+//        return (Some(KindTemplata(structRef)))
 //      }
 //      case None =>
 //    }
@@ -151,7 +151,7 @@ class TemplataTemplar(
 //      case Some(oib) => {
 //        val structRef =
 //          StructTemplar.getInterfaceRef(env.globalEnv, temputs, oib)
-//        return (Some(ReferendTemplata(structRef)))
+//        return (Some(KindTemplata(structRef)))
 //      }
 //      case None =>
 //    }
@@ -209,15 +209,15 @@ class TemplataTemplar(
         //val elementCoord =
         //  templateArgTemplatas match {
         //    case List(ReferenceTemplata(ref)) => ref
-        //    // todo: coerce referend into reference here... or somehow reuse all the machinery we have for
+        //    // todo: coerce kind into reference here... or somehow reuse all the machinery we have for
         //    // regular templates?
         //  }
-        //val elementMutability = Templar.getMutability(state, elementCoord.referend)
+        //val elementMutability = Templar.getMutability(state, elementCoord.kind)
         //if (arrayMutability == Immutable && elementMutability == Mutable) {
         //  throw new Exception("Can't have an immutable array of mutables")
         //}
         //val arrayType = RuntimeSizedArrayT2(RawArrayT2(elementCoord, arrayMutability))
-        //(state, ReferendTemplata(arrayType))
+        //(state, KindTemplata(arrayType))
 
         override def getAncestorInterfaceDistance(
           temputs: Temputs,

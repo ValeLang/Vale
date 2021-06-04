@@ -217,7 +217,7 @@ Ref buildExternCall(
 
     buildFlare(FL(), globalState, functionState, builder);
 
-    if (prototype->returnType->referend == globalState->metalCache->never) {
+    if (prototype->returnType->kind == globalState->metalCache->never) {
       buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
       buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
       LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));

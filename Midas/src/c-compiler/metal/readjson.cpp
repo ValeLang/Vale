@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include "readjson.h"
 #include "metal/instructions.h"
@@ -13,6 +14,7 @@ Ownership readUnconvertedOwnership(MetalCache* cache, const json& ownership);
 Location readLocation(MetalCache* cache, const json& location);
 Mutability readMutability(const json& mutability);
 Variability readVariability(const json& variability);
+Name* readName(MetalCache* cache, const json& name);
 
 //template<typename T>
 //concept ReturnsVec = requires(T a) {
@@ -30,10 +32,10 @@ std::vector<T> readArray(MetalCache* cache, const json& j, const F& f) {
   return vec;
 }
 // F should return pair<key, value>
-template<typename K, typename V, typename H, typename F>
-std::unordered_map<K, V, H> readArrayIntoMap(MetalCache* cache, H h, const json& j, const F& f) {
+template<typename K, typename V, typename H, typename E, typename F>
+std::unordered_map<K, V, H, E> readArrayIntoMap(MetalCache* cache, H h, E e, const json& j, const F& f) {
   assert(j.is_array());
-  std::unordered_map<K, V, H> map(0, move(h));
+  std::unordered_map<K, V, H, E> map(0, move(h), move(e));
   map.reserve(j.size());
   for (const auto& element : j) {
     std::pair<K, V> p = f(cache, element);
@@ -43,29 +45,50 @@ std::unordered_map<K, V, H> readArrayIntoMap(MetalCache* cache, H h, const json&
   return map;
 }
 
-Name* readName(MetalCache* cache, const json& name) {
+std::string readString(MetalCache* cache, const json& name) {
   assert(name.is_string());
   auto nameStr = name.get<std::string>();
-
-  return cache->getName(nameStr);
+  return nameStr;
 }
 
-StructReferend* readStructReferend(MetalCache* cache, const json& referend) {
-  assert(referend["__type"] == "StructId");
+PackageCoordinate* readPackageCoordinate(MetalCache* cache, const json& packageCoord) {
+  assert(packageCoord["__type"] == "PackageCoordinate");
+  auto moduleName = readString(cache, packageCoord["project"]);//.get<std::string>();
+  auto packageSteps = readArray(cache, packageCoord["packageSteps"], readString);
+  return cache->getPackageCoordinate(moduleName, packageSteps);
+}
 
-  auto structName = readName(cache, referend["name"]);
+Name* readName(MetalCache* cache, const json& name) {
+  assert(name.is_object());
+  auto packageCoord = readPackageCoordinate(cache, name["packageCoordinate"]);
+  auto readableName = readString(cache, name["readableName"]);
+  int id = name["id"];
+  auto parts = readArray(cache, name["parts"], readString);
 
-  auto result = cache->getStructReferend(structName);
+  std::stringstream nameStrBuilder;
+  nameStrBuilder << readableName;
+  if (id >= 0) {
+    nameStrBuilder << "_" << id;
+  }
+  return cache->getName(packageCoord, nameStrBuilder.str());
+}
+
+StructKind* readStructKind(MetalCache* cache, const json& kind) {
+  assert(kind["__type"] == "StructId");
+
+  auto structName = readName(cache, kind["name"]);
+
+  auto result = cache->getStructKind(structName);
 
   return result;
 }
 
-InterfaceReferend* readInterfaceReferend(MetalCache* cache, const json& referend) {
-  assert(referend["__type"] == "InterfaceId");
+InterfaceKind* readInterfaceKind(MetalCache* cache, const json& kind) {
+  assert(kind["__type"] == "InterfaceId");
 
-  auto interfaceName = readName(cache, referend["name"]);
+  auto interfaceName = readName(cache, kind["name"]);
 
-  return cache->getInterfaceReferend(interfaceName);
+  return cache->getInterfaceKind(interfaceName);
 }
 
 RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
@@ -79,22 +102,22 @@ RawArrayT* readRawArray(MetalCache* cache, const json& rawArray) {
   return new RawArrayT(regionId, mutability, variability, elementType);
 }
 
-RuntimeSizedArrayT* readRuntimeSizedArray(MetalCache* cache, const json& referend) {
-  auto name = readName(cache, referend["name"]);
+RuntimeSizedArrayT* readRuntimeSizedArray(MetalCache* cache, const json& kind) {
+  auto name = readName(cache, kind["name"]);
 
   return cache->getRuntimeSizedArray(name);
 }
 
 RuntimeSizedArrayDefinitionT* readRuntimeSizedArrayDefinition(MetalCache* cache, const json& rsa) {
   auto name = readName(cache, rsa["name"]);
-  auto referend = readRuntimeSizedArray(cache, rsa["referend"]);
+  auto kind = readRuntimeSizedArray(cache, rsa["kind"]);
   auto rawArray = readRawArray(cache, rsa["array"]);
 
-  return new RuntimeSizedArrayDefinitionT(name, referend, rawArray);
+  return new RuntimeSizedArrayDefinitionT(name, kind, rawArray);
 }
 
-StaticSizedArrayT* readStaticSizedArray(MetalCache* cache, const json& referend) {
-  auto name = readName(cache, referend["name"]);
+StaticSizedArrayT* readStaticSizedArray(MetalCache* cache, const json& kind) {
+  auto name = readName(cache, kind["name"]);
 
   return makeIfNotPresent(
       &cache->staticSizedArrays,
@@ -104,35 +127,35 @@ StaticSizedArrayT* readStaticSizedArray(MetalCache* cache, const json& referend)
 
 StaticSizedArrayDefinitionT* readStaticSizedArrayDefinition(MetalCache* cache, const json& ssa) {
   auto name = readName(cache, ssa["name"]);
-  auto referend = readStaticSizedArray(cache, ssa["referend"]);
+  auto kind = readStaticSizedArray(cache, ssa["kind"]);
   auto rawArray = readRawArray(cache, ssa["array"]);
   auto size = ssa["size"].get<int>();
 
-  return new StaticSizedArrayDefinitionT(name, referend, size, rawArray);
+  return new StaticSizedArrayDefinitionT(name, kind, size, rawArray);
 }
 
-Referend* readReferend(MetalCache* cache, const json& referend) {
-  assert(referend.is_object());
-  if (referend["__type"] == "Int") {
+Kind* readKind(MetalCache* cache, const json& kind) {
+  assert(kind.is_object());
+  if (kind["__type"] == "Int") {
     return cache->innt;
-  } else if (referend["__type"] == "Bool") {
+  } else if (kind["__type"] == "Bool") {
     return cache->boool;
-  } else if (referend["__type"] == "Float") {
+  } else if (kind["__type"] == "Float") {
     return cache->flooat;
-  } else if (referend["__type"] == "Str") {
+  } else if (kind["__type"] == "Str") {
     return cache->str;
-  } else if (referend["__type"] == "StructId") {
-    return readStructReferend(cache, referend);
-  } else if (referend["__type"] == "Never") {
+  } else if (kind["__type"] == "StructId") {
+    return readStructKind(cache, kind);
+  } else if (kind["__type"] == "Never") {
     return cache->never;
-  } else if (referend["__type"] == "RuntimeSizedArray") {
-    return readRuntimeSizedArray(cache, referend);
-  } else if (referend["__type"] == "StaticSizedArray") {
-    return readStaticSizedArray(cache, referend);
-  } else if (referend["__type"] == "InterfaceId") {
-    return readInterfaceReferend(cache, referend);
+  } else if (kind["__type"] == "RuntimeSizedArray") {
+    return readRuntimeSizedArray(cache, kind);
+  } else if (kind["__type"] == "StaticSizedArray") {
+    return readStaticSizedArray(cache, kind);
+  } else if (kind["__type"] == "InterfaceId") {
+    return readInterfaceKind(cache, kind);
   } else {
-    std::cerr << "Unrecognized referend: " << referend["__type"] << std::endl;
+    std::cerr << "Unrecognized kind: " << kind["__type"] << std::endl;
     assert(false);
   }
 }
@@ -143,13 +166,13 @@ Reference* readReference(MetalCache* cache, const json& reference) {
 
   auto ownership = readUnconvertedOwnership(cache, reference["ownership"]);
   auto location = readLocation(cache, reference["location"]);
-  auto referend = readReferend(cache, reference["referend"]);
+  auto kind = readKind(cache, reference["kind"]);
 //  std::string debugStr = reference["debugStr"];
 
   return cache->getReference(
       ownership,
       location,
-      referend);
+      kind);
 }
 
 Mutability readMutability(const json& mutability) {
@@ -221,7 +244,7 @@ VariableId* readVariableId(MetalCache* cache, const json& variable) {
   int height = variable["height"];
   std::string maybeName;
   if (variable["optName"]["__type"] == "Some") {
-    maybeName = variable["optName"]["value"];
+    maybeName = readName(cache, variable["optName"]["value"])->name;
   }
 
   return makeIfNotPresent(
@@ -272,7 +295,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new LocalStore(
         readLocal(cache, expression["local"]),
         readExpression(cache, expression["sourceExpr"]),
-        expression["localName"],
+        readName(cache, expression["localName"])->name,
         expression["knownLive"]);
   } else if (type == "MemberStore") {
     return new MemberStore(
@@ -282,7 +305,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         expression["memberIndex"],
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["resultType"]),
-        expression["memberName"]);
+        readName(cache, expression["memberName"])->name);
   } else if (type == "Discard") {
     return new Discard(
         readExpression(cache, expression["sourceExpr"]),
@@ -298,12 +321,12 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new LocalLoad(
         readLocal(cache, expression["local"]),
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
-        expression["localName"]);
+        readName(cache, expression["localName"])->name);
   } else if (type == "WeakAlias") {
     return new WeakAlias(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
-        readReferend(cache, expression["sourceReferend"]),
+        readKind(cache, expression["sourceKind"]),
         readReference(cache, expression["resultType"]));
   } else if (type == "NarrowPermission") {
     return new NarrowPermission(
@@ -349,24 +372,24 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
   } else if (type == "MemberLoad") {
     return new MemberLoad(
         readExpression(cache, expression["structExpr"]),
-        readStructReferend(cache, expression["structId"]),
+        readStructKind(cache, expression["structId"]),
         readReference(cache, expression["structType"]),
         expression["structKnownLive"],
         expression["memberIndex"],
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readReference(cache, expression["expectedMemberType"]),
         readReference(cache, expression["expectedResultType"]),
-        expression["memberName"]);
+        readName(cache, expression["memberName"])->name);
   } else if (type == "NewArrayFromValues") {
     return new NewArrayFromValues(
         readArray(cache, expression["sourceExprs"], readExpression),
         readReference(cache, expression["resultType"]),
-        readStaticSizedArray(cache, expression["resultReferend"]));
+        readStaticSizedArray(cache, expression["resultKind"]));
   } else if (type == "StaticSizedArrayLoad") {
     return new StaticSizedArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readStaticSizedArray(cache, expression["arrayReferend"]),
+        readStaticSizedArray(cache, expression["arrayKind"]),
         expression["arrayKnownLive"],
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["resultType"]),
@@ -377,11 +400,11 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new RuntimeSizedArrayLoad(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readRuntimeSizedArray(cache, expression["arrayReferend"]),
+        readRuntimeSizedArray(cache, expression["arrayKind"]),
         expression["arrayKnownLive"],
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["indexType"]),
-        readReferend(cache, expression["indexReferend"]),
+        readKind(cache, expression["indexKind"]),
         readReference(cache, expression["resultType"]),
         readUnconvertedOwnership(cache, expression["targetOwnership"]),
         readReference(cache, expression["expectedElementType"]));
@@ -389,22 +412,22 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new RuntimeSizedArrayStore(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readRuntimeSizedArray(cache, expression["arrayReferend"]),
+        readRuntimeSizedArray(cache, expression["arrayKind"]),
         expression["arrayKnownLive"],
         readExpression(cache, expression["indexExpr"]),
         readReference(cache, expression["indexType"]),
-        readReferend(cache, expression["indexReferend"]),
+        readKind(cache, expression["indexKind"]),
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
-        readReferend(cache, expression["sourceReferend"]));
+        readKind(cache, expression["sourceKind"]));
   } else if (type == "ConstructRuntimeSizedArray") {
     return new ConstructRuntimeSizedArray(
         readExpression(cache, expression["sizeExpr"]),
         readReference(cache, expression["sizeType"]),
-        readReferend(cache, expression["sizeReferend"]),
+        readKind(cache, expression["sizeKind"]),
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
-        readReferend(cache, expression["generatorReferend"]),
+        readKind(cache, expression["generatorKind"]),
         readPrototype(cache, expression["generatorMethod"]),
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
@@ -413,7 +436,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new StaticArrayFromCallable(
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
-        readReferend(cache, expression["generatorReferend"]),
+        readKind(cache, expression["generatorKind"]),
         readPrototype(cache, expression["generatorMethod"]),
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
@@ -422,10 +445,10 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new DestroyRuntimeSizedArray(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readRuntimeSizedArray(cache, expression["arrayReferend"]),
+        readRuntimeSizedArray(cache, expression["arrayKind"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
-        readInterfaceReferend(cache, expression["consumerReferend"]),
+        readInterfaceKind(cache, expression["consumerKind"]),
         readPrototype(cache, expression["consumerMethod"]),
         expression["consumerKnownLive"]);
   } else if (type == "ArrayLength") {
@@ -437,14 +460,14 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new StructToInterfaceUpcast(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceStructType"]),
-        readStructReferend(cache, expression["sourceStructReferend"]),
+        readStructKind(cache, expression["sourceStructKind"]),
         readReference(cache, expression["targetInterfaceType"]),
-        readInterfaceReferend(cache, expression["targetInterfaceReferend"]));
+        readInterfaceKind(cache, expression["targetInterfaceKind"]));
   } else if (type == "DestroyStaticSizedArrayIntoFunction") {
     return new DestroyStaticSizedArrayIntoFunction(
         readExpression(cache, expression["arrayExpr"]),
         readReference(cache, expression["arrayType"]),
-        readStaticSizedArray(cache, expression["arrayReferend"]),
+        readStaticSizedArray(cache, expression["arrayKind"]),
         readExpression(cache, expression["consumerExpr"]),
         readReference(cache, expression["consumerType"]),
         readPrototype(cache, expression["consumerMethod"]),
@@ -455,7 +478,7 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
     return new InterfaceCall(
         readArray(cache, expression["argExprs"], readExpression),
         expression["virtualParamIndex"],
-        readInterfaceReferend(cache, expression["interfaceRef"]),
+        readInterfaceKind(cache, expression["interfaceRef"]),
         expression["indexInEdge"],
         readPrototype(cache, expression["functionType"]));
   } else if (type == "ConstantStr") {
@@ -470,26 +493,26 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         expression["sourceKnownLive"],
         readPrototype(cache, expression["someConstructor"]),
         readReference(cache, expression["someType"]),
-        readStructReferend(cache, expression["someReferend"]),
+        readStructKind(cache, expression["someKind"]),
         readPrototype(cache, expression["noneConstructor"]),
         readReference(cache, expression["noneType"]),
-        readStructReferend(cache, expression["noneReferend"]),
+        readStructKind(cache, expression["noneKind"]),
         readReference(cache, expression["resultOptType"]),
-        readInterfaceReferend(cache, expression["resultOptReferend"]));
+        readInterfaceKind(cache, expression["resultOptKind"]));
   } else if (type == "AsSubtype") {
     return new AsSubtype(
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         expression["sourceKnownLive"],
-        readReferend(cache, expression["targetReferend"]),
+        readKind(cache, expression["targetKind"]),
         readPrototype(cache, expression["okConstructor"]),
         readReference(cache, expression["okType"]),
-        readStructReferend(cache, expression["okReferend"]),
+        readStructKind(cache, expression["okKind"]),
         readPrototype(cache, expression["errConstructor"]),
         readReference(cache, expression["errType"]),
-        readStructReferend(cache, expression["errReferend"]),
+        readStructKind(cache, expression["errKind"]),
         readReference(cache, expression["resultResultType"]),
-        readInterfaceReferend(cache, expression["resultResultReferend"]));
+        readInterfaceKind(cache, expression["resultResultKind"]));
   } else {
     std::cerr << "Unexpected instruction: " << type << std::endl;
     assert(false);
@@ -500,7 +523,7 @@ StructMember* readStructMember(MetalCache* cache, const json& struuct) {
   assert(struuct.is_object());
   assert(struuct["__type"] == "StructMember");
   return new StructMember(
-      struuct["fullName"],
+      readName(cache, struuct["fullName"])->name,
       struuct["name"],
       readVariability(struuct["variability"]),
       readReference(cache, struuct["type"]));
@@ -526,8 +549,8 @@ Edge* readEdge(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
   assert(edge["__type"] == "Edge");
   return new Edge(
-      readStructReferend(cache, edge["structName"]),
-      readInterfaceReferend(cache, edge["interfaceName"]),
+      readStructKind(cache, edge["structName"]),
+      readInterfaceKind(cache, edge["interfaceName"]),
       readArray(cache, edge["methods"], readInterfaceMethodAndPrototypeEntry));
 }
 
@@ -538,7 +561,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
   auto result =
       new StructDefinition(
           readName(cache, struuct["name"]),
-          readStructReferend(cache, struuct["referend"]),
+          readStructKind(cache, struuct["kind"]),
           mutability == Mutability::IMMUTABLE ? cache->rcImmRegionId : cache->mutRegionId,
           mutability,
           readArray(cache, struuct["edges"], readEdge),
@@ -547,7 +570,7 @@ StructDefinition* readStruct(MetalCache* cache, const json& struuct) {
 
   auto structName = result->name;
   if (structName->name == std::string("Tup0_0")) {
-    cache->emptyTupleStruct = cache->getStructReferend(structName);
+    cache->emptyTupleStruct = cache->getStructKind(structName);
     cache->emptyTupleStructRef =
         cache->getReference(Ownership::SHARE, Location::INLINE, cache->emptyTupleStruct);
   }
@@ -561,7 +584,7 @@ InterfaceDefinition* readInterface(MetalCache* cache, const json& interface) {
   auto mutability = readMutability(interface["mutability"]);
   return new InterfaceDefinition(
       readName(cache, interface["name"]),
-      readInterfaceReferend(cache, interface["referend"]),
+      readInterfaceKind(cache, interface["kind"]),
       mutability == Mutability::IMMUTABLE ? cache->rcImmRegionId : cache->mutRegionId,
       mutability,
       {},
@@ -577,21 +600,24 @@ Function* readFunction(MetalCache* cache, const json& function) {
       readExpression(cache, function["block"]));
 }
 
-std::pair<Referend*, Prototype*> readReferendAndPrototypeEntry(MetalCache* cache, const json& edge) {
+std::pair<Kind*, Prototype*> readKindAndPrototypeEntry(MetalCache* cache, const json& edge) {
   assert(edge.is_object());
   assert(edge["__type"] == "Entry");
   return std::make_pair(
-      readReferend(cache, edge["referend"]),
+      readKind(cache, edge["kind"]),
       readPrototype(cache, edge["destructor"]));
 }
 
-Program* readProgram(MetalCache* cache, const json& program) {
+Package* readPackage(MetalCache* cache, const json& program) {
   assert(program.is_object());
-  assert(program["__type"] == "Program");
-  return new Program(
+  assert(program["__type"] == "Package");
+  return new Package(
+      cache->addressNumberer,
+      readPackageCoordinate(cache, program["packageCoordinate"]),
       readArrayIntoMap<std::string, InterfaceDefinition*>(
           cache,
           std::hash<std::string>(),
+          std::equal_to<std::string>(),
           program["interfaces"],
           [](MetalCache* cache, json j){
             auto s = readInterface(cache, j);
@@ -600,6 +626,7 @@ Program* readProgram(MetalCache* cache, const json& program) {
       readArrayIntoMap<std::string, StructDefinition*>(
           cache,
           std::hash<std::string>(),
+          std::equal_to<std::string>(),
           program["structs"],
           [](MetalCache* cache, json j){
             auto s = readStruct(cache, j);
@@ -608,6 +635,7 @@ Program* readProgram(MetalCache* cache, const json& program) {
       readArrayIntoMap<std::string, StaticSizedArrayDefinitionT*>(
           cache,
           std::hash<std::string>(),
+          std::equal_to<std::string>(),
           program["staticSizedArrays"],
           [](MetalCache* cache, json j){
             auto s = readStaticSizedArrayDefinition(cache, j);
@@ -616,44 +644,97 @@ Program* readProgram(MetalCache* cache, const json& program) {
       readArrayIntoMap<std::string, RuntimeSizedArrayDefinitionT*>(
           cache,
           std::hash<std::string>(),
+          std::equal_to<std::string>(),
           program["runtimeSizedArrays"],
           [](MetalCache* cache, json j){
             auto s = readRuntimeSizedArrayDefinition(cache, j);
             return std::make_pair(s->name->name, s);
           }),
-      readStructReferend(cache, program["emptyTupleStructReferend"]),
-      readArrayIntoMap<std::string, Prototype*>(
-          cache,
-          std::hash<std::string>(),
-          program["externFunctions"],
-          [](MetalCache* cache, json j){
-            auto f = readPrototype(cache, j);
-            return std::make_pair(f->name->name, f);
-          }),
+      readStructKind(cache, program["emptyTupleStructKind"]),
+//      readArrayIntoMap<std::string, Prototype*>(
+//          cache,
+//          std::hash<std::string>(),
+//          std::equal_to<std::string>(),
+//          program["externFunctions"],
+//          [](MetalCache* cache, json j){
+//            auto f = readPrototype(cache, j);
+//            return std::make_pair(f->name->name, f);
+//          }),
       readArrayIntoMap<std::string, Function*>(
           cache,
           std::hash<std::string>(),
+          std::equal_to<std::string>(),
           program["functions"],
           [](MetalCache* cache, json j){
             auto f = readFunction(cache, j);
             return std::make_pair(f->prototype->name->name, f);
           }),
-      readArrayIntoMap<Referend*, Prototype*>(
+      readArrayIntoMap<Kind*, Prototype*>(
           cache,
-          AddressHasher<Referend*>(cache->addressNumberer),
-          program["immDestructorsByReferend"],
-          readReferendAndPrototypeEntry),
-      readArrayIntoMap<Name*, std::vector<std::string>>(
+          AddressHasher<Kind*>(cache->addressNumberer),
+          std::equal_to<Kind*>(),
+          program["immDestructorsByKind"],
+          readKindAndPrototypeEntry),
+      readArrayIntoMap<std::string, Prototype*>(
           cache,
-          AddressHasher<Name*>(cache->addressNumberer),
-          program["fullNameToExportedNames"],
+          std::hash<std::string>(),
+          std::equal_to<std::string>(),
+          program["exportNameToFunction"],
           [](MetalCache* cache, json entryJ){
-            auto fullName = readName(cache, entryJ["fullName"]);
-            auto exportedNamesJ = entryJ["exportedNames"];
-            auto exportedNames =
-                readArray(cache, exportedNamesJ, [](MetalCache* cache, json j) -> std::string {
-                  return j;
-                });
-            return std::make_pair(fullName, exportedNames);
+            auto exportName = readString(cache, entryJ["exportName"]);
+            auto prototype = readPrototype(cache, entryJ["prototype"]);
+            return std::make_pair(exportName, prototype);
+          }),
+      readArrayIntoMap<std::string, Kind*>(
+          cache,
+          std::hash<std::string>(),
+          std::equal_to<std::string>(),
+          program["exportNameToKind"],
+          [](MetalCache* cache, json entryJ){
+            auto exportName = readString(cache, entryJ["exportName"]);
+            auto kind = readKind(cache, entryJ["kind"]);
+            return std::make_pair(exportName, kind);
+          }),
+      readArrayIntoMap<std::string, Prototype*>(
+          cache,
+          std::hash<std::string>(),
+          std::equal_to<std::string>(),
+          program["externNameToFunction"],
+          [](MetalCache* cache, json entryJ){
+            auto externName = readString(cache, entryJ["externName"]);
+            auto prototype = readPrototype(cache, entryJ["prototype"]);
+            return std::make_pair(externName, prototype);
+          }),
+      readArrayIntoMap<std::string, Kind*>(
+          cache,
+          std::hash<std::string>(),
+          std::equal_to<std::string>(),
+          program["externNameToKind"],
+          [](MetalCache* cache, json entryJ){
+            auto externName = readString(cache, entryJ["externName"]);
+            auto kind = readKind(cache, entryJ["kind"]);
+            return std::make_pair(externName, kind);
+          }));
+}
+
+std::pair<PackageCoordinate*, Package*> readPackageCoordinateAndPackageEntry(MetalCache* cache, const json& edge) {
+  assert(edge.is_object());
+  assert(edge["__type"] == "Entry");
+  return std::make_pair<PackageCoordinate*, Package*>(
+      readPackageCoordinate(cache, edge["packageCoordinate"]),
+      readPackage(cache, edge["package"]));
+}
+
+Program* readProgram(MetalCache* cache, const json& program) {
+  assert(program.is_object());
+  assert(program["__type"] == "Program");
+  return new Program(
+      readArrayIntoMap<PackageCoordinate*, Package*, AddressHasher<PackageCoordinate*>, std::equal_to<PackageCoordinate*>>(
+          cache,
+          cache->addressNumberer->makeHasher<PackageCoordinate*>(),
+          std::equal_to<PackageCoordinate*>(),
+          program["packages"],
+          [](MetalCache* cache, json j){
+            return readPackageCoordinateAndPackageEntry(cache, j);
           }));
 }

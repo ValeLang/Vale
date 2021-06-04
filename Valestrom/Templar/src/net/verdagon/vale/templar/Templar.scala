@@ -108,7 +108,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             FunctionHeader2(namedEnv.fullName, List(), paramCoords, maybeReturnType2.get, maybeOriginFunction1)
           temputs.declareFunctionReturnType(header.toSignature, header.returnType)
 
-          val sourceKind = vassertSome(paramCoords.headOption).tyype.referend
+          val sourceKind = vassertSome(paramCoords.headOption).tyype.kind
           val KindTemplata(targetKind) = vassertSome(namedEnv.fullName.last.templateArgs.headOption)
 
           val sourceCitizen =
@@ -133,8 +133,8 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
 
           val incomingCoord = paramCoords(0).tyype
-          val incomingSubkind = incomingCoord.referend
-          val targetCoord = incomingCoord.copy(referend = targetKind)
+          val incomingSubkind = incomingCoord.kind
+          val targetCoord = incomingCoord.copy(kind = targetKind)
           val (resultCoord, okConstructor, errConstructor) =
             expressionTemplar.getResult(temputs, namedEnv, callRange, targetCoord, incomingCoord)
           val asSubtypeExpr: ReferenceExpression2 =
@@ -496,7 +496,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
   def evaluate(packageToProgramA: PackageCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
-        val programsA = packageToProgramA.moduleToPackagesToFilenameToContents.values.flatMap(_.values)
+        val programsA = packageToProgramA.moduleToPackagesToContents.values.flatMap(_.values)
 
         val structsA = programsA.flatMap(_.structs)
         val interfacesA = programsA.flatMap(_.interfaces)
@@ -604,12 +604,12 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           val typeRuneT = NameTranslator.translateRune(typeRuneA)
           val templataByRune =
             inferTemplar.inferOrdinaryRules(env11, temputs, rules, typeByRune, Set(typeRuneA))
-          val referend =
+          val kind =
             templataByRune.get(typeRuneT) match {
-              case Some(KindTemplata(referend)) => referend
+              case Some(KindTemplata(kind)) => kind
               case _ => vfail()
             }
-          temputs.addExport(referend, range.file.packageCoordinate, exportedName)
+          temputs.addKindExport(kind, range.file.packageCoordinate, exportedName)
         })
 
         profiler.newProfile("StampOverridesUntilSettledProbe", "", () => {
@@ -718,11 +718,13 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             reachableStructs.toList,
             Program2.emptyTupleStructRef,
             reachableFunctions.toList,
-            temputs.getExports,
             reachableDestructors.toMap,
-            temputs.getExternPrototypes,
             edgeBlueprintsByInterface,
-            edges)
+            edges,
+            temputs.getKindExports,
+            temputs.getFunctionExports,
+            temputs.getKindExterns,
+            temputs.getFunctionExterns)
 
         Ok(hinputs)
       })

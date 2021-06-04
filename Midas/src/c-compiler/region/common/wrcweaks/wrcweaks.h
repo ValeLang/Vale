@@ -8,16 +8,16 @@
 
 class WrcWeaks {
 public:
-  WrcWeaks(GlobalState* globalState, IReferendStructsSource* referendStructsSource, IWeakRefStructsSource* weakRefStructsSource);
+  WrcWeaks(GlobalState* globalState, IKindStructsSource* kindStructsSource, IWeakRefStructsSource* weakRefStructsSource);
 
   WeakFatPtrLE weakStructPtrToWrciWeakInterfacePtr(
       GlobalState *globalState,
       FunctionState *functionState,
       LLVMBuilderRef builder,
       WeakFatPtrLE sourceRefLE,
-      StructReferend *sourceStructReferendM,
+      StructKind *sourceStructKindM,
       Reference *sourceStructTypeM,
-      InterfaceReferend *targetInterfaceReferendM,
+      InterfaceKind *targetInterfaceKindM,
       Reference *targetInterfaceTypeM);
 
   Ref assembleWeakRef(
@@ -33,7 +33,7 @@ public:
       LLVMBuilderRef builder,
       Reference* sourceType,
       Reference* targetType,
-      InterfaceReferend* interfaceReferendM,
+      InterfaceKind* interfaceKindM,
       InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
   WeakFatPtrLE assembleStructWeakRef(
@@ -41,7 +41,7 @@ public:
       LLVMBuilderRef builder,
       Reference* structTypeM,
       Reference* targetTypeM,
-      StructReferend* structReferendM,
+      StructKind* structKindM,
       WrapperPtrLE objPtrLE);
 
   WeakFatPtrLE assembleStaticSizedArrayWeakRef(
@@ -83,8 +83,8 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IReferendStructsSource* structs,
-      Referend* referendM,
+      IKindStructsSource* structs,
+      Kind* kindM,
       LLVMValueRef controlBlockLE);
 
   WeakFatPtrLE weakInterfaceRefToWeakStructRef(
@@ -158,7 +158,7 @@ private:
 
   GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
-  IReferendStructsSource* referendStructsSource;
+  IKindStructsSource* kindStructsSource;
   IWeakRefStructsSource* weakRefStructsSource;
 
   LLVMValueRef wrcTablePtrLE = nullptr;

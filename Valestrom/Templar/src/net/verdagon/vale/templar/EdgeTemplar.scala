@@ -83,7 +83,7 @@ object EdgeTemplar {
               if (index != virtualIndex) {
                 paramType
               } else {
-                paramType.copy(referend = superInterface)
+                paramType.copy(kind = superInterface)
               }
             })
 

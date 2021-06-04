@@ -110,8 +110,7 @@ public:
       kindToExternName[kind] = externName;
     }
   }
-
-
+  
   Function* getFunction(Name* name) {
     auto iter = functions.find(name->name);
     if (iter == functions.end()) {

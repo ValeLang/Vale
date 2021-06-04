@@ -4,6 +4,8 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/IRReader.h>
 
+#include <sys/stat.h>
+
 #include <assert.h>
 #include <string>
 #include <vector>
@@ -251,15 +253,28 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
     }
   }
   for (auto& [packageCoord, headerNameToC] : packageCoordToHeaderNameToC) {
-    for (auto i = headerNameToC.begin(); i != headerNameToC.end(); i++) {
-      auto exportedName = i->first;
-      auto exportCode = i->second.str();
+    for (auto& [exportedName, exportCode] : headerNameToC) {
       if (globalState->opt->outputDir.empty()) {
         std::cerr << "Must specify --output-dir!" << std::endl;
         assert(false);
       }
-      std::string filepath = globalState->opt->outputDir + "/";
-      filepath += exportedName + ".h";
+      std::string moduleExternsDirectory = globalState->opt->outputDir;
+      if (!packageCoord->projectName.empty()) {
+        moduleExternsDirectory += "/" + packageCoord->projectName;
+        int failed = mkdir(moduleExternsDirectory.c_str(), 0700);
+        if (failed) {
+          int error = errno;
+          if (error == EEXIST) {
+            // do nothing
+            std::cerr << "Directory " << moduleExternsDirectory << " already exists, continuing." << std::endl;
+          } else {
+            std::cerr << "Couldn't make directory: " << moduleExternsDirectory << " (" << error << ")" << std::endl;
+            exit(1);
+          }
+        }
+      }
+
+      std::string filepath = moduleExternsDirectory + "/" + exportedName + ".h";
       std::ofstream out(filepath, std::ofstream::out);
       if (!out) {
         std::cerr << "Couldn't make file '" << filepath << std::endl;
@@ -270,7 +285,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       out << "#ifndef VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
       out << "#define VALE_EXPORTS_" << exportedName << "_H_" << std::endl;
       out << "#include \"ValeBuiltins.h\"" << std::endl;
-      out << exportCode;
+      out << exportCode.str();
       out << "#endif" << std::endl;
     }
   }

@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "MutIntArray.h"
-#include "getMutIntArrayLen.h"
-#include "getMutIntArrayElem.h"
+#include "tmod/MutIntArray.h"
+#include "tmod/getMutIntArrayLen.h"
+#include "tmod/getMutIntArrayElem.h"
 
 int64_t tmod_sumBytes(tmod_MutIntArrayRef arr) {
   int64_t total = 0;

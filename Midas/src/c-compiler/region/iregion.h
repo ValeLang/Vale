@@ -165,7 +165,8 @@ public:
 
   virtual std::string getExportName(
       Package* package,
-      Reference* reference) = 0;
+      Reference* reference,
+      bool includeProjectName) = 0;
 
 //  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
 //      Reference* refMT) = 0;

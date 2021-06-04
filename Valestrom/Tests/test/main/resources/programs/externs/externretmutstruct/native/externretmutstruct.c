@@ -3,8 +3,8 @@
 
 #include "Thing.h"
 
-extern ThingRef makeThing(ValeStr* a, ValeInt b);
+extern tmod_ThingRef tmod_makeThing(ValeStr* a, ValeInt b);
 
-ThingRef runExtCommand() {
-  return makeThing(ValeStrFrom("hello"), 37);
+tmod_ThingRef tmod_runExtCommand() {
+  return tmod_makeThing(ValeStrFrom("hello"), 37);
 }

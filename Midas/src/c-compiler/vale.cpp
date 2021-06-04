@@ -233,7 +233,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
       if (!skipExporting) {
         std::stringstream s;
         auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
-        auto returnExportName = globalState->getRegion(externReturnType)->getExportName(package, externReturnType);
+        auto returnExportName = globalState->getRegion(externReturnType)->getExportName(package, externReturnType, true);
         s << "extern " << returnExportName << " ";
         s << exportName << "(";
         for (int i = 0; i < functionM->prototype->params.size(); i++) {
@@ -241,7 +241,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
             s << ", ";
           }
           auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
-          auto paramExportName = globalState->getRegion(hostParamRefMT)->getExportName(package, hostParamRefMT);
+          auto paramExportName = globalState->getRegion(hostParamRefMT)->getExportName(package, hostParamRefMT, true);
           s << paramExportName << " param" << i;
         }
         s << ");" << std::endl;
@@ -717,7 +717,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   for (auto[packageCoord, package] : program->packages) {
     for (auto[externName, prototype] : package->externNameToFunction) {
-      declareExternFunction(globalState, prototype);
+      declareExternFunction(globalState, package, prototype);
     }
   }
 
@@ -732,7 +732,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
       bool skipExporting = exportName == "main";
       if (!skipExporting) {
         auto function = program->getFunction(prototype->name);
-        exportFunction(globalState, package, function, exportName);
+        exportFunction(globalState, package, function);
       }
     }
   }

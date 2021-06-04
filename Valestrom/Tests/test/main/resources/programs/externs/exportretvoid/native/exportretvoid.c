@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "donothing.h"
 
-void runExtCommand() {
-  donothing();
+void tmod_runExtCommand() {
+  tmod_donothing();
 }

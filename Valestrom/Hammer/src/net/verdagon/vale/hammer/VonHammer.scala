@@ -60,7 +60,7 @@ object VonHammer {
       "Package",
       None,
       Vector(
-        VonMember("name", NameHammer.translatePackageCoordinate(packageCoord)),
+        VonMember("packageCoordinate", NameHammer.translatePackageCoordinate(packageCoord)),
         VonMember("interfaces", VonArray(None, interfaces.map(vonifyInterface).toVector)),
         VonMember("structs", VonArray(None, structs.map(vonfiyStruct).toVector)),
         VonMember("functions", VonArray(None, functions.map(vonifyFunction).toVector)),

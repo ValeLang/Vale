@@ -12,10 +12,10 @@ size_t floorMultipleOf16(size_t x) {
   return x & ~0xF;
 }
 
-int64_t sumWings(ImmSpaceshipArray* arr) {
+extern int64_t tmod_sumWings(tmod_ImmSpaceshipArray* arr) {
 
   size_t arrayHeaderAddr = (size_t)(void*)arr;
-  size_t arrayShallowSize = sizeof(ImmSpaceshipArray) + sizeof(Spaceship*) * arr->length;
+  size_t arrayShallowSize = sizeof(tmod_ImmSpaceshipArray) + sizeof(tmod_Spaceship*) * arr->length;
   // AP = And Padding; to get the next multiple of 16 from the end of the array's header struct.
   size_t arrayHeaderAPEndAddr = nextMultipleOf16(arrayHeaderAddr + arrayShallowSize);
 
@@ -25,7 +25,7 @@ int64_t sumWings(ImmSpaceshipArray* arr) {
   size_t rootMetadataAddr = floorMultipleOf16(rootMetadataAPEndAddr - 16);
 
   size_t lastElementAPEndAddr = rootMetadataAddr;
-  size_t lastElementAddr = floorMultipleOf16(lastElementAPEndAddr - sizeof(Spaceship));
+  size_t lastElementAddr = floorMultipleOf16(lastElementAPEndAddr - sizeof(tmod_Spaceship));
 
   size_t elementStride = lastElementAPEndAddr - lastElementAddr;
 

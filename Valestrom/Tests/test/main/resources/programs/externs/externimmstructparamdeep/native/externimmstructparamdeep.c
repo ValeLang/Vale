@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "Spigglewigget.h"
-#include "Bogglewoggle.h"
-#include "Flamscrankle.h"
+#include "tmod/Spigglewigget.h"
+#include "tmod/Bogglewoggle.h"
+#include "tmod/Flamscrankle.h"
 
 size_t nextMultipleOf16(size_t x) {
   return ((x - 1) | 15) + 1;

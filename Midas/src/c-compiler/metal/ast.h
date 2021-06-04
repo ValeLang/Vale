@@ -37,6 +37,7 @@ class Name;
 
 class Package {
 public:
+  PackageCoordinate* packageCoordinate;
   std::unordered_map<std::string, InterfaceDefinition*> interfaces;
   std::unordered_map<std::string, StructDefinition*> structs;
   std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays;
@@ -62,6 +63,7 @@ public:
 
   Package(
     AddressNumberer* addressNumberer,
+    PackageCoordinate* packageCoordinate_,
     std::unordered_map<std::string, InterfaceDefinition*> interfaces_,
     std::unordered_map<std::string, StructDefinition*> structs_,
     std::unordered_map<std::string, StaticSizedArrayDefinitionT*> staticSizedArrays_,
@@ -74,6 +76,7 @@ public:
     std::unordered_map<std::string, Kind*> exportNameToKind_,
     std::unordered_map<std::string, Prototype*> externNameToFunction_,
     std::unordered_map<std::string, Kind*> externNameToKind_) :
+      packageCoordinate(packageCoordinate_),
       interfaces(std::move(interfaces_)),
       structs(std::move(structs_)),
       staticSizedArrays(std::move(staticSizedArrays_)),
@@ -181,7 +184,7 @@ public:
     return iter->second;
   }
 
-  std::string getKindExportName(Kind* kind) const {
+  std::string getKindExportName(Kind* kind, bool includeProjectName) const {
     if (dynamic_cast<Int *>(kind)) {
       return "int64_t";
     } else if (dynamic_cast<Bool *>(kind)) {
@@ -193,23 +196,23 @@ public:
     } else {
       auto iter = kindToExportName.find(kind);
       assert(iter != kindToExportName.end());
-      return iter->second;
+      return (includeProjectName ? packageCoordinate->projectName + "_" : "") + iter->second;
     }
   }
   std::string getFunctionExportName(Prototype* kind) const {
     auto iter = functionToExportName.find(kind);
     assert(iter != functionToExportName.end());
-    return iter->second;
+    return packageCoordinate->projectName + "_" + iter->second;
   }
   std::string getKindExternName(Kind* kind) const {
     auto iter = kindToExternName.find(kind);
     assert(iter != kindToExternName.end());
-    return iter->second;
+    return packageCoordinate->projectName + "_" + iter->second;
   }
   std::string getFunctionExternName(Prototype* kind) const {
     auto iter = functionToExternName.find(kind);
     assert(iter != functionToExternName.end());
-    return iter->second;
+    return packageCoordinate->projectName + "_" + iter->second;
   }
 //  bool isExported(Name* name) {
 //    auto exportedNameI = fullNameToExportName.find(name);

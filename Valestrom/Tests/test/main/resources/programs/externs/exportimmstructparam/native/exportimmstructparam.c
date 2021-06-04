@@ -6,7 +6,7 @@
 #include "Flamscrankle.h"
 #include "expFunc.h"
 
-int64_t extFunc(Flamscrankle* flam) {
-  int64_t result = expFunc(flam);
+int64_t tmod_extFunc(tmod_Flamscrankle* flam) {
+  int64_t result = tmod_expFunc(flam);
   return result;
 }

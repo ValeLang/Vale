@@ -355,7 +355,7 @@ public:
 
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override;
 
-  std::string getExportName(Package* currentPackage, Reference* refMT) override;
+  std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
 
   std::string generateStructDefsC(
     Package* currentPackage,

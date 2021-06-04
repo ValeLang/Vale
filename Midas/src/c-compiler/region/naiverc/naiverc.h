@@ -410,7 +410,7 @@ public:
       const std::string& typeName);
 
 
-  std::string getExportName(Package* currentPackage, Reference* refMT) override;
+  std::string getExportName(Package* currentPackage, Reference* refMT, bool includeProjectName) override;
   std::string generateStructDefsC(
     Package* currentPackage,
       StructDefinition* refMT) override;

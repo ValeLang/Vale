@@ -832,7 +832,7 @@ std::string NaiveRC::generateRuntimeSizedArrayDefsC(
   if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind);
+    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
   }
 }
@@ -843,7 +843,7 @@ std::string NaiveRC::generateStaticSizedArrayDefsC(
   if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind);
+    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
   }
 }
@@ -854,7 +854,7 @@ std::string NaiveRC::generateStructDefsC(
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind);
+    auto name = currentPackage->getKindExportName(structDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
   }
 }
@@ -1068,6 +1068,7 @@ Ref NaiveRC::localStore(FunctionState* functionState, LLVMBuilderRef builder, Lo
 
 std::string NaiveRC::getExportName(
     Package* package,
-    Reference* reference) {
-  return package->getKindExportName(reference->kind) + (reference->location == Location::YONDER ? "Ref" : "");
+    Reference* reference,
+    bool includeProjectName) {
+  return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
 }

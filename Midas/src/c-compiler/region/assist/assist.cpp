@@ -818,7 +818,7 @@ std::string Assist::generateRuntimeSizedArrayDefsC(
   if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind);
+    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
   }
 }
@@ -829,7 +829,7 @@ std::string Assist::generateStaticSizedArrayDefsC(
   if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind);
+    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
   }
 }
@@ -839,7 +839,7 @@ std::string Assist::generateStructDefsC(
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind);
+    auto name = currentPackage->getKindExportName(structDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
   }
 }
@@ -849,7 +849,7 @@ std::string Assist::generateInterfaceDefsC(
   if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = currentPackage->getKindExportName(interfaceDefM->kind);
+    auto name = currentPackage->getKindExportName(interfaceDefM->kind, true);
     return std::string() + "typedef struct " + name + "Ref { void* unused1; void* unused2; } " + name + "Ref;\n";
   }
 }
@@ -1064,6 +1064,7 @@ Ref Assist::localStore(FunctionState* functionState, LLVMBuilderRef builder, Loc
 
 std::string Assist::getExportName(
     Package* package,
-    Reference* reference) {
-  return package->getKindExportName(reference->kind) + (reference->location == Location::YONDER ? "Ref" : "");
+    Reference* reference,
+    bool includeProjectName) {
+  return package->getKindExportName(reference->kind, includeProjectName) + (reference->location == Location::YONDER ? "Ref" : "");
 }

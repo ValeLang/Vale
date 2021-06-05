@@ -19,9 +19,9 @@ public:
   }
 
   LLVMTypeRef translatePrimitive(GlobalState* globalState, Reference* referenceM) {
-    if (dynamic_cast<Int*>(referenceM->kind) != nullptr) {
+    if (auto innt = dynamic_cast<Int*>(referenceM->kind)) {
       assert(referenceM->ownership == Ownership::SHARE);
-      return LLVMInt64TypeInContext(globalState->context);
+      return LLVMIntTypeInContext(globalState->context, innt->bits);
     } else if (dynamic_cast<Bool*>(referenceM->kind) != nullptr) {
       assert(referenceM->ownership == Ownership::SHARE);
       return LLVMInt1TypeInContext(globalState->context);

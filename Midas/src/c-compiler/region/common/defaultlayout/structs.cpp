@@ -24,7 +24,7 @@ KindStructs::KindStructs(GlobalState* globalState_, ControlBlock controlBlock_)
         LLVMStructCreateNamed(
             globalState->context, "__Str");
     std::vector<LLVMTypeRef> memberTypesL;
-    memberTypesL.push_back(LLVMInt64TypeInContext(globalState->context));
+    memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
     memberTypesL.push_back(LLVMArrayType(int8LT, 0));
     LLVMStructSetBody(
         stringInnerStructL, memberTypesL.data(), memberTypesL.size(), false);
@@ -291,7 +291,7 @@ void KindStructs::defineRuntimeSizedArray(
 
   elementsL.push_back(controlBlock.getStruct());
 
-  elementsL.push_back(LLVMInt64TypeInContext(globalState->context));
+  elementsL.push_back(LLVMInt32TypeInContext(globalState->context));
 
   elementsL.push_back(innerArrayLT);
 
@@ -687,7 +687,7 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
   return LLVMBuildStructGEP(
       builder,
       controlBlockPtr.refLE,
-      getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::STRONG_RC),
+      getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::STRONG_RC_32B),
       "rcPtr");
 }
 

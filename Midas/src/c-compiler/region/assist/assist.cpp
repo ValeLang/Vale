@@ -538,16 +538,18 @@ LLVMValueRef Assist::getCensusObjectId(
     LLVMBuilderRef builder,
     Reference* refM,
     Ref ref) {
-  if (refM == globalState->metalCache->intRef) {
-    return constI64LE(globalState, -2);
-  } else if (refM == globalState->metalCache->boolRef) {
-    return constI64LE(globalState, -3);
-  } else if (refM == globalState->metalCache->neverRef) {
-    return constI64LE(globalState, -4);
-  } else if (refM == globalState->metalCache->floatRef) {
-    return constI64LE(globalState, -5);
-  } else if (refM->location == Location::INLINE) {
+  if (refM->location == Location::INLINE) {
     return constI64LE(globalState, -1);
+  } else if (refM == globalState->metalCache->i32Ref) {
+    return constI64LE(globalState, -2);
+  } else if (refM == globalState->metalCache->i64Ref) {
+    return constI64LE(globalState, -3);
+  } else if (refM == globalState->metalCache->boolRef) {
+    return constI64LE(globalState, -4);
+  } else if (refM == globalState->metalCache->neverRef) {
+    return constI64LE(globalState, -5);
+  } else if (refM == globalState->metalCache->floatRef) {
+    return constI64LE(globalState, -6);
   } else {
     auto controlBlockPtrLE =
         kindStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
@@ -1000,7 +1002,7 @@ void Assist::initializeElementInSSA(
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
           globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
-  auto sizeRef = globalState->constI64(ssaDef->size);
+  auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElement(
       globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);

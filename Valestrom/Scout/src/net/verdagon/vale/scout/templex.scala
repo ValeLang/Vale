@@ -70,7 +70,7 @@ case class ImpreciseCodeVarNameS(name: String) extends IImpreciseNameStepS
 
 // See PVSBUFI
 sealed trait ITemplexS { def range: RangeS }
-case class IntST(range: RangeS, value: Int) extends ITemplexS
+case class IntST(range: RangeS, value: Long) extends ITemplexS
 case class StringST(range: RangeS, value: String) extends ITemplexS
 case class MutabilityST(range: RangeS, mutability: MutabilityP) extends ITemplexS
 case class PermissionST(range: RangeS, permission: PermissionP) extends ITemplexS

@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.templar.templata.CoordTemplata
-import net.verdagon.vale.templar.types.{Constraint, Coord, InterfaceRef2, Own, Readonly, Readwrite, StructRef2}
+import net.verdagon.vale.templar.types.{ConstraintT, CoordT, InterfaceRefT, OwnT, ReadonlyT, ReadwriteT, StructRefT}
 import net.verdagon.vale.{vassert, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -27,35 +27,35 @@ class TemplarVirtualTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
 
     temputs.lookupFunction("as").only({
-      case as @ AsSubtype2(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
+      case as @ AsSubtypeTE(sourceExpr, targetSubtype, resultOptType, okConstructor, errConstructor) => {
         sourceExpr.resultRegister.reference match {
-          case Coord(Constraint,Readonly,InterfaceRef2(FullName2(_, List(),CitizenName2("IShip",List())))) =>
+          case CoordT(ConstraintT,ReadonlyT,InterfaceRefT(FullNameT(_, List(),CitizenNameT("IShip",List())))) =>
         }
         targetSubtype match {
-          case StructRef2(FullName2(_, List(),CitizenName2("Raza",List()))) =>
+          case StructRefT(FullNameT(_, List(),CitizenNameT("Raza",List()))) =>
         }
         val (firstGenericArg, secondGenericArg) =
           resultOptType match {
-            case Coord(
-              Own,Readwrite,
-              InterfaceRef2(
-                FullName2(
+            case CoordT(
+              OwnT,ReadwriteT,
+              InterfaceRefT(
+                FullNameT(
                   _, List(),
-                  CitizenName2(
+                  CitizenNameT(
                     "Result",
                     List(firstGenericArg, secondGenericArg))))) => (firstGenericArg, secondGenericArg)
           }
         firstGenericArg match {
           case CoordTemplata(
-            Coord(
-              Constraint,Readonly,
-              StructRef2(FullName2(_, List(),CitizenName2("Raza",List()))))) =>
+            CoordT(
+              ConstraintT,ReadonlyT,
+              StructRefT(FullNameT(_, List(),CitizenNameT("Raza",List()))))) =>
         }
         secondGenericArg match {
           case CoordTemplata(
-            Coord(
-              Constraint,Readonly,
-              InterfaceRef2(FullName2(_, List(),CitizenName2("IShip",List()))))) =>
+            CoordT(
+              ConstraintT,ReadonlyT,
+              InterfaceRefT(FullNameT(_, List(),CitizenNameT("IShip",List()))))) =>
         }
         vassert(okConstructor.paramTypes.head.kind == targetSubtype)
         vassert(errConstructor.paramTypes.head == sourceExpr.resultRegister.reference)

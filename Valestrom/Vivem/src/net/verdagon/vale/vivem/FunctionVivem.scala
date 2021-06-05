@@ -50,42 +50,50 @@ object FunctionVivem {
 
   def getExternFunction(programH: ProgramH, ref: PrototypeH): (AdapterForExterns, Vector[ReferenceV]) => ReferenceV = {
     ref.fullName.toFullString() match {
-      case """::F("__addIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.addIntInt
+      case """::F("__addI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.addI32
       case """::F("__addFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.addFloatFloat
       case """::F("__panic")""" => VivemExterns.panic
-      case """::F("__multiplyIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.multiplyIntInt
+      case """::F("__multiplyI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.multiplyI32
       case """::F("__subtractFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.subtractFloatFloat
-      case """::F("__divideIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.divideIntInt
+      case """::F("__divideI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.divideI32
       case """::F("__multiplyFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.multiplyFloatFloat
       case """::F("__divideFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.divideFloatFloat
-      case """::F("__subtractIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.subtractIntInt
-      case """::F("__vaddStr",[],[R(*,>,#,s),R(*,<,#,i),R(*,<,#,i),R(*,>,#,s),R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.addStrStr
+      case """::F("__subtractI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.subtractI32
+      case """::F("__vaddStr",[],[R(*,>,#,s),R(*,<,#,i(32)),R(*,<,#,i(32)),R(*,>,#,s),R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.addStrStr
       case """ioutils::F("__getch")""" => VivemExterns.getch
       case """::F("__eqFloatFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.eqFloatFloat
       case """math::F("sqrt",[],[R(*,<,#,f)])""" => VivemExterns.sqrt
-      case """::F("__lessThanInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.lessThanInt
+      case """::F("__lessThanI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.lessThanI32
       case """::F("__lessThanFloat",[],[R(*,<,#,f),R(*,<,#,f)])""" => VivemExterns.lessThanFloat
-//      case PrototypeH(FullNameH(List(NamePartH("__greaterThanFloat", Some(List()), Some(List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH()))), None))), List(ReferenceH(m.Share,FloatH()), ReferenceH(m.Share,FloatH())), ReferenceH(m.Share,BoolH())) =>
-//        VivemExterns.greaterThanFloat
-//      case PrototypeH(FullNameH(List(NamePartH("__greaterThanInt", Some(List()), Some(List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH()))), None))), List(ReferenceH(m.Share,IntH()), ReferenceH(m.Share,IntH())), ReferenceH(m.Share,BoolH())) =>
-//        VivemExterns.greaterThanInt
-//      case """F("__eqStrStr",[],[R(*,>,#,s),R(*,>,#,s)])""" => VivemExterns.eqStrStr
-      case """::F("__greaterThanOrEqInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.greaterThanOrEqInt
-      case """::F("__eqIntInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.eqIntInt
+      case """::F("__greaterThanOrEqI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.greaterThanOrEqI32
+      case """::F("__eqI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.eqI32
       case """::F("__eqBoolBool",[],[R(*,<,#,b),R(*,<,#,b)])""" => VivemExterns.eqBoolBool
-      case """::F("__vprintStr",[],[R(*,>,#,s),R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.print
+      case """::F("__vprintStr",[],[R(*,>,#,s),R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.print
       case """::F("__not",[],[R(*,<,#,b)])""" => VivemExterns.not
-      case """::F("__castIntStr",[],[R(*,<,#,i)])""" => VivemExterns.castIntStr
-      case """::F("__castIntFloat",[],[R(*,<,#,i)])""" => VivemExterns.castIntFloat
-      case """::F("__castFloatInt",[],[R(*,<,#,f)])""" => VivemExterns.castFloatInt
-      case """::F("__lessThanOrEqInt",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.lessThanOrEqInt
+      case """::F("__castI32Str",[],[R(*,<,#,i(32))])""" => VivemExterns.castI32Str
+      case """::F("__castI32Float",[],[R(*,<,#,i(32))])""" => VivemExterns.castI32Float
+      case """::F("__castFloatI32",[],[R(*,<,#,f)])""" => VivemExterns.castFloatI32
+      case """::F("__lessThanOrEqI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.lessThanOrEqI32
       case """::F("__and",[],[R(*,<,#,b),R(*,<,#,b)])""" => VivemExterns.and
       case """::F("__or",[],[R(*,<,#,b),R(*,<,#,b)])""" => VivemExterns.or
-      case """::F("__mod",[],[R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.mod
+      case """::F("__modI32",[],[R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.modI32
       case """::F("__strLength",[],[R(*,>,#,s)])""" => VivemExterns.strLength
       case """::F("__castFloatStr",[],[R(*,<,#,f)])""" => VivemExterns.castFloatStr
-      case """::F("vstr_eq",[],[R(*,>,#,s),R(*,<,#,i),R(*,<,#,i),R(*,>,#,s),R(*,<,#,i),R(*,<,#,i)])""" => VivemExterns.eqStrStr
-      case """::F("__negateFloat",[],[R(*,<,#,f)])""" => VivemExterns.negateFloat
+      case """::F("vstr_eq",[],[R(*,>,#,s),R(*,<,#,i(32)),R(*,<,#,i(32)),R(*,>,#,s),R(*,<,#,i(32)),R(*,<,#,i(32))])""" => VivemExterns.eqStrStr
+      case """::F("__negateFloat",[],[R(*,<,#,f)])""" => VivemExterns.negateFloat      case """::F("__addI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.addI64
+      case """::F("__multiplyI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.multiplyI64
+      case """::F("__divideI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.divideI64
+      case """::F("__subtractI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.subtractI64
+      case """::F("__lessThanI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.lessThanI64
+      case """::F("__greaterThanOrEqI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.greaterThanOrEqI64
+      case """::F("__eqI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.eqI64
+      case """::F("__castI64Str",[],[R(*,<,#,i(64))])""" => VivemExterns.castI64Str
+      case """::F("__castI64Float",[],[R(*,<,#,i(64))])""" => VivemExterns.castI64Float
+      case """::F("__castFloatI64",[],[R(*,<,#,f)])""" => VivemExterns.castFloatI64
+      case """::F("__lessThanOrEqI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.lessThanOrEqI64
+      case """::F("__modI64",[],[R(*,<,#,i(64)),R(*,<,#,i(64))])""" => VivemExterns.modI64
+
+
       case _ => vimpl(ref.fullName.toFullString())
     }
   }

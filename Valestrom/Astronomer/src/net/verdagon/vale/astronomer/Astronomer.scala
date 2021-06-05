@@ -143,6 +143,7 @@ object Astronomer {
   val primitives =
     Map(
       "int" -> KindTypeSR,
+      "i64" -> KindTypeSR,
       "str" -> KindTypeSR,
       "bool" -> KindTypeSR,
       "float" -> KindTypeSR,

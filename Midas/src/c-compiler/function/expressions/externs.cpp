@@ -16,77 +16,156 @@ Ref buildExternCall(
     LLVMBuilderRef builder,
     Prototype* prototype,
     const std::vector<Ref>& args) {
-  if (prototype->name->name == "__addIntInt") {
+  if (prototype->name->name == "__addI32") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildAdd(builder, leftLE, rightLE,"add");
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, result);
-  } else if (prototype->name->name == "__divideIntInt") {
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__multiplyI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto resultIntLE = LLVMBuildMul(builder, leftLE, rightLE, "mul");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
+  } else if (prototype->name->name == "__subtractI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto resultIntLE = LLVMBuildSub(builder, leftLE, rightLE, "diff");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
+  } else if (prototype->name->name == "__lessThanI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSLT, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__greaterThanI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSGT, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__greaterThanOrEqI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSGE, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__lessThanOrEqI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSLE, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__eqI32") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntEQ, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__modI32") {
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    assert(args.size() == 2);
+    auto result = LLVMBuildSRem( builder, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__divideI32") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else
+  if (prototype->name->name == "__addI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildAdd(builder, leftLE, rightLE,"add");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__multiplyI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto resultIntLE = LLVMBuildMul(builder, leftLE, rightLE, "mul");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
+  } else if (prototype->name->name == "__subtractI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto resultIntLE = LLVMBuildSub(builder, leftLE, rightLE, "diff");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
+  } else if (prototype->name->name == "__lessThanI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSLT, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__greaterThanI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSGT, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__greaterThanOrEqI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSGE, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__lessThanOrEqI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntSLE, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__eqI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildICmp(builder, LLVMIntEQ, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__modI64") {
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    assert(args.size() == 2);
+    auto result = LLVMBuildSRem( builder, leftLE, rightLE, "");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
+  } else if (prototype->name->name == "__divideI64") {
+    assert(args.size() == 2);
+    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
+    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
+    auto result = LLVMBuildSDiv(builder, leftLE, rightLE,"add");
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__divideFloatFloat") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildFDiv(builder, leftLE, rightLE,"divided");
-    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__multiplyFloatFloat") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildFMul(builder, leftLE, rightLE,"multiplied");
-    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__subtractFloatFloat") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildFSub(builder, leftLE, rightLE,"subtracted");
-    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__negateFloat") {
     assert(args.size() == 1);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto result = LLVMBuildFNeg(builder, leftLE, "negated");
-    return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, result);
-//  } else if (prototype->name->name == "__eqStrStr") {
-//    assert(args.size() == 2);
-//
-//    auto leftStrTypeM = call->argTypes[0];
-//    auto leftStrRef =
-//        translateExpression(
-//            globalState, functionState, blockState, builder, call->argExprs[0]);
-//
-//    auto rightStrTypeM = call->argTypes[1];
-//    auto rightStrRef =
-//        translateExpression(
-//            globalState, functionState, blockState, builder, call->argExprs[1]);
-//
-//    std::vector<LLVMValueRef> argsLE = {
-//        globalState->getRegion(refHere)->getStringBytesPtr(functionState, builder, leftStrRef),
-//        globalState->getRegion(refHere)->getStringBytesPtr(functionState, builder, rightStrRef)
-//    };
-//    auto resultInt8LE =
-//        LLVMBuildCall(
-//            builder,
-//            globalState->eqStr,
-//            argsLE.data(),
-//            argsLE.size(),
-//            "eqStrResult");
-//    auto resultBoolLE = LLVMBuildICmp(builder, LLVMIntNE, resultInt8LE, LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 0, false), "");
-//
-//    globalState->getRegion(refHere)->dealias(FL(), functionState, blockState, builder, globalState->metalCache->strRef, leftStrRef);
-//    globalState->getRegion(refHere)->dealias(FL(), functionState, blockState, builder, globalState->metalCache->strRef, rightStrRef);
-//
-//    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, resultBoolLE);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__strLength") {
     assert(args.size() == 1);
     auto resultLenLE = globalState->getRegion(globalState->metalCache->strRef)->getStringLen(functionState, builder, args[0]);
     globalState->getRegion(globalState->metalCache->strRef)
         ->dealias(FL(), functionState, builder, globalState->metalCache->strRef, args[0]);
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultLenLE);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultLenLE);
   } else if (prototype->name->name == "__addFloatFloat") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
@@ -99,88 +178,40 @@ Ref buildExternCall(
     LLVMBuildCall(builder, globalState->externs->exit, &exitCodeLE, 1, "");
     LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
     return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
-  } else if (prototype->name->name == "__multiplyIntInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto resultIntLE = LLVMBuildMul(builder, leftLE, rightLE, "mul");
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultIntLE);
-  } else if (prototype->name->name == "__subtractIntInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto resultIntLE = LLVMBuildSub(builder, leftLE, rightLE, "diff");
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultIntLE);
   } else if (prototype->name->name == "__getch") {
     auto resultIntLE = LLVMBuildCall(builder, globalState->externs->getch, nullptr, 0, "");
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultIntLE);
-  } else if (prototype->name->name == "__lessThanInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto result = LLVMBuildICmp(builder, LLVMIntSLT, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
-  } else if (prototype->name->name == "__greaterThanInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto result = LLVMBuildICmp(builder, LLVMIntSGT, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
-  } else if (prototype->name->name == "__greaterThanOrEqInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto result = LLVMBuildICmp(builder, LLVMIntSGE, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
-  } else if (prototype->name->name == "__lessThanOrEqInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto result = LLVMBuildICmp(builder, LLVMIntSLE, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
-  } else if (prototype->name->name == "__eqIntInt") {
-    assert(args.size() == 2);
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    auto result = LLVMBuildICmp(builder, LLVMIntEQ, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, resultIntLE);
   } else if (prototype->name->name == "__eqFloatFloat") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildFCmp(builder, LLVMRealOEQ, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__eqBoolBool") {
     assert(args.size() == 2);
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     auto result = LLVMBuildICmp(builder, LLVMIntEQ, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__not") {
     assert(args.size() == 1);
     auto result = LLVMBuildNot(
         builder,
         checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]),
         "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__and") {
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     assert(args.size() == 2);
     auto result = LLVMBuildAnd( builder, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else if (prototype->name->name == "__or") {
     auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
     auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
     assert(args.size() == 2);
     auto result = LLVMBuildOr( builder, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, result);
-  } else if (prototype->name->name == "__mod") {
-    auto leftLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[0], args[0]);
-    auto rightLE = checkValidInternalReference(FL(), globalState, functionState, builder, prototype->params[1], args[1]);
-    assert(args.size() == 2);
-    auto result = LLVMBuildSRem( builder, leftLE, rightLE, "");
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, result);
+    return wrap(globalState->getRegion(prototype->returnType), prototype->returnType, result);
   } else {
     auto valeArgRefs = std::vector<Ref>{};
     valeArgRefs.reserve(args.size());

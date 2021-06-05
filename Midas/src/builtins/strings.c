@@ -8,7 +8,7 @@
 #define TRUE 1
 #define FALSE 0
 
-ValeStr* ValeStrNew(ValeInt length) {
+ValeStr* ValeStrNew(int64_t length) {
   ValeStr* result = (ValeStr*)malloc(sizeof(ValeStr) + length + 1);
   result->length = length;
   result->chars[0] = 0;
@@ -145,7 +145,7 @@ ValeStr* __vaddStr(
   return result;
 }
 
-ValeStr* __castIntStr(int n) {
+extern ValeStr* __castI64Str(int64_t n) {
   char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 100, "%d", n);
   ValeStr* result = ValeStrNew(charsWritten);
@@ -154,7 +154,11 @@ ValeStr* __castIntStr(int n) {
   return result;
 }
 
-ValeStr* __castFloatStr(double f) {
+extern ValeStr* __castI32Str(int32_t n) {
+  return __castI64Str((int64_t)n);
+}
+
+extern ValeStr* __castFloatStr(double f) {
   char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 100, "%lf", f);
   ValeStr* result = ValeStrNew(charsWritten);

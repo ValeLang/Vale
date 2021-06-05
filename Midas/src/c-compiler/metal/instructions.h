@@ -23,13 +23,16 @@ public:
 //    virtual Reference* getResultType() const = 0;
 };
 
-class ConstantI64 : public Expression {
+class ConstantInt : public Expression {
 public:
-  int value;
+  int64_t value;
+  int bits;
 
-  ConstantI64(
-      int value_)
-      : value(value_) {}
+  ConstantInt(
+      int64_t value_,
+      int bits_)
+      : value(value_),
+        bits(bits_) {}
 };
 
 class ConstantBool : public Expression {

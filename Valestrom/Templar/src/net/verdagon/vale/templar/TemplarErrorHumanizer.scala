@@ -5,8 +5,8 @@ import net.verdagon.vale.astronomer.{AstronomerErrorHumanizer, CodeVarNameA, Con
 import net.verdagon.vale.scout.RangeS
 import net.verdagon.vale.templar.OverloadTemplar.{IScoutExpectedFunctionFailureReason, InferFailure, Outscored, ScoutExpectedFunctionFailure, SpecificParamDoesntMatch, SpecificParamVirtualityDoesntMatch, WrongNumberOfArguments, WrongNumberOfTemplateArguments}
 import net.verdagon.vale.templar.infer.infer.{IConflictCause, InferSolveFailure}
-import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBanner2, IPotentialBanner}
-import net.verdagon.vale.templar.types.{Bool2, Constraint, Coord, Float2, Int2, Kind, Own, ParamFilter, Readonly, Readwrite, Share, Str2, StructRef2, Weak}
+import net.verdagon.vale.templar.templata.{CoordTemplata, FunctionBannerT, IPotentialBanner}
+import net.verdagon.vale.templar.types.{BoolT, ConstraintT, CoordT, FloatT, IntT, KindT, OwnT, ParamFilter, ReadonlyT, ReadwriteT, ShareT, StrT, StructRefT, WeakT}
 import net.verdagon.vale.{FileCoordinate, FileCoordinateMap, repeatStr, vimpl}
 
 object TemplarErrorHumanizer {
@@ -157,7 +157,7 @@ object TemplarErrorHumanizer {
 
   def humanizeBanner(
     codeMap: FileCoordinateMap[String],
-    banner: FunctionBanner2):
+    banner: FunctionBannerT):
   String = {
     banner.originFunction match {
       case None => "(internal)"
@@ -181,42 +181,42 @@ object TemplarErrorHumanizer {
     }
   }
 
-  private def printableCoordName(coord: Coord): String = {
-    val Coord(ownership, permission, kind) = coord
+  private def printableCoordName(coord: CoordT): String = {
+    val CoordT(ownership, permission, kind) = coord
     (ownership match {
-      case Share => ""
-      case Own => ""
-      case Constraint => "&"
-      case Weak => "&&"
+      case ShareT => ""
+      case OwnT => ""
+      case ConstraintT => "&"
+      case WeakT => "&&"
     }) +
     (permission match {
-      case Readonly => ""
-      case Readwrite => "!"
+      case ReadonlyT => ""
+      case ReadwriteT => "!"
     }) +
     printableKindName(kind)
   }
 
-  private def printableKindName(kind: Kind): String = {
+  private def printableKindName(kind: KindT): String = {
     kind match {
-      case Int2() => "int"
-      case Bool2() => "bool"
-      case Float2() => "float"
-      case Str2() => "str"
-      case StructRef2(f) => printableFullName(f)
+      case IntT(bits) => "i" + bits
+      case BoolT() => "bool"
+      case FloatT() => "float"
+      case StrT() => "str"
+      case StructRefT(f) => printableFullName(f)
     }
   }
-  private def printableFullName(fullName2: FullName2[IName2]): String = {
+  private def printableFullName(fullName2: FullNameT[INameT]): String = {
     fullName2.last match {
-      case CitizenName2(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
+      case CitizenNameT(humanName, templateArgs) => humanName + (if (templateArgs.isEmpty) "" else "<" + templateArgs.map(_.toString.mkString) + ">")
       case x => x.toString
     }
   }
 
   private def printableVarName(
-    name: IVarName2):
+    name: IVarNameT):
   String = {
     name match {
-      case CodeVarName2(n) => n
+      case CodeVarNameT(n) => n
     }
   }
 

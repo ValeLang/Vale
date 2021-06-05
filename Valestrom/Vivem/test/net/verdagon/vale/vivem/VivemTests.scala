@@ -14,12 +14,12 @@ class VivemTests extends FunSuite with Matchers {
             "main",
             0,
             PackageCoordinate.TEST_TLD,
-            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH())),
+            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
         true,
         false,
         false,
         List(UserFunctionH),
-        BlockH(ConstantI64H(7)))
+        BlockH(ConstantIntH(7, 32)))
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
@@ -31,17 +31,17 @@ class VivemTests extends FunSuite with Matchers {
 
   test("Adding") {
     val intRef =
-      VonObject("Ref",None,Vector(VonMember("ownership",VonObject("Share",None,Vector())), VonMember("location",VonObject("Inline",None,Vector())), VonMember("permission",VonObject("Readonly",None,Vector())), VonMember("kind",VonObject("Int",None,Vector()))))
+      VonObject("Ref",None,Vector(VonMember("ownership",VonObject("Share",None,Vector())), VonMember("location",VonObject("Inline",None,Vector())), VonMember("permission",VonObject("Readonly",None,Vector())), VonMember("kind",VonObject("Int",None,Vector(VonMember("bits", VonInt(32)))))))
 
     val addPrototype =
       PrototypeH(
         FullNameH(
-          "__addIntInt",
+          "__addI32",
           0,
           PackageCoordinate.BUILTIN,
-          List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addIntInt")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
-        List(ReferenceH(ShareH,InlineH,ReadonlyH,IntH()), ReferenceH(ShareH,InlineH,ReadonlyH,IntH())),
-        ReferenceH(ShareH,InlineH,ReadonlyH,IntH()))
+          List(VonObject("F",None,Vector(VonMember("humanName",VonStr("__addI32")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector(intRef, intRef))))))),
+        List(ReferenceH(ShareH,InlineH,ReadonlyH,IntH.i32), ReferenceH(ShareH,InlineH,ReadonlyH,IntH.i32)),
+        ReferenceH(ShareH,InlineH,ReadonlyH,IntH.i32))
     val main =
       FunctionH(
         PrototypeH(
@@ -49,7 +49,7 @@ class VivemTests extends FunSuite with Matchers {
             "main",
             0,
             PackageCoordinate.TEST_TLD,
-            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH())),
+            List(VonObject("F",None,Vector(VonMember("humanName",VonStr("main")), VonMember("templateArgs",VonArray(None,Vector())), VonMember("parameters",VonArray(None,Vector())))))),List(),ReferenceH(m.ShareH,InlineH,ReadonlyH,IntH.i32)),
         true,
         false,
         false,
@@ -58,12 +58,12 @@ class VivemTests extends FunSuite with Matchers {
           CallH(
             addPrototype,
             List(
-              ConstantI64H(52),
+              ConstantIntH(52, 32),
               CallH(
                 addPrototype,
                 List(
-                  ConstantI64H(53),
-                  ConstantI64H(54)))))))
+                  ConstantIntH(53, 32),
+                  ConstantIntH(54, 32)))))))
     val addExtern =
       FunctionH(
         addPrototype,
@@ -71,11 +71,11 @@ class VivemTests extends FunSuite with Matchers {
         false,
         true,
         List(),
-        BlockH(ConstantI64H(133337)))
+        BlockH(ConstantIntH(133337, 32)))
     val programH =
       ProgramH(
         PackageCoordinateMap(Map())
-          .add(PackageCoordinate.BUILTIN, PackageH(List(), List(), List(addExtern), List(), List(), Map(), Map(), Map(), Map("__addIntInt" -> addPrototype), Map()))
+          .add(PackageCoordinate.BUILTIN, PackageH(List(), List(), List(addExtern), List(), List(), Map(), Map(), Map(), Map("__addI32" -> addPrototype), Map()))
           .add(PackageCoordinate.TEST_TLD, PackageH(List(), List(), List(main), List(), List(), Map(), Map("main" -> main.prototype), Map(), Map(), Map())))
     val result =
       Vivem.executeWithPrimitiveArgs(programH, Vector(), System.out, Vivem.emptyStdin, Vivem.nullStdout)

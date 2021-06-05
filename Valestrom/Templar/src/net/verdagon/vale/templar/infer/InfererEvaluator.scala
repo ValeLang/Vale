@@ -2,9 +2,9 @@ package net.verdagon.vale.templar.infer
 
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{BorrowP, OwnP, ShareP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, OwnP, ReadonlyP, ReadwriteP, ShareP, WeakP}
 import net.verdagon.vale.scout.{RangeS, Environment => _, FunctionEnvironment => _, IEnvironment => _}
-import net.verdagon.vale.templar.{CompileErrorExceptionT, IName2, IRune2, NameTranslator, RangedInternalErrorT, SolverKindRune2}
+import net.verdagon.vale.templar.{CompileErrorExceptionT, IName2, IRune2, NameTranslator, RangedInternalErrorT, SolverKindRune2, Templar}
 import net.verdagon.vale.templar.infer.infer._
 import net.verdagon.vale.templar.templata.{Conversions, ITemplata, _}
 import net.verdagon.vale.templar.types.{Kind, _}
@@ -189,6 +189,7 @@ class InfererEvaluator[Env, State](
                 List(
                   // This seems weird. We should probably remove this, see GAOFPS
                   TemplexTR(OwnershipTT(paramRange, Conversions.unevaluateOwnership(paramFilterInstance.tyype.ownership))),
+                  TemplexTR(PermissionTT(paramRange, Conversions.unevaluatePermission(paramFilterInstance.tyype.permission))),
                   TemplexTR(RuneTT(paramRange, kindRune, KindTemplataType)))))
           (List(rule), Map[IRune2, ITemplataType](kindRune -> KindTemplataType))
         }
@@ -677,7 +678,7 @@ class InfererEvaluator[Env, State](
           (InferEvaluateSuccess(templata, true))
         }
       }
-      case OwnershippedTT(range, targetOwnership, innerKindRule) => {
+      case InterpretedTT(range, targetOwnership, targetPermission, innerKindRule) => {
         evaluateTemplex(env, state, typeByRune, localRunes, inferences, innerKindRule) match {
           case (iec @ InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "bogglewogget", List(iec)))
           case (InferEvaluateUnknown(innerCoordDeeplySatisfied)) => {
@@ -685,37 +686,50 @@ class InfererEvaluator[Env, State](
             // For example, we can't do a borrow of something that's already a borrow or a weak.
             val _ = innerCoordDeeplySatisfied
             val deeplySatisfied = false
-//            println("OwnershippedAT unsatisfied")
+//            println("InterpretedAT unsatisfied")
 
             (InferEvaluateUnknown(deeplySatisfied))
           }
-          case (InferEvaluateSuccess(CoordTemplata(Coord(innerCoordOwnership, innerCoordKind)), innerCoordDeeplySatisfied)) => {
+          case (InferEvaluateSuccess(CoordTemplata(Coord(innerCoordOwnership, innerCoordPermission, innerCoordKind)), innerCoordDeeplySatisfied)) => {
 
             val resultingOwnership =
               (innerCoordOwnership, targetOwnership) match {
                 case (Own, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was an own!", List()))
                 case (Own, OwnP) => Own // No change, allow it
-                case (Own, BorrowP) => Borrow // Can borrow an own, allow it
+                case (Own, ConstraintP) => Constraint // Can borrow an own, allow it
                 case (Own, WeakP) => Weak // Can weak an own, allow it
-                case (Borrow, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a borrow!", List()))
-                case (Borrow, OwnP) => Own // Can turn a borrow into an own, allow it
-                case (Borrow, BorrowP) => Borrow // No change, allow it
-                case (Borrow, WeakP) => Weak // Can weak a borrow, allow it
+                case (Constraint, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a borrow!", List()))
+                case (Constraint, OwnP) => Own // Can turn a borrow into an own, allow it
+                case (Constraint, ConstraintP) => Constraint // No change, allow it
+                case (Constraint, WeakP) => Weak // Can weak a borrow, allow it
                 case (Weak, ShareP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a share, but was a weak!", List()))
                 case (Weak, OwnP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a own, but was a weak!", List()))
-                case (Weak, BorrowP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a borrow, but was a weak!", List()))
+                case (Weak, ConstraintP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a borrow, but was a weak!", List()))
                 case (Weak, WeakP) => Weak // No change, allow it
                 case (Share, OwnP) => Share // Can own a share, just becomes another share.
-                case (Share, BorrowP) => Share // Can borrow a share, just becomes another share.
+                case (Share, ConstraintP) => Share // Can borrow a share, just becomes another share.
                 case (Share, WeakP) => return (InferEvaluateConflict(inferences.inferences, range, "Expected a weak, but was a share!", List())) // Cant get a weak ref to a share because it doesnt have lock().
                 case (Share, ShareP) => Share // No change, allow it
+              }
+
+            val resultingPermission =
+              if (innerCoordOwnership == Share) {
+                if (targetPermission == ReadwriteP) {
+                  // It would technically be *weird* to make a Readwrite reference to an immutable, but it happens
+                  // accidentally as part of making an owning reference to something, like with ^T. Using ^T in a rule
+                  // but handing in a share is a pretty reasonable thing to happen, so let's let it slide.
+                }
+                Readonly
+              } else {
+                // For mutables, we can turn a &T into a &!T, or vice versa, or anything else.
+                Conversions.evaluatePermission(targetPermission)
               }
 
             // If we got here then the ownership and mutability were compatible.
             val satisfied = true
             val deeplySatisfied = innerCoordDeeplySatisfied && satisfied
 
-            (InferEvaluateSuccess(CoordTemplata(Coord(resultingOwnership, innerCoordKind)), deeplySatisfied))
+            (InferEvaluateSuccess(CoordTemplata(Coord(resultingOwnership, resultingPermission, innerCoordKind)), deeplySatisfied))
           }
         }
       }
@@ -968,7 +982,7 @@ class InfererEvaluator[Env, State](
         maybeInferencesH match {
           case imc @ InferMatchConflict(_, _, _, _) => {
             // None from the match means something conflicted, bail!
-            return (InferEvaluateConflict(inferences.inferences, range, "Failed to match known left against the right side!\nLeft: " + leftTemplata + "\nRight rule: " + rightRule, List(imc)))
+            return (InferEvaluateConflict(inferences.inferences, range, "Failed to match known left against the right side!\nLeft: " + leftTemplata + "\nRight rule: " + rightRule + "\n", List(imc)))
           }
           case InferMatchSuccess(rightMatchDeeplySatisfied) => {
             (InferEvaluateSuccess(leftTemplata, leftDeeplySatisfied && rightMatchDeeplySatisfied))
@@ -1092,7 +1106,7 @@ class InfererEvaluator[Env, State](
     // At the end, if we have values for every component, then we'll
     // assemble a shiny new coord out of them!
     components match {
-      case List(ownershipRule, kindRule) => {
+      case List(ownershipRule, permissionRule, kindRule) => {
         val (maybeOwnership, ownershipDeeplySatisfied) =
           evaluateRule(env, state, typeByRune, localRunes, inferences, ownershipRule) match {
             case (iec@InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "floop", List(iec)))
@@ -1101,6 +1115,17 @@ class InfererEvaluator[Env, State](
               templata match {
                 case OwnershipTemplata(ownership) => (Some(ownership), ds)
                 case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "First component of Coord must be an ownership!"))
+              }
+            }
+          }
+        val (maybePermission, permissionDeeplySatisfied) =
+          evaluateRule(env, state, typeByRune, localRunes, inferences, permissionRule) match {
+            case (iec@InferEvaluateConflict(_, _, _, _)) => return (InferEvaluateConflict(inferences.inferences, range, "floop", List(iec)))
+            case (InferEvaluateUnknown(ds)) => (None, ds)
+            case (InferEvaluateSuccess(templata, ds)) => {
+              templata match {
+                case PermissionTemplata(permission) => (Some(permission), ds)
+                case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "First component of Coord must be a permission!"))
               }
             }
           }
@@ -1115,13 +1140,16 @@ class InfererEvaluator[Env, State](
               }
             }
           }
-        val deeplySatisfied = ownershipDeeplySatisfied && kindDeeplySatisfied
-        (maybeOwnership, maybeKind) match {
-          case (Some(ownership), Some(kind)) => {
+        val deeplySatisfied = ownershipDeeplySatisfied && permissionDeeplySatisfied && kindDeeplySatisfied
+        (maybeOwnership, maybePermission, maybeKind) match {
+          case (Some(ownership), Some(permission), Some(kind)) => {
             val newOwnership =
               if (delegate.getMutability(state, kind) == Immutable) Share
               else ownership
-            (InferEvaluateSuccess(CoordTemplata(Coord(newOwnership, kind)), deeplySatisfied))
+            val newPermission =
+              if (delegate.getMutability(state, kind) == Immutable) Readonly
+              else permission
+            (InferEvaluateSuccess(CoordTemplata(Coord(newOwnership, newPermission, kind)), deeplySatisfied))
           }
           case _ => {
             // deeplySatisfied can still be true even if the result is unknown, see IEUNDS.
@@ -1129,7 +1157,9 @@ class InfererEvaluator[Env, State](
           }
         }
       }
-      case _ => throw CompileErrorExceptionT(RangedInternalErrorT(range, "Coords must have 4 components"))
+      case _ => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "Coords must have 3 components"))
+      }
     }
   }
 

@@ -1,6 +1,0 @@
-
-fn main() int export {
-  x! = 10;
-  { mut x = 42; }();
-  = x;
-}

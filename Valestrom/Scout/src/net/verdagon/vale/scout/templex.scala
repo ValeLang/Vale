@@ -5,25 +5,6 @@ import net.verdagon.vale.{vassert, vcheck, vcurious, vpass, vwat}
 
 import scala.collection.immutable.List
 
-//// An absolute name is one where we know *exactly* where it's defined; if parser and scout
-//// put their brains together they could know exactly where the thing is.
-//case class AbsoluteNameS[+T <: INameS](file: String, initSteps: List[INameS], last: T) {// extends IImpreciseNameS[T] {
-//  def addStep[Y <: INameS](newLast: Y): Y = Y(file, initSteps :+ last, newLast)
-//  def steps: List[INameS] = initSteps :+ last
-//  def init: INameS = INameS(file, initSteps.init, initSteps.last)
-//}
-//// An imprecise name is one where we don't know exactly where the thing is defined.
-//// For example, in
-////   fn main() int export {
-////     doStuff("hello");
-////   }
-//// we don't know exactly where doStuff was defined, that depends on what overload the
-//// typing stage decides.
-//case class ImpreciseNameS[+T <: IImpreciseNameStepS](init: List[IImpreciseNameStepS], last: T) {//extends IImpreciseNameS[T] {
-//  def addStep[Y <: IImpreciseNameStepS](newLast: Y): ImpreciseNameS[Y] = ImpreciseNameS[Y](init :+ last, newLast)
-//  def steps: List[IImpreciseNameStepS] = init :+ last
-//}
-
 // We namespace runes with a full name so we don't have to worry about collisions
 // between, for example, two ImplicitRune(0)s.
 
@@ -47,6 +28,7 @@ case class UnnamedLocalNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class ClosureParamNameS() extends IVarNameS
 case class MagicParamNameS(codeLocation: CodeLocationS) extends IVarNameS
 case class CodeVarNameS(name: String) extends IVarNameS {
+  vcheck(name != "set", "Can't name a variable 'set'")
   vcheck(name != "mut", "Can't name a variable 'mut'")
 }
 case class ConstructingMemberNameS(name: String) extends IVarNameS
@@ -67,6 +49,12 @@ case class ImplicitRuneS(containerName: INameS, name: Int) extends IRuneS {
 case class LetImplicitRuneS(codeLocationS: CodeLocationS, name: Int) extends IRuneS
 case class MagicParamRuneS(codeLocationS: CodeLocationS) extends IRuneS
 case class MemberRuneS(memberIndex: Int) extends IRuneS
+// Used to type the templex handed to the size part of the static sized array expressions
+case class ArraySizeImplicitRuneS() extends IRuneS
+// Used to type the templex handed to the mutability part of the static sized array expressions
+case class ArrayMutabilityImplicitRuneS() extends IRuneS
+// Used to type the templex handed to the variability part of the static sized array expressions
+case class ArrayVariabilityImplicitRuneS() extends IRuneS
 case class ReturnRuneS() extends IRuneS
 // These are only made by the templar
 case class ExplicitTemplateArgRuneS(index: Int) extends IRuneS
@@ -93,7 +81,8 @@ case class BoolST(range: RangeS, value: Boolean) extends ITemplexS
 case class AbsoluteNameST(range: RangeS, name: INameS) extends ITemplexS
 case class NameST(range: RangeS, name: CodeTypeNameS) extends ITemplexS
 case class RuneST(range: RangeS, rune: IRuneS) extends ITemplexS
-case class OwnershippedST(range: RangeS, ownership: OwnershipP, inner: ITemplexS) extends ITemplexS
+case class InterpretedST(range: RangeS, ownership: OwnershipP, permission: PermissionP, inner: ITemplexS) extends ITemplexS
+//case class PermissionedST(range: RangeS, permission: PermissionP, inner: ITemplexS) extends ITemplexS
 case class NullableST(range: RangeS, inner: ITemplexS) extends ITemplexS
 case class CallST(range: RangeS,
     template: ITemplexS,
@@ -143,7 +132,7 @@ object TemplexSUtils {
       case NameST(_, _) => List()
       case AbsoluteNameST(_, _) => List()
       case RuneST(_, rune) => List(rune)
-      case OwnershippedST(_, _, inner) => getDistinctOrderedRunesForTemplex(inner)
+      case InterpretedST(_, _, _, inner) => getDistinctOrderedRunesForTemplex(inner)
       case BorrowST(_, inner) => getDistinctOrderedRunesForTemplex(inner)
       case CallST(_, template, args) => {
         (template :: args).flatMap(getDistinctOrderedRunesForTemplex).distinct
@@ -177,7 +166,7 @@ object TemplexSUtils {
 //      case VariabilityST(variability) => VariabilityST(variability)
 //      case BoolST(value) => BoolST(value)
 //      case RuneST(rune) => RuneST(rune)
-//      case OwnershippedST(ownership, inner) => OwnershippedST(ownership, templexNamesToRunes(envName, runes)(inner))
+//      case InterpretedST(ownership, inner) => InterpretedST(ownership, templexNamesToRunes(envName, runes)(inner))
 //      case CallST(template, args) => {
 //        CallST(
 //          templexNamesToRunes(envName, runes)(template),

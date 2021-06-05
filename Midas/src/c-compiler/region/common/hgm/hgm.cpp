@@ -74,7 +74,7 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
         buildFlare(FL(), globalState, functionState, builder);
 
         auto protectedTwinPagePtrLE =
-            LLVMBuildCall(builder, globalState->initTwinPages, nullptr, 0, "protectedTwinPagePtr");
+            LLVMBuildCall(builder, globalState->externs->initTwinPages, nullptr, 0, "protectedTwinPagePtr");
         size_t numProtectedBytes = LLVMABISizeOfType(globalState->dataLayout, anyInlRefLT);
         LLVMValueRef negativeNumProtectedBytesLE = constI64LE(globalState, -numProtectedBytes);
 
@@ -88,7 +88,7 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
 
         if (globalState->opt->census) {
           std::cerr << "HGM half-protected block has no census fields!" << std::endl;
-          LLVMBuildCall(builder, globalState->censusAdd, &halfProtectedI8PtrLE, 1, "");
+          LLVMBuildCall(builder, globalState->externs->censusAdd, &halfProtectedI8PtrLE, 1, "");
         }
 
         buildFlare(FL(), globalState, functionState, builder);
@@ -522,10 +522,27 @@ WeakFatPtrLE HybridGenerationalMemory::assembleKnownSizeArrayWeakRef(
     Reference* sourceKSAMT,
     KnownSizeArrayT* knownSizeArrayMT,
     Reference* targetKSAWeakRefMT,
-    WrapperPtrLE objPtrLE) {
-  // impl
-  assert(false);
-  exit(1);
+    WrapperPtrLE sourceRefLE) {
+  LLVMValueRef genLE = nullptr;
+  if (sourceKSAMT->ownership == Ownership::OWN) {
+    auto controlBlockPtrLE = referendStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceKSAMT, sourceRefLE);
+    if (limitMode) {
+      genLE = constI64LE(globalState, 0);
+    } else {
+      genLE = getGenerationFromControlBlockPtr(globalState, builder, referendStructsSource, sourceKSAMT->referend,
+          controlBlockPtrLE);
+    }
+  } else if (sourceKSAMT->ownership == Ownership::BORROW) {
+    assert(false); // impl
+  } else {
+    assert(false);
+  }
+  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, knownSizeArrayMT, genLE);
+
+  auto weakRefStructLT =
+      weakRefStructsSource->getKnownSizeArrayWeakRefStruct(knownSizeArrayMT);
+  return fatWeaks.assembleWeakFatPtr(
+      functionState, builder, targetKSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
 }
 
 WeakFatPtrLE HybridGenerationalMemory::assembleUnknownSizeArrayWeakRef(
@@ -588,7 +605,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
             buildPrint(globalState, thenBuilder, "Exiting!\n");
             // See MPESC for status codes
             auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 14, false);
-            LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+            LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
           }
         });
   }

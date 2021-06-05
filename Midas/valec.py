@@ -5,11 +5,12 @@ import os
 import sys
 import shutil
 import glob
+from os.path import abspath
 import argparse
 import platform
 import os.path
 
-from pathlib import PurePath
+from pathlib import *
 from os import path
 from subprocess import PIPE
 from typing import Dict, Any, List, Callable, Optional
@@ -23,19 +24,19 @@ def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
 class ValeCompiler:
     def valestrom(self,
                   command: str,
-                  user_valestrom_files: List[PurePath],
+                  user_modules: List[str],
+                  user_valestrom_inputs: List[Path],
                   valestrom_options: List[str]) -> subprocess.CompletedProcess:
 
-        # Add in the default vale files
-        valestrom_files = user_valestrom_files
+        valestrom_inputs = user_valestrom_inputs
 
-        if self.build_dir != PurePath("."):
+        if self.build_dir != Path("."):
             if os.path.exists(self.build_dir):
                 shutil.rmtree(self.build_dir)
             os.makedirs(self.build_dir)
 
-        valestrom_options.append("-o")
-        valestrom_options.append(str(self.output_vast_file))
+        valestrom_options.append("--output-dir")
+        valestrom_options.append(str(self.build_dir))
 
         if self.parseds_output_dir != None:
             valestrom_options.append("-op")
@@ -48,23 +49,26 @@ class ValeCompiler:
                 str(self.valestrom_path / "Valestrom.jar"),
                 "net.verdagon.vale.driver.Driver",
                 command
-            ] + valestrom_options + list(str(x) for x in valestrom_files)
+            ] + user_modules + valestrom_options + list((x[0] + ":" + str(x[1])) for x in valestrom_inputs)
         )
 
     def valec(self,
-              vast_file: PurePath,
+              vast_file: Path,
               o_files_dir: str,
               midas_options: List[str]) -> subprocess.CompletedProcess:
         return procrun(
             [str(self.valec_path), "--verify", "--output-dir", o_files_dir, str(vast_file)] + midas_options)
 
     def clang(self,
-              o_files: List[PurePath],
-              o_files_dir: PurePath,
-              exe_file: PurePath,
-              include_path: Optional[PurePath]) -> subprocess.CompletedProcess:
+              o_files: List[Path],
+              o_files_dir: Path,
+              exe_file: Path,
+              include_path: Optional[Path]) -> subprocess.CompletedProcess:
         if self.windows:
-            args = ["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file)] + list(str(x) for x in o_files)
+            args = [
+                "cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file),
+                "/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
+            ] + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)
@@ -80,10 +84,10 @@ class ValeCompiler:
         self, args: str) -> subprocess.CompletedProcess:
 
 
-        cwd = PurePath(os.path.dirname(os.path.realpath(__file__)))
+        cwd = Path(os.path.dirname(os.path.realpath(__file__)))
 
         if len(os.environ.get('VALESTROM_PATH', '')) > 0:
-            self.valestrom_path = PurePath(os.environ.get('VALESTROM_PATH', ''))
+            self.valestrom_path = Path(os.environ.get('VALESTROM_PATH', ''))
         elif path.exists(cwd / "Valestrom.jar"):
             self.valestrom_path = cwd
         elif path.exists(cwd / "test/Valestrom.jar"):
@@ -96,7 +100,7 @@ class ValeCompiler:
             self.valestrom_path = cwd
 
         if len(os.environ.get('VALESTD_PATH', '')) > 0:
-            self.builtins_path = PurePath(os.environ.get('VALESTD_PATH', ''))
+            self.builtins_path = Path(os.environ.get('VALESTD_PATH', ''))
         elif path.exists(cwd / "src/builtins"):
             self.builtins_path = cwd / "src/builtins"
         elif path.exists(cwd / "builtins"):
@@ -105,12 +109,12 @@ class ValeCompiler:
             self.builtins_path = cwd
 
         # Maybe we can add a command line param here too, relying on environments is always irksome.
-        self.valec_path: PurePath = cwd
+        self.valec_path: Path = cwd
         if len(os.environ.get('VALEC_PATH', '')) > 0:
             print(f"Using valec at {self.valec_path}. ", file=sys.stderr)
-            self.valec_path = PurePath(os.environ.get('VALEC_PATH', ''))
+            self.valec_path = Path(os.environ.get('VALEC_PATH', ''))
         elif shutil.which("valec") != None:
-            self.valec_path = PurePath(shutil.which("valec"))
+            self.valec_path = Path(shutil.which("valec"))
         elif path.exists(cwd / "valec"):
             self.valec_path = cwd / "valec"
         elif path.exists(cwd / "valec.exe"):
@@ -161,19 +165,23 @@ class ValeCompiler:
         #                     help='sum the integers (default: find the max)')
         # args = parser.parse_args()
 
-        self.build_dir = PurePath(f".")
-        exports_dir = PurePath(f".")
+        self.build_dir = Path(f".")
+        exports_dir = Path(f".")
         exe_file = ("main.exe" if self.windows else "a.out")
         self.parseds_output_dir = None
         add_exports_include_path = False
 
 
-
+        print_help = False
+        print_version = False
         valestrom_options = []
         midas_options = []
         if "--flares" in args:
             args.remove("--flares")
             midas_options.append("--flares")
+        if "--benchmark" in args:
+            args.remove("--benchmark")
+            valestrom_options.append("--benchmark")
         if "--gen-heap" in args:
             args.remove("--gen-heap")
             midas_options.append("--gen-heap")
@@ -189,6 +197,16 @@ class ValeCompiler:
         if "--verbose" in args:
             args.remove("--verbose")
             valestrom_options.append("--verbose")
+        if "--include-builtins" in args:
+            ind = args.index("--include-builtins")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            valestrom_options.append("--include-builtins")
+            valestrom_options.append(val)
+        # if "--output-vpst" in args:
+        #     args.remove("--output-vpst")
+        #     valestrom_options.append("--output-vpst")
         if "--llvmir" in args:
             args.remove("--llvmir")
             midas_options.append("--llvmir")
@@ -217,7 +235,7 @@ class ValeCompiler:
             del args[ind]
             val = args[ind]
             del args[ind]
-            self.build_dir = PurePath(val)
+            self.build_dir = Path(val)
             midas_options.append("--output-dir")
             midas_options.append(val)
         if "--exports-dir" in args:
@@ -225,9 +243,23 @@ class ValeCompiler:
             del args[ind]
             val = args[ind]
             del args[ind]
-            exports_dir = PurePath(val)
+            exports_dir = Path(val)
             midas_options.append("--exports-dir")
             midas_options.append(val)
+        if "--output-vast" in args:
+            ind = args.index("--output-vast")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            valestrom_options.append("--output-vast")
+            valestrom_options.append(val)
+        if "--output-vpst" in args:
+            ind = args.index("--output-vpst")
+            del args[ind]
+            val = args[ind]
+            del args[ind]
+            valestrom_options.append("--output-vpst")
+            valestrom_options.append(val)
         if "--add-exports-include-path" in args:
             ind = args.index("--add-exports-include-path")
             del args[ind]
@@ -244,15 +276,30 @@ class ValeCompiler:
             val = args[ind]
             del args[ind]
             parseds_output_dir = val
-
-        self.output_vast_file = self.build_dir / "build.vast"
+        if "--help" in args:
+            ind = args.index("--help")
+            del args[ind]
+            print_help = True
+        if "-v" in args:
+            ind = args.index("-v")
+            del args[ind]
+            print_version = True
+        if "--version" in args:
+            ind = args.index("--version")
+            del args[ind]
+            print_version = True
 
         if len(args) == 0:
-            print("Must supply a command, such as 'help', 'build`, 'run'.")
+            print("Must supply a command, such as 'help', 'build`, 'run', 'version'.")
             sys.exit(22)
 
-        if args[0] == "help" or args[0] == "--help":
+        if print_version or args[0] == "version":
+            with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+                print(f.read())
+        elif print_help or args[0] == "help":
             if len(args) < 2:
+                with open(str(self.valestrom_path / "valec-version.txt"), 'r') as f:
+                    print(f.read())
                 with open(str(self.valestrom_path / "valec-help.txt"), 'r') as f:
                     print(f.read())
             elif args[1] == "build":
@@ -268,60 +315,54 @@ class ValeCompiler:
             else:
                 print("Unknown subcommand: " + args[1])
             sys.exit(0)
-        elif args[0] == "run":
-            args.pop(0)
-
-            user_valestrom_files = []
-
-            for arg in args:
-                if arg.endswith(".vale"):
-                    user_valestrom_files.append(PurePath(arg))
-
-            proc = self.valestrom("run", user_valestrom_files, valestrom_options)
-
-            if proc.returncode == 0:
-                sys.exit(1)
-            elif proc.returncode == 22:
-                print(proc.stdout + "\n" + proc.stderr)
-                sys.exit(22)
-            else:
-                print(f"Internal error while running {user_valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
-                sys.exit(proc.returncode)
-
         elif args[0] == "build":
             args.pop(0)
 
-            user_valestrom_files = []
+            user_modules = []
+            user_valestrom_inputs = []
             user_vast_files = []
             user_c_files = []
 
             for arg in args:
-                if arg.endswith(".vale"):
-                    user_valestrom_files.append(PurePath(arg))
-                elif arg.endswith(".vpr"):
-                    user_valestrom_files.append(PurePath(arg))
-                elif arg.endswith(".vast"):
-                    user_vast_files.append(PurePath(arg))
-                elif arg.endswith(".c"):
-                    user_c_files.append(PurePath(arg))
+                if ":" in arg:
+                    parts = arg.split(":")
+                    if len(parts) != 2:
+                        print("Unrecognized input: " + arg)
+                        sys.exit(22)
+                    module_name = parts[0]
+                    contents_path = Path(parts[1]).expanduser()
+                    if str(contents_path).endswith(".vale"):
+                        user_valestrom_inputs.append([module_name, contents_path])
+                    elif str(contents_path).endswith(".vpst"):
+                        user_valestrom_inputs.append([module_name, contents_path])
+                    elif str(contents_path).endswith(".vast"):
+                        user_vast_files.append(contents_path)
+                    elif str(contents_path).endswith(".c"):
+                        user_c_files.append(contents_path)
+                    elif contents_path.is_dir():
+                        for c_file in contents_path.rglob('*.c'):
+                            user_c_files.append(Path(c_file))
+                        user_valestrom_inputs.append([module_name, contents_path])
+                    else:
+                        print("Unrecognized input: " + arg + " (should be module name, then a colon, then a directory or file ending in .vale, .vpst, .vast, .c)")
+                        sys.exit(22)
                 else:
-                    print("Unrecognized input: " + arg)
-                    sys.exit(22)
+                    user_modules.append(arg)
 
             vast_file = None
-            if len(user_valestrom_files) > 0 and len(user_vast_files) == 0:
-                proc = self.valestrom("build", user_valestrom_files, valestrom_options)
+            if len(user_valestrom_inputs) > 0 and len(user_vast_files) == 0:
+                proc = self.valestrom("build", user_modules, user_valestrom_inputs, valestrom_options)
 
                 if proc.returncode == 0:
-                    vast_file = self.output_vast_file
+                    vast_file = self.build_dir / "build.vast"
                     pass
                 elif proc.returncode == 22:
                     print(proc.stdout + "\n" + proc.stderr)
                     sys.exit(22)
                 else:
-                    print(f"Internal error while compiling {user_valestrom_files}:\n" + proc.stdout + "\n" + proc.stderr)
+                    print(f"Internal error while compiling {user_valestrom_inputs}:\n" + proc.stdout + "\n" + proc.stderr)
                     sys.exit(proc.returncode)
-            elif len(user_vast_files) > 0 and len(user_valestrom_files) == 0:
+            elif len(user_vast_files) > 0 and len(user_valestrom_inputs) == 0:
                 if len(user_vast_files) > 1:
                     print("Can't have more than one VAST file!")
                     sys.exit(1)

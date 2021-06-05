@@ -41,11 +41,11 @@ object FunctionScout {
 //  // Name of anonymous substructs. They're more identified by their CodeLocation though.
 //  val ANONYMOUS_SUBSTRUCT_NAME = "__AnonymousSubstruct"
 
-  def scoutTopLevelFunction(file: Int, functionP: FunctionP): FunctionS = {
+  def scoutTopLevelFunction(file: FileCoordinate, functionP: FunctionP): FunctionS = {
     val FunctionP(
       range,
       FunctionHeaderP(_,
-        Some(StringP(_, codeName)),
+        Some(NameP(_, codeName)),
         attributes,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
@@ -60,7 +60,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
-        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
     val userRunesFromRules =
       templateRulesP
         .toList
@@ -209,6 +209,7 @@ object FunctionScout {
       case AbstractAttributeP(_) => vwat() // Should have been filtered out, templar cares about abstract directly
       case ExportAttributeP(_) => ExportS
       case ExternAttributeP(_) => ExternS
+      case PureAttributeP(_) => PureS
       case BuiltinAttributeP(_, generatorName) => BuiltinS(generatorName.str)
       case x => vimpl(x.toString)
     })
@@ -227,7 +228,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
         .toList
         .flatMap(_.runes)
-        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val lambdaName = LambdaNameS(/*parentStackFrame.name,*/ codeLocation)
     // Every lambda has a closure as its first arg, even if its empty
@@ -284,7 +285,7 @@ object FunctionScout {
         EqualsSR(
           closureParamRange,
           TypedSR(closureParamRange, closureParamTypeRune,CoordTypeSR),
-          TemplexSR(OwnershippedST(closureParamRange,BorrowP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
+          TemplexSR(InterpretedST(closureParamRange,ConstraintP,ReadwriteP,AbsoluteNameST(Scout.evalRange(functionEnv.file, range), closureStructName)))))
     val closureParamS =
       ParameterS(
         AtomSP(
@@ -503,7 +504,7 @@ object FunctionScout {
     val FunctionP(
       range,
       FunctionHeaderP(_,
-        Some(StringP(_, codeName)),
+        Some(NameP(_, codeName)),
         attrsP,
         userSpecifiedIdentifyingRuneNames,
         templateRulesP,
@@ -526,7 +527,7 @@ object FunctionScout {
       userSpecifiedIdentifyingRuneNames
           .toList
         .flatMap(_.runes)
-        .map({ case IdentifyingRuneP(_, StringP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
+        .map({ case IdentifyingRuneP(_, NameP(_, identifyingRuneName), _) => CodeRuneS(identifyingRuneName) })
 
     val rate = RuleStateBox(RuleState(funcName, 0))
 
@@ -617,60 +618,4 @@ object FunctionScout {
       rulesS,
       AbstractBody1);
   }
-
-//
-//  // returns seq num, new parameter, exported template names from typeless params, and capture names
-//  private def scoutParameter(
-//      fate: ScoutFate,
-//      rulesS0: TemplateRulesS,
-//      param0: ParameterPP):
-//  (ScoutFate, TemplateRulesS, ParameterS) = {
-//    val ParameterPP(maybeName, maybeVirtualityP, maybeCoordPP) = param0;
-//
-//
-//
-//    patternP match {
-//      // Has name and type
-//      case ParameterPP(Some(CaptureP(name, _)), _, Some(CoordPP(_, maybeOwnershipP, ReferendSP(None, None)))) => {
-//        val patternId = fate.nextPatternNumber()
-//
-//        val param = ParameterS(patternId, name, pattern1)
-//        (rulesS0, param)
-//      }
-//      // Has name, has no type
-//      case ParameterSP(_, CoordSP(None, OwnershipSP(None, None), ReferendSP(None, None)), ValueSP(Some(CaptureS(name, _)), _)) => {
-//        val templateParamTypeNumber = fate.nextTypeNumber()
-//        val newTemplateParamName = "__T" + templateParamTypeNumber;
-//        val patternId = fate.nextPatternNumber()
-//        val param = ParameterS(patternId, name, pattern1)
-//        (param, List(newTemplateParamName))
-//      }
-//      // Has no name, has type
-//      case ParameterSP(_, CoordSP(Some(_), OwnershipSP(None, None), ReferendSP(None, None)), ValueSP(None, _)) => {
-//        val num = fate.nextPatternNumber()
-//        val name = "__arg_" + num
-//        val patternId = fate.nextPatternNumber()
-//        val param = ParameterS(patternId, name, pattern1)
-//        (param, List())
-//      }
-//      // Has no name nor type
-//      case ParameterSP(_, CoordSP(None, OwnershipSP(None, None), ReferendSP(None, None)), ValueSP(None, _)) => {
-//        val num = fate.nextPatternNumber()
-//        val name = "__arg_" + num
-//        val templateParamTypeNumber = fate.nextTypeNumber()
-//        val newTemplateParamName = "__T" + templateParamTypeNumber;
-//        val patternId = fate.nextPatternNumber()
-//        val param = ParameterS(patternId, name, pattern1)
-//        (param, List(newTemplateParamName))
-//      }
-//      case _ => {
-//        vfail("curiosity") // when does this happen
-//        val num = fate.nextPatternNumber()
-//        val name = "__arg_" + num
-//        val patternId = fate.nextPatternNumber()
-//        val param = ParameterS(patternId, name, pattern1)
-//        (param, List())
-//      }
-//    }
-//  }
 }

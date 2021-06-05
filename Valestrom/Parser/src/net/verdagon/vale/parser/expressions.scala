@@ -8,10 +8,13 @@ trait IExpressionPE {
 
 case class VoidPE(range: Range) extends IExpressionPE {}
 
-case class LendPE(range: Range, expr: IExpressionPE, targetOwnership: LoadAsP) extends IExpressionPE {
+case class LendPE(
+    range: Range,
+    expr: IExpressionPE,
+    targetOwnership: LoadAsP) extends IExpressionPE {
   targetOwnership match {
-    case LendWeakP =>
-    case LendBorrowP =>
+    case LendWeakP(_) =>
+    case LendConstraintP(_) =>
   }
 }
 
@@ -34,15 +37,34 @@ case class LetPE(
   range: Range,
   templateRules: Option[TemplateRulesP],
   pattern: PatternPP,
-  expr: IExpressionPE
+  source: IExpressionPE
 ) extends IExpressionPE
 
-case class SequencePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
+case class BadLetPE(
+  range: Range
+) extends IExpressionPE
+
+case class TuplePE(range: Range, elements: List[IExpressionPE]) extends IExpressionPE
+
+sealed trait IArraySizeP
+case object RuntimeSizedP extends IArraySizeP
+case class StaticSizedP(sizePT: Option[ITemplexPT]) extends IArraySizeP
+
+case class ConstructArrayPE(
+  range: Range,
+  mutabilityPT: Option[ITemplexPT],
+  variabilityPT: Option[ITemplexPT],
+  size: IArraySizeP,
+  // True if theyre making it like [3][10, 20, 30]
+  // False if theyre making it like [3]({ _ * 10 })
+  initializingIndividualElements: Boolean,
+  args: List[IExpressionPE]
+) extends IExpressionPE
 
 case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
 case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE
 case class StrLiteralPE(range: Range, value: String) extends IExpressionPE
-case class FloatLiteralPE(range: Range, value: Float) extends IExpressionPE
+case class FloatLiteralPE(range: Range, value: Double) extends IExpressionPE
 
 case class StrInterpolatePE(range: Range, parts: List[IExpressionPE]) extends IExpressionPE
 
@@ -51,7 +73,7 @@ case class DotPE(
   left: IExpressionPE,
   operatorRange: Range,
   isMapAccess: Boolean,
-  member: StringP) extends IExpressionPE
+  member: NameP) extends IExpressionPE
 
 case class IndexPE(range: Range, left: IExpressionPE, args: List[IExpressionPE]) extends IExpressionPE
 
@@ -70,6 +92,7 @@ case class FunctionCallPE(
 
 case class MethodCallPE(
   range: Range,
+  inline: Option[UnitP],
   subjectExpr: IExpressionPE,
   operatorRange: Range,
   subjectTargetOwnership: LoadAsP,
@@ -80,8 +103,8 @@ case class MethodCallPE(
 
 case class TemplateArgsP(range: Range, args: List[ITemplexPT])
 case class LookupPE(
-  name: StringP,
-  templateArgs: Option[TemplateArgsP]
+                     name: NameP,
+                     templateArgs: Option[TemplateArgsP]
 ) extends IExpressionPE {
   override def range: Range = name.range
 }

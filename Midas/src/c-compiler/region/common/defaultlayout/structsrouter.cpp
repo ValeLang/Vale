@@ -225,6 +225,16 @@ WeakFatPtrLE WeakRefStructsRouter::makeWeakFatPtr(Reference* referenceM_, LLVMVa
   return getWeakRefStructsSource(referenceM_->referend)->makeWeakFatPtr(referenceM_, ptrLE);
 }
 
+
+WeakFatPtrLE WeakRefStructsRouter::downcastWeakFatPtr(
+    LLVMBuilderRef builder,
+    StructReferend* targetStructReferend,
+    Reference* targetRefMT,
+    LLVMValueRef sourceWeakFatPtrLE) {
+  return getWeakRefStructsSource(targetStructReferend)->downcastWeakFatPtr(
+      builder, targetStructReferend, targetRefMT, sourceWeakFatPtrLE);
+}
+
 LLVMTypeRef WeakRefStructsRouter::getWeakRefHeaderStruct(Referend* referend) {
   return getWeakRefStructsSource(referend)->getWeakRefHeaderStruct(referend);
 }

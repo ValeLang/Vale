@@ -1,8 +1,9 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.parser.CombinatorParsers.repeatStr
-import net.verdagon.vale.{Err, Ok, Result, vassert, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NullProfiler, Ok, Result, repeatStr, vassert, vassertSome, vfail, vimpl, vwat}
+import net.verdagon.von.{JsonSyntax, VonPrinter}
 
+import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.util.parsing.input.{CharSequenceReader, Position}
@@ -133,6 +134,11 @@ object Parser {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(result) => topLevelThings += TopLevelExportAsP(result)
         }
+      } else if (iter.peek("^import\\b".r)) {
+        parseImport(iter) match {
+          case ParseFailure(err) => return ParseFailure(err)
+          case ParseSuccess(result) => topLevelThings += TopLevelImportP(result)
+        }
       } else if (iter.peek("^fn\\b".r)) {
         parseFunction(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
@@ -172,6 +178,13 @@ object Parser {
   private def parseExportAs(iter: ParsingIterator): IParseResult[ExportAsP] = {
     iter.consumeWithCombinator(CombinatorParsers.`export`) match {
       case Err(e) => ParseFailure(BadExport(iter.getPos(), e))
+      case Ok(s) => ParseSuccess(s)
+    }
+  }
+
+  private def parseImport(iter: ParsingIterator): IParseResult[ImportP] = {
+    iter.consumeWithCombinator(CombinatorParsers.`import`) match {
+      case Err(e) => ParseFailure(BadImport(iter.getPos(), e))
       case Ok(s) => ParseSuccess(s)
     }
   }
@@ -291,7 +304,7 @@ object Parser {
 
   private def parseMut(iter: ParsingIterator): IParseResult[MutatePE] = {
     val mutateBegin = iter.getPos()
-    if (!iter.tryConsume("^mut".r)) {
+    if (!iter.tryConsume("^(set|mut)".r)) {
       vwat()
     }
     iter.consumeWhitespace()
@@ -339,7 +352,7 @@ object Parser {
     val letEnd = iter.getPos()
 
     pattern.capture match {
-      case Some(CaptureP(_, LocalNameP(name), _)) => vassert(name.str != "mut")
+      case Some(CaptureP(_, LocalNameP(name), _)) => vassert(name.str != "set" && name.str != "mut")
       case _ =>
     }
 
@@ -347,6 +360,35 @@ object Parser {
     if (!iter.tryConsume("^;".r)) { return ParseFailure(BadLetEndError(iter.getPos())) }
 
     ParseSuccess(LetPE(Range(letBegin, letEnd), None, pattern, source))
+  }
+
+  private def parseBadLet(iter: ParsingIterator): IParseResult[BadLetPE] = {
+    if (!iter.peek(CombinatorParsers.badLetBegin)) {
+      vwat()
+    }
+    iter.consumeWhitespace()
+    val badLetBegin = iter.getPos()
+    val pattern =
+      iter.consumeWithCombinator(CombinatorParsers.expressionLevel5) match {
+        case Ok(result) => result
+        case Err(cpe) => return ParseFailure(BadLetDestinationError(iter.getPos(), cpe))
+      }
+    iter.consumeWhitespace()
+    if (!iter.tryConsume("^=".r)) {
+      return ParseFailure(BadLetEqualsError(iter.position))
+    }
+    iter.consumeWhitespace()
+    val source =
+      iter.consumeWithCombinator(CombinatorParsers.expression) match {
+        case Ok(result) => result
+        case Err(cpe) => return ParseFailure(BadLetSourceError(iter.getPos(), cpe))
+      }
+    val badLetEnd = iter.getPos()
+
+    iter.consumeWhitespace()
+    if (!iter.tryConsume("^;".r)) { return ParseFailure(BadLetEndError(iter.getPos())) }
+
+    ParseSuccess(BadLetPE(Range(badLetBegin, badLetEnd)))
   }
 
   private def parseIfPart(iter: ParsingIterator): IParseResult[(BlockPE, BlockPE)] = {
@@ -362,9 +404,14 @@ object Parser {
       iter.consumeWithCombinator(CombinatorParsers.let) match {
         case Ok(result) => result
         case Err(cpe) => {
-          iter.consumeWithCombinator(CombinatorParsers.expression) match {
+          iter.consumeWithCombinator(CombinatorParsers.badLet) match {
             case Ok(result) => result
-            case Err(cpe) => return ParseFailure(BadIfCondition(iter.getPos(), cpe))
+            case Err(cpe) => {
+              iter.consumeWithCombinator(CombinatorParsers.expression) match {
+                case Ok(result) => result
+                case Err(cpe) => return ParseFailure(BadIfCondition(iter.getPos(), cpe))
+              }
+            }
           }
         }
       }
@@ -476,8 +523,8 @@ object Parser {
           case Err(err) => return ParseFailure(BadDestructError(iter.getPos(), err))
           case Ok(result) => statements += result
         }
-        // mut must come before let, or else mut a = 3; is interpreted as a var named `mut` of type `a`.
-      } else if (iter.peek("^mut\\s".r)) {
+        // mut must come before let, or else set a = 3; is interpreted as a var named `mut` of type `a`.
+      } else if (iter.peek("^(set|mut)\\s".r)) {
         parseMut(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(expression) => {
@@ -498,6 +545,15 @@ object Parser {
         // let is special in that it _must_ have a semicolon after it,
         // it can't be used as a block result.
         parseLet(iter) match {
+          case ParseFailure(err) => return ParseFailure(err)
+          case ParseSuccess(result) => {
+            statements += result
+          }
+        }
+      } else if (iter.peek(CombinatorParsers.badLetBegin)) {
+        // let is special in that it _must_ have a semicolon after it,
+        // it can't be used as a block result.
+        parseBadLet(iter) match {
           case ParseFailure(err) => return ParseFailure(err)
           case ParseSuccess(result) => {
             statements += result
@@ -606,3 +662,119 @@ object Parser {
     ParseSuccess(FunctionP(Range(funcBegin, bodyEnd), header, Some(body)))
   }
 }
+
+object ParserCompilation {
+
+  def loadAndParse(
+    neededModules: List[String],
+    resolver: INamespaceResolver[Map[String, String]]):
+  (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
+    vassert(neededModules.size == neededModules.distinct.size, "Duplicate modules in: " + neededModules.mkString(", "))
+
+    loadAndParseIteration(neededModules, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
+  }
+
+  def loadAndParseIteration(
+    neededModules: List[String],
+    alreadyFoundCodeMap: FileCoordinateMap[String],
+    alreadyParsedProgramPMap: FileCoordinateMap[(FileP, List[(Int, Int)])],
+    resolver: INamespaceResolver[Map[String, String]]):
+  (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
+    val neededNamespaceCoords =
+      neededModules.map(module => NamespaceCoordinate(module, List())) ++
+        alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
+          file._1.topLevelThings.collect({
+            case TopLevelImportP(ImportP(_, moduleName, namespaceSteps, importeeName)) => {
+              NamespaceCoordinate(moduleName.str, namespaceSteps.map(_.str))
+            }
+          })
+        }).toList.flatten.filter(namespaceCoord => {
+          !alreadyParsedProgramPMap.moduleToNamespacesToFilenameToContents
+            .getOrElse(namespaceCoord.module, Map())
+            .contains(namespaceCoord.namespaces)
+        })
+
+    if (neededNamespaceCoords.isEmpty) {
+      return (alreadyFoundCodeMap, alreadyParsedProgramPMap)
+    }
+
+    val neededCodeMapFlat =
+      neededNamespaceCoords.flatMap(neededNamespaceCoord => {
+        val filepathsAndContents =
+          resolver.resolve(neededNamespaceCoord) match {
+            case None => throw InputException("Couldn't find: " + neededNamespaceCoord)
+            case Some(fac) => fac
+          }
+        // Note that filepathsAndContents *can* be empty, see ImportTests.
+        List((neededNamespaceCoord.module, neededNamespaceCoord.namespaces, filepathsAndContents))
+      })
+    val grouped =
+      neededCodeMapFlat.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3).head))
+    val neededCodeMap = FileCoordinateMap(grouped)
+
+    val newProgramPMap =
+      neededCodeMap.map({ case (fileCoord, code) =>
+        Parser.runParserForProgramAndCommentRanges(code) match {
+          case ParseFailure(err) => {
+            println(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, err))
+            System.exit(1)
+            vfail()
+          }
+          case ParseSuccess((program0, commentsRanges)) => {
+            val von = ParserVonifier.vonifyFile(program0)
+            val vpstJson = new VonPrinter(JsonSyntax, 120).print(von)
+            ParsedLoader.load(vpstJson) match {
+              case ParseFailure(error) => vwat(ParseErrorHumanizer.humanize(neededCodeMap, fileCoord, error))
+              case ParseSuccess(program0) => (program0, commentsRanges)
+            }
+          }
+        }
+      })
+
+    val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
+    val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
+
+    loadAndParseIteration(List(), combinedCodeMap, combinedProgramPMap, resolver)
+  }
+}
+
+class ParserCompilation(
+  modulesToBuild: List[String],
+  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
+  var codeMapCache: Option[FileCoordinateMap[String]] = None
+  var vpstMapCache: Option[FileCoordinateMap[String]] = None
+  var parsedsCache: Option[FileCoordinateMap[(FileP, List[(Int, Int)])]] = None
+
+  def getCodeMap(): FileCoordinateMap[String] = {
+    getParseds()
+    codeMapCache.get
+  }
+  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = {
+    parsedsCache match {
+      case Some(parseds) => parseds
+      case None => {
+        // Also build the "" module, which has all the builtins
+        val (codeMap, programPMap) =
+          ParserCompilation.loadAndParse(modulesToBuild, namespaceToContentsResolver)
+        codeMapCache = Some(codeMap)
+        parsedsCache = Some(programPMap)
+        parsedsCache.get
+      }
+    }
+  }
+
+  def getVpstMap(): FileCoordinateMap[String] = {
+    vpstMapCache match {
+      case Some(vpst) => vpst
+      case None => {
+        getParseds().map({ case (fileCoord, (programP, commentRanges)) =>
+          val von = ParserVonifier.vonifyFile(programP)
+          val json = new VonPrinter(JsonSyntax, 120).print(von)
+          json
+        })
+      }
+    }
+  }
+}
+
+case class InputException(message: String) extends Throwable

@@ -47,6 +47,21 @@ public:
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) override;
 
+
+  Ref asSubtype(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      bool thenResultIsNever,
+      bool elseResultIsNever,
+      Reference* resultOptTypeM,
+      Reference* constraintRefM,
+      Reference* sourceInterfaceRefMT,
+      Ref sourceInterfaceRef,
+      bool sourceRefKnownLive,
+      Referend* targetReferend,
+      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+      std::function<Ref(LLVMBuilderRef)> buildElse) override;
+
   LLVMTypeRef translateType(Reference* referenceM) override;
 
   LLVMValueRef getCensusObjectId(
@@ -386,7 +401,7 @@ public:
       ControlBlockPtrLE controlBlockPtrLE,
       const std::string& typeName);
 
-  std::string getRefNameC(
+  std::string getMemberArbitraryRefNameCSeeMMEDT(
       Reference* refMT) override;
   void generateStructDefsC(
       std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) override;

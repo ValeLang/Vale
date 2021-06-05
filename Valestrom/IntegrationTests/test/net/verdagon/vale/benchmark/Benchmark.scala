@@ -1,24 +1,23 @@
 package net.verdagon.vale.benchmark
 
-import net.verdagon.vale.driver.{Compilation, CompilationOptions}
-import net.verdagon.vale.{Profiler, Samples}
+import net.verdagon.vale.driver.FullCompilationOptions
+import net.verdagon.vale.{Builtins, FileCoordinateMap, Profiler, RunCompilation, Tests}
+
+import scala.collection.immutable.List
 
 object Benchmark {
   def go(useOptimization: Boolean): Profiler = {
     val profiler = new Profiler()
-    val compile = Compilation.multiple(
-      List(
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/utils.vale"),
-        Samples.get("libraries/opt.vale"),
-        Samples.get("libraries/list.vale"),
-        Samples.get("libraries/strings.vale"),
-        Samples.get("programs/scratch.vale")),
-      CompilationOptions(
-        debugOut = (_) => {},
-        profiler = profiler,
-        useOptimization = useOptimization))
+    val compile =
+      new RunCompilation(
+        List("", FileCoordinateMap.TEST_MODULE),
+        Builtins.getCodeMap()
+          .or(FileCoordinateMap.test(Tests.loadExpected("programs/scratch.vale")))
+          .or(Tests.getNamespaceToResourceResolver),
+        FullCompilationOptions(
+          debugOut = (_) => {},
+          profiler = profiler,
+          useOptimization = useOptimization))
     compile.getHamuts()
     profiler
   }

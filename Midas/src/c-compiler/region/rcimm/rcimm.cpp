@@ -107,6 +107,25 @@ Ref RCImm::lockWeak(
   exit(1);
 }
 
+
+Ref RCImm::asSubtype(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  return regularInnerAsSubtype(
+      globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM, constraintRefM,
+      sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetReferend, buildThen, buildElse);
+}
+
 LLVMTypeRef RCImm::translateType(Reference* referenceM) {
   return translateType(globalState, referenceM);
 }
@@ -455,11 +474,14 @@ LLVMValueRef RCImm::checkValidReference(
     LLVMBuilderRef builder,
     Reference* refM,
     Ref ref) {
+    //buildFlare(FL(), globalState, functionState, builder);
   Reference *actualRefM = nullptr;
   LLVMValueRef refLE = nullptr;
+  //buildFlare(FL(), globalState, functionState, builder);
   std::tie(actualRefM, refLE) = megaGetRefInnardsForChecking(ref);
   assert(actualRefM == refM);
   assert(refLE != nullptr);
+  //buildFlare(FL(), globalState, functionState, builder);
   assert(LLVMTypeOf(refLE) == globalState->getRegion(refM)->translateType(refM));
 
   if (globalState->opt->census) {
@@ -848,7 +870,7 @@ void RCImm::checkValidReference(
   regularCheckValidReference(checkerAFL, globalState, functionState, builder, referendStructs, refM, refLE);
 }
 
-std::string RCImm::getRefNameC(Reference* sourceMT) {
+std::string RCImm::getMemberArbitraryRefNameCSeeMMEDT(Reference* sourceMT) {
   assert(false);
   exit(1);
 }
@@ -866,11 +888,31 @@ void RCImm::generateInterfaceDefsC(std::unordered_map<std::string, std::string>*
 void RCImm::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     UnknownSizeArrayDefinitionT* usaDefM) {
+  if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(usaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 void RCImm::generateKnownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
-    KnownSizeArrayDefinitionT* usaDefM) {
+    KnownSizeArrayDefinitionT* ksaDefM) {
+  if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(ksaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 Reference* RCImm::getExternalType(Reference* refMT) {

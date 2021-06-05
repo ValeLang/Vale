@@ -1,5 +1,7 @@
 package net.verdagon.vale.parser
 
+import net.verdagon.vale.vpass
+
 sealed trait IParseError
 case class UnrecognizedTopLevelThingError(pos: Int) extends IParseError
 case class BadStartOfStatementError(pos: Int) extends IParseError
@@ -25,8 +27,13 @@ case class BadLetEqualsError(pos: Int) extends IParseError
 case class BadMutateEqualsError(pos: Int) extends IParseError
 case class BadLetEndError(pos: Int) extends IParseError
 
-case class BadVPRException(err: BadVPRError) extends RuntimeException
-case class BadVPRError(message: String) extends IParseError
+case class BadVPSTException(err: BadVPSTError) extends RuntimeException {
+//  println("VPST error:")
+//  printStackTrace()
+}
+case class BadVPSTError(message: String) extends IParseError {
+  vpass()
+}
 
 
 // TODO: Get rid of all the below when we've migrated away from combinators.
@@ -41,6 +48,7 @@ case class BadStruct(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadInterface(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadImpl(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadExport(pos: Int, cause: CombinatorParseError) extends IParseError
+case class BadImport(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadFunctionHeaderError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadEachError(pos: Int, cause: CombinatorParseError) extends IParseError
 case class BadBlockError(pos: Int, cause: CombinatorParseError) extends IParseError

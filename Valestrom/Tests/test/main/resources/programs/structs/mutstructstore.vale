@@ -1,0 +1,10 @@
+struct Carrier {
+  hp int;
+  interceptors! int;
+}
+
+fn main() int export {
+  c = Carrier(400, 8);
+  set c.interceptors = 42;
+  = c.interceptors;
+}

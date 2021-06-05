@@ -59,13 +59,12 @@ Ref translateExpressionInner(
     return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
+
     auto resultLE =
-        LLVMBuildFPCast(
-            builder,
-            makeConstIntExpr(
-                functionState, builder, LLVMInt64TypeInContext(globalState->context), *(uint64_t*)&constantFloat->value),
-            LLVMDoubleTypeInContext(globalState->context),
-            "castedfloat");
+            makeConstExpr(
+                functionState,
+                builder,
+                LLVMConstReal(LLVMDoubleTypeInContext(globalState->context), constantFloat->value));
     assert(LLVMTypeOf(resultLE) == LLVMDoubleTypeInContext(globalState->context));
     return wrap(globalState->getRegion(globalState->metalCache->floatRef), globalState->metalCache->floatRef, resultLE);
   } else if (auto constantBool = dynamic_cast<ConstantBool*>(expr)) {
@@ -400,10 +399,11 @@ Ref translateExpressionInner(
         globalState->getRegion(knownSizeArrayLoad->resultType)
             ->upgradeLoadResultToRefWithTargetOwnership(
                 functionState, builder, elementType, knownSizeArrayLoad->resultType, loadResult);
+    globalState->getRegion(elementType)->checkValidReference(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
-        ->alias(FL(), functionState, builder, elementType, resultRef);
+        ->alias(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     globalState->getRegion(elementType)
-        ->checkValidReference(FL(), functionState, builder, elementType, resultRef);
+        ->checkValidReference(FL(), functionState, builder, knownSizeArrayLoad->resultType, resultRef);
     return resultRef;
   } else if (auto unknownSizeArrayLoad = dynamic_cast<UnknownSizeArrayLoad*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
@@ -521,12 +521,19 @@ Ref translateExpressionInner(
         ->dealias(AFL("USALen"), functionState, builder, arrayType, arrayRefLE);
 
     return sizeLE;
+  } else if (auto narrowPermission = dynamic_cast<NarrowPermission*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    auto sourceExpr = narrowPermission->sourceExpr;
+    return translateExpression(globalState, functionState, blockState, builder, sourceExpr);
   } else if (auto newArrayFromValues = dynamic_cast<NewArrayFromValues*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateNewArrayFromValues(globalState, functionState, blockState, builder, newArrayFromValues);
   } else if (auto constructUnknownSizeArray = dynamic_cast<ConstructUnknownSizeArray*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
     return translateConstructUnknownSizeArray(globalState, functionState, blockState, builder, constructUnknownSizeArray);
+  } else if (auto staticArrayFromCallable = dynamic_cast<StaticArrayFromCallable*>(expr)) {
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+    return translateStaticArrayFromCallable(globalState, functionState, blockState, builder, staticArrayFromCallable);
   } else if (auto call = dynamic_cast<Call*>(expr)) {
     buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name(), " ", call->function->name->name);
     auto resultLE = translateCall(globalState, functionState, blockState, builder, call);
@@ -692,6 +699,86 @@ Ref translateExpressionInner(
                       noneRef,
                       lockWeak->resultOptType,
                       lockWeak->resultOptReferend);
+            });
+
+    globalState->getRegion(sourceType)->dealias(
+        AFL("LockWeak drop weak ref"),
+        functionState, builder, sourceType, sourceLE);
+
+    return resultOptLE;
+  } else if (auto asSubtype = dynamic_cast<AsSubtype*>(expr)) {
+    bool sourceKnownLive = asSubtype->sourceKnownLive || globalState->opt->overrideKnownLiveTrue;
+
+    buildFlare(FL(), globalState, functionState, builder, typeid(*expr).name());
+
+    auto sourceType = asSubtype->sourceType;
+    auto sourceLE =
+        translateExpression(
+            globalState, functionState, blockState, builder, asSubtype->sourceExpr);
+    globalState->getRegion(sourceType)
+        ->checkValidReference(FL(), functionState, builder, sourceType, sourceLE);
+
+    auto sourceTypeAsConstraintRefM =
+        globalState->metalCache->getReference(
+            Ownership::BORROW,
+            sourceType->location,
+            sourceType->referend);
+
+    auto resultOptTypeLE =
+        globalState->getRegion(asSubtype->resultOptType)
+            ->translateType(asSubtype->resultOptType);
+
+    auto resultOptLE =
+        globalState->getRegion(sourceType)->asSubtype(
+            functionState, builder,
+            false, false, asSubtype->resultOptType,
+            sourceTypeAsConstraintRefM,
+            sourceType,
+            sourceLE,
+            sourceKnownLive,
+            asSubtype->targetReferend,
+            [globalState, functionState, asSubtype, sourceLE](LLVMBuilderRef thenBuilder, Ref constraintRef) -> Ref {
+              globalState->getRegion(asSubtype->someConstructor->params[0])
+                  ->checkValidReference(
+                      FL(), functionState, thenBuilder,
+                      asSubtype->someConstructor->params[0],
+                      constraintRef);
+              globalState->getRegion(asSubtype->someConstructor->params[0])
+                  ->alias(
+                      FL(), functionState, thenBuilder,
+                      asSubtype->someConstructor->params[0],
+                      constraintRef);
+              // If we get here, object is alive, return a Some.
+              auto someRef = buildCall(globalState, functionState, thenBuilder, asSubtype->someConstructor, {constraintRef});
+              globalState->getRegion(asSubtype->someType)
+                  ->checkValidReference(
+                      FL(), functionState, thenBuilder, asSubtype->someType, someRef);
+              return globalState->getRegion(asSubtype->someType)
+                  ->upcast(
+                      functionState,
+                      thenBuilder,
+                      asSubtype->someType,
+                      asSubtype->someReferend,
+                      someRef,
+                      asSubtype->resultOptType,
+                      asSubtype->resultOptReferend);
+            },
+            [globalState, functionState, asSubtype](LLVMBuilderRef elseBuilder) {
+              auto noneConstructor = asSubtype->noneConstructor;
+              // If we get here, object is dead, return a None.
+              auto noneRef = buildCall(globalState, functionState, elseBuilder, noneConstructor, {});
+              globalState->getRegion(asSubtype->noneType)
+                  ->checkValidReference(
+                      FL(), functionState, elseBuilder, asSubtype->noneType, noneRef);
+              return globalState->getRegion(asSubtype->noneType)
+                  ->upcast(
+                      functionState,
+                      elseBuilder,
+                      asSubtype->noneType,
+                      asSubtype->noneReferend,
+                      noneRef,
+                      asSubtype->resultOptType,
+                      asSubtype->resultOptReferend);
             });
 
     globalState->getRegion(sourceType)->dealias(

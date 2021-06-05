@@ -174,6 +174,19 @@ object CombinatorParsers
     }
   }
 
+  private[parser] def `import`: Parser[ImportP] = {
+    (pos <~ "import" <~ white) ~
+      rep(exprIdentifier <~ optWhite <~ "." <~ optWhite) ~
+      (exprIdentifier | pstr("*")) ~
+      (optWhite ~> ";" ~> pos) ^^ {
+      case begin ~ steps ~ importee ~ end => {
+        val moduleName = steps.head
+        val namespaceSteps = steps.tail
+        ImportP(Range(begin, end), moduleName, namespaceSteps, importee)
+      }
+    }
+  }
+
 //  private[parser] def topLevelThing: Parser[ITopLevelThing] = {
 //    struct ^^ TopLevelStruct |
 //    topLevelFunction ^^ TopLevelFunction |
@@ -185,13 +198,6 @@ object CombinatorParsers
 //    optWhite ~> repsep(topLevelThing, optWhite) <~ optWhite ^^ Program0
 //  }
 
-  def repeatStr(str: String, n: Int): String = {
-    var result = "";
-    (0 until n).foreach(i => {
-      result = result + str
-    })
-    result
-  }
 
 //  def runOldParser(codeWithComments: String): ParseResult[(Program0, List[(Int, Int)])] = {
 //    val regex = "(//[^\\r\\n]*|«\\w+»)".r

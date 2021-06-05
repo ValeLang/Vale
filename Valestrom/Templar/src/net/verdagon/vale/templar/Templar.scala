@@ -3,11 +3,12 @@ package net.verdagon.vale.templar;
 import net.verdagon.vale._
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, RangeS}
+import net.verdagon.vale.scout.{CodeLocationS, ICompileErrorS, ITemplexS, ProgramS, RangeS}
 import net.verdagon.vale.templar.EdgeTemplar.{FoundFunction, NeededOverride, PartialEdge2}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, ScoutExpectedFunctionSuccess}
 import net.verdagon.vale.templar.citizen.{AncestorHelper, IAncestorHelperDelegate, IStructTemplarDelegate, StructTemplar}
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.expression.{ExpressionTemplar, IExpressionTemplarDelegate}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.function.{BuiltInFunctions, DestructorTemplar, DropHelper, FunctionTemplar, FunctionTemplarCore, IFunctionTemplarDelegate, VirtualTemplar}
@@ -36,7 +37,9 @@ trait IFunctionGenerator {
 
 case class TemplarOptions(
   functionGeneratorByName: Map[String, IFunctionGenerator],
-  debugOut: String => Unit = println,
+  debugOut: String => Unit = (x => {
+    println("###: " + x)
+  }),
   verboseErrors: Boolean = false,
   useOptimization: Boolean = false,
 )
@@ -64,7 +67,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       (id, generator)
     }).toMap +
-    ("vale_is" ->
+    ("vale_same_instance" ->
       new IFunctionGenerator {
         override def generate(
           functionTemplarCore: FunctionTemplarCore,
@@ -84,7 +87,81 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
             Function2(
               header,
               List(),
-              Block2(List(Return2(Is2(ArgLookup2(0, paramCoords(0).tyype), ArgLookup2(1, paramCoords(1).tyype)))))))
+              Block2(List(Return2(IsSameInstance2(ArgLookup2(0, paramCoords(0).tyype), ArgLookup2(1, paramCoords(1).tyype)))))))
+          header
+        }
+      }) +
+    ("vale_as_subtype" ->
+      new IFunctionGenerator {
+        override def generate(
+          functionTemplarCore: FunctionTemplarCore,
+          structTemplar: StructTemplar,
+          destructorTemplar: DestructorTemplar,
+          namedEnv: FunctionEnvironment,
+          temputs: Temputs,
+          callRange: RangeS,
+          maybeOriginFunction1: Option[FunctionA],
+          paramCoords: List[Parameter2],
+          maybeReturnType2: Option[Coord]):
+        (FunctionHeader2) = {
+          val header =
+            FunctionHeader2(namedEnv.fullName, List(), paramCoords, maybeReturnType2.get, maybeOriginFunction1)
+          temputs.declareFunctionReturnType(header.toSignature, header.returnType)
+
+          val sourceKind = vassertSome(paramCoords.headOption).tyype.referend
+          val KindTemplata(targetKind) = vassertSome(namedEnv.fullName.last.templateArgs.headOption)
+
+          val sourceCitizen =
+            sourceKind match {
+              case c : CitizenRef2 => c
+              case _ => throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+            }
+
+          val targetCitizen =
+            targetKind match {
+              case c : CitizenRef2 => c
+              case _ => throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+            }
+
+          // We dont support downcasting to interfaces yet
+          val targetStruct =
+            targetCitizen match {
+              case sr @ StructRef2(_) => sr
+              case ir @ InterfaceRef2(_) => throw CompileErrorExceptionT(CantDowncastToInterface(callRange, ir))
+              case _ => vfail()
+            }
+
+
+          val incomingCoord = paramCoords(0).tyype
+          val incomingSubkind = incomingCoord.referend
+          val targetCoord = incomingCoord.copy(referend = targetKind)
+          val asSubtypeExpr: ReferenceExpression2 =
+            sourceCitizen match {
+              case sourceInterface @ InterfaceRef2(_) => {
+                if (ancestorHelper.isAncestor(temputs, targetStruct, sourceInterface)) {
+                  val (optCoord, someConstructor, noneConstructor) =
+                    expressionTemplar.getOption(temputs, namedEnv, callRange, targetCoord)
+
+                  AsSubtype2(
+                    ArgLookup2(0, incomingCoord),
+                    targetKind,
+                    optCoord,
+                    someConstructor,
+                    noneConstructor)
+                } else {
+                  throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+                }
+              }
+              case sourceStruct @ StructRef2(_) => {
+                if (sourceStruct == targetStruct) {
+                  ArgLookup2(0, incomingCoord)
+                } else {
+                  throw CompileErrorExceptionT(CantDowncastUnrelatedTypes(callRange, sourceKind, targetKind))
+                }
+              }
+            }
+
+          temputs.addFunction(Function2(header, List(), Block2(List(Return2(asSubtypeExpr)))))
           header
         }
       })
@@ -281,20 +358,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  val arrayTemplar =
-    new ArrayTemplar(
-      opts,
-      new IArrayTemplarDelegate {
-        def getArrayDestructor(
-          env: IEnvironment,
-          temputs: Temputs,
-          type2: Coord):
-        (Prototype2) = {
-          destructorTemplar.getArrayDestructor(env, temputs, type2)
-        }
-      })
-
-  val ancestorHelper =
+  val ancestorHelper: AncestorHelper =
     new AncestorHelper(opts, profiler, inferTemplar, new IAncestorHelperDelegate {
       override def getInterfaceRef(temputs: Temputs, callRange: RangeS, interfaceTemplata: InterfaceTemplata, uncoercedTemplateArgs: List[ITemplata]): InterfaceRef2 = {
         structTemplar.getInterfaceRef(temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
@@ -371,10 +435,24 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
   val virtualTemplar = new VirtualTemplar(opts, overloadTemplar)
 
-  val sequenceTemplar = new SequenceTemplar(opts, arrayTemplar, structTemplar, destructorTemplar)
+  val sequenceTemplar = new SequenceTemplar(opts, structTemplar, destructorTemplar)
 
+  val arrayTemplar =
+    new ArrayTemplar(
+      opts,
+      new IArrayTemplarDelegate {
+        def getArrayDestructor(
+          env: IEnvironment,
+          temputs: Temputs,
+          type2: Coord):
+        (Prototype2) = {
+          destructorTemplar.getArrayDestructor(env, temputs, type2)
+        }
+      },
+      inferTemplar,
+      overloadTemplar)
 
-  val expressionTemplar =
+  val expressionTemplar: ExpressionTemplar =
     new ExpressionTemplar(
       opts,
       profiler,
@@ -398,10 +476,16 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         }
       })
 
-  def evaluate(program: ProgramA): Result[Hinputs, ICompileErrorT] = {
+  def evaluate(namespaceToProgramA: NamespaceCoordinateMap[ProgramA]): Result[Hinputs, ICompileErrorT] = {
     try {
       profiler.newProfile("Templar.evaluate", "", () => {
-        val ProgramA(structsA, interfacesA, impls1, functions1, exportsA) = program;
+        val programsA = namespaceToProgramA.moduleToNamespacesToFilenameToContents.values.flatMap(_.values)
+
+        val structsA = programsA.flatMap(_.structs)
+        val interfacesA = programsA.flatMap(_.interfaces)
+        val implsA = programsA.flatMap(_.impls)
+        val functionsA = programsA.flatMap(_.functions)
+        val exportsA = programsA.flatMap(_.exports)
 
         val env0 =
           NamespaceEnvironment(
@@ -434,7 +518,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
         // This has to come before the structs and interfaces because part of evaluating a
         // struct or interface is figuring out what it extends.
         val env5 =
-        impls1.foldLeft(env3)({
+        implsA.foldLeft(env3)({
           case (env4, impl1) => env4.addEntry(opts.useOptimization, NameTranslator.translateImplName(impl1.name), ImplEnvEntry(impl1))
         })
         val env7 =
@@ -447,7 +531,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           })
 
         val env11 =
-          functions1.foldLeft(env9)({
+          functionsA.foldLeft(env9)({
             case (env10, functionS) => {
               env10.addUnevaluatedFunction(opts.useOptimization, functionS)
             }
@@ -457,7 +541,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
 
         structTemplar.addBuiltInStructs(env11, temputs)
 
-        functions1.foreach({
+        functionsA.foreach({
           case (functionS) => {
             if (functionS.isTemplate) {
               // Do nothing, it's a template
@@ -722,6 +806,15 @@ object Templar {
         // Just like FunctionT2
         Immutable
       }
+    }
+  }
+
+  def intersectPermission(a: Permission, b: Permission): Permission = {
+    (a, b) match {
+      case (Readonly, Readonly) => Readonly
+      case (Readonly, Readwrite) => Readonly
+      case (Readwrite, Readonly) => Readonly
+      case (Readwrite, Readwrite) => Readwrite
     }
   }
 }

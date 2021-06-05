@@ -1,0 +1,2 @@
+
+fn main() int export { a = 7; = ({ ({ a })() })(); }

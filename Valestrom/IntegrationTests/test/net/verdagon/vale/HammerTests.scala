@@ -1,18 +1,20 @@
 package net.verdagon.vale
 
 import net.verdagon.vale.hammer._
-import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReferenceH}
+import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReadonlyH, ReferenceH}
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.types.Share
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
+import net.verdagon.von.VonInt
+
+import scala.collection.immutable.List
 
 class HammerTests extends FunSuite with Matchers {
   // Hammer tests only test the general structure of things, not the generated nodes.
   // The generated nodes will be tested by end-to-end tests.
 
   test("Simple main") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       "fn main() int export {3}")
     val hamuts = compile.getHamuts()
 
@@ -22,7 +24,7 @@ class HammerTests extends FunSuite with Matchers {
 
 //  // Make sure a ListNode struct made it out
 //  test("Templated struct makes it into hamuts") {
-//    val compile = Compilation(
+//    val compile = RunCompilation.test(
 //      """
 //        |struct ListNode<T> imm rules(T: Ref) {
 //        |  tail: *ListNode<T>;
@@ -34,7 +36,7 @@ class HammerTests extends FunSuite with Matchers {
 //  }
 
   test("Two templated structs make it into hamuts") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |interface MyOption<T> imm rules(T Ref) { }
         |struct MyNone<T> imm rules(T Ref) { }
@@ -45,13 +47,13 @@ class HammerTests extends FunSuite with Matchers {
         |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
     val hamuts = compile.getHamuts()
-    hamuts.interfaces.find(_.fullName.toFullString() == """C("MyOption",[TR(R(*,<,i))])""").get;
+    hamuts.interfaces.find(_.fullName.toFullString() == """C("MyOption",[TR(R(*,<,#,i))])""").get;
 
-    val mySome = hamuts.structs.find(_.fullName.toFullString() == """C("MySome",[TR(R(*,<,i))])""").get;
+    val mySome = hamuts.structs.find(_.fullName.toFullString() == """C("MySome",[TR(R(*,<,#,i))])""").get;
     vassert(mySome.members.size == 1);
-    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, IntH()))
+    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH()))
 
-    val myNone = hamuts.structs.find(_.fullName.toFullString() == """C("MyNone",[TR(R(*,<,i))])""").get;
+    val myNone = hamuts.structs.find(_.fullName.toFullString() == """C("MyNone",[TR(R(*,<,#,i))])""").get;
     vassert(myNone.members.isEmpty);
   }
 
@@ -59,7 +61,7 @@ class HammerTests extends FunSuite with Matchers {
   // Maybe we can turn off tree shaking?
   // Maybe this just violates requirements?
   test("Virtual and override functions make it into hamuts") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |interface Blark imm { }
         |fn wot(virtual b *Blark) int abstract;
@@ -76,7 +78,7 @@ class HammerTests extends FunSuite with Matchers {
   }
 
   test("Tests stripping things after panic") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  __panic();
@@ -87,40 +89,50 @@ class HammerTests extends FunSuite with Matchers {
     val hamuts = compile.getHamuts()
     val main = hamuts.lookupFunction("main")
     main.body match {
-      case BlockH(CallH(PrototypeH(fullNameH, List(), ReferenceH(_, _, NeverH())), List())) => {
+      case BlockH(CallH(PrototypeH(fullNameH, List(), ReferenceH(_, _, ReadonlyH, NeverH())), List())) => {
         vassert(fullNameH.toFullString().contains("__panic"))
       }
     }
   }
 
-
   test("Tests export function") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |fn moo() int export { 42 }
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupFunction("moo")
-    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("moo")
   }
 
   test("Tests export struct") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |struct Moo export { }
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupStruct("Moo")
-    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "Moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo")
+  }
+
+  test("Tests export struct twice") {
+    val compile = RunCompilation.test(
+      """
+        |struct Moo export { }
+        |export Moo as Bork;
+        |""".stripMargin)
+    val hamuts = compile.getHamuts()
+    val moo = hamuts.lookupStruct("Moo")
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo", "Bork")
   }
 
   test("Tests export interface") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |interface Moo export { }
         |""".stripMargin)
     val hamuts = compile.getHamuts()
     val moo = hamuts.lookupInterface("Moo")
-    vassertSome(hamuts.exportedNameByFullName.get(moo.fullName)) shouldEqual "Moo"
+    vassertSome(hamuts.fullNameToExportedNames.get(moo.fullName)) shouldEqual List("Moo")
   }
 }

@@ -217,7 +217,7 @@ void ReferendStructs::defineEdge(
   auto builder = LLVMCreateBuilderInContext(globalState->context);
   auto itableLE = LLVMGetUndef(interfaceTableStructL);
   for (int i = 0; i < functions.size(); i++) {
-    auto entryLE = LLVMConstBitCast(functions[i], LLVMPointerType(interfaceFunctionsLT[i], 0));
+    auto entryLE = LLVMConstBitCast(functions[i], interfaceFunctionsLT[i]);
     itableLE = LLVMBuildInsertValue(builder, itableLE, entryLE, i, std::to_string(i).c_str());
   }
   LLVMDisposeBuilder(builder);
@@ -830,6 +830,34 @@ WeakFatPtrLE WeakableReferendStructs::makeWeakFatPtr(Reference* referenceM_, LLV
     assert(false);
   }
   return WeakFatPtrLE(referenceM_, ptrLE);
+}
+
+WeakFatPtrLE WeakableReferendStructs::downcastWeakFatPtr(
+    LLVMBuilderRef builder,
+    StructReferend* targetStructReferend,
+    Reference* targetRefMT,
+    LLVMValueRef sourceWeakFatPtrLE) {
+  assert(targetRefMT->referend == targetStructReferend);
+  auto weakRefVoidStructLT = getWeakVoidRefStruct(targetStructReferend);
+  assert(LLVMTypeOf(sourceWeakFatPtrLE) == weakRefVoidStructLT);
+
+  auto weakRefHeaderStruct =
+      LLVMBuildExtractValue(builder, sourceWeakFatPtrLE, 0, "weakHeader");
+  auto objVoidPtrLE =
+      LLVMBuildExtractValue(builder, sourceWeakFatPtrLE, 1, "objVoidPtr");
+
+  auto underlyingStructPtrLT =
+      LLVMPointerType(referendStructs.getWrapperStruct(targetStructReferend), 0);
+  auto underlyingStructPtrLE =
+      LLVMBuildBitCast(builder, objVoidPtrLE, underlyingStructPtrLT, "subtypePtr");
+
+  auto resultStructRefLT = getStructWeakRefStruct(targetStructReferend);
+  auto resultStructRefLE = LLVMGetUndef(resultStructRefLT);
+  resultStructRefLE = LLVMBuildInsertValue(builder, resultStructRefLE, weakRefHeaderStruct, 0, "withHeader");
+  resultStructRefLE = LLVMBuildInsertValue(builder, resultStructRefLE, underlyingStructPtrLE, 1, "withBoth");
+
+  auto targetWeakRef = makeWeakFatPtr(targetRefMT, resultStructRefLE);
+  return targetWeakRef;
 }
 
 ControlBlockPtrLE WeakableReferendStructs::getConcreteControlBlockPtr(

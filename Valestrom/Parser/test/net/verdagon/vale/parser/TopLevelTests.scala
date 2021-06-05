@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.{Samples, vassert}
+import net.verdagon.vale.{Tests, vassert}
 import org.scalatest.{FunSuite, Matchers}
 
 
@@ -43,7 +43,7 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("exporting int") {
     val program = compileProgram("export int as NumberThing;")
     program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(StringP(_,"int")),StringP(_,"NumberThing"))) =>
+      case TopLevelExportAsP(ExportAsP(_,NameOrRunePT(NameP(_,"int")),NameP(_,"NumberThing"))) =>
 
     }
   }
@@ -51,7 +51,28 @@ class TopLevelTests extends FunSuite with Matchers with Collector with TestParse
   test("exporting array") {
     val program = compileProgram("export Array<mut, int> as IntArray;")
     program.topLevelThings(0) match {
-      case TopLevelExportAsP(ExportAsP(_,_,StringP(_,"IntArray"))) =>
+      case TopLevelExportAsP(ExportAsP(_,_,NameP(_,"IntArray"))) =>
+    }
+  }
+
+  test("import wildcard") {
+    val program = compileProgram("import somemodule.*;")
+    program.topLevelThings(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(), NameP(_, "*"))) =>
+    }
+  }
+
+  test("import just module and thing") {
+    val program = compileProgram("import somemodule.List;")
+    program.topLevelThings(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(), NameP(_, "List"))) =>
+    }
+  }
+
+  test("full import") {
+    val program = compileProgram("import somemodule.subpackage.List;")
+    program.topLevelThings(0) match {
+      case TopLevelImportP(ImportP(_, NameP(_, "somemodule"), List(NameP(_, "subpackage")), NameP(_, "List"))) =>
     }
   }
 }

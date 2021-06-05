@@ -1,0 +1,48 @@
+
+fn +(a str, b str) str { __vaddStr(a, 0, len(a), b, 0, len(b)) }
+fn __vaddStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
+
+fn str(x int) str { __castIntStr(x) }
+fn __castIntStr(x int) str extern;
+
+fn str(x float) str { __castFloatStr(x) }
+fn __castFloatStr(x float) str extern;
+
+fn len(s str) int { __strLength(s) }
+fn __strLength(s str) int extern;
+
+fn vstr_toascii(s str, begin int, end int) int extern;
+fn vstr_fromascii(code int) str extern;
+
+fn vstr_indexOf(
+  haystackContainer str,
+  haystackBegin int,
+  haystackEnd int,
+  needleContainer str,
+  needleBegin int,
+  needleEnd int)
+int extern;
+
+fn vstr_substring(
+  haystackContainer str,
+  begin int,
+  end int)
+str extern;
+
+fn vstr_eq(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+bool extern;
+
+fn vstr_cmp(
+  aContainerStr str,
+  aBegin int,
+  aEnd int,
+  bContainerStr str,
+  bBegin int,
+  bEnd int)
+int extern;

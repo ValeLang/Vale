@@ -5,15 +5,10 @@ import net.verdagon.vale.templar.env.ReferenceLocalVariable2
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.{Compilation, CompilationOptions}
 
 class OptTests extends FunSuite with Matchers {
   test("Test empty and get for Some") {
-    val compile = Compilation(
-      Samples.get("libraries/utils.vale") +
-        Samples.get("libraries/printutils.vale") +
-        Samples.get("libraries/castutils.vale") +
-      Samples.get("libraries/opt.vale") +
+    val compile = RunCompilation.test(
         """
           |fn main() int export {
           |  opt Opt<int> = Some(9);
@@ -26,37 +21,23 @@ class OptTests extends FunSuite with Matchers {
   }
 
   test("Test empty and get for None") {
-    val profiler = new Profiler()
-    val compile = Compilation.multiple(
-      List(
-      Samples.get("libraries/utils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("libraries/castutils.vale"),
-      Samples.get("libraries/opt.vale"),
+    val compile = RunCompilation.test(
         """
           |fn main() int export {
           |  opt Opt<int> = None<int>();
           |  = if (opt.isEmpty()) { 0 }
           |    else { opt.get() }
           |}
-        """.stripMargin),
-      CompilationOptions(profiler = profiler))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(0)
-
-    println(profiler.assembleResults())
   }
 
   test("Test empty and get for borrow") {
     val profiler = new Profiler()
-    val compile = Compilation.multiple(
-      List(
-        Samples.get("libraries/utils.vale"),
-        Samples.get("libraries/printutils.vale"),
-        Samples.get("libraries/castutils.vale"),
-        Samples.get("libraries/opt.vale"),
+    val compile = RunCompilation.test(
         """
-          |// This is the same as the one in opt.vale, just named differently,
+          |// This is the same as the one in optutils.vale, just named differently,
           |// so its easier to debug.
           |fn borrowGet<T>(opt &Some<T>) &T { opt.value }
           |
@@ -65,11 +46,8 @@ class OptTests extends FunSuite with Matchers {
           |  s = Spaceship(42);
           |  ret Some<&Spaceship>(&s).borrowGet().fuel;
           |}
-        """.stripMargin),
-      CompilationOptions(profiler = profiler))
+        """.stripMargin)
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(42)
-
-    println(profiler.assembleResults())
   }
 }

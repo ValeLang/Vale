@@ -1,0 +1,15 @@
+struct MyBox export {
+  i! int;
+}
+
+fn changeInBox(b &!MyBox) export {
+  set b.i = 42;
+}
+
+fn runExtCommand(b &!MyBox) extern;
+
+fn main() int export {
+  b = MyBox(73);
+  runExtCommand(&!b);
+  ret b.i;
+}

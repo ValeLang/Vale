@@ -1,10 +1,11 @@
 package net.verdagon.vale.vivem
 
 import java.io.PrintStream
-
-import net.verdagon.vale.metal.{InlineH, ProgramH, ShareH}
-import net.verdagon.vale.{vassert, vfail, vimpl}
+import net.verdagon.vale.metal.{InlineH, ProgramH, ReadonlyH, ShareH}
+import net.verdagon.vale.{FileCoordinateMap, INamespaceResolver, NamespaceCoordinateMap, Result, vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
+
+import scala.collection.immutable.List
 
 case class PanicException() extends Throwable
 case class ConstraintViolatedException(msg: String) extends Throwable
@@ -19,7 +20,7 @@ object Vivem {
     val heap = new Heap(vivemDout)
     val argReferences =
       externalArgumentReferends.map(argReferend => {
-        heap.add(ShareH, InlineH, argReferend);
+        heap.add(ShareH, InlineH, ReadonlyH, argReferend);
       });
     innerExecute(programH, argReferences, heap, vivemDout, stdin, stdout)
   }

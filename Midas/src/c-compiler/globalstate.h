@@ -11,6 +11,7 @@
 #include "metal/instructions.h"
 #include "valeopts.h"
 #include "addresshasher.h"
+#include "externs.h"
 
 class IRegion;
 class IReferendStructsSource;
@@ -35,6 +36,8 @@ public:
   LLVMMetadataRef difile = nullptr;
 
   ValeOptions *opt = nullptr;
+
+  Externs* externs = nullptr;
 
   LLVMTargetDataRef dataLayout = nullptr;
   LLVMModuleRef mod = nullptr;
@@ -61,10 +64,6 @@ public:
   // Initialized to &writeOnlyGlobal / 8 in main.
   // We can use this to easily write an i64 into NULL or the write only global at runtime.
   LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;
-  LLVMValueRef malloc = nullptr, free = nullptr, assert = nullptr, exit = nullptr,
-      assertI64Eq = nullptr, printCStr = nullptr,
-      getch = nullptr, printInt = nullptr, initTwinPages = nullptr,
-      strlen = nullptr, censusContains = nullptr, censusAdd = nullptr, censusRemove = nullptr;
 
 
   LLVMTypeRef wrcTableStructLT = nullptr;
@@ -72,10 +71,6 @@ public:
 
   LLVMTypeRef lgtTableStructLT, lgtEntryStructLT = nullptr; // contains generation and next free
   LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
-
-  LLVMValueRef strncpy = nullptr;
-  LLVMValueRef memcpy = nullptr;
-  LLVMValueRef memset = nullptr;
 
   LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 

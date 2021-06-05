@@ -6,11 +6,10 @@ import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.types.{Bool2, Coord, Int2, Share}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
-import net.verdagon.vale.driver.Compilation
 
 class BlockTests extends FunSuite with Matchers {
   test("Empty block") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  block {
@@ -18,14 +17,14 @@ class BlockTests extends FunSuite with Matchers {
         |  = 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput()
+    val scoutput = compile.expectScoutput().moduleToNamespacesToFilenameToContents("test")(List())("0.vale")
     val main = scoutput.lookupFunction("main")
     main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(BlockSE(_, _,_), _)))) => }
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  block {
@@ -34,7 +33,7 @@ class BlockTests extends FunSuite with Matchers {
         |  = 3;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput()
+    val scoutput = compile.expectScoutput().moduleToNamespacesToFilenameToContents("test")(List())("0.vale")
     val main = scoutput.lookupFunction("main")
     val block = main.body match { case CodeBody1(BodySE(_, _,BlockSE(_, _,List(b @ BlockSE(_, _,_), _)))) => b }
     vassert(block.locals.size == 1)
@@ -45,7 +44,7 @@ class BlockTests extends FunSuite with Matchers {
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }
   test("Simple block with a variable, another variable outside with same name") {
-    val compile = Compilation(
+    val compile = RunCompilation.test(
       """
         |fn main() int export {
         |  block {
@@ -55,7 +54,7 @@ class BlockTests extends FunSuite with Matchers {
         |  = y;
         |}
       """.stripMargin)
-    val scoutput = compile.getScoutput()
+    val scoutput = compile.expectScoutput()
 
     compile.evalForReferend(Vector()) shouldEqual VonInt(3)
   }

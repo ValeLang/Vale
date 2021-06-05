@@ -7,6 +7,7 @@ import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnv
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
+import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.templata.TemplataTemplar
 import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcheck, vcurious, vfail, vimpl}
 
@@ -52,126 +53,138 @@ class FunctionTemplarCore(
         case _ => false
       })
 
-    startingFullEnv.function.body match {
-      case CodeBodyA(body) => {
-        val (header, body2) =
-          bodyTemplar.declareAndEvaluateFunctionBody(
-            fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
+    val header =
+      startingFullEnv.function.body match {
+        case CodeBodyA(body) => {
+          val (header, body2) =
+            bodyTemplar.declareAndEvaluateFunctionBody(
+              fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
 
-        // Funny story... let's say we're current instantiating a constructor,
-        // for example MySome<T>().
-        // The constructor returns a MySome<T>, which means when we do the above
-        // evaluating of the function body, we stamp the MySome<T> struct.
-        // That ends up stamping the entire struct, including the constructor.
-        // That's what we were originally here for, and evaluating the body above
-        // just did it for us O_o
-        // So, here we check to see if we accidentally already did it.
+          // Funny story... let's say we're current instantiating a constructor,
+          // for example MySome<T>().
+          // The constructor returns a MySome<T>, which means when we do the above
+          // evaluating of the function body, we stamp the MySome<T> struct.
+          // That ends up stamping the entire struct, including the constructor.
+          // That's what we were originally here for, and evaluating the body above
+          // just did it for us O_o
+          // So, here we check to see if we accidentally already did it.
 
-        // Get the variables by diffing the function environment.
-        // Remember, the near env contains closure variables, which we
-        // don't care about here. So find the difference between the near
-        // env and our latest env.
-        vassert(fullEnv.locals.startsWith(startingFullEnv.locals))
-        val introducedLocals =
-          fullEnv.locals
-            .drop(startingFullEnv.locals.size)
-            .collect({
-              case x @ ReferenceLocalVariable2(_, _, _) => x
-              case x @ AddressibleLocalVariable2(_, _, _) => x
-            })
+          // Get the variables by diffing the function environment.
+          // Remember, the near env contains closure variables, which we
+          // don't care about here. So find the difference between the near
+          // env and our latest env.
+          vassert(fullEnv.locals.startsWith(startingFullEnv.locals))
+          val introducedLocals =
+            fullEnv.locals
+              .drop(startingFullEnv.locals.size)
+              .collect({
+                case x @ ReferenceLocalVariable2(_, _, _) => x
+                case x @ AddressibleLocalVariable2(_, _, _) => x
+              })
 
-        temputs.lookupFunction(header.toSignature) match {
-          case None => {
-            val function2 = Function2(header, introducedLocals, body2);
-            temputs.addFunction(function2)
-            (function2.header)
+          temputs.lookupFunction(header.toSignature) match {
+            case None => {
+              val function2 = Function2(header, introducedLocals, body2);
+              temputs.addFunction(function2)
+              (function2.header)
+            }
+            case Some(function2) => {
+              (function2.header)
+            }
           }
-          case Some(function2) => {
-            (function2.header)
+        }
+        case AbstractBodyA => {
+          val maybeRetCoord =
+            startingFullEnv.function.maybeRetCoordRune match {
+              case None => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Need return type for abstract function!"))
+              case Some(r) => fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(r), Set(TemplataLookupContext))
+            }
+          val retCoord =
+            maybeRetCoord match {
+              case None => vfail("wat")
+              case Some(CoordTemplata(r)) => r
+            }
+          val header =
+            makeInterfaceFunction(fullEnv.snapshot, temputs, Some(startingFullEnv.function), params2, retCoord)
+          (header)
+        }
+        case ExternBodyA => {
+          val maybeRetCoord =
+            fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(startingFullEnv.function.maybeRetCoordRune.get), Set(TemplataLookupContext))
+          val retCoord =
+            maybeRetCoord match {
+              case None => vfail("wat")
+              case Some(CoordTemplata(r)) => r
+            }
+          val header =
+            makeExternFunction(
+              temputs,
+              fullEnv.fullName,
+              startingFullEnv.function.range,
+              translateFunctionAttributes(startingFullEnv.function.attributes),
+              params2,
+              retCoord,
+              Some(startingFullEnv.function))
+          (header)
+        }
+        case GeneratedBodyA(generatorId) => {
+          val signature2 = Signature2(fullEnv.fullName);
+          val maybeRetTemplata =
+            startingFullEnv.function.maybeRetCoordRune match {
+              case None => (None)
+              case Some(retCoordRune) => {
+                fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(retCoordRune), Set(TemplataLookupContext))
+              }
+            }
+          val maybeRetCoord =
+            maybeRetTemplata match {
+              case None => (None)
+              case Some(CoordTemplata(retCoord)) => {
+                temputs.declareFunctionReturnType(signature2, retCoord)
+                (Some(retCoord))
+              }
+              case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Must be a coord!"))
+            }
+
+          // Funny story... let's say we're current instantiating a constructor,
+          // for example MySome<T>().
+          // The constructor returns a MySome<T>, which means when we do the above
+          // evaluating of the function body, we stamp the MySome<T> struct.
+          // That ends up stamping the entire struct, including the constructor.
+          // That's what we were originally here for, and evaluating the body above
+          // just did it for us O_o
+          // So, here we check to see if we accidentally already did it.
+          opts.debugOut("doesnt this mean we have to do this in every single generated function?")
+
+          temputs.lookupFunction(signature2) match {
+            case Some(function2) => {
+              (function2.header)
+            }
+            case None => {
+              val generator = opts.functionGeneratorByName(generatorId)
+              val header =
+                delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, callRange, Some(startingFullEnv.function), params2, maybeRetCoord)
+              if (header.toSignature != signature2) {
+                throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
+                "Expected:  " + signature2 + "\n" +
+                "Generated: " + header.toSignature))
+              }
+              (header)
+            }
           }
         }
       }
-      case AbstractBodyA => {
-        val maybeRetCoord =
-          startingFullEnv.function.maybeRetCoordRune match {
-            case None => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Need return type for abstract function!"))
-            case Some(r) => fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(r), Set(TemplataLookupContext))
-          }
-        val retCoord =
-          maybeRetCoord match {
-            case None => vfail("wat")
-            case Some(CoordTemplata(r)) => r
-          }
-        val header =
-          makeInterfaceFunction(fullEnv.snapshot, temputs, Some(startingFullEnv.function), params2, retCoord)
-        (header)
-      }
-      case ExternBodyA => {
-        val maybeRetCoord =
-          fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(startingFullEnv.function.maybeRetCoordRune.get), Set(TemplataLookupContext))
-        val retCoord =
-          maybeRetCoord match {
-            case None => vfail("wat")
-            case Some(CoordTemplata(r)) => r
-          }
-        val header =
-          makeExternFunction(
-            temputs,
-            fullEnv.fullName,
-            startingFullEnv.function.range,
-            translateFunctionAttributes(startingFullEnv.function.attributes),
-            params2,
-            retCoord,
-            Some(startingFullEnv.function))
-        (header)
-      }
-      case GeneratedBodyA(generatorId) => {
-        val signature2 = Signature2(fullEnv.fullName);
-        val maybeRetTemplata =
-          startingFullEnv.function.maybeRetCoordRune match {
-            case None => (None)
-            case Some(retCoordRune) => {
-              fullEnv.getNearestTemplataWithAbsoluteName2(NameTranslator.translateRune(retCoordRune), Set(TemplataLookupContext))
-            }
-          }
-        val maybeRetCoord =
-          maybeRetTemplata match {
-            case None => (None)
-            case Some(CoordTemplata(retCoord)) => {
-              temputs.declareFunctionReturnType(signature2, retCoord)
-              (Some(retCoord))
-            }
-            case _ => throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Must be a coord!"))
-          }
 
-        // Funny story... let's say we're current instantiating a constructor,
-        // for example MySome<T>().
-        // The constructor returns a MySome<T>, which means when we do the above
-        // evaluating of the function body, we stamp the MySome<T> struct.
-        // That ends up stamping the entire struct, including the constructor.
-        // That's what we were originally here for, and evaluating the body above
-        // just did it for us O_o
-        // So, here we check to see if we accidentally already did it.
-        opts.debugOut("doesnt this mean we have to do this in every single generated function?")
 
-        temputs.lookupFunction(signature2) match {
-          case Some(function2) => {
-            (function2.header)
-          }
-          case None => {
-            val generator = opts.functionGeneratorByName(generatorId)
-            val header =
-              delegate.generateFunction(this, generator, fullEnv.snapshot, temputs, callRange, Some(startingFullEnv.function), params2, maybeRetCoord)
-            if (header.toSignature != signature2) {
-              throw CompileErrorExceptionT(RangedInternalErrorT(callRange, "Generator made a function whose signature doesn't match the expected one!\n" +
-              "Expected:  " + signature2 + "\n" +
-              "Generated: " + header.toSignature))
-            }
-            (header)
-          }
+    if (header.attributes.contains(Pure2)) {
+      header.params.foreach(param => {
+        if (param.tyype.permission != Readonly) {
+          throw CompileErrorExceptionT(NonReadonlyReferenceFoundInPureFunctionParameter(startingFullEnv.function.range, param.name))
         }
-      }
+      })
     }
+
+    header
   }
 
   def makeExternFunction(
@@ -270,8 +283,9 @@ class FunctionTemplarCore(
   ):
   (FunctionHeader2) = {
     val ownership = if (structDef2.mutability == Mutable) Own else Share
+    val permission = if (structDef2.mutability == Mutable) Readwrite else Readonly
     val structRef2 = structDef2.getRef
-    val structType2 = Coord(ownership, structRef2)
+    val structType2 = Coord(ownership, permission, structRef2)
 
     val destructor2 =
       Function2(
@@ -279,7 +293,7 @@ class FunctionTemplarCore(
           env.fullName,
           List(),
           List(Parameter2(CodeVarName2("this"), Some(Override2(interfaceRef2)), structType2)),
-          Coord(Share, Void2()),
+          Coord(Share, Readonly, Void2()),
           maybeOriginFunction1),
         List(),
         Block2(

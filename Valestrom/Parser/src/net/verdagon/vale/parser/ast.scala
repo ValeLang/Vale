@@ -13,7 +13,7 @@ object Range {
 // Something that exists in the source code. An Option[UnitP] is better than a boolean
 // because it also contains the range it was found.
 case class UnitP(range: Range)
-case class StringP(range: Range, str: String)
+case class NameP(range: Range, str: String)
 
 case class FileP(topLevelThings: List[ITopLevelThingP]) {
   def lookupFunction(name: String) = {
@@ -32,6 +32,7 @@ case class TopLevelStructP(struct: StructP) extends ITopLevelThingP
 case class TopLevelInterfaceP(interface: InterfaceP) extends ITopLevelThingP
 case class TopLevelImplP(impl: ImplP) extends ITopLevelThingP
 case class TopLevelExportAsP(export: ExportAsP) extends ITopLevelThingP
+case class TopLevelImportP(imporrt: ImportP) extends ITopLevelThingP
 
 case class ImplP(
   range: Range,
@@ -43,7 +44,13 @@ case class ImplP(
 case class ExportAsP(
   range: Range,
   struct: ITemplexPT,
-  exportedName: StringP)
+  exportedName: NameP)
+
+case class ImportP(
+  range: Range,
+  moduleName: NameP,
+  namespaceSteps: List[NameP],
+  importeeName: NameP)
 
 sealed trait ICitizenAttributeP
 case class ExportP(range: Range) extends ICitizenAttributeP
@@ -51,13 +58,13 @@ case class WeakableP(range: Range) extends ICitizenAttributeP
 case class SealedP(range: Range) extends ICitizenAttributeP
 
 case class StructP(
-  range: Range,
-  name: StringP,
-  attributes: List[ICitizenAttributeP],
-  mutability: MutabilityP,
-  identifyingRunes: Option[IdentifyingRunesP],
-  templateRules: Option[TemplateRulesP],
-  members: StructMembersP)
+                    range: Range,
+                    name: NameP,
+                    attributes: List[ICitizenAttributeP],
+                    mutability: MutabilityP,
+                    identifyingRunes: Option[IdentifyingRunesP],
+                    templateRules: Option[TemplateRulesP],
+                    members: StructMembersP)
 
 case class StructMembersP(
   range: Range,
@@ -66,23 +73,23 @@ sealed trait IStructContent
 case class StructMethodP(func: FunctionP) extends IStructContent
 case class StructMemberP(
   range: Range,
-  name: StringP,
+  name: NameP,
   variability: VariabilityP,
   tyype: ITemplexPT) extends IStructContent
 
 case class InterfaceP(
-    range: Range,
-    name: StringP,
-    attributes: List[ICitizenAttributeP],
-    mutability: MutabilityP,
-    maybeIdentifyingRunes: Option[IdentifyingRunesP],
-    templateRules: Option[TemplateRulesP],
-    members: List[FunctionP])
+                       range: Range,
+                       name: NameP,
+                       attributes: List[ICitizenAttributeP],
+                       mutability: MutabilityP,
+                       maybeIdentifyingRunes: Option[IdentifyingRunesP],
+                       templateRules: Option[TemplateRulesP],
+                       members: List[FunctionP])
 
 sealed trait IFunctionAttributeP
 case class AbstractAttributeP(range: Range) extends IFunctionAttributeP
 case class ExternAttributeP(range: Range) extends IFunctionAttributeP
-case class BuiltinAttributeP(range: Range, generatorName: StringP) extends IFunctionAttributeP
+case class BuiltinAttributeP(range: Range, generatorName: NameP) extends IFunctionAttributeP
 case class ExportAttributeP(range: Range) extends IFunctionAttributeP
 case class PureAttributeP(range: Range) extends IFunctionAttributeP
 
@@ -93,7 +100,7 @@ case class PoolRuneAttributeP(range: Range) extends IRuneAttributeP
 case class ArenaRuneAttributeP(range: Range) extends IRuneAttributeP
 case class BumpRuneAttributeP(range: Range) extends IRuneAttributeP
 
-case class IdentifyingRuneP(range: Range, name: StringP, attributes: List[IRuneAttributeP])
+case class IdentifyingRuneP(range: Range, name: NameP, attributes: List[IRuneAttributeP])
 
 case class IdentifyingRunesP(range: Range, runes: List[IdentifyingRuneP])
 case class TemplateRulesP(range: Range, rules: List[IRulexPR])
@@ -111,16 +118,16 @@ case class FunctionReturnP(
 )
 
 case class FunctionHeaderP(
-  range: Range,
-  name: Option[StringP],
-  attributes: List[IFunctionAttributeP],
+                            range: Range,
+                            name: Option[NameP],
+                            attributes: List[IFunctionAttributeP],
 
-  // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
-  maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
-  templateRules: Option[TemplateRulesP],
+                            // If Some(List()), should show up like the <> in fn moo<>(a int, b bool)
+                            maybeUserSpecifiedIdentifyingRunes: Option[IdentifyingRunesP],
+                            templateRules: Option[TemplateRulesP],
 
-  params: Option[ParamsP],
-  ret: FunctionReturnP
+                            params: Option[ParamsP],
+                            ret: FunctionReturnP
 )
 
 
@@ -134,7 +141,7 @@ case object VaryingP extends VariabilityP
 
 sealed trait OwnershipP
 case object OwnP extends OwnershipP
-case object BorrowP extends OwnershipP
+case object ConstraintP extends OwnershipP
 case object WeakP extends OwnershipP
 case object ShareP extends OwnershipP
 
@@ -146,9 +153,11 @@ sealed trait LoadAsP
 case object MoveP extends LoadAsP
 // This means we want to use it, but don't want to own it. This will
 // probably become a BorrowP or ShareP.
-case object LendBorrowP extends LoadAsP
+// If permission is None, then we're probably in a dot. For example, x.launch()
+// should be mapped to launch(&!x) if x is mutable, or launch(&x) if it's readonly.
+case class LendConstraintP(permission: Option[PermissionP]) extends LoadAsP
 // This means we want to get a weak reference to it. Thisll become a WeakP.
-case object LendWeakP extends LoadAsP
+case class LendWeakP(permission: PermissionP) extends LoadAsP
 // This represents unspecified. It basically means, use whatever ownership already there.
 case object UseP extends LoadAsP
 

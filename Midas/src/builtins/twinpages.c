@@ -1,10 +1,16 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#ifdef _WIN32
+#else
 #include <sys/mman.h>
 #include <unistd.h>
-#include <stdlib.h>
+#endif
 
 char* __vale_initTwinPages() {
+#ifdef _WIN32
+  return malloc(4096*2);
+#else
   size_t pageSize = getpagesize();
   char *region = mmap(0, pageSize * 2, 0, MAP_ANON | MAP_PRIVATE, 0, 0);
   if (region == MAP_FAILED) {
@@ -19,4 +25,5 @@ char* __vale_initTwinPages() {
   *(long long*)&region[pageSize - sizeof(long long)] = 42LL;
   long long result = *(long long*)&region[pageSize - sizeof(long long)];
   return region + pageSize;
+#endif
 }

@@ -1,4 +1,4 @@
-Vale Compiler, version 0.1.0
+Vale Compiler, version 0.1.3
 http://vale.dev/
 
 To run a program:

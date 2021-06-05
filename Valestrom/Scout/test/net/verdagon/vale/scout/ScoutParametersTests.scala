@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutParametersTests extends FunSuite with Matchers {
@@ -12,7 +12,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -53,7 +53,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
         case List(
           EqualsSR(_,
             TypedSR(_,tcr @ ImplicitRuneS(_,_),CoordTypeSR),
-            TemplexSR(OwnershippedST(_,BorrowP,RuneST(_,CodeRuneS("T")))))) => tcr
+            TemplexSR(InterpretedST(_,ConstraintP,ReadonlyP,RuneST(_,CodeRuneS("T")))))) => tcr
       }
 
     tCoordRuneFromParams shouldEqual tCoordRuneFromRules

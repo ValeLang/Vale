@@ -39,12 +39,12 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
 
   test("No capture, with type") {
     compile("_ int") shouldHave {
-      case PatternPP(_,None, _, Some(NameOrRunePT(StringP(_, "int"))), None, None) =>
+      case PatternPP(_,None, _, Some(NameOrRunePT(NameP(_, "int"))), None, None) =>
     }
   }
   test("Capture with type") {
     compile("a int") shouldHave {
-      case capturedWithType("a", NameOrRunePT(StringP(_, "int"))) =>
+      case capturedWithType("a", NameOrRunePT(NameP(_, "int"))) =>
     }
   }
   test("Simple capture with tame") {
@@ -55,8 +55,8 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
   test("Capture with borrow tame") {
     compile("arr &R") shouldHave {
       case PatternPP(_,_,
-      Some(CaptureP(_,LocalNameP(StringP(_, "arr")),FinalP)),
-      Some(OwnershippedPT(_,BorrowP, NameOrRunePT(StringP(_, "R")))),
+      Some(CaptureP(_,LocalNameP(NameP(_, "arr")),FinalP)),
+      Some(InterpretedPT(_,ConstraintP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>
     }
@@ -64,8 +64,8 @@ class CaptureAndTypeTests extends FunSuite with Matchers with Collector {
   test("Capture with this. in front") {
     compile("this.arr &&R") shouldHave {
       case PatternPP(_,_,
-      Some(CaptureP(_, ConstructingMemberNameP(StringP(_, "arr")),FinalP)),
-      Some(OwnershippedPT(_,WeakP, NameOrRunePT(StringP(_, "R")))),
+      Some(CaptureP(_, ConstructingMemberNameP(NameP(_, "arr")),FinalP)),
+      Some(InterpretedPT(_,WeakP,ReadonlyP, NameOrRunePT(NameP(_, "R")))),
       None,
       None) =>
     }

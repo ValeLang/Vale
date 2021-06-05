@@ -136,6 +136,24 @@ Ref Assist::lockWeak(
       isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
 }
 
+Ref Assist::asSubtype(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  return regularInnerAsSubtype(
+      globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM, constraintRefM,
+      sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetReferend, buildThen, buildElse);
+}
+
 LLVMTypeRef Assist::translateType(Reference* referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:
@@ -281,7 +299,7 @@ void Assist::noteWeakableDestroyed(
         buildPrint(globalState, thenBuilder, "Error: Dangling pointers detected!");
         // See MPESC for status codes
         auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
-        LLVMBuildCall(thenBuilder, globalState->exit, &exitCodeIntLE, 1, "");
+        LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
       });
 
   if (auto structReferendM = dynamic_cast<StructReferend*>(refM->referend)) {
@@ -552,12 +570,16 @@ LLVMValueRef Assist::checkValidReference(
   assert(refLE != nullptr);
   assert(LLVMTypeOf(refLE) == globalState->getRegion(refM)->translateType(refM));
 
+  buildFlare(FL(), globalState, functionState, builder);
+
   if (globalState->opt->census) {
     if (refM->ownership == Ownership::OWN) {
+        buildFlare(FL(), globalState, functionState, builder);
       regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
     } else if (refM->ownership == Ownership::SHARE) {
       assert(false);
     } else {
+        buildFlare(FL(), globalState, functionState, builder);
       if (refM->ownership == Ownership::BORROW) {
         regularCheckValidReference(checkerAFL, globalState, functionState, builder, &referendStructs, refM, refLE);
       } else if (refM->ownership == Ownership::WEAK) {
@@ -721,6 +743,8 @@ Ref Assist::upcast(
 
     Reference* targetInterfaceTypeM,
     InterfaceReferend* targetInterfaceReferendM) {
+    buildFlare(FL(), globalState, functionState, builder);
+
   switch (sourceStructMT->ownership) {
     case Ownership::SHARE:
     case Ownership::OWN:
@@ -790,22 +814,43 @@ void Assist::checkInlineStructType(
 void Assist::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     UnknownSizeArrayDefinitionT* usaDefM) {
+  if (usaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(usaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 void Assist::generateKnownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
-    KnownSizeArrayDefinitionT* usaDefM) {
+    KnownSizeArrayDefinitionT* ksaDefM) {
+  if (ksaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
+    assert(false);
+  } else {
+    for (auto baseName : globalState->program->getExportedNames(ksaDefM->name)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
+  }
 }
 
 void Assist::generateStructDefsC(std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* structDefM) {
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto baseName = globalState->program->getExportedName(structDefM->referend->fullName);
-    auto refTypeName = baseName + "Ref";
-    std::stringstream s;
-    s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
-    cByExportedName->insert(std::make_pair(baseName, s.str()));
+    for (auto baseName : globalState->program->getExportedNames(structDefM->referend->fullName)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { void* unused; } " << refTypeName << ";" << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
   }
 }
 
@@ -813,34 +858,42 @@ void Assist::generateInterfaceDefsC(std::unordered_map<std::string, std::string>
   if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
-    std::stringstream s;
-    s << "typedef struct " << name << "Ref { void* unused1; void* unused2; } " << name << "Ref;";
-    cByExportedName->insert(std::make_pair(name, s.str()));
+    for (auto name : globalState->program->getExportedNames(interfaceDefM->referend->fullName)) {
+      std::stringstream s;
+      s << "typedef struct " << name << "Ref { void* unused1; void* unused2; } " << name << "Ref;";
+      cByExportedName->insert(std::make_pair(name, s.str()));
+    }
   }
 }
 
-std::string Assist::getRefNameC(Reference* refMT) {
+std::string Assist::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
   if (refMT->ownership == Ownership::SHARE) {
     assert(false);
   } else if (auto structRefMT = dynamic_cast<StructReferend*>(refMT->referend)) {
     auto structMT = globalState->program->getStruct(structRefMT->fullName);
-    auto baseName = globalState->program->getExportedName(structRefMT->fullName);
-    if (structMT->mutability == Mutability::MUTABLE) {
-      assert(refMT->location != Location::INLINE);
-      return baseName + "Ref";
-    } else {
-      if (refMT->location == Location::INLINE) {
-        return baseName + "Inl";
-      } else {
+    for (auto baseName : globalState->program->getExportedNames(structRefMT->fullName)) {
+      if (structMT->mutability == Mutability::MUTABLE) {
+        assert(refMT->location != Location::INLINE);
         return baseName + "Ref";
+      } else {
+        if (refMT->location == Location::INLINE) {
+          return baseName + "Inl";
+        } else {
+          return baseName + "Ref";
+        }
       }
     }
   } else if (auto interfaceMT = dynamic_cast<InterfaceReferend*>(refMT->referend)) {
-    return globalState->program->getExportedName(interfaceMT->fullName) + "Ref";
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(usaMT->name) + "Ref";
+  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ksaMT->name) + "Ref";
   } else {
     assert(false);
   }
+  assert(false);
+  return "";
 }
 
 Reference* Assist::getExternalType(Reference* refMT) {
@@ -954,7 +1007,15 @@ void Assist::initializeElementInKSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  assert(false);
+  auto ksaDef = globalState->program->getKnownSizeArray(ksaMT->name);
+  auto arrayWrapperPtrLE =
+      referendStructs.makeWrapperPtr(
+          FL(), functionState, builder, ksaRefMT,
+          globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef));
+  auto sizeRef = globalState->constI64(ksaDef->size);
+  auto arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+  ::initializeElement(
+      globalState, functionState, builder, ksaRefMT->location, ksaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref Assist::deinitializeElementFromKSA(

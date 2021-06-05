@@ -51,11 +51,17 @@ object Reachability {
     val function = vassertSome(program.lookupFunction(calleeSignature))
     function.all({
       case FunctionCall2(calleePrototype, _) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case ConstructArray2(_, _, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
+      case StaticArrayFromCallable2(_, _, calleePrototype) => visitFunction(program, edgeBlueprints, edges, reachables, calleePrototype.toSignature)
       case sr @ StructRef2(_) => visitStruct(program, edgeBlueprints, edges, reachables, sr)
       case ir @ InterfaceRef2(_) => visitInterface(program, edgeBlueprints, edges, reachables, ir)
       case ksa @ KnownSizeArrayT2(_, _) => visitKnownSizeArray(program, edgeBlueprints, edges, reachables, ksa)
       case usa @ UnknownSizeArrayT2(_) => visitUnknownSizeArray(program, edgeBlueprints, edges, reachables, usa)
-      case usa @ LockWeak2(_, _, someConstructor, noneConstructor) => {
+      case LockWeak2(_, _, someConstructor, noneConstructor) => {
+        visitFunction(program, edgeBlueprints, edges, reachables, someConstructor.toSignature)
+        visitFunction(program, edgeBlueprints, edges, reachables, noneConstructor.toSignature)
+      }
+      case AsSubtype2(_, _, _, someConstructor, noneConstructor) => {
         visitFunction(program, edgeBlueprints, edges, reachables, someConstructor.toSignature)
         visitFunction(program, edgeBlueprints, edges, reachables, noneConstructor.toSignature)
       }
@@ -92,7 +98,7 @@ object Reachability {
     // that let go of a reference.
     if (interfaceDef.mutability == Immutable) {
       val destructorSignature =
-        Signature2(FullName2(List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, interfaceRef))), List(Coord(Share, interfaceRef)))))
+        Signature2(FullName2(List(), ImmInterfaceDestructorName2(List(CoordTemplata(Coord(Share, Readonly, interfaceRef))), List(Coord(Share, Readonly, interfaceRef)))))
       visitFunction(program, edgeBlueprints, edges, reachables, destructorSignature)
     }
     interfaceDef.all({

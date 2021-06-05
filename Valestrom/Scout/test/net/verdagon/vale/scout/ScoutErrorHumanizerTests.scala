@@ -3,7 +3,7 @@ package net.verdagon.vale.scout
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.patterns.{AbstractSP, AtomSP, CaptureS}
 import net.verdagon.vale.scout.rules._
-import net.verdagon.vale.{Err, Ok, vassert, vfail}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, Ok, vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ScoutErrorHumanizerTests extends FunSuite with Matchers {
@@ -11,7 +11,7 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -23,7 +23,7 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => e
           case Ok(t) => vfail("Successfully compiled!\n" + t.toString)
         }
@@ -32,13 +32,22 @@ class ScoutErrorHumanizerTests extends FunSuite with Matchers {
   }
 
   test("Humanize errors") {
-    val filenamesAndSources = List(("file.vale", "blah blah blah\nblah blah blah"))
+    val codeMap = FileCoordinateMap.test("blah blah blah\nblah blah blah")
 
-    vassert(ScoutErrorHumanizer.humanize(filenamesAndSources,
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
       VariableNameAlreadyExists(RangeS.testZero, CodeVarNameS("Spaceship")))
       .nonEmpty)
-    vassert(ScoutErrorHumanizer.humanize(filenamesAndSources,
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
       InterfaceMethodNeedsSelf(RangeS.testZero))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      ForgotSetKeywordError(RangeS.testZero))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      CantUseThatLocalName(RangeS.testZero, "set"))
+      .nonEmpty)
+    vassert(ScoutErrorHumanizer.humanize(codeMap,
+      CantInitializeIndividualElementsOfRuntimeSizedArray(RangeS.testZero))
       .nonEmpty)
   }
 }

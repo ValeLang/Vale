@@ -37,7 +37,7 @@ LLVMValueRef hexRoundDown(
     LLVMBuilderRef builder,
     LLVMValueRef n) {
   // Mask off the last four bits, to round downward to the next multiple of 16.
-  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFUL, false);
+  auto mask = LLVMConstInt(LLVMInt64TypeInContext(globalState->context), ~0xFULL, false);
   return LLVMBuildAnd(builder, n, mask, "rounded");
 }
 
@@ -161,7 +161,7 @@ void Linear::dealias(
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "extStrPtrLE");
 
-  LLVMBuildCall(builder, globalState->free, &sourceI8PtrLE, 1, "");
+  LLVMBuildCall(builder, globalState->externs->free, &sourceI8PtrLE, 1, "");
 }
 
 Ref Linear::lockWeak(
@@ -179,6 +179,22 @@ Ref Linear::lockWeak(
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   assert(false);
   exit(1);
+}
+
+Ref Linear::asSubtype(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  assert(false);
 }
 
 LLVMTypeRef Linear::translateType(Reference* referenceM) {
@@ -762,7 +778,7 @@ void Linear::deallocate(
           refLE,
           LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
           "concreteCharPtrForFree");
-  LLVMBuildCall(builder, globalState->free, &concreteAsCharPtrLE, 1, "");
+  LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
 }
 
 Ref Linear::constructUnknownSizeArray(
@@ -929,7 +945,7 @@ Ref Linear::innerMallocStr(
         buildFlare(FL(), globalState, functionState, thenBuilder);
 
         std::vector<LLVMValueRef> argsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
-        LLVMBuildCall(thenBuilder, globalState->strncpy, argsLE.data(), argsLE.size(), "");
+        LLVMBuildCall(thenBuilder, globalState->externs->strncpy, argsLE.data(), argsLE.size(), "");
 
 
         auto charsEndPtr = LLVMBuildGEP(thenBuilder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
@@ -980,7 +996,7 @@ void Linear::checkValidReference(
   regularCheckValidReference(checkerAFL, globalState, functionState, builder, referendStructs, refM, refLE);
 }
 
-std::string Linear::getRefNameC(Reference* hostRefMT) {
+std::string Linear::getMemberArbitraryRefNameCSeeMMEDT(Reference* hostRefMT) {
   assert(valeReferendByHostReferend.find(hostRefMT->referend) != valeReferendByHostReferend.end());
 
   auto hostMT = hostRefMT->referend;
@@ -996,7 +1012,7 @@ std::string Linear::getRefNameC(Reference* hostRefMT) {
     auto valeMT = valeReferendByHostReferend.find(hostMT)->second;
     auto valeInterfaceMT = dynamic_cast<InterfaceReferend*>(valeMT);
     assert(valeInterfaceMT);
-    auto baseName = globalState->program->getExportedName(valeInterfaceMT->fullName);
+    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(valeInterfaceMT->fullName);
     assert(hostRefMT->ownership == Ownership::SHARE);
 //    if (hostRefMT->location == Location::INLINE) {
       return baseName;
@@ -1010,7 +1026,7 @@ std::string Linear::getRefNameC(Reference* hostRefMT) {
     if (valeStructMT == globalState->metalCache->emptyTupleStruct) {
       return "void";
     }
-    auto baseName = globalState->program->getExportedName(valeStructMT->fullName);
+    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(valeStructMT->fullName);
     assert(hostRefMT->ownership == Ownership::SHARE);
     if (hostRefMT->location == Location::INLINE) {
       return baseName;
@@ -1023,7 +1039,7 @@ std::string Linear::getRefNameC(Reference* hostRefMT) {
     auto valeMT = valeReferendByHostReferend.find(hostMT)->second;
     auto valeUsaMT = dynamic_cast<UnknownSizeArrayT*>(valeMT);
     assert(valeUsaMT);
-    auto baseName = globalState->program->getExportedName(valeUsaMT->name);
+    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(valeUsaMT->name);
     assert(hostRefMT->ownership == Ownership::SHARE);
     if (hostRefMT->location == Location::INLINE) {
       return baseName;
@@ -1031,7 +1047,7 @@ std::string Linear::getRefNameC(Reference* hostRefMT) {
       return baseName + "*";
     }
   } else {
-    std::cerr << "Unimplemented type in immutables' getRefNameC: "
+    std::cerr << "Unimplemented type in immutables' getMemberArbitraryRefNameCSeeMMEDT: "
               << typeid(*hostRefMT->referend).name() << std::endl;
     assert(false);
   }
@@ -1040,55 +1056,61 @@ std::string Linear::getRefNameC(Reference* hostRefMT) {
 void Linear::generateStructDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     StructDefinition* structDefM) {
-  auto name = globalState->program->getExportedName(structDefM->referend->fullName);
-  std::stringstream s;
-  s << "typedef struct " << name << " {" << std::endl;
-  for (int i = 0; i < structDefM->members.size(); i++) {
-    auto member = structDefM->members[i];
-    auto hostMT = hostReferendByValeReferend.find(member->type->referend)->second;
-    auto hostRefMT = globalState->metalCache->getReference(member->type->ownership, member->type->location, hostMT);
-    s << "  " << getRefNameC(hostRefMT) << " " << member->name << ";" << std::endl;
-  }
-  s << "} " << name << ";" << std::endl;
-  s << builtinReleaseFuncHeader << std::endl;
+  for (auto name : globalState->program->getExportedNames(structDefM->referend->fullName)) {
+    std::stringstream s;
+    s << "typedef struct " << name << " {" << std::endl;
+    for (int i = 0; i < structDefM->members.size(); i++) {
+      auto member = structDefM->members[i];
+      auto hostMT = hostReferendByValeReferend.find(member->type->referend)->second;
+      auto hostRefMT = globalState->metalCache->getReference(member->type->ownership, member->type->location, hostMT);
+      s << "  " << getMemberArbitraryRefNameCSeeMMEDT(hostRefMT) << " " << member->name << ";" << std::endl;
+    }
+    s << "} " << name << ";" << std::endl;
+    s << builtinReleaseFuncHeader << std::endl;
 
-  cByExportedName->insert(std::make_pair(name, s.str()));
+    cByExportedName->insert(std::make_pair(name, s.str()));
+  }
 }
 
 void Linear::generateInterfaceDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     InterfaceDefinition* interfaceDefM) {
-  auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
-  std::stringstream s;
+  for (auto name : globalState->program->getExportedNames(interfaceDefM->referend->fullName)) {
+    std::stringstream s;
 
-  auto hostReferend = hostReferendByValeReferend.find(interfaceDefM->referend)->second;
-  auto hostInterfaceReferend = dynamic_cast<InterfaceReferend*>(hostReferend);
-  assert(hostInterfaceReferend);
+    auto hostReferend = hostReferendByValeReferend.find(interfaceDefM->referend)->second;
+    auto hostInterfaceReferend = dynamic_cast<InterfaceReferend*>(hostReferend);
+    assert(hostInterfaceReferend);
 
-  s << "typedef enum " << name << "_Type {" << std::endl;
-  for (auto hostStructReferend : structs.getOrderedSubstructs(hostInterfaceReferend)) {
-    auto valeReferend = valeReferendByHostReferend.find(hostStructReferend)->second;
-    auto valeStructReferend = dynamic_cast<StructReferend*>(valeReferend);
-    assert(valeStructReferend);
-    s << "  " << name << "_" << globalState->program->getExportedName(valeStructReferend->fullName) << "," << std::endl;
+    s << "typedef enum " << name << "_Type {" << std::endl;
+    for (auto hostStructReferend : structs.getOrderedSubstructs(hostInterfaceReferend)) {
+      auto valeReferend = valeReferendByHostReferend.find(hostStructReferend)->second;
+      auto valeStructReferend = dynamic_cast<StructReferend*>(valeReferend);
+      assert(valeStructReferend);
+      s << "  " << name << "_" << globalState->program->getMemberArbitraryExportNameSeeMMEDT(valeStructReferend->fullName) << "," << std::endl;
+    }
+    s << "} " << name << "_Type;" << std::endl;
+
+    s << "typedef struct " << name << " { void* obj; " << name << "_Type type; } " << name << ";" << std::endl;
+
+    s << builtinReleaseFuncHeader << std::endl;
+
+    cByExportedName->insert(std::make_pair(name, s.str()));
   }
-  s << "} " << name << "_Type;" << std::endl;
-
-  s << "typedef struct " << name << " { void* obj; " << name << "_Type type; } " << name << ";" << std::endl;
-
-  s << builtinReleaseFuncHeader << std::endl;
-
-  cByExportedName->insert(std::make_pair(name, s.str()));
 }
 
 void Linear::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string>* cByExportedName,
     UnknownSizeArrayDefinitionT* usaDefM) {
-  auto name = globalState->program->getExportedName(usaDefM->name);
+  auto names = globalState->program->getExportedNames(usaDefM->name);
+  assert(names.size() > 0);
+  // In the future, we should make this choose the name that was exported
+  // by this module itself. See MMEDT.
+  auto name = names[0];
 
   auto valeMemberRefMT = usaDefM->rawArray->elementType;
   auto hostMemberRefMT = linearizeReference(valeMemberRefMT);
-  auto hostMemberRefName = getRefNameC(hostMemberRefMT);
+  auto hostMemberRefName = getMemberArbitraryRefNameCSeeMMEDT(hostMemberRefMT);
 
   std::stringstream s;
   s << "typedef struct " << name << " {" << std::endl;
@@ -1819,7 +1841,16 @@ LLVMValueRef Linear::getInterfaceMethodFunctionPtr(
   auto orderedSubstructs = structs.getOrderedSubstructs(hostInterfaceMT);
   auto isValidEdgeNumLE =
       LLVMBuildICmp(builder, LLVMIntULT, edgeNumLE, constI64LE(globalState, orderedSubstructs.size()), "isValidEdgeNum");
-  buildAssert(globalState, functionState, builder, isValidEdgeNumLE, "Invalid edge number!");
+
+  buildIf(
+      globalState, functionState, builder, isZeroLE(builder, isValidEdgeNumLE),
+      [this, edgeNumLE](LLVMBuilderRef thenBuilder) {
+          buildPrint(globalState, thenBuilder, "Invalid edge number (");
+          buildPrint(globalState, thenBuilder, edgeNumLE);
+          buildPrint(globalState, thenBuilder, "), exiting!\n");
+          auto exitCodeIntLE = LLVMConstInt(LLVMInt8TypeInContext(globalState->context), 1, false);
+          LLVMBuildCall(thenBuilder, globalState->externs->exit, &exitCodeIntLE, 1, "");
+      });
 
   auto functionLT = globalState->getInterfaceFunctionTypes(hostInterfaceMT)[indexInEdge];
 

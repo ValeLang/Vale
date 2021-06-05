@@ -102,13 +102,50 @@ object CallHammer {
     val constructArrayCallNode =
         ConstructUnknownSizeArrayH(
           sizeRegisterId.expectIntAccess(),
-          generatorRegisterId.expectInterfaceAccess(),
+          generatorRegisterId,
           generatorMethodH,
           elementType,
           arrayRefTypeH.expectUnknownSizeArrayReference())
 
     ExpressionHammer.translateDeferreds(
       hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds ++ sizeDeferreds)
+  }
+
+  def translateStaticArrayFromCallable(
+    hinputs: Hinputs,
+    hamuts: HamutsBox,
+    currentFunctionHeader: FunctionHeader2,
+    locals: LocalsBox,
+    exprTE: StaticArrayFromCallable2):
+  (ExpressionH[ReferendH]) = {
+    val StaticArrayFromCallable2(arrayType2, generatorExpr2, generatorMethod) = exprTE;
+
+    val (generatorRegisterId, generatorDeferreds) =
+      ExpressionHammer.translate(
+        hinputs, hamuts, currentFunctionHeader, locals, generatorExpr2);
+
+    val (arrayRefTypeH) =
+      TypeHammer.translateReference(
+        hinputs, hamuts, exprTE.resultRegister.reference)
+
+    val (arrayTypeH) =
+      TypeHammer.translateKnownSizeArray(hinputs, hamuts, arrayType2)
+    vassert(arrayRefTypeH.expectKnownSizeArrayReference().kind == arrayTypeH)
+
+    val elementType = hamuts.getKnownSizeArray(arrayTypeH).rawArray.elementType
+
+    val generatorMethodH =
+      FunctionHammer.translatePrototype(hinputs, hamuts, generatorMethod)
+
+    val constructArrayCallNode =
+      StaticArrayFromCallableH(
+        generatorRegisterId,
+        generatorMethodH,
+        elementType,
+        arrayRefTypeH.expectKnownSizeArrayReference())
+
+    ExpressionHammer.translateDeferreds(
+      hinputs, hamuts, currentFunctionHeader, locals, constructArrayCallNode, generatorDeferreds)
   }
 
   def translateDestroyArraySequence(
@@ -214,7 +251,7 @@ object CallHammer {
 
     val (conditionBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
-    vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH,BoolH()))
+    vassert(conditionBlockH.resultType == ReferenceH(m.ShareH, InlineH, ReadonlyH, BoolH()))
 
     val thenLocals = LocalsBox(parentLocals.snapshot)
     val (thenBlockH, List()) =
@@ -301,7 +338,7 @@ object CallHammer {
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
 
     val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val Coord(_, interfaceRef2 @ InterfaceRef2(_)) =
+    val Coord(_, _, interfaceRef2 @ InterfaceRef2(_)) =
       superFunctionHeader.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
       StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceRef2)

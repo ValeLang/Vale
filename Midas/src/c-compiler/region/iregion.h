@@ -118,6 +118,20 @@ public:
       std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
       std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
 
+  virtual Ref asSubtype(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      bool thenResultIsNever,
+      bool elseResultIsNever,
+      Reference* resultOptTypeM,
+      Reference* constraintRefM,
+      Reference* sourceInterfaceRefMT,
+      Ref sourceInterfaceRefLE,
+      bool sourceRefKnownLive,
+      Referend* targetReferend,
+      std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+      std::function<Ref(LLVMBuilderRef)> buildElse) = 0;
+
   virtual Ref constructKnownSizeArray(
       Ref regionInstanceRef,
       FunctionState* functionState,
@@ -148,7 +162,7 @@ public:
 
   virtual LLVMTypeRef translateType(Reference* referenceM) = 0;
 
-  virtual std::string getRefNameC(
+  virtual std::string getMemberArbitraryRefNameCSeeMMEDT(
       Reference* refMT) = 0;
   virtual void generateStructDefsC(
       std::unordered_map<std::string, std::string>* cByExportedName, StructDefinition* refMT) = 0;

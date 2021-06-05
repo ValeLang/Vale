@@ -130,7 +130,7 @@ case class IntV(value: Int) extends PrimitiveReferendV {
 case class BoolV(value: Boolean) extends PrimitiveReferendV {
   override def tyype = RRReferend(BoolH())
 }
-case class FloatV(value: Float) extends PrimitiveReferendV {
+case class FloatV(value: Double) extends PrimitiveReferendV {
   override def tyype = RRReferend(FloatH())
 }
 case class StrV(value: String) extends PrimitiveReferendV {
@@ -214,7 +214,9 @@ case class ArrayInstanceV(
   }
 }
 
-case class AllocationId(tyype: RRReferend, num: Int)
+case class AllocationId(tyype: RRReferend, num: Int) {
+  override def hashCode(): Int = num
+}
 
 case class ReferenceV(
   // actualType and seenAsType will be different in the case of interface reference.
@@ -229,13 +231,14 @@ case class ReferenceV(
   ownership: OwnershipH,
 
   location: LocationH,
+  permission: PermissionH,
 
   // Negative number means it's an empty struct (like void).
   num: Int
 ) {
   def allocId = AllocationId(RRReferend(actualKind.hamut), num)
-  val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, actualKind.hamut))
-  val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, seenAsKind.hamut))
+  val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, permission, actualKind.hamut))
+  val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, permission, seenAsKind.hamut))
 }
 
 sealed trait IObjectReferrer {
@@ -251,7 +254,7 @@ case class RegisterHoldToObjectReferrer(expressionId: ExpressionId, ownership: O
 case class ArgumentToObjectReferrer(argumentId: ArgumentId, ownership: OwnershipH) extends IObjectReferrer
 
 case class VariableAddressV(callId: CallId, local: Local) {
-  override def toString: String = "&v:" + callId + "#v" + local.id
+  override def toString: String = "&v:" + callId + "#v" + local.id.number
 }
 case class MemberAddressV(structId: AllocationId, fieldIndex: Int) {
   override def toString: String = "&o:" + structId.num + "." + fieldIndex
@@ -262,7 +265,8 @@ case class ElementAddressV(arrayId: AllocationId, elementIndex: Int) {
 
 // Used in tracking reference counts/maps.
 case class CallId(callDepth: Int, function: PrototypeH) {
-  override def toString: String = "ƒ" + callDepth + "/" + function.fullName.toString
+  override def toString: String = "ƒ" + callDepth + "/" + function.fullName.toReadableString()
+  override def hashCode(): Int = callDepth + function.fullName.id
 }
 //case class RegisterId(blockId: BlockId, lineInBlock: Int)
 case class ArgumentId(callId: CallId, index: Int)

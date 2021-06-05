@@ -303,6 +303,9 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReference(cache, expression["sourceType"]),
         readReferend(cache, expression["sourceReferend"]),
         readReference(cache, expression["resultType"]));
+  } else if (type == "NarrowPermission") {
+    return new NarrowPermission(
+        readExpression(cache, expression["sourceExpr"]));
   } else if (type == "Call") {
     return new Call(
         readPrototype(cache, expression["function"]),
@@ -399,7 +402,16 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readReferend(cache, expression["sizeReferend"]),
         readExpression(cache, expression["generatorExpr"]),
         readReference(cache, expression["generatorType"]),
-        readInterfaceReferend(cache, expression["generatorReferend"]),
+        readReferend(cache, expression["generatorReferend"]),
+        readPrototype(cache, expression["generatorMethod"]),
+        expression["generatorKnownLive"],
+        readReference(cache, expression["resultType"]),
+        readReference(cache, expression["elementType"]));
+  } else if (type == "StaticArrayFromCallable") {
+    return new StaticArrayFromCallable(
+        readExpression(cache, expression["generatorExpr"]),
+        readReference(cache, expression["generatorType"]),
+        readReferend(cache, expression["generatorReferend"]),
         readPrototype(cache, expression["generatorMethod"]),
         expression["generatorKnownLive"],
         readReference(cache, expression["resultType"]),
@@ -454,6 +466,20 @@ Expression* readExpression(MetalCache* cache, const json& expression) {
         readExpression(cache, expression["sourceExpr"]),
         readReference(cache, expression["sourceType"]),
         expression["sourceKnownLive"],
+        readPrototype(cache, expression["someConstructor"]),
+        readReference(cache, expression["someType"]),
+        readStructReferend(cache, expression["someReferend"]),
+        readPrototype(cache, expression["noneConstructor"]),
+        readReference(cache, expression["noneType"]),
+        readStructReferend(cache, expression["noneReferend"]),
+        readReference(cache, expression["resultOptType"]),
+        readInterfaceReferend(cache, expression["resultOptReferend"]));
+  } else if (type == "AsSubtype") {
+    return new AsSubtype(
+        readExpression(cache, expression["sourceExpr"]),
+        readReference(cache, expression["sourceType"]),
+        expression["sourceKnownLive"],
+        readReferend(cache, expression["targetReferend"]),
         readPrototype(cache, expression["someConstructor"]),
         readReference(cache, expression["someType"]),
         readStructReferend(cache, expression["someReferend"]),
@@ -615,13 +641,17 @@ Program* readProgram(MetalCache* cache, const json& program) {
           AddressHasher<Referend*>(cache->addressNumberer),
           program["immDestructorsByReferend"],
           readReferendAndPrototypeEntry),
-      readArrayIntoMap<Name*, std::string>(
+      readArrayIntoMap<Name*, std::vector<std::string>>(
           cache,
           AddressHasher<Name*>(cache->addressNumberer),
-          program["exportedNameByFullName"],
-          [](MetalCache* cache, json j){
-            auto fullName = readName(cache, j["fullName"]);
-            std::string exportedName = j["exportedName"];
-            return std::make_pair(fullName, exportedName);
+          program["fullNameToExportedNames"],
+          [](MetalCache* cache, json entryJ){
+            auto fullName = readName(cache, entryJ["fullName"]);
+            auto exportedNamesJ = entryJ["exportedNames"];
+            auto exportedNames =
+                readArray(cache, exportedNamesJ, [](MetalCache* cache, json j) -> std::string {
+                  return j;
+                });
+            return std::make_pair(fullName, exportedNames);
           }));
 }

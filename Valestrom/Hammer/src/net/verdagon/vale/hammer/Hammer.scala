@@ -1,10 +1,14 @@
 package net.verdagon.vale.hammer
 
+import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
-import net.verdagon.vale.parser.VariabilityP
-import net.verdagon.vale.templar.{CitizenName2, ExportAs2, ExternFunctionName2, FullName2, FunctionName2, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, types => t}
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.parser.{FileP, VariabilityP}
+import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
+import net.verdagon.vale.templar.{CitizenName2, ExportAs2, ExternFunctionName2, FullName2, FunctionName2, ICompileErrorT, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, TemplarCompilation, TemplarCompilationOptions, types => t}
+import net.verdagon.vale.{Builtins, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NamespaceCoordinateMap, NullProfiler, Result, vassert, vfail, vwat}
+
+import scala.collection.immutable.List
 
 case class FunctionRefH(prototype: PrototypeH) {
   //  def functionType = prototype.functionType
@@ -212,8 +216,20 @@ object Hammer {
       vassert(immDestructorPrototypeH.params.head.kind == kindH)
     }})
 
-    val exportedNameByFullName = hamuts.fullNameByExportedName.map(_.swap)
-    vassert(exportedNameByFullName.size == hamuts.fullNameByExportedName.size)
+    val fullNameToExportedNames = hamuts.exportedNameToFullName.groupBy(_._2).map({ case (k, v) => (k, v.keys.toList) })
+//    if (fullNameToExportedNames.size != hamuts.exportedNameToFullName.size) {
+//      fullNameToExportedNames.foreach({ case (fullName, exportedName) =>
+//        if (hamuts.exportedNameToFullName(exportedName) != fullName) {
+//          vfail("Exported name conflict: " + exportedName + ": " + fullName + " and " + hamuts.exportedNameToFullName(exportedName))
+//        }
+//      })
+//
+//      // If we get here, something went very wrong
+//      hamuts.exportedNameToFullName.foreach({ case (exportedName, fullName) =>
+//        println(exportedName + ": " + fullName)
+//      })
+//      vfail()
+//    }
 
     ProgramH(
       hamuts.interfaceDefs.values.toList,
@@ -223,7 +239,7 @@ object Hammer {
       hamuts.inner.knownSizeArrays,
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
-      exportedNameByFullName,
+      fullNameToExportedNames,
       List())
   }
 
@@ -234,7 +250,7 @@ object Hammer {
         case CitizenName2(humanName, _) => humanName
         case _ => vfail("Can't export something that doesn't have a human readable name!")
       }
-    hamuts.fullNameByExportedName.get(exportedName) match {
+    hamuts.exportedNameToFullName.get(exportedName) match {
       case None =>
       case Some(existingFullName) => {
         vfail("Can't export " + fullNameH + " as " + exportedName + ", that exported name already taken by " + existingFullName)
@@ -243,3 +259,4 @@ object Hammer {
     hamuts.addExport(fullNameH, exportedName)
   }
 }
+

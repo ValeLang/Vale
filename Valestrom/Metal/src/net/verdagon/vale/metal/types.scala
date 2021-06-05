@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.{vassert, vfail}
+import net.verdagon.vale.{FileCoordinate, vassert, vfail}
 
 // Represents a reference type.
 // A reference contains these things:
@@ -20,12 +20,15 @@ import net.verdagon.vale.{vassert, vfail}
 //     TODO: Get rid of raw.
 //   - (in the future) Weak, which is a reference that will null itself out when the
 //     referend is destroyed. Weak refs can only point at mutable referends.
-// - (in the future) Permission, either readonly or readwrite.
+// - Permission, how one can modify the object through this reference.
+//   - Readonly, we cannot modify the object through this reference.
+//   - Readwrite, we can.
 // - (in the future) Location, either inline or yonder. Inline means that this reference
 //   isn't actually a pointer, it's just the value itself, like C's Car vs Car*.
 // In previous stages, this is referred to as a "coord", because these four things can be
 // thought of as dimensions of a coordinate.
-case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: LocationH, kind: T) {
+case class ReferenceH[+T <: ReferendH](
+    ownership: OwnershipH, location: LocationH, permission: PermissionH, kind: T) {
   (ownership, location) match {
     case (OwnH, YonderH) =>
     case (ShareH, _) =>
@@ -66,28 +69,28 @@ case class ReferenceH[+T <: ReferendH](ownership: OwnershipH, location: Location
   // points at a known size array.
   def expectKnownSizeArrayReference() = {
     kind match {
-      case atH @ KnownSizeArrayTH(_) => ReferenceH[KnownSizeArrayTH](ownership, location, atH)
+      case atH @ KnownSizeArrayTH(_) => ReferenceH[KnownSizeArrayTH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at an unknown size array.
   def expectUnknownSizeArrayReference() = {
     kind match {
-      case atH @ UnknownSizeArrayTH(_) => ReferenceH[UnknownSizeArrayTH](ownership, location, atH)
+      case atH @ UnknownSizeArrayTH(_) => ReferenceH[UnknownSizeArrayTH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at struct.
   def expectStructReference() = {
     kind match {
-      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, atH)
+      case atH @ StructRefH(_) => ReferenceH[StructRefH](ownership, location, permission, atH)
     }
   }
   // Convenience function for casting this to a Reference which the compiler knows
   // points at interface.
   def expectInterfaceReference() = {
     kind match {
-      case atH @ InterfaceRefH(_) => ReferenceH[InterfaceRefH](ownership, location, atH)
+      case atH @ InterfaceRefH(_) => ReferenceH[InterfaceRefH](ownership, location, permission, atH)
     }
   }
 }
@@ -160,8 +163,8 @@ case class RawArrayTH(
 // Place in the original source code that something came from. Useful for uniquely
 // identifying templates.
 case class CodeLocation(
-  line: Int,
-  char: Int)
+  file: FileCoordinate,
+  offset: Int)
 
 // Ownership is the way a reference relates to the referend's lifetime, see
 // ReferenceH for explanation.
@@ -171,12 +174,18 @@ case object BorrowH extends OwnershipH
 case object WeakH extends OwnershipH
 case object ShareH extends OwnershipH
 
-// Permission says whether a reference can modify the referend it's pointing at.
-// See ReferenceH for explanation.
-sealed trait Permission
-case object Readonly extends Permission
-case object Readwrite extends Permission
-case object ExclusiveReadwrite extends Permission
+// Permission is restrictions on how we can modify an object through a certain
+// reference, see ReferenceH for explanation.
+sealed trait PermissionH
+case object ReadonlyH extends PermissionH
+case object ReadwriteH extends PermissionH
+
+//// Permission says whether a reference can modify the referend it's pointing at.
+//// See ReferenceH for explanation.
+//sealed trait Permission
+//case object Readonly extends Permission
+//case object Readwrite extends Permission
+//case object ExclusiveReadwrite extends Permission
 
 // Location says whether a reference contains the referend's location (yonder) or
 // contains the referend itself (inline).
@@ -223,8 +232,8 @@ case object Mutable extends Mutability
 //   This will create a varying local, which can be changed to point elsewhere:
 //     Vale:
 //       x! = Car(4, "Honda Civic");
-//       mut x = someOtherCar;
-//       mut x = Car(4, "Toyota Camry");
+//       set x = someOtherCar;
+//       set x = Car(4, "Toyota Camry");
 //     C++:
 //       Car* x = new Car(4, "Honda Civic");
 //       x = someOtherCar;

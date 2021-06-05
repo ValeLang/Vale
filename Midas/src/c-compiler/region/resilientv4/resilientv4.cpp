@@ -253,6 +253,29 @@ Ref ResilientV4::lockWeak(
       buildThen, buildElse, isAliveLE, resultOptTypeLE, &weakRefStructs);
 }
 
+Ref ResilientV4::asSubtype(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    bool thenResultIsNever,
+    bool elseResultIsNever,
+    Reference* resultOptTypeM,
+    Reference* constraintRefM,
+    Reference* sourceInterfaceRefMT,
+    Ref sourceInterfaceRef,
+    bool sourceRefKnownLive,
+    Referend* targetReferend,
+    std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
+    std::function<Ref(LLVMBuilderRef)> buildElse) {
+  auto targetStructReferend = dynamic_cast<StructReferend*>(targetReferend);
+  assert(targetStructReferend);
+  auto sourceInterfaceReferend = dynamic_cast<InterfaceReferend*>(sourceInterfaceRefMT->referend);
+  assert(sourceInterfaceReferend);
+
+  return resilientDowncast(
+      globalState, functionState, builder, &weakRefStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
+      targetReferend, buildThen, buildElse, targetStructReferend, sourceInterfaceReferend);
+}
+
 LLVMTypeRef ResilientV4::translateType(Reference *referenceM) {
   switch (referenceM->ownership) {
     case Ownership::SHARE:
@@ -767,7 +790,7 @@ void ResilientV4::deallocate(
         buildFlare(FL(), globalState, functionState, thenBuilder, "size: ", sizeLE);
 
         std::vector<LLVMValueRef> argsLE = { sourceContentsI8PtrLE, constI8LE(globalState, 0), sizeLE };
-        LLVMBuildCall(thenBuilder, globalState->memset, argsLE.data(), argsLE.size(), "");
+        LLVMBuildCall(thenBuilder, globalState->externs->memset, argsLE.data(), argsLE.size(), "");
         buildFlare(FL(), globalState, functionState, thenBuilder, "done!");
 
         hgmWeaks.addToUndeadCycle(functionState, thenBuilder, refMT, sourceWrapperPtrLE);
@@ -867,12 +890,12 @@ void ResilientV4::checkInlineStructType(
 }
 
 
-std::string ResilientV4::getRefNameC(Reference *refMT) {
+std::string ResilientV4::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
   if (refMT->ownership == Ownership::SHARE) {
     assert(false);
   } else if (auto structRefMT = dynamic_cast<StructReferend *>(refMT->referend)) {
     auto structMT = globalState->program->getStruct(structRefMT->fullName);
-    auto baseName = globalState->program->getExportedName(structRefMT->fullName);
+    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(structRefMT->fullName);
     if (structMT->mutability == Mutability::MUTABLE) {
       assert(refMT->location != Location::INLINE);
       return baseName + "Ref";
@@ -884,7 +907,11 @@ std::string ResilientV4::getRefNameC(Reference *refMT) {
       }
     }
   } else if (auto interfaceMT = dynamic_cast<InterfaceReferend *>(refMT->referend)) {
-    return globalState->program->getExportedName(interfaceMT->fullName) + "Ref";
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
+  } else if (auto usaMT = dynamic_cast<UnknownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(usaMT->name) + "Ref";
+  } else if (auto ksaMT = dynamic_cast<KnownSizeArrayT*>(refMT->referend)) {
+    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ksaMT->name) + "Ref";
   } else {
     assert(false);
   }
@@ -893,11 +920,13 @@ std::string ResilientV4::getRefNameC(Reference *refMT) {
 void ResilientV4::generateUnknownSizeArrayDefsC(
     std::unordered_map<std::string, std::string> *cByExportedName,
     UnknownSizeArrayDefinitionT *usaDefM) {
+  assert(false);
 }
 
 void ResilientV4::generateKnownSizeArrayDefsC(
     std::unordered_map<std::string, std::string> *cByExportedName,
     KnownSizeArrayDefinitionT *usaDefM) {
+  assert(false);
 }
 
 void ResilientV4::generateStructDefsC(
@@ -906,12 +935,13 @@ void ResilientV4::generateStructDefsC(
   if (structDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto baseName = globalState->program->getExportedName(structDefM->referend->fullName);
-    auto refTypeName = baseName + "Ref";
-    std::stringstream s;
-    s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused1; } " << refTypeName << ";"
-      << std::endl;
-    cByExportedName->insert(std::make_pair(baseName, s.str()));
+    for (auto baseName : globalState->program->getExportedNames(structDefM->referend->fullName)) {
+      auto refTypeName = baseName + "Ref";
+      std::stringstream s;
+      s << "typedef struct " << refTypeName << " { uint64_t unused0; void* unused1; } " << refTypeName << ";"
+        << std::endl;
+      cByExportedName->insert(std::make_pair(baseName, s.str()));
+    }
   }
 }
 
@@ -921,10 +951,11 @@ void ResilientV4::generateInterfaceDefsC(
   if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
     assert(false);
   } else {
-    auto name = globalState->program->getExportedName(interfaceDefM->referend->fullName);
-    std::stringstream s;
-    s << "typedef struct " << name << "Ref { uint64_t unused0; void* unused1; void* unused2; } " << name << "Ref;";
-    cByExportedName->insert(std::make_pair(name, s.str()));
+    for (auto name : globalState->program->getExportedNames(interfaceDefM->referend->fullName)) {
+      std::stringstream s;
+      s << "typedef struct " << name << "Ref { uint64_t unused0; void* unused1; void* unused2; } " << name << "Ref;";
+      cByExportedName->insert(std::make_pair(name, s.str()));
+    }
   }
 }
 
@@ -1015,7 +1046,15 @@ void ResilientV4::initializeElementInKSA(
     bool arrayRefKnownLive,
     Ref indexRef,
     Ref elementRef) {
-  assert(false);
+  auto ksaDef = globalState->program->getKnownSizeArray(ksaMT->name);
+  auto arrayWrapperPtrLE =
+      referendStructs.makeWrapperPtr(
+          FL(), functionState, builder, ksaRefMT,
+          globalState->getRegion(ksaRefMT)->checkValidReference(FL(), functionState, builder, ksaRefMT, arrayRef));
+  auto sizeRef = globalState->constI64(ksaDef->size);
+  auto arrayElementsPtrLE = getKnownSizeArrayContentsPtr(builder, arrayWrapperPtrLE);
+  ::initializeElement(
+      globalState, functionState, builder, ksaRefMT->location, ksaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref ResilientV4::deinitializeElementFromKSA(

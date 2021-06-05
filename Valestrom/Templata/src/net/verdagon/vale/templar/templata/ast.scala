@@ -4,7 +4,7 @@ package net.verdagon.vale.templar.templata
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.templar.{FullName2, FunctionName2, IFunctionName2, IVarName2}
 import net.verdagon.vale.templar.types._
-import net.verdagon.vale.{vassert, vassertSome, vfail, vimpl}
+import net.verdagon.vale.{FileCoordinate, vassert, vassertSome, vfail, vimpl}
 
 case class CovariantFamily(
     root: Prototype2,
@@ -111,7 +111,7 @@ case class FunctionBanner2(
   def getAbstractInterface: Option[InterfaceRef2] = {
     val abstractInterfaces =
       params.collect({
-        case Parameter2(_, Some(Abstract2), Coord(_, ir @ InterfaceRef2(_))) => ir
+        case Parameter2(_, Some(Abstract2), Coord(_, _, ir @ InterfaceRef2(_))) => ir
       })
     vassert(abstractInterfaces.size <= 1)
     abstractInterfaces.headOption
@@ -120,7 +120,7 @@ case class FunctionBanner2(
   def getOverride: Option[(StructRef2, InterfaceRef2)] = {
     val overrides =
       params.collect({
-        case Parameter2(_, Some(Override2(ir)), Coord(_, sr @ StructRef2(_))) => (sr, ir)
+        case Parameter2(_, Some(Override2(ir)), Coord(_, _, sr @ StructRef2(_))) => (sr, ir)
       })
     vassert(overrides.size <= 1)
     overrides.headOption
@@ -154,6 +154,7 @@ sealed trait IFunctionAttribute2
 sealed trait ICitizenAttribute2
 case object Extern2 extends IFunctionAttribute2 with ICitizenAttribute2 // For optimization later
 case object Export2 extends IFunctionAttribute2 with ICitizenAttribute2
+case object Pure2 extends IFunctionAttribute2 with ICitizenAttribute2
 case object UserFunction2 extends IFunctionAttribute2 // Whether it was written by a human. Mostly for tests right now.
 
 case class FunctionHeader2(
@@ -207,7 +208,7 @@ case class Prototype2(
 }
 
 case class CodeLocation2(
-  file: Int,
+  file: FileCoordinate,
   offset: Int
 ) extends Queriable2 {
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -215,4 +216,13 @@ case class CodeLocation2(
   }
 
   override def toString: String = file + ":" + offset
+}
+
+object CodeLocation2 {
+  // Keep in sync with CodeLocationS
+  val zero = CodeLocation2.internal(-1)
+  def internal(internalNum: Int): CodeLocation2 = {
+    vassert(internalNum < 0)
+    CodeLocation2(FileCoordinate("", List(), "internal"), internalNum)
+  }
 }

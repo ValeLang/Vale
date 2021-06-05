@@ -20,11 +20,10 @@ object Conversions {
     }
   }
 
-  def evaluatePermission(permission: t.Permission): Permission = {
+  def evaluatePermission(permission: t.Permission): PermissionH = {
     permission match {
-      case t.Readonly => Readonly
-      case t.Readwrite => Readwrite
-      case t.ExclusiveReadwrite => ExclusiveReadwrite
+      case t.Readonly => ReadonlyH
+      case t.Readwrite => ReadwriteH
     }
   }
 
@@ -45,7 +44,7 @@ object Conversions {
   def evaluateOwnership(ownership: t.Ownership): OwnershipH = {
     ownership match {
       case t.Own => OwnH
-      case t.Borrow => BorrowH
+      case t.Constraint => BorrowH
       case t.Share => ShareH
       case t.Weak => WeakH
     }

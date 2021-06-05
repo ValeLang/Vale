@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.scout.CodeLocationS
 import net.verdagon.vale.templar.templata.{CodeLocation2, CoordTemplata, ITemplata, Queriable2}
-import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Share, StructRef2, UnknownSizeArrayT2}
+import net.verdagon.vale.templar.types.{Coord, InterfaceRef2, Kind, KnownSizeArrayT2, Mutability, Readonly, Share, StructRef2, UnknownSizeArrayT2}
 import net.verdagon.vale.{vassert, vpass, vwat}
 
 // Scout's/Astronomer's name parts correspond to where they are in the source code,
@@ -101,8 +101,8 @@ case class BuildingFunctionNameWithClosuredsAndTemplateArgs2(
 
 // We dont just use "destructor" as the name because we don't want the user to override it.
 case class ImmConcreteDestructorName2(kind: Kind) extends IFunctionName2 {
-  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, kind)))
-  override def parameters: List[Coord] = List(Coord(Share, kind))
+  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, Readonly, kind)))
+  override def parameters: List[Coord] = List(Coord(Share, Readonly, kind))
 
   kind match {
     case InterfaceRef2(_) => vwat()
@@ -126,8 +126,8 @@ case class ImmInterfaceDestructorName2(
 }
 // We dont just use "drop" as the name because we don't want the user to override it.
 case class ImmDropName2(kind: Kind) extends IFunctionName2 {
-  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, kind)))
-  override def parameters: List[Coord] = List(Coord(Share, kind))
+  override def templateArgs: List[ITemplata] = List(CoordTemplata(Coord(Share, Readonly, kind)))
+  override def parameters: List[Coord] = List(Coord(Share, Readonly, kind))
 
   def order = 39;
   def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
@@ -305,6 +305,9 @@ sealed trait IRune2 extends IName2
 case class CodeRune2(name: String) extends IRune2 { def order = 7; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class ImplicitRune2(parentName: IName2, name: Int) extends IRune2 { def order = 8; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class LetImplicitRune2(codeLocation: CodeLocation2, name: Int) extends IRune2 { def order = 34; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class ArraySizeImplicitRune2() extends IRune2 { def order = 48; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class ArrayVariabilityImplicitRune2() extends IRune2 { def order = 49; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
+case class ArrayMutabilityImplicitRune2() extends IRune2 { def order = 50; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class MemberRune2(memberIndex: Int) extends IRune2 { def order = 9; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class MagicImplicitRune2(codeLocation: CodeLocation2) extends IRune2 { def order = 10; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }
 case class ReturnRune2() extends IRune2 { def order = 11; def all[T](func: PartialFunction[Queriable2, T]): List[T] = { List(this).collect(func) } }

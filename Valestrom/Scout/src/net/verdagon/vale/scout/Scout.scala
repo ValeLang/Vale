@@ -5,31 +5,39 @@ import net.verdagon.vale.scout.patterns.{PatternScout, RuleState, RuleStateBox}
 import net.verdagon.vale.scout.predictor.Conclusions
 import net.verdagon.vale.scout.rules._
 import net.verdagon.vale.scout.templatepredictor.PredictorEvaluator
-import net.verdagon.vale.{Err, Ok, Result, vfail, vimpl, vwat}
+import net.verdagon.vale.{Err, FileCoordinate, FileCoordinateMap, INamespaceResolver, IProfiler, NamespaceCoordinate, NullProfiler, Ok, Result, vfail, vimpl, vwat}
 
+import scala.collection.immutable.List
 import scala.util.parsing.input.OffsetPosition
 
 case class CompileErrorExceptionS(err: ICompileErrorS) extends RuntimeException
 
 sealed trait ICompileErrorS
 case class CouldntFindVarToMutateS(range: RangeS, name: String) extends ICompileErrorS
+case class ForgotSetKeywordError(range: RangeS) extends ICompileErrorS
+case class CantUseThatLocalName(range: RangeS, name: String) extends ICompileErrorS
+case class CantInitializeIndividualElementsOfRuntimeSizedArray(range: RangeS) extends ICompileErrorS
+case class InitializingRuntimeSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS
+case class InitializingStaticSizedArrayRequiresSizeAndCallable(range: RangeS) extends ICompileErrorS
+case class InitializingStaticSizedArrayFromCallableNeedsSizeTemplex(range: RangeS) extends ICompileErrorS
 case class CantOwnershipInterfaceInImpl(range: RangeS) extends ICompileErrorS
 case class CantOwnershipStructInImpl(range: RangeS) extends ICompileErrorS
 case class CantOverrideOwnershipped(range: RangeS) extends ICompileErrorS
 case class VariableNameAlreadyExists(range: RangeS, name: IVarNameS) extends ICompileErrorS
 case class InterfaceMethodNeedsSelf(range: RangeS) extends ICompileErrorS
+case class VirtualAndAbstractGoTogether(range: RangeS) extends ICompileErrorS
 
 case class RangedInternalErrorS(range: RangeS, message: String) extends ICompileErrorS
 
 sealed trait IEnvironment {
-  def file: Int
+  def file: FileCoordinate
   def name: INameS
   def allUserDeclaredRunes(): Set[IRuneS]
 }
 
 // Someday we might split this into NamespaceEnvironment and CitizenEnvironment
 case class Environment(
-    file: Int,
+    file: FileCoordinate,
     parentEnv: Option[Environment],
     name: INameS,
     userDeclaredRunes: Set[IRuneS]
@@ -40,7 +48,7 @@ case class Environment(
 }
 
 case class FunctionEnvironment(
-    file: Int,
+    file: FileCoordinate,
     name: IFunctionDeclarationNameS,
     parentEnv: Option[IEnvironment],
     userDeclaredRunes: Set[IRuneS],
@@ -54,7 +62,7 @@ case class FunctionEnvironment(
 }
 
 case class StackFrame(
-    file: Int,
+    file: FileCoordinate,
     name: IFunctionDeclarationNameS,
     parentEnv: FunctionEnvironment,
     maybeParent: Option[StackFrame],
@@ -86,31 +94,22 @@ object Scout {
 //  val unrunedParamOverrideRuneSuffix = "Override"
 //  val unnamedMemberNameSeparator = "_mem_"
 
-  def scoutProgram(files: List[FileP]): Result[ProgramS, ICompileErrorS] = {
+  def scoutProgram(fileCoordinate: FileCoordinate, parsed: FileP): Result[ProgramS, ICompileErrorS] = {
     try {
-      val programsS =
-        files.zipWithIndex.map({ case (FileP(topLevelThings), file) =>
-          val structsS = topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(file, _));
-          val interfacesS = topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(file, _));
-          val implsS = topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(file, _))
-          val functionsS = topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(file, _))
-          val exportsS = topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(file, _))
-          ProgramS(structsS, interfacesS, implsS, functionsS, exportsS)
-        })
-      val programS =
-        ProgramS(
-          programsS.flatMap(_.structs),
-          programsS.flatMap(_.interfaces),
-          programsS.flatMap(_.impls),
-          programsS.flatMap(_.implementedFunctions),
-          programsS.flatMap(_.exports))
+      val structsS = parsed.topLevelThings.collect({ case TopLevelStructP(s) => s }).map(scoutStruct(fileCoordinate, _));
+      val interfacesS = parsed.topLevelThings.collect({ case TopLevelInterfaceP(i) => i }).map(scoutInterface(fileCoordinate, _));
+      val implsS = parsed.topLevelThings.collect({ case TopLevelImplP(i) => i }).map(scoutImpl(fileCoordinate, _))
+      val functionsS = parsed.topLevelThings.collect({ case TopLevelFunctionP(f) => f }).map(FunctionScout.scoutTopLevelFunction(fileCoordinate, _))
+      val exportsS = parsed.topLevelThings.collect({ case TopLevelExportAsP(e) => e }).map(scoutExportAs(fileCoordinate, _))
+      val importsS = parsed.topLevelThings.collect({ case TopLevelImportP(e) => e }).map(scoutImport(fileCoordinate, _))
+      val programS = ProgramS(structsS, interfacesS, implsS, functionsS, exportsS, importsS)
       Ok(programS)
     } catch {
       case CompileErrorExceptionS(err) => Err(err)
     }
   }
 
-  private def scoutImpl(file: Int, impl0: ImplP): ImplS = {
+  private def scoutImpl(file: FileCoordinate, impl0: ImplP): ImplS = {
     val ImplP(range, identifyingRuneNames, maybeTemplateRulesP, struct, interface) = impl0
 
 
@@ -150,14 +149,14 @@ object Scout {
         KindTypePR)
 
     interface match {
-      case OwnershippedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipInterfaceInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
     }
 
     struct match {
-      case OwnershippedPT(range, _, _) => {
+      case InterpretedPT(range, _, _, _) => {
         throw CompileErrorExceptionS(CantOwnershipStructInImpl(Scout.evalRange(file, range)))
       }
       case _ =>
@@ -187,7 +186,7 @@ object Scout {
       interfaceRune)
   }
 
-  private def scoutExportAs(file: Int, exportAsP: ExportAsP): ExportAsS = {
+  private def scoutExportAs(file: FileCoordinate, exportAsP: ExportAsP): ExportAsS = {
     val ExportAsP(range, templexP, exportedName) = exportAsP
 
     val pos = Scout.evalPos(file, range.begin)
@@ -198,8 +197,16 @@ object Scout {
     ExportAsS(Scout.evalRange(file, range), exportName, templexS, exportedName.str)
   }
 
-  private def scoutStruct(file: Int, head: StructP): StructS = {
-    val StructP(range, StringP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
+  private def scoutImport(file: FileCoordinate, importP: ImportP): ImportS = {
+    val ImportP(range, moduleName, namespaceNames, importeeName) = importP
+
+    val pos = Scout.evalPos(file, range.begin)
+
+    ImportS(Scout.evalRange(file, range), moduleName.str, namespaceNames.map(_.str), importeeName.str)
+  }
+
+  private def scoutStruct(file: FileCoordinate, head: StructP): StructS = {
+    val StructP(range, NameP(_, structHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeTemplateRulesP, StructMembersP(_, members)) = head
     val codeLocation = Scout.evalPos(file, range.begin)
     val structName = TopLevelCitizenDeclarationNameS(structHumanName, codeLocation)
 
@@ -248,7 +255,7 @@ object Scout {
 
     val membersS =
       members.zip(memberRunes).flatMap({
-        case (StructMemberP(range, StringP(_, name), variability, _), memberRune) => {
+        case (StructMemberP(range, NameP(_, name), variability, _), memberRune) => {
           List(StructMemberS(Scout.evalRange(structEnv.file, range), name, variability, memberRune))
         }
         case (StructMethodP(_), memberRune) => {
@@ -294,8 +301,8 @@ object Scout {
     })
   }
 
-  private def scoutInterface(file: Int, headP: InterfaceP): InterfaceS = {
-    val InterfaceP(range, StringP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
+  private def scoutInterface(file: FileCoordinate, headP: InterfaceP): InterfaceS = {
+    val InterfaceP(range, NameP(_, interfaceHumanName), attributesP, mutability, maybeIdentifyingRunes, maybeRulesP, internalMethodsP) = headP
     val codeLocation = Scout.evalPos(file, range.begin)
     val interfaceFullName = TopLevelCitizenDeclarationNameS(interfaceHumanName, codeLocation)
     val rulesP = maybeRulesP.toList.flatMap(_.rules)
@@ -366,11 +373,11 @@ object Scout {
     interfaceS
   }
 
-  def evalRange(file: Int, range: Range): RangeS = {
+  def evalRange(file: FileCoordinate, range: Range): RangeS = {
     RangeS(evalPos(file, range.begin), evalPos(file, range.end))
   }
 
-  def evalPos(file: Int, pos: Int): CodeLocationS = {
+  def evalPos(file: FileCoordinate, pos: Int): CodeLocationS = {
     CodeLocationS(file, pos)
   }
 
@@ -378,10 +385,10 @@ object Scout {
     templex match {
       case NullablePT(_, inner) => getHumanName(inner)
       case InlinePT(_, inner) => getHumanName(inner)
-      case PermissionedPT(_, permission, inner) => getHumanName(inner)
-      case OwnershippedPT(_, ownership, inner) => getHumanName(inner)
+//      case PermissionedPT(_, permission, inner) => getHumanName(inner)
+      case InterpretedPT(_, ownership, permission, inner) => getHumanName(inner)
       case AnonymousRunePT(_) => vwat()
-      case NameOrRunePT(StringP(_, name)) => name
+      case NameOrRunePT(NameP(_, name)) => name
       case CallPT(_, template, args) => getHumanName(template)
       case RepeaterSequencePT(_, mutability, size, element) => vwat()
       case ManualSequencePT(_, members) => vwat()
@@ -392,5 +399,36 @@ object Scout {
       case LocationPT(_, location) => vwat()
       case PermissionPT(_, permission) => vwat()
     }
+  }
+}
+
+class ScoutCompilation(
+  modulesToBuild: List[String],
+  namespaceToContentsResolver: INamespaceResolver[Map[String, String]]) {
+  var parserCompilation = new ParserCompilation(modulesToBuild, namespaceToContentsResolver)
+  var scoutputCache: Option[FileCoordinateMap[ProgramS]] = None
+
+  def getCodeMap(): FileCoordinateMap[String] = parserCompilation.getCodeMap()
+  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = parserCompilation.getParseds()
+  def getVpstMap(): FileCoordinateMap[String] = parserCompilation.getVpstMap()
+
+  def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = {
+    scoutputCache match {
+      case Some(scoutput) => Ok(scoutput)
+      case None => {
+        val scoutput =
+          getParseds().map({ case (fileCoordinate, (code, commentsAndRanges)) =>
+            Scout.scoutProgram(fileCoordinate, code) match {
+              case Err(e) => return Err(e)
+              case Ok(p) => p
+            }
+          })
+        scoutputCache = Some(scoutput)
+        Ok(scoutput)
+      }
+    }
+  }
+  def expectScoutput(): FileCoordinateMap[ProgramS] = {
+    getScoutput().getOrDie()
   }
 }

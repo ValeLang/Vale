@@ -290,7 +290,7 @@ class StructTemplar(
     prototype: Prototype2):
   StructRef2 = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousStruct", prototype.toString, () => {
-      val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2(-13, 0)))
+      val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2.internal(-13)))
 
       temputs.structDeclared(structFullName) match {
         case Some(structRef2) => return structRef2
@@ -312,13 +312,13 @@ class StructTemplar(
   (StructRef2, Prototype2) = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousSubstruct", prototype.toString + " " + interfaceRef2.toString, () => {
       val functionStructRef = prototypeToAnonymousStruct(temputs, range, prototype)
-      val functionStructType = Coord(Share, functionStructRef)
+      val functionStructType = Coord(Share, Readonly, functionStructRef)
 
       val lambdas = List(functionStructType)
 
       val anonymousSubstructRef =
         makeAnonymousSubstruct(temputs, range, interfaceRef2, lambdas)
-      val anonymousSubstructType = Coord(Share, anonymousSubstructRef)
+      val anonymousSubstructType = Coord(Share, Readonly, anonymousSubstructRef)
 
       val constructorName =
         interfaceRef2.fullName
@@ -348,7 +348,7 @@ class StructTemplar(
                   List(
                     Construct2(
                       functionStructRef,
-                      Coord(Share, functionStructRef),
+                      Coord(Share, Readonly, functionStructRef),
                       List())))))))
       temputs.declareFunctionSignature(range, constructor2.header.toSignature, None)
       temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
@@ -464,7 +464,7 @@ object StructTemplar {
             paramCoords: List[Parameter2],
             maybeRetCoord: Option[Coord]):
           (FunctionHeader2) = {
-            val Some(Coord(_, structRef2 @ StructRef2(_))) = maybeRetCoord
+            val Some(Coord(_, _, structRef2 @ StructRef2(_))) = maybeRetCoord
             val structDef2 = temputs.lookupStruct(structRef2)
             structTemplar.makeStructConstructor(temputs, originFunction, structDef2, env.fullName)
           }

@@ -1,6 +1,6 @@
 package net.verdagon.vale.scout
 
-import net.verdagon.vale.parser.{BorrowP, LendBorrowP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
+import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, PermissionP, VariabilityP, WeakP}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.{IRulexSR, ITypeSR}
 import net.verdagon.vale.{vassert, vpass}
@@ -30,10 +30,14 @@ case class LocalMutateSE(range: RangeS, name: IVarNameS, expr: IExpressionSE) ex
 
 case class OwnershippedSE(range: RangeS, innerExpr1: IExpressionSE, targetOwnership: LoadAsP) extends IExpressionSE {
   targetOwnership match {
-    case LendWeakP =>
-    case LendBorrowP =>
+    case LendWeakP(_) =>
+    case LendConstraintP(_) =>
     case MoveP =>
   }
+}
+
+case class PermissionedSE(range: RangeS, innerExpr1: IExpressionSE, targetPermission: PermissionP) extends IExpressionSE {
+
 }
 
 
@@ -110,7 +114,28 @@ case class RepeaterBlockIteratorSE(range: RangeS, expression: IExpressionSE) ext
 case class ReturnSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 case class VoidSE(range: RangeS) extends IExpressionSE {}
 
-case class SequenceESE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE
+case class TupleSE(range: RangeS, elements: List[IExpressionSE]) extends IExpressionSE
+case class StaticArrayFromValuesSE(
+  range: RangeS,
+  maybeMutabilityST: Option[ITemplexS],
+  maybeVariabilityST: Option[ITemplexS],
+  maybeSizeST: Option[ITemplexS],
+  elements: List[IExpressionSE]
+) extends IExpressionSE
+case class StaticArrayFromCallableSE(
+  range: RangeS,
+  maybeMutabilityST: Option[ITemplexS],
+  maybeVariabilityST: Option[ITemplexS],
+  sizeST: ITemplexS,
+  callable: IExpressionSE
+) extends IExpressionSE
+case class RuntimeArrayFromCallableSE(
+  range: RangeS,
+  mutabilityST: Option[ITemplexS],
+  variabilityST: Option[ITemplexS],
+  sizeSE: IExpressionSE,
+  callable: IExpressionSE
+) extends IExpressionSE
 
 // This thing will be repeated, separated by commas, and all be joined in a pack
 case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
@@ -124,7 +149,7 @@ case class BoolLiteralSE(range: RangeS, value: Boolean) extends IExpressionSE
 
 case class StrLiteralSE(range: RangeS, value: String) extends IExpressionSE
 
-case class FloatLiteralSE(range: RangeS, value: Float) extends IExpressionSE
+case class FloatLiteralSE(range: RangeS, value: Double) extends IExpressionSE
 
 case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 

@@ -1,7 +1,7 @@
 package net.verdagon.vale.scout
 
 import net.verdagon.vale.parser.{CombinatorParsers, FinalP, ParseFailure, ParseSuccess, Parser, VaryingP}
-import net.verdagon.vale.{Err, Ok, vassert, vfail, vimpl}
+import net.verdagon.vale.{Err, FileCoordinate, Ok, vassert, vfail, vimpl}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.runtime.Nothing$
@@ -11,7 +11,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Ok(_) => vfail("Expected an error")
           case Err(e) => e
         }
@@ -23,7 +23,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
     Parser.runParser(code) match {
       case ParseFailure(err) => fail(err.toString)
       case ParseSuccess(program0) => {
-        Scout.scoutProgram(List(program0)) match {
+        Scout.scoutProgram(FileCoordinate.test, program0) match {
           case Err(e) => vfail(e.toString)
           case Ok(t) => t
         }
@@ -105,7 +105,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is mutating mutable") {
-    val program1 = compile("fn main() int export { x! = 4; mut x = 6; }")
+    val program1 = compile("fn main() int export { x! = 4; set x = 6; }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -116,7 +116,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self is moving and mutating same variable") {
-    val program1 = compile("fn main() int export { x! = 4; mut x = x + 1; }")
+    val program1 = compile("fn main() int export { x! = 4; set x = x + 1; }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -131,7 +131,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  { doBlarks(&x); }();
+        |  ({ doBlarks(&x); })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -148,7 +148,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  { doBlarks(x); }();
+        |  ({ doBlarks(x); })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -165,7 +165,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  { mut x = 9; }();
+        |  ({ set x = 9; })();
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -216,7 +216,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { mut x = 9; } else { }
+        |  if (true) { set x = 9; } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -267,7 +267,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { { mut x = 9; }(); } else { }
+        |  if (true) { { set x = 9; }(); } else { }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -352,7 +352,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { mut x = 9; } else { mut x = 8; }
+        |  if (true) { set x = 9; } else { set x = 8; }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -369,7 +369,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { { mut x = 9; }(); } else { { mut x = 8; }(); }
+        |  if (true) { { set x = 9; }(); } else { { set x = 8; }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -420,7 +420,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { mut x = 9; } else { moveThis(x); }
+        |  if (true) { set x = 9; } else { moveThis(x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -437,7 +437,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { { mut x = 9; }(); } else { { moveThis(x); }(); }
+        |  if (true) { { set x = 9; }(); } else { { moveThis(x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -450,7 +450,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Self moving and mutating same variable") {
-    val program1 = compile("fn main() int export { x! = 4; mut x = x + 1; }")
+    val program1 = compile("fn main() int export { x! = 4; set x = x + 1; }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -461,7 +461,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
   }
 
   test("Children moving and mutating same variable") {
-    val program1 = compile("fn main() int export { x! = 4; { mut x = x + 1; }(); }")
+    val program1 = compile("fn main() int export { x! = 4; { set x = x + 1; }(); }")
     val main = program1.lookupFunction("main")
     val CodeBody1(body) = main.body
     body.block.locals.head match {
@@ -508,7 +508,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { mut x = 9; } else if (true) { moveThis(x); } else { blark(&x); }
+        |  if (true) { set x = 9; } else if (true) { moveThis(x); } else { blark(&x); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")
@@ -525,7 +525,7 @@ class ScoutVariableTests extends FunSuite with Matchers {
       """
         |fn main() int export {
         |  x = 4;
-        |  if (true) { { mut x = 9; }(); } else if (true) { { moveThis(x); }(); } else { { blark(&x); }(); }
+        |  if (true) { { set x = 9; }(); } else if (true) { { moveThis(x); }(); } else { { blark(&x); }(); }
         |}
       """.stripMargin)
     val main = program1.lookupFunction("main")

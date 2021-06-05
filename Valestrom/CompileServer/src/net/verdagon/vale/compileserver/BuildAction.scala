@@ -3,7 +3,7 @@ package net.verdagon.vale.compileserver
 import com.google.cloud.functions.{HttpFunction, HttpRequest, HttpResponse}
 import net.verdagon.vale.{Err, Ok}
 import net.verdagon.vale.driver.Driver
-import net.verdagon.vale.driver.Driver.{Options, build, jsonifyProgram}
+import net.verdagon.vale.driver.Driver.{Options, SourceInput, build, jsonifyProgram}
 
 class BuildAction extends HttpFunction {
   override def service(request: HttpRequest, response: HttpResponse): Unit = {
@@ -14,8 +14,14 @@ class BuildAction extends HttpFunction {
       return
     }
 
+    val options =
+      Options(
+        List(SourceInput(Driver.defaultModuleName, "in.vale", code)),
+        List(Driver.defaultModuleName),
+        Some(""),
+        false, false, true, false, true, None, false)
     val json =
-      Driver.build(Options(List("in.vale"), Some(""), None, None, None, false), List(code)) match {
+      Driver.build(options) match {
         case Ok(Some(programH)) => jsonifyProgram(programH)
         case Err(error) => {
           response.setStatusCode(400)

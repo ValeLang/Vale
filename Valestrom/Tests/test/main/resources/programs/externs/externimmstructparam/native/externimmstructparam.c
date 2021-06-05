@@ -5,8 +5,8 @@
 
 #include "tmod/Flamscrankle.h"
 
-int64_t tmod_extFunc(tmod_Flamscrankle* flam) {
-  int64_t result = flam->a + flam->c;
+ValeInt tmod_extFunc(tmod_Flamscrankle* flam) {
+  ValeInt result = flam->a + flam->c;
   ValeReleaseMessage(flam);
   return result;
 }

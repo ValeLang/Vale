@@ -154,29 +154,32 @@ LLVMValueRef GlobalState::getOrMakeStringConstant(const std::string& str) {
 }
 
 Ref GlobalState::constI64(int64_t x) {
-  return wrap(getRegion(metalCache->intRef), metalCache->intRef, constI64LE(this, x));
+  return wrap(getRegion(metalCache->i64Ref), metalCache->i64Ref, constI64LE(this, x));
+}
+Ref GlobalState::constI32(int32_t x) {
+  return wrap(getRegion(metalCache->i32Ref), metalCache->i32Ref, constI32LE(this, x));
 }
 Ref GlobalState::constI1(bool b) {
   return wrap(getRegion(metalCache->boolRef), metalCache->boolRef, constI1LE(this, b));
 }
 Ref GlobalState::buildAdd(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
-  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__addIntInt"), intMT, {intMT, intMT});
+  auto intMT = metalCache->i32Ref;
+  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__addI32"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 Ref GlobalState::buildMod(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
+  auto intMT = metalCache->i32Ref;
   auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__mod"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 Ref GlobalState::buildDivide(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
-  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__divideIntInt"), intMT, {intMT, intMT});
+  auto intMT = metalCache->i32Ref;
+  auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__divideI32"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }
 
 Ref GlobalState::buildMultiply(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b) {
-  auto intMT = metalCache->intRef;
+  auto intMT = metalCache->i32Ref;
   auto addPrototype = metalCache->getPrototype(metalCache->getName(metalCache->builtinPackageCoord, "__multiplyIntInt"), intMT, {intMT, intMT});
   return buildExternCall(this, functionState, builder, addPrototype, { a, b });
 }

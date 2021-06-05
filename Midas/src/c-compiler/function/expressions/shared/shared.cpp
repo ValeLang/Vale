@@ -81,7 +81,7 @@ LLVMValueRef adjustStrongRc(
       kindStructsSource->getControlBlockPtr(from, functionState, builder, exprRef, refM);
   auto rcPtrLE = kindStructsSource->getStrongRcPtrFromControlBlockPtr(builder, refM, controlBlockPtrLE);
 //  auto oldRc = LLVMBuildLoad(builder, rcPtrLE, "oldRc");
-  auto newRc = adjustCounter(globalState, builder, rcPtrLE, amount);
+  auto newRc = adjustCounter(globalState, builder, globalState->metalCache->i32, rcPtrLE, amount);
 //  flareAdjustStrongRc(from, globalState, functionState, builder, refM, controlBlockPtrLE, oldRc, newRc);
   return newRc;
 }

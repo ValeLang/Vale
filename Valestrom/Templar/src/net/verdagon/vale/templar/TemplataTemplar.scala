@@ -15,8 +15,8 @@ trait ITemplataTemplarDelegate {
 
   def getAncestorInterfaceDistance(
     temputs: Temputs,
-    descendantCitizenRef: CitizenRef2,
-    ancestorInterfaceRef: InterfaceRef2):
+    descendantCitizenRef: CitizenRefT,
+    ancestorInterfaceRef: InterfaceRefT):
   Option[Int]
 
   def getStructRef(
@@ -24,7 +24,7 @@ trait ITemplataTemplarDelegate {
     callRange: RangeS,
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
-  StructRef2
+  StructRefT
 
   def getInterfaceRef(
     temputs: Temputs,
@@ -33,20 +33,20 @@ trait ITemplataTemplarDelegate {
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
-  InterfaceRef2
+  InterfaceRefT
 
   def getStaticSizedArrayKind(
     env: IEnvironment,
     temputs: Temputs,
-    mutability: Mutability,
-    variability: Variability,
+    mutability: MutabilityT,
+    variability: VariabilityT,
     size: Int,
-    type2: Coord):
-  StaticSizedArrayT2
+    type2: CoordT):
+  StaticSizedArrayTT
 
-  def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): RuntimeSizedArrayT2
+  def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT
 
-  def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2
+  def getTupleKind(env: IEnvironment, state: Temputs, elements: List[CoordT]): TupleTT
 }
 
 class TemplataTemplar(
@@ -55,8 +55,8 @@ class TemplataTemplar(
 
   def getTypeDistance(
     temputs: Temputs,
-    sourcePointerType: Coord,
-    targetPointerType: Coord):
+    sourcePointerType: CoordT,
+    targetPointerType: CoordT):
   (Option[TypeDistance]) = {
     makeInner().getTypeDistance(temputs,sourcePointerType, targetPointerType)
   }
@@ -76,24 +76,24 @@ class TemplataTemplar(
 
   def pointifyKind(
     temputs: Temputs,
-    kind: Kind,
-    ownershipIfMutable: Ownership):
-  Coord = {
+    kind: KindT,
+    ownershipIfMutable: OwnershipT):
+  CoordT = {
     makeInner().pointifyKind(temputs, kind, ownershipIfMutable)
   }
 
   def isTypeConvertible(
     temputs: Temputs,
-    sourcePointerType: Coord,
-    targetPointerType: Coord):
+    sourcePointerType: CoordT,
+    targetPointerType: CoordT):
   (Boolean) = {
     makeInner().isTypeConvertible(temputs, sourcePointerType, targetPointerType)
   }
 
   def isTypeTriviallyConvertible(
     temputs: Temputs,
-    sourcePointerType: Coord,
-    targetPointerType: Coord):
+    sourcePointerType: CoordT,
+    targetPointerType: CoordT):
   (Boolean) = {
     makeInner().isTypeTriviallyConvertible(temputs, sourcePointerType, targetPointerType)
   }
@@ -180,14 +180,14 @@ class TemplataTemplar(
           vassertSome(env.getNearestTemplataWithName(name, Set(TemplataLookupContext)))
         }
 
-        override def lookupTemplata(env: IEnvironment, range: RangeS, name: IName2): ITemplata = {
+        override def lookupTemplata(env: IEnvironment, range: RangeS, name: INameT): ITemplata = {
           // Changed this from AnythingLookupContext to TemplataLookupContext
           // because this is called from StructTemplar to figure out its members.
           // We could instead pipe a lookup context through, if this proves problematic.
           vassertSome(env.getNearestTemplataWithAbsoluteName2(name, Set(TemplataLookupContext)))
         }
 
-        override def getMutability(temputs: Temputs, kind: Kind): Mutability = {
+        override def getMutability(temputs: Temputs, kind: KindT): MutabilityT = {
           Templar.getMutability(temputs, kind)
         }
 
@@ -197,12 +197,12 @@ class TemplataTemplar(
 //        }
 
         override def evaluateInterfaceTemplata(state: Temputs, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
-        (Kind) = {
+        (KindT) = {
           delegate.getInterfaceRef(state, callRange, templata, templateArgs)
         }
 
         override def evaluateStructTemplata(state: Temputs, callRange: RangeS, templata: StructTemplata, templateArgs: List[ITemplata]):
-        (Kind) = {
+        (KindT) = {
           delegate.getStructRef(state, callRange, templata, templateArgs)
         }
 
@@ -221,21 +221,21 @@ class TemplataTemplar(
 
         override def getAncestorInterfaceDistance(
           temputs: Temputs,
-          descendantCitizenRef: CitizenRef2,
-          ancestorInterfaceRef: InterfaceRef2):
+          descendantCitizenRef: CitizenRefT,
+          ancestorInterfaceRef: InterfaceRefT):
         (Option[Int]) = {
           delegate.getAncestorInterfaceDistance(temputs, descendantCitizenRef, ancestorInterfaceRef)
         }
 
-        override def getStaticSizedArrayKind(env: IEnvironment, state: Temputs, mutability: Mutability, variability: Variability, size: Int, element: Coord): (StaticSizedArrayT2) = {
+        override def getStaticSizedArrayKind(env: IEnvironment, state: Temputs, mutability: MutabilityT, variability: VariabilityT, size: Int, element: CoordT): (StaticSizedArrayTT) = {
           delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, element)
         }
 
-        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: Coord, arrayMutability: Mutability, arrayVariability: Variability): RuntimeSizedArrayT2 = {
+        override def getRuntimeSizedArrayKind(env: IEnvironment, state: Temputs, element: CoordT, arrayMutability: MutabilityT, arrayVariability: VariabilityT): RuntimeSizedArrayTT = {
           delegate.getRuntimeSizedArrayKind(env, state, element, arrayMutability, arrayVariability)
         }
 
-        override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[Coord]): TupleT2 = {
+        override def getTupleKind(env: IEnvironment, state: Temputs, elements: List[CoordT]): TupleTT = {
           delegate.getTupleKind(env, state, elements)
         }
 

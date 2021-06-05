@@ -53,10 +53,15 @@ Ref translateExpressionInner(
     BlockState* blockState,
     LLVMBuilderRef builder,
     Expression* expr) {
-  if (auto constantI64 = dynamic_cast<ConstantI64*>(expr)) {
+  if (auto constantInt = dynamic_cast<ConstantInt*>(expr)) {
     // See ULTMCIE for why we load and store here.
-    auto resultLE = makeConstIntExpr(functionState, builder, LLVMInt64TypeInContext(globalState->context), constantI64->value);
-    return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, resultLE);
+    auto resultLE = makeConstIntExpr(functionState, builder, LLVMIntTypeInContext(globalState->context, constantInt->bits), constantInt->value);
+    auto intRef =
+        globalState->metalCache->getReference(
+            Ownership::SHARE,
+            Location::INLINE,
+            globalState->metalCache->getInt(globalState->metalCache->rcImmRegionId, constantInt->bits));
+    return wrap(globalState->getRegion(intRef), intRef, resultLE);
   } else if (auto constantFloat = dynamic_cast<ConstantF64*>(expr)) {
     // See ULTMCIE for why we load and store here.
 
@@ -94,9 +99,6 @@ Ref translateExpressionInner(
             globalState, functionState, blockState, builder, stackify->sourceExpr);
     globalState->getRegion(stackify->local->type)
         ->checkValidReference(FL(), functionState, builder, stackify->local->type, refToStore);
-    if (stackify->local->type->kind == globalState->metalCache->innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Storing ", refToStore);
-    }
     makeHammerLocal(
         globalState, functionState, blockState, builder, stackify->local, refToStore, stackify->knownLive);
     return makeEmptyTupleRef(globalState);
@@ -109,9 +111,6 @@ Ref translateExpressionInner(
     auto refToStore =
         translateExpression(
             globalState, functionState, blockState, builder, localStore->sourceExpr);
-    if (localStore->local->type->kind == globalState->metalCache->innt) {
-      buildFlare(FL(), globalState, functionState, builder, "Storing ", refToStore);
-    }
 
     // We need to load the old ref *after* we evaluate the source expression,
     // Because of expressions like: Ship() = (mut b = (mut a = (mut b = Ship())));
@@ -235,9 +234,9 @@ Ref translateExpressionInner(
 
     auto sizeRef =
         wrap(
-            globalState->getRegion(globalState->metalCache->intRef),
-            globalState->metalCache->intRef,
-            LLVMConstInt(LLVMInt64TypeInContext(globalState->context), arraySize, false));
+            globalState->getRegion(globalState->metalCache->i32Ref),
+            globalState->metalCache->i32Ref,
+            LLVMConstInt(LLVMInt32TypeInContext(globalState->context), arraySize, false));
 
     auto arrayRef = translateExpression(globalState, functionState, blockState, builder, arrayExpr);
 
@@ -310,16 +309,16 @@ Ref translateExpressionInner(
             ->getRuntimeSizedArrayLength(
                 functionState, builder, arrayType, arrayRef, arrayKnownLive);
     auto arrayLenLE =
-        globalState->getRegion(globalState->metalCache->intRef)
+        globalState->getRegion(globalState->metalCache->i32Ref)
             ->checkValidReference(FL(),
-                functionState, builder, globalState->metalCache->intRef, arrayLenRef);
+                functionState, builder, globalState->metalCache->i32Ref, arrayLenRef);
 
     auto consumerRef = translateExpression(globalState, functionState, blockState, builder, consumerExpr);
     globalState->getRegion(consumerType)
         ->checkValidReference(FL(), functionState, builder, consumerType, consumerRef);
 
     intRangeLoopReverse(
-        globalState, functionState, builder, arrayLenRef,
+        globalState, functionState, builder, globalState->metalCache->i32, arrayLenRef,
         [globalState, functionState, consumerType, consumerMethod, arrayKind, arrayType, arrayRef, arrayKnownLive, consumerRef](Ref indexRef, LLVMBuilderRef bodyBuilder) {
           globalState->getRegion(consumerType)
               ->alias(
@@ -383,9 +382,9 @@ Ref translateExpressionInner(
         ->checkValidReference(FL(), functionState, builder, arrayType, arrayRef);
     auto sizeLE =
         wrap(
-            globalState->getRegion(globalState->metalCache->intRef),
-            globalState->metalCache->intRef,
-            constI64LE(globalState, arraySize));
+            globalState->getRegion(globalState->metalCache->i32Ref),
+            globalState->metalCache->i32Ref,
+            constI32LE(globalState, arraySize));
     auto indexLE = translateExpression(globalState, functionState, blockState, builder, indexExpr);
     auto mutability = ownershipToMutability(arrayType->ownership);
     globalState->getRegion(arrayType)
@@ -462,8 +461,8 @@ Ref translateExpressionInner(
     auto sizeRef =
         globalState->getRegion(arrayType)
             ->getRuntimeSizedArrayLength(functionState, builder, arrayType, arrayRefLE, arrayKnownLive);
-    globalState->getRegion(globalState->metalCache->intRef)
-        ->checkValidReference(FL(), functionState, builder, globalState->metalCache->intRef, sizeRef);
+    globalState->getRegion(globalState->metalCache->i32Ref)
+        ->checkValidReference(FL(), functionState, builder, globalState->metalCache->i32Ref, sizeRef);
 
 
     auto indexRef =

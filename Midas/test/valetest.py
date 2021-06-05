@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Callable
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
-    # print("Running: " + " ".join(args))
+    print("Running: " + " ".join(args))
     return subprocess.run(args, capture_output=True, text=True, **kwargs)
 
 
@@ -149,6 +149,8 @@ class ValeTest(unittest.TestCase):
 
     def test_assist_addret(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/addret.vale"], "assist", 7)
+    def test_assist_add64ret(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/add64ret.vale"], "assist", 42)
     def test_assist_floatarithmetic(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/floatarithmetic.vale"], "assist", 42)
     def test_assist_floateq(self) -> None:

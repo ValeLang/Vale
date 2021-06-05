@@ -16,12 +16,12 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
   // See Virtuals doc for this function's purpose.
   // For the "Templated parent case"
   def evaluateParent(
-    env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeader2):
+    env: IEnvironment, temputs: Temputs, sparkHeader: FunctionHeaderT):
   Unit = {
     vassert(sparkHeader.params.count(_.virtuality.nonEmpty) <= 1)
     val maybeSuperInterfaceAndIndex =
       sparkHeader.params.zipWithIndex.collectFirst({
-        case (Parameter2(_, Some(Override2(ir)), Coord(_, _, StructRef2(_))), index) => (ir, index)
+        case (ParameterT(_, Some(OverrideT(ir)), CoordT(_, _, StructRefT(_))), index) => (ir, index)
       })
 
     maybeSuperInterfaceAndIndex match {
@@ -43,14 +43,14 @@ class VirtualTemplar(opts: TemplarOptions, overloadTemplar: OverloadTemplar) {
         val needleSuperFunctionParamFilters =
           needleSuperFunctionParamTypes.zipWithIndex.map({
             case (needleSuperFunctionParamType, index) => {
-              ParamFilter(needleSuperFunctionParamType, if (index == virtualIndex) Some(Abstract2) else None)
+              ParamFilter(needleSuperFunctionParamType, if (index == virtualIndex) Some(AbstractT$) else None)
             }
           })
 
         val nameToScoutFor =
           sparkHeader.fullName.last match {
-            case FunctionName2(humanName, _, _) => GlobalFunctionFamilyNameA(humanName)
-            case ImmInterfaceDestructorName2(_, _) => ImmInterfaceDestructorImpreciseNameA()
+            case FunctionNameT(humanName, _, _) => GlobalFunctionFamilyNameA(humanName)
+            case ImmInterfaceDestructorNameT(_, _) => ImmInterfaceDestructorImpreciseNameA()
             case _ => vcurious()
           }
 

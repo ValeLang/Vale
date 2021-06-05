@@ -124,7 +124,7 @@ object ExpressionScout {
           scoutElementsAsExpressions(stackFrame0, partsPE)
 
         val rangeS = evalRange(range)
-        val startingExpr: IExpressionSE = StrLiteralSE(RangeS(rangeS.begin, rangeS.begin), "")
+        val startingExpr: IExpressionSE = ConstantStrSE(RangeS(rangeS.begin, rangeS.begin), "")
         val addedExpr =
           partsSE.foldLeft(startingExpr)({
             case (prevExpr, partSE) => {
@@ -153,10 +153,10 @@ object ExpressionScout {
           scoutExpressionAndCoerce(stackFrame0, innerPE, UseP)
         (stackFrame1, NormalResult(evalRange(range), ReturnSE(evalRange(range), inner1)), innerSelfUses, innerChildUses)
       }
-      case IntLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), IntLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
-      case BoolLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), BoolLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
-      case StrLiteralPE(range, value) => (stackFrame0, NormalResult(evalRange(range), StrLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
-      case FloatLiteralPE(range,value) => (stackFrame0, NormalResult(evalRange(range), FloatLiteralSE(evalRange(range), value)), noVariableUses, noVariableUses)
+      case ConstantIntPE(range, value, bits) => (stackFrame0, NormalResult(evalRange(range), ConstantIntSE(evalRange(range), value, bits)), noVariableUses, noVariableUses)
+      case ConstantBoolPE(range,value) => (stackFrame0, NormalResult(evalRange(range), ConstantBoolSE(evalRange(range), value)), noVariableUses, noVariableUses)
+      case ConstantStrPE(range, value) => (stackFrame0, NormalResult(evalRange(range), ConstantStrSE(evalRange(range), value)), noVariableUses, noVariableUses)
+      case ConstantFloatPE(range,value) => (stackFrame0, NormalResult(evalRange(range), ConstantFloatSE(evalRange(range), value)), noVariableUses, noVariableUses)
 
       case MagicParamLookupPE(range) => {
         val name = MagicParamNameS(Scout.evalPos(stackFrame0.file, range.begin))
@@ -286,7 +286,7 @@ object ExpressionScout {
           scoutBlock(stackFrame0, rightPE, VariableDeclarations(List()))
         val elseUses = VariableUses(List())
         val elseChildUses = VariableUses(List())
-        val elseSE = BlockSE(endRange, List(), List(BoolLiteralSE(endRange, false)))
+        val elseSE = BlockSE(endRange, List(), List(ConstantBoolSE(endRange, false)))
 
         val selfCaseUses = thenUses.branchMerge(elseUses)
         val selfUses = condUses.thenMerge(selfCaseUses);
@@ -304,7 +304,7 @@ object ExpressionScout {
           scoutBlock(stackFrame0, leftPE, VariableDeclarations(List()))
         val thenUses = VariableUses(List())
         val thenChildUses = VariableUses(List())
-        val thenSE = BlockSE(endRange, List(), List(BoolLiteralSE(endRange, true)))
+        val thenSE = BlockSE(endRange, List(), List(ConstantBoolSE(endRange, true)))
         val (NormalResult(_, elseSE), elseUses, elseChildUses) =
           scoutBlock(stackFrame0, rightPE, VariableDeclarations(List()))
 

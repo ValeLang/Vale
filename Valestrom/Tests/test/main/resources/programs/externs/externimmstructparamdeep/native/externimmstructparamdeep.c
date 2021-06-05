@@ -15,7 +15,7 @@ size_t floorMultipleOf16(size_t x) {
   return x & ~0xF;
 }
 
-int64_t tmod_extFunc(tmod_Flamscrankle* flam) {
+ValeInt tmod_extFunc(tmod_Flamscrankle* flam) {
   // Make sure the root pointer is at a multiple of 16.
   // If this fails, that means we have a bug, or malloc is breaking our assumptions
   // about alignment.
@@ -60,7 +60,7 @@ int64_t tmod_extFunc(tmod_Flamscrankle* flam) {
   assert((size_t)(void*)flam->b == bogAddr);
   assert((size_t)(void*)flam->b->s == spigAddr);
 
-  int64_t result = flam->x + flam->b->s->x + flam->b->s->y + flam->b->s->z + flam->b->x + flam->y;
+  ValeInt result = flam->x + flam->b->s->x + flam->b->s->y + flam->b->s->z + flam->b->x + flam->y;
   assert(result == 42);
 
   size_t startAddrFromRootMetadata = ((uint64_t*)(void*)rootMetadataAddr)[0];

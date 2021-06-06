@@ -23,7 +23,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
                   None,
                   Some(OverrideP(_,NameOrRunePT(NameP(_, "IUnit")))))))),
           FunctionReturnP(_, None,None)),
-        Some(BlockPE(_, List(IntLiteralPE(_, 5))))) =>
+        Some(BlockPE(_, List(ConstantIntPE(_, 5, _))))) =>
     }
   }
 
@@ -39,7 +39,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), List(), None, Some(_), Some(_), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
     }
   }
 

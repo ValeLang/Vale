@@ -14,8 +14,8 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal.{FullNameH, IntH, ProgramH, PrototypeH, ReadonlyH, ReadwriteH, YonderH}
 import net.verdagon.vale.parser.{FailedParse, FileP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
-import net.verdagon.vale.templar.templata.Signature2
-import net.verdagon.vale.templar.types.{Coord, Int2, Readonly, Share, Str2}
+import net.verdagon.vale.templar.templata.SignatureT
+import net.verdagon.vale.templar.types.{CoordT, IntT, ReadonlyT, ShareT, StrT}
 
 import scala.collection.immutable.List
 
@@ -91,7 +91,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Taking an argument and returning it") {
     val compile = RunCompilation.test("fn main(a int) export int {a}")
-    compile.evalForKind(Vector(IntV(5))) shouldEqual VonInt(5)
+    compile.evalForKind(Vector(IntV(5, 32))) shouldEqual VonInt(5)
   }
 
   test("Tests adding two numbers") {
@@ -209,6 +209,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn main() int export { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
     compile.evalForKind(Vector()) shouldEqual VonInt(7)
+  }
+
+  test("Add two i64") {
+    val compile = RunCompilation.test(Tests.loadExpected("programs/add64ret.vale"))
+    val temputs = compile.getTemputs()
+    val hamuts = compile.getHamuts()
+    compile.evalForKind(Vector()) shouldEqual VonInt(42L)
   }
 
   test("=== true") {
@@ -462,7 +469,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
     doIt.only({
-      case StructToInterfaceUpcast2(_, _) =>
+      case StructToInterfaceUpcastTE(_, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -474,7 +481,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
     doIt.only({
-      case StructToInterfaceUpcast2(_, _) =>
+      case StructToInterfaceUpcastTE(_, _) =>
     })
 
     compile.evalForKind(Vector()) shouldEqual VonInt(3)
@@ -502,11 +509,11 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
 
-    vassertSome(hinputs.lookupFunction(Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Int2())))))))
+    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("bork", List(), List(Coord(Share, Readonly, Str2())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("bork", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Str2())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
 //  test("Test overloading between borrow and own") {
@@ -663,6 +670,6 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
     val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
     val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
-    rsa.rawArray.elementType.kind shouldEqual IntH()
+    rsa.rawArray.elementType.kind shouldEqual IntH.i32
   }
 }

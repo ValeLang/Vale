@@ -1123,32 +1123,32 @@ struct SequencePE {
 impl IExpressionPE for SequencePE;
 
 // A simple integer, like the `5` in `println(5);`
-struct IntLiteralPE {
+struct ConstantIntPE {
   range Range;
   value int;
 }
-impl IExpressionPE for IntLiteralPE;
+impl IExpressionPE for ConstantIntPE;
 
 // A simple boolean, like the `false` in `println(false);`
-struct BoolLiteralPE {
+struct ConstantBoolPE {
   range Range;
   value bool;
 }
-impl IExpressionPE for BoolLiteralPE;
+impl IExpressionPE for ConstantBoolPE;
 
 // A simple string, like the "hello" in `println("hello");`
-struct StrLiteralPE {
+struct ConstantStrPE {
   range Range;
   value str;
 }
-impl IExpressionPE for StrLiteralPE;
+impl IExpressionPE for ConstantStrPE;
 
 // A simple integer, like the `5.2` in `println(5.2);`
-struct FloatLiteralPE {
+struct ConstantFloatPE {
   range Range;
   value float;
 }
-impl IExpressionPE for FloatLiteralPE;
+impl IExpressionPE for ConstantFloatPE;
 
 // Accesses a member of the struct on the left side, like `mySpaceship.fuel`.
 struct DotPE {

@@ -4,7 +4,7 @@ import net.verdagon.vale.driver.FullCompilationOptions
 import net.verdagon.vale.hammer._
 import net.verdagon.vale.metal.{BlockH, CallH, InlineH, IntH, NeverH, PrototypeH, ReadonlyH, ReferenceH}
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.templar.types.Share
+import net.verdagon.vale.templar.types.ShareT
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.von.VonInt
 
@@ -49,13 +49,13 @@ class HammerTests extends FunSuite with Matchers {
         |fn main(a *MySome<int>, b *MyNone<int>) {}
       """.stripMargin)
     val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
-    packageH.interfaces.find(_.fullName.toFullString() == """test::C("MyOption",[TR(R(*,<,#,i))])""").get;
+    packageH.interfaces.find(_.fullName.toFullString() == """test::C("MyOption",[TR(R(*,<,#,i(32)))])""").get;
 
-    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C("MySome",[TR(R(*,<,#,i))])""").get;
+    val mySome = packageH.structs.find(_.fullName.toFullString() == """test::C("MySome",[TR(R(*,<,#,i(32)))])""").get;
     vassert(mySome.members.size == 1);
-    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH()))
+    vassert(mySome.members.head.tyype == ReferenceH[IntH](m.ShareH, InlineH, ReadonlyH, IntH.i32))
 
-    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C("MyNone",[TR(R(*,<,#,i))])""").get;
+    val myNone = packageH.structs.find(_.fullName.toFullString() == """test::C("MyNone",[TR(R(*,<,#,i(32)))])""").get;
     vassert(myNone.members.isEmpty);
   }
 

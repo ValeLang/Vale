@@ -23,64 +23,64 @@ object NameHammer {
 //    name.toString
 //  }
 
-  def getReadableName(namePart: IName2): String = {
+  def getReadableName(namePart: INameT): String = {
     namePart match {
-      case AnonymousSubstructImplName2() => "AnonSubstructImplName"
-      case AnonymousSubstructMemberName2(index) => "anonSubstructMember" + index
-      case AnonymousSubstructName2(callables) => "AnonSubstruct"
-      case AnonymousSubstructParentInterfaceRune2() => "anonSubstructParentInterfaceRune"
-      case BuildingFunctionNameWithClosureds2(_) => vwat() // Shouldnt see this in hammer
-      case BuildingFunctionNameWithClosuredsAndTemplateArgs2(_, _) => vwat() // Shouldnt see this in hammer
-      case CitizenName2(humanName, templateArgs) => humanName
-      case CitizenTemplateName2(humanName, codeLocation) => humanName
-      case ClosureParamName2() => "closure"
-      case CodeRune2(name) => name
-      case CodeVarName2(name) => name
-      case ConstructingMemberName2(name) => name
-      case ConstructorName2(params) => "constructor"
-      case ConstructorTemplateName2(codeLoc) => "constructorTemplate"
-      case ExplicitTemplateArgRune2(index) => "rune" + index
-      case ExternFunctionName2(humanName, params) => humanName
-      case FunctionName2(humanName, templateArgs, params) => humanName
-      case FunctionTemplateName2(humanName, codeLoc) => humanName
-      case PackageTopLevelName2() => vwat() // Does this ever make it to hammer?
-      case ImmConcreteDestructorName2(kind) => "immConcreteDestructor"
-      case ImmConcreteDestructorTemplateName2() => "immConcreteDestructorTemplate"
-      case ImmDropName2(kind) => "immDrop"
-      case ImmDropTemplateName2() => "immDropTemplate"
-      case ImmInterfaceDestructorName2(templateArgs, params) => "immInterfaceDestructor"
-      case ImmInterfaceDestructorTemplateName2() => "immInterfaceDestructorTemplate"
-      case ImplDeclareName2(subCitizenHumanName, codeLoc) => "impl" + subCitizenHumanName
-      case ImplicitRune2(parentName, name) => "implicitRune" + name
-      case StaticSizedArrayName2(size, arr) => "ssa" + size
-      case LambdaCitizenName2(codeLoc) => "lam"
-      case LambdaTemplateName2(codeLoc) => "lamTemplate"
-      case LetImplicitRune2(codeLoc, name) => "letImplicitRune" + name
-      case LetName2(codeLoc) => "letName"
-      case MagicImplicitRune2(codeLoc) => "magicRune"
-      case MagicParamName2(codeLoc) => "magicParam"
-      case MemberRune2(memberIndex) => "memberRune" + memberIndex
-      case PrimitiveName2(humanName) => humanName
-      case RawArrayName2(mutability, elementType) => "rawArr"
-      case ReturnRune2() => "retRune"
-      case SolverKindRune2(paramRune) => "solverKindRune"
-      case TemplarBlockResultVarName2(num) => "blockResult" + num
-      case TemplarFunctionResultVarName2() => "funcResult"
-      case TemplarPatternDestructureeName2(num) => "patDestrName" + num
-      case TemplarPatternMemberName2(num, memberIndex) => "patMemName" + num + "_" + memberIndex
-      case TemplarTemporaryVarName2(num) => "tempVarName" + num
-      case TupleName2(members) => "Tup" + members.size
-      case RuntimeSizedArrayName2(arr) => "rsa"
-      case UnnamedLocalName2(codeLoc) => "unnamedLocal"
+      case AnonymousSubstructImplNameT() => "AnonSubstructImplName"
+      case AnonymousSubstructMemberNameT(index) => "anonSubstructMember" + index
+      case AnonymousSubstructNameT(callables) => "AnonSubstruct"
+      case AnonymousSubstructParentInterfaceRuneT() => "anonSubstructParentInterfaceRune"
+      case BuildingFunctionNameWithClosuredsT(_) => vwat() // Shouldnt see this in hammer
+      case BuildingFunctionNameWithClosuredsAndTemplateArgsT(_, _) => vwat() // Shouldnt see this in hammer
+      case CitizenNameT(humanName, templateArgs) => humanName
+      case CitizenTemplateNameT(humanName, codeLocation) => humanName
+      case ClosureParamNameT() => "closure"
+      case CodeRuneT(name) => name
+      case CodeVarNameT(name) => name
+      case ConstructingMemberNameT(name) => name
+      case ConstructorNameT(params) => "constructor"
+      case ConstructorTemplateNameT(codeLoc) => "constructorTemplate"
+      case ExplicitTemplateArgRuneT(index) => "rune" + index
+      case ExternFunctionNameT(humanName, params) => humanName
+      case FunctionNameT(humanName, templateArgs, params) => humanName
+      case FunctionTemplateNameT(humanName, codeLoc) => humanName
+      case PackageTopLevelNameT() => vwat() // Does this ever make it to hammer?
+      case ImmConcreteDestructorNameT(kind) => "immConcreteDestructor"
+      case ImmConcreteDestructorTemplateNameT() => "immConcreteDestructorTemplate"
+      case ImmDropNameT(kind) => "immDrop"
+      case ImmDropTemplateNameT() => "immDropTemplate"
+      case ImmInterfaceDestructorNameT(templateArgs, params) => "immInterfaceDestructor"
+      case ImmInterfaceDestructorTemplateNameT() => "immInterfaceDestructorTemplate"
+      case ImplDeclareNameT(subCitizenHumanName, codeLoc) => "impl" + subCitizenHumanName
+      case ImplicitRuneT(parentName, name) => "implicitRune" + name
+      case StaticSizedArrayNameT(size, arr) => "ssa" + size
+      case LambdaCitizenNameT(codeLoc) => "lam"
+      case LambdaTemplateNameT(codeLoc) => "lamTemplate"
+      case LetImplicitRuneT(codeLoc, name) => "letImplicitRune" + name
+      case LetNameT(codeLoc) => "letName"
+      case MagicImplicitRuneT(codeLoc) => "magicRune"
+      case MagicParamNameT(codeLoc) => "magicParam"
+      case MemberRuneT(memberIndex) => "memberRune" + memberIndex
+      case PrimitiveNameT(humanName) => humanName
+      case RawArrayNameT(mutability, elementType) => "rawArr"
+      case ReturnRuneT() => "retRune"
+      case SolverKindRuneT(paramRune) => "solverKindRune"
+      case TemplarBlockResultVarNameT(num) => "blockResult" + num
+      case TemplarFunctionResultVarNameT() => "funcResult"
+      case TemplarPatternDestructureeNameT(num) => "patDestrName" + num
+      case TemplarPatternMemberNameT(num, memberIndex) => "patMemName" + num + "_" + memberIndex
+      case TemplarTemporaryVarNameT(num) => "tempVarName" + num
+      case TupleNameT(members) => "Tup" + members.size
+      case RuntimeSizedArrayNameT(arr) => "rsa"
+      case UnnamedLocalNameT(codeLoc) => "unnamedLocal"
     }
   }
 
   def translateFullName(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    fullName2: FullName2[IName2]
+    fullName2: FullNameT[INameT]
   ): FullNameH = {
-    val FullName2(packageCoord @ PackageCoordinate(project, packageSteps), _, _) = fullName2
+    val FullNameT(packageCoord @ PackageCoordinate(project, packageSteps), _, _) = fullName2
     val newNameParts =
 //      (VonStr(project) :: packageSteps.map(VonStr)) ++
       fullName2.steps.map(step => VonHammer.translateName(hinputs, hamuts, step))
@@ -90,7 +90,7 @@ object NameHammer {
       getReadableName(fullName2.last)
 
     val id =
-      if (fullName2.last.isInstanceOf[ExternFunctionName2]) {
+      if (fullName2.last.isInstanceOf[ExternFunctionNameT]) {
         -1
       } else {
         hamuts.getNameId(readableName, packageCoord, newNameParts)
@@ -109,8 +109,8 @@ object NameHammer {
     FullNameH(s, id, fullName.packageCoordinate, newNameParts)
   }
 
-  def translateCodeLocation(location: CodeLocation2): VonObject = {
-    val CodeLocation2(fileCoord, offset) = location
+  def translateCodeLocation(location: CodeLocationT): VonObject = {
+    val CodeLocationT(fileCoord, offset) = location
     VonObject(
       "CodeLocation",
       None,

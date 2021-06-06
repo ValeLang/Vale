@@ -7,8 +7,8 @@
 #include "tmod/Bogglewoggle.h"
 #include "tmod/Flamscrankle.h"
 
-extern int64_t tmod_expFunc(tmod_Flamscrankle* flam);
+extern ValeInt tmod_expFunc(tmod_Flamscrankle* flam);
 
-int64_t tmod_extFunc(tmod_Flamscrankle* flam) {
+ValeInt tmod_extFunc(tmod_Flamscrankle* flam) {
   return tmod_expFunc(flam);
 }

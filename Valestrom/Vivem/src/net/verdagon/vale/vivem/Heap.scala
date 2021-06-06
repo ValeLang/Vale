@@ -517,7 +517,7 @@ class Heap(in_vivemDout: PrintStream) {
 
     destinationMap.put(inputReachable, allocation)
     allocation.kind match {
-      case IntV(_) =>
+      case IntV(_, _) =>
       case BoolV(_) =>
       case FloatV(_) =>
       case StructInstanceV(structDefH, Some(members)) => {
@@ -572,7 +572,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def printKind(kind: KindV) = {
     kind match {
-      case IntV(value) => vivemDout.print(value)
+      case IntV(value, _) => vivemDout.print(value)
       case BoolV(value) => vivemDout.print(value)
       case StrV(value) => vivemDout.print(value)
       case FloatV(value) => vivemDout.print(value)
@@ -746,7 +746,11 @@ class Heap(in_vivemDout: PrintStream) {
 
   def checkKind(expectedType: KindH, actualKind: KindV): Unit = {
     (actualKind, expectedType) match {
-      case (IntV(_), IntH()) =>
+      case (IntV(_, actualBits), IntH(expectedBits)) => {
+        if (actualBits != expectedBits) {
+          vfail("Expected " + expectedType + " but was " + actualKind)
+        }
+      }
       case (BoolV(_), BoolH()) =>
       case (StrV(_), StrH()) =>
       case (FloatV(_), FloatH()) =>
@@ -846,7 +850,7 @@ class Heap(in_vivemDout: PrintStream) {
 
   def toVon(ref: ReferenceV): IVonData = {
     dereference(ref) match {
-      case IntV(value) => VonInt(value)
+      case IntV(value, bits) => VonInt(value)
       case FloatV(value) => VonFloat(value)
       case BoolV(value) => VonBool(value)
       case StrV(value) => VonStr(value)

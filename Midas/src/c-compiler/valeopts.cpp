@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <iostream>
 
 // List of option ids
 enum
@@ -299,7 +300,11 @@ int valeOptSet(ValeOptions *opt, int *argc, char **argv) {
             opt->regionOverride = RegionOverride::RESILIENT_V4;
 //          } else if (s.arg_val == std::string("resilient-limit")) {
 //            opt->regionOverride = RegionOverride::RESILIENT_LIMIT;
-          } else assert(false);
+          } else {
+            std::cerr << "Unknown region: " << s.arg_val << std::endl;
+            exit(1);
+            assert(false);
+          }
           break;
         }
 

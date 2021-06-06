@@ -258,7 +258,7 @@ LLVMValueRef getTablePtrFromInterfaceRef(
   return LLVMBuildExtractValue(builder, interfaceRefLE.refLE, INTERFACE_REF_MEMBER_INDEX_FOR_ITABLE_PTR, "itablePtr");
 }
 
-LLVMValueRef callFree(
+void callFree(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE) {
@@ -269,7 +269,7 @@ LLVMValueRef callFree(
             ptrLE,
             LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteVoidPtrForFree");
-    return LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->genFree, &concreteAsVoidPtrLE, 1, "");
   } else {
     auto concreteAsCharPtrLE =
         LLVMBuildBitCast(
@@ -277,7 +277,7 @@ LLVMValueRef callFree(
             ptrLE,
             LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0),
             "concreteCharPtrForFree");
-    return LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
+    LLVMBuildCall(builder, globalState->externs->free, &concreteAsCharPtrLE, 1, "");
   }
 }
 

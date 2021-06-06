@@ -14,10 +14,10 @@ constexpr int GENERATION_NUM_BITS = 32;
 
 enum class ControlBlockMember {
   UNUSED_32B,
-  LGTI,
-  GENERATION,
-  WRCI,
-  STRONG_RC,
+  LGTI_32B,
+  GENERATION_32B,
+  WRCI_32B,
+  STRONG_RC_32B,
   CENSUS_TYPE_STR,
   CENSUS_OBJ_ID,
   // It's 32B because we put it in the spot where the generational heap puts its size,

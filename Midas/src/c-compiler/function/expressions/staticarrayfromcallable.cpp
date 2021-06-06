@@ -24,7 +24,7 @@ Ref translateStaticArrayFromCallable(
   auto staticSizedArrayMT = dynamic_cast<StaticSizedArrayT*>(staticArrayFromCallable->arrayRefType->kind);
 
   auto ssaDefMT = globalState->program->getStaticSizedArray(staticSizedArrayMT);
-  auto sizeRef = globalState->constI64(ssaDefMT->size);
+  auto sizeRef = globalState->constI32(ssaDefMT->size);
 
   auto generatorRef = translateExpression(globalState, functionState, blockState, builder, generatorExpr);
   globalState->getRegion(generatorType)->checkValidReference(FL(), functionState, builder,

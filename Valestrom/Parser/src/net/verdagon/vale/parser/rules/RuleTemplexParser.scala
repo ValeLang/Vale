@@ -42,7 +42,7 @@ trait RuleTemplexParser extends RegexParsers with ParserUtils {
     packRulePR |
     manualSeqRulePR |
     repeaterSeqRulePR |
-    (pos ~ int ~ pos ^^ { case begin ~ inner ~ end => IntPT(Range(begin, end), inner) }) |
+    (pos ~ long ~ pos ^^ { case begin ~ inner ~ end => IntPT(Range(begin, end), inner) }) |
     keywordOrIdentifierOrRuneRuleTemplexPR
   }
 

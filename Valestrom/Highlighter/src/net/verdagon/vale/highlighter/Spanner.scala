@@ -161,9 +161,9 @@ object Spanner {
 
   def forExpression(e: IExpressionPE): Span = {
     e match {
-      case IntLiteralPE(range, _) => makeSpan(Num, range, List())
-      case StrLiteralPE(range, _) => makeSpan(Str, range, List())
-      case BoolLiteralPE(range, _) => makeSpan(Bool, range, List())
+      case ConstantIntPE(range, _, _) => makeSpan(Num, range, List())
+      case ConstantStrPE(range, _) => makeSpan(Str, range, List())
+      case ConstantBoolPE(range, _) => makeSpan(Bool, range, List())
       case VoidPE(range) => makeSpan(W, range, List())
       case MagicParamLookupPE(range) => {
         makeSpan(

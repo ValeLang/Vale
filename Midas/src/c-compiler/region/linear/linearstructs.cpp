@@ -19,7 +19,7 @@ LinearStructs::LinearStructs(GlobalState* globalState_)
 
   stringStructLT = LLVMStructCreateNamed(globalState->context, "ValeStr");
   std::vector<LLVMTypeRef> memberTypesL;
-  memberTypesL.push_back(LLVMInt64TypeInContext(globalState->context));
+  memberTypesL.push_back(LLVMInt32TypeInContext(globalState->context));
   memberTypesL.push_back(LLVMArrayType(LLVMInt8TypeInContext(globalState->context), 0));
   LLVMStructSetBody(stringStructLT, memberTypesL.data(), memberTypesL.size(), false);
 }
@@ -124,7 +124,7 @@ void LinearStructs::defineRuntimeSizedArray(
     LLVMTypeRef elementLT) {
   auto runtimeSizedArrayStruct = getRuntimeSizedArrayStruct(runtimeSizedArrayMT);
   std::vector<LLVMTypeRef> elementsL;
-  elementsL.push_back(LLVMInt64TypeInContext(globalState->context));
+  elementsL.push_back(LLVMInt32TypeInContext(globalState->context));
   elementsL.push_back(LLVMArrayType(elementLT, 0));
   LLVMStructSetBody(runtimeSizedArrayStruct, elementsL.data(), elementsL.size(), false);
 }

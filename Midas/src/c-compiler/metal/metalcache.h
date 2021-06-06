@@ -93,8 +93,10 @@ public:
     resilientV3RegionId = getRegionId(builtinPackageCoord, "resilientv3");
     resilientV4RegionId = getRegionId(builtinPackageCoord, "resilientv4");
 
-    innt = getInt(rcImmRegionId);
-    intRef = getReference(Ownership::SHARE, Location::INLINE, innt);
+    i32 = getInt(rcImmRegionId, 32);
+    i32Ref = getReference(Ownership::SHARE, Location::INLINE, i32);
+    i64 = getInt(rcImmRegionId, 64);
+    i64Ref = getReference(Ownership::SHARE, Location::INLINE, i64);
     boool = getBool(rcImmRegionId);
     boolRef = getReference(Ownership::SHARE, Location::INLINE, boool);
     flooat = getFloat(rcImmRegionId);
@@ -115,11 +117,11 @@ public:
         [&](){ return new PackageCoordinate{projectName, packageSteps}; });
   }
 
-  Int* getInt(RegionId* regionId) {
+  Int* getInt(RegionId* regionId, int bits) {
     return makeIfNotPresent(
-        &ints,
-        regionId,
-        [&](){ return new Int(regionId); });
+        &ints[regionId],
+        bits,
+        [&](){ return new Int(regionId, bits); });
   }
 
   Bool* getBool(RegionId* regionId) {
@@ -227,7 +229,7 @@ public:
   std::unordered_map<PackageCoordinate*, std::unordered_map<std::string, Name*>, AddressHasher<PackageCoordinate*>> names;
 
   std::unordered_map<std::string, std::unordered_map<std::vector<std::string>, PackageCoordinate*, PackageCoordinate::StringVectorHasher, PackageCoordinate::StringVectorEquator>> packageCoords;
-  std::unordered_map<RegionId*, Int*, AddressHasher<RegionId*>> ints;
+  std::unordered_map<RegionId*, std::unordered_map<int, Int*>, AddressHasher<RegionId*>> ints;
   std::unordered_map<RegionId*, Bool*, AddressHasher<RegionId*>> bools;
   std::unordered_map<RegionId*, Str*, AddressHasher<RegionId*>> strs;
   std::unordered_map<RegionId*, Float*, AddressHasher<RegionId*>> floats;
@@ -284,8 +286,10 @@ public:
 //  I8* i8 = new I8();
 //  Reference* i8Ref = nullptr;
   PackageCoordinate* builtinPackageCoord = nullptr;
-  Int* innt = nullptr;
-  Reference* intRef = nullptr;
+  Int* i32 = nullptr;
+  Reference* i32Ref = nullptr;
+  Int* i64 = nullptr;
+  Reference* i64Ref = nullptr;
   Bool* boool = nullptr;
   Reference* boolRef = nullptr;
   Float* flooat = nullptr;

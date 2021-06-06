@@ -6,8 +6,8 @@ import net.verdagon.vale.metal.{BorrowH, ShareH, Variability => _, Varying => _,
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.templar.{types => t}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.{AddressibleLocalVariable2, ReferenceLocalVariable2}
-import net.verdagon.vale.templar.templata.FunctionHeader2
+import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, ReferenceLocalVariableT}
+import net.verdagon.vale.templar.templata.FunctionHeaderT
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail}
 
@@ -16,32 +16,32 @@ object LoadHammer {
   def translateLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      load2: SoftLoad2):
-  (ExpressionH[KindH], List[Expression2]) = {
-    val SoftLoad2(sourceExpr2, targetOwnership, targetPermission) = load2
+      load2: SoftLoadTE):
+  (ExpressionH[KindH], List[ExpressionT]) = {
+    val SoftLoadTE(sourceExpr2, targetOwnership, targetPermission) = load2
 
     val (loadedAccessH, sourceDeferreds) =
       sourceExpr2 match {
-        case LocalLookup2(_,ReferenceLocalVariable2(varId, variability, reference), varType2, _) => {
+        case LocalLookupT(_,ReferenceLocalVariableT(varId, variability, reference), varType2, _) => {
           vassert(reference == varType2)
           translateMundaneLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, reference, targetOwnership, targetPermission)
         }
-        case LocalLookup2(_,AddressibleLocalVariable2(varId, variability, localReference2), varType2, _) => {
+        case LocalLookupT(_,AddressibleLocalVariableT(varId, variability, localReference2), varType2, _) => {
           vassert(localReference2 == varType2)
           translateAddressibleLocalLoad(hinputs, hamuts, currentFunctionHeader, locals, varId, variability, localReference2, targetOwnership, targetPermission)
         }
-        case ReferenceMemberLookup2(_,structExpr2, memberName, memberType2, _, _) => {
+        case ReferenceMemberLookupT(_,structExpr2, memberName, memberType2, _, _) => {
           translateMundaneMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberType2, memberName, targetOwnership, targetPermission)
         }
-        case AddressMemberLookup2(_,structExpr2, memberName, memberType2, _) => {
+        case AddressMemberLookupT(_,structExpr2, memberName, memberType2, _) => {
           translateAddressibleMemberLoad(hinputs, hamuts, currentFunctionHeader, locals, structExpr2, memberName, memberType2, targetOwnership, targetPermission)
         }
-        case RuntimeSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
+        case RuntimeSizedArrayLookupT(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneRuntimeSizedArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
-        case StaticSizedArrayLookup2(_, arrayExpr2, _, indexExpr2, _, _) => {
+        case StaticSizedArrayLookupT(_, arrayExpr2, _, indexExpr2, _, _) => {
           translateMundaneStaticSizedArrayLoad(hinputs, hamuts, currentFunctionHeader, locals, arrayExpr2, indexExpr2, targetOwnership, targetPermission)
         }
       }
@@ -54,13 +54,13 @@ object LoadHammer {
   private def translateMundaneRuntimeSizedArrayLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      arrayExpr2: ReferenceExpression2,
-      indexExpr2: ReferenceExpression2,
-      targetOwnershipT: t.Ownership,
-      targetPermissionT: t.Permission,
-  ): (ExpressionH[KindH], List[Expression2]) = {
+      arrayExpr2: ReferenceExpressionTE,
+      indexExpr2: ReferenceExpressionTE,
+      targetOwnershipT: t.OwnershipT,
+      targetPermissionT: t.PermissionT,
+  ): (ExpressionH[KindH], List[ExpressionT]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
@@ -102,13 +102,13 @@ object LoadHammer {
   private def translateMundaneStaticSizedArrayLoad(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    arrayExpr2: ReferenceExpression2,
-    indexExpr2: ReferenceExpression2,
-    targetOwnershipT: t.Ownership,
-    targetPermissionT: t.Permission,
-  ): (ExpressionH[KindH], List[Expression2]) = {
+    arrayExpr2: ReferenceExpressionTE,
+    indexExpr2: ReferenceExpressionTE,
+    targetOwnershipT: t.OwnershipT,
+    targetPermissionT: t.PermissionT,
+  ): (ExpressionH[KindH], List[ExpressionT]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
@@ -151,22 +151,22 @@ object LoadHammer {
   private def translateAddressibleMemberLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      structExpr2: ReferenceExpression2,
-      memberName: FullName2[IVarName2],
-      expectedType2: Coord,
-      targetOwnershipT: t.Ownership,
-      targetPermissionT: t.Permission,
-  ): (ExpressionH[KindH], List[Expression2]) = {
+      structExpr2: ReferenceExpressionTE,
+      memberName: FullNameT[IVarNameT],
+      expectedType2: CoordT,
+      targetOwnershipT: t.OwnershipT,
+      targetPermissionT: t.PermissionT,
+  ): (ExpressionH[KindH], List[ExpressionT]) = {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRef2(_) => sr
-        case TupleT2(_, sr) => sr
-        case PackT2(_, sr) => sr
+        case sr @ StructRefT(_) => sr
+        case TupleTT(_, sr) => sr
+        case PackTT(_, sr) => sr
       }
     val structDef2 = hinputs.lookupStruct(structRef2)
     val memberIndex = structDef2.members.indexWhere(member => structDef2.fullName.addStep(member.name) == memberName)
@@ -217,15 +217,15 @@ object LoadHammer {
   private def translateMundaneMemberLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      structExpr2: ReferenceExpression2,
-      expectedMemberCoord: Coord,
-      memberName: FullName2[IVarName2],
+      structExpr2: ReferenceExpressionTE,
+      expectedMemberCoord: CoordT,
+      memberName: FullNameT[IVarNameT],
 //      resultCoord: Coord,
-      targetOwnershipT: t.Ownership,
-      targetPermissionT: t.Permission,
-  ): (ExpressionH[KindH], List[Expression2]) = {
+      targetOwnershipT: t.OwnershipT,
+      targetPermissionT: t.PermissionT,
+  ): (ExpressionH[KindH], List[ExpressionT]) = {
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
@@ -236,9 +236,9 @@ object LoadHammer {
 
     val structRef2 =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRef2(_) => sr
-        case TupleT2(_, sr) => sr
-        case PackT2(_, sr) => sr
+        case sr @ StructRefT(_) => sr
+        case TupleTT(_, sr) => sr
+        case PackTT(_, sr) => sr
       }
     val structDef2 = hinputs.lookupStruct(structRef2)
     val memberIndex = structDef2.members.indexWhere(member => structDef2.fullName.addStep(member.name) == memberName)
@@ -262,14 +262,14 @@ object LoadHammer {
   def translateAddressibleLocalLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      varId: FullName2[IVarName2],
-      variability: Variability,
-      localReference2: Coord,
-      targetOwnershipT: t.Ownership,
-      targetPermissionT: t.Permission,
-  ): (ExpressionH[KindH], List[Expression2]) = {
+      varId: FullNameT[IVarNameT],
+      variability: VariabilityT,
+      localReference2: CoordT,
+      targetOwnershipT: t.OwnershipT,
+      targetPermissionT: t.PermissionT,
+  ): (ExpressionH[KindH], List[ExpressionT]) = {
     val local = locals.get(varId).get
     vassert(!locals.unstackifiedVars.contains(local.id))
 
@@ -307,13 +307,13 @@ object LoadHammer {
   def translateMundaneLocalLoad(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      varId: FullName2[IVarName2],
-      expectedType2: Coord,
-      targetOwnershipT: t.Ownership,
-      targetPermissionT: t.Permission,
-  ): (ExpressionH[KindH], List[Expression2]) = {
+      varId: FullNameT[IVarNameT],
+      expectedType2: CoordT,
+      targetOwnershipT: t.OwnershipT,
+      targetPermissionT: t.PermissionT,
+  ): (ExpressionH[KindH], List[ExpressionT]) = {
     val targetOwnership = Conversions.evaluateOwnership(targetOwnershipT)
     val targetPermission = Conversions.evaluatePermission(targetPermissionT)
 
@@ -342,11 +342,11 @@ object LoadHammer {
   def translateLocalAddress(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      lookup2: LocalLookup2):
+      lookup2: LocalLookupT):
   (ExpressionH[KindH]) = {
-    val LocalLookup2(_,localVar, type2, _) = lookup2;
+    val LocalLookupT(_,localVar, type2, _) = lookup2;
     vassert(type2 == localVar.reference)
 
     val local = locals.get(localVar.id).get
@@ -372,20 +372,20 @@ object LoadHammer {
   def translateMemberAddress(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      lookup2: AddressMemberLookup2):
-  (ExpressionH[KindH], List[Expression2]) = {
-    val AddressMemberLookup2(_,structExpr2, memberName, resultType2, _) = lookup2;
+      lookup2: AddressMemberLookupT):
+  (ExpressionH[KindH], List[ExpressionT]) = {
+    val AddressMemberLookupT(_,structExpr2, memberName, resultType2, _) = lookup2;
 
     val (structResultLine, structDeferreds) =
       translate(hinputs, hamuts, currentFunctionHeader, locals, structExpr2);
 
     val structRef2 =
       structExpr2.resultRegister.reference.kind match {
-        case sr @ StructRef2(_) => sr
-        case TupleT2(_, sr) => sr
-        case PackT2(_, sr) => sr
+        case sr @ StructRefT(_) => sr
+        case TupleTT(_, sr) => sr
+        case PackTT(_, sr) => sr
       }
     val structDef2 = hinputs.lookupStruct(structRef2)
     val memberIndex = structDef2.members.indexWhere(member => structDef2.fullName.addStep(member.name) == memberName)
@@ -393,7 +393,7 @@ object LoadHammer {
     val member2 = structDef2.members(memberIndex)
 
     val variability = member2.variability
-    vassert(variability == Varying, "Expected varying for member " + memberName) // curious
+    vassert(variability == VaryingT, "Expected varying for member " + memberName) // curious
 
     val boxedType2 = member2.tyype.expectAddressMember().reference
 

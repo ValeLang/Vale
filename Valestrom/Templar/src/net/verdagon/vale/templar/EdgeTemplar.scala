@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar
 
 import net.verdagon.vale.astronomer.{GlobalFunctionFamilyNameA, IImpreciseNameStepA, INameA, ImmConcreteDestructorImpreciseNameA, ImmConcreteDestructorNameA, ImmInterfaceDestructorImpreciseNameA}
-import net.verdagon.vale.templar.templata.{FunctionBanner2, Override2, Prototype2, Signature2}
+import net.verdagon.vale.templar.templata.{FunctionBannerT, OverrideT, PrototypeT, SignatureT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail, vwat}
 
@@ -11,14 +11,14 @@ object EdgeTemplar {
     name: IImpreciseNameStepA,
     paramFilters: List[ParamFilter]
   ) extends IMethod
-  case class FoundFunction(prototype: Prototype2) extends IMethod
+  case class FoundFunction(prototype: PrototypeT) extends IMethod
 
-  case class PartialEdge2(
-    struct: StructRef2,
-    interface: InterfaceRef2,
+  case class PartialEdgeT(
+    struct: StructRefT,
+    interface: InterfaceRefT,
     methods: List[IMethod])
 
-  def assemblePartialEdges(temputs: Temputs): List[PartialEdge2] = {
+  def assemblePartialEdges(temputs: Temputs): List[PartialEdgeT] = {
     val interfaceEdgeBlueprints = makeInterfaceEdgeBlueprints(temputs)
 
     val overrideFunctionsAndIndicesByStructAndInterface = doBlah(temputs, interfaceEdgeBlueprints)
@@ -36,14 +36,14 @@ object EdgeTemplar {
                 case None => {
                   val overrideParamFilters =
                     superFunction.paramTypes.zipWithIndex.map({
-                      case (Coord(ownership, permission, _), index) if index == superFunction.getVirtualIndex.get => {
-                        ParamFilter(Coord(ownership, permission, struct), Some(Override2(superInterface)))
+                      case (CoordT(ownership, permission, _), index) if index == superFunction.getVirtualIndex.get => {
+                        ParamFilter(CoordT(ownership, permission, struct), Some(OverrideT(superInterface)))
                       }
                       case (tyype, _) => ParamFilter(tyype, None)
                     })
                   superFunction.fullName.last match {
-                    case FunctionName2(humanName, _, _) => NeededOverride(GlobalFunctionFamilyNameA(humanName), overrideParamFilters)
-                    case ImmInterfaceDestructorName2(_, _) => NeededOverride(ImmInterfaceDestructorImpreciseNameA(), overrideParamFilters)
+                    case FunctionNameT(humanName, _, _) => NeededOverride(GlobalFunctionFamilyNameA(humanName), overrideParamFilters)
+                    case ImmInterfaceDestructorNameT(_, _) => NeededOverride(ImmInterfaceDestructorImpreciseNameA(), overrideParamFilters)
                     case _ => vwat()
                   }
                 }
@@ -54,7 +54,7 @@ object EdgeTemplar {
                 }
               }
             })
-          PartialEdge2(struct, superInterface, methods)
+          PartialEdgeT(struct, superInterface, methods)
         })
 
     partialEdges2.toList
@@ -64,7 +64,7 @@ object EdgeTemplar {
   def doBlah(
     temputs: Temputs,
     interfaceEdgeBlueprints: Vector[InterfaceEdgeBlueprint]
-  ): Map[(StructRef2, InterfaceRef2), List[(Function2, Int)]] = {
+  ): Map[(StructRefT, InterfaceRefT), List[(FunctionT, Int)]] = {
     temputs.getAllFunctions().toList.flatMap({ case overrideFunction =>
       overrideFunction.header.getOverride match {
         case None => List()
@@ -102,10 +102,10 @@ object EdgeTemplar {
               .filter({ case (possibleSuperFunction, index) =>
                 val namesMatch =
                   (possibleSuperFunction.fullName.last, overrideFunction.header.fullName.last) match {
-                    case (FunctionName2(possibleSuperFunctionHumanName, _, _), FunctionName2(overrideFunctionHumanName, _, _)) => {
+                    case (FunctionNameT(possibleSuperFunctionHumanName, _, _), FunctionNameT(overrideFunctionHumanName, _, _)) => {
                       possibleSuperFunctionHumanName == overrideFunctionHumanName
                     }
-                    case (ImmInterfaceDestructorName2(_, _), ImmInterfaceDestructorName2(_, _)) => true
+                    case (ImmInterfaceDestructorNameT(_, _), ImmInterfaceDestructorNameT(_, _)) => true
                     case _ => false
                   }
                 namesMatch && possibleSuperFunction.paramTypes == needleSuperFunctionParamTypes

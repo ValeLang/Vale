@@ -5,7 +5,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.{vassert, vassertSome, vcurious, vfail, vwat, metal => m}
 import net.verdagon.vale.metal.{ShareH => _, _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{FunctionBanner2, FunctionHeader2, Prototype2}
+import net.verdagon.vale.templar.templata.{FunctionBannerT, FunctionHeaderT, PrototypeT}
 import net.verdagon.vale.templar.types._
 
 object CallHammer {
@@ -13,10 +13,10 @@ object CallHammer {
   def translateExternFunctionCall(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    prototype2: Prototype2,
-    argsExprs2: List[ReferenceExpression2]):
+    prototype2: PrototypeT,
+    argsExprs2: List[ReferenceExpressionTE]):
   (ExpressionH[KindH]) = {
     val (argsResultLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
@@ -39,11 +39,11 @@ object CallHammer {
   def translateFunctionPointerCall(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      function: Prototype2,
-      args: List[Expression2],
-      resultType2: Coord):
+      function: PrototypeT,
+      args: List[ExpressionT],
+      resultType2: CoordT):
   ExpressionH[KindH] = {
     val returnType2 = function.returnType
     val paramTypes = function.paramTypes
@@ -72,11 +72,11 @@ object CallHammer {
 
   def translateConstructArray(
       hinputs: Hinputs, hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      constructArray2: ConstructArray2):
+      constructArray2: ConstructArrayTE):
   (ExpressionH[KindH]) = {
-    val ConstructArray2(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
+    val ConstructArrayTE(arrayType2, sizeExpr2, generatorExpr2, generatorMethod) = constructArray2;
 
     val (sizeRegisterId, sizeDeferreds) =
       ExpressionHammer.translate(
@@ -114,11 +114,11 @@ object CallHammer {
   def translateStaticArrayFromCallable(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    exprTE: StaticArrayFromCallable2):
+    exprTE: StaticArrayFromCallableTE):
   (ExpressionH[KindH]) = {
-    val StaticArrayFromCallable2(arrayType2, generatorExpr2, generatorMethod) = exprTE;
+    val StaticArrayFromCallableTE(arrayType2, generatorExpr2, generatorMethod) = exprTE;
 
     val (generatorRegisterId, generatorDeferreds) =
       ExpressionHammer.translate(
@@ -151,11 +151,11 @@ object CallHammer {
   def translateDestroyStaticSizedArray(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      das2: DestroyStaticSizedArrayIntoFunction2):
+      das2: DestroyStaticSizedArrayIntoFunctionTE):
   ExpressionH[KindH] = {
-    val DestroyStaticSizedArrayIntoFunction2(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
+    val DestroyStaticSizedArrayIntoFunctionTE(arrayExpr2, staticSizedArrayType, consumerExpr2, consumerMethod2) = das2;
 
     val (arrayTypeH) =
       TypeHammer.translateStaticSizedArray(hinputs, hamuts, staticSizedArrayType)
@@ -197,11 +197,11 @@ object CallHammer {
   def translateDestroyRuntimeSizedArray(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
     locals: LocalsBox,
-    das2: DestroyRuntimeSizedArray2):
+    das2: DestroyRuntimeSizedArrayTE):
   ExpressionH[KindH] = {
-    val DestroyRuntimeSizedArray2(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
+    val DestroyRuntimeSizedArrayTE(arrayExpr2, runtimeSizedArrayType2, consumerExpr2, consumerMethod2) = das2;
 
 //    val RuntimeSizedArrayT2(RawArrayT2(memberType2, mutability)) = runtimeSizedArrayType2
 
@@ -241,11 +241,11 @@ object CallHammer {
   def translateIf(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
     parentLocals: LocalsBox,
-    if2: If2):
+    if2: IfTE):
   ExpressionH[KindH] = {
-    val If2(condition2, thenBlock2, elseBlock2) = if2
+    val IfTE(condition2, thenBlock2, elseBlock2) = if2
 
     val (conditionBlockH, List()) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, parentLocals, condition2);
@@ -304,12 +304,12 @@ object CallHammer {
 
   def translateWhile(
       hinputs: Hinputs, hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      while2: While2):
+      while2: WhileTE):
   WhileH = {
 
-    val While2(bodyExpr2) = while2
+    val WhileTE(bodyExpr2) = while2
 
     val (exprWithoutDeferreds, deferreds) =
       ExpressionHammer.translate(hinputs, hamuts, currentFunctionHeader, locals, bodyExpr2);
@@ -325,18 +325,18 @@ object CallHammer {
   def translateInterfaceFunctionCall(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      currentFunctionHeader: FunctionHeader2,
+      currentFunctionHeader: FunctionHeaderT,
       locals: LocalsBox,
-      superFunctionHeader: FunctionHeader2,
-      resultType2: Coord,
-      argsExprs2: List[Expression2]):
+      superFunctionHeader: FunctionHeaderT,
+      resultType2: CoordT,
+      argsExprs2: List[ExpressionT]):
   ExpressionH[KindH] = {
     val (argLines, argsDeferreds) =
       ExpressionHammer.translateExpressions(
         hinputs, hamuts, currentFunctionHeader, locals, argsExprs2);
 
     val virtualParamIndex = superFunctionHeader.getVirtualIndex.get
-    val Coord(_, _, interfaceRef2 @ InterfaceRef2(_)) =
+    val CoordT(_, _, interfaceRef2 @ InterfaceRefT(_)) =
       superFunctionHeader.paramTypes(virtualParamIndex)
     val (interfaceRefH) =
       StructHammer.translateInterfaceRef(hinputs, hamuts, interfaceRef2)

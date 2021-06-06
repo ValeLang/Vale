@@ -22,7 +22,7 @@ trait IStructTemplarDelegate {
     temputs: Temputs,
     callRange: RangeS,
     functionTemplata: FunctionTemplata):
-  FunctionHeader2
+  FunctionHeaderT
 
   def scoutExpectedFunctionForPrototype(
     env: IEnvironment,
@@ -38,27 +38,27 @@ trait IStructTemplarDelegate {
   def makeImmConcreteDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRef2):
-  Prototype2
+    structRef2: StructRefT):
+  PrototypeT
 
   def getImmInterfaceDestructorOverride(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRef2,
-    implementedInterfaceRefT: InterfaceRef2):
-  Prototype2
+    structRef2: StructRefT,
+    implementedInterfaceRefT: InterfaceRefT):
+  PrototypeT
 
   def getImmInterfaceDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    interfaceRef2: InterfaceRef2):
-  Prototype2
+    interfaceRef2: InterfaceRefT):
+  PrototypeT
 
   def getImmConcreteDestructor(
     temputs: Temputs,
     env: IEnvironment,
-    structRef2: StructRef2):
-  Prototype2
+    structRef2: StructRefT):
+  PrototypeT
 }
 
 class StructTemplar(
@@ -72,16 +72,16 @@ class StructTemplar(
     new StructTemplarTemplateArgsLayer(
       opts, profiler, newTemplataStore, inferTemplar, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
     templateArgsLayer.addBuiltInStructs(env, temputs)
   }
 
   private def makeStructConstructor(
     temputs: Temputs,
     maybeConstructorOriginFunctionA: Option[FunctionA],
-    structDef: StructDefinition2,
-    constructorFullName: FullName2[IFunctionName2]):
-  FunctionHeader2 = {
+    structDef: StructDefinitionT,
+    constructorFullName: FullNameT[IFunctionNameT]):
+  FunctionHeaderT = {
     templateArgsLayer.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
   }
 
@@ -216,7 +216,7 @@ class StructTemplar(
     callRange: RangeS,
     structTemplata: StructTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
-  (StructRef2) = {
+  (StructRefT) = {
     profiler.newProfile("StructTemplarGetStructRef", structTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getStructRef(
         temputs, callRange, structTemplata, uncoercedTemplateArgs)
@@ -230,7 +230,7 @@ class StructTemplar(
     // their rules as needed
     interfaceTemplata: InterfaceTemplata,
     uncoercedTemplateArgs: List[ITemplata]):
-  (InterfaceRef2) = {
+  (InterfaceRefT) = {
 //    profiler.newProfile("StructTemplar-getInterfaceRef", interfaceTemplata.debugString + "<" + uncoercedTemplateArgs.mkString(", ") + ">", () => {
       templateArgsLayer.getInterfaceRef(
         temputs, callRange, interfaceTemplata, uncoercedTemplateArgs)
@@ -243,16 +243,16 @@ class StructTemplar(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMember2]):
-  (StructRef2, Mutability, FunctionTemplata) = {
+    members: List[StructMemberT]):
+  (StructRefT, MutabilityT, FunctionTemplata) = {
 //    profiler.newProfile("StructTemplar-makeClosureUnderstruct", name.codeLocation.toString, () => {
       templateArgsLayer.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
 //    })
   }
 
   // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnderstruct(env: PackageEnvironment[IName2], temputs: Temputs, memberTypes2: List[Coord], name: ICitizenName2):
-  (StructRef2, Mutability) = {
+  def makeSeqOrPackUnderstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: List[CoordT], name: ICitizenNameT):
+  (StructRefT, MutabilityT) = {
 //    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + memberTypes2.map(_.toString).mkString(", ") + "]", () => {
       templateArgsLayer.makeSeqOrPackUnerstruct(env, temputs, memberTypes2, name)
 //    })
@@ -262,12 +262,12 @@ class StructTemplar(
   def makeAnonymousSubstruct(
     temputs: Temputs,
     range: RangeS,
-    interfaceRef2: InterfaceRef2,
-    members: List[Coord]):
-  StructRef2 = {
+    interfaceRef2: InterfaceRefT,
+    members: List[CoordT]):
+  StructRefT = {
 //    profiler.newProfile("StructTemplar-makeSeqOrPackUnderstruct", "[" + interfaceRef2.toString + " " + members.map(_.toString).mkString(", ") + "]", () => {
       val anonymousSubstructName =
-        interfaceRef2.fullName.addStep(AnonymousSubstructName2(members))
+        interfaceRef2.fullName.addStep(AnonymousSubstructNameT(members))
 
       temputs.structDeclared(anonymousSubstructName) match {
         case Some(s) => return s
@@ -287,10 +287,10 @@ class StructTemplar(
   def prototypeToAnonymousStruct(
     temputs: Temputs,
     range: RangeS,
-    prototype: Prototype2):
-  StructRef2 = {
+    prototype: PrototypeT):
+  StructRefT = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousStruct", prototype.toString, () => {
-      val structFullName = prototype.fullName.addStep(LambdaCitizenName2(CodeLocation2.internal(-13)))
+      val structFullName = prototype.fullName.addStep(LambdaCitizenNameT(CodeLocationT.internal(-13)))
 
       temputs.structDeclared(structFullName) match {
         case Some(structRef2) => return structRef2
@@ -307,23 +307,23 @@ class StructTemplar(
   def prototypeToAnonymousSubstruct(
       temputs: Temputs,
       range: RangeS,
-      interfaceRef2: InterfaceRef2,
-      prototype: Prototype2):
-  (StructRef2, Prototype2) = {
+      interfaceRef2: InterfaceRefT,
+      prototype: PrototypeT):
+  (StructRefT, PrototypeT) = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousSubstruct", prototype.toString + " " + interfaceRef2.toString, () => {
       val functionStructRef = prototypeToAnonymousStruct(temputs, range, prototype)
-      val functionStructType = Coord(Share, Readonly, functionStructRef)
+      val functionStructType = CoordT(ShareT, ReadonlyT, functionStructRef)
 
       val lambdas = List(functionStructType)
 
       val anonymousSubstructRef =
         makeAnonymousSubstruct(temputs, range, interfaceRef2, lambdas)
-      val anonymousSubstructType = Coord(Share, Readonly, anonymousSubstructRef)
+      val anonymousSubstructType = CoordT(ShareT, ReadonlyT, anonymousSubstructRef)
 
       val constructorName =
         interfaceRef2.fullName
-          .addStep(AnonymousSubstructName2(List(functionStructType)))
-          .addStep(ConstructorName2(List()))
+          .addStep(AnonymousSubstructNameT(List(functionStructType)))
+          .addStep(ConstructorNameT(List()))
       temputs.prototypeDeclared(constructorName) match {
         case Some(func) => return (anonymousSubstructRef, func)
         case None =>
@@ -331,24 +331,24 @@ class StructTemplar(
 
       // Now we make a function which constructs a functionStruct, then constructs a substruct.
       val constructor2 =
-        Function2(
-          FunctionHeader2(
+        FunctionT(
+          FunctionHeaderT(
             constructorName,
             List(),
             List(),
             anonymousSubstructType,
             None),
           List(),
-          Block2(
+          BlockTE(
             List(
-              Return2(
-                Construct2(
+              ReturnTE(
+                ConstructTE(
                   anonymousSubstructRef,
                   anonymousSubstructType,
                   List(
-                    Construct2(
+                    ConstructTE(
                       functionStructRef,
-                      Coord(Share, Readonly, functionStructRef),
+                      CoordT(ShareT, ReadonlyT, functionStructRef),
                       List())))))))
       temputs.declareFunctionSignature(range, constructor2.header.toSignature, None)
       temputs.declareFunctionReturnType(constructor2.header.toSignature, constructor2.header.returnType)
@@ -369,10 +369,10 @@ class StructTemplar(
 //    templateArgsLayer.functionToLambda(outerEnv, temputs, header)
 //  }
 
-  def getMemberCoords(temputs: Temputs, structRef: StructRef2): List[Coord] = {
+  def getMemberCoords(temputs: Temputs, structRef: StructRefT): List[CoordT] = {
     temputs.getStructDefForRef(structRef).members.map(_.tyype).map({
-      case ReferenceMemberType2(coord) => coord
-      case AddressMemberType2(_) => {
+      case ReferenceMemberTypeT(coord) => coord
+      case AddressMemberTypeT(_) => {
         // At time of writing, the only one who calls this is the inferer, who wants to know so it
         // can match incoming arguments into a destructure. Can we even destructure things with
         // addressible members?
@@ -413,8 +413,8 @@ class StructTemplar(
       env: IEnvironment,
       temputs: Temputs,
       range: RangeS,
-      prototype: Prototype2):
-  (InterfaceRef2, StructRef2, Prototype2) = {
+      prototype: PrototypeT):
+  (InterfaceRefT, StructRefT, PrototypeT) = {
 //    profiler.newProfile("StructTemplar-prototypeToAnonymousIFunctionSubstruct", prototype.toString, () => {
       val returnType = prototype.returnType
       val List(paramType) = prototype.fullName.last.parameters
@@ -427,7 +427,7 @@ class StructTemplar(
           range,
           ifunction1Templata,
           List(
-            MutabilityTemplata(Immutable),
+            MutabilityTemplata(ImmutableT),
             CoordTemplata(paramType),
             CoordTemplata(returnType)))
 
@@ -442,11 +442,11 @@ class StructTemplar(
 
 object StructTemplar {
 
-  def getCompoundTypeMutability(memberTypes2: List[Coord])
-  : Mutability = {
+  def getCompoundTypeMutability(memberTypes2: List[CoordT])
+  : MutabilityT = {
     val membersOwnerships = memberTypes2.map(_.ownership)
-    val allMembersImmutable = membersOwnerships.isEmpty || membersOwnerships.toSet == Set(Share)
-    if (allMembersImmutable) Immutable else Mutable
+    val allMembersImmutable = membersOwnerships.isEmpty || membersOwnerships.toSet == Set(ShareT)
+    if (allMembersImmutable) ImmutableT else MutableT
   }
 
   def getFunctionGenerators(): Map[String, IFunctionGenerator] = {
@@ -461,10 +461,10 @@ object StructTemplar {
             temputs: Temputs,
             callRange: RangeS,
             originFunction: Option[FunctionA],
-            paramCoords: List[Parameter2],
-            maybeRetCoord: Option[Coord]):
-          (FunctionHeader2) = {
-            val Some(Coord(_, _, structRef2 @ StructRef2(_))) = maybeRetCoord
+            paramCoords: List[ParameterT],
+            maybeRetCoord: Option[CoordT]):
+          (FunctionHeaderT) = {
+            val Some(CoordT(_, _, structRef2 @ StructRefT(_))) = maybeRetCoord
             val structDef2 = temputs.lookupStruct(structRef2)
             structTemplar.makeStructConstructor(temputs, originFunction, structDef2, env.fullName)
           }
@@ -479,13 +479,13 @@ object StructTemplar {
             temputs: Temputs,
             callRange: RangeS,
             originFunction: Option[FunctionA],
-            paramCoords: List[Parameter2],
-            maybeRetCoord: Option[Coord]):
-          (FunctionHeader2) = {
+            paramCoords: List[ParameterT],
+            maybeRetCoord: Option[CoordT]):
+          (FunctionHeaderT) = {
             // The interface should be in the "__Interface" rune of the function environment.
             val interfaceRef2 =
-              env.getNearestTemplataWithAbsoluteName2(AnonymousSubstructParentInterfaceRune2(), Set(TemplataLookupContext)) match {
-                case Some(KindTemplata(ir @ InterfaceRef2(_))) => ir
+              env.getNearestTemplataWithAbsoluteName2(AnonymousSubstructParentInterfaceRuneT(), Set(TemplataLookupContext)) match {
+                case Some(KindTemplata(ir @ InterfaceRefT(_))) => ir
                 case _ => vwat()
               }
 

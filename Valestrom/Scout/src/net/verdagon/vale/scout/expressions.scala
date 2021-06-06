@@ -143,13 +143,13 @@ case class RepeaterPackSE(range: RangeS, expression: IExpressionSE) extends IExp
 // Results in a pack, represents the differences between the elements
 case class RepeaterPackIteratorSE(range: RangeS, expression: IExpressionSE) extends IExpressionSE
 
-case class IntLiteralSE(range: RangeS, value: Int) extends IExpressionSE
+case class ConstantIntSE(range: RangeS, value: Long, bits: Int) extends IExpressionSE
 
-case class BoolLiteralSE(range: RangeS, value: Boolean) extends IExpressionSE
+case class ConstantBoolSE(range: RangeS, value: Boolean) extends IExpressionSE
 
-case class StrLiteralSE(range: RangeS, value: String) extends IExpressionSE
+case class ConstantStrSE(range: RangeS, value: String) extends IExpressionSE
 
-case class FloatLiteralSE(range: RangeS, value: Double) extends IExpressionSE
+case class ConstantFloatSE(range: RangeS, value: Double) extends IExpressionSE
 
 case class DestructSE(range: RangeS, inner: IExpressionSE) extends IExpressionSE
 

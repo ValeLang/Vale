@@ -5,7 +5,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.metal._
 import net.verdagon.vale.parser.{FileP, VariabilityP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
-import net.verdagon.vale.templar.{CitizenName2, ExternFunctionName2, FullName2, FunctionExport2, FunctionExtern2, FunctionName2, ICompileErrorT, IName2, IVarName2, ImmConcreteDestructorName2, ImmInterfaceDestructorName2, KindExport2, KindExtern2, TemplarCompilation, TemplarCompilationOptions, types => t}
+import net.verdagon.vale.templar.{CitizenNameT, ExternFunctionNameT, FullNameT, FunctionExportT, FunctionExternT, FunctionNameT, ICompileErrorT, INameT, IVarNameT, ImmConcreteDestructorNameT, ImmInterfaceDestructorNameT, KindExportT, KindExternT, TemplarCompilation, TemplarCompilationOptions, types => t}
 import net.verdagon.vale.{Builtins, FileCoordinateMap, IPackageResolver, IProfiler, NullProfiler, PackageCoordinate, PackageCoordinateMap, Result, vassert, vfail, vwat}
 
 import scala.collection.immutable.List
@@ -18,15 +18,15 @@ case class FunctionRefH(prototype: PrototypeH) {
 case class LocalsBox(var inner: Locals) {
   def snapshot = inner
 
-  def templarLocals: Map[FullName2[IVarName2], VariableIdH] = inner.templarLocals
+  def templarLocals: Map[FullNameT[IVarNameT], VariableIdH] = inner.templarLocals
   def unstackifiedVars: Set[VariableIdH] = inner.unstackifiedVars
   def locals: Map[VariableIdH, Local] = inner.locals
   def nextLocalIdNumber: Int = inner.nextLocalIdNumber
 
-  def get(id: FullName2[IVarName2]) = inner.get(id)
+  def get(id: FullNameT[IVarNameT]) = inner.get(id)
   def get(id: VariableIdH) = inner.get(id)
 
-  def markUnstackified(varId2: FullName2[IVarName2]): Unit = {
+  def markUnstackified(varId2: FullNameT[IVarNameT]): Unit = {
     inner = inner.markUnstackified(varId2)
   }
 
@@ -49,7 +49,7 @@ case class LocalsBox(var inner: Locals) {
   def addTemplarLocal(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    varId2: FullName2[IVarName2],
+    varId2: FullNameT[IVarNameT],
     variability: Variability,
     tyype: ReferenceH[KindH]):
   Local = {
@@ -66,7 +66,7 @@ case class LocalsBox(var inner: Locals) {
 case class Locals(
      // This doesn't have all the locals that are in the locals list, this just
      // has any locals added by templar.
-     templarLocals: Map[FullName2[IVarName2], VariableIdH],
+     templarLocals: Map[FullNameT[IVarNameT], VariableIdH],
 
      unstackifiedVars: Set[VariableIdH],
 
@@ -78,7 +78,7 @@ case class Locals(
   def addTemplarLocal(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    varId2: FullName2[IVarName2],
+    varId2: FullNameT[IVarNameT],
     variability: Variability,
     tyype: ReferenceH[KindH]):
   (Locals, Local) = {
@@ -118,7 +118,7 @@ case class Locals(
     (newLocals, newLocal)
   }
 
-  def markUnstackified(varId2: FullName2[IVarName2]): Locals = {
+  def markUnstackified(varId2: FullNameT[IVarNameT]): Locals = {
     markUnstackified(templarLocals(varId2))
   }
 
@@ -131,7 +131,7 @@ case class Locals(
     Locals(templarLocals, unstackifiedVars + varIdH, locals, nextLocalIdNumber)
   }
 
-  def get(varId: FullName2[IVarName2]): Option[Local] = {
+  def get(varId: FullNameT[IVarNameT]): Option[Local] = {
     templarLocals.get(varId) match {
       case None => None
       case Some(index) => Some(locals(index))
@@ -163,22 +163,22 @@ object Hammer {
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
-    kindExports.foreach({ case KindExport2(tyype, packageCoordinate, exportName) =>
+    kindExports.foreach({ case KindExportT(tyype, packageCoordinate, exportName) =>
       val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
       hamuts.addKindExport(kindH, packageCoordinate, exportName)
     })
 
-    functionExports.foreach({ case FunctionExport2(prototype, packageCoordinate, exportName) =>
+    functionExports.foreach({ case FunctionExportT(prototype, packageCoordinate, exportName) =>
       val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype)
       hamuts.addFunctionExport(prototypeH, packageCoordinate, exportName)
     })
 
-    kindExterns.foreach({ case KindExtern2(tyype, packageCoordinate, exportName) =>
+    kindExterns.foreach({ case KindExternT(tyype, packageCoordinate, exportName) =>
       val kindH = TypeHammer.translateKind(hinputs, hamuts, tyype)
       hamuts.addKindExtern(kindH, packageCoordinate, exportName)
     })
 
-    functionExterns.foreach({ case FunctionExtern2(prototype, packageCoordinate, exportName) =>
+    functionExterns.foreach({ case FunctionExternT(prototype, packageCoordinate, exportName) =>
       val prototypeH = FunctionHammer.translatePrototype(hinputs, hamuts, prototype)
       hamuts.addFunctionExtern(prototypeH, packageCoordinate, exportName)
     })

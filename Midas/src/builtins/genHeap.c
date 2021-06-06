@@ -4,6 +4,9 @@
 #include <assert.h>
 #include <string.h>
 
+static int64_t __totalLiveSize = 0;
+static int64_t __totalAllocatedSize = 0;
+
 typedef struct {
   // Vale's control block should also have gen right here.
   uint32_t generationOrRc;
@@ -89,6 +92,7 @@ static inline void* mallocAndZeroGen(int allocationActualSizeBytes) {
   __Heap_Entry* newAllocation = malloc(allocationActualSizeBytes);
   newAllocation->generationOrRc = 0;
   newAllocation->allocationActualSizeBytes = allocationActualSizeBytes;
+  __totalAllocatedSize += allocationActualSizeBytes;
   return newAllocation;
 }
 
@@ -159,20 +163,28 @@ void* __genMalloc(int desiredBytes) {
   int allocationActualSizeBytes = genHeapForDesiredSize->allocationActualSizeBytes;
   __Heap_Entry** freeListHeadPtrPtr = genHeapForDesiredSize->freeListHeadPtrPtr;
 
+  __totalLiveSize += allocationActualSizeBytes;
+
   __Heap_Entry* result = NULL;
   if (*freeListHeadPtrPtr) {
     result = popFromFreeList(freeListHeadPtrPtr);
+    printf("genMalloc(%d) reused, total allocated %d, total live %d.\n", desiredBytes, __totalAllocatedSize, __totalLiveSize);
   } else {
     result = mallocAndZeroGen(allocationActualSizeBytes);
+    printf("genMalloc(%d) allocated, now total allocated %d, total live %d.\n", desiredBytes, __totalAllocatedSize, __totalLiveSize);
   }
   // Dont change the generation
   result->allocationActualSizeBytes = allocationActualSizeBytes;
+
   return result;
 }
 
 // we assume bytes is a multiple of 8
 void __genFree(void* allocationVoidPtr) {
   __Heap_Entry* allocation = (__Heap_Entry*)allocationVoidPtr;
+
+  __totalLiveSize -= allocation->allocationActualSizeBytes;
+  printf("genFree freeing %d, now total allocated %d, total live %d.\n", allocation->allocationActualSizeBytes, __totalAllocatedSize, __totalLiveSize);
 
   __Heap_Entry** freeListHeadPtrPtr = getGenHeapForDesiredSize(allocation->allocationActualSizeBytes)->freeListHeadPtrPtr;
   incrementGenAndAddToFreeList((__Heap_Entry*)allocation, freeListHeadPtrPtr);

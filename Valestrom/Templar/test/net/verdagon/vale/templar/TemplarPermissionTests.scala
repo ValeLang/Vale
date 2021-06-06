@@ -2,7 +2,7 @@ package net.verdagon.vale.templar
 
 import net.verdagon.vale.parser.{CombinatorParsers, FileP, ParseErrorHumanizer, ParseFailure, ParseSuccess, Parser}
 import net.verdagon.vale.scout.{CodeLocationS, CodeVarNameS, ProgramS, RangeS, Scout, VariableNameAlreadyExists}
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale._
@@ -35,7 +35,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeader2(simpleName("main"),List(UserFunction2),List(Parameter2(_, _, Coord(Constraint, Readonly, StructRef2(_)))), _, _) => true
+      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(ParameterT(_, _, CoordT(ConstraintT, ReadonlyT, StructRefT(_)))), _, _) => true
     })
   }
 
@@ -50,7 +50,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.only({
-      case FunctionHeader2(simpleName("main"),List(UserFunction2),List(Parameter2(_, _, Coord(Constraint, Readwrite, StructRef2(_)))), _, _) => true
+      case FunctionHeaderT(simpleName("main"),List(UserFunction2),List(ParameterT(_, _, CoordT(ConstraintT, ReadwriteT, StructRefT(_)))), _, _) => true
     })
   }
 
@@ -69,7 +69,7 @@ class TemplarPermissionTests extends FunSuite with Matchers {
 
     val main = temputs.lookupFunction("main")
     main.header.returnType match {
-      case Coord(Constraint, Readonly, _) =>
+      case CoordT(ConstraintT, ReadonlyT, _) =>
     }
   }
 

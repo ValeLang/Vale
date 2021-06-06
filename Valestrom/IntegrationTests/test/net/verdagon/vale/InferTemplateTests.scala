@@ -1,8 +1,8 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.templar.{CitizenName2, CodeVarName2, FullName2, simpleName}
-import net.verdagon.vale.templar.templata.{CoordTemplata, Parameter2}
-import net.verdagon.vale.templar.types.{Constraint, Coord, Own, Readonly, Readwrite, StructRef2}
+import net.verdagon.vale.templar.{CitizenNameT, CodeVarNameT, FullNameT, simpleName}
+import net.verdagon.vale.templar.templata.{CoordTemplata, ParameterT}
+import net.verdagon.vale.templar.types.{ConstraintT, CoordT, OwnT, ReadonlyT, ReadwriteT, StructRefT}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -20,10 +20,10 @@ class InferTemplateTests extends FunSuite with Matchers {
 
     val moo = compile.expectTemputs().lookupFunction("moo")
     moo.header.params match {
-      case List(Parameter2(CodeVarName2("m"), _, Coord(Constraint,Readonly, _))) =>
+      case List(ParameterT(CodeVarNameT("m"), _, CoordT(ConstraintT,ReadonlyT, _))) =>
     }
     moo.header.fullName.last.templateArgs shouldEqual
-      List(CoordTemplata(Coord(Own,Readwrite,StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(),CitizenName2("Muta",List()))))), CoordTemplata(Coord(Constraint,Readonly,StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(),CitizenName2("Muta",List()))))))
+      List(CoordTemplata(CoordT(OwnT,ReadwriteT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(),CitizenNameT("Muta",List()))))), CoordTemplata(CoordT(ConstraintT,ReadonlyT,StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(),CitizenNameT("Muta",List()))))))
 
     compile.evalForKind(Vector()) shouldEqual VonInt(10)
   }

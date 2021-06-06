@@ -76,8 +76,7 @@ class ValeCompiler:
             return procrun(args)
         else:
             clang = "clang-11" if shutil.which("clang-11") is not None else "clang"
-            # "-fsanitize=address", "-fno-omit-frame-pointer", "-g",
-            args = [clang, "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
+            args = [clang, "-O3", "-lm", "-o", str(exe_file), "-fsanitize=address", "-fsanitize=leak", "-fno-omit-frame-pointer", "-g"] + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)

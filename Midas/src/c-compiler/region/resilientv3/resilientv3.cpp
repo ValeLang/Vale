@@ -14,7 +14,7 @@
 
 ControlBlock makeResilientV3WeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
-  controlBlock.addMember(ControlBlockMember::GENERATION);
+  controlBlock.addMember(ControlBlockMember::GENERATION_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
@@ -947,7 +947,7 @@ void ResilientV3::initializeElementInSSA(
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
           globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
-  auto sizeRef = globalState->constI64(ssaDef->size);
+  auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElement(
       globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);

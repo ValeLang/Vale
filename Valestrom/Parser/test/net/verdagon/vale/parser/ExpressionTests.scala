@@ -5,59 +5,63 @@ import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("PE") {
-    compile(CombinatorParsers.expression, "4") shouldHave { case IntLiteralPE(_, 4) => }
+    compile(CombinatorParsers.expression, "4") shouldHave { case ConstantIntPE(_, 4, 32) => }
+  }
+
+  test("i64") {
+    compile(CombinatorParsers.expression, "4i64") shouldHave { case ConstantIntPE(_, 4, 64) => }
   }
 
   test("2") {
-    compile(CombinatorParsers.expression,"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"4 + 5") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), List(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LendConstraintP(Some(ReadonlyP))) => }
   }
 
   test("Floats") {
-    compile(CombinatorParsers.expression,"4.2") shouldHave { case FloatLiteralPE(_, 4.2f) => }
+    compile(CombinatorParsers.expression,"4.2") shouldHave { case ConstantFloatPE(_, 4.2f) => }
   }
 
   test("Simple string") {
-    compile(CombinatorParsers.stringExpr, """"moo"""") shouldHave { case StrLiteralPE(_, "moo") => }
+    compile(CombinatorParsers.stringExpr, """"moo"""") shouldHave { case ConstantStrPE(_, "moo") => }
   }
 
   test("String with quote inside") {
-    compile(CombinatorParsers.expression, """"m\"oo"""") shouldHave { case StrLiteralPE(_, "m\"oo") => }
+    compile(CombinatorParsers.expression, """"m\"oo"""") shouldHave { case ConstantStrPE(_, "m\"oo") => }
   }
 
   test("String with apostrophe inside") {
-    compile(CombinatorParsers.expression, """"m'oo"""") shouldHave { case StrLiteralPE(_, "m'oo") => }
+    compile(CombinatorParsers.expression, """"m'oo"""") shouldHave { case ConstantStrPE(_, "m'oo") => }
   }
 
   test("Short string interpolating") {
-    compile(CombinatorParsers.expression, """"bl{4}rg"""") shouldHave { case StrInterpolatePE(_, List(StrLiteralPE(_, "bl"), IntLiteralPE(_, 4), StrLiteralPE(_, "rg"))) => }
+    compile(CombinatorParsers.expression, """"bl{4}rg"""") shouldHave { case StrInterpolatePE(_, List(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Short string interpolating with call") {
     compile(CombinatorParsers.expression, """"bl{ns(4)}rg"""") shouldHave {
       case StrInterpolatePE(_,
         List(
-          StrLiteralPE(_, "bl"),
-          FunctionCallPE(_, _, _, _, LookupPE(NameP(_, "ns"), _), List(IntLiteralPE(_, 4)), _),
-          StrLiteralPE(_, "rg"))) =>
+          ConstantStrPE(_, "bl"),
+          FunctionCallPE(_, _, _, _, LookupPE(NameP(_, "ns"), _), List(ConstantIntPE(_, 4, _)), _),
+          ConstantStrPE(_, "rg"))) =>
     }
   }
 
   test("Long string interpolating") {
-    compile(CombinatorParsers.expression, "\"\"\"bl{4}rg\"\"\"") shouldHave { case StrInterpolatePE(_, List(StrLiteralPE(_, "bl"), IntLiteralPE(_, 4), StrLiteralPE(_, "rg"))) => }
+    compile(CombinatorParsers.expression, "\"\"\"bl{4}rg\"\"\"") shouldHave { case StrInterpolatePE(_, List(ConstantStrPE(_, "bl"), ConstantIntPE(_, 4, _), ConstantStrPE(_, "rg"))) => }
   }
 
   test("Long string interpolating with call") {
     compile(CombinatorParsers.expression, "\"\"\"bl\"{ns(4)}rg\"\"\"") shouldHave {
       case StrInterpolatePE(_,
       List(
-        StrLiteralPE(_, "bl\""),
-        FunctionCallPE(_, _, _, _, LookupPE(NameP(_, "ns"), _), List(IntLiteralPE(_, 4)), _),
-        StrLiteralPE(_, "rg"))) =>
+        ConstantStrPE(_, "bl\""),
+        FunctionCallPE(_, _, _, _, LookupPE(NameP(_, "ns"), _), List(ConstantIntPE(_, 4, _)), _),
+        ConstantStrPE(_, "rg"))) =>
     }
   }
 
   test("add as call") {
-    compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), List(IntLiteralPE(_, 4), IntLiteralPE(_, 5)),LendConstraintP(Some(ReadonlyP))) => }
+    compile(CombinatorParsers.expression,"+(4, 5)") shouldHave { case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, "+"), None), List(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)),LendConstraintP(Some(ReadonlyP))) => }
   }
 
   test("regular call") {
@@ -189,13 +193,13 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     // for + - * / < >) so it parsed as >(9, =) which was bad. We changed the infix operator parser to expect the
     // whitespace on both sides, so that it was forced to parse the entire thing.
     compile(CombinatorParsers.expression,"9 >= 3") shouldHave {
-      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, ">="),None),List(IntLiteralPE(_, 9), IntLiteralPE(_, 3)),LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_,None,_,false,LookupPE(NameP(_, ">="),None),List(ConstantIntPE(_, 9, _), ConstantIntPE(_, 3, _)),LendConstraintP(Some(ReadonlyP))) =>
     }
   }
 
   test("Indexing") {
     compile(CombinatorParsers.expression,"arr [4]") shouldHave {
-      case IndexPE(_,LookupPE(NameP(_,arr),None),List(IntLiteralPE(_,4))) =>
+      case IndexPE(_,LookupPE(NameP(_,arr),None),List(ConstantIntPE(_, 4, _))) =>
     }
   }
 
@@ -223,7 +227,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("!=") {
     compile(CombinatorParsers.expression,"3 != 4") shouldHave {
-      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "!="), None), List(IntLiteralPE(_, 3), IntLiteralPE(_, 4)), LendConstraintP(Some(ReadonlyP))) =>
+      case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "!="), None), List(ConstantIntPE(_, 3, _), ConstantIntPE(_, 4, _)), LendConstraintP(Some(ReadonlyP))) =>
     }
   }
 
@@ -236,7 +240,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
   test("Test templated lambda param") {
     val program = compile(CombinatorParsers.expression, "((a){a + a})!(3)")
     program shouldHave {
-      case FunctionCallPE(_, None, _, false, PackPE(_, List(LambdaPE(_, _))), List(IntLiteralPE(_, 3)),UseP) =>
+      case FunctionCallPE(_, None, _, false, PackPE(_, List(LambdaPE(_, _))), List(ConstantIntPE(_, 3, _)),UseP) =>
     }
     program shouldHave {
       case PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),None,None,None) =>
@@ -282,12 +286,12 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
         case FunctionCallPE(_,None,_,false,
           LookupPE(NameP(_,"*"),None),
           List(
-            IntLiteralPE(_,2),
+            ConstantIntPE(_, 2, _),
             PackPE(_,
               List(
                 FunctionCallPE(_,None,_,false,
                   LookupPE(NameP(_,"-"),None),
-                  List(IntLiteralPE(_,5), IntLiteralPE(_,7)),
+                  List(ConstantIntPE(_, 5, _), ConstantIntPE(_, 7, _)),
                   LendConstraintP(Some(ReadonlyP)))))),
           LendConstraintP(Some(ReadonlyP))) =>
     }
@@ -297,7 +301,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
     "from values") {
     compile(CombinatorParsers.expression,
       "[][3, 5, 6]") shouldHave {
-//      case StaticArrayFromValuesPE(_,List(IntLiteralPE(_,3), IntLiteralPE(_,5), IntLiteralPE(_,6))) =>
+//      case StaticArrayFromValuesPE(_,List(ConstantIntPE(_, 3, _), ConstantIntPE(_, 5, _), ConstantIntPE(_, 6, _))) =>
 //      case null =>
       case ConstructArrayPE(_,None,None,StaticSizedP(None),true,List(_, _, _)) =>
     }
@@ -446,10 +450,10 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
             None,_,false,
             LookupPE(NameP(_,"mod"),None),
             List(
-              IntLiteralPE(_,8),
-              IntLiteralPE(_,2)),
+              ConstantIntPE(_, 8, _),
+              ConstantIntPE(_, 2, _)),
             LendConstraintP(Some(ReadonlyP))),
-          IntLiteralPE(_,0)),
+          ConstantIntPE(_, 0, _)),
         LendConstraintP(Some(ReadonlyP))) =>
     }
   }
@@ -464,10 +468,10 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
               None,_,false,
               LookupPE(NameP(_,"=="),None),
               List(
-                IntLiteralPE(_,2),
-                IntLiteralPE(_,0)),
+                ConstantIntPE(_, 2, _),
+                ConstantIntPE(_, 0, _)),
               LendConstraintP(Some(ReadonlyP))))),
-        BlockPE(_, List(BoolLiteralPE(_,false)))) =>
+        BlockPE(_, List(ConstantBoolPE(_,false)))) =>
     }
   }
 

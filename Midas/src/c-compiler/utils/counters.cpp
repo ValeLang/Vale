@@ -3,28 +3,16 @@
 LLVMValueRef adjustCounter(
     GlobalState* globalState,
     LLVMBuilderRef builder,
+    Int* innt,
     LLVMValueRef counterPtrLE,
     int adjustAmount) {
-  if (LLVMTypeOf(counterPtrLE) == LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0)) {
-    auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
-    auto newValLE =
-        LLVMBuildAdd(
-            builder, prevValLE, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), adjustAmount, true), "counterNewVal");
-    LLVMBuildStore(builder, newValLE, counterPtrLE);
+  auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
+  auto adjustByLE = LLVMConstInt(LLVMIntTypeInContext(globalState->context, innt->bits), adjustAmount, true);
+  assert(LLVMTypeOf(prevValLE) == LLVMTypeOf(adjustByLE));
+  auto newValLE =LLVMBuildAdd(builder, prevValLE, adjustByLE, "counterNewVal");
+  LLVMBuildStore(builder, newValLE, counterPtrLE);
 
-    return newValLE;
-  } else if (LLVMTypeOf(counterPtrLE) == LLVMPointerType(LLVMInt32TypeInContext(globalState->context), 0)) {
-    auto prevValLE = LLVMBuildLoad(builder, counterPtrLE, "counterPrevVal");
-    auto newValLE =
-        LLVMBuildAdd(
-            builder, prevValLE, LLVMConstInt(LLVMInt32TypeInContext(globalState->context), adjustAmount, true), "counterNewVal");
-    LLVMBuildStore(builder, newValLE, counterPtrLE);
-
-    return newValLE;
-  } else {
-    // impl
-    assert(false);
-  }
+  return newValLE;
 }
 
 LLVMValueRef isZeroLE(LLVMBuilderRef builder, LLVMValueRef intLE) {

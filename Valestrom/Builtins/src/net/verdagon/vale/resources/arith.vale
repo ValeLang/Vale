@@ -1,36 +1,48 @@
 
-fn float(x int) float { __castIntFloat(x) }
-fn __castIntFloat(x int) float extern;
+fn float(x int) float { __castI32Float(x) }
+fn __castI32Float(x int) float extern;
 
-fn int(x float) int { __castFloatInt(x) }
-fn __castFloatInt(x float) int extern;
+fn int(x float) int { __castFloatI32(x) }
+fn __castFloatI32(x float) int extern;
 
-fn -(x int) int { __negateInt(x) }
-fn __negateInt(x int) int extern;
+fn -(x int) int { __negateI32(x) }
+fn __negateI32(x int) int extern;
 
 fn -(x float) float { __negateFloat(x) }
 fn __negateFloat(x float) float extern;
 
-fn +(left int, right int) int { __addIntInt(left, right) }
-fn __addIntInt(left int, right int) int extern;
+fn +(left int, right int) int { __addI32(left, right) }
+fn __addI32(left int, right int) int extern;
+
+fn +(left i64, right i64) i64 { __addI64(left, right) }
+fn __addI64(left i64, right i64) i64 extern;
 
 fn +(left float, right float) float { __addFloatFloat(left, right) }
 fn __addFloatFloat(left float, right float) float extern;
 
-fn *(left int, right int) int { __multiplyIntInt(left, right) }
-fn __multiplyIntInt(left int, right int) int extern;
+fn *(left int, right int) int { __multiplyI32(left, right) }
+fn __multiplyI32(left int, right int) int extern;
+
+fn *(left i64, right i64) i64 { __multiplyI64(left, right) }
+fn __multiplyI64(left i64, right i64) i64 extern;
 
 fn *(left float, right float) float { __multiplyFloatFloat(left, right) }
 fn __multiplyFloatFloat(left float, right float) float extern;
 
-fn -(left int, right int) int { __subtractIntInt(left, right) }
-fn __subtractIntInt(left int, right int) int extern;
+fn -(left int, right int) int { __subtractI32(left, right) }
+fn __subtractI32(left int, right int) int extern;
+
+fn -(left i64, right i64) i64 { __subtractI64(left, right) }
+fn __subtractI64(left i64, right i64) i64 extern;
 
 fn -(left float, right float) float { __subtractFloatFloat(left, right) }
 fn __subtractFloatFloat(left float, right float) float extern;
 
-fn /(left int, right int) int { __divideIntInt(left, right) }
-fn __divideIntInt(left int, right int) int extern;
+fn /(left int, right int) int { __divideI32(left, right) }
+fn __divideI32(left int, right int) int extern;
+
+fn /(left i64, right i64) i64 { __divideI64(left, right) }
+fn __divideI64(left i64, right i64) i64 extern;
 
 fn /(left float, right float) float { __divideFloatFloat(left, right) }
 fn __divideFloatFloat(left float, right float) float extern;
@@ -38,26 +50,44 @@ fn __divideFloatFloat(left float, right float) float extern;
 fn <(left float, right float) bool { __lessThanFloat(left, right) }
 fn __lessThanFloat(left float, right float) bool extern;
 
+fn <(left i64, right i64) bool { __lessThanI64(left, right) }
+fn __lessThanI64(left i64, right i64) bool extern;
+
+fn <(left int, right int) bool { __lessThanI32(left, right) }
+fn __lessThanI32(left int, right int) bool extern;
+
 fn >(left float, right float) bool { __greaterThanFloat(left, right) }
 fn __greaterThanFloat(left float, right float) bool extern;
 
-fn <(left int, right int) bool { __lessThanInt(left, right) }
-fn __lessThanInt(left int, right int) bool extern;
+fn >(left i64, right i64) bool { __greaterThanI64(left, right) }
+fn __greaterThanI64(left i64, right i64) bool extern;
 
-fn >(left int, right int) bool { __greaterThanInt(left, right) }
-fn __greaterThanInt(left int, right int) bool extern;
+fn >(left int, right int) bool { __greaterThanI32(left, right) }
+fn __greaterThanI32(left int, right int) bool extern;
 
-fn <=(left int, right int) bool { __lessThanOrEqInt(left, right) }
-fn __lessThanOrEqInt(left int, right int) bool extern;
+fn <=(left int, right int) bool { __lessThanOrEqI32(left, right) }
+fn __lessThanOrEqI32(left int, right int) bool extern;
 
-fn >=(left int, right int) bool { __greaterThanOrEqInt(left, right) }
-fn __greaterThanOrEqInt(left int, right int) bool extern;
+fn <=(left i64, right i64) bool { __lessThanOrEqI64(left, right) }
+fn __lessThanOrEqI64(left i64, right i64) bool extern;
 
-fn ==(left int, right int) bool { __eqIntInt(left, right) }
-fn __eqIntInt(left int, right int) bool extern;
+fn >=(left int, right int) bool { __greaterThanOrEqI32(left, right) }
+fn __greaterThanOrEqI32(left int, right int) bool extern;
+
+fn >=(left i64, right i64) bool { __greaterThanOrEqI64(left, right) }
+fn __greaterThanOrEqI64(left i64, right i64) bool extern;
+
+fn ==(left int, right int) bool { __eqI32(left, right) }
+fn __eqI32(left int, right int) bool extern;
+
+fn ==(left i64, right i64) bool { __eqI64(left, right) }
+fn __eqI64(left i64, right i64) bool extern;
 
 fn ==(left float, right float) bool { __eqFloatFloat(left, right) }
 fn __eqFloatFloat(left float, right float) bool extern;
 
-fn mod(left int, right int) int { __mod(left, right) }
-fn __mod(left int, right int) int extern;
+fn mod(left int, right int) int { __modI32(left, right) }
+fn __modI32(left int, right int) int extern;
+
+fn mod(left i64, right i64) i64 { __modI64(left, right) }
+fn __modI64(left i64, right i64) i64 extern;

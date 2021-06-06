@@ -7,9 +7,9 @@
 
 #define ValeReleaseMessage(msg) (free(*((void**)(msg) - 2)))
 
-typedef struct { uint64_t length; char chars[0]; } ValeStr;
-typedef int64_t ValeInt;
-ValeStr* ValeStrNew(int64_t length);
+typedef int32_t ValeInt;
+typedef struct { ValeInt length; char chars[0]; } ValeStr;
+ValeStr* ValeStrNew(ValeInt length);
 ValeStr* ValeStrFrom(char* source);
 
 #endif

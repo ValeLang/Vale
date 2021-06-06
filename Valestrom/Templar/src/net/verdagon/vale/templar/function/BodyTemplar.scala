@@ -20,14 +20,14 @@ trait IBodyTemplarDelegate {
     startingFate: FunctionEnvironment,
     fate: FunctionEnvironmentBox,
     exprs: List[IExpressionAE]):
-  (List[ReferenceExpression2], Set[Coord])
+  (List[ReferenceExpressionTE], Set[CoordT])
 
   def nonCheckingTranslateList(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     patterns1: List[AtomAP],
-    patternInputExprs2: List[ReferenceExpression2]):
-  (List[ReferenceExpression2])
+    patternInputExprs2: List[ReferenceExpressionTE]):
+  (List[ReferenceExpressionTE])
 }
 
 class BodyTemplar(
@@ -42,16 +42,16 @@ class BodyTemplar(
       funcOuterEnv: FunctionEnvironmentBox,
       temputs: Temputs,
       bfunction1: BFunctionA,
-      params2: List[Parameter2],
+      params2: List[ParameterT],
       isDestructor: Boolean):
-  (FunctionHeader2, Block2) = {
+  (FunctionHeaderT, BlockTE) = {
     val BFunctionA(function1, _) = bfunction1;
     val functionFullName = funcOuterEnv.fullName
 
     profiler.childFrame("evaluate body", () => {
       function1.maybeRetCoordRune match {
         case None => {
-          val banner = FunctionBanner2(Some(function1), functionFullName, params2)
+          val banner = FunctionBannerT(Some(function1), functionFullName, params2)
           val (body2, returns) =
             evaluateFunctionBody(
                 funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
@@ -70,7 +70,7 @@ class BodyTemplar(
 
           temputs.declareFunctionReturnType(banner.toSignature, returnType2)
           val attributesA = translateAttributes(function1.attributes)
-          val header = FunctionHeader2(functionFullName, attributesA, params2, returnType2, Some(function1));
+          val header = FunctionHeaderT(functionFullName, attributesA, params2, returnType2, Some(function1));
 
           (header, body2)
         }
@@ -80,7 +80,7 @@ class BodyTemplar(
               funcOuterEnv.getNearestTemplataWithAbsoluteName2(
                 NameTranslator.translateRune(expectedRetCoordRune),
                 Set(TemplataLookupContext)))
-          val header = FunctionHeader2(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
+          val header = FunctionHeaderT(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
           temputs.declareFunctionReturnType(header.toSignature, expectedRetCoord)
 
           funcOuterEnv.setReturnType(Some(expectedRetCoord))
@@ -103,7 +103,7 @@ class BodyTemplar(
 
           if (returns == Set(expectedRetCoord)) {
             // Let it through, it returns the expected type.
-          } else if (returns == Set(Coord(Share, Readonly, Never2()))) {
+          } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT()))) {
             // Let it through, it returns a never but we expect something else, that's fine
           } else {
             throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "In function " + header + ":\nExpected return type " + expectedRetCoord + " but was " + returns))
@@ -123,17 +123,17 @@ class BodyTemplar(
     })
   }
 
-  case class ResultTypeMismatchError(expectedType: Coord, actualType: Coord)
+  case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT)
 
   private def evaluateFunctionBody(
       funcOuterEnv: FunctionEnvironmentBox,
       temputs: Temputs,
       params1: List[ParameterA],
-      params2: List[Parameter2],
+      params2: List[ParameterT],
       body1: BodyAE,
       isDestructor: Boolean,
-      maybeExpectedResultType: Option[Coord]):
-  Result[(Block2, Set[Coord]), ResultTypeMismatchError] = {
+      maybeExpectedResultType: Option[CoordT]):
+  Result[(BlockTE, Set[CoordT]), ResultTypeMismatchError] = {
     val env = funcOuterEnv.makeChildEnvironment(newTemplataStore)
     val startingEnv = env.functionEnvironment
 
@@ -155,7 +155,7 @@ class BodyTemplar(
         case None => lastUnconvertedUnreturnedExpr
         case Some(expectedResultType) => {
           if (templataTemplar.isTypeTriviallyConvertible(temputs, lastUnconvertedUnreturnedExpr.resultRegister.reference, expectedResultType)) {
-            if (lastUnconvertedUnreturnedExpr.kind == Never2()) {
+            if (lastUnconvertedUnreturnedExpr.kind == NeverT()) {
               lastUnconvertedUnreturnedExpr
             } else {
               convertHelper.convert(funcOuterEnv.snapshot, temputs, body1.range, lastUnconvertedUnreturnedExpr, expectedResultType);
@@ -168,15 +168,15 @@ class BodyTemplar(
 
 
     // If the function doesn't end in a ret, then add one for it.
-    val lastExpr = if (lastUnreturnedExpr.kind == Never2()) lastUnreturnedExpr else Return2(lastUnreturnedExpr)
+    val lastExpr = if (lastUnreturnedExpr.kind == NeverT()) lastUnreturnedExpr else ReturnTE(lastUnreturnedExpr)
     // Add that result type to the returns, since we just added a Return for it.
     val returnsMaybeWithNever = returnsFromInsideMaybeWithNever + lastUnreturnedExpr.resultRegister.reference
     // If we already had a return, then the above will add a Never to the returns, but that's fine, it will be filtered
     // out below.
 
     val returns =
-      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(Coord(Share, Readonly, Never2()))) {
-        returnsMaybeWithNever - Coord(Share, Readonly, Never2())
+      if (returnsMaybeWithNever.size > 1 && returnsMaybeWithNever.contains(CoordT(ShareT, ReadonlyT, NeverT()))) {
+        returnsMaybeWithNever - CoordT(ShareT, ReadonlyT, NeverT())
       } else {
         returnsMaybeWithNever
       }
@@ -194,7 +194,7 @@ class BodyTemplar(
       }
     }
 
-    val block2 = Block2(initExprs :+ lastExpr)
+    val block2 = BlockTE(initExprs :+ lastExpr)
 
     Ok((block2, returns))
   }
@@ -205,10 +205,10 @@ class BodyTemplar(
       temputs: Temputs,
     range: RangeS,
       params1: List[ParameterA],
-      params2: List[Parameter2]):
-  (List[ReferenceExpression2]) = {
+      params2: List[ParameterT]):
+  (List[ReferenceExpressionTE]) = {
     val paramLookups2 =
-      params2.zipWithIndex.map({ case (p, index) => ArgLookup2(index, p.tyype) })
+      params2.zipWithIndex.map({ case (p, index) => ArgLookupTE(index, p.tyype) })
     val letExprs2 =
       delegate.nonCheckingTranslateList(
         temputs, fate, params1.map(_.pattern), paramLookups2);

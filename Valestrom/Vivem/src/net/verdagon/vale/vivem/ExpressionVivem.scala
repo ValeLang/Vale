@@ -90,8 +90,8 @@ object ExpressionVivem {
         discard(programH, heap, stdout, stdin, callId, sourceExpr.resultType, sourceRef)
         NodeContinue(makeVoid(programH, heap, callId))
       }
-      case ConstantI64H(value) => {
-        val ref = makePrimitive(heap, callId, InlineH, IntV(value))
+      case ConstantIntH(value, bits) => {
+        val ref = makePrimitive(heap, callId, InlineH, IntV(value, bits))
         NodeContinue(ref)
       }
       case ConstantF64H(value) => {
@@ -161,7 +161,7 @@ object ExpressionVivem {
 
         val num =
           heap.dereference(numRef) match {
-            case IntV(n) => n
+            case IntV(n, 32) => n.toInt
           }
         heap.ensureRefCount(objRef, Some(category), None, num)
 
@@ -259,7 +259,7 @@ object ExpressionVivem {
 
         discard(programH, heap, stdout, stdin, callId, arrExpr.resultType, arrayReference)
 
-        val lenRef = makePrimitive(heap, callId, InlineH, IntV(arr.getSize()))
+        val lenRef = makePrimitive(heap, callId, InlineH, IntV(arr.getSize(), 32))
         NodeContinue(lenRef)
       }
       case waH @ WeakAliasH(sourceExpr) => {
@@ -444,9 +444,9 @@ object ExpressionVivem {
             case r @ NodeReturn(_) => return r
             case NodeContinue(r) => r
           }
-        val IntV(elementIndex) = heap.dereference(indexReference)
+        val IntV(elementIndex, 32) = heap.dereference(indexReference)
 
-        val address = ElementAddressV(arrayReference.allocId, elementIndex)
+        val address = ElementAddressV(arrayReference.allocId, elementIndex.toInt)
         heap.vivemDout.print(" " + address)
         heap.vivemDout.print("<-" + sourceReference.num)
         val oldMemberReference = heap.mutateArray(address, sourceReference, sourceExpr.resultType)
@@ -660,7 +660,7 @@ object ExpressionVivem {
 
         val index =
           heap.dereference(indexIntReference) match {
-            case IntV(value) => value
+            case IntV(value, 32) => value.toInt
           }
 
         val address = ElementAddressV(arrayReference.allocId, index)
@@ -691,7 +691,7 @@ object ExpressionVivem {
           }
         val index =
           heap.dereference(indexReference) match {
-            case IntV(value) => value
+            case IntV(value, 32) => value.toInt
           }
 
         val address = ElementAddressV(arrayReference.allocId, index)
@@ -765,10 +765,10 @@ object ExpressionVivem {
             case NodeContinue(r) => r
           }
         val sizeKind = heap.dereference(sizeReference)
-        val IntV(size) = sizeKind;
+        val IntV(size, 32) = sizeKind;
         val rsaDef = programH.lookupRuntimeSizedArray(arrayRefType.kind)
         val (arrayReference, arrayInstance) =
-          heap.addUninitializedArray(rsaDef, arrayRefType, size)
+          heap.addUninitializedArray(rsaDef, arrayRefType, size.toInt)
         heap.incrementReferenceRefCount(RegisterToObjectReferrer(callId, arrayReference.ownership), arrayReference)
 
         val generatorReference =
@@ -778,7 +778,7 @@ object ExpressionVivem {
           }
 
         generateElements(
-          programH, stdin, stdout, heap, expressionId, callId, generatorReference, generatorPrototype, size,
+          programH, stdin, stdout, heap, expressionId, callId, generatorReference, generatorPrototype, size.toInt,
           (i, elementRef) => {
             // No need to increment or decrement, we're conceptually moving the return value
             // from the return slot to the array slot
@@ -995,7 +995,7 @@ object ExpressionVivem {
       heap.vivemDout.println()
       heap.vivemDout.println("  " * callId.callDepth + "Making new stack frame (generator)")
 
-      val indexReference = heap.allocateTransient(ShareH, InlineH, ReadonlyH, IntV(i))
+      val indexReference = heap.allocateTransient(ShareH, InlineH, ReadonlyH, IntV(i, 32))
 
       heap.vivemDout.println()
 
@@ -1102,7 +1102,7 @@ object ExpressionVivem {
         case BorrowH => // Do nothing.
         case ShareH => {
           expectedReference.kind match {
-            case IntH() | BoolH() | StrH() | FloatH() => {
+            case IntH(_) | BoolH() | StrH() | FloatH() => {
               heap.zero(actualReference)
               heap.deallocateIfNoWeakRefs(actualReference)
             }

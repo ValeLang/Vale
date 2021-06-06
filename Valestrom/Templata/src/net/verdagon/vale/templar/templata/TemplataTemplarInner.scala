@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.templata
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser.ShareP
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
-import net.verdagon.vale.templar.{AnonymousSubstructName2, CitizenName2, IName2, LambdaCitizenName2, NameTranslator, TupleName2}
+import net.verdagon.vale.templar.{AnonymousSubstructNameT, CitizenNameT, INameT, LambdaCitizenNameT, NameTranslator, TupleNameT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{vassert, vfail, vimpl, vwat}
 
@@ -23,10 +23,10 @@ case class TypeDistance(upcastDistance: Int, ownershipDistance: Int, permissionD
 }
 
 trait ITemplataTemplarInnerDelegate[Env, State] {
-  def lookupTemplata(env: Env, range: RangeS, name: IName2): ITemplata
+  def lookupTemplata(env: Env, range: RangeS, name: INameT): ITemplata
   def lookupTemplataImprecise(env: Env, range: RangeS, name: IImpreciseNameStepA): ITemplata
 
-  def getMutability(state: State, kind: Kind): Mutability
+  def getMutability(state: State, kind: KindT): MutabilityT
 
 //  def getPackKind(env: Env, temputs: State, types2: List[Coord]): (PackT2, Mutability)
 
@@ -35,43 +35,43 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
     callRange: RangeS,
     templata: StructTemplata,
     templateArgs: List[ITemplata]):
-  (Kind)
+  (KindT)
 
   def evaluateInterfaceTemplata(
     state: State,
     callRange: RangeS,
     templata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
-  (Kind)
+  (KindT)
 
   def getAncestorInterfaceDistance(
     temputs: State,
-    descendantCitizenRef: CitizenRef2,
-    ancestorInterfaceRef: InterfaceRef2):
+    descendantCitizenRef: CitizenRefT,
+    ancestorInterfaceRef: InterfaceRefT):
   (Option[Int])
 
   def getStaticSizedArrayKind(
     env: Env,
     state: State,
-    mutability: Mutability,
-    variability: Variability,
+    mutability: MutabilityT,
+    variability: VariabilityT,
     size: Int,
-    element: Coord):
-  (StaticSizedArrayT2)
+    element: CoordT):
+  (StaticSizedArrayTT)
 
   def getRuntimeSizedArrayKind(
     env: Env,
     state: State,
-    type2: Coord,
-    arrayMutability: Mutability,
-    arrayVariability: Variability):
-  RuntimeSizedArrayT2
+    type2: CoordT,
+    arrayMutability: MutabilityT,
+    arrayVariability: VariabilityT):
+  RuntimeSizedArrayTT
 
   def getTupleKind(
     env: Env,
     state: State,
-    elements: List[Coord]):
-  (TupleT2)
+    elements: List[CoordT]):
+  (TupleTT)
 
   def getInterfaceTemplataType(it: InterfaceTemplata): ITemplataType
   def getStructTemplataType(st: StructTemplata): ITemplataType
@@ -138,7 +138,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
         val CoordTemplata(elementType2) = evaluateTemplex(env, state, elementTemplexS)
 
-        val kind = KindTemplata(delegate.getStaticSizedArrayKind(env, state, mutability, variability, size, elementType2))
+        val kind = KindTemplata(delegate.getStaticSizedArrayKind(env, state, mutability, variability, size.toInt, elementType2))
         coerce(state, range, kind, tyype)
       }
       case InterpretedAT(range, ownershipS, permissionS, innerType1) => {
@@ -146,8 +146,8 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         val permission = Conversions.evaluatePermission(permissionS)
         val (KindTemplata(innerKind)) = evaluateTemplex(env, state, innerType1)
         val mutability = delegate.getMutability(state, innerKind)
-        vassert((mutability == Immutable) == (ownership == Share))
-        (CoordTemplata(Coord(ownership, permission, innerKind)))
+        vassert((mutability == ImmutableT) == (ownership == ShareT))
+        (CoordTemplata(CoordT(ownership, permission, innerKind)))
       }
       case NullableAT(range, _) => {
         //        val innerValueType2 = evaluateTemplex(env, state, innerType1)
@@ -173,7 +173,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           }
           case ArrayTemplateTemplata() => {
             val List(MutabilityTemplata(mutability), VariabilityTemplata(variability), CoordTemplata(elementCoord)) = templateArgsTemplatas
-            val result = RuntimeSizedArrayT2(RawArrayT2(elementCoord, mutability, variability))
+            val result = RuntimeSizedArrayTT(RawArrayTT(elementCoord, mutability, variability))
             vimpl() // we should be calling into arraytemplar for that ^
             coerce(state, range, KindTemplata(result), resultType)
           }
@@ -209,8 +209,8 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
   def isTypeConvertible(
     temputs: State,
-    sourcePointerType: Coord,
-    targetPointerType: Coord):
+    sourcePointerType: CoordT,
+    targetPointerType: CoordT):
   (Boolean) = {
     val maybeDistance =
       getTypeDistance(temputs, sourcePointerType, targetPointerType)
@@ -219,13 +219,13 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
   def getTypeDistance(
     temputs: State,
-    sourcePointerType: Coord,
-    targetPointerType: Coord):
+    sourcePointerType: CoordT,
+    targetPointerType: CoordT):
   (Option[TypeDistance]) = {
-    val Coord(targetOwnership, targetPermission, targetType) = targetPointerType;
-    val Coord(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
 
-    if (sourceType == Never2()) {
+    if (sourceType == NeverT()) {
       return (Some(TypeDistance(0, 0, 0)))
     }
 
@@ -234,33 +234,33 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         (0)
       } else {
         (sourceType, targetType) match {
-          case (Void2(), _) => return (None)
-          case (Int2(), _) => return (None)
-          case (Bool2(), _) => return (None)
-          case (Str2(), _) => return (None)
-          case (_, Void2()) => return (None)
-          case (_, Int2()) => return (None)
-          case (_, Bool2()) => return (None)
-          case (_, Str2()) => return (None)
-          case (_, StructRef2(_)) => return (None)
-          case (a @ StructRef2(_), b @ InterfaceRef2(_)) => {
+          case (VoidT(), _) => return (None)
+          case (IntT(_), _) => return (None)
+          case (BoolT(), _) => return (None)
+          case (StrT(), _) => return (None)
+          case (_, VoidT()) => return (None)
+          case (_, IntT(_)) => return (None)
+          case (_, BoolT()) => return (None)
+          case (_, StrT()) => return (None)
+          case (_, StructRefT(_)) => return (None)
+          case (a @ StructRefT(_), b @ InterfaceRefT(_)) => {
             delegate.getAncestorInterfaceDistance(temputs, a, b) match {
               case (None) => return (None)
               case (Some(distance)) => (distance)
             }
           }
-          case (a @ InterfaceRef2(_), b @ InterfaceRef2(_)) => {
+          case (a @ InterfaceRefT(_), b @ InterfaceRefT(_)) => {
             delegate.getAncestorInterfaceDistance(temputs, a, b) match {
               case (None) => return (None)
               case (Some(distance)) => (distance)
             }
           }
-          case (PackT2(List(), _), Void2()) => vfail("figure out void<->emptypack")
-          case (Void2(), PackT2(List(), _)) => vfail("figure out void<->emptypack")
-          case (PackT2(List(), _), _) => return (None)
-          case (_, PackT2(List(), _)) => return (None)
-          case (_ : CitizenRef2, Int2() | Bool2() | Str2() | Float2()) => return (None)
-          case (Int2() | Bool2() | Str2() | Float2(), _ : CitizenRef2) => return (None)
+          case (PackTT(List(), _), VoidT()) => vfail("figure out void<->emptypack")
+          case (VoidT(), PackTT(List(), _)) => vfail("figure out void<->emptypack")
+          case (PackTT(List(), _), _) => return (None)
+          case (_, PackTT(List(), _)) => return (None)
+          case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (None)
+          case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (None)
           case _ => {
             vfail("Can't convert from " + sourceType + " to " + targetType)
           }
@@ -269,32 +269,32 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
     val ownershipDistance =
       (sourceOwnership, targetOwnership) match {
-        case (Own, Own) => 0
-        case (Own, Constraint) => 1
-        case (Own, Weak) => 1
-        case (Own, Share) => return None
-        case (Constraint, Own) => return (None)
-        case (Constraint, Constraint) => 0
-        case (Constraint, Weak) => 1
-        case (Constraint, Share) => return None
-        case (Weak, Own) => return None
-        case (Weak, Constraint) => return None
-        case (Weak, Weak) => 0
-        case (Weak, Share) => return None
-        case (Share, Share) => 0
-        case (Share, Constraint) => return None
-        case (Share, Weak) => return None
-        case (Share, Own) => return None
+        case (OwnT, OwnT) => 0
+        case (OwnT, ConstraintT) => 1
+        case (OwnT, WeakT) => 1
+        case (OwnT, ShareT) => return None
+        case (ConstraintT, OwnT) => return (None)
+        case (ConstraintT, ConstraintT) => 0
+        case (ConstraintT, WeakT) => 1
+        case (ConstraintT, ShareT) => return None
+        case (WeakT, OwnT) => return None
+        case (WeakT, ConstraintT) => return None
+        case (WeakT, WeakT) => 0
+        case (WeakT, ShareT) => return None
+        case (ShareT, ShareT) => 0
+        case (ShareT, ConstraintT) => return None
+        case (ShareT, WeakT) => return None
+        case (ShareT, OwnT) => return None
       }
 
     val permissionDistance =
       (sourcePermission, targetPermission) match {
-        case (Readonly, Readonly) => 0
-        case (Readonly, Readwrite) => return None
+        case (ReadonlyT, ReadonlyT) => 0
+        case (ReadonlyT, ReadwriteT) => return None
         // Could eventually make this 1 instead of None, if we want to implicitly
         // go from readwrite to readonly, that would be nice.
-        case (Readwrite, Readonly) => return None
-        case (Readwrite, Readwrite) => 0
+        case (ReadwriteT, ReadonlyT) => return None
+        case (ReadwriteT, ReadwriteT) => 0
 //        case (Readonly, ExclusiveReadwrite) => 1
 //        case (Readwrite, ExclusiveReadwrite) => 1
 //        case (ExclusiveReadwrite, Readonly) => 1
@@ -307,13 +307,13 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
   def isTypeTriviallyConvertible(
     temputs: State,
-    sourcePointerType: Coord,
-    targetPointerType: Coord):
+    sourcePointerType: CoordT,
+    targetPointerType: CoordT):
   (Boolean) = {
-    val Coord(targetOwnership, targetPermission, targetType) = targetPointerType;
-    val Coord(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
 
-    if (sourceType == Never2()) {
+    if (sourceType == NeverT()) {
       return (true)
     }
 
@@ -321,33 +321,33 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
 
     } else {
       (sourceType, targetType) match {
-        case (Void2(), _) => return (false)
-        case (Int2(), _) => return (false)
-        case (Bool2(), _) => return (false)
-        case (Str2(), _) => return (false)
-        case (_, Void2()) => return (false)
-        case (_, Int2()) => return (false)
-        case (_, Bool2()) => return (false)
-        case (_, Str2()) => return (false)
-        case (_, StructRef2(_)) => return (false)
-        case (a @ StructRef2(_), b @ InterfaceRef2(_)) => {
+        case (VoidT(), _) => return (false)
+        case (IntT(_), _) => return (false)
+        case (BoolT(), _) => return (false)
+        case (StrT(), _) => return (false)
+        case (_, VoidT()) => return (false)
+        case (_, IntT(_)) => return (false)
+        case (_, BoolT()) => return (false)
+        case (_, StrT()) => return (false)
+        case (_, StructRefT(_)) => return (false)
+        case (a @ StructRefT(_), b @ InterfaceRefT(_)) => {
           delegate.getAncestorInterfaceDistance(temputs, a, b) match {
             case (None) => return (false)
             case (Some(_)) =>
           }
         }
-        case (a @ InterfaceRef2(_), b @ InterfaceRef2(_)) => {
+        case (a @ InterfaceRefT(_), b @ InterfaceRefT(_)) => {
           delegate.getAncestorInterfaceDistance(temputs, a, b) match {
             case (None) => return (false)
             case (Some(_)) =>
           }
         }
-        case (PackT2(List(), _), Void2()) => vfail("figure out void<->emptypack")
-        case (Void2(), PackT2(List(), _)) => vfail("figure out void<->emptypack")
-        case (PackT2(List(), _), _) => return (false)
-        case (_, PackT2(List(), _)) => return (false)
-        case (_ : CitizenRef2, Int2() | Bool2() | Str2() | Float2()) => return (false)
-        case (Int2() | Bool2() | Str2() | Float2(), _ : CitizenRef2) => return (false)
+        case (PackTT(List(), _), VoidT()) => vfail("figure out void<->emptypack")
+        case (VoidT(), PackTT(List(), _)) => vfail("figure out void<->emptypack")
+        case (PackTT(List(), _), _) => return (false)
+        case (_, PackTT(List(), _)) => return (false)
+        case (_ : CitizenRefT, IntT(_) | BoolT() | StrT() | FloatT()) => return (false)
+        case (IntT(_) | BoolT() | StrT() | FloatT(), _ : CitizenRefT) => return (false)
         case _ => {
           vfail("Can't convert from " + sourceType + " to " + targetType)
         }
@@ -365,40 +365,40 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     true
   }
 
-  def pointifyKind(state: State, kind: Kind, ownershipIfMutable: Ownership): Coord = {
+  def pointifyKind(state: State, kind: KindT, ownershipIfMutable: OwnershipT): CoordT = {
     val mutability = delegate.getMutability(state, kind)
-    val ownership = if (mutability == Mutable) ownershipIfMutable else Share
-    val permission = if (mutability == Mutable) Readwrite else Readonly
+    val ownership = if (mutability == MutableT) ownershipIfMutable else ShareT
+    val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
     kind match {
-      case a @ RuntimeSizedArrayT2(array) => {
-        Coord(ownership, permission, a)
+      case a @ RuntimeSizedArrayTT(array) => {
+        CoordT(ownership, permission, a)
       }
-      case a @ StaticSizedArrayT2(_, RawArrayT2(_, mutability, variability)) => {
-        Coord(ownership, permission, a)
+      case a @ StaticSizedArrayTT(_, RawArrayTT(_, mutability, variability)) => {
+        CoordT(ownership, permission, a)
       }
-      case a @ PackT2(_, underlyingStruct) => {
-        Coord(ownership, permission, a)
+      case a @ PackTT(_, underlyingStruct) => {
+        CoordT(ownership, permission, a)
       }
-      case s @ StructRef2(_) => {
-        Coord(ownership, permission, s)
+      case s @ StructRefT(_) => {
+        CoordT(ownership, permission, s)
       }
-      case i @ InterfaceRef2(_) => {
-        Coord(ownership, permission, i)
+      case i @ InterfaceRefT(_) => {
+        CoordT(ownership, permission, i)
       }
-      case Void2() => {
-        Coord(Share, Readonly, Void2())
+      case VoidT() => {
+        CoordT(ShareT, ReadonlyT, VoidT())
       }
-      case Int2() => {
-        Coord(Share, Readonly, Int2())
+      case i @ IntT(_) => {
+        CoordT(ShareT, ReadonlyT, i)
       }
-      case Float2() => {
-        Coord(Share, Readonly, Float2())
+      case FloatT() => {
+        CoordT(ShareT, ReadonlyT, FloatT())
       }
-      case Bool2() => {
-        Coord(Share, Readonly, Bool2())
+      case BoolT() => {
+        CoordT(ShareT, ReadonlyT, BoolT())
       }
-      case Str2() => {
-        Coord(Share, Readonly, Str2())
+      case StrT() => {
+        CoordT(ShareT, ReadonlyT, StrT())
       }
     }
   }
@@ -468,10 +468,10 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     env: Env,
     state: State,
     callRange: RangeS,
-    mutability: Mutability,
-    variability: Variability,
+    mutability: MutabilityT,
+    variability: VariabilityT,
     size: Int,
-    element: Coord,
+    element: CoordT,
     expectedType: ITemplataType):
   (ITemplata) = {
     val uncoercedTemplata =
@@ -485,7 +485,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     env: Env,
     state: State,
     callRange: RangeS,
-    elements: List[Coord],
+    elements: List[CoordT],
     expectedType: ITemplataType):
   (ITemplata) = {
     val uncoercedTemplata =
@@ -499,7 +499,7 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
     env: Env,
     state: State,
     range: RangeS,
-    name: IName2,
+    name: INameT,
     expectedType: ITemplataType):
   (ITemplata) = {
     val uncoercedTemplata = delegate.lookupTemplata(env, range, name)
@@ -535,9 +535,9 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         val mutability = delegate.getMutability(state, kind)
         val coerced =
           CoordTemplata(
-            Coord(
-              if (mutability == Mutable) Own else Share,
-              if (mutability == Mutable) Readwrite else Readonly,
+            CoordT(
+              if (mutability == MutableT) OwnT else ShareT,
+              if (mutability == MutableT) ReadwriteT else ReadonlyT,
               kind))
         (coerced)
       }
@@ -573,10 +573,10 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         val mutability = delegate.getMutability(state, kind)
 
         // Default ownership is own for mutables, share for imms
-        val ownership = if (mutability == Mutable) Own else Share
+        val ownership = if (mutability == MutableT) OwnT else ShareT
         // Default permission is readwrite for mutables, readonly for imms
-        val permission = if (mutability == Mutable) Readwrite else Readonly
-        val coerced = CoordTemplata(Coord(ownership, permission, kind))
+        val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+        val coerced = CoordTemplata(CoordT(ownership, permission, kind))
         (coerced)
       }
       case (it @ InterfaceTemplata(_, interfaceA), CoordTemplataType) => {
@@ -588,9 +588,9 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         val mutability = delegate.getMutability(state, kind)
         val coerced =
           CoordTemplata(
-            Coord(
-              if (mutability == Mutable) Own else Share,
-              if (mutability == Mutable) Readwrite else Readonly,
+            CoordT(
+              if (mutability == MutableT) OwnT else ShareT,
+              if (mutability == MutableT) ReadwriteT else ReadonlyT,
               kind))
         (coerced)
       }
@@ -630,45 +630,45 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       case (KindTemplata(_) | CoordTemplata(_), KindTemplata(_) | CoordTemplata(_)) => {
         a == coerce(state, RangeS.internal(-1345), b, bExpectedType)
       }
-      case (KindTemplata(actualStructRef @ StructRef2(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
+      case (KindTemplata(actualStructRef @ StructRefT(_)), expectedStructTemplata @ StructTemplata(_, _)) => {
         vassert(bExpectedType == KindTemplataType)
         citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List())
       }
-      case (CoordTemplata(Coord(Share | Own, actualPermission, actualStructRef @ StructRef2(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
+      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualStructRef @ StructRefT(_))), expectedStructTemplata @ StructTemplata(_, _)) => {
         vassert(bExpectedType == CoordTemplataType)
         val mutability = delegate.getMutability(state, actualStructRef)
-        val expectedPermission = if (mutability == Mutable) Readwrite else Readonly
+        val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
         val permissionMatches = expectedPermission == actualPermission
         permissionMatches && citizenMatchesTemplata(actualStructRef, expectedStructTemplata, List())
       }
-      case (KindTemplata(actualInterfaceRef @ InterfaceRef2(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+      case (KindTemplata(actualInterfaceRef @ InterfaceRefT(_)), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
         vassert(bExpectedType == KindTemplataType)
         citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
       }
-      case (CoordTemplata(Coord(Share | Own, actualPermission, actualInterfaceRef @ InterfaceRef2(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
+      case (CoordTemplata(CoordT(ShareT | OwnT, actualPermission, actualInterfaceRef @ InterfaceRefT(_))), expectedInterfaceTemplata @ InterfaceTemplata(_, _)) => {
         vassert(bExpectedType == CoordTemplataType)
         val mutability = delegate.getMutability(state, actualInterfaceRef)
-        val expectedPermission = if (mutability == Mutable) Readwrite else Readonly
+        val expectedPermission = if (mutability == MutableT) ReadwriteT else ReadonlyT
         val permissionMatches = expectedPermission == actualPermission
         permissionMatches && citizenMatchesTemplata(actualInterfaceRef, expectedInterfaceTemplata, List())
       }
       case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
-      case (KindTemplata(RuntimeSizedArrayT2(_)), ArrayTemplateTemplata()) => true
-      case (CoordTemplata(Coord(Share | Own, Readonly, RuntimeSizedArrayT2(_))), ArrayTemplateTemplata()) => true
+      case (KindTemplata(RuntimeSizedArrayTT(_)), ArrayTemplateTemplata()) => true
+      case (CoordTemplata(CoordT(ShareT | OwnT, ReadonlyT, RuntimeSizedArrayTT(_))), ArrayTemplateTemplata()) => true
       case (ArrayTemplateTemplata(), ArrayTemplateTemplata()) => true
-      case (ArrayTemplateTemplata(), KindTemplata(RuntimeSizedArrayT2(_))) => true
-      case (ArrayTemplateTemplata(), CoordTemplata(Coord(Share | Own, Readonly, RuntimeSizedArrayT2(_)))) => true
+      case (ArrayTemplateTemplata(), KindTemplata(RuntimeSizedArrayTT(_))) => true
+      case (ArrayTemplateTemplata(), CoordTemplata(CoordT(ShareT | OwnT, ReadonlyT, RuntimeSizedArrayTT(_)))) => true
       case _ => false
     }
   }
 
-  def citizenIsFromTemplate(actualCitizenRef: CitizenRef2, expectedCitizenTemplata: ITemplata): Boolean = {
+  def citizenIsFromTemplate(actualCitizenRef: CitizenRefT, expectedCitizenTemplata: ITemplata): Boolean = {
     val (citizenTemplateNameInitSteps, citizenTemplateName) =
       expectedCitizenTemplata match {
         case StructTemplata(env, originStruct) => (env.fullName.steps, originStruct.name.name)
         case InterfaceTemplata(env, originInterface) => (env.fullName.steps, originInterface.name.name)
         case KindTemplata(expectedKind) => return actualCitizenRef == expectedKind
-        case CoordTemplata(Coord(Own | Share, Readonly, actualKind)) => return actualCitizenRef == actualKind
+        case CoordTemplata(CoordT(OwnT | ShareT, ReadonlyT, actualKind)) => return actualCitizenRef == actualKind
         case _ => return false
       }
     if (actualCitizenRef.fullName.initSteps != citizenTemplateNameInitSteps) {
@@ -676,19 +676,19 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
       return false
     }
     actualCitizenRef.fullName.last match {
-      case CitizenName2(humanName, templateArgs) => {
+      case CitizenNameT(humanName, templateArgs) => {
         if (humanName != citizenTemplateName) {
           // Names dont match, bail
           return false
         }
       }
-      case TupleName2(_) => return false
+      case TupleNameT(_) => return false
       case _ => vwat()
     }
     return true
   }
 
-  def citizenMatchesTemplata(actualCitizenRef: CitizenRef2, expectedCitizenTemplata: ITemplata, expectedCitizenTemplateArgs: List[ITemplata]): (Boolean) = {
+  def citizenMatchesTemplata(actualCitizenRef: CitizenRefT, expectedCitizenTemplata: ITemplata, expectedCitizenTemplateArgs: List[ITemplata]): (Boolean) = {
     vassert(expectedCitizenTemplateArgs.isEmpty) // implement
 
     if (!citizenIsFromTemplate(actualCitizenRef, expectedCitizenTemplata)) {

@@ -65,19 +65,22 @@ class ValeCompiler:
               o_files: List[Path],
               o_files_dir: Path,
               exe_file: Path,
+              census: bool,
               include_path: Optional[Path]) -> subprocess.CompletedProcess:
         if self.windows:
-            args = [
-                "cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file),
-                "/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
-            ] + list(str(x) for x in o_files)
+            args = ["cl.exe", '/ENTRY:"main"', '/SUBSYSTEM:CONSOLE', "/Fe:" + str(exe_file)]
+            if census:
+                args = args + ["/fsanitize=address", "clang_rt.asan_dynamic-x86_64.lib", "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"]
+            args = args + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)
         else:
             clang = "clang-11" if shutil.which("clang-11") is not None else "clang"
-            # "-fsanitize=address", "-fno-omit-frame-pointer", "-g",
-            args = [clang, "-O3", "-lm", "-o", str(exe_file)] + list(str(x) for x in o_files)
+            args = [clang, "-O3", "-lm", "-o", str(exe_file)]
+            if census:
+                args = args + ["-fsanitize=address", "-fsanitize=leak", "-fno-omit-frame-pointer", "-g"]
+            args = args + list(str(x) for x in o_files)
             if include_path is not None:
                 args.append("-I" + str(include_path))
             return procrun(args)
@@ -175,6 +178,7 @@ class ValeCompiler:
 
         print_help = False
         print_version = False
+        census = False
         valestrom_options = []
         midas_options = []
         if "--flares" in args:
@@ -187,6 +191,7 @@ class ValeCompiler:
             args.remove("--gen-heap")
             midas_options.append("--gen-heap")
         if "--census" in args:
+            census = True
             args.remove("--census")
             midas_options.append("--census")
         if "--print-mem-overhead" in args:
@@ -475,6 +480,7 @@ class ValeCompiler:
                 [str(n) for n in clang_inputs],
                 self.build_dir,
                 self.build_dir / exe_file,
+                census,
                 self.build_dir if add_exports_include_path else None)
             # print(proc.stdout)
             # print(proc.stderr)

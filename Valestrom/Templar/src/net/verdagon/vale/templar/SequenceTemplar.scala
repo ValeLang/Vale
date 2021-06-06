@@ -14,8 +14,8 @@ class SequenceTemplar(
   def evaluate(
     env: FunctionEnvironmentBox,
     temputs: Temputs,
-    exprs2: List[ReferenceExpression2]):
-  (Expression2) = {
+    exprs2: List[ReferenceExpressionTE]):
+  (ExpressionT) = {
 
     val types2 = exprs2.map(_.resultRegister.expectReference().reference)
 //    if (types2.toSet.size == 1) {
@@ -29,9 +29,9 @@ class SequenceTemplar(
 //      (finalExpr)
 //    } else {
       val (tupleType2, mutability) = makeTupleType(env.globalEnv, temputs, types2)
-      val ownership = if (mutability == Mutable) Own else Share
-      val permission = if (mutability == Mutable) Readwrite else Readonly
-      val finalExpr = TupleE2(exprs2, Coord(ownership, permission, tupleType2), tupleType2)
+      val ownership = if (mutability == MutableT) OwnT else ShareT
+      val permission = if (mutability == MutableT) ReadwriteT else ReadonlyT
+      val finalExpr = TupleTE(exprs2, CoordT(ownership, permission, tupleType2), tupleType2)
       (finalExpr)
 //    }
   }
@@ -39,25 +39,25 @@ class SequenceTemplar(
   def makeTupleType(
     env: IEnvironment,
     temputs: Temputs,
-    types2: List[Coord]):
-  (TupleT2, Mutability) = {
+    types2: List[CoordT]):
+  (TupleTT, MutabilityT) = {
     val (structRef, mutability) =
-      structTemplar.makeSeqOrPackUnderstruct(env.globalEnv, temputs, types2, TupleName2(types2))
+      structTemplar.makeSeqOrPackUnderstruct(env.globalEnv, temputs, types2, TupleNameT(types2))
 
     if (types2.isEmpty)
-      vassert(temputs.lookupStruct(structRef).mutability == Immutable)
+      vassert(temputs.lookupStruct(structRef).mutability == ImmutableT)
     // Make sure it's in there
     Templar.getMutability(temputs, structRef)
 
     val reference =
-      Coord(
-        if (mutability == Mutable) Own else Share,
-        if (mutability == Mutable) Readwrite else Readonly,
+      CoordT(
+        if (mutability == MutableT) OwnT else ShareT,
+        if (mutability == MutableT) ReadwriteT else ReadonlyT,
         structRef)
 
     val _ =
       destructorTemplar.getCitizenDestructor(env, temputs, reference)
 
-    (TupleT2(types2, structRef), mutability)
+    (TupleTT(types2, structRef), mutability)
   }
 }

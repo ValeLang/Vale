@@ -1,8 +1,8 @@
 #include <stdint.h>
 
 typedef struct tmod_TwoInts {
-  int64_t a;
-  int64_t b;
+  ValeInt a;
+  ValeInt b;
 } tmod_TwoInts;
 
 TwoInts tmod_extMakeTuple(int i) {

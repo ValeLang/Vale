@@ -3,7 +3,7 @@ package net.verdagon.vale.templar.infer
 import net.verdagon.vale.astronomer._
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.RangeS
-import net.verdagon.vale.templar.{IName2, IRune2}
+import net.verdagon.vale.templar.{INameT, IRuneT}
 import net.verdagon.vale.{vassert, vimpl, vwat}
 
 import scala.collection.immutable.List
@@ -51,7 +51,7 @@ sealed trait ITemplexT {
   def resultType: ITemplataType
   def range: RangeS
 }
-case class IntTT(range: RangeS, value: Int) extends ITemplexT {
+case class IntTT(range: RangeS, value: Long) extends ITemplexT {
   override def resultType: ITemplataType = IntegerTemplataType
 }
 case class StringTT(range: RangeS, value: String) extends ITemplexT {
@@ -99,7 +99,7 @@ case class AbsoluteNameTT(
 // something into the environment.
 case class RuneTT(
   range: RangeS,
-  rune: IRune2,
+  rune: IRuneT,
   resultType: ITemplataType
 ) extends ITemplexT
 

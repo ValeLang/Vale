@@ -67,7 +67,7 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
   auto setupFuncName =
       globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__ValeHGM_mainSetup");
   auto setupFuncProto =
-      globalState->metalCache->getPrototype(setupFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(setupFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, setupFuncProto, setupFuncName->name,
       [this, anyRefMT, anyRefLT, anyInlRefLT](FunctionState *functionState, LLVMBuilderRef builder) {
@@ -104,7 +104,7 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
 
         buildFlare(FL(), globalState, functionState, builder);
 
-        auto genMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::GENERATION);
+        auto genMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::GENERATION_32B);
         auto genPtrLE =
             LLVMBuildStructGEP(builder, halfProtectedObjControlBlockPtrLE.refLE, genMemberIndex, "genPtr");
         auto genLT = LLVMIntTypeInContext(globalState->context, GENERATION_NUM_BITS);
@@ -176,7 +176,7 @@ Prototype* HybridGenerationalMemory::makeCleanupLoopFunction() {
   auto cleanupLoopFuncName =
       globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__ValeHGM_cleanupIter");
   auto cleanupLoopFuncProto =
-      globalState->metalCache->getPrototype(cleanupLoopFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(cleanupLoopFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, cleanupLoopFuncProto, cleanupLoopFuncName->name,
       [this](FunctionState *functionState, LLVMBuilderRef builder) {
@@ -226,7 +226,7 @@ Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
   auto cleanupIterFuncName =
       globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__ValeHGM_cleanupIter");
   auto cleanupIterFuncProto =
-      globalState->metalCache->getPrototype(cleanupIterFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(cleanupIterFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, cleanupIterFuncProto, cleanupIterFuncName->name,
       [this, anyRefMT](FunctionState *functionState, LLVMBuilderRef builder) {
@@ -283,9 +283,9 @@ Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
         auto resultIntRef =
             buildIfElse(
                 globalState, functionState, builder,
-                isTetheredRef, LLVMInt64TypeInContext(globalState->context),
-                globalState->metalCache->intRef,
-                globalState->metalCache->intRef,
+                isTetheredRef, LLVMInt32TypeInContext(globalState->context),
+                globalState->metalCache->i64Ref,
+                globalState->metalCache->i64Ref,
                 [this, undeadCycleNextNodePtrLE](LLVMBuilderRef thenBuilder) {
                   // Make the next one the new head.
                   LLVMBuildStore(thenBuilder, undeadCycleNextNodePtrLE, undeadCycleHeadNodePtrPtrLE);
@@ -306,8 +306,8 @@ Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
                 });
 
         auto resultIntLE =
-            globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(
-                FL(), functionState, builder, globalState->metalCache->intRef, resultIntRef);
+            globalState->getRegion(globalState->metalCache->i64Ref)->checkValidReference(
+                FL(), functionState, builder, globalState->metalCache->i64Ref, resultIntRef);
         LLVMBuildRet(builder, resultIntLE);
       });
   return cleanupIterFuncProto;
@@ -322,7 +322,7 @@ Prototype* HybridGenerationalMemory::makeMainCleanupFunction() {
 
   auto cleanupFuncName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__ValeHGM_mainCleanup");
   auto cleanupFuncProto =
-      globalState->metalCache->getPrototype(cleanupFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(cleanupFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, cleanupFuncProto, cleanupFuncName->name,
       [this, boolRefMT, anyRefMT](FunctionState *functionState, LLVMBuilderRef builder) {
@@ -415,7 +415,7 @@ static LLVMValueRef getGenerationFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION),
+          structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::GENERATION_32B),
           "genPtr");
   return LLVMBuildLoad(builder, genPtrLE, "gen");
 }
@@ -591,7 +591,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
     // Do nothing
   } else {
     if (globalState->opt->printMemOverhead) {
-      adjustCounter(globalState, builder, globalState->livenessCheckCounter, 1);
+      adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->livenessCheckCounter, 1);
     }
     auto isAliveLE = getIsAliveFromWeakFatPtr(functionState, builder, refM, fatPtrLE, knownLive);
     buildIf(

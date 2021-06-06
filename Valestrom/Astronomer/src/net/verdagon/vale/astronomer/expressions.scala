@@ -132,13 +132,13 @@ case class RepeaterPackAE(range: RangeS, expression: IExpressionAE) extends IExp
 // Results in a pack, represents the differences between the elements
 case class RepeaterPackIteratorAE(range: RangeS, expression: IExpressionAE) extends IExpressionAE
 
-case class IntLiteralAE(range: RangeS, value: Int) extends IExpressionAE
+case class ConstantIntAE(range: RangeS, value: Long, bits: Int) extends IExpressionAE
 
-case class BoolLiteralAE(range: RangeS, value: Boolean) extends IExpressionAE
+case class ConstantBoolAE(range: RangeS, value: Boolean) extends IExpressionAE
 
-case class StrLiteralAE(range: RangeS, value: String) extends IExpressionAE
+case class ConstantStrAE(range: RangeS, value: String) extends IExpressionAE
 
-case class FloatLiteralAE(range: RangeS, value: Double) extends IExpressionAE
+case class ConstantFloatAE(range: RangeS, value: Double) extends IExpressionAE
 
 case class FunctionAE(name: LambdaNameA, function: FunctionA) extends IExpressionAE {
   override def range: RangeS = function.range

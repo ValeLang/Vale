@@ -12,7 +12,7 @@ size_t floorMultipleOf16(size_t x) {
   return x & ~0xF;
 }
 
-extern int64_t tmod_sumWings(tmod_ImmSpaceshipArray* arr) {
+extern ValeInt tmod_sumWings(tmod_ImmSpaceshipArray* arr) {
 
   size_t arrayHeaderAddr = (size_t)(void*)arr;
   size_t arrayShallowSize = sizeof(tmod_ImmSpaceshipArray) + sizeof(tmod_Spaceship*) * arr->length;
@@ -68,7 +68,7 @@ extern int64_t tmod_sumWings(tmod_ImmSpaceshipArray* arr) {
   assert(rootAddrFromStartMetadata == arrayHeaderAddr);
 
   // Now sum up all elements' wings, like a normal piece of code.
-  int64_t total = 0;
+  ValeInt total = 0;
   for (int i = 0; i < arr->length; i++) {
     total += arr->elements[i]->wings;
   }

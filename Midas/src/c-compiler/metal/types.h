@@ -112,9 +112,11 @@ public:
 class Int : public Kind {
 public:
   RegionId* regionId;
+  int bits;
 
-  Int(RegionId* regionId_) :
-      regionId(regionId_) {}
+  Int(RegionId* regionId_, int bits_) :
+      regionId(regionId_),
+      bits(bits_) {}
 
   PackageCoordinate* getPackageCoordinate() const override { return regionId->packageCoord; }
 };

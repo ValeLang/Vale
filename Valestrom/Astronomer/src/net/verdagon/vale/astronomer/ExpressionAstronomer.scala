@@ -187,10 +187,10 @@ object ExpressionAstronomer {
         val tyype = env.lookupRune(runeA)
         RuneLookupAE(range, runeA, tyype)
       }
-      case IntLiteralSE(range, value) => IntLiteralAE(range, value)
-      case BoolLiteralSE(range, value) => BoolLiteralAE(range, value)
-      case StrLiteralSE(range, value) => StrLiteralAE(range, value)
-      case FloatLiteralSE(range, value) => FloatLiteralAE(range, value)
+      case ConstantIntSE(range, value, bits) => ConstantIntAE(range, value, bits)
+      case ConstantBoolSE(range, value) => ConstantBoolAE(range, value)
+      case ConstantStrSE(range, value) => ConstantStrAE(range, value)
+      case ConstantFloatSE(range, value) => ConstantFloatAE(range, value)
       case FunctionSE(functionS) => {
         val functionA = Astronomer.translateFunction(astrouts, env, functionS)
         val lambdaName = functionA.name match { case n @ LambdaNameA(_) => n }

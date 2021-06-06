@@ -21,16 +21,16 @@ class StructTemplarTemplateArgsLayer(
     delegate: IStructTemplarDelegate) {
   val middle = new StructTemplarMiddle(opts, profiler, newTemplataStore, ancestorHelper, delegate)
 
-  def addBuiltInStructs(env: PackageEnvironment[IName2], temputs: Temputs): Unit = {
+  def addBuiltInStructs(env: PackageEnvironment[INameT], temputs: Temputs): Unit = {
     middle.addBuiltInStructs(env, temputs)
   }
 
   def makeStructConstructor(
     temputs: Temputs,
     maybeConstructorOriginFunctionA: Option[FunctionA],
-    structDef: StructDefinition2,
-    constructorFullName: FullName2[IFunctionName2]):
-  FunctionHeader2 = {
+    structDef: StructDefinitionT,
+    constructorFullName: FullNameT[IFunctionNameT]):
+  FunctionHeaderT = {
     middle.makeStructConstructor(temputs, maybeConstructorOriginFunctionA, structDef, constructorFullName)
   }
 
@@ -39,7 +39,7 @@ class StructTemplarTemplateArgsLayer(
     callRange: RangeS,
     structTemplata: StructTemplata,
     templateArgs: List[ITemplata]):
-  (StructRef2) = {
+  (StructRefT) = {
     profiler.newProfile("getStructRef", structTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val StructTemplata(env, structA) = structTemplata
       val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = structA.name
@@ -56,7 +56,7 @@ class StructTemplarTemplateArgsLayer(
           if (templateArgs.size != structA.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryStructRef = StructRef2(fullName)
+          val temporaryStructRef = StructRefT(fullName)
           temputs.declareStruct(temporaryStructRef)
 
           structA.maybePredictedMutability match {
@@ -103,7 +103,7 @@ class StructTemplarTemplateArgsLayer(
     callRange: RangeS,
     interfaceTemplata: InterfaceTemplata,
     templateArgs: List[ITemplata]):
-  (InterfaceRef2) = {
+  (InterfaceRefT) = {
     profiler.newProfile("getInterfaceRef", interfaceTemplata.debugString + "<" + templateArgs.map(_.toString).mkString(", ") + ">", () => {
       val InterfaceTemplata(env, interfaceS) = interfaceTemplata
       val TopLevelCitizenDeclarationNameA(humanName, codeLocation) = interfaceS.name
@@ -120,7 +120,7 @@ class StructTemplarTemplateArgsLayer(
           if (templateArgs.size != interfaceS.identifyingRunes.size) {
             vfail("wat?")
           }
-          val temporaryInterfaceRef = InterfaceRef2(fullName)
+          val temporaryInterfaceRef = InterfaceRefT(fullName)
           temputs.declareInterface(temporaryInterfaceRef)
 
 
@@ -170,14 +170,14 @@ class StructTemplarTemplateArgsLayer(
     temputs: Temputs,
     name: LambdaNameA,
     functionS: FunctionA,
-    members: List[StructMember2]):
-  (StructRef2, Mutability, FunctionTemplata) = {
+    members: List[StructMemberT]):
+  (StructRefT, MutabilityT, FunctionTemplata) = {
     middle.makeClosureUnderstruct(containingFunctionEnv, temputs, name, functionS, members)
   }
 
   // Makes a struct to back a pack or tuple
-  def makeSeqOrPackUnerstruct(env: PackageEnvironment[IName2], temputs: Temputs, memberTypes2: List[Coord], name: ICitizenName2):
-  (StructRef2, Mutability) = {
+  def makeSeqOrPackUnerstruct(env: PackageEnvironment[INameT], temputs: Temputs, memberTypes2: List[CoordT], name: ICitizenNameT):
+  (StructRefT, MutabilityT) = {
     middle.makeSeqOrPackUnderstruct(env, temputs, memberTypes2, name)
   }
 
@@ -186,9 +186,9 @@ class StructTemplarTemplateArgsLayer(
     interfaceEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    interfaceRef: InterfaceRef2,
-    substructName: FullName2[AnonymousSubstructName2]):
-  (StructRef2, Mutability) = {
+    interfaceRef: InterfaceRefT,
+    substructName: FullNameT[AnonymousSubstructNameT]):
+  (StructRefT, MutabilityT) = {
     middle.makeAnonymousSubstruct(
       interfaceEnv,
       temputs,
@@ -202,9 +202,9 @@ class StructTemplarTemplateArgsLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    prototype: Prototype2,
-    structFullName: FullName2[ICitizenName2]):
-  StructRef2 = {
+    prototype: PrototypeT,
+    structFullName: FullNameT[ICitizenNameT]):
+  StructRefT = {
     middle.prototypeToAnonymousStruct(
       outerEnv, temputs, range, prototype, structFullName)
   }

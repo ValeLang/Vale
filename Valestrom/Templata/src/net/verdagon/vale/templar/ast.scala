@@ -19,72 +19,72 @@ import scala.collection.mutable
 //   type to avoid a cyclical definition.
 // - If not in declared banners, then tell FunctionTemplar to start evaluating it.
 
-case class Impl2(
-  struct: StructRef2,
-  interface: InterfaceRef2
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+case class ImplT(
+  struct: StructRefT,
+  interface: InterfaceRefT
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     struct.all(func) ++ interface.all(func)
   }
 }
 
-case class KindExport2(
-  tyype: Kind,
+case class KindExportT(
+  tyype: KindT,
   packageCoordinate: PackageCoordinate,
   exportedName: String
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     tyype.all(func)
   }
 }
 
-case class FunctionExport2(
-  prototype: Prototype2,
+case class FunctionExportT(
+  prototype: PrototypeT,
   packageCoordinate: PackageCoordinate,
   exportedName: String
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     prototype.all(func)
   }
 }
 
-case class KindExtern2(
-  tyype: Kind,
+case class KindExternT(
+  tyype: KindT,
   packageCoordinate: PackageCoordinate,
   externName: String
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     tyype.all(func)
   }
 }
 
-case class FunctionExtern2(
-  prototype: Prototype2,
+case class FunctionExternT(
+  prototype: PrototypeT,
   packageCoordinate: PackageCoordinate,
   externName: String
-) extends Queriable2 {
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+) extends QueriableT {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     prototype.all(func)
   }
 }
 
 case class InterfaceEdgeBlueprint(
-  interface: InterfaceRef2,
-  superFamilyRootBanners: List[FunctionBanner2])
+  interface: InterfaceRefT,
+  superFamilyRootBanners: List[FunctionBannerT])
 
-case class Edge2(
-  struct: StructRef2,
-  interface: InterfaceRef2,
-  methods: List[Prototype2])
+case class EdgeT(
+  struct: StructRefT,
+  interface: InterfaceRefT,
+  methods: List[PrototypeT])
 
 object Program2 {
-  val emptyTupleStructRef = StructRef2(FullName2(PackageCoordinate.BUILTIN, List(), TupleName2(List())))
-  val emptyTupleType: PackT2 = PackT2(List(), Program2.emptyTupleStructRef)
-  val emptyTupleReference: Coord = Coord(Share, Readonly, emptyTupleType)
-  val emptyPackExpression: PackE2 = PackE2(List(), Coord(Share, Readonly, Program2.emptyTupleType), Program2.emptyTupleType)
+  val emptyTupleStructRef = StructRefT(FullNameT(PackageCoordinate.BUILTIN, List(), TupleNameT(List())))
+  val emptyTupleType: PackTT = PackTT(List(), Program2.emptyTupleStructRef)
+  val emptyTupleReference: CoordT = CoordT(ShareT, ReadonlyT, emptyTupleType)
+  val emptyPackExpression: PackTE = PackTE(List(), CoordT(ShareT, ReadonlyT, Program2.emptyTupleType), Program2.emptyTupleType)
 
-  val intType = Coord(Share, Readonly, Int2())
-  val boolType = Coord(Share, Readonly, Bool2())
+  val intType = CoordT(ShareT, ReadonlyT, IntT.i32)
+  val boolType = CoordT(ShareT, ReadonlyT, BoolT())
 }
 
 //trait Program2 {
@@ -109,18 +109,18 @@ object Program2 {
 //  }
 //}
 
-case class Function2(
-  header: FunctionHeader2,
+case class FunctionT(
+  header: FunctionHeaderT,
   // Used for testing
-  variables: List[ILocalVariable2],
-  body: ReferenceExpression2) extends Queriable2 {
+  variables: List[ILocalVariableT],
+  body: ReferenceExpressionTE) extends QueriableT {
 
   vassert(
-    body.resultRegister.kind == Never2() ||
-    header.returnType.kind == Never2() ||
+    body.resultRegister.kind == NeverT() ||
+    header.returnType.kind == NeverT() ||
     body.resultRegister.reference == header.returnType)
 
-  def all[T](func: PartialFunction[Queriable2, T]): List[T] = {
+  def all[T](func: PartialFunction[QueriableT, T]): List[T] = {
     List(this).collect(func) ++ header.all(func) ++ variables.flatMap(_.all(func)) ++ body.all(func)
   }
 }

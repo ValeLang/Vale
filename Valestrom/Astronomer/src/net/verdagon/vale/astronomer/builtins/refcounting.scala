@@ -55,7 +55,7 @@ object RefCounting {
                   OutsideLoadAE(RangeS.internal(-38),"+", LendConstraintP(None)),
                   List(
                     LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP),
-                    IntLiteralAE(RangeS.internal(-35), 1)))),
+                    ConstantIntAE(RangeS.internal(-35), 1, 32)))),
               VoidAE(RangeS.internal(-35)))))))
 
   val checkMemberRcName = FunctionNameA("__checkmemberrc", CodeLocationS.internal(-5))

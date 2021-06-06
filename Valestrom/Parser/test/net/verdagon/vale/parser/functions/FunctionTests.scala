@@ -22,7 +22,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), List(), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, Some(_))),
-        Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
     }
   }
 
@@ -31,7 +31,7 @@ class BiggerTests extends FunSuite with Matchers with Collector with TestParseUt
       case FunctionP(_,
         FunctionHeaderP(_,
           Some(NameP(_, "sum")), List(PureAttributeP(_)), None, None, Some(ParamsP(_,List())), FunctionReturnP(_, None, None)),
-        Some(BlockPE(_, List(IntLiteralPE(_, 3))))) =>
+        Some(BlockPE(_, List(ConstantIntPE(_, 3, _))))) =>
     }
   }
 

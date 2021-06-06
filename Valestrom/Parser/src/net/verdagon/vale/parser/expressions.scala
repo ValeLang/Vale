@@ -66,10 +66,10 @@ case class ConstructArrayPE(
   args: List[IExpressionPE]
 ) extends IExpressionPE
 
-case class IntLiteralPE(range: Range, value: Int) extends IExpressionPE
-case class BoolLiteralPE(range: Range, value: Boolean) extends IExpressionPE
-case class StrLiteralPE(range: Range, value: String) extends IExpressionPE
-case class FloatLiteralPE(range: Range, value: Double) extends IExpressionPE
+case class ConstantIntPE(range: Range, value: Long, bits: Int) extends IExpressionPE
+case class ConstantBoolPE(range: Range, value: Boolean) extends IExpressionPE
+case class ConstantStrPE(range: Range, value: String) extends IExpressionPE
+case class ConstantFloatPE(range: Range, value: Double) extends IExpressionPE
 
 case class StrInterpolatePE(range: Range, parts: List[IExpressionPE]) extends IExpressionPE
 

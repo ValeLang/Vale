@@ -2,8 +2,8 @@
 fn +(a str, b str) str { __vaddStr(a, 0, len(a), b, 0, len(b)) }
 fn __vaddStr(a str, aBegin int, aEnd int, b str, bBegin int, bEnd int) str extern;
 
-fn str(x int) str { __castIntStr(x) }
-fn __castIntStr(x int) str extern;
+fn str(x int) str { __castI32Str(x) }
+fn __castI32Str(x int) str extern;
 
 fn str(x float) str { __castFloatStr(x) }
 fn __castFloatStr(x float) str extern;

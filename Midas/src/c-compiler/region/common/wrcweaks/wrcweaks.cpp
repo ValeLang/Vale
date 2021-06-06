@@ -93,7 +93,7 @@ static LLVMValueRef getWrciFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::WRCI),
+            structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::WRCI_32B),
             "wrciPtr");
     return LLVMBuildLoad(builder, wrciPtrLE, "wrci");
   }
@@ -433,7 +433,7 @@ void WrcWeaks::aliasWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  adjustCounter(globalState, builder, ptrToWrcLE, 1);
+  adjustCounter(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, 1);
 }
 
 void WrcWeaks::discardWeakRef(
@@ -453,7 +453,7 @@ void WrcWeaks::discardWeakRef(
   }
 
   auto ptrToWrcLE = getWrcPtr(builder, wrciLE);
-  auto wrcLE = adjustCounter(globalState, builder, ptrToWrcLE, -1);
+  auto wrcLE = adjustCounter(globalState, builder, globalState->metalCache->i32, ptrToWrcLE, -1);
 
   buildFlare(FL(), globalState, functionState, builder, "decrementing ", wrciLE, " to ", wrcLE);
 
@@ -526,7 +526,7 @@ LLVMValueRef WrcWeaks::fillWeakableControlBlock(
       builder,
       controlBlockLE,
       wrciLE,
-      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::WRCI),
+      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::WRCI_32B),
       "weakableControlBlockWithWrci");
 }
 

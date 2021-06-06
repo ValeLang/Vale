@@ -45,8 +45,6 @@ public:
 
   MetalCache* metalCache = nullptr;
 
-  LLVMTypeRef ram64Struct = nullptr;
-
   Program* program = nullptr;
 
   LLVMValueRef numMainArgs = nullptr;
@@ -57,13 +55,8 @@ public:
   LLVMValueRef derefCounter = nullptr;
   LLVMValueRef mutRcAdjustCounter = nullptr;
   LLVMValueRef livenessCheckCounter = nullptr;
-  // an i64 pointer to null.
-  LLVMValueRef ram64 = nullptr;
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
-  // Initialized to &writeOnlyGlobal / 8 in main.
-  // We can use this to easily write an i64 into NULL or the write only global at runtime.
-  LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;
 
 
   LLVMTypeRef wrcTableStructLT = nullptr;
@@ -192,6 +185,7 @@ public:
   Weakability getKindWeakability(Kind* kind);
 
   Ref constI64(int64_t x);
+  Ref constI32(int32_t x);
   Ref constI1(bool b);
   Ref buildAdd(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
   Ref buildMod(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);

@@ -911,10 +911,8 @@ Ref regularDowncast(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    bool thenResultIsNever,
-    bool elseResultIsNever,
+    IKindStructsSource* structs,
     Reference* resultOptTypeM,
-    Reference* constraintRefM,
     Reference* sourceInterfaceRefMT,
     Ref sourceInterfaceRef,
     bool sourceRefKnownLive,
@@ -953,14 +951,13 @@ Ref regularDowncast(
       resultOptTypeLE,
       resultOptTypeM,
       resultOptTypeM,
-      [globalState, sourceInterfaceRefMT, targetKind, newVirtualArgLE, buildThen, functionState](
+      [globalState, sourceInterfaceRefMT, structs, targetKind, newVirtualArgLE, buildThen](
           LLVMBuilderRef thenBuilder) {
         auto resultStructRefMT =
             globalState->metalCache->getReference(
                 sourceInterfaceRefMT->ownership, sourceInterfaceRefMT->location, targetKind);
-        auto resultStructRefLT = globalState->getRegion(resultStructRefMT)->translateType(resultStructRefMT);
         auto resultStructRefLE =
-            LLVMBuildPointerCast(thenBuilder, newVirtualArgLE, resultStructRefLT, "subtypePtr");
+            structs->downcastPtr(thenBuilder, resultStructRefMT, newVirtualArgLE);
         auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
         return buildThen(thenBuilder, resultStructRef);
       },
@@ -969,7 +966,9 @@ Ref regularDowncast(
 
 Ref resilientDowncast(
     GlobalState* globalState,
-    FunctionState *functionState, LLVMBuilderRef builder,
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    IKindStructsSource* structs,
     IWeakRefStructsSource* weakRefStructs,
     Reference *resultOptTypeM,
     Reference *sourceInterfaceRefMT,
@@ -996,7 +995,7 @@ Ref resilientDowncast(
       resultOptTypeLE,
       resultOptTypeM,
       resultOptTypeM,
-      [globalState, weakRefStructs, functionState, sourceInterfaceRef, sourceInterfaceRefMT, targetKind, targetStructKind, buildThen](
+      [globalState, weakRefStructs, structs, functionState, sourceInterfaceRef, sourceInterfaceRefMT, targetKind, targetStructKind, buildThen](
           LLVMBuilderRef thenBuilder) {
         auto possibilityPtrLE =
             std::get<1>(
@@ -1009,9 +1008,7 @@ Ref resilientDowncast(
                 sourceInterfaceRefMT->ownership, sourceInterfaceRefMT->location, targetKind);
         switch (sourceInterfaceRefMT->ownership) {
           case Ownership::OWN: {
-            auto resultStructRefLT = globalState->getRegion(resultStructRefMT)->translateType(resultStructRefMT);
-            auto resultStructRefLE =
-                LLVMBuildPointerCast(thenBuilder, possibilityPtrLE, resultStructRefLT, "subtypePtr");
+            auto resultStructRefLE = structs->downcastPtr(thenBuilder, resultStructRefMT, possibilityPtrLE);
             auto resultStructRef = wrap(globalState->getRegion(resultStructRefMT), resultStructRefMT, resultStructRefLE);
             return buildThen(thenBuilder, resultStructRef);
           }

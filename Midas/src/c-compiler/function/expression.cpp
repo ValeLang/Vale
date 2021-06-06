@@ -717,11 +717,11 @@ Ref translateExpressionInner(
     globalState->getRegion(sourceType)
         ->checkValidReference(FL(), functionState, builder, sourceType, sourceLE);
 
-    auto sourceTypeAsConstraintRefM =
-        globalState->metalCache->getReference(
-            Ownership::BORROW,
-            sourceType->location,
-            sourceType->kind);
+//    auto sourceTypeAsConstraintRefM =
+//        globalState->metalCache->getReference(
+//            Ownership::BORROW,
+//            sourceType->location,
+//            sourceType->kind);
 
     auto resultResultTypeLE =
         globalState->getRegion(asSubtype->resultResultType)
@@ -730,13 +730,12 @@ Ref translateExpressionInner(
     auto resultOptLE =
         globalState->getRegion(sourceType)->asSubtype(
             functionState, builder,
-            false, false, asSubtype->resultResultType,
-            sourceTypeAsConstraintRefM,
+            asSubtype->resultResultType,
             sourceType,
             sourceLE,
             sourceKnownLive,
             asSubtype->targetKind,
-            [globalState, functionState, asSubtype, sourceType, sourceLE](LLVMBuilderRef thenBuilder, Ref refAsSubtype) -> Ref {
+            [globalState, functionState, asSubtype](LLVMBuilderRef thenBuilder, Ref refAsSubtype) -> Ref {
               globalState->getRegion(asSubtype->okConstructor->params[0])
                   ->checkValidReference(
                       FL(), functionState, thenBuilder,

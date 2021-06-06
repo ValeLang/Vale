@@ -148,6 +148,8 @@ public:
       Reference* refM,
       ControlBlockPtrLE controlBlockPtr) override;
 
+  LLVMValueRef downcastPtr(LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) override;
+
 private:
   GlobalState* globalState = nullptr;
   GetKindStructsSource getKindStructsSource;

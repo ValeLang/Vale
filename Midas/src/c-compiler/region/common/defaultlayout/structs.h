@@ -62,6 +62,8 @@ public:
   void defineRuntimeSizedArray(RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT, LLVMTypeRef elementLT) override;
   void defineStaticSizedArray(StaticSizedArrayDefinitionT* staticSizedArrayMT, LLVMTypeRef elementLT) override;
 
+  LLVMValueRef downcastPtr(LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) override;
+
   LLVMTypeRef getControlBlockStruct() {
     return controlBlock.getStruct();
   }
@@ -399,6 +401,8 @@ public:
       LLVMBuilderRef builder,
       Reference* refM,
       ControlBlockPtrLE controlBlockPtr) override;
+
+  LLVMValueRef downcastPtr(LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) override;
 
   LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
     return weakRefHeaderStructL;

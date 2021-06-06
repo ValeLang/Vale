@@ -246,10 +246,7 @@ Ref ResilientV3::lockWeak(
 Ref ResilientV3::asSubtype(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    bool thenResultIsNever,
-    bool elseResultIsNever,
     Reference* resultOptTypeM,
-    Reference* constraintRefM,
     Reference* sourceInterfaceRefMT,
     Ref sourceInterfaceRef,
     bool sourceRefKnownLive,
@@ -262,7 +259,7 @@ Ref ResilientV3::asSubtype(
   assert(sourceInterfaceKind);
 
   return resilientDowncast(
-      globalState, functionState, builder, &weakRefStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
+      globalState, functionState, builder, &kindStructs, &weakRefStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
       targetKind, buildThen, buildElse, targetStructKind, sourceInterfaceKind);
 }
 

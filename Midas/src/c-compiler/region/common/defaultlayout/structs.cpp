@@ -691,6 +691,16 @@ LLVMValueRef KindStructs::getStrongRcPtrFromControlBlockPtr(
       "rcPtr");
 }
 
+LLVMValueRef KindStructs::downcastPtr(
+    LLVMBuilderRef builder,
+    Reference* resultStructRefMT,
+    LLVMValueRef unknownPossibilityPtrLE) {
+  auto resultStructRefLT = globalState->getRegion(resultStructRefMT)->translateType(resultStructRefMT);
+  auto resultStructRefLE =
+      LLVMBuildPointerCast(builder, unknownPossibilityPtrLE, resultStructRefLT, "subtypePtr");
+  return resultStructRefLE;
+}
+
 
 
 
@@ -1009,4 +1019,8 @@ LLVMValueRef WeakableKindStructs::getStrongRcFromControlBlockPtr(
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   return kindStructs.getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
+}
+
+LLVMValueRef WeakableKindStructs::downcastPtr(LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) {
+  return kindStructs.downcastPtr(builder, resultStructRefMT, unknownPossibilityPtrLE);
 }

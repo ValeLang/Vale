@@ -98,10 +98,7 @@ public:
   Ref asSubtype(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      bool thenResultIsNever,
-      bool elseResultIsNever,
       Reference* resultOptTypeM,
-      Reference* constraintRefM,
       Reference* sourceInterfaceRefMT,
       Ref sourceInterfaceRef,
       bool sourceRefKnownLive,

@@ -208,6 +208,11 @@ LLVMValueRef KindStructsRouter::getStrongRcFromControlBlockPtr(
   return getKindStructsSource(refM->kind)->getStrongRcFromControlBlockPtr(builder, refM, controlBlockPtr);
 }
 
+LLVMValueRef KindStructsRouter::downcastPtr(
+    LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) {
+  return getKindStructsSource(resultStructRefMT->kind)->downcastPtr(builder, resultStructRefMT, unknownPossibilityPtrLE);
+}
+
 
 LLVMTypeRef WeakRefStructsRouter::getStructWeakRefStruct(StructKind* structKind) {
   return getWeakRefStructsSource(structKind)->getStructWeakRefStruct(structKind);

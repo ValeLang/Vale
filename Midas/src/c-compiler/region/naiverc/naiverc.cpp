@@ -235,10 +235,7 @@ Ref NaiveRC::lockWeak(
 Ref NaiveRC::asSubtype(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    bool thenResultIsNever,
-    bool elseResultIsNever,
     Reference* resultOptTypeM,
-    Reference* constraintRefM,
     Reference* sourceInterfaceRefMT,
     Ref sourceInterfaceRef,
     bool sourceRefKnownLive,
@@ -246,7 +243,7 @@ Ref NaiveRC::asSubtype(
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse) {
   return regularDowncast(
-      globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM, constraintRefM,
+      globalState, functionState, builder, &kindStructs, resultOptTypeM,
       sourceInterfaceRefMT, sourceInterfaceRef, sourceRefKnownLive, targetKind, buildThen, buildElse);
 }
 

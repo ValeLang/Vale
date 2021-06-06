@@ -248,7 +248,9 @@ Ref resilientLockWeak(
 
 Ref resilientDowncast(
     GlobalState* globalState,
-    FunctionState *functionState, LLVMBuilderRef builder,
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    IKindStructsSource* structs,
     IWeakRefStructsSource* weakRefStructs,
     Reference *resultOptTypeM,
     Reference *sourceInterfaceRefMT,
@@ -582,10 +584,8 @@ Ref regularDowncast(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    bool thenResultIsNever,
-    bool elseResultIsNever,
+    IKindStructsSource* structs,
     Reference* resultOptTypeM,
-    Reference* constraintRefM,
     Reference* sourceInterfaceRefMT,
     Ref sourceInterfaceRef,
     bool sourceRefKnownLive,

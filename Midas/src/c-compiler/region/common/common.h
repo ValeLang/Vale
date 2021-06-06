@@ -547,7 +547,7 @@ Ref regularInnerLockWeak(
     IWeakRefStructsSource* weakRefStructsSource,
     FatWeaks* fatWeaks);
 
-LLVMValueRef callFree(
+void callFree(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef ptrLE);

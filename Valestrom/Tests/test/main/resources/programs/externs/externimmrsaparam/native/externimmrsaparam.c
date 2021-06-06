@@ -7,5 +7,6 @@ ValeInt tmod_sumBytes(tmod_ImmIntArray* arr) {
   for (int i = 0; i < arr->length; i++) {
     total += arr->elements[i];
   }
+  ValeReleaseMessage(arr);
   return total;
 }

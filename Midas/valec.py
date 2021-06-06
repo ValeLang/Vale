@@ -19,7 +19,7 @@ from typing import Dict, Any, List, Callable, Optional
 
 
 def procrun(args: List[str], **kwargs) -> subprocess.CompletedProcess:
-    print("Running: " + " ".join(args))
+    # print("Running: " + " ".join(args))
     return subprocess.run(args, stdout=PIPE, stderr=PIPE, text=True, **kwargs)
 
 

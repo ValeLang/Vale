@@ -13,40 +13,40 @@ object Conversions {
     m.CodeLocation(line, col)
   }
 
-  def evaluateMutability(mutability: t.Mutability): Mutability = {
+  def evaluateMutability(mutability: t.MutabilityT): Mutability = {
     mutability match {
-      case t.Mutable => Mutable
-      case t.Immutable => Immutable
+      case t.MutableT => Mutable
+      case t.ImmutableT => Immutable
     }
   }
 
-  def evaluatePermission(permission: t.Permission): PermissionH = {
+  def evaluatePermission(permission: t.PermissionT): PermissionH = {
     permission match {
-      case t.Readonly => ReadonlyH
-      case t.Readwrite => ReadwriteH
+      case t.ReadonlyT => ReadonlyH
+      case t.ReadwriteT => ReadwriteH
     }
   }
 
-  def evaluateLocation(location: t.Location): LocationH = {
+  def evaluateLocation(location: t.LocationT): LocationH = {
     location match {
-      case t.Inline => InlineH
-      case t.Yonder => YonderH
+      case t.InlineT => InlineH
+      case t.YonderT => YonderH
     }
   }
 
-  def evaluateVariability(variability: t.Variability): Variability = {
+  def evaluateVariability(variability: t.VariabilityT): Variability = {
     variability match {
-      case t.Final => Final
-      case t.Varying => Varying
+      case t.FinalT => Final
+      case t.VaryingT => Varying
     }
   }
 
-  def evaluateOwnership(ownership: t.Ownership): OwnershipH = {
+  def evaluateOwnership(ownership: t.OwnershipT): OwnershipH = {
     ownership match {
-      case t.Own => OwnH
-      case t.Constraint => BorrowH
-      case t.Share => ShareH
-      case t.Weak => WeakH
+      case t.OwnT => OwnH
+      case t.ConstraintT => BorrowH
+      case t.ShareT => ShareH
+      case t.WeakT => WeakH
     }
   }
 

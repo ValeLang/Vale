@@ -38,7 +38,7 @@ case class ReferenceH[+T <: KindH](
   }
 
   kind match {
-    case IntH() | BoolH() | FloatH() | NeverH() => {
+    case IntH(_) | BoolH() | FloatH() | NeverH() => {
       // Make sure that if we're pointing at a primitives, it's via a Share reference.
       vassert(ownership == ShareH)
       vassert(location == InlineH)
@@ -99,8 +99,10 @@ case class ReferenceH[+T <: KindH](
 sealed trait KindH {
   def packageCoord: PackageCoordinate
 }
-
-case class IntH() extends KindH {
+object IntH {
+  val i32 = IntH(32)
+}
+case class IntH(bits: Int) extends KindH {
   override def packageCoord: PackageCoordinate = PackageCoordinate.BUILTIN
 }
 case class BoolH() extends KindH {

@@ -2,7 +2,7 @@ package net.verdagon.vale
 
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.types._
 import net.verdagon.von.{VonBool, VonFloat, VonInt}

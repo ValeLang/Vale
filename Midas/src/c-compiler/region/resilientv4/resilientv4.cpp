@@ -15,7 +15,7 @@
 
 ControlBlock makeResilientV4WeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
-  controlBlock.addMember(ControlBlockMember::GENERATION);
+  controlBlock.addMember(ControlBlockMember::GENERATION_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::TETHER_32B);
@@ -704,14 +704,15 @@ Ref ResilientV4::upcast(
 }
 
 
-LLVMValueRef ResilientV4::predictShallowSize(LLVMBuilderRef builder, Kind* kind, LLVMValueRef lenIntLE) {
+LLVMValueRef ResilientV4::predictShallowSize(LLVMBuilderRef builder, Kind* kind, LLVMValueRef lenI32LE) {
+  auto lenI64LE = LLVMBuildZExt(builder, lenI32LE, LLVMInt64TypeInContext(globalState->context), "lenI32");
   assert(globalState->getRegion(kind) == this);
   if (auto structKind = dynamic_cast<StructKind*>(kind)) {
     return constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, kindStructs.getWrapperStruct(structKind)));
   } else if (dynamic_cast<Str*>(kind)) {
     auto headerBytesLE =
         constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, kindStructs.getStringWrapperStruct()));
-    return LLVMBuildAdd(builder, headerBytesLE, lenIntLE, "sum");
+    return LLVMBuildAdd(builder, headerBytesLE, lenI64LE, "sum");
   } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
     auto headerBytesLE =
         constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, kindStructs.getRuntimeSizedArrayWrapperStruct(rsaMT)));
@@ -723,7 +724,7 @@ LLVMValueRef ResilientV4::predictShallowSize(LLVMBuilderRef builder, Kind* kind,
     // The above line tries to include padding... if the below fails, we know there are some serious shenanigans
     // going on in LLVM.
     assert(sizePerElement * 2 == LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(elementRefLT, 2)));
-    auto elementsSizeLE = LLVMBuildMul(builder, constI64LE(globalState, sizePerElement), lenIntLE, "elementsSize");
+    auto elementsSizeLE = LLVMBuildMul(builder, constI64LE(globalState, sizePerElement), lenI64LE, "elementsSize");
 
     return LLVMBuildAdd(builder, headerBytesLE, elementsSizeLE, "sum");
   } else if (auto hostKsaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
@@ -737,7 +738,7 @@ LLVMValueRef ResilientV4::predictShallowSize(LLVMBuilderRef builder, Kind* kind,
     // The above line tries to include padding... if the below fails, we know there are some serious shenanigans
     // going on in LLVM.
     assert(sizePerElement * 2 == LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(elementRefLT, 2)));
-    auto elementsSizeLE = LLVMBuildMul(builder, constI64LE(globalState, sizePerElement), lenIntLE, "elementsSize");
+    auto elementsSizeLE = LLVMBuildMul(builder, constI64LE(globalState, sizePerElement), lenI64LE, "elementsSize");
 
     return LLVMBuildAdd(builder, headerBytesLE, elementsSizeLE, "sum");
   } else assert(false);
@@ -772,21 +773,21 @@ void ResilientV4::deallocate(
         if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
           buildFlare(FL(), globalState, functionState, thenBuilder);
           lenLE =
-              globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(
-                  FL(), functionState, thenBuilder, globalState->metalCache->intRef,
+              globalState->getRegion(globalState->metalCache->i32Ref)->checkValidReference(
+                  FL(), functionState, thenBuilder, globalState->metalCache->i32Ref,
                   getRuntimeSizedArrayLength(functionState, thenBuilder, refMT, ref, true));
         } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
           buildFlare(FL(), globalState, functionState, thenBuilder);
           lenLE =
-              globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(
-                  FL(), functionState, thenBuilder, globalState->metalCache->intRef,
+              globalState->getRegion(globalState->metalCache->i32Ref)->checkValidReference(
+                  FL(), functionState, thenBuilder, globalState->metalCache->i32Ref,
                   getRuntimeSizedArrayLength(functionState, thenBuilder, refMT, ref, true));
         } else if (dynamic_cast<StructKind*>(refMT->kind)) {
           buildFlare(FL(), globalState, functionState, thenBuilder);
-          lenLE = constI64LE(globalState, 0);
+          lenLE = constI32LE(globalState, 0);
         } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
           buildFlare(FL(), globalState, functionState, thenBuilder);
-          lenLE = constI64LE(globalState, 0);
+          lenLE = constI32LE(globalState, 0);
         }
         auto sizeLE = predictShallowSize(thenBuilder, refMT->kind, lenLE);
         buildFlare(FL(), globalState, functionState, thenBuilder, "size: ", sizeLE);
@@ -1053,7 +1054,7 @@ void ResilientV4::initializeElementInSSA(
       kindStructs.makeWrapperPtr(
           FL(), functionState, builder, ssaRefMT,
           globalState->getRegion(ssaRefMT)->checkValidReference(FL(), functionState, builder, ssaRefMT, arrayRef));
-  auto sizeRef = globalState->constI64(ssaDef->size);
+  auto sizeRef = globalState->constI32(ssaDef->size);
   auto arrayElementsPtrLE = getStaticSizedArrayContentsPtr(builder, arrayWrapperPtrLE);
   ::initializeElement(
       globalState, functionState, builder, ssaRefMT->location, ssaDef->rawArray->elementType, sizeRef, arrayElementsPtrLE, indexRef, elementRef);

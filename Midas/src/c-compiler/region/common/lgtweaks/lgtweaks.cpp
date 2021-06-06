@@ -112,7 +112,7 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
         LLVMBuildStructGEP(
             builder,
             controlBlockPtr.refLE,
-            structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::LGTI),
+            structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::LGTI_32B),
             "lgtiPtr");
     return LLVMBuildLoad(builder, lgtiPtrLE, "lgti");
   }
@@ -388,7 +388,7 @@ void LgtWeaks::innerNoteWeakableDestroyed(
   auto lgtiLE = getLgtiFromControlBlockPtr(globalState, builder, kindStructsSource, concreteRefM,
       controlBlockPtrLE);
   auto ptrToActualGenLE = getLGTEntryGenPtr(functionState, builder, lgtiLE);
-  adjustCounter(globalState, builder, ptrToActualGenLE, 1);
+  adjustCounter(globalState, builder, globalState->metalCache->i64, ptrToActualGenLE, 1);
   auto ptrToLgtEntryNextFreeLE = getLGTEntryNextFreePtr(builder, lgtiLE);
 
   // __lgt_entries[lgti] = __lgt_firstFree;
@@ -487,7 +487,7 @@ LLVMValueRef LgtWeaks::fillWeakableControlBlock(
       builder,
       controlBlockLE,
       geniLE,
-      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::LGTI),
+      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::LGTI_32B),
       "controlBlockWithLgti");
 }
 

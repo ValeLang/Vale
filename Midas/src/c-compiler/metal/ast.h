@@ -110,7 +110,7 @@ public:
       kindToExternName[kind] = externName;
     }
   }
-  
+
   Function* getFunction(Name* name) {
     auto iter = functions.find(name->name);
     if (iter == functions.end()) {
@@ -184,8 +184,8 @@ public:
   }
 
   std::string getKindExportName(Kind* kind, bool includeProjectName) const {
-    if (dynamic_cast<Int *>(kind)) {
-      return "int64_t";
+    if (auto innt = dynamic_cast<Int *>(kind)) {
+      return std::string() + "int" + std::to_string(innt->bits) + "_t";
     } else if (dynamic_cast<Bool *>(kind)) {
       return "int8_t";
     } else if (dynamic_cast<Float *>(kind)) {

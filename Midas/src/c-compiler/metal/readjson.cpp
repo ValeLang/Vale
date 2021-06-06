@@ -51,6 +51,22 @@ std::string readString(MetalCache* cache, const json& name) {
   return nameStr;
 }
 
+int64_t readI64(MetalCache* cache, const json& name) {
+  if (name.is_number_integer()) {
+    int64_t i = name;
+    return i;
+  } else if (name.is_string()) {
+    std::string str = name;
+    int64_t l = std::stoull(str);
+    assert(std::to_string(l) == str);
+    return l;
+  } else {
+    std::cerr << "Couldn't read number in json!" << std::endl;
+    assert(false);
+    exit(1);
+  }
+}
+
 PackageCoordinate* readPackageCoordinate(MetalCache* cache, const json& packageCoord) {
   assert(packageCoord["__type"] == "PackageCoordinate");
   auto moduleName = readString(cache, packageCoord["project"]);//.get<std::string>();
@@ -137,7 +153,8 @@ StaticSizedArrayDefinitionT* readStaticSizedArrayDefinition(MetalCache* cache, c
 Kind* readKind(MetalCache* cache, const json& kind) {
   assert(kind.is_object());
   if (kind["__type"] == "Int") {
-    return cache->innt;
+    int bits = kind["bits"];
+    return cache->getInt(cache->rcImmRegionId, bits);
   } else if (kind["__type"] == "Bool") {
     return cache->boool;
   } else if (kind["__type"] == "Float") {
@@ -275,9 +292,10 @@ Local* readLocal(MetalCache* cache, const json& local) {
 Expression* readExpression(MetalCache* cache, const json& expression) {
   assert(expression.is_object());
   std::string type = expression["__type"];
-  if (type == "ConstantI64") {
-    return new ConstantI64(
-        expression["value"]);
+  if (type == "ConstantInt") {
+    return new ConstantInt(
+        readI64(cache, expression["value"]),
+        expression["bits"]);
   } else if (type == "ConstantBool") {
     return new ConstantBool(
         expression["value"]);

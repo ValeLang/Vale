@@ -137,7 +137,7 @@ LLVMValueRef fillControlBlockCensusFields(
     LLVMValueRef newControlBlockLE,
     const std::string& typeName) {
   if (globalState->opt->census) {
-    auto objIdLE = adjustCounter(globalState, builder, globalState->objIdCounter, 1);
+    auto objIdLE = adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->objIdCounter, 1);
     newControlBlockLE =
         LLVMBuildInsertValue(
             builder,
@@ -168,7 +168,7 @@ LLVMValueRef insertStrongRc(
       newControlBlockLE,
       // Start RC at 1, see SRCAZ.
       LLVMConstInt(LLVMInt32TypeInContext(globalState->context), 1, false),
-      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::STRONG_RC),
+      structs->getControlBlock(kindM)->getMemberIndex(ControlBlockMember::STRONG_RC_32B),
       "controlBlockWithRc");
 }
 
@@ -184,9 +184,9 @@ LoadResult loadElementFromSSAInner(
     LLVMValueRef arrayElementsPtrLE) {
   auto sizeRef =
       wrap(
-          globalState->getRegion(globalState->metalCache->intRef),
-          globalState->metalCache->intRef,
-          LLVMConstInt(LLVMInt64TypeInContext(globalState->context), size, false));
+          globalState->getRegion(globalState->metalCache->i32Ref),
+          globalState->metalCache->i32Ref,
+          LLVMConstInt(LLVMInt32TypeInContext(globalState->context), size, false));
   buildFlare(FL(), globalState, functionState, builder);
   return loadElement(
       globalState, functionState, builder, arrayElementsPtrLE, elementType, sizeRef, indexRef);
@@ -319,7 +319,7 @@ void innerDeallocateYonder(
   callFree(globalState, builder, controlBlockPtrLE.refLE);
 
   if (globalState->opt->census) {
-    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, -1);
+    adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->liveHeapObjCounter, -1);
   }
 }
 
@@ -357,7 +357,7 @@ void fillStaticSizedArray(
 
   for (int i = 0; i < elementRefs.size(); i++) {
     globalState->getRegion(ssaRefMT)->initializeElementInSSA(
-        functionState, builder, ssaRefMT, ssaMT, ssaRef, true, globalState->constI64(i), elementRefs[i]);
+        functionState, builder, ssaRefMT, ssaMT, ssaRef, true, globalState->constI32(i), elementRefs[i]);
   }
 }
 
@@ -431,6 +431,7 @@ LLVMValueRef callMalloc(
     GlobalState* globalState,
     LLVMBuilderRef builder,
     LLVMValueRef sizeLE) {
+  assert(LLVMTypeOf(sizeLE) == LLVMInt64TypeInContext(globalState->context));
   if (globalState->opt->genHeap) {
     return LLVMBuildCall(builder, globalState->genMalloc, &sizeLE, 1, "");
   } else {
@@ -442,15 +443,16 @@ WrapperPtrLE mallocStr(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    LLVMValueRef lengthLE,
+    LLVMValueRef lenI32LE,
     LLVMValueRef sourceCharsPtrLE,
     IKindStructsSource* kindStructs,
     std::function<void(LLVMBuilderRef builder, ControlBlockPtrLE controlBlockPtrLE)> fillControlBlock) {
+  auto lenI64LE = LLVMBuildZExt(builder, lenI32LE, LLVMInt64TypeInContext(globalState->context), "lenAsI64");
   // The +1 is for the null terminator at the end, for C compatibility.
   auto sizeBytesLE =
       LLVMBuildAdd(
           builder,
-          lengthLE,
+          lenI64LE,
           LLVMBuildAdd(
               builder,
               constI64LE(globalState, 1),
@@ -458,10 +460,10 @@ WrapperPtrLE mallocStr(
               "lenPlus1"),
           "strMallocSizeBytes");
 
-  auto destCharPtrLE = callMalloc(globalState, builder, LLVMBuildZExt(builder, sizeBytesLE, LLVMInt64TypeInContext(globalState->context), "lenPlus1As64"));
+  auto destCharPtrLE =callMalloc(globalState, builder, sizeBytesLE);
 
   if (globalState->opt->census) {
-    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, 1);
+    adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->liveHeapObjCounter, 1);
 
     LLVMValueRef resultAsVoidPtrLE =
         LLVMBuildBitCast(
@@ -481,16 +483,16 @@ WrapperPtrLE mallocStr(
   fillControlBlock(
       builder,
       kindStructs->getConcreteControlBlockPtr(FL(), functionState, builder, globalState->metalCache->strRef, newStrWrapperPtrLE));
-  LLVMBuildStore(builder, LLVMBuildZExt(builder, lengthLE, LLVMInt64TypeInContext(globalState->context), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
+  LLVMBuildStore(builder, LLVMBuildZExt(builder, lenI32LE, LLVMInt32TypeInContext(globalState->context), ""), getLenPtrFromStrWrapperPtr(builder, newStrWrapperPtrLE));
 
   // Set the null terminating character to the 0th spot and the end spot, just to guard against bugs
   auto charsBeginPtr = getCharsPtrFromWrapperPtr(globalState, builder, newStrWrapperPtrLE);
 
 
-  std::vector<LLVMValueRef> strncpyArgsLE = { charsBeginPtr, sourceCharsPtrLE, lengthLE };
+  std::vector<LLVMValueRef> strncpyArgsLE = { charsBeginPtr, sourceCharsPtrLE, lenI64LE };
   LLVMBuildCall(builder, globalState->externs->strncpy, strncpyArgsLE.data(), strncpyArgsLE.size(), "");
 
-  auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lengthLE, 1, "charsEndPtr");
+  auto charsEndPtr = LLVMBuildGEP(builder, charsBeginPtr, &lenI32LE, 1, "charsEndPtr");
   LLVMBuildStore(builder, constI8LE(globalState, 0), charsEndPtr);
 
   // The caller still needs to initialize the actual chars inside!
@@ -505,7 +507,7 @@ LLVMValueRef mallocKnownSize(
     Location location,
     LLVMTypeRef kindLT) {
   if (globalState->opt->census) {
-    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, 1);
+    adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->liveHeapObjCounter, 1);
   }
 
   LLVMValueRef resultPtrLE = nullptr;
@@ -700,7 +702,8 @@ LLVMValueRef mallocRuntimeSizedArray(
     LLVMBuilderRef builder,
     LLVMTypeRef rsaWrapperLT,
     LLVMTypeRef rsaElementLT,
-    LLVMValueRef lengthLE) {
+    LLVMValueRef lenI32LE) {
+  auto lenI64LE = LLVMBuildZExt(builder, lenI32LE, LLVMInt64TypeInContext(globalState->context), "lenI16");
   auto sizeBytesLE =
       LLVMBuildAdd(
           builder,
@@ -708,14 +711,14 @@ LLVMValueRef mallocRuntimeSizedArray(
           LLVMBuildMul(
               builder,
               constI64LE(globalState, LLVMABISizeOfType(globalState->dataLayout, LLVMArrayType(rsaElementLT, 1))),
-              lengthLE,
+              lenI64LE,
               ""),
           "rsaMallocSizeBytes");
 
   auto newWrapperPtrLE = callMalloc(globalState, builder, sizeBytesLE);
 
   if (globalState->opt->census) {
-    adjustCounter(globalState, builder, globalState->liveHeapObjCounter, 1);
+    adjustCounter(globalState, builder, globalState->metalCache->i64, globalState->liveHeapObjCounter, 1);
   }
 
   if (globalState->opt->census) {
@@ -756,12 +759,12 @@ Ref getRuntimeSizedArrayLength(
     WrapperPtrLE arrayRefLE) {
   auto lengthPtrLE = getRuntimeSizedArrayLengthPtr(globalState, builder, arrayRefLE);
   auto intLE = LLVMBuildLoad(builder, lengthPtrLE, "rsaLen");
-  return wrap(globalState->getRegion(globalState->metalCache->intRef), globalState->metalCache->intRef, intLE);
+  return wrap(globalState->getRegion(globalState->metalCache->i32Ref), globalState->metalCache->i32Ref, intLE);
 }
 
 ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutNonWeakableControlBlock"));
-  controlBlock.addMember(ControlBlockMember::STRONG_RC);
+  controlBlock.addMember(ControlBlockMember::STRONG_RC_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
@@ -775,7 +778,7 @@ ControlBlock makeAssistAndNaiveRCNonWeakableControlBlock(GlobalState* globalStat
 
 ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutWeakableControlBlock"));
-  controlBlock.addMember(ControlBlockMember::STRONG_RC);
+  controlBlock.addMember(ControlBlockMember::STRONG_RC_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
@@ -783,7 +786,7 @@ ControlBlock makeAssistAndNaiveRCWeakableControlBlock(GlobalState* globalState) 
     controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
     controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
   }
-  controlBlock.addMember(ControlBlockMember::WRCI);
+  controlBlock.addMember(ControlBlockMember::WRCI_32B);
   // We could add this in to avoid an InstructionCombiningPass bug where when it inlines things
   // it doesnt seem to realize that there's padding at the end of structs.
   // To see it, make loadFromWeakable test in fast mode, see its .ll and its .opt.ll, it seems
@@ -804,7 +807,7 @@ ControlBlock makeFastWeakableControlBlock(GlobalState* globalState) {
     controlBlock.addMember(ControlBlockMember::CENSUS_TYPE_STR);
     controlBlock.addMember(ControlBlockMember::CENSUS_OBJ_ID);
   }
-  controlBlock.addMember(ControlBlockMember::WRCI);
+  controlBlock.addMember(ControlBlockMember::WRCI_32B);
   controlBlock.build();
   return controlBlock;
 }
@@ -827,7 +830,7 @@ ControlBlock makeFastNonWeakableControlBlock(GlobalState* globalState) {
 
 ControlBlock makeResilientV0WeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutWeakableControlBlock"));
-  controlBlock.addMember(ControlBlockMember::WRCI);
+  controlBlock.addMember(ControlBlockMember::WRCI_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
@@ -1029,7 +1032,7 @@ Ref resilientDowncast(
 
 ControlBlock makeResilientV1WeakableControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "mutControlBlock"));
-  controlBlock.addMember(ControlBlockMember::LGTI);
+  controlBlock.addMember(ControlBlockMember::LGTI_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
@@ -1243,7 +1246,7 @@ Ref regularStoreElementInSSA(
   buildFlare(FL(), globalState, functionState, builder);
   return swapElement(
       globalState, functionState, builder, ssaRefMT->location,
-      elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
+      elementType, globalState->constI32(size), arrayElementsPtrLE, indexRef, elementRef);
 }
 
 void regularInitializeElementInSSA(
@@ -1266,7 +1269,7 @@ void regularInitializeElementInSSA(
   buildFlare(FL(), globalState, functionState, builder);
   initializeElement(
       globalState, functionState, builder, ssaRefMT->location,
-      elementType, globalState->constI64(size), arrayElementsPtrLE, indexRef, elementRef);
+      elementType, globalState->constI32(size), arrayElementsPtrLE, indexRef, elementRef);
 }
 
 Ref constructRuntimeSizedArray(
@@ -1285,8 +1288,8 @@ Ref constructRuntimeSizedArray(
   buildFlare(FL(), globalState, functionState, builder, "Constructing RSA!");
 
   auto sizeLE =
-      globalState->getRegion(globalState->metalCache->intRef)->checkValidReference(FL(),
-          functionState, builder, globalState->metalCache->intRef, sizeRef);
+      globalState->getRegion(globalState->metalCache->i32Ref)->checkValidReference(FL(),
+          functionState, builder, globalState->metalCache->i32Ref, sizeRef);
   auto ptrLE = mallocRuntimeSizedArray(globalState, builder, rsaWrapperPtrLT, rsaElementLT, sizeLE);
   auto rsaWrapperPtrLE =
       kindStructs->makeWrapperPtr(FL(), functionState, builder, rsaMT, ptrLE);

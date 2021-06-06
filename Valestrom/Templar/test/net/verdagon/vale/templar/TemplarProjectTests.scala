@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar
 
-import net.verdagon.vale.templar.templata.{CoordTemplata, Signature2}
+import net.verdagon.vale.templar.templata.{CoordTemplata, SignatureT}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.{Builtins, FileCoordinateMap, PackageCoordinate, Tests, vassert, vassertSome, vimpl}
 import org.scalatest.{FunSuite, Matchers}
@@ -14,8 +14,8 @@ class TemplarProjectTests extends FunSuite with Matchers {
       TemplarTestCompilation.test("fn main() export { }")
     val temputs = compile.expectTemputs()
 
-    val fullName = FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("main", List(), List()))
-    vassertSome(temputs.lookupFunction(Signature2(fullName)))
+    val fullName = FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("main", List(), List()))
+    vassertSome(temputs.lookupFunction(SignatureT(fullName)))
   }
 
   test("Lambda has correct name") {
@@ -27,10 +27,10 @@ class TemplarProjectTests extends FunSuite with Matchers {
 
     val lamFunc = temputs.lookupFunction("__call")
     lamFunc.header.fullName match {
-      case FullName2(
+      case FullNameT(
         PackageCoordinate.TEST_TLD,
-        List(FunctionName2("main",List(),List()), LambdaCitizenName2(_)),
-        FunctionName2("__call",List(),List(Coord(Share,Readonly,_)))) =>
+        List(FunctionNameT("main",List(),List()), LambdaCitizenNameT(_)),
+        FunctionNameT("__call",List(),List(CoordT(ShareT,ReadonlyT,_)))) =>
     }
   }
 
@@ -41,7 +41,7 @@ class TemplarProjectTests extends FunSuite with Matchers {
 
     val struct = temputs.lookupStruct("MyStruct")
     struct.fullName match {
-      case FullName2(PackageCoordinate.TEST_TLD,List(),CitizenName2("MyStruct",List())) =>
+      case FullNameT(PackageCoordinate.TEST_TLD,List(),CitizenNameT("MyStruct",List())) =>
     }
   }
 }

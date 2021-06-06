@@ -6,7 +6,7 @@ import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{CodeLocationS, ProgramS, RangeS, Scout}
 import net.verdagon.vale.templar.OverloadTemplar.{ScoutExpectedFunctionFailure, WrongNumberOfArguments}
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.templar.types._
 import org.scalatest.{FunSuite, Matchers}
@@ -27,11 +27,11 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val compile = TemplarTestCompilation.test("fn main() export {a! = 3; set a = 4; }")
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
-    main.only({ case Mutate2(LocalLookup2(_,ReferenceLocalVariable2(FullName2(_,_, CodeVarName2("a")), Varying, _), _, Varying), IntLiteral2(4)) => })
+    main.only({ case MutateTE(LocalLookupT(_,ReferenceLocalVariableT(FullNameT(_,_, CodeVarNameT("a")), VaryingT, _), _, VaryingT), ConstantIntTE(4, _)) => })
 
-    val lookup = main.only({ case l @ LocalLookup2(range, localVariable, reference, variability) => l })
+    val lookup = main.only({ case l @ LocalLookupT(range, localVariable, reference, variability) => l })
     val resultCoord = lookup.resultRegister.reference
-    resultCoord shouldEqual Coord(Share, Readonly, Int2())
+    resultCoord shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
   }
 
   test("Test mutable member permission") {
@@ -48,11 +48,11 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs();
     val main = temputs.lookupFunction("main")
 
-    val lookup = main.only({ case l @ ReferenceMemberLookup2(_, _, _, _, _, _) => l })
+    val lookup = main.only({ case l @ ReferenceMemberLookupT(_, _, _, _, _, _) => l })
     val resultCoord = lookup.resultRegister.reference
     // See RMLRMO, it should result in the same type as the member.
     resultCoord match {
-      case Coord(Own, Readwrite, StructRef2(_)) =>
+      case CoordT(OwnT, ReadwriteT, StructRefT(_)) =>
       case x => vfail(x.toString)
     }
   }
@@ -75,7 +75,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
-      case Mutate2(_, StructToInterfaceUpcast2(_, _)) =>
+      case MutateTE(_, StructToInterfaceUpcastTE(_, _)) =>
     })
   }
 
@@ -100,7 +100,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
     main.only({
-      case Mutate2(_, StructToInterfaceUpcast2(_, _)) =>
+      case MutateTE(_, StructToInterfaceUpcastTE(_, _)) =>
     })
   }
 
@@ -116,10 +116,10 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structRef2, memberName)) => {
         structRef2.last match {
-          case CitizenName2("Vec3", List()) =>
+          case CitizenNameT("Vec3", List()) =>
         }
         memberName.last match {
-          case CodeVarName2("x") =>
+          case CodeVarNameT("x") =>
         }
       }
     }
@@ -137,10 +137,10 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalMember(_, structRef2, memberName)) => {
         structRef2.last match {
-          case CitizenName2("Vec3", List()) =>
+          case CitizenNameT("Vec3", List()) =>
         }
         memberName.last match {
-          case CodeVarName2("x") =>
+          case CodeVarNameT("x") =>
         }
       }
     }
@@ -158,7 +158,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.last match {
-          case RuntimeSizedArrayName2(RawArrayName2(Mutable,_)) =>
+          case RuntimeSizedArrayNameT(RawArrayNameT(MutableT,_)) =>
         }
       }
     }
@@ -176,7 +176,7 @@ class TemplarMutateTests extends FunSuite with Matchers {
     compile.getTemputs() match {
       case Err(CantMutateFinalElement(_, arrRef2)) => {
         arrRef2.last match {
-          case StaticSizedArrayName2(10,RawArrayName2(Mutable,_)) =>
+          case StaticSizedArrayNameT(10,RawArrayNameT(MutableT,_)) =>
         }
       }
     }
@@ -191,16 +191,16 @@ class TemplarMutateTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     compile.getTemputs() match {
-      case Err(CouldntConvertForMutateT(_, Coord(Share, Readonly, Int2()), Coord(Share, Readonly, Str2()))) =>
+      case Err(CouldntConvertForMutateT(_, CoordT(ShareT, ReadonlyT, IntT.i32), CoordT(ShareT, ReadonlyT, StrT()))) =>
       case _ => vfail()
     }
   }
 
   test("Humanize errors") {
-    val fireflyKind = StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Firefly", List())))
-    val fireflyCoord = Coord(Own,Readwrite,fireflyKind)
-    val serenityKind = StructRef2(FullName2(PackageCoordinate.TEST_TLD, List(), CitizenName2("Serenity", List())))
-    val serenityCoord = Coord(Own,Readwrite,serenityKind)
+    val fireflyKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Firefly", List())))
+    val fireflyCoord = CoordT(OwnT,ReadwriteT,fireflyKind)
+    val serenityKind = StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("Serenity", List())))
+    val serenityCoord = CoordT(OwnT,ReadwriteT,serenityKind)
 
     val filenamesAndSources = FileCoordinateMap.test("blah blah blah\nblah blah blah")
 
@@ -249,24 +249,24 @@ class TemplarMutateTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMoveOutOfMemberT(
         RangeS.testZero,
-        CodeVarName2("hp")))
+        CodeVarNameT("hp")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantUseUnstackifiedLocal(
         RangeS.testZero,
-        CodeVarName2("firefly")))
+        CodeVarNameT("firefly")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       FunctionAlreadyExists(
         RangeS.testZero,
         RangeS.testZero,
-        Signature2(FullName2(PackageCoordinate.TEST_TLD, List(), FunctionName2("myFunc", List(), List())))))
+        SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("myFunc", List(), List())))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantMutateFinalMember(
         RangeS.testZero,
         serenityKind.fullName,
-        FullName2(PackageCoordinate.TEST_TLD, List(), CodeVarName2("bork"))))
+        FullNameT(PackageCoordinate.TEST_TLD, List(), CodeVarNameT("bork"))))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       LambdaReturnDoesntMatchInterfaceConstructor(

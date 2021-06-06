@@ -28,14 +28,14 @@ object OverloadTemplar {
 
 
   sealed trait IScoutExpectedFunctionResult
-  case class ScoutExpectedFunctionSuccess(prototype: Prototype2) extends IScoutExpectedFunctionResult
+  case class ScoutExpectedFunctionSuccess(prototype: PrototypeT) extends IScoutExpectedFunctionResult
   case class ScoutExpectedFunctionFailure(
     name: IImpreciseNameStepA,
     args: List[ParamFilter],
     // All the ones that could have worked, but were outscored by the best match
     outscoredReasonByPotentialBanner: Map[IPotentialBanner, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
-    rejectedReasonByBanner: Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
+    rejectedReasonByBanner: Map[FunctionBannerT, IScoutExpectedFunctionFailureReason],
     // All the FunctionA we rejected, and the reason why
     rejectedReasonByFunction: Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) extends IScoutExpectedFunctionResult {
@@ -71,11 +71,11 @@ class OverloadTemplar(
     extraEnvsToLookIn: List[IEnvironment],
       exact: Boolean):
   (
-    Option[Prototype2],
+    Option[PrototypeT],
     // All the ones that could have worked, but were outscored by the best match
     Map[IPotentialBanner, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
-    Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
+    Map[FunctionBannerT, IScoutExpectedFunctionFailureReason],
     // All the FunctionA we rejected, and the reason why
     Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
@@ -119,8 +119,8 @@ class OverloadTemplar(
 
   private def paramMatches(
     temputs: Temputs,
-    source: Coord,
-    destination: Coord,
+    source: CoordT,
+    destination: CoordT,
     exact: Boolean):
   (
     // Rejection reason, if any. None means it matches.
@@ -143,7 +143,7 @@ class OverloadTemplar(
   private def paramsMatch(
     temputs: Temputs,
     desiredParams: List[ParamFilter],
-    candidateParams: List[Parameter2],
+    candidateParams: List[ParameterT],
     exact: Boolean):
   (
     // Rejection reason, if any. None means it matches.
@@ -155,7 +155,7 @@ class OverloadTemplar(
     desiredParams.zip(candidateParams).zipWithIndex.foreach({
       case (((desiredParam, candidateParam), paramIndex)) => {
         val ParamFilter(desiredTemplata, desiredMaybeVirtuality) = desiredParam
-        val Parameter2(_, candidateMaybeVirtuality, candidateType) = candidateParam
+        val ParameterT(_, candidateMaybeVirtuality, candidateType) = candidateParam
         paramMatches(temputs, desiredTemplata, candidateType, exact) match {
           case (Some(rejectionReason)) => {
             return (Some(SpecificParamDoesntMatch(paramIndex, rejectionReason)))
@@ -188,14 +188,14 @@ class OverloadTemplar(
   (
     Set[IPotentialBanner],
     // rejection reason by banner
-    Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
+    Map[FunctionBannerT, IScoutExpectedFunctionFailureReason],
     // rejection reason by function
     Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
     val hayTemplatas = findHayTemplatas(env, temputs, functionName, paramFilters, extraEnvsToLookIn)
 
     val (allPotentialBanners, allRejectionReasonByBanner, allRejectionReasonByFunction) =
-      hayTemplatas.foldLeft((Set[IPotentialBanner](), Map[FunctionBanner2, IScoutExpectedFunctionFailureReason](), Map[FunctionA, IScoutExpectedFunctionFailureReason]()))({
+      hayTemplatas.foldLeft((Set[IPotentialBanner](), Map[FunctionBannerT, IScoutExpectedFunctionFailureReason](), Map[FunctionA, IScoutExpectedFunctionFailureReason]()))({
         case ((previousPotentials, previousRejectionReasonByBanner, previousRejectionReasonByFunction), templata) => {
           val (potentialBanners, rejectionReasonByBanner, rejectionReasonByFunction) =
             templata match {
@@ -203,12 +203,12 @@ class OverloadTemplar(
                 getCandidateBanners(
                   overloadsEnv, temputs, callRange, nameInOverloadsEnv, explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), exact)
               }
-              case KindTemplata(sr @ StructRef2(_)) => {
+              case KindTemplata(sr @ StructRefT(_)) => {
                 val structEnv = temputs.getEnvForStructRef(sr)
                 getCandidateBanners(
                   structEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), exact)
               }
-              case KindTemplata(sr @ InterfaceRef2(_)) => {
+              case KindTemplata(sr @ InterfaceRefT(_)) => {
                 val interfaceEnv = temputs.getEnvForInterfaceRef(sr)
                 getCandidateBanners(
                   interfaceEnv, temputs, callRange, GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME), explicitlySpecifiedTemplateArgTemplexesS, paramFilters, List(), exact)
@@ -370,14 +370,14 @@ class OverloadTemplar(
   List[IEnvironment] = {
     paramFilters.flatMap({ case ParamFilter(tyype, virtuality) =>
       (tyype.kind match {
-        case sr @ StructRef2(_) => List(temputs.getEnvForStructRef(sr))
-        case ir @ InterfaceRef2(_) => List(temputs.getEnvForInterfaceRef(ir))
+        case sr @ StructRefT(_) => List(temputs.getEnvForStructRef(sr))
+        case ir @ InterfaceRefT(_) => List(temputs.getEnvForInterfaceRef(ir))
         case _ => List()
       }) ++
         (virtuality match {
           case None => List()
-          case Some(Abstract2) => List()
-          case Some(Override2(ir)) => List(temputs.getEnvForInterfaceRef(ir))
+          case Some(AbstractT$) => List()
+          case Some(OverrideT(ir)) => List(temputs.getEnvForInterfaceRef(ir))
         })
     })
   }
@@ -416,7 +416,7 @@ class OverloadTemplar(
     // All the ones that could have worked, but were outscored by the best match
     Map[IPotentialBanner, IScoutExpectedFunctionFailureReason],
     // All the banners we rejected, and the reason why
-    Map[FunctionBanner2, IScoutExpectedFunctionFailureReason],
+    Map[FunctionBannerT, IScoutExpectedFunctionFailureReason],
     // All the FunctionA we rejected, and the reason why
     Map[FunctionA, IScoutExpectedFunctionFailureReason]
   ) = {
@@ -438,7 +438,7 @@ class OverloadTemplar(
   private def getBannerParamScores(
     temputs: Temputs,
     banner: IPotentialBanner,
-    argTypes: List[Coord]):
+    argTypes: List[CoordT]):
   (List[TypeDistance]) = {
     banner.banner.paramTypes.zip(argTypes)
       .foldLeft((List[TypeDistance]()))({
@@ -455,7 +455,7 @@ class OverloadTemplar(
       temputs: Temputs,
       callRange: RangeS,
       unfilteredBanners: Set[IPotentialBanner],
-      argTypes: List[Coord]):
+      argTypes: List[CoordT]):
   (
     IPotentialBanner,
     // Rejection reason by banner
@@ -542,7 +542,7 @@ class OverloadTemplar(
       temputs: Temputs,
       callRange: RangeS,
       potentialBanner: IPotentialBanner):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
     potentialBanner match {
       case PotentialBannerFromFunctionS(signature, ft @ FunctionTemplata(_, _)) => {
         if (ft.function.isTemplate) {
@@ -568,7 +568,7 @@ class OverloadTemplar(
       range: RangeS,
       potentialBanner: IPotentialBanner,
       args: List[ParamFilter]):
-  (Prototype2) = {
+  (PrototypeT) = {
     potentialBanner match {
       case PotentialBannerFromFunctionS(signature, ft @ FunctionTemplata(_, _)) => {
         if (ft.function.isTemplate) {
@@ -594,13 +594,13 @@ class OverloadTemplar(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
-    callableTE: ReferenceExpression2):
-  Prototype2 = {
+    callableTE: ReferenceExpressionTE):
+  PrototypeT = {
     val funcName = GlobalFunctionFamilyNameA(CallTemplar.CALL_FUNCTION_NAME)
     val paramFilters =
       List(
         ParamFilter(callableTE.resultRegister.underlyingReference, None),
-        ParamFilter(Coord(Share, Readonly, Int2()), None))
+        ParamFilter(CoordT(ShareT, ReadonlyT, IntT.i32), None))
     val prototype =
       scoutExpectedFunctionForPrototype(
         fate.snapshot, temputs, range, funcName, List(), paramFilters, List(), false) match {

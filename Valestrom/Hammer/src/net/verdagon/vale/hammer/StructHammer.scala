@@ -1,10 +1,10 @@
 package net.verdagon.vale.hammer
 
-import net.verdagon.vale.hinputs.{ETable2, Hinputs, TetrisTable}
+import net.verdagon.vale.hinputs.{Hinputs}
 import net.verdagon.vale.metal.{Immutable => _, Mutable => _, Variability => _, Varying => _, _}
 import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail, metal => m}
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, FunctionHeader2}
+import net.verdagon.vale.templar.templata.{CoordTemplata, Export2, FunctionHeaderT}
 import net.verdagon.vale.templar.types._
 
 import scala.collection.immutable.ListMap
@@ -21,7 +21,7 @@ object StructHammer {
   private def translateInterfaceRefs(
       hinputs: Hinputs,
     hamuts: HamutsBox,
-      interfaceRefs2: List[InterfaceRef2]):
+      interfaceRefs2: List[InterfaceRefT]):
   (List[InterfaceRefH]) = {
     interfaceRefs2 match {
       case Nil => Nil
@@ -36,7 +36,7 @@ object StructHammer {
   def translateInterfaceMethods(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      interfaceRef2: InterfaceRef2) = {
+      interfaceRef2: InterfaceRefT) = {
 
     val edgeBlueprint = hinputs.edgeBlueprintsByInterface(interfaceRef2);
 
@@ -54,7 +54,7 @@ object StructHammer {
   def translateInterfaceRef(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    interfaceRef2: InterfaceRef2):
+    interfaceRef2: InterfaceRefT):
   InterfaceRefH = {
     hamuts.interfaceRefs.get(interfaceRef2) match {
       case Some(structRefH) => structRefH
@@ -86,7 +86,7 @@ object StructHammer {
           case Some(exportPackageCoord) => {
             val exportedName =
               interfaceRef2.fullName.last match {
-                case CitizenName2(humanName, _) => humanName
+                case CitizenNameT(humanName, _) => humanName
                 case _ => vfail("Can't export something that doesn't have a human readable name!")
               }
             hamuts.addKindExport(interfaceDefH.getRef, exportPackageCoord, exportedName)
@@ -105,7 +105,7 @@ object StructHammer {
   def translateStructRef(
       hinputs: Hinputs,
       hamuts: HamutsBox,
-      structRef2: StructRef2):
+      structRef2: StructRefT):
   (StructRefH) = {
     hamuts.structRefsByRef2.get(structRef2) match {
       case Some(structRefH) => structRefH
@@ -122,12 +122,12 @@ object StructHammer {
 
         // Make sure there's a destructor for this shared struct.
         structDef2.mutability match {
-          case Mutable => None
-          case Immutable => {
+          case MutableT => None
+          case ImmutableT => {
             if (structRef2 != Program2.emptyTupleStructRef) {
               vassertSome(
                 hinputs.functions.find(function => {
-                  function.header.fullName == FullName2(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorName2(structRef2))
+                  function.header.fullName == FullNameT(PackageCoordinate.BUILTIN, List(), ImmConcreteDestructorNameT(structRef2))
                 }))
             }
           }
@@ -151,7 +151,7 @@ object StructHammer {
           case Some(exportPackageCoord) => {
             val exportedName =
               structRef2.fullName.last match {
-                case CitizenName2(humanName, _) => humanName
+                case CitizenNameT(humanName, _) => humanName
                 case _ => vfail("Can't export something that doesn't have a human readable name!")
               }
             hamuts.addKindExport(structDefH.getRef, exportPackageCoord, exportedName)
@@ -166,11 +166,11 @@ object StructHammer {
   def makeBox(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    conceptualVariability: Variability,
-    type2: Coord,
+    conceptualVariability: VariabilityT,
+    type2: CoordT,
     typeH: ReferenceH[KindH]):
   (StructRefH) = {
-    val boxFullName2 = FullName2(PackageCoordinate.BUILTIN, List(), CitizenName2(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
+    val boxFullName2 = FullNameT(PackageCoordinate.BUILTIN, List(), CitizenNameT(BOX_HUMAN_NAME, List(CoordTemplata(type2))))
     val boxFullNameH = NameHammer.translateFullName(hinputs, hamuts, boxFullName2)
     hamuts.structDefsByRef2.find(_._2.fullName == boxFullNameH) match {
       case Some((_, structDefH)) => (structDefH.getRef)
@@ -180,7 +180,7 @@ object StructHammer {
         // We don't actually care about the given variability, because even if it's final, we still need
         // the box to contain a varying reference, see VCBAAF.
         val _ = conceptualVariability
-        val actualVariability = Varying
+        val actualVariability = VaryingT
 
         val memberH =
           StructMemberH(
@@ -205,7 +205,7 @@ object StructHammer {
   private def translateEdgesForStruct(
       hinputs: Hinputs, hamuts: HamutsBox,
       structRefH: StructRefH,
-      structRef2: StructRef2):
+      structRef2: StructRefT):
   (List[EdgeH]) = {
     val edges2 = hinputs.edges.filter(_.struct == structRef2)
     translateEdgesForStruct(hinputs, hamuts, structRefH, edges2.toList)
@@ -214,7 +214,7 @@ object StructHammer {
   private def translateEdgesForStruct(
       hinputs: Hinputs, hamuts: HamutsBox,
       structRefH: StructRefH,
-      edges2: List[Edge2]):
+      edges2: List[EdgeT]):
   (List[EdgeH]) = {
     edges2 match {
       case Nil => Nil
@@ -228,7 +228,7 @@ object StructHammer {
   }
 
 
-  private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructRefH, interfaceRef2: InterfaceRef2, edge2: Edge2):
+  private def translateEdge(hinputs: Hinputs, hamuts: HamutsBox, structRefH: StructRefH, interfaceRef2: InterfaceRefT, edge2: EdgeT):
   (EdgeH) = {
     // Purposefully not trying to translate the entire struct here, because we might hit a circular dependency
     val interfaceRefH = translateInterfaceRef(hinputs, hamuts, interfaceRef2)

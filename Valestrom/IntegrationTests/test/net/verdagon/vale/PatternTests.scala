@@ -2,8 +2,8 @@ package net.verdagon.vale
 
 import net.verdagon.vale.parser.FinalP
 import net.verdagon.vale.templar._
-import net.verdagon.vale.templar.env.ReferenceLocalVariable2
-import net.verdagon.vale.templar.types.{Coord, Final, Int2, Readonly, Share}
+import net.verdagon.vale.templar.env.ReferenceLocalVariableT
+import net.verdagon.vale.templar.types.{CoordT, FinalT, IntT, ReadonlyT, ShareT}
 import net.verdagon.von.VonInt
 import org.scalatest.{FunSuite, Matchers}
 
@@ -22,7 +22,7 @@ class PatternTests extends FunSuite with Matchers {
     val compile = RunCompilation.test( "fn main() int export { (x, y) = [4, 5]; = y; }")
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main")
-    main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
+    main.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
     compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
@@ -35,7 +35,7 @@ class PatternTests extends FunSuite with Matchers {
       """.stripMargin)
     val temputs = compile.expectTemputs()
     val main = temputs.lookupFunction("main");
-    main.header.returnType shouldEqual Coord(Share, Readonly, Int2())
+    main.header.returnType shouldEqual CoordT(ShareT, ReadonlyT, IntT.i32)
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
@@ -47,7 +47,7 @@ class PatternTests extends FunSuite with Matchers {
         |fn main() int export { (x, y) = [7, Marine(8)]; = y.hp; }
       """.stripMargin)
     val temputs = compile.expectTemputs()
-    temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
+    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
@@ -63,7 +63,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
       """.stripMargin)
     val temputs = compile.expectTemputs()
-    temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
+    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
@@ -94,7 +94,7 @@ class PatternTests extends FunSuite with Matchers {
         |}
         |""".stripMargin)
     val temputs = compile.expectTemputs()
-    temputs.functions.head.header.returnType == Coord(Share, Readonly, Int2())
+    temputs.functions.head.header.returnType == CoordT(ShareT, ReadonlyT, IntT.i32)
     compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 }

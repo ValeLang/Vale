@@ -30,7 +30,7 @@ void fillControlBlock(
 
 ControlBlock makeImmControlBlock(GlobalState* globalState) {
   ControlBlock controlBlock(globalState, LLVMStructCreateNamed(globalState->context, "immControlBlock"));
-  controlBlock.addMember(ControlBlockMember::STRONG_RC);
+  controlBlock.addMember(ControlBlockMember::STRONG_RC_32B);
   // This is where we put the size in the current generational heap, we can use it for something
   // else until we get rid of that.
   controlBlock.addMember(ControlBlockMember::UNUSED_32B);
@@ -136,16 +136,18 @@ LLVMValueRef RCImm::getCensusObjectId(
     LLVMBuilderRef builder,
     Reference* refM,
     Ref ref) {
-  if (refM == globalState->metalCache->intRef) {
-    return constI64LE(globalState, -2);
-  } else if (refM == globalState->metalCache->boolRef) {
-    return constI64LE(globalState, -3);
-  } else if (refM == globalState->metalCache->neverRef) {
-    return constI64LE(globalState, -4);
-  } else if (refM == globalState->metalCache->floatRef) {
-    return constI64LE(globalState, -5);
-  } else if (refM->location == Location::INLINE) {
+  if (refM->location == Location::INLINE) {
     return constI64LE(globalState, -1);
+  } else if (refM == globalState->metalCache->i32Ref) {
+    return constI64LE(globalState, -2);
+  } else if (refM == globalState->metalCache->i64Ref) {
+    return constI64LE(globalState, -3);
+  } else if (refM == globalState->metalCache->boolRef) {
+    return constI64LE(globalState, -4);
+  } else if (refM == globalState->metalCache->neverRef) {
+    return constI64LE(globalState, -5);
+  } else if (refM == globalState->metalCache->floatRef) {
+    return constI64LE(globalState, -6);
   } else {
     auto controlBlockPtrLE =
         kindStructs.getControlBlockPtr(checkerAFL, functionState, builder, ref, refM);
@@ -1145,7 +1147,7 @@ void RCImm::declareConcreteUnserializeFunction(Kind* valeKind) {
 }
 
 void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
-  auto intMT = globalState->metalCache->intRef;
+  auto i32MT = globalState->metalCache->i32Ref;
   auto boolMT = globalState->metalCache->boolRef;
 
   auto prototype = getUnserializePrototype(valeKind);
@@ -1246,7 +1248,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           auto hostMemberRefMT = globalState->linearRegion->linearizeReference(valeMemberRefMT);
 
           intRangeLoopReverse(
-              globalState, functionState, builder, lengthRef,
+              globalState, functionState, builder, globalState->metalCache->i32, lengthRef,
               [this, functionState, hostObjectRefMT, valeUsaRef, hostMemberRefMT, valeObjectRefMT, hostUsaMT, valeUsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
                   Ref indexRef, LLVMBuilderRef bodyBuilder){
                 auto hostMemberRef =
@@ -1276,7 +1278,7 @@ void RCImm::defineConcreteUnserializeFunction(Kind* valeKind) {
           auto valeMemberRefMT = valeKsaDefM->rawArray->elementType;
 
           intRangeLoopReverse(
-              globalState, functionState, builder, globalState->constI64(length),
+              globalState, functionState, builder, globalState->metalCache->i32, globalState->constI32(length),
               [this, functionState, hostObjectRefMT, valeKsaRef, valeObjectRefMT, hostKsaMT, valeKsaMT, hostObjectRef, valeMemberRefMT, unserializeMemberOrElement](
                   Ref indexRef, LLVMBuilderRef bodyBuilder){
 

@@ -34,7 +34,7 @@ trait TemplexParser extends RegexParsers with ParserUtils {
     ("(" ~> optWhite ~> templex <~ optWhite <~ ")") |
     repeaterSeqTemplex |
     manualSeqTemplex |
-    (pos ~ int ~ pos ^^ { case begin ~ value ~ end => IntPT(Range(begin, end), value) }) |
+    (pos ~ long ~ pos ^^ { case begin ~ value ~ end => IntPT(Range(begin, end), value) }) |
     pos ~ "true" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), true) } |
     pos ~ "false" ~ pos ^^ { case begin ~ _ ~ end => BoolPT(Range(begin, end), false) } |
     pos ~ "own" ~ pos ^^ { case begin ~ _ ~ end => OwnershipPT(Range(begin, end), OwnP) } |

@@ -37,9 +37,13 @@ ValeInt vstr_indexOf(
 
   for (ValeInt i = 0; i <= haystackLen - needleLen; i++) {
     if (strncmp(needle, haystack + i, needleLen) == 0) {
+      ValeReleaseMessage(haystackContainerStr);
+      ValeReleaseMessage(needleContainerStr);
       return i;
     }
   }
+  ValeReleaseMessage(haystackContainerStr);
+  ValeReleaseMessage(needleContainerStr);
   return -1;
 }
 
@@ -56,49 +60,57 @@ ValeStr* vstr_substring(
   ValeStr* result = ValeStrNew(length);
   char* resultChars = result->chars;
   strncpy(resultChars, sourceChars + begin, length);
+  ValeReleaseMessage(sourceStr);
   return result;
 }
 
 char vstr_eq(
-    ValeStr* aContainerStr,
+    ValeStr* aStr,
     ValeInt aBegin,
     ValeInt aEnd,
-    ValeStr* bContainerStr,
+    ValeStr* bStr,
     ValeInt bBegin,
     ValeInt bEnd) {
-  char* aContainerChars = aContainerStr->chars;
+  char* aContainerChars = aStr->chars;
   char* a = aContainerChars + aBegin;
   ValeInt aLen = aEnd - aBegin;
 
-  char* bContainerChars = bContainerStr->chars;
+  char* bContainerChars = bStr->chars;
   char* b = bContainerChars + bBegin;
   ValeInt bLen = bEnd - bBegin;
 
   if (aLen != bLen) {
+    ValeReleaseMessage(aStr);
+    ValeReleaseMessage(bStr);
     return FALSE;
   }
   ValeInt len = aLen;
 
   for (int i = 0; i < len; i++) {
     if (a[i] != b[i]) {
+      ValeReleaseMessage(aStr);
+      ValeReleaseMessage(bStr);
       return FALSE;
     }
   }
+
+  ValeReleaseMessage(aStr);
+  ValeReleaseMessage(bStr);
   return TRUE;
 }
 
 ValeInt vstr_cmp(
-    ValeStr* aContainerStr,
+    ValeStr* aStr,
     ValeInt aBegin,
     ValeInt aEnd,
-    ValeStr* bContainerStr,
+    ValeStr* bStr,
     ValeInt bBegin,
     ValeInt bEnd) {
-  char* aContainerChars = aContainerStr->chars;
+  char* aContainerChars = aStr->chars;
   char* a = aContainerChars + aBegin;
   ValeInt aLen = aEnd - aBegin;
 
-  char* bContainerChars = bContainerStr->chars;
+  char* bContainerChars = bStr->chars;
   char* b = bContainerChars + bBegin;
   ValeInt bLen = bEnd - bBegin;
 
@@ -107,18 +119,28 @@ ValeInt vstr_cmp(
       break;
     }
     if (i >= aLen && i < bLen) {
+      ValeReleaseMessage(aStr);
+      ValeReleaseMessage(bStr);
       return -1;
     }
     if (i < aLen && i >= bLen) {
+      ValeReleaseMessage(aStr);
+      ValeReleaseMessage(bStr);
       return 1;
     }
     if (a[i] < b[i]) {
+      ValeReleaseMessage(aStr);
+      ValeReleaseMessage(bStr);
       return -1;
     }
     if (a[i] > b[i]) {
+      ValeReleaseMessage(aStr);
+      ValeReleaseMessage(bStr);
       return 1;
     }
   }
+  ValeReleaseMessage(aStr);
+  ValeReleaseMessage(bStr);
   return 0;
 }
 
@@ -142,10 +164,12 @@ ValeStr* __vaddStr(
   // (Midas also adds this in case we didn't do it here)
   dest[aLength + bLength] = 0;
 
+  ValeReleaseMessage(aStr);
+  ValeReleaseMessage(bStr);
   return result;
 }
 
-ValeStr* __castIntStr(int n) {
+extern ValeStr* __castI64Str(int64_t n) {
   char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 100, "%d", n);
   ValeStr* result = ValeStrNew(charsWritten);
@@ -154,7 +178,11 @@ ValeStr* __castIntStr(int n) {
   return result;
 }
 
-ValeStr* __castFloatStr(double f) {
+extern ValeStr* __castI32Str(int32_t n) {
+  return __castI64Str((int64_t)n);
+}
+
+extern ValeStr* __castFloatStr(double f) {
   char tempBuffer[100] = { 0 };
   int charsWritten = snprintf(tempBuffer, 100, "%lf", f);
   ValeStr* result = ValeStrNew(charsWritten);
@@ -166,12 +194,15 @@ ValeStr* __castFloatStr(double f) {
 void __vprintStr(ValeStr* s, int start, int length) {
   char* chars = s->chars;
   fwrite(chars + start, 1, length, stdout);
+  ValeReleaseMessage(s);
 }
 
 int vstr_toascii(ValeStr* s, int begin, int end) {
   assert(begin + 1 <= end);
   char* chars = s->chars;
-  return (int)*(chars + begin);
+  int result = (int)*(chars + begin);
+  ValeReleaseMessage(s);
+  return result;
 }
 
 ValeStr* vstr_fromascii(int code) {

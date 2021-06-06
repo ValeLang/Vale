@@ -124,8 +124,8 @@ sealed trait KindV {
   def tyype: RRKind
 }
 sealed trait PrimitiveKindV extends KindV
-case class IntV(value: Int) extends PrimitiveKindV {
-  override def tyype = RRKind(IntH())
+case class IntV(value: Long, bits: Int) extends PrimitiveKindV {
+  override def tyype = RRKind(IntH(bits))
 }
 case class BoolV(value: Boolean) extends PrimitiveKindV {
   override def tyype = RRKind(BoolH())

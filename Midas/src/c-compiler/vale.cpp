@@ -181,9 +181,9 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   builtinExportsCode << "#include <stdint.h>" << std::endl;
   builtinExportsCode << "#include <stdlib.h>" << std::endl;
   builtinExportsCode << "#include <string.h>" << std::endl;
-  builtinExportsCode << "typedef struct { uint64_t length; char chars[0]; } ValeStr;" << std::endl;
-  builtinExportsCode << "typedef int64_t ValeInt;" << std::endl;
-  builtinExportsCode << "ValeStr* ValeStrNew(int64_t length);" << std::endl;
+  builtinExportsCode << "typedef int32_t ValeInt;" << std::endl;
+  builtinExportsCode << "typedef struct { ValeInt length; char chars[0]; } ValeStr;" << std::endl;
+  builtinExportsCode << "ValeStr* ValeStrNew(ValeInt length);" << std::endl;
   builtinExportsCode << "ValeStr* ValeStrFrom(char* source);" << std::endl;
   builtinExportsCode << "#define ValeReleaseMessage(msg) (free(*((void**)(msg) - 2)))" << std::endl;
 
@@ -393,11 +393,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   std::tie(stringSetupFunctionL, stringConstantBuilder) = makeStringSetupFunction(globalState);
   globalState->stringConstantBuilder = stringConstantBuilder;
 
-  globalState->ram64Struct =
-      LLVMStructCreateNamed(globalState->context, "__Ram64Struct");
-  LLVMTypeRef memberI64 = LLVMInt64TypeInContext(globalState->context);
-  LLVMStructSetBody(globalState->ram64Struct, &memberI64, 1, false);
-
 
   globalState->program = program;
 
@@ -425,6 +420,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   globalState->liveHeapObjCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__liveHeapObjCounter");
+  LLVMSetLinkage(globalState->mainArgs, LLVMExternalLinkage);
   LLVMSetInitializer(globalState->liveHeapObjCounter, LLVMConstInt(LLVMInt64TypeInContext(globalState->context), 0, false));
 
   globalState->writeOnlyGlobal =
@@ -434,14 +430,6 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   globalState->crashGlobal =
       LLVMAddGlobal(globalState->mod, LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0), "__crashGlobal");
   LLVMSetInitializer(globalState->crashGlobal, LLVMConstNull(LLVMPointerType(LLVMInt64TypeInContext(globalState->context), 0)));
-
-  globalState->ram64 =
-      LLVMAddGlobal(globalState->mod, LLVMPointerType(globalState->ram64Struct, 0), "__ram64");
-  LLVMSetInitializer(globalState->ram64, LLVMConstNull(LLVMPointerType(globalState->ram64Struct, 0)));
-
-  globalState->ram64IndexToWriteOnlyGlobal =
-      LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__ram64IndexToWriteOnlyGlobal");
-  LLVMSetInitializer(globalState->ram64IndexToWriteOnlyGlobal, constI64LE(globalState, 0));
 
   globalState->objIdCounter =
       LLVMAddGlobal(globalState->mod, LLVMInt64TypeInContext(globalState->context), "__objIdCounter");
@@ -496,17 +484,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   auto mainSetupFuncName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_mainSetup");
   auto mainSetupFuncProto =
-      globalState->metalCache->getPrototype(mainSetupFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(mainSetupFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, mainSetupFuncProto, mainSetupFuncName->name,
       [globalState](FunctionState* functionState, LLVMBuilderRef builder) {
-        buildFlare(FL(), globalState, functionState, builder);
         for (auto i : globalState->regions) {
-          buildFlare(FL(), globalState, functionState, builder);
           i.second->mainSetup(functionState, builder);
-          buildFlare(FL(), globalState, functionState, builder);
         }
-        buildFlare(FL(), globalState, functionState, builder);
         LLVMBuildRet(builder, constI64LE(globalState, 0));
       });
 
@@ -782,7 +766,7 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
 
   auto mainCleanupFuncName = globalState->metalCache->getName(globalState->metalCache->builtinPackageCoord, "__Vale_mainCleanup");
   auto mainCleanupFuncProto =
-      globalState->metalCache->getPrototype(mainCleanupFuncName, globalState->metalCache->intRef, {});
+      globalState->metalCache->getPrototype(mainCleanupFuncName, globalState->metalCache->i64Ref, {});
   declareAndDefineExtraFunction(
       globalState, mainCleanupFuncProto, mainCleanupFuncName->name,
       [globalState](FunctionState* functionState, LLVMBuilderRef builder) {

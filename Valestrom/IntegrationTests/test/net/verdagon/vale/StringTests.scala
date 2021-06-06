@@ -14,7 +14,7 @@ class StringTests extends FunSuite with Matchers {
       """.stripMargin)
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({ case StrLiteral2("sprogwoggle") => })
+    temputs.lookupFunction("main").only({ case ConstantStrTE("sprogwoggle") => })
 
     compile.evalForKind(Vector()) shouldEqual VonStr("sprogwoggle")
   }
@@ -28,7 +28,7 @@ class StringTests extends FunSuite with Matchers {
         |""".stripMargin)
 
     val temputs = compile.expectTemputs()
-    temputs.lookupFunction("main").only({ case StrLiteral2("sprog\nwoggle") => })
+    temputs.lookupFunction("main").only({ case ConstantStrTE("sprog\nwoggle") => })
 
     compile.evalForKind(Vector()) shouldEqual VonStr("sprog\nwoggle")
   }
@@ -43,7 +43,7 @@ class StringTests extends FunSuite with Matchers {
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
-      case StrLiteral2(x) => {
+      case ConstantStrTE(x) => {
         x shouldEqual "sprog\u001bwoggle"
       }
     })

@@ -4,17 +4,17 @@ import net.verdagon.vale.hammer.ExpressionHammer.translateDeferreds
 import net.verdagon.vale.hinputs.Hinputs
 import net.verdagon.vale.{metal => m}
 import net.verdagon.vale.metal._
-import net.verdagon.vale.templar.Block2
-import net.verdagon.vale.templar.templata.FunctionHeader2
+import net.verdagon.vale.templar.BlockTE
+import net.verdagon.vale.templar.templata.FunctionHeaderT
 import net.verdagon.vale.{vassert, vfail}
 
 object BlockHammer {
   def translateBlock(
     hinputs: Hinputs,
     hamuts: HamutsBox,
-    currentFunctionHeader: FunctionHeader2,
+    currentFunctionHeader: FunctionHeaderT,
     parentLocals: LocalsBox,
-    block2: Block2):
+    block2: BlockTE):
   (BlockH) = {
     val blockLocals = LocalsBox(parentLocals.snapshot)
 

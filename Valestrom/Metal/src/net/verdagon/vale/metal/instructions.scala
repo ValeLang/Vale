@@ -1,6 +1,6 @@
 package net.verdagon.vale.metal
 
-import net.verdagon.vale.templar.{FullName2, IVarName2, LetNormal2}
+import net.verdagon.vale.templar.{FullNameT, IVarNameT, LetNormalTE}
 import net.verdagon.vale.{vassert, vcurious, vfail, vwat}
 
 // Common trait for all instructions.
@@ -40,7 +40,14 @@ sealed trait ExpressionH[+T <: KindH] {
   }
   def expectIntAccess(): ExpressionH[IntH] = {
     resultType match {
-      case ReferenceH(_, _, _, x @ IntH()) => {
+      case ReferenceH(_, _, _, x @ IntH(32)) => {
+        this.asInstanceOf[ExpressionH[IntH]]
+      }
+    }
+  }
+  def expectI64Access(): ExpressionH[IntH] = {
+    resultType match {
+      case ReferenceH(_, _, _, x @ IntH(64)) => {
         this.asInstanceOf[ExpressionH[IntH]]
       }
     }
@@ -55,11 +62,12 @@ sealed trait ExpressionH[+T <: KindH] {
 }
 
 // Produces an integer.
-case class ConstantI64H(
+case class ConstantIntH(
   // The value of the integer.
-  value: Int
+  value: Long,
+  bits: Int
 ) extends ExpressionH[IntH] {
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH())
+  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH(bits))
 }
 
 // Produces a boolean.
@@ -319,7 +327,9 @@ case class StaticSizedArrayStoreH(
   // Expression containing the value we'll swap into the array.
   sourceExpression: ExpressionH[KindH],
   resultType: ReferenceH[KindH],
-) extends ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  vassert(indexExpression.resultType.kind == IntH.i32)
+}
 
 // Loads from the "source" expressions and swaps it into the array from arrayExpression at
 // the position specified by the integer in indexExpression. The old value from the
@@ -335,7 +345,9 @@ case class RuntimeSizedArrayStoreH(
   // Expression containing the value we'll swap into the array.
   sourceExpression: ExpressionH[KindH],
   resultType: ReferenceH[KindH],
-) extends ExpressionH[KindH]
+) extends ExpressionH[KindH] {
+  vassert(indexExpression.resultType.kind == IntH.i32)
+}
 
 // Loads from the array in arrayExpression at the index in indexExpression, and stores
 // the result in expressionsId. This can never move a reference, only alias it.
@@ -357,6 +369,7 @@ case class RuntimeSizedArrayLoadH(
   expectedElementType: ReferenceH[KindH],
   resultType: ReferenceH[KindH],
 ) extends ExpressionH[KindH] {
+  vassert(indexExpression.resultType.kind == IntH.i32)
 //
 //  override def resultType: ReferenceH[KindH] = {
 //    val location =
@@ -390,6 +403,7 @@ case class StaticSizedArrayLoadH(
   arraySize: Int,
   resultType: ReferenceH[KindH],
 ) extends ExpressionH[KindH] {
+  vassert(indexExpression.resultType.kind == IntH.i32)
 
 //  override def resultType: ReferenceH[KindH] = {
 //    val location =
@@ -538,6 +552,7 @@ case class ConstructRuntimeSizedArrayH(
   vassert(
     generatorExpression.resultType.ownership == BorrowH ||
       generatorExpression.resultType.ownership == ShareH)
+  vassert(sizeExpression.resultType.kind == IntH.i32)
 }
 
 // Constructs an unknown-size array, whose length is the integer from sizeExpression,
@@ -616,7 +631,7 @@ case class ArrayLengthH(
   // Expression containing the array whose length we'll get.
   sourceExpression: ExpressionH[KindH],
 ) extends ExpressionH[IntH] {
-  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH())
+  override def resultType: ReferenceH[IntH] = ReferenceH(ShareH, InlineH, ReadonlyH, IntH.i32)
 }
 
 // Turns a constraint ref into a weak ref.
@@ -674,6 +689,8 @@ case class CheckRefCountH(
   // ref count.
   numExpression: ExpressionH[IntH]
 ) extends ExpressionH[StructRefH] {
+  vassert(numExpression.resultType.kind == IntH.i32)
+
   override def resultType: ReferenceH[StructRefH] = ProgramH.emptyTupleStructType
 }
 // The type of ref count that an object might have. Used with the CheckRefCountH

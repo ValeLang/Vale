@@ -8,7 +8,7 @@
 #define TRUE 1
 #define FALSE 0
 
-ValeStr* ValeStrNew(int64_t length) {
+ValeStr* ValeStrNew(ValeInt length) {
   ValeStr* result = (ValeStr*)malloc(sizeof(ValeStr) + length + 1);
   result->length = length;
   result->chars[0] = 0;

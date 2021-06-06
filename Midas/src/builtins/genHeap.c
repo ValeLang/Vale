@@ -168,10 +168,10 @@ void* __genMalloc(int desiredBytes) {
   __Heap_Entry* result = NULL;
   if (*freeListHeadPtrPtr) {
     result = popFromFreeList(freeListHeadPtrPtr);
-    printf("genMalloc(%d) reused, total allocated %d, total live %d.\n", desiredBytes, __totalAllocatedSize, __totalLiveSize);
+    //printf("genMalloc(%d) reused, total allocated %d, total live %d.\n", desiredBytes, __totalAllocatedSize, __totalLiveSize);
   } else {
     result = mallocAndZeroGen(allocationActualSizeBytes);
-    printf("genMalloc(%d) allocated, now total allocated %d, total live %d.\n", desiredBytes, __totalAllocatedSize, __totalLiveSize);
+    //printf("genMalloc(%d) allocated, now total allocated %d, total live %d.\n", desiredBytes, __totalAllocatedSize, __totalLiveSize);
   }
   // Dont change the generation
   result->allocationActualSizeBytes = allocationActualSizeBytes;
@@ -184,7 +184,7 @@ void __genFree(void* allocationVoidPtr) {
   __Heap_Entry* allocation = (__Heap_Entry*)allocationVoidPtr;
 
   __totalLiveSize -= allocation->allocationActualSizeBytes;
-  printf("genFree freeing %d, now total allocated %d, total live %d.\n", allocation->allocationActualSizeBytes, __totalAllocatedSize, __totalLiveSize);
+  //printf("genFree freeing %d, now total allocated %d, total live %d.\n", allocation->allocationActualSizeBytes, __totalAllocatedSize, __totalLiveSize);
 
   __Heap_Entry** freeListHeadPtrPtr = getGenHeapForDesiredSize(allocation->allocationActualSizeBytes)->freeListHeadPtrPtr;
   incrementGenAndAddToFreeList((__Heap_Entry*)allocation, freeListHeadPtrPtr);

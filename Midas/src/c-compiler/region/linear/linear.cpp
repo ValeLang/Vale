@@ -1124,7 +1124,7 @@ std::string Linear::generateRuntimeSizedArrayDefsC(
 
   std::stringstream s;
   s << "typedef struct " << rsaName << " {" << std::endl;
-  s << "  uint64_t length;" << std::endl;
+  s << "  uint32_t length;" << std::endl;
 //  s << "  " << currentPackage->getKindExportName(hostMemberRefMT->kind) << " elements[0];" << std::endl;
   s << "  " << getExportName(currentPackage, hostMemberRefMT, true) << " elements[0];" << std::endl;
   s << "} " << rsaName << ";" << std::endl;

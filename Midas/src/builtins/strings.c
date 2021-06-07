@@ -3,6 +3,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef ValeReleaseMessage
+#define ValeRelease(msg) (free(*((void**)(msg) - 2)))
+#endif
 
 #define TRUE 1
 #define FALSE 0
@@ -41,12 +44,17 @@ int64_t vstr_indexOf(
   char* needle = needleContainerChars + needleBegin;
   int64_t needleLen = needleEnd - needleBegin;
 
+  long retval = -1;
+
   for (int64_t i = 0; i <= haystackLen - needleLen; i++) {
     if (strncmp(needle, haystack + i, needleLen) == 0) {
-      return i;
+      retval = i;
+      break;
     }
   }
-  return -1;
+  ValeRelease(haystackContainerStr);
+  ValeRelease(needleContainerStr);
+  return retval;
 }
 
 
@@ -62,6 +70,7 @@ ValeStr* vstr_substring(
   ValeStr* result = ValeStrNew(length);
   char* resultChars = result->chars;
   strncpy(resultChars, sourceChars + begin, length);
+  ValeRelease(sourceStr);
   return result;
 }
 
@@ -80,16 +89,24 @@ char vstr_eq(
   char* b = bContainerChars + bBegin;
   int64_t bLen = bEnd - bBegin;
 
+  char retval;
+
   if (aLen != bLen) {
+    ValeRelease(aContainerStr);
+    ValeRelease(bContainerStr);
     return FALSE;
   }
   int64_t len = aLen;
 
   for (int i = 0; i < len; i++) {
     if (a[i] != b[i]) {
+      ValeRelease(aContainerStr);
+      ValeRelease(bContainerStr);
       return FALSE;
     }
   }
+  ValeRelease(aContainerStr);
+  ValeRelease(bContainerStr);
   return TRUE;
 }
 
@@ -107,25 +124,32 @@ int64_t vstr_cmp(
   char* bContainerChars = bContainerStr->chars;
   char* b = bContainerChars + bBegin;
   int64_t bLen = bEnd - bBegin;
-
+  int64_t retval = 0;
   for (int i = 0; ; i++) {
     if (i >= aLen && i >= bLen) {
+      retval = 0;
       break;
     }
     if (i >= aLen && i < bLen) {
-      return -1;
+      retval = -1;
+      break;
     }
     if (i < aLen && i >= bLen) {
-      return 1;
+      retval = 1;
+      break;
     }
     if (a[i] < b[i]) {
-      return -1;
+      retval = -1;
+      break;
     }
     if (a[i] > b[i]) {
-      return 1;
+      retval = 1;
+      break;
     }
   }
-  return 0;
+  ValeRelease(aContainerStr);
+  ValeRelease(bContainerStr);
+  return retval;
 }
 
 ValeStr* __vaddStr(
@@ -147,7 +171,8 @@ ValeStr* __vaddStr(
   // Midas should allocate an extra byte to accommodate this.
   // (Midas also adds this in case we didn't do it here)
   dest[aLength + bLength] = 0;
-
+  ValeRelease(aStr);
+  ValeRelease(bStr);
   return result;
 }
 
@@ -172,6 +197,7 @@ ValeStr* __castFloatStr(double f) {
 void __vprintStr(ValeStr* s, int start, int length) {
   char* chars = s->chars;
   fwrite(chars + start, 1, length, stdout);
+  ValeRelease(s);
 }
 
 int vstr_toascii(ValeStr* s, int begin, int end) {

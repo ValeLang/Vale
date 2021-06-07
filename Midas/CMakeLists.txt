@@ -3,7 +3,7 @@ project(valec)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 
-find_package(LLVM 11.1 REQUIRED CONFIG)
+find_package(LLVM 11 REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(
 	${LLVM_INCLUDE_DIRS}

@@ -42,7 +42,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
           AtomSP(_,
-            CaptureS(CodeVarNameS("moo"),FinalP),
+            CaptureS(CodeVarNameS("moo")),
             None,
             tcr @ ImplicitRuneS(_,_),
             None)) => tcr
@@ -67,7 +67,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
           AtomSP(_,
-            CaptureS(UnnamedLocalNameS(_),FinalP),
+            CaptureS(UnnamedLocalNameS(_)),
             None,
             pr @ ImplicitRuneS(_, 0),
             None)) => pr
@@ -94,7 +94,7 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
          AtomSP(_,
-          CaptureS(UnnamedLocalNameS(_),FinalP),
+          CaptureS(UnnamedLocalNameS(_)),
           None,
           pr @ ImplicitRuneS(_, 0),
           None)) => pr
@@ -121,13 +121,13 @@ class ScoutParametersTests extends FunSuite with Matchers {
       param match {
         case ParameterS(
             AtomSP(_,
-              CaptureS(CodeVarNameS("moo"),FinalP),
+              CaptureS(CodeVarNameS("moo")),
               None,
               tr @ CodeRuneS("T"),
               Some(
                 List(
                   AtomSP(_,
-                    CaptureS(CodeVarNameS("a"),FinalP),
+                    CaptureS(CodeVarNameS("a")),
                     None,
                     ar @ ImplicitRuneS(_, 0),
                     None))))) => (ar, tr)

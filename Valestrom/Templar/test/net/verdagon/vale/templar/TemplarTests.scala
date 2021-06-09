@@ -280,21 +280,6 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
-  test("Report when changing final local") {
-    // https://github.com/ValeLang/Vale/issues/128
-    val compile = TemplarTestCompilation.test(
-      """
-        |fn main() export {
-        |  x = "world!";
-        |  set x = "changed";
-        |  println(x); // => changed
-        |}
-        |""".stripMargin)
-    compile.getTemputs() match {
-      case Err(CantMutateFinalLocal(_, _)) =>
-    }
-  }
-
   test("Test templates") {
     val compile = TemplarTestCompilation.test(
       """
@@ -1008,30 +993,6 @@ class TemplarTests extends FunSuite with Matchers {
     }
   }
 
-  test("Reports when mutating a tuple") {
-    val compile = TemplarTestCompilation.test(
-      """
-        |fn main() export {
-        |  t2 = [5, true, "V"];
-        |  set t2.1 = false;
-        |}
-        |""".stripMargin)
-    compile.getTemputs() match {
-      case Err(CantMutateFinalMember(_, _, _)) =>
-    }
-
-    val compile2 = TemplarTestCompilation.test(
-      """
-        |fn main() export {
-        |  t2 = [5, true, "V"];
-        |  set t2[1] = false;
-        |}
-        |""".stripMargin)
-    compile2.getTemputs() match {
-      case Err(CantMutateFinalMember(_, _, _)) =>
-    }
-  }
-
   test("Lock weak member") {
     val compile = TemplarTestCompilation.test(
         """
@@ -1169,10 +1130,6 @@ class TemplarTests extends FunSuite with Matchers {
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       WhileConditionIsntBoolean(
         RangeS.testZero, fireflyCoord))
-      .nonEmpty)
-    vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
-      CantMutateFinalLocal(
-        RangeS.testZero, CodeVarNameA("x")))
       .nonEmpty)
     vassert(TemplarErrorHumanizer.humanize(false, filenamesAndSources,
       CantImplStruct(

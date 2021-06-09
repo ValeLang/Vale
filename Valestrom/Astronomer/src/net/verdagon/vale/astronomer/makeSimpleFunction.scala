@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.scout.{CodeLocationS, CodeRuneS, MaybeUsed, ParameterS, RangeS}
-import net.verdagon.vale.parser.{CaptureP, FinalP}
+import net.verdagon.vale.parser.{CaptureP}
 import net.verdagon.vale.scout.patterns.AtomSP
 
 object makeSimpleFunction {
@@ -55,6 +55,6 @@ object makeSimpleFunction {
       TemplexAR(NameAT(RangeS.internal(-5602),CodeTypeNameA(name), CoordTemplataType)))
   }
   def simpleParam(name: IVarNameA, rune: IRuneA): ParameterA = {
-    ParameterA(AtomAP(RangeS.internal(-123), LocalVariableA(name, FinalP, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), None, rune, None))
+    ParameterA(AtomAP(RangeS.internal(-123), LocalA(name, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed, MaybeUsed), None, rune, None))
   }
 }

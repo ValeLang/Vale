@@ -223,7 +223,7 @@ case class ParameterA(
 }
 
 case class CaptureA(
-  local: LocalVariableA,
+  local: LocalA,
   variability: VariabilityP)
 
 sealed trait IBodyA

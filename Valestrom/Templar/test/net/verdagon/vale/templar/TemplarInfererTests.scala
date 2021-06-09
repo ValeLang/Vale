@@ -591,7 +591,7 @@ class InfererTests extends FunSuite with Matchers {
             CodeRuneT("YT") -> CoordTemplataType),
           Set(CodeRuneT("1337"), CodeRuneT("0"), CodeRuneT("T")),
           Map(),
-          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("m"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("0"),None)),
+          List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("m"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("0"),None)),
           Some(List(ParamFilter(CoordT(ConstraintT,ReadonlyT, InterfaceRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MutInterface", List())))),None))),
           true)
 
@@ -613,7 +613,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneT("__Let0_") -> CoordTemplataType),
           Set(CodeRuneT("__Let0_")),
           Map(),
-          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0_"),None)),
+          List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0_"),None)),
           Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MutStruct",List())))),None))),
           true)
 
@@ -643,7 +643,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneT("__Let0_") -> CoordTemplataType, CodeRuneT("T") -> CoordTemplataType),
           Set(CodeRuneT("__Let0_"), CodeRuneT("T")),
           Map(),
-          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0_"),None)),
+          List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0_"),None)),
           Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT, IntT.i32))))))),None))),
           true)
 
@@ -673,7 +673,7 @@ class InfererTests extends FunSuite with Matchers {
               CallTR(RangeS.testZero,"passThroughIfConcrete",List(TemplexTR(RuneTT(RangeS.testZero,CodeRuneT("Z"), KindTemplataType))), KindTemplataType)))),
         EqualsTR(RangeS.testZero,TemplexTR(RuneTT(RangeS.testZero,CodeRuneT("V"), CoordTemplataType)),CallTR(RangeS.testZero,"toRef",List(TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("void"),KindTemplataType))), CoordTemplataType)))
     val atoms =
-      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val solve =
       (paramFilter: ParamFilter) => {
@@ -731,7 +731,7 @@ class InfererTests extends FunSuite with Matchers {
           TemplexTR(RuneTT(RangeS.testZero,CodeRuneT("V"), CoordTemplataType)),
           CallTR(RangeS.testZero,"toRef",List(TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("void"), KindTemplataType))), CoordTemplataType)))
     val atoms =
-      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("this"),NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val solve =
       (paramFilter: ParamFilter) => {
@@ -780,7 +780,7 @@ class InfererTests extends FunSuite with Matchers {
               OrTR(RangeS.testZero,List(TemplexTR(PermissionTT(RangeS.testZero,ReadwriteP)), TemplexTR(PermissionTT(RangeS.testZero,ReadonlyP)))),
               CallTR(RangeS.testZero,"passThroughIfStruct",List(TemplexTR(RuneTT(RangeS.testZero,CodeRuneT("Z"), KindTemplataType))), KindTemplataType)))))
     val atoms =
-      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val solve =
       (paramFilter: ParamFilter) => {
@@ -834,7 +834,7 @@ class InfererTests extends FunSuite with Matchers {
               List(NameTT(RangeS.testZero,CodeTypeNameA("int"), CoordTemplataType)),
               CoordTemplataType))))
     val atoms =
-      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val (InferSolveSuccess(inferencesD)) =
       makeCannedEvaluator().solve(
@@ -860,7 +860,7 @@ class InfererTests extends FunSuite with Matchers {
         TemplexTR(RuneTT(RangeS.testZero,CodeRuneT("__Par0"), CoordTemplataType)),
         EqualsTR(RangeS.testZero,TemplexTR(RuneTT(RangeS.testZero,CodeRuneT("__Par0"), CoordTemplataType)),TemplexTR(NameTT(RangeS.testZero,CodeTypeNameA("MutStruct"), CoordTemplataType))))
     val atoms =
-      List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
+      List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None))
 
     val (InferSolveSuccess(inferencesD)) =
       makeCannedEvaluator().solve(
@@ -899,7 +899,7 @@ class InfererTests extends FunSuite with Matchers {
         Map(CodeRuneT("0") -> CoordTemplataType, CodeRuneT("T") -> CoordTemplataType),
         Set(CodeRuneT("0"), CodeRuneT("T")),
         Map(),
-        List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),Some(AbstractAP),CodeRuneA("0"),None)),
+        List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("x"),NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),Some(AbstractAP),CodeRuneA("0"),None)),
         Some(List(ParamFilter(CoordT(OwnT,ReadwriteT, StructRefT(FullNameT(PackageCoordinate.TEST_TLD, List(), CitizenNameT("MutTStruct",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32))))))),None))),
         true)
     inferencesD.templatasByRune(CodeRuneT("0")) shouldEqual
@@ -921,13 +921,13 @@ class InfererTests extends FunSuite with Matchers {
         Map(),
         List(
           AtomAP(RangeS.testZero,
-            LocalVariableA(CodeVarNameA("a"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+            LocalA(CodeVarNameA("a"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
             None,
             CodeRuneA("__Let0_"),
             Some(
               List(
-                AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0__Mem_0"),None),
-                AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0__Mem_1"),None))))),
+                AtomAP(RangeS.testZero,LocalA(CodeVarNameA("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0__Mem_0"),None),
+                AtomAP(RangeS.testZero,LocalA(CodeVarNameA("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("__Let0__Mem_1"),None))))),
         Some(List(ParamFilter(CoordT(ShareT, ReadonlyT,PackTT(List(CoordT(ShareT, ReadonlyT,IntT.i32), CoordT(ShareT, ReadonlyT,IntT.i32)),StructRefT(FullNameT(PackageCoordinate.BUILTIN, List(), CitizenNameT("__Pack",List(CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)), CoordTemplata(CoordT(ShareT, ReadonlyT,IntT.i32)))))))),None))),
         true)
     inferencesD.templatasByRune(CodeRuneT("__Let0_")) shouldEqual
@@ -1325,7 +1325,7 @@ class InfererTests extends FunSuite with Matchers {
           Map(CodeRuneT("T") -> CoordTemplataType),
           Set(CodeRuneT("T")),
           Map(),
-          List(AtomAP(RangeS.testZero,LocalVariableA(CodeVarNameA("this"),FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None)),
+          List(AtomAP(RangeS.testZero,LocalA(CodeVarNameA("this"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),None,CodeRuneA("T"),None)),
           None,
           true)
       result

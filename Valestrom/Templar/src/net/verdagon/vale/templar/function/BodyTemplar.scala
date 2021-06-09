@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.function
 
 
-import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, ExportA, IExpressionAE, IFunctionAttributeA, LocalVariableA, ParameterA, PureA, UserFunctionA}
+import net.verdagon.vale.astronomer.{AtomAP, BFunctionA, BodyAE, ExportA, IExpressionAE, IFunctionAttributeA, LocalA, ParameterA, PureA, UserFunctionA}
 import net.verdagon.vale.templar.types._
 import net.verdagon.vale.templar.templata._
 import net.verdagon.vale.parser.CaptureP
@@ -217,7 +217,7 @@ class BodyTemplar(
     // for everything inside the body to use
 
     params1.foreach({
-      case ParameterA(AtomAP(_, LocalVariableA(name, _, _, _, _, _, _, _), _, _, _)) => {
+      case ParameterA(AtomAP(_, LocalA(name, _, _, _, _, _, _), _, _, _)) => {
         if (!fate.locals.exists(_.id.last == NameTranslator.translateVarNameStep(name))) {
           throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot couldnt find " + name))
         }

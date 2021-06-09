@@ -1,6 +1,6 @@
 package net.verdagon.vale.templar.expression
 
-import net.verdagon.vale.astronomer.LocalVariableA
+import net.verdagon.vale.astronomer.LocalA
 import net.verdagon.vale.parser._
 import net.verdagon.vale.scout.{MaybeUsed, NotUsed, RangeS}
 import net.verdagon.vale.templar.env.{AddressibleLocalVariableT, FunctionEnvironmentBox, ILocalVariableT, ReferenceLocalVariableT}
@@ -81,15 +81,16 @@ class LocalHelper(
     temputs: Temputs,
     fate: FunctionEnvironmentBox,
     range: RangeS,
-    localVariableA: LocalVariableA,
+    localVariableA: LocalA,
     referenceType2: CoordT):
   ILocalVariableT = {
     val varId = NameTranslator.translateVarNameStep(localVariableA.varName)
-    val variability = Conversions.evaluateVariability(localVariableA.variability)
 
     if (fate.getVariable(varId).nonEmpty) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "There's already a variable named " + varId))
     }
+
+    val variability = LocalHelper.determineLocalVariability(localVariableA)
 
     val mutable = Templar.getMutability(temputs, referenceType2.kind)
     val addressible = LocalHelper.determineIfLocalIsAddressible(mutable, localVariableA)
@@ -241,16 +242,23 @@ class LocalHelper(
       }
     }
   }
-
 }
 
 object LocalHelper {
   // See ClosureTests for requirements here
-  def determineIfLocalIsAddressible(mutability: MutabilityT, variable1: LocalVariableA): Boolean = {
+  def determineIfLocalIsAddressible(mutability: MutabilityT, localA: LocalA): Boolean = {
     if (mutability == MutableT) {
-      variable1.childMutated != NotUsed || variable1.selfMoved == MaybeUsed || variable1.childMoved != NotUsed
+      localA.childMutated != NotUsed || localA.selfMoved == MaybeUsed || localA.childMoved != NotUsed
     } else {
-      variable1.childMutated != NotUsed
+      localA.childMutated != NotUsed
+    }
+  }
+
+  def determineLocalVariability(localA: LocalA): VariabilityT = {
+    if (localA.selfMutated != NotUsed || localA.childMutated != NotUsed) {
+      VaryingT
+    } else {
+      FinalT
     }
   }
 }

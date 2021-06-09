@@ -235,14 +235,13 @@ object ParserVonifier {
   }
 
   def vonifyCapture(thing: CaptureP): VonObject = {
-    val CaptureP(range, captureName, variability) = thing
+    val CaptureP(range, captureName) = thing
     VonObject(
       "Capture",
       None,
       Vector(
         VonMember("range", vonifyRange(range)),
-        VonMember("captureName", vonifyCaptureName(captureName)),
-        VonMember("variability", vonifyVariability(variability))))
+        VonMember("captureName", vonifyCaptureName(captureName))))
   }
 
   def vonifyCaptureName(thing: ICaptureNameP): VonObject = {

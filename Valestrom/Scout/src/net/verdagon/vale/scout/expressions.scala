@@ -54,9 +54,8 @@ case object Used extends IVariableUseCertainty
 case object NotUsed extends IVariableUseCertainty
 case object MaybeUsed extends IVariableUseCertainty
 
-case class LocalVariable1(
+case class LocalS(
     varName: IVarNameS,
-    variability: VariabilityP,
     selfBorrowed: IVariableUseCertainty,
     selfMoved: IVariableUseCertainty,
     selfMutated: IVariableUseCertainty,
@@ -76,7 +75,7 @@ case class BodySE(
 
 case class BlockSE(
   range: RangeS,
-  locals: List[LocalVariable1],
+  locals: List[LocalS],
 
   exprs: List[IExpressionSE],
 ) extends IExpressionSE {

@@ -32,7 +32,6 @@ case class CantUnstackifyOutsideLocalFromInsideWhile(range: RangeS, localId: IVa
 case class FunctionAlreadyExists(oldFunctionRange: RangeS, newFunctionRange: RangeS, signature: SignatureT) extends ICompileErrorT {
   override def range: RangeS = newFunctionRange
 }
-case class CantMutateFinalLocal(range: RangeS, localName: IVarNameA) extends ICompileErrorT
 case class CantMutateFinalMember(range: RangeS, fullName2: FullNameT[INameT], memberName: FullNameT[IVarNameT]) extends ICompileErrorT
 case class CantMutateFinalElement(range: RangeS, fullName2: FullNameT[INameT]) extends ICompileErrorT
 //case class CantMutateReadonlyMember(range: RangeS, structRef2: StructRef2, memberName: FullName2[IVarName2]) extends ICompileErrorT

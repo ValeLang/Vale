@@ -1,18 +1,19 @@
 package net.verdagon.vale.driver
 
-import java.io.{BufferedWriter, File, FileNotFoundException, FileWriter, OutputStream, PrintStream}
+import java.io.{BufferedWriter, File, FileNotFoundException, FileOutputStream, FileWriter, OutputStream, PrintStream}
 import java.util.InputMismatchException
 import net.verdagon.vale.astronomer.{Astronomer, AstronomerErrorHumanizer, ProgramA}
 import net.verdagon.vale.hammer.{Hammer, Hamuts, VonHammer}
 import net.verdagon.vale.highlighter.{Highlighter, Spanner}
 import net.verdagon.vale.metal.ProgramH
-import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier, Vonifier}
+import net.verdagon.vale.parser.{CombinatorParsers, FailedParse, FileP, InputException, ParseErrorHumanizer, ParseFailure, ParseSuccess, ParsedLoader, Parser, ParserVonifier}
 import net.verdagon.vale.scout.{Scout, ScoutErrorHumanizer}
 import net.verdagon.vale.templar.{Templar, TemplarErrorHumanizer}
 import net.verdagon.vale.vivem.Vivem
 import net.verdagon.vale.{Builtins, Err, FileCoordinate, FileCoordinateMap, NullProfiler, Ok, PackageCoordinate, Result, vassert, vassertSome, vcheck, vfail, vwat}
 import net.verdagon.von.{IVonData, JsonSyntax, VonInt, VonPrinter}
 
+import java.nio.charset.Charset
 import scala.io.Source
 import scala.util.matching.Regex
 
@@ -119,25 +120,6 @@ object Driver {
           }
         }
       }
-    }
-  }
-
-  def readCode(path: String): String = {
-    if (path == "stdin:") {
-      val allLines = new StringBuilder()
-      var ok = true
-      while (ok) {
-        val ln = scala.io.StdIn.readLine()
-        ok = ln != null
-        if (ok) allLines.append(ln + "\n")
-      }
-      allLines.toString()
-    } else {
-      val file = path
-      val bufferedSource = Source.fromFile(file)
-      val code = bufferedSource.getLines.mkString("\n")
-      bufferedSource.close
-      code
     }
   }
 
@@ -423,20 +405,6 @@ object Driver {
       }
   }
 
-  def outputParseds(outputFile: String, program0: FileP): Unit = {
-    val program0J = Vonifier.vonifyProgram(program0)
-    val json = new VonPrinter(JsonSyntax, 120).print(program0J)
-    println("Wrote to file " + outputFile)
-    writeFile(outputFile, json)
-  }
-
-  def outputHamuts(outputFile: String, programH: ProgramH): Unit = {
-    val programV = VonHammer.vonifyProgram(programH)
-    val json = new VonPrinter(JsonSyntax, 120).print(programV)
-    println("Wrote to file " + outputFile)
-    writeFile(outputFile, json)
-  }
-
   def run(program: ProgramH, verbose: Boolean): IVonData = {
     if (verbose) {
       Vivem.executeWithPrimitiveArgs(
@@ -577,10 +545,10 @@ object Driver {
     if (filepath == "stdout:") {
       println(s)
     } else {
-      val file = new File(filepath)
-      val bw = new BufferedWriter(new FileWriter(file))
-      bw.write(s)
-      bw.close()
+      val bytes = s.getBytes(Charset.forName("UTF-8"))
+      val outputStream = new FileOutputStream(filepath)
+      outputStream.write(bytes)
+      outputStream.close()
     }
   }
 }

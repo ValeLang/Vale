@@ -10,7 +10,7 @@ object Builtins {
       "arith" -> "arith.vale",
       "logic" -> "logic.vale",
       "str" -> "str.vale",
-      "main" -> "main.vale",
+      "mainargs" -> "mainargs.vale",
       "as" -> "as.vale",
       "print" -> "print.vale",
       "panic" -> "panic.vale",

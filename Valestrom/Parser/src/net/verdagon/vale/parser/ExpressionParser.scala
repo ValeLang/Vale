@@ -232,12 +232,18 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     ("block" ~> optWhite ~> bracedBlock)
   }
 
+  private[parser] def fourDigitHexNumber: Parser[Int] = {
+    "([0-9a-fA-F]{4})".r ^^ { s =>
+      Integer.parseInt(s, 16)
+    }
+  }
 
   private[parser] def shortStringPart: Parser[IExpressionPE] = {
 //    ("\"" ~> failure("ended string")) |
     (pos ~ "\\t" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\t") }) |
     (pos ~ "\\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
     (pos ~ "\\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
+    (pos ~ ("\\u" ~> fourDigitHexNumber) ~ pos ^^ { case begin ~ s ~ end => ConstantStrPE(Range(begin, end), s.toChar.toString) }) |
     (pos ~ "\\\"" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\"") }) |
     (pos ~ "\\\\" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\\") }) |
     (pos ~ "\\/" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "/") }) |
@@ -246,7 +252,7 @@ trait ExpressionParser extends RegexParsers with ParserUtils with TemplexParser 
     (pos ~ "\n" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\n") }) |
     (pos ~ "\r" ~ pos ^^ { case begin ~ _ ~ end => ConstantStrPE(Range(begin, end), "\r") }) |
     ("{" ~> expression <~ "}") |
-    (pos ~ (not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
+    (pos ~ (not("\\") ~> not("\"") ~> ".".r) ~ pos ^^ { case begin ~ thing ~ end => ConstantStrPE(Range(begin, end), thing) })
   }
 
   private[parser] def shortStringExpr: Parser[IExpressionPE] = {

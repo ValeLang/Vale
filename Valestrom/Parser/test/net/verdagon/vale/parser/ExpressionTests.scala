@@ -1,6 +1,6 @@
 package net.verdagon.vale.parser
 
-import net.verdagon.vale.vassert
+import net.verdagon.vale.{vassert, vfail}
 import org.scalatest.{FunSuite, Matchers}
 
 class ExpressionTests extends FunSuite with Matchers with Collector with TestParseUtils {
@@ -26,6 +26,26 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
 
   test("String with quote inside") {
     compile(CombinatorParsers.expression, """"m\"oo"""") shouldHave { case ConstantStrPE(_, "m\"oo") => }
+  }
+
+  test("String with unicode") {
+    compile(CombinatorParsers.fourDigitHexNumber, "000a") shouldEqual 10
+    compile(CombinatorParsers.shortStringPart, "\\u000a") match { case ConstantStrPE(_, "\n") => }
+    compile(CombinatorParsers.shortStringPart, "\\u001b") match { case ConstantStrPE(_, "\u001b") => }
+    compile(CombinatorParsers.stringExpr, "\"\\u001b\"") match { case ConstantStrPE(_, "\u001b") => }
+    compile(CombinatorParsers.stringExpr, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    compile(CombinatorParsers.expression, "\"foo\\u001bbar\"") match { case ConstantStrPE(_, "foo\u001bbar") => }
+    // FALL NOT TO TEMPTATION
+    // Scala has some issues here.
+    // The above "\"\\u001b\"" seems like it could be expressed """"\\u001b"""" but it can't.
+    // Nothing seems to work:
+    // - vassert("\"\\u001b\"" == """"\u001b"""") fails
+    // - vassert("\"\\u001b\"" == """"\\u001b"""") fails
+    // - vassert("\"\\u001b\"" == """\"\\u001b\"""") fails
+    // This took quite a while to figure out.
+    // So, just stick with regular scala string literals, scala's good with those.
+    // Other tests have this, search TEMPTATION.
+    // NOW GO YE AND PROSPER
   }
 
   test("String with apostrophe inside") {
@@ -243,7 +263,7 @@ class ExpressionTests extends FunSuite with Matchers with Collector with TestPar
       case FunctionCallPE(_, None, _, false, PackPE(_, List(LambdaPE(_, _))), List(ConstantIntPE(_, 3, _)),UseP) =>
     }
     program shouldHave {
-      case PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),None,None,None) =>
+      case PatternPP(_,_, Some(CaptureP(_,LocalNameP(NameP(_, "a")))),None,None,None) =>
     }
     program shouldHave {
       case FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "+"), None),List(LookupPE(NameP(_, "a"), None), LookupPE(NameP(_, "a"), None)),LendConstraintP(Some(ReadonlyP))) =>

@@ -260,7 +260,7 @@ object FunctionScout {
     val closureParamName = ClosureParamNameS()
 
     val closureDeclaration =
-      VariableDeclarations(List(VariableDeclaration(closureParamName, FinalP)))
+      VariableDeclarations(List(VariableDeclaration(closureParamName)))
 
     val paramDeclarations =
       explicitParams1.map(_.pattern)
@@ -293,7 +293,7 @@ object FunctionScout {
       ParameterS(
         AtomSP(
           closureParamRange,
-          CaptureS(closureParamName,FinalP),None,closureParamTypeRune,None))
+          CaptureS(closureParamName),None,closureParamTypeRune,None))
 
     val (magicParamsRules, magicParams) =
         lambdaMagicParamNames.map({
@@ -305,7 +305,7 @@ object FunctionScout {
               ParameterS(
                 AtomSP(
                   magicParamRange,
-                  CaptureS(mpn,FinalP),None,magicParamRune,None))
+                  CaptureS(mpn),None,magicParamRune,None))
             (ruleS, paramS)
           }
         })
@@ -442,13 +442,12 @@ object FunctionScout {
       childUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn }).isEmpty)
     val magicParamNames =
       selfUses.uses.map(_.name).collect({ case mpn @ MagicParamNameS(_) => mpn })
-    val magicParamVars = magicParamNames.map(n => VariableDeclaration(n, FinalP))
+    val magicParamVars = magicParamNames.map(n => VariableDeclaration(n))
 
     val magicParamLocals =
       magicParamVars.map({ declared =>
-        LocalVariable1(
+        LocalS(
           declared.name,
-          declared.variability,
           selfUses.isBorrowed(declared.name),
           selfUses.isMoved(declared.name),
           selfUses.isMutated(declared.name),

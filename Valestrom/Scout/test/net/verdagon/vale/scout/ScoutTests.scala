@@ -128,13 +128,13 @@ class ScoutTests extends FunSuite with Matchers {
       case List(
       ParameterS(
       AtomSP(_,
-      CaptureS(CodeVarNameS("this"), FinalP),
+      CaptureS(CodeVarNameS("this")),
       Some(AbstractSP),
       ImplicitRuneS(_, 0),
       None)),
       ParameterS(
       AtomSP(_,
-      CaptureS(CodeVarNameS("a"), FinalP),
+      CaptureS(CodeVarNameS("a")),
       None,
       ImplicitRuneS(_, 1),
       None))) =>
@@ -212,10 +212,10 @@ class ScoutTests extends FunSuite with Matchers {
     val CodeBody1(BodySE(_, _, block)) = main.body
     val BlockSE(_, _, FunctionSE(lambda1) :: FunctionSE(lambda2) :: _) = block
     lambda1.params match {
-      case List(_, ParameterS(AtomSP(_, CaptureS(MagicParamNameS(_), FinalP), None, MagicParamRuneS(_), None))) =>
+      case List(_, ParameterS(AtomSP(_, CaptureS(MagicParamNameS(_)), None, MagicParamRuneS(_), None))) =>
     }
     lambda2.params match {
-      case List(_, ParameterS(AtomSP(_, CaptureS(CodeVarNameS("a"), FinalP), None, ImplicitRuneS(_, _), None))) =>
+      case List(_, ParameterS(AtomSP(_, CaptureS(CodeVarNameS("a")), None, ImplicitRuneS(_, _), None))) =>
     }
   }
 
@@ -233,20 +233,20 @@ class ScoutTests extends FunSuite with Matchers {
     block match {
       case BlockSE(_,
       List(
-      LocalVariable1(ConstructingMemberNameS("x"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-      LocalVariable1(ConstructingMemberNameS("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      LocalS(ConstructingMemberNameS("x"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+      LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(
       LetSE(_,
       _,
       _,
       _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("x"), FinalP), None, _, None),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("x")), None, _, None),
       ConstantIntSE(_, 4, _)),
       LetSE(_,
       _,
       _,
       _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("y")), None, _, None),
       ConstantBoolSE(_, true)),
       FunctionCallSE(_,
       OutsideLoadSE(_, "MyStruct", _, _),
@@ -395,14 +395,14 @@ class ScoutTests extends FunSuite with Matchers {
     block match {
       case BlockSE(_,
       List(
-      LocalVariable1(ConstructingMemberNameS("x"), FinalP, Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
-      LocalVariable1(ConstructingMemberNameS("y"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
+      LocalS(ConstructingMemberNameS("x"), Used, Used, NotUsed, NotUsed, NotUsed, NotUsed),
+      LocalS(ConstructingMemberNameS("y"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(
       LetSE(_, _, _, _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("x"), FinalP), None, _, None),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("x")), None, _, None),
       ConstantIntSE(_, 4, _)),
       LetSE(_, _, _, _,
-      AtomSP(_, CaptureS(ConstructingMemberNameS("y"), FinalP), None, _, None),
+      AtomSP(_, CaptureS(ConstructingMemberNameS("y")), None, _, None),
       LocalLoadSE(_, ConstructingMemberNameS("x"), LendConstraintP(Some(ReadonlyP)))),
       FunctionCallSE(_,
       OutsideLoadSE(_, "MyStruct", _, _),
@@ -425,7 +425,7 @@ class ScoutTests extends FunSuite with Matchers {
       BodySE(_,
       List(),
       BlockSE(_,
-      List(LocalVariable1(CodeVarNameS("this"), FinalP, Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
+      List(LocalS(CodeVarNameS("this"), Used, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)),
       List(
       FunctionCallSE(_,
       OutsideLoadSE(_, "println", _, _),

@@ -201,8 +201,7 @@ object ParsedLoader {
   def loadCapture(jobj: JObject): CaptureP = {
     CaptureP(
       loadRange(getObjectField(jobj, "range")),
-      loadCaptureName(getObjectField(jobj, "captureName")),
-      loadVariability(getObjectField(jobj, "variability")))
+      loadCaptureName(getObjectField(jobj, "captureName")))
   }
 
   def loadCaptureName(jobj: JObject): ICaptureNameP = {

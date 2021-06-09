@@ -6,8 +6,7 @@ import net.verdagon.vale.scout._
 import scala.collection.immutable.List
 
 case class CaptureS(
-  name: IVarNameS,
-  variability: VariabilityP)
+  name: IVarNameS)
 
 case class AtomSP(
   range: RangeS,

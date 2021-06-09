@@ -18,7 +18,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
               _,
               List(
                 PatternPP(_,_,
-                  Some(CaptureP(_,LocalNameP(NameP(_, "this")),FinalP)),
+                  Some(CaptureP(_,LocalNameP(NameP(_, "this")))),
                   Some(NameOrRunePT(NameP(_, "Marine"))),
                   None,
                   Some(OverrideP(_,NameOrRunePT(NameP(_, "IUnit")))))))),
@@ -30,7 +30,7 @@ class SignatureTests extends FunSuite with Matchers with Collector with TestPars
   test("Param") {
     val program = compileProgram("fn call(f F){f()}")
     program shouldHave {
-      case PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "f")),FinalP)),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
+      case PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "f")))),Some(NameOrRunePT(NameP(_, "F"))),None,None) =>
     }
   }
 

@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser.{ConstraintP, LendConstraintP, LendWeakP, LoadAsP, MoveP, MutabilityP, OwnershipP, VariabilityP, WeakP}
-import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalVariable1, RangeS, RefCountCategory}
+import net.verdagon.vale.scout.{CodeLocationS, ITemplexS, IVariableUseCertainty, LocalS, RangeS, RefCountCategory}
 import net.verdagon.vale.scout.patterns.AtomSP
 import net.verdagon.vale.scout.rules.IRulexSR
 import net.verdagon.vale.{vassert, vpass, vwat}
@@ -165,9 +165,8 @@ case class UnletAE(range: RangeS, name: String) extends IExpressionAE
 case class ArrayLengthAE(range: RangeS, arrayExpr: IExpressionAE) extends IExpressionAE
 
 
-case class LocalVariableA(
+case class LocalA(
   varName: IVarNameA,
-  variability: VariabilityP,
   selfBorrowed: IVariableUseCertainty, // unused
   selfMoved: IVariableUseCertainty, // used to know whether to box, if we have branching.
   selfMutated: IVariableUseCertainty, // unused

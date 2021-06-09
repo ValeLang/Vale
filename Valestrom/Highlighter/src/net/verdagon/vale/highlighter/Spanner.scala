@@ -316,7 +316,7 @@ object Spanner {
   }
 
   def forCapture(c: CaptureP): Span = {
-    val CaptureP(range, name, _) = c
+    val CaptureP(range, name) = c
     val nameSpan =
       name match {
         case LocalNameP(NameP(nameRange, _)) => {

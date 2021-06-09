@@ -145,8 +145,8 @@ ValeInt vstr_cmp(
 }
 
 ValeStr* __vaddStr(
-    ValeStr* aStr, int aBegin, int aLength,
-    ValeStr* bStr, int bBegin, int bLength) {
+    ValeStr* aStr, ValeInt aBegin, ValeInt aLength,
+    ValeStr* bStr, ValeInt bBegin, ValeInt bLength) {
   char* a = aStr->chars;
   char* b = bStr->chars;
 
@@ -191,21 +191,21 @@ extern ValeStr* __castFloatStr(double f) {
   return result;
 }
 
-void __vprintStr(ValeStr* s, int start, int length) {
+void __vprintStr(ValeStr* s, ValeInt start, ValeInt length) {
   char* chars = s->chars;
   fwrite(chars + start, 1, length, stdout);
   ValeReleaseMessage(s);
 }
 
-int vstr_toascii(ValeStr* s, int begin, int end) {
+ValeInt vstr_toascii(ValeStr* s, ValeInt begin, ValeInt end) {
   assert(begin + 1 <= end);
   char* chars = s->chars;
-  int result = (int)*(chars + begin);
+  ValeInt result = (ValeInt)*(chars + begin);
   ValeReleaseMessage(s);
   return result;
 }
 
-ValeStr* vstr_fromascii(int code) {
+ValeStr* vstr_fromascii(ValeInt code) {
   ValeStr* result = ValeStrNew(1);
   char* dest = result->chars;
   *dest = code;

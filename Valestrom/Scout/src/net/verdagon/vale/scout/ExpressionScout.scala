@@ -78,9 +78,8 @@ object ExpressionScout {
 
     val locals =
         stackFrame.locals.vars.map({ declared =>
-        LocalVariable1(
+        LocalS(
           declared.name,
-          declared.variability,
           selfUses.isBorrowed(declared.name),
           selfUses.isMoved(declared.name),
           selfUses.isMutated(declared.name),

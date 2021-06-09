@@ -58,7 +58,7 @@ class IfTests extends FunSuite with Matchers with Collector {
                 Some(
                   DestructureP(_,
                     List(
-                      PatternPP(_,None,Some(CaptureP(_,LocalNameP(NameP(_,"u")),FinalP)),None,None,None)))),
+                      PatternPP(_,None,Some(CaptureP(_,LocalNameP(NameP(_,"u")))),None,None,None)))),
                 None),
               LookupPE(NameP(_,"a"),None)))),
         BlockPE(_,List(VoidPE(_))),
@@ -71,7 +71,7 @@ class IfTests extends FunSuite with Matchers with Collector {
       "newLen = if (num == 0) { 1 } else { 2 };") shouldHave {
       case LetPE(_,
       None,
-      PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")), FinalP)), None, None, None),
+      PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "newLen")))), None, None, None),
       IfPE(_,
       BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "=="), None), List(LookupPE(NameP(_, "num"), None), ConstantIntPE(_, 0, _)), LendConstraintP(Some(ReadonlyP))))),
       BlockPE(_, List(ConstantIntPE(_, 1, _))),

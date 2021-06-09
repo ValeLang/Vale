@@ -14,10 +14,10 @@ object ExpressionAstronomer {
     BlockAE(range, exprsA)
   }
 
-  def translateLocalVariable(varS: LocalVariable1): LocalVariableA = {
-    val LocalVariable1(varNameS, variability, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated) = varS
+  def translateLocalVariable(varS: LocalS): LocalA = {
+    val LocalS(varNameS, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated) = varS
     val varNameA = Astronomer.translateVarNameStep(varNameS)
-    LocalVariableA(varNameA, variability, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated)
+    LocalA(varNameA, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated)
   }
 
   def translateExpression(env: Environment, astrouts: AstroutsBox, iexprS: IExpressionSE): IExpressionAE = {

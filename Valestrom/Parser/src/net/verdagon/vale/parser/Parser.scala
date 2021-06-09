@@ -352,7 +352,7 @@ object Parser {
     val letEnd = iter.getPos()
 
     pattern.capture match {
-      case Some(CaptureP(_, LocalNameP(name), _)) => vassert(name.str != "set" && name.str != "mut")
+      case Some(CaptureP(_, LocalNameP(name))) => vassert(name.str != "set" && name.str != "mut")
       case _ =>
     }
 

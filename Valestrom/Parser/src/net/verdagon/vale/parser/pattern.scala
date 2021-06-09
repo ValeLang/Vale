@@ -42,8 +42,7 @@ case class ConstructingMemberNameP(name: NameP) extends ICaptureNameP
 
 case class CaptureP(
     range: Range,
-    name: ICaptureNameP,
-    variability: VariabilityP)
+    name: ICaptureNameP)
 
 //sealed trait ITemplexPT
 //case class IntPT(range: Range, value: Int) extends ITemplexPT
@@ -63,7 +62,7 @@ object Patterns {
   object capturedWithTypeRune {
     def unapply(arg: PatternPP): Option[(String, String)] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)), FinalP)), Some(NameOrRunePT(NameP(_, kindRune))), None, None) => Some((name, kindRune))
+        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)))), Some(NameOrRunePT(NameP(_, kindRune))), None, None) => Some((name, kindRune))
         case _ => None
       }
     }
@@ -76,7 +75,7 @@ object Patterns {
   object capture {
     def unapply(arg: PatternPP): Option[String] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)), FinalP)), None, None, None) => Some(name)
+        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)))), None, None, None) => Some(name)
         case _ => None
       }
     }
@@ -100,7 +99,7 @@ object Patterns {
   object capturedWithType {
     def unapply(arg: PatternPP): Option[(String, ITemplexPT)] = {
       arg match {
-        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)), FinalP)), Some(templex), None, None) => Some((name, templex))
+        case PatternPP(_, _, Some(CaptureP(_, LocalNameP(NameP(_, name)))), Some(templex), None, None) => Some((name, templex))
         case _ => None
       }
     }

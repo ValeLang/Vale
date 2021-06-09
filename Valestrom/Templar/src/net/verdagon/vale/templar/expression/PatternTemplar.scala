@@ -114,7 +114,7 @@ class PatternTemplar(
       unconvertedInputExpr: ReferenceExpressionTE):
   (List[ReferenceExpressionTE]) = {
 
-    val AtomAP(range, lv @ LocalVariableA(varName, variability, _, _, _, _, _, _), maybeVirtuality, coordRuneA, maybeDestructure) = pattern
+    val AtomAP(range, lv @ LocalA(varName, _, _, _, _, _, _), maybeVirtuality, coordRuneA, maybeDestructure) = pattern
 
     if (maybeVirtuality.nonEmpty) {
       // This is actually to be expected for when we translate the patterns from the

@@ -34,12 +34,13 @@ class StringTests extends FunSuite with Matchers {
   }
 
   test("String with hex escape") {
-    val compile = RunCompilation.test(
-      """
-        |fn main() str export {
-        |  "sprog\u001bwoggle"
-        |}
-        |""".stripMargin)
+    val code = "fn main() str export { \"sprog\\u001bwoggle\" }"
+    // This assert makes sure the above is making the input we actually intend.
+    // Real source files from disk are going to have a backslash character and then a u,
+    // they won't have the 0x1b byte.
+    vassert(code.contains("\\u001b"))
+
+    val compile = RunCompilation.test(code)
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -48,13 +49,15 @@ class StringTests extends FunSuite with Matchers {
       }
     })
 
-    compile.evalForKind(Vector()) shouldEqual VonStr("sprog\u001bwoggle")
+    val VonStr(result) = compile.evalForKind(Vector())
+    result.size shouldEqual 12
+    result shouldEqual "sprog\u001bwoggle"
   }
 
   test("String length") {
     val compile = RunCompilation.test( Tests.loadExpected("programs/strings/strlen.vale"))
 
-    compile.evalForKind(Vector()) shouldEqual VonInt(11)
+    compile.evalForKind(Vector()) shouldEqual VonInt(12)
   }
 
   test("String interpolate") {

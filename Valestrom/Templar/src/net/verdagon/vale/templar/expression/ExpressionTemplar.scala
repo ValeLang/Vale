@@ -527,9 +527,8 @@ class ExpressionTemplar(
           val (unconvertedSourceExpr2, returnsFromSource) =
             evaluateAndCoerceToReferenceExpression(temputs, fate, sourceExpr1)
 
-          if (destinationExpr2.variability != VaryingT) {
-            throw CompileErrorExceptionT(CantMutateFinalLocal(range, name))
-          }
+          // We should have inferred variability from the presents of sets
+          vassert(destinationExpr2.variability == VaryingT)
 
           val isConvertible =
             templataTemplar.isTypeConvertible(

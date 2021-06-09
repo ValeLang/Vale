@@ -19,7 +19,7 @@ case class Environment(
     primitives: Map[String, ITypeSR],
     codeMap: PackageCoordinateMap[ProgramS],
     typeByRune: Map[IRuneA, ITemplataType],
-    locals: List[LocalVariableA]) {
+    locals: List[LocalA]) {
 
   val structsS: List[StructS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.structs)).toList
   val interfacesS: List[InterfaceS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.interfaces)).toList
@@ -28,7 +28,7 @@ case class Environment(
   val exportsS: List[ExportAsS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.exports)).toList
   val imports: List[ImportS] = codeMap.moduleToPackagesToContents.values.flatMap(_.values.flatMap(_.imports)).toList
 
-  def addLocals(newLocals: List[LocalVariableA]): Environment = {
+  def addLocals(newLocals: List[LocalA]): Environment = {
     Environment(maybeName, maybeParentEnv, primitives, codeMap, typeByRune, locals ++ newLocals)
   }
   def addRunes(newTypeByRune: Map[IRuneA, ITemplataType]): Environment = {
@@ -461,7 +461,7 @@ object Astronomer {
   }
 
   def translateAtom(env: Environment, atomS: AtomSP): AtomAP = {
-    val AtomSP(range, CaptureS(nameS, variability), virtualityS, coordRuneS, destructureS) = atomS
+    val AtomSP(range, CaptureS(nameS), virtualityS, coordRuneS, destructureS) = atomS
     val nameA = translateVarNameStep(nameS)
 
     val virtualityA =
@@ -493,10 +493,9 @@ object Astronomer {
           // We make some LocalVariableA here to appease translateParameter which expects some locals in the env.
           paramsS.map(_.pattern.name)
             .map({
-              case CaptureS(name, variability) => {
-                LocalVariableA(
+              case CaptureS(name) => {
+                LocalA(
                   Astronomer.translateVarNameStep(name),
-                  variability,
                   NotUsed, NotUsed, NotUsed, NotUsed, NotUsed, NotUsed)
               }
             })

@@ -325,10 +325,13 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
         case (IntT(_), _) => return (false)
         case (BoolT(), _) => return (false)
         case (StrT(), _) => return (false)
+        case (RuntimeSizedArrayTT(_), _) => return (false)
+        case (StaticSizedArrayTT(_, _), _) => return (false)
         case (_, VoidT()) => return (false)
         case (_, IntT(_)) => return (false)
         case (_, BoolT()) => return (false)
         case (_, StrT()) => return (false)
+        case (_, StaticSizedArrayTT(_, _)) => return (false)
         case (_, StructRefT(_)) => return (false)
         case (a @ StructRefT(_), b @ InterfaceRefT(_)) => {
           delegate.getAncestorInterfaceDistance(temputs, a, b) match {

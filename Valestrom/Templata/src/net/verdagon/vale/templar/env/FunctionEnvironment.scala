@@ -1,7 +1,7 @@
 package net.verdagon.vale.templar.env
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.scout.LocalVariable1
+import net.verdagon.vale.scout.LocalS
 import net.verdagon.vale.templar._
 import net.verdagon.vale.templar.templata.{ITemplata, QueriableT}
 import net.verdagon.vale.templar.types.{CoordT, StructRefT, VariabilityT}

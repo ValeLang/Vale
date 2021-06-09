@@ -1,6 +1,6 @@
 package net.verdagon.vale
 
-import net.verdagon.vale.astronomer.{CodeVarNameA, LocalVariableA}
+import net.verdagon.vale.astronomer.{CodeVarNameA, LocalA}
 import net.verdagon.vale.parser.{FinalP, ImmutableP, MutableP, VaryingP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.templar._
@@ -24,13 +24,13 @@ class ClosureTests extends FunSuite with Matchers {
       val addressibleIfMutable =
         LocalHelper.determineIfLocalIsAddressible(
           MutableT,
-          LocalVariableA(
-            CodeVarNameA("x"), VaryingP, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
+          LocalA(
+            CodeVarNameA("x"), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       val addressibleIfImmutable =
         LocalHelper.determineIfLocalIsAddressible(
           ImmutableT,
-          LocalVariableA(
-            CodeVarNameA("x"), VaryingP, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
+          LocalA(
+            CodeVarNameA("x"), selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated))
       (addressibleIfMutable, addressibleIfImmutable)
     }
 

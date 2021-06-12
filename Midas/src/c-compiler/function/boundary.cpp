@@ -1,4 +1,5 @@
 #include <globalstate.h>
+#include <function/expressions/expressions.h>
 #include "boundary.h"
 #include "region/iregion.h"
 
@@ -73,6 +74,7 @@ LLVMValueRef sendValeObjectIntoHost(
     auto hostArgLE =
         globalState->getRegion(hostRefMT)
             ->checkValidReference(FL(), functionState, builder, hostRefMT, hostArgRef);
+
     return hostArgLE;
   } else {
     auto encryptedValeRef =

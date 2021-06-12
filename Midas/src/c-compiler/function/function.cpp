@@ -50,6 +50,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   // This is a thunk function that correctly aliases the objects that come in from the
   // outside world, and dealiases the object that we're returning to the outside world.
   LLVMValueRef exportFunctionL = LLVMAddFunction(globalState->mod, exportName.c_str(), exportFunctionTypeL);
+  LLVMSetLinkage(exportFunctionL, LLVMExternalLinkage);
 
   LLVMBasicBlockRef block = LLVMAppendBasicBlockInContext(globalState->context, exportFunctionL, "entry");
   LLVMBuilderRef builder = LLVMCreateBuilderInContext(globalState->context);
@@ -61,6 +62,7 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
 
   FunctionState functionState(exportName, exportFunctionL, exportReturnTypeL, localsBuilder);
   BlockState initialBlockState(globalState->addressNumberer, nullptr);
+  buildFlare(FL(), globalState, &functionState, builder, "Calling export function ", functionState.containingFuncName, " from native");
 
   std::vector<Ref> argsToActualFunction;
 
@@ -79,7 +81,12 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
     argsToActualFunction.push_back(valeRef);
   }
 
+  buildFlare(FL(), globalState, &functionState, builder, "Suspending export function ", functionState.containingFuncName);
+  buildFlare(FL(), globalState, &functionState, builder, "Calling vale function ", functionM->prototype->name->name);
   auto valeReturnRefOrVoid = buildCall(globalState, &functionState, builder, functionM->prototype, argsToActualFunction);
+  buildFlare(FL(), globalState, &functionState, builder, "Done calling vale function ", functionM->prototype->name->name);
+  buildFlare(FL(), globalState, &functionState, builder, "Resuming export function ", functionState.containingFuncName);
+
   auto valeReturnRef =
       (functionM->prototype->returnType == globalState->metalCache->emptyTupleStructRef ?
        makeEmptyTupleRef(globalState) :
@@ -94,6 +101,9 @@ void exportFunction(GlobalState* globalState, Package* package, Function* functi
   auto hostReturnRefLE =
       sendValeObjectIntoHost(
           globalState, &functionState, builder, valeReturnMT, hostReturnMT, valeReturnRef);
+
+  buildFlare(FL(), globalState, &functionState, builder, "Done calling export function ", functionState.containingFuncName, " from native");
+
   LLVMBuildRet(builder, hostReturnRefLE);
 
   LLVMDisposeBuilder(builder);

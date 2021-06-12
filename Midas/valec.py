@@ -341,6 +341,8 @@ class ValeCompiler:
                         user_valestrom_inputs.append([project_name, contents_path])
                     elif str(contents_path).endswith(".c"):
                         user_c_files.append(contents_path)
+                    elif str(contents_path).endswith(".a"):
+                        user_c_files.append(contents_path)
                     elif contents_path.is_dir():
                         # for vale_file in contents_path.rglob('*.vale'):
                         #     with open(str(vale_file), 'r') as f:

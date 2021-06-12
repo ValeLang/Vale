@@ -122,6 +122,8 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/externimmrsaparamdeep"], "assist", 20)
     def test_assist_exportretvoid(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid"], "assist", 42)
+    def test_assist_exportretstr(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretstr"], "assist", 6)
     def test_assist_exportimmstructparam(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportimmstructparam"], "assist", 42)
     def test_assist_exportimmstructparamdeep(self) -> None:

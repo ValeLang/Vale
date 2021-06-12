@@ -237,7 +237,7 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
         auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
         auto returnExportName = globalState->getRegion(externReturnType)->getExportName(package, externReturnType, true);
         s << "extern " << returnExportName << " ";
-        s << exportName << "(";
+        s << packageCoord->projectName << "_" << exportName << "(";
         for (int i = 0; i < functionM->prototype->params.size(); i++) {
           if (i > 0) {
             s << ", ";

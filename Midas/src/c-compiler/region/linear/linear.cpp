@@ -1213,7 +1213,7 @@ Ref Linear::topLevelSerialize(
           "rootMetadataPtr");
 
   bumpDestinationOffset(functionState, builder, regionInstanceRef, constI64LE(globalState, startMetadataSize));
-  buildFlare(FL(), globalState, functionState, builder);
+  buildFlare(FL(), globalState, functionState, builder, "done with serialization, result ptr ", ptrToIntLE(globalState, builder, rootObjectPtrLE));
   auto startMetadataRef = getDestinationRef(functionState, builder, regionInstanceRef, startMetadataRefMT);
   auto startMetadataPtrLE = checkValidReference(FL(), functionState, builder, startMetadataRefMT, startMetadataRef);
   LLVMBuildStore(builder,

@@ -192,6 +192,7 @@ void buildAssertIntEq(
     LLVMValueRef aLE,
     LLVMValueRef bLE,
     const std::string& failMessage) {
+  assert(LLVMTypeOf(aLE) == LLVMTypeOf(bLE));
   auto conditionLE = LLVMBuildICmp(builder, LLVMIntEQ, aLE, bLE, "assertCondition");
   buildIf(
       globalState, functionState, builder, isZeroLE(builder, conditionLE),
@@ -243,7 +244,7 @@ Ref buildInterfaceCall(
   }
   argsLE[virtualParamIndex] = newVirtualArgLE;
 
-  buildFlare(FL(), globalState, functionState, builder, interfaceKindM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
+  //buildFlare(FL(), globalState, functionState, builder, interfaceKindM->fullName->name, " ", ptrToIntLE(globalState, builder, methodFunctionPtrLE));
 
 //  assert(LLVMGetTypeKind(LLVMTypeOf(itablePtrLE)) == LLVMPointerTypeKind);
 //  auto funcPtrPtrLE =

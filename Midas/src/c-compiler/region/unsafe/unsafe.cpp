@@ -835,30 +835,26 @@ std::string Unsafe::generateStaticSizedArrayDefsC(
   }
 }
 
-Reference* Unsafe::getExternalType(Reference* refMT) {
-  return refMT;
-//  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
-//  } else {
-//    if (auto structKind = dynamic_cast<StructKind*>(refMT->kind)) {
-//      return LLVMPointerType(kindStructs.getWrapperStruct(structKind), 0);
-//    } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(refMT->kind)) {
-//      assert(false); // impl
-//    } else {
-//      std::cerr << "Invalid type for extern!" << std::endl;
-//      assert(false);
-//    }
-//  }
-//  assert(false);
+LLVMTypeRef Unsafe::getExternalType(Reference* refMT) {
+  if (dynamic_cast<StructKind*>(refMT->kind) ||
+      dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
+      dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
+    return globalState->getConcreteHandleStruct();
+  } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
+    return globalState->getInterfaceHandleStruct();
+  } else {
+    assert(false);
+  }
 }
 
 Ref Unsafe::receiveAndDecryptFamiliarReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
-    Ref sourceRef) {
-  // Someday, we'll do some encryption stuff here.
-  return sourceRef;
+    LLVMValueRef sourceRefLE) {
+  assert(sourceRefMT->ownership != Ownership::SHARE);
+  return regularReceiveAndDecryptFamiliarReference(
+      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRefLE);
 }
 
 LLVMTypeRef Unsafe::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -884,13 +880,14 @@ Ref Unsafe::receiveUnencryptedAlienReference(
   exit(1);
 }
 
-Ref Unsafe::encryptAndSendFamiliarReference(
+LLVMValueRef Unsafe::encryptAndSendFamiliarReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     Ref sourceRef) {
-  // Someday, we'll do some encryption stuff here.
-  return sourceRef;
+  assert(sourceRefMT->ownership != Ownership::SHARE);
+  return regularEncryptAndSendFamiliarReference(
+      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRef);
 }
 
 void Unsafe::initializeElementInRSA(

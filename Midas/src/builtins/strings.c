@@ -171,7 +171,7 @@ ValeStr* __vaddStr(
 
 extern ValeStr* __castI64Str(int64_t n) {
   char tempBuffer[100] = { 0 };
-  int charsWritten = snprintf(tempBuffer, 100, "%d", n);
+  int charsWritten = snprintf(tempBuffer, 100, "%lld", n);
   ValeStr* result = ValeStrNew(charsWritten);
   char* resultChars = result->chars;
   strncpy(resultChars, tempBuffer, charsWritten);

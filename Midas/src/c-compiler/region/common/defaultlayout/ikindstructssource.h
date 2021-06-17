@@ -139,7 +139,8 @@ public:
       Reference* refM,
       ControlBlockPtrLE controlBlockPtr) = 0;
 
-  virtual LLVMValueRef downcastPtr(LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) = 0;
+  virtual LLVMValueRef downcastPtr(
+      LLVMBuilderRef builder, Reference* resultStructRefMT, LLVMValueRef unknownPossibilityPtrLE) = 0;
 };
 
 #endif

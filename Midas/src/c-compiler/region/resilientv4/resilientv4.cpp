@@ -959,15 +959,16 @@ std::string ResilientV4::generateInterfaceDefsC(
   }
 }
 
-Reference *ResilientV4::getExternalType(Reference *refMT) {
-  return refMT;
+LLVMTypeRef ResilientV4::getExternalType(Reference *refMT) {
+  assert(false);
+//  return refMT;
 }
 
 Ref ResilientV4::receiveAndDecryptFamiliarReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *sourceRefMT,
-    Ref sourceRef) {
+    LLVMValueRef sourceRefLE) {
   switch (sourceRefMT->ownership) {
     case Ownership::SHARE:
       assert(false);
@@ -975,7 +976,8 @@ Ref ResilientV4::receiveAndDecryptFamiliarReference(
     case Ownership::BORROW:
     case Ownership::WEAK:
       // Someday we'll do some encryption stuff here
-      return sourceRef;
+//      return sourceRef;
+      assert(false);
   }
   assert(false);
 }
@@ -1001,13 +1003,14 @@ Ref ResilientV4::receiveUnencryptedAlienReference(
   exit(1);
 }
 
-Ref ResilientV4::encryptAndSendFamiliarReference(
+LLVMValueRef ResilientV4::encryptAndSendFamiliarReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *sourceRefMT,
     Ref sourceRef) {
   // Someday we'll do some encryption stuff here
-  return sourceRef;
+//  return sourceRef;
+  assert(false);
 }
 
 void ResilientV4::initializeElementInRSA(

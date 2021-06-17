@@ -177,4 +177,7 @@ void declareAndDefineExtraFunction(
     std::string llvmName,
     std::function<void(FunctionState*, LLVMBuilderRef)> definer);
 
+bool typeNeedsPointerParameter(GlobalState* globalState, Reference* returnMT);
+LLVMTypeRef translateReturnType(GlobalState* globalState, Reference* returnMT);
+
 #endif

@@ -1,0 +1,23 @@
+struct Spaceship export imm {
+  fuel int;
+  wings int;
+}
+
+export Array<imm, final, Spaceship> as ImmSpaceshipArray;
+
+fn valeSumFuel(arr Array<imm, final, Spaceship>) int export {
+  total = 0;
+  i = 0;
+  while (i < arr.len()) {
+    set total = total + arr[i].fuel;
+    set i = i + 1;
+  }
+  ret total;
+}
+
+fn cSumFuel(arr Array<imm, final, Spaceship>) int extern;
+
+fn main() int export {
+  a = [imm *](3, (i){ Spaceship(13 + i, i * 2) });
+  = cSumFuel(a);
+}

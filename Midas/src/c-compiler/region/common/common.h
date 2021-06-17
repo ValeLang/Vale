@@ -7,6 +7,10 @@
 #include <region/common/hgm/hgm.h>
 #include <region/common/wrcweaks/wrcweaks.h>
 
+constexpr int64_t externHandleRegionId = 13371;
+constexpr int64_t externHandleGen = 65536; // lower 16 bits zero, so it can be or'd with offset
+constexpr int64_t externHandleGenOffset = 42;
+
 LLVMValueRef weakStructPtrToGenWeakInterfacePtr(
     GlobalState* globalState,
     FunctionState* functionState,
@@ -94,6 +98,15 @@ LLVMValueRef makeInterfaceRefStruct(
     StructKind* sourceStructKindM,
     InterfaceKind* targetInterfaceKindM,
     ControlBlockPtrLE controlBlockPtrLE);
+
+LLVMValueRef makeInterfaceRefStruct(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IKindStructsSource* structs,
+    InterfaceKind* targetInterfaceKindM,
+    LLVMValueRef objControlBlockPtrLE,
+    LLVMValueRef itablePtrLE);
 
 LLVMValueRef getTablePtrFromInterfaceRef(
     LLVMBuilderRef builder,
@@ -592,5 +605,65 @@ Ref regularDowncast(
     Kind* targetKind,
     std::function<Ref(LLVMBuilderRef, Ref)> buildThen,
     std::function<Ref(LLVMBuilderRef)> buildElse);
+
+Ref regularReceiveAndDecryptFamiliarReference(
+    GlobalState* globalState,
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    KindStructs* kindStructs,
+    Reference *sourceRefMT,
+    LLVMValueRef sourceRefLE);
+
+LLVMValueRef regularEncryptAndSendFamiliarReference(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    IKindStructsSource* kindStructs,
+    Reference* sourceRefMT,
+    Ref sourceRef);
+
+Ref resilientReceiveAndDecryptFamiliarReference(
+    GlobalState* globalState,
+    FunctionState *functionState,
+    LLVMBuilderRef builder,
+    KindStructs* kindStructs,
+    WeakableKindStructs* weakableKindStructs,
+    HybridGenerationalMemory* hgm,
+    Reference *sourceRefMT,
+    LLVMValueRef sourceRefLE);
+
+LLVMValueRef resilientEncryptAndSendFamiliarReference(
+    GlobalState* globalState,
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    WeakableKindStructs* kindStructs,
+    HybridGenerationalMemory* hgm,
+    Reference* sourceRefMT,
+    Ref sourceRef);
+
+LLVMValueRef implodeConcreteHandle(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef concreteHandleLT,
+    LLVMValueRef regionIdLE,
+    LLVMValueRef objPtrIntLE,
+    LLVMValueRef genLE,
+    LLVMValueRef offsetToGenLE);
+
+LLVMValueRef implodeInterfaceHandle(
+    GlobalState* globalState,
+    LLVMBuilderRef builder,
+    LLVMTypeRef interfaceHandleLT,
+    LLVMValueRef regionIdLE,
+    LLVMValueRef itableIntLE,
+    LLVMValueRef objPtrIntLE,
+    LLVMValueRef genLE,
+    LLVMValueRef offsetToGenLE);
+
+
+std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
+explodeConcreteHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef concreteHandleLE);
+std::tuple<LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef, LLVMValueRef>
+explodeInterfaceHandle(GlobalState* globalState, LLVMBuilderRef builder, LLVMValueRef concreteHandleLE);
 
 #endif

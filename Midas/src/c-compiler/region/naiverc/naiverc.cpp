@@ -863,73 +863,31 @@ std::string NaiveRC::generateInterfaceDefsC(
   return "";
 }
 
-Reference* NaiveRC::getExternalType(Reference* refMT) {
-  return refMT;
+LLVMTypeRef NaiveRC::getExternalType(Reference* refMT) {
+  assert(false);
+//  return refMT;
 }
 
 Ref NaiveRC::receiveAndDecryptFamiliarReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
-    Ref sourceRef) {
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::NAIVE_RC:
-      // Alias when receiving from the outside world, see DEPAR.
-      globalState->getRegion(sourceRefMT)
-          ->alias(FL(), functionState, builder, sourceRefMT, sourceRef);
-
-      return sourceRef;
-      break;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
-      switch (sourceRefMT->ownership) {
-        case Ownership::SHARE:
-          assert(false);
-        case Ownership::OWN:
-        case Ownership::BORROW:
-        case Ownership::WEAK:
-          // Someday we'll do some encryption stuff here
-          return sourceRef;
-      }
-      assert(false);
-      break;
-    default:
-      assert(false);
-      break;
-  }
-
+    LLVMValueRef sourceRefLE) {
+  // Naive shouldnt do exports, its just for benchmarking
   assert(false);
 }
 
 LLVMTypeRef NaiveRC::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::NAIVE_RC: {
-      switch (reference->ownership) {
-        case Ownership::BORROW:
-        case Ownership::OWN:
-        case Ownership::SHARE:
-          return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
-        case Ownership::WEAK:
-          return weakRefStructs.getWeakVoidRefStruct(reference->kind);
-        default:
-          assert(false);
-      }
-      break;
-    }
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4: {
-      switch (reference->ownership) {
-        case Ownership::OWN:
-        case Ownership::SHARE:
-          return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
-        case Ownership::BORROW:
-        case Ownership::WEAK:
-          return weakRefStructs.getWeakVoidRefStruct(reference->kind);
-      }
-      break;
-    }
+  switch (reference->ownership) {
+    case Ownership::BORROW:
+    case Ownership::OWN:
+    case Ownership::SHARE:
+      return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
+    case Ownership::WEAK:
+      return weakRefStructs.getWeakVoidRefStruct(reference->kind);
     default:
       assert(false);
   }
-  assert(false);
 }
 
 Ref NaiveRC::receiveUnencryptedAlienReference(
@@ -942,25 +900,13 @@ Ref NaiveRC::receiveUnencryptedAlienReference(
   exit(1);
 }
 
-Ref NaiveRC::encryptAndSendFamiliarReference(
+LLVMValueRef NaiveRC::encryptAndSendFamiliarReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
     Ref sourceRef) {
-  switch (globalState->opt->regionOverride) {
-    case RegionOverride::NAIVE_RC:
-
-      // Dealias when sending to the outside world, see DEPAR.
-      globalState->getRegion(sourceRefMT)
-          ->dealias(FL(), functionState, builder, sourceRefMT, sourceRef);
-
-      return sourceRef;
-    case RegionOverride::RESILIENT_V3: case RegionOverride::RESILIENT_V4:
-      // Someday we'll do some encryption stuff here
-      return sourceRef;
-    default:
-      assert(false);
-  }
+//  return sourceRef;
+  assert(false); // naive shouldnt be externing
 }
 
 void NaiveRC::initializeElementInRSA(

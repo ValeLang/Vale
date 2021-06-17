@@ -363,7 +363,7 @@ public:
 
   // TODO Make these private once refactor is done
 //  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
-//    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
+//    return structs.makeWeakFatPtr(referenceM_, ptrLE);
 //  }
   // TODO get rid of these once refactor is done
 //  ControlBlock* getControlBlock(Kind* kind) override {
@@ -385,10 +385,10 @@ public:
     return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
 //  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
-//    return mutWeakableStructs.getWeakRefHeaderStruct(kind);
+//    return structs.getWeakRefHeaderStruct(kind);
 //  }
 //  LLVMTypeRef getWeakVoidRefStruct(Kind* kind) override {
-//    return mutWeakableStructs.getWeakVoidRefStruct(kind);
+//    return structs.getWeakVoidRefStruct(kind);
 //  }
   void fillControlBlock(
       AreaAndFileAndLine from,
@@ -417,7 +417,7 @@ public:
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
-  Reference* getExternalType(
+  LLVMTypeRef getExternalType(
       Reference* refMT) override;
 
   Ref receiveUnencryptedAlienReference(
@@ -431,9 +431,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) override;
+      LLVMValueRef sourceRefLE) override;
 
-  Ref encryptAndSendFamiliarReference(
+  LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -482,7 +482,7 @@ private:
 
   GlobalState* globalState = nullptr;
 
-  LLVMTypeRef regionLT;
+  LLVMTypeRef regionLT = nullptr;
 
   KindStructs mutNonWeakableStructs;
   WeakableKindStructs mutWeakableStructs;

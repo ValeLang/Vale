@@ -1,0 +1,13 @@
+interface IShip export imm { }
+
+struct Spaceship export imm { fuel int; }
+impl IShip for Spaceship;
+
+struct Seaship export imm { leftFuel int; rightFuel int; }
+impl IShip for Seaship;
+
+fn cGetShipFuel(s IShip) int extern;
+
+fn main() int export {
+  cGetShipFuel(Seaship(37, 5))
+}

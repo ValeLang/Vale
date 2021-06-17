@@ -910,10 +910,10 @@ std::string RCImm::generateStaticSizedArrayDefsC(
   }
 }
 
-Reference* RCImm::getExternalType(Reference* refMT) {
+LLVMTypeRef RCImm::getExternalType(Reference* refMT) {
   // Instance regions (unlike this one) return their handle types from this method.
   // For this region though, we don't give out handles, we give out copies.
-  return globalState->linearRegion->linearizeReference(refMT);
+  return globalState->linearRegion->translateType(globalState->linearRegion->linearizeReference(refMT));
 }
 
 
@@ -923,6 +923,8 @@ Ref RCImm::receiveUnencryptedAlienReference(
     Reference* hostRefMT,
     Reference* valeRefMT,
     Ref sourceRef) {
+  buildFlare(FL(), globalState, functionState, builder);
+
   assert(hostRefMT->ownership == Ownership::SHARE);
 
   auto sourceRegion = globalState->getRegion(hostRefMT);
@@ -956,6 +958,7 @@ Ref RCImm::receiveUnencryptedAlienReference(
              dynamic_cast<InterfaceKind*>(hostRefMT->kind) ||
              dynamic_cast<StaticSizedArrayT*>(hostRefMT->kind) ||
              dynamic_cast<RuntimeSizedArrayT*>(hostRefMT->kind)) {
+    buildFlare(FL(), globalState, functionState, builder);
     if (hostRefMT->location == Location::INLINE) {
       if (hostRefMT == globalState->metalCache->emptyTupleStructRef) {
         auto emptyTupleRefMT = globalState->linearRegion->unlinearizeReference(globalState->metalCache->emptyTupleStructRef);
@@ -979,12 +982,12 @@ Ref RCImm::receiveAndDecryptFamiliarReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
-    Ref sourceRef) {
+    LLVMValueRef sourceRefLE) {
   assert(false);
   exit(1);
 }
 
-Ref RCImm::encryptAndSendFamiliarReference(
+LLVMValueRef RCImm::encryptAndSendFamiliarReference(
     FunctionState* functionState,
     LLVMBuilderRef builder,
     Reference* sourceRefMT,
@@ -1101,12 +1104,15 @@ Ref RCImm::callUnserialize(
     Ref objectRef) {
   auto prototype = getUnserializePrototype(valeKind);
   if (auto valeInterfaceMT = dynamic_cast<InterfaceKind*>(valeKind)) {
+    buildFlare(FL(), globalState, functionState, builder);
     auto hostInterfaceMT = globalState->linearRegion->linearizeInterfaceKind(valeInterfaceMT);
     auto hostVirtualArgRefMT = prototype->params[0];
     int indexInEdge = globalState->getInterfaceMethodIndex(hostInterfaceMT, prototype);
+    buildFlare(FL(), globalState, functionState, builder);
     auto methodFunctionPtrLE =
         globalState->getRegion(hostVirtualArgRefMT)
             ->getInterfaceMethodFunctionPtr(functionState, builder, hostVirtualArgRefMT, objectRef, indexInEdge);
+    buildFlare(FL(), globalState, functionState, builder);
     return buildInterfaceCall(globalState, functionState, builder, prototype, methodFunctionPtrLE, {objectRef}, 0);
   } else {
     return buildCall(globalState, functionState, builder, prototype, {objectRef});
@@ -1334,7 +1340,8 @@ std::string RCImm::getExportName(
     Package* package,
     Reference* reference,
     bool includeProjectName) {
-  assert(false);
+  auto linear = globalState->linearRegion->linearizeReference(reference);
+  return globalState->linearRegion->getExportName(package, linear, includeProjectName);
 //  if (dynamic_cast<InterfaceKind*>(reference->kind)) {
 //    return package->getKindExportName(reference->kind);
 //  } else {

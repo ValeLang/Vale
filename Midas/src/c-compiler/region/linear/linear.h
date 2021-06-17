@@ -368,7 +368,7 @@ public:
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
-  Reference* getExternalType(
+  LLVMTypeRef getExternalType(
       Reference* refMT) override;
 
   Ref receiveUnencryptedAlienReference(
@@ -382,9 +382,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) override;
+      LLVMValueRef sourceRefLE) override;
 
-  Ref encryptAndSendFamiliarReference(
+  LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -465,7 +465,6 @@ private:
       Reference* rsaMT,
       RuntimeSizedArrayT* runtimeSizedArrayT,
       Ref sizeRef,
-      const std::string& typeName,
       Ref dryRunBoolRef);
 
   Prototype* getSerializePrototype(Kind* valeKind);

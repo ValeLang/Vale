@@ -49,13 +49,13 @@ ControlBlock* KindStructs::getControlBlock(Kind* kind) {
   return &controlBlock;
 }
 LLVMTypeRef KindStructs::getInnerStruct(StructKind* structKind) {
-  auto structIter = innerStructs.find(structKind->fullName->name);
-  assert(structIter != innerStructs.end());
+  auto structIter = structInnerStructs.find(structKind->fullName->name);
+  assert(structIter != structInnerStructs.end());
   return structIter->second;
 }
 LLVMTypeRef KindStructs::getWrapperStruct(StructKind* structKind) {
-  auto structIter = wrapperStructs.find(structKind->fullName->name);
-  assert(structIter != wrapperStructs.end());
+  auto structIter = structWrapperStructs.find(structKind->fullName->name);
+  assert(structIter != structWrapperStructs.end());
   return structIter->second;
 }
 LLVMTypeRef KindStructs::getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT) {
@@ -182,14 +182,14 @@ void KindStructs::declareStruct(StructKind* structM) {
   auto innerStructL =
       LLVMStructCreateNamed(
           globalState->context, structM->fullName->name.c_str());
-  assert(innerStructs.count(structM->fullName->name) == 0);
-  innerStructs.emplace(structM->fullName->name, innerStructL);
+  assert(structInnerStructs.count(structM->fullName->name) == 0);
+  structInnerStructs.emplace(structM->fullName->name, innerStructL);
 
   auto wrapperStructL =
       LLVMStructCreateNamed(
           globalState->context, (structM->fullName->name + "rc").c_str());
-  assert(wrapperStructs.count(structM->fullName->name) == 0);
-  wrapperStructs.emplace(structM->fullName->name, wrapperStructL);
+  assert(structWrapperStructs.count(structM->fullName->name) == 0);
+  structWrapperStructs.emplace(structM->fullName->name, wrapperStructL);
 }
 
 

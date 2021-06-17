@@ -114,7 +114,7 @@ public:
   Function* getFunction(Name* name) {
     auto iter = functions.find(name->name);
     if (iter == functions.end()) {
-      std::cerr << "Couldn't find struct: " << name->name << std::endl;
+      std::cerr << "Couldn't find function: " << name->name << std::endl;
       exit(1);
     }
     return iter->second;

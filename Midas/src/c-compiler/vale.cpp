@@ -168,6 +168,40 @@ void initInternalExterns(GlobalState* globalState) {
           });
 }
 
+std::string generateFunctionSignature(GlobalState* globalState, Package* package, const std::string& outsideName, Prototype* prototype) {
+  bool usingRetOutParam = typeNeedsPointerParameter(globalState, prototype->returnType);
+  std::stringstream s;
+  std::cout << "Generating signature for " << prototype->name->name << std::endl;
+  auto returnExportName = globalState->getRegion(prototype->returnType)->getExportName(package, prototype->returnType, true);
+  s << "extern ";
+  if (usingRetOutParam) {
+    s << "void ";
+  } else {
+    s << returnExportName << " ";
+  }
+  s << package->packageCoordinate->projectName << "_" << outsideName << "(";
+  bool addedAnyParam = false;
+  if (usingRetOutParam) {
+    s << returnExportName << "* ret";
+    addedAnyParam = true;
+  }
+  for (int i = 0; i < prototype->params.size(); i++) {
+    if (addedAnyParam) {
+      s << ", ";
+    }
+    auto paramExportName = globalState->getRegion(prototype->params[i])->getExportName(package, prototype->params[i], true);
+    s << paramExportName;
+    if (typeNeedsPointerParameter(globalState, prototype->params[i])) {
+      s << "*";
+    }
+    s << " param" << i;
+    addedAnyParam = true;
+  }
+  s << ");" << std::endl;
+
+  return s.str();
+}
+
 void generateExports(GlobalState* globalState, Prototype* mainM) {
   auto program = globalState->program;
   auto packageCoordToHeaderNameToC =
@@ -230,26 +264,17 @@ void generateExports(GlobalState* globalState, Prototype* mainM) {
   }
   for (auto[packageCoord, package] : program->packages) {
     for (auto[exportName, prototype] : package->exportNameToFunction) {
-      auto functionM = program->getFunction(prototype->name);
       bool skipExporting = exportName == "main";
       if (!skipExporting) {
-        std::stringstream s;
-        auto externReturnType = globalState->getRegion(functionM->prototype->returnType)->getExternalType(functionM->prototype->returnType);
-        auto returnExportName = globalState->getRegion(externReturnType)->getExportName(package, externReturnType, true);
-        s << "extern " << returnExportName << " ";
-        s << packageCoord->projectName << "_" << exportName << "(";
-        for (int i = 0; i < functionM->prototype->params.size(); i++) {
-          if (i > 0) {
-            s << ", ";
-          }
-          auto hostParamRefMT = globalState->getRegion(functionM->prototype->params[i])->getExternalType(functionM->prototype->params[i]);
-          auto paramExportName = globalState->getRegion(hostParamRefMT)->getExportName(package, hostParamRefMT, true);
-          s << paramExportName << " param" << i;
-        }
-        s << ");" << std::endl;
-
-        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << s.str() << std::endl;
+        auto s = generateFunctionSignature(globalState, package, exportName, prototype);
+        packageCoordToHeaderNameToC[packageCoord].emplace(exportName, std::stringstream()).first->second << s << std::endl;
       }
+    }
+  }
+  for (auto[packageCoord, package] : program->packages) {
+    for (auto[externName, prototype] : package->externNameToFunction) {
+      auto s = generateFunctionSignature(globalState, package, externName, prototype);
+      packageCoordToHeaderNameToC[packageCoord].emplace(externName, std::stringstream()).first->second << s << std::endl;
     }
   }
   for (auto& [packageCoord, headerNameToC] : packageCoordToHeaderNameToC) {
@@ -298,6 +323,36 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   auto int32LT = LLVMInt32TypeInContext(globalState->context);
   auto int32PtrLT = LLVMPointerType(int32LT, 0);
   auto int8PtrLT = LLVMPointerType(int8LT, 0);
+
+  {
+    globalState->concreteHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternConcreteHandle");
+    std::vector<LLVMTypeRef> memberTypesL = {
+        LLVMInt64TypeInContext(globalState->context), // region ID
+        LLVMInt64TypeInContext(globalState->context), // object pointer
+        LLVMInt32TypeInContext(globalState->context), // generation
+        LLVMInt32TypeInContext(globalState->context), // offset to generation
+    };
+    LLVMStructSetBody(globalState->concreteHandleLT, memberTypesL.data(), memberTypesL.size(), false);
+
+    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->concreteHandleLT);
+    assert(actualSize == 24);
+  }
+
+  {
+    globalState->interfaceHandleLT = LLVMStructCreateNamed(globalState->context, "__ExternInterfaceHandle");
+    std::vector<LLVMTypeRef> memberTypesL = {
+        LLVMInt64TypeInContext(globalState->context), // region ID
+        LLVMInt64TypeInContext(globalState->context), // itable pointer
+        LLVMInt64TypeInContext(globalState->context), // object pointer
+        LLVMInt32TypeInContext(globalState->context), // generation
+        LLVMInt32TypeInContext(globalState->context), // offset to generation
+    };
+    LLVMStructSetBody(globalState->interfaceHandleLT, memberTypesL.data(), memberTypesL.size(), false);
+
+    auto actualSize = LLVMABISizeOfType(globalState->dataLayout, globalState->interfaceHandleLT);
+    assert(actualSize == 32);
+  }
+
 
   if (globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
       globalState->opt->regionOverride == RegionOverride::RESILIENT_V4) {

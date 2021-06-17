@@ -374,41 +374,41 @@ public:
 
   // TODO Make these private once refactor is done
 //  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
-//    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
+//    return structs.makeWeakFatPtr(referenceM_, ptrLE);
 //  }
   // TODO get rid of these once refactor is done
 //  ControlBlock* getControlBlock(Kind* kind) override {
-//    return kindStructs.getControlBlock(kind);
+//    return structs.getControlBlock(kind);
 //  }
 //  IKindStructsSource* getKindStructsSource() override {
-//    return &kindStructs;
+//    return &structs;
 //  }
 //  IWeakRefStructsSource* getWeakRefStructsSource() override {
 //    return &weakRefStructs;
 //  }
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     auto strWrapperPtrLE =
-        kindStructs.makeWrapperPtr(
+        structs.makeWrapperPtr(
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
                 FL(), functionState, builder, globalState->metalCache->strRef, ref));
-    return kindStructs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
+    return structs.getStringBytesPtr(functionState, builder, strWrapperPtrLE);
   }
   LLVMValueRef getStringLen(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     auto strWrapperPtrLE =
-        kindStructs.makeWrapperPtr(
+        structs.makeWrapperPtr(
             FL(), functionState, builder,
             globalState->metalCache->strRef,
             checkValidReference(
                 FL(), functionState, builder, globalState->metalCache->strRef, ref));
-    return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
+    return structs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
 //  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
-//    return mutWeakableStructs.getWeakRefHeaderStruct(kind);
+//    return structs.getWeakRefHeaderStruct(kind);
 //  }
 //  LLVMTypeRef getWeakVoidRefStruct(Kind* kind) override {
-//    return mutWeakableStructs.getWeakVoidRefStruct(kind);
+//    return structs.getWeakVoidRefStruct(kind);
 //  }
   void fillControlBlock(
       AreaAndFileAndLine from,
@@ -434,7 +434,7 @@ public:
     Package* currentPackage,
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
-  Reference* getExternalType(Reference* refMT) override;
+  LLVMTypeRef getExternalType(Reference* refMT) override;
 
   Ref receiveUnencryptedAlienReference(
       FunctionState* functionState,
@@ -447,9 +447,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) override;
+      LLVMValueRef sourceRefLE) override;
 
-  Ref encryptAndSendFamiliarReference(
+  LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -487,15 +487,12 @@ protected:
 
   RegionId* regionId;
 
-  WeakableKindStructs mutWeakableStructs;
-
-  KindStructsRouter kindStructs;
-  WeakRefStructsRouter weakRefStructs;
+  WeakableKindStructs structs;
 
   FatWeaks fatWeaks;
   HybridGenerationalMemory hgmWeaks;
 
-  // TODO see if we can just use kindStructs/weakRefStructs instead of having these?
+  // TODO see if we can just use structs/weakRefStructs instead of having these?
 //  WeakFatPtrLEMaker weakFatPtrMaker;
 //  InterfaceFatPtrLEMaker interfaceFatPtrMaker;
 //  ControlBlockPtrLEMaker controlBlockPtrMaker;

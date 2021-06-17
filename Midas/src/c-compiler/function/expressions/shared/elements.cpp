@@ -105,7 +105,7 @@ void storeInnerArrayMember(
       indexLE
   };
   auto destPtrLE = LLVMBuildGEP(builder, elemsPtrLE, indices, 2, "destPtr");
-  buildFlare(FL(), globalState, functionState, builder, "writing a reference to ", ptrToIntLE(globalState, builder, destPtrLE));
+  //buildFlare(FL(), globalState, functionState, builder, "writing a reference to ", ptrToIntLE(globalState, builder, destPtrLE));
   LLVMBuildStore(builder, sourceLE, destPtrLE);
 }
 

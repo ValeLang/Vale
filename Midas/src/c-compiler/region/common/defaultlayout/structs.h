@@ -227,11 +227,11 @@ private:
   std::unordered_map<std::string, LLVMTypeRef> interfaceRefStructs;
   // These don't have a ref count.
   // They're used directly for inl imm references, and
-  // also used inside the below wrapperStructs.
-  std::unordered_map<std::string, LLVMTypeRef> innerStructs;
+  // also used inside the below structWrapperStructs.
+  std::unordered_map<std::string, LLVMTypeRef> structInnerStructs;
   // These contain a ref count and the above val struct. Yon references
   // point to these.
-  std::unordered_map<std::string, LLVMTypeRef> wrapperStructs;
+  std::unordered_map<std::string, LLVMTypeRef> structWrapperStructs;
 
   // These contain a ref count and an array type. Yon references
   // point to these.
@@ -262,6 +262,10 @@ public:
   LLVMTypeRef getRuntimeSizedArrayWrapperStruct(RuntimeSizedArrayT* rsaMT) override;
   LLVMTypeRef getInterfaceRefStruct(InterfaceKind* interfaceKind) override;
   LLVMTypeRef getInterfaceTableStruct(InterfaceKind* interfaceKind) override;
+
+  LLVMTypeRef getControlBlockStruct() {
+    return kindStructs.getControlBlockStruct();
+  }
 
   void defineStruct(StructKind* structM, std::vector<LLVMTypeRef> membersLT) override;
   void declareStruct(StructKind* structM) override;

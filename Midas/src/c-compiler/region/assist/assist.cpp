@@ -839,7 +839,7 @@ std::string Assist::generateStructDefsC(
     assert(false);
   } else {
     auto name = currentPackage->getKindExportName(structDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
+    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint32_t unused2; uint32_t unused3; } " + name + "Ref;\n";
   }
 }
 
@@ -849,73 +849,40 @@ std::string Assist::generateInterfaceDefsC(
     assert(false);
   } else {
     auto name = currentPackage->getKindExportName(interfaceDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused1; void* unused2; } " + name + "Ref;\n";
+    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint64_t unused2; uint32_t unused3; uint32_t unused4; } " + name + "Ref;\n";
   }
 }
 
-//std::string Assist::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
-//  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
-//  } else if (auto structRefMT = dynamic_cast<StructKind*>(refMT->kind)) {
-//    auto structMT = globalState->program->getStruct(structRefMT);
-//    for (auto baseName : globalState->program->getExportedNames(structRefMT->fullName)) {
-//      if (structMT->mutability == Mutability::MUTABLE) {
-//        assert(refMT->location != Location::INLINE);
-//        return baseName + "Ref";
-//      } else {
-//        if (refMT->location == Location::INLINE) {
-//          return baseName + "Inl";
-//        } else {
-//          return baseName + "Ref";
-//        }
-//      }
-//    }
-//  } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
-//  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(rsaMT->name) + "Ref";
-//  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ssaMT->name) + "Ref";
-//  } else {
-//    assert(false);
-//  }
-//  assert(false);
-//  return "";
-//}
-
-Reference* Assist::getExternalType(Reference* refMT) {
-  return refMT;
-//  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
-//  } else {
-//    if (auto structKind = dynamic_cast<StructKind*>(refMT->kind)) {
-//      if (refMT->location == Location::INLINE) {
-//        assert(false); // what do we do in this case? malloc an owning thing and send it in?
-//        // perhaps just disallow sending inl owns?
-//      }
-//      return LLVMPointerType(kindStructs.getWrapperStruct(structKind), 0);
-//    } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(refMT->kind)) {
-//      return LLVMPointerType(kindStructs.getInterfaceRefStruct(interfaceKind), 0);
-//    } else {
-//      std::cerr << "Invalid type for extern!" << std::endl;
-//      assert(false);
-//    }
-//  }
-//  assert(false);
+LLVMTypeRef Assist::getExternalType(Reference* refMT) {
+  if (dynamic_cast<StructKind*>(refMT->kind) ||
+      dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
+      dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
+    return globalState->getConcreteHandleStruct();
+  } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
+    return globalState->getInterfaceHandleStruct();
+  } else {
+    assert(false);
+  }
 }
 
 Ref Assist::receiveAndDecryptFamiliarReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *sourceRefMT,
+    LLVMValueRef sourceRefLE) {
+  assert(sourceRefMT->ownership != Ownership::SHARE);
+  return regularReceiveAndDecryptFamiliarReference(
+      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRefLE);
+}
+
+LLVMValueRef Assist::encryptAndSendFamiliarReference(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* sourceRefMT,
     Ref sourceRef) {
   assert(sourceRefMT->ownership != Ownership::SHARE);
-
-  // Alias when receiving from the outside world, see DEPAR.
-  globalState->getRegion(sourceRefMT)
-      ->alias(FL(), functionState, builder, sourceRefMT, sourceRef);
-
-  return sourceRef;
+  return regularEncryptAndSendFamiliarReference(
+      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRef);
 }
 
 LLVMTypeRef Assist::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -939,18 +906,6 @@ Ref Assist::receiveUnencryptedAlienReference(
     Ref sourceRef) {
   assert(false);
   exit(1);
-}
-
-Ref Assist::encryptAndSendFamiliarReference(
-    FunctionState* functionState,
-    LLVMBuilderRef builder,
-    Reference* sourceRefMT,
-    Ref sourceRef) {
-  // Dealias when sending to the outside world, see DEPAR.
-  globalState->getRegion(sourceRefMT)
-      ->dealias(FL(), functionState, builder, sourceRefMT, sourceRef);
-
-  return sourceRef;
 }
 
 void Assist::initializeElementInRSA(

@@ -3,7 +3,7 @@
 #include "boundary.h"
 #include "region/iregion.h"
 
-Ref sendHostObjectIntoVale(
+Ref receiveHostObjectIntoVale(
     GlobalState* globalState,
     FunctionState* functionState,
     LLVMBuilderRef builder,
@@ -27,17 +27,22 @@ Ref sendHostObjectIntoVale(
   //   receiveUnencryptedAlienReference. HOWEVER, we don't yet support
   //   moving instances between regions, so this is only for vals for now.
   if (hostRefMT->ownership == Ownership::SHARE) {
+    buildFlare(FL(), globalState, functionState, builder);
     auto hostRef =
         wrap(globalState->getRegion(hostRefMT), hostRefMT, hostRefLE);
     return globalState->getRegion(valeRefMT)
         ->receiveUnencryptedAlienReference(
             functionState, builder, hostRefMT, valeRefMT, hostRef);
   } else {
-    auto valeRef =
-        wrap(globalState->getRegion(hostRefMT), hostRefMT, hostRefLE);
-
+    if (dynamic_cast<InterfaceKind*>(hostRefMT->kind)) {
+      // Interface external handles should be 32 bytes
+      assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostRefLE)) == 32);
+    } else {
+      // Struct and array external handles should be 24 bytes
+      assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostRefLE)) == 24);
+    }
     return globalState->getRegion(valeRefMT)
-        ->receiveAndDecryptFamiliarReference(functionState, builder, hostRefMT, valeRef);
+        ->receiveAndDecryptFamiliarReference(functionState, builder, hostRefMT, hostRefLE);
   }
 }
 
@@ -77,13 +82,22 @@ LLVMValueRef sendValeObjectIntoHost(
 
     return hostArgLE;
   } else {
-    auto encryptedValeRef =
+    auto encryptedValeRefLE =
         globalState->getRegion(valeRefMT)
             ->encryptAndSendFamiliarReference(functionState, builder, valeRefMT, valeRef);
 
-    auto encryptedValeRefLE =
-        globalState->getRegion(valeRefMT)
-            ->checkValidReference(FL(), functionState, builder, valeRefMT, encryptedValeRef);
+//    auto encryptedValeRefLE =
+//        globalState->getRegion(valeRefMT)
+//            ->checkValidReference(FL(), functionState, builder, valeRefMT, encryptedValeRef);
+
+    if (dynamic_cast<InterfaceKind*>(hostRefMT->kind)) {
+      // Interface external handles should be 32 bytes
+      assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(encryptedValeRefLE)) == 32);
+    } else {
+      // Struct and array external handles should be 24 bytes
+      assert(LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(encryptedValeRefLE)) == 24);
+    }
+
     return encryptedValeRefLE;
   }
 }

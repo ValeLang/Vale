@@ -55,6 +55,14 @@ public:
       StructKind* structKindM,
       WrapperPtrLE objPtrLE);
 
+  WeakFatPtrLE assembleStructWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetTypeM,
+      StructKind* structKindM,
+      LLVMValueRef currentGenLE,
+      WrapperPtrLE objPtrLE);
+
   WeakFatPtrLE assembleStaticSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -143,6 +151,18 @@ public:
       LLVMBuilderRef builder,
       Reference* refMT,
       WrapperPtrLE uncastedObjWrapperPtrLE);
+
+  LLVMValueRef implodeConcreteHandle(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef);
+
+  LLVMValueRef implodeInterfaceHandle(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* weakRefM,
+      Ref weakRef);
 
 private:
   LLVMValueRef getTargetGenFromWeakRef(

@@ -69,7 +69,7 @@ Ref ResilientV3::constructStaticSizedArray(
       ::constructStaticSizedArray(
           globalState, functionState, builder, referenceM, kindM, &kindStructs,
           [this, functionState, referenceM, kindM](LLVMBuilderRef innerBuilder,
-                                                       ControlBlockPtrLE controlBlockPtrLE) {
+                                                   ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
                 FL(),
                 functionState,
@@ -678,12 +678,12 @@ Ref ResilientV3::upcast(
     case Ownership::SHARE:
     case Ownership::OWN: {
       return upcastStrong(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM,
-                          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     case Ownership::BORROW:
     case Ownership::WEAK: {
       return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM,
-                          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
       assert(false);
@@ -744,10 +744,10 @@ Ref ResilientV3::loadMember(
   } else {
     if (structRefMT->location == Location::INLINE) {
       auto structRefLE = checkValidReference(FL(), functionState, builder,
-                                             structRefMT, structRef);
+          structRefMT, structRef);
       return wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
-                  LLVMBuildExtractValue(
-                      builder, structRefLE, memberIndex, memberName.c_str()));
+          LLVMBuildExtractValue(
+              builder, structRefLE, memberIndex, memberName.c_str()));
     } else {
       switch (structRefMT->ownership) {
         case Ownership::OWN:
@@ -786,36 +786,9 @@ void ResilientV3::checkInlineStructType(
   auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
   auto structKind = dynamic_cast<StructKind *>(refMT->kind);
   assert(structKind);
-  assert(LLVMTypeOf(argLE) == kindStructs.getInnerStruct(structKind));
+  assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
 }
 
-
-//std::string ResilientV3::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
-//  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
-//  } else if (auto structRefMT = dynamic_cast<StructKind *>(refMT->kind)) {
-//    auto structMT = globalState->program->getStruct(structRefMT);
-//    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(structRefMT->fullName);
-//    if (structMT->mutability == Mutability::MUTABLE) {
-//      assert(refMT->location != Location::INLINE);
-//      return baseName + "Ref";
-//    } else {
-//      if (refMT->location == Location::INLINE) {
-//        return baseName + "Inl";
-//      } else {
-//        return baseName + "Ref";
-//      }
-//    }
-//  } else if (auto interfaceMT = dynamic_cast<InterfaceKind *>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
-//  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(rsaMT->name) + "Ref";
-//  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ssaMT->name) + "Ref";
-//  } else {
-//    assert(false);
-//  }
-//}
 
 std::string ResilientV3::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
@@ -906,7 +879,7 @@ void ResilientV3::initializeElementInRSA(
     Ref indexRef,
     Ref elementRef) {
   ::initializeElementInRSA(globalState, functionState, builder, &kindStructs, rsaMT, rsaRefMT, rsaRef, indexRef,
-                           elementRef);
+      elementRef);
 }
 
 Ref ResilientV3::deinitializeElementFromRSA(

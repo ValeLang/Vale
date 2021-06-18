@@ -808,7 +808,7 @@ void Assist::checkInlineStructType(
   auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
   auto structKind = dynamic_cast<StructKind*>(refMT->kind);
   assert(structKind);
-  assert(LLVMTypeOf(argLE) == kindStructs.getInnerStruct(structKind));
+  assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
 }
 
 std::string Assist::generateRuntimeSizedArrayDefsC(

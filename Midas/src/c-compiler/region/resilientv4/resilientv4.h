@@ -505,7 +505,12 @@ protected:
       bool knownLive,
       LLVMValueRef localAddr);
 
-  LLVMValueRef predictShallowSize(LLVMBuilderRef builder, Kind* kind, LLVMValueRef lenIntLE);
+  LLVMValueRef predictShallowSize(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      bool includeHeader,
+      Kind* kind,
+      LLVMValueRef lenIntLE);
 
   GlobalState* globalState = nullptr;
 

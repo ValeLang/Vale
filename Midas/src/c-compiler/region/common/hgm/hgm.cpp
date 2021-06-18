@@ -100,6 +100,8 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
 
         buildFlare(FL(), globalState, functionState, builder);
 
+        auto controlBlock = kindStructs->getControlBlock(anyMT);
+
         auto genMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::GENERATION_32B);
         auto genPtrLE =
             LLVMBuildStructGEP(builder, halfProtectedObjControlBlockPtrLE.refLE, genMemberIndex, "genPtr");
@@ -279,7 +281,7 @@ Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
         auto resultIntRef =
             buildIfElse(
                 globalState, functionState, builder,
-                isTetheredRef, LLVMInt32TypeInContext(globalState->context),
+                isTetheredRef, LLVMInt64TypeInContext(globalState->context),
                 globalState->metalCache->i64Ref,
                 globalState->metalCache->i64Ref,
                 [this, undeadCycleNextNodePtrLE](LLVMBuilderRef thenBuilder) {

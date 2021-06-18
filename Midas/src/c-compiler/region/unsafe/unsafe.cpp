@@ -16,30 +16,31 @@
 
 Unsafe::Unsafe(GlobalState* globalState_) :
     globalState(globalState_),
-    mutNonWeakableStructs(globalState, makeFastNonWeakableControlBlock(globalState)),
-    mutWeakableStructs(
-        globalState,
-        makeFastWeakableControlBlock(globalState),
-        WrcWeaks::makeWeakRefHeaderStruct(globalState)),
+//    mutNonWeakableStructs(globalState, makeFastNonWeakableControlBlock(globalState)),
     kindStructs(
         globalState,
-        [this](Kind* kind) -> IKindStructsSource* {
-          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-            return &mutNonWeakableStructs;
-          } else {
-            return &mutWeakableStructs;
-          }
-        }),
-    weakRefStructs(
-        [this](Kind* kind) -> IWeakRefStructsSource* {
-            if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-              assert(false);
-            } else {
-              return &mutWeakableStructs;
-            }
-        }),
-    fatWeaks(globalState_, &weakRefStructs),
-    wrcWeaks(globalState_, &kindStructs, &weakRefStructs) {
+        makeFastNonWeakableControlBlock(globalState),
+        makeFastWeakableControlBlock(globalState),
+        WrcWeaks::makeWeakRefHeaderStruct(globalState)),
+//    kindStructs(
+//        globalState,
+//        [this](Kind* kind) -> KindStructs* {
+//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
+//            return &mutNonWeakableStructs;
+//          } else {
+//            return &kindStructs;
+//          }
+//        }),
+//    kindStructs(
+//        [this](Kind* kind) -> KindStructs* {
+//            if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
+//              assert(false);
+//            } else {
+//              return &kindStructs;
+//            }
+//        }),
+    fatWeaks(globalState_, &kindStructs),
+    wrcWeaks(globalState_, &kindStructs, &kindStructs) {
   regionLT = LLVMStructCreateNamed(globalState->context, "__Unsafe_Region");
   LLVMStructSetBody(regionLT, nullptr, 0, false);
 }
@@ -188,7 +189,7 @@ WrapperPtrLE Unsafe::lockWeakRef(
       break;
     case Ownership::WEAK: {
       auto weakFatPtrLE =
-          weakRefStructs.makeWeakFatPtr(
+          kindStructs.makeWeakFatPtr(
               refM,
               checkValidReference(FL(), functionState, builder, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
@@ -222,7 +223,7 @@ Ref Unsafe::lockWeak(
   return regularInnerLockWeak(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM,
       constraintRefM, sourceWeakRefMT, sourceWeakRefLE, buildThen, buildElse,
-      isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
+      isAliveLE, resultOptTypeLE, &kindStructs, &fatWeaks);
 }
 
 
@@ -252,7 +253,7 @@ LLVMTypeRef Unsafe::translateType(Reference* referenceM) {
       return translateReferenceSimple(globalState, &kindStructs, referenceM->kind);
     case Ownership::WEAK:
       assert(referenceM->location != Location::INLINE);
-      return translateWeakReference(globalState, &weakRefStructs, referenceM->kind);
+      return translateWeakReference(globalState, &kindStructs, referenceM->kind);
     default:
       assert(false);
   }
@@ -277,14 +278,14 @@ void Unsafe::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
   globalState->regionIdByKind.emplace(staticSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareStaticSizedArray(staticSizedArrayMT);
+  kindStructs.declareStaticSizedArray(staticSizedArrayMT->kind, Weakability::NON_WEAKABLE);
 }
 
 void Unsafe::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   globalState->regionIdByKind.emplace(runtimeSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
+  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT->kind, Weakability::NON_WEAKABLE);
 }
 
 void Unsafe::defineRuntimeSizedArray(
@@ -307,7 +308,7 @@ void Unsafe::declareStruct(
     StructDefinition* structM) {
   globalState->regionIdByKind.emplace(structM->kind, getRegionId());
 
-  kindStructs.declareStruct(structM->kind);
+  kindStructs.declareStruct(structM->kind, structM->weakability);
 }
 
 void Unsafe::defineStruct(
@@ -337,7 +338,7 @@ void Unsafe::declareInterface(
     InterfaceDefinition* interfaceM) {
   globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
 
-  kindStructs.declareInterface(interfaceM);
+  kindStructs.declareInterface(interfaceM->kind, interfaceM->weakability);
 }
 
 void Unsafe::defineInterface(
@@ -437,7 +438,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Unsafe::explodeInterfaceRef(
     }
     case Ownership::WEAK: {
       return explodeWeakInterfaceRef(
-          globalState, functionState, builder, &kindStructs, &fatWeaks, &weakRefStructs,
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
           virtualParamMT, virtualArgRef,
           [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
             return wrcWeaks.weakInterfaceRefToWeakStructRef(
@@ -685,7 +686,7 @@ Ref Unsafe::upcast(
       return upcastStrong(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     case Ownership::WEAK: {
-      return ::upcastWeak(globalState, functionState, builder, &weakRefStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+      return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
       assert(false);
@@ -868,7 +869,7 @@ LLVMTypeRef Unsafe::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
     case Ownership::SHARE:
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
     case Ownership::WEAK:
-      return mutWeakableStructs.getWeakVoidRefStruct(reference->kind);
+      return kindStructs.getWeakVoidRefStruct(reference->kind);
     default:
       assert(false);
   }

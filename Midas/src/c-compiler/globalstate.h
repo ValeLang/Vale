@@ -14,8 +14,8 @@
 #include "externs.h"
 
 class IRegion;
-class IKindStructsSource;
-class IWeakRefStructsSource;
+class KindStructs;
+class KindStructs;
 class ControlBlock;
 class Linear;
 class RCImm;

@@ -11,9 +11,7 @@ class HybridGenerationalMemory {
 public:
   HybridGenerationalMemory(
       GlobalState* globalState_,
-      ControlBlock* controlBlock_,
-      IKindStructsSource* kindStructsSource_,
-      IWeakRefStructsSource* weakRefStructsSource_,
+      KindStructs* kindStructs_,
       bool elideChecksForKnownLive_,
       bool limitMode_,
       StructKind* anyMT);
@@ -147,7 +145,7 @@ public:
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
-      IWeakRefStructsSource* weakRefStructsSource,
+      KindStructs* weakRefStructsSource,
       Kind* kind,
       WeakFatPtrLE weakRefLE);
 
@@ -163,8 +161,8 @@ private:
   GlobalState* globalState = nullptr;
   ControlBlock* controlBlock = nullptr;
   FatWeaks fatWeaks;
-  IKindStructsSource* kindStructsSource;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* kindStructs;
+//  KindStructs* weakRefStructsSource;
 
   LLVMBuilderRef setupBuilder = nullptr;
 

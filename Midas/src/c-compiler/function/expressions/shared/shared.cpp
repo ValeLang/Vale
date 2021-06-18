@@ -58,7 +58,7 @@ LLVMValueRef adjustStrongRc(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IKindStructsSource* kindStructsSource,
+    KindStructs* kindStructsSource,
     LLVMBuilderRef builder,
     Ref exprRef,
     Reference* refM,
@@ -88,7 +88,7 @@ LLVMValueRef adjustStrongRc(
 
 LLVMValueRef strongRcIsZero(
     GlobalState* globalState,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     LLVMBuilderRef builder,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtrLE) {

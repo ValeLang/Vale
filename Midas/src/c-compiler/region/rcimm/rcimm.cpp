@@ -15,7 +15,7 @@ void fillControlBlock(
     AreaAndFileAndLine from,
     GlobalState* globalState,
     FunctionState* functionState,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     LLVMBuilderRef builder,
     Kind* kindM,
     ControlBlockPtrLE controlBlockPtrLE,
@@ -44,7 +44,7 @@ ControlBlock makeImmControlBlock(GlobalState* globalState) {
 
 RCImm::RCImm(GlobalState* globalState_)
   : globalState(globalState_),
-    kindStructs(globalState, makeImmControlBlock(globalState)) {
+    kindStructs(globalState, makeImmControlBlock(globalState), makeImmControlBlock(globalState), LLVMStructCreateNamed(globalState->context, "immUnused")) {
 }
 
 RegionId* RCImm::getRegionId() {
@@ -170,7 +170,7 @@ void RCImm::declareStruct(
     StructDefinition* structM) {
   globalState->regionIdByKind.emplace(structM->kind, getRegionId());
 
-  kindStructs.declareStruct(structM->kind);
+  kindStructs.declareStruct(structM->kind, structM->weakability);
 }
 
 void RCImm::declareStructExtraFunctions(StructDefinition* structDefM) {
@@ -196,7 +196,7 @@ void RCImm::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* ssaDefM) {
   globalState->regionIdByKind.emplace(ssaDefM->kind, getRegionId());
 
-  kindStructs.declareStaticSizedArray(ssaDefM);
+  kindStructs.declareStaticSizedArray(ssaDefM->kind, Weakability::NON_WEAKABLE);
 }
 
 void RCImm::declareStaticSizedArrayExtraFunctions(StaticSizedArrayDefinitionT* ssaDef) {
@@ -219,7 +219,7 @@ void RCImm::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* rsaDefM) {
   globalState->regionIdByKind.emplace(rsaDefM->kind, getRegionId());
 
-  kindStructs.declareRuntimeSizedArray(rsaDefM);
+  kindStructs.declareRuntimeSizedArray(rsaDefM->kind, Weakability::NON_WEAKABLE);
 }
 
 void RCImm::declareRuntimeSizedArrayExtraFunctions(RuntimeSizedArrayDefinitionT* rsaDefM) {
@@ -242,7 +242,7 @@ void RCImm::declareInterface(
     InterfaceDefinition* interfaceM) {
   globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
 
-  kindStructs.declareInterface(interfaceM);
+  kindStructs.declareInterface(interfaceM->kind, interfaceM->weakability);
 }
 
 void RCImm::declareInterfaceExtraFunctions(InterfaceDefinition* interfaceDefM) {
@@ -817,25 +817,25 @@ LLVMTypeRef RCImm::translateType(GlobalState* globalState, Reference* referenceM
 }
 
 
-LLVMTypeRef RCImm::getControlBlockStruct(Kind* kind) {
-  if (auto structKind = dynamic_cast<StructKind*>(kind)) {
-    auto structM = globalState->program->getStruct(structKind);
-    assert(structM->mutability == Mutability::IMMUTABLE);
-  } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(kind)) {
-    auto interfaceM = globalState->program->getInterface(interfaceKind);
-    assert(interfaceM->mutability == Mutability::IMMUTABLE);
-  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
-    auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
-    assert(ssaDef->rawArray->mutability == Mutability::IMMUTABLE);
-  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
-    auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
-    assert(rsaDef->rawArray->mutability == Mutability::IMMUTABLE);
-  } else if (auto strMT = dynamic_cast<Str*>(kind)) {
-  } else {
-    assert(false);
-  }
-  return kindStructs.getControlBlockStruct();
-}
+//LLVMTypeRef RCImm::getControlBlockStruct(Kind* kind) {
+//  if (auto structKind = dynamic_cast<StructKind*>(kind)) {
+//    auto structM = globalState->program->getStruct(structKind);
+//    assert(structM->mutability == Mutability::IMMUTABLE);
+//  } else if (auto interfaceKind = dynamic_cast<InterfaceKind*>(kind)) {
+//    auto interfaceM = globalState->program->getInterface(interfaceKind);
+//    assert(interfaceM->mutability == Mutability::IMMUTABLE);
+//  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(kind)) {
+//    auto ssaDef = globalState->program->getStaticSizedArray(ssaMT);
+//    assert(ssaDef->rawArray->mutability == Mutability::IMMUTABLE);
+//  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(kind)) {
+//    auto rsaDef = globalState->program->getRuntimeSizedArray(rsaMT);
+//    assert(rsaDef->rawArray->mutability == Mutability::IMMUTABLE);
+//  } else if (auto strMT = dynamic_cast<Str*>(kind)) {
+//  } else {
+//    assert(false);
+//  }
+//  return kindStructs.getControlBlockStruct();
+//}
 
 
 LoadResult RCImm::loadMember(
@@ -863,7 +863,7 @@ void RCImm::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IKindStructsSource* kindStructs,
+    KindStructs* kindStructs,
     Reference* refM,
     LLVMValueRef refLE) {
   regularCheckValidReference(checkerAFL, globalState, functionState, builder, kindStructs, refM, refLE);

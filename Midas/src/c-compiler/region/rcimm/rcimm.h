@@ -393,9 +393,6 @@ public:
 
   LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM);
 
-  LLVMTypeRef getControlBlockStruct(Kind* kind);
-
-
   LoadResult loadMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -410,7 +407,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IKindStructsSource* kindStructs,
+      KindStructs* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);
 

@@ -29,19 +29,17 @@ ControlBlock makeResilientV3WeakableControlBlock(GlobalState* globalState) {
 ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
     globalState(globalState_),
     regionId(regionId_),
-    mutWeakableStructs(
+    kindStructs(
         globalState,
         makeResilientV3WeakableControlBlock(globalState),
+        makeResilientV3WeakableControlBlock(globalState),
         HybridGenerationalMemory::makeWeakRefHeaderStruct(globalState, regionId)),
-    kindStructs(
-        globalState, [this](Kind *kind) -> IKindStructsSource * { return &mutWeakableStructs; }),
-    weakRefStructs([this](Kind *kind) -> IWeakRefStructsSource * { return &mutWeakableStructs; }),
-    fatWeaks(globalState_, &weakRefStructs),
+    fatWeaks(globalState_, &kindStructs),
     hgmWeaks(
         globalState_,
-        mutWeakableStructs.getControlBlock(),
+//        kindStructs.getControlBlock(),
+//        &kindStructs,
         &kindStructs,
-        &weakRefStructs,
         globalState->opt->elideChecksForKnownLive,
         false,
         // V3 doesnt use the undead cycle, so any struct will do here
@@ -180,7 +178,7 @@ Ref ResilientV3::weakAlias(FunctionState *functionState, LLVMBuilderRef builder,
                            Reference *targetRefMT, Ref sourceRef) {
   assert(sourceRefMT->ownership == Ownership::BORROW);
   return transmuteWeakRef(
-      globalState, functionState, builder, sourceRefMT, targetRefMT, &weakRefStructs, sourceRef);
+      globalState, functionState, builder, sourceRefMT, targetRefMT, &kindStructs, sourceRef);
 }
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
@@ -203,7 +201,7 @@ WrapperPtrLE ResilientV3::lockWeakRef(
     case Ownership::BORROW:
     case Ownership::WEAK: {
       auto weakFatPtrLE =
-          weakRefStructs.makeWeakFatPtr(
+          kindStructs.makeWeakFatPtr(
               refM,
               checkValidReference(
                   FL(), functionState, builder, refM, weakRefLE));
@@ -240,7 +238,7 @@ Ref ResilientV3::lockWeak(
   return resilientLockWeak(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever,
       resultOptTypeM, constraintRefM, sourceWeakRefMT, sourceWeakRefLE, weakRefKnownLive,
-      buildThen, buildElse, isAliveLE, resultOptTypeLE, &weakRefStructs);
+      buildThen, buildElse, isAliveLE, resultOptTypeLE, &kindStructs);
 }
 
 Ref ResilientV3::asSubtype(
@@ -259,7 +257,7 @@ Ref ResilientV3::asSubtype(
   assert(sourceInterfaceKind);
 
   return resilientDowncast(
-      globalState, functionState, builder, &kindStructs, &weakRefStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
+      globalState, functionState, builder, &kindStructs, &kindStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
       targetKind, buildThen, buildElse, targetStructKind, sourceInterfaceKind);
 }
 
@@ -273,7 +271,7 @@ LLVMTypeRef ResilientV3::translateType(Reference *referenceM) {
     case Ownership::BORROW:
     case Ownership::WEAK:
       assert(referenceM->location != Location::INLINE);
-      return translateWeakReference(globalState, &weakRefStructs, referenceM->kind);
+      return translateWeakReference(globalState, &kindStructs, referenceM->kind);
     default:
       assert(false);
   }
@@ -298,14 +296,19 @@ void ResilientV3::declareStaticSizedArray(
     StaticSizedArrayDefinitionT *staticSizedArrayMT) {
   globalState->regionIdByKind.emplace(staticSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareStaticSizedArray(staticSizedArrayMT);
+
+  // All SSAs are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareStaticSizedArray(staticSizedArrayMT->kind, weakability);
 }
 
 void ResilientV3::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT *runtimeSizedArrayMT) {
   globalState->regionIdByKind.emplace(runtimeSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
+  // All SSAs are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT->kind, weakability);
 }
 
 void ResilientV3::defineRuntimeSizedArray(
@@ -328,7 +331,11 @@ void ResilientV3::declareStruct(
     StructDefinition *structM) {
   globalState->regionIdByKind.emplace(structM->kind, getRegionId());
 
-  kindStructs.declareStruct(structM->kind);
+  // Note how it's not:
+  //   auto weakability = structM->weakability;
+  // This is because all structs are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareStruct(structM->kind, weakability);
 }
 
 void ResilientV3::defineStruct(StructDefinition *structM) {
@@ -353,7 +360,12 @@ void ResilientV3::defineEdge(Edge *edge) {
 
 void ResilientV3::declareInterface(InterfaceDefinition *interfaceM) {
   globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
-  kindStructs.declareInterface(interfaceM);
+
+  // Note how it's not:
+  //   auto weakability = interfaceM->weakability;
+  // This is because all interfaces are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareInterface(interfaceM->kind, weakability);
 }
 
 void ResilientV3::defineInterface(InterfaceDefinition *interfaceM) {
@@ -441,7 +453,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> ResilientV3::explodeInterfaceRef(
     case Ownership::BORROW:
     case Ownership::WEAK: {
       return explodeWeakInterfaceRef(
-          globalState, functionState, builder, &kindStructs, &fatWeaks, &weakRefStructs,
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
           virtualParamMT, virtualArgRef,
           [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
             return hgmWeaks.weakInterfaceRefToWeakStructRef(
@@ -671,7 +683,7 @@ Ref ResilientV3::upcast(
     }
     case Ownership::BORROW:
     case Ownership::WEAK: {
-      return ::upcastWeak(globalState, functionState, builder, &weakRefStructs, sourceStructMT, sourceStructKindM,
+      return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM,
                           sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
@@ -880,7 +892,7 @@ LLVMTypeRef ResilientV3::getInterfaceMethodVirtualParamAnyType(Reference *refere
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
     case Ownership::BORROW:
     case Ownership::WEAK:
-      return weakRefStructs.getWeakVoidRefStruct(reference->kind);
+      return kindStructs.getWeakVoidRefStruct(reference->kind);
   }
 }
 

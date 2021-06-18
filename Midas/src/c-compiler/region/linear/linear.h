@@ -404,7 +404,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IKindStructsSource* kindStructs,
+      KindStructs* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);
 

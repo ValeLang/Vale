@@ -9,7 +9,7 @@
 
 class FatWeaks {
 public:
-  FatWeaks(GlobalState* globalState_, IWeakRefStructsSource* weakRefStructsSource_)
+  FatWeaks(GlobalState* globalState_, KindStructs* weakRefStructsSource_)
   : globalState(globalState_),
   weakRefStructsSource(weakRefStructsSource_){}
 
@@ -45,7 +45,7 @@ public:
 
 private:
   GlobalState* globalState = nullptr;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* weakRefStructsSource;
 };
 
 #endif

@@ -11,8 +11,8 @@ class LgtWeaks {
 public:
   LgtWeaks(
       GlobalState* globalState,
-      IKindStructsSource* kindStructsSource,
-      IWeakRefStructsSource* weakRefStructsSource,
+      KindStructs* kindStructsSource,
+      KindStructs* weakRefStructsSource,
       bool elideChecksForKnownLive);
 
   Ref assembleWeakRef(
@@ -110,7 +110,7 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IKindStructsSource* structs,
+      KindStructs* structs,
       Kind* kindM,
       LLVMValueRef controlBlockLE);
 
@@ -136,7 +136,7 @@ public:
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
-      IWeakRefStructsSource* weakRefStructsSource,
+      KindStructs* weakRefStructsSource,
       Kind* kind,
       WeakFatPtrLE weakRefLE);
 
@@ -168,8 +168,8 @@ private:
 
   GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
-  IKindStructsSource* kindStructsSource;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* kindStructsSource;
+  KindStructs* weakRefStructsSource;
   bool elideChecksForKnownLive;
 
   LLVMValueRef lgtTablePtrLE = nullptr;

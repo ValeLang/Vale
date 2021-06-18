@@ -10,12 +10,12 @@ fn getShipFuelInner(virtual s &IShip) int abstract;
 fn getShipFuelInner(s &Spaceship impl IShip) int { s.fuel }
 fn getShipFuelInner(s &Seaship impl IShip) int { s.leftFuel + s.rightFuel }
 
-fn cGetShipFuel(s &IShip) int export {
+fn valeGetShipFuel(s &IShip) int export {
   getShipFuelInner(s)
 }
 
-fn valeGetTripleShipFuel(s &IShip) int extern;
+fn cGetTripleShipFuel(s &IShip) int extern;
 
 fn main() int export {
-  valeGetTripleShipFuel(&Seaship(9, 5))
+  cGetTripleShipFuel(&Seaship(9, 5))
 }

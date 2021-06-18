@@ -8,6 +8,6 @@ export Array<imm, final, Spaceship> as ImmSpaceshipArray;
 fn cSumFuel(arr Array<imm, final, Spaceship>) int extern;
 
 fn main() int export {
-  a = [imm *](5, (i){ Spaceship(i, i * 2) });
+  a = [imm *](5, (i){ Spaceship(i * 2, 7) });
   = cSumFuel(a);
 }

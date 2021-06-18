@@ -367,10 +367,10 @@ public:
 //  ControlBlock* getControlBlock(Kind* kind) override {
 //    return kindStructs.getControlBlock(kind);
 //  }
-//  IKindStructsSource* getKindStructsSource() override {
+//  KindStructs* getKindStructsSource() override {
 //    return &kindStructs;
 //  }
-//  IWeakRefStructsSource* getWeakRefStructsSource() override {
+//  KindStructs* getWeakRefStructsSource() override {
 //    return &weakRefStructs;
 //  }
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
@@ -511,10 +511,10 @@ protected:
 
   RegionId* regionId = nullptr;
 
-  WeakableKindStructs mutWeakableStructs;
+  KindStructs kindStructs;
 
-  KindStructsRouter kindStructs;
-  WeakRefStructsRouter weakRefStructs;
+//  KindStructsRouter kindStructs;
+//  WeakRefStructsRouter weakRefStructs;
 
   FatWeaks fatWeaks;
 

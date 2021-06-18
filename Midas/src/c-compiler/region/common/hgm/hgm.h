@@ -11,9 +11,7 @@ class HybridGenerationalMemory {
 public:
   HybridGenerationalMemory(
       GlobalState* globalState_,
-      ControlBlock* controlBlock_,
-      IKindStructsSource* kindStructsSource_,
-      IWeakRefStructsSource* weakRefStructsSource_,
+      KindStructs* kindStructs_,
       bool elideChecksForKnownLive_,
       bool limitMode_,
       StructKind* anyMT);
@@ -47,6 +45,14 @@ public:
       InterfaceKind* interfaceKindM,
       InterfaceFatPtrLE sourceInterfaceFatPtrLE);
 
+  WeakFatPtrLE assembleInterfaceWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetType,
+      InterfaceKind* interfaceKindM,
+      LLVMValueRef currentGenLE,
+      InterfaceFatPtrLE sourceInterfaceFatPtrLE);
+
   WeakFatPtrLE assembleStructWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -71,13 +77,29 @@ public:
       Reference* targetSSAWeakRefMT,
       WrapperPtrLE objPtrLE);
 
+  WeakFatPtrLE assembleStaticSizedArrayWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetTypeM,
+      StaticSizedArrayT* staticSizedArrayMT,
+      LLVMValueRef currentGenLE,
+      WrapperPtrLE objPtrLE);
+
   WeakFatPtrLE assembleRuntimeSizedArrayWeakRef(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      Reference* sourceType,
-      RuntimeSizedArrayT* runtimeSizedArrayMT,
-      Reference* targetRSAWeakRefMT,
-      WrapperPtrLE sourceRefLE);
+      Reference* sourceSSAMT,
+      RuntimeSizedArrayT* staticSizedArrayMT,
+      Reference* targetSSAWeakRefMT,
+      WrapperPtrLE objPtrLE);
+
+  WeakFatPtrLE assembleRuntimeSizedArrayWeakRef(
+      FunctionState* functionState,
+      LLVMBuilderRef builder,
+      Reference* targetTypeM,
+      RuntimeSizedArrayT* staticSizedArrayMT,
+      LLVMValueRef currentGenLE,
+      WrapperPtrLE objPtrLE);
 
   LLVMValueRef lockGenFatPtr(
       AreaAndFileAndLine from,
@@ -167,7 +189,7 @@ public:
 private:
   LLVMValueRef getTargetGenFromWeakRef(
       LLVMBuilderRef builder,
-      IWeakRefStructsSource* weakRefStructsSource,
+      KindStructs* weakRefStructsSource,
       Kind* kind,
       WeakFatPtrLE weakRefLE);
 
@@ -183,8 +205,8 @@ private:
   GlobalState* globalState = nullptr;
   ControlBlock* controlBlock = nullptr;
   FatWeaks fatWeaks;
-  IKindStructsSource* kindStructsSource;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* kindStructs;
+//  KindStructs* weakRefStructsSource;
 
   LLVMBuilderRef setupBuilder = nullptr;
 
@@ -192,11 +214,11 @@ private:
   LLVMValueRef undeadCycleHeadNodePtrPtrLE = nullptr;
 
   bool elideChecksForKnownLive = false;
-
-  // If true, then pretend all references are known live, dont fill in any generations, basically
-  // pretend to be unsafe mode as much as possible.
-  // This is to see the theoretical maximum speed of HGM, and where its slowdowns are.
-  bool limitMode = false;
+//
+//  // If true, then pretend all references are known live, dont fill in any generations, basically
+//  // pretend to be unsafe mode as much as possible.
+//  // This is to see the theoretical maximum speed of HGM, and where its slowdowns are.
+//  bool limitMode = false;
 
   // Points to an object whose control block is in an unprotected page, and the contents of the object
   // is in a protected page.

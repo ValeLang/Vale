@@ -471,7 +471,9 @@ private:
   Prototype* getSerializeThunkPrototype(StructKind* structKind, InterfaceKind* interfaceKind);
 
   LLVMValueRef predictShallowSize(
+      FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool includeHeader,
       Kind* kind,
       // Ignored if kind isn't an array or string.
       // If it's a string, this will be the length of the string.

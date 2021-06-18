@@ -523,15 +523,13 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
   Linear linearRegion(globalState);
   globalState->linearRegion = &linearRegion;
   globalState->regions.emplace(globalState->linearRegion->getRegionId(), globalState->linearRegion);
-  
   ResilientV3 resilientV3Region(globalState, globalState->metalCache->resilientV3RegionId);
   globalState->resilientV3Region = &resilientV3Region;
   globalState->regions.emplace(globalState->resilientV3Region->getRegionId(), globalState->resilientV3Region);
-  /*ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
+  ResilientV4 resilientV4Region(globalState, globalState->metalCache->resilientV4RegionId);
   globalState->resilientV4Region = &resilientV4Region;
   globalState->regions.emplace(globalState->resilientV4Region->getRegionId(), globalState->resilientV4Region);
-  */
-//  Mega megaRegion(globalState);
+
   globalState->mutRegion = globalState->getRegion(metalCache.mutRegionId);
 
 
@@ -554,7 +552,8 @@ void compileValeCode(GlobalState* globalState, const std::string& filename) {
     for (auto p : package->structs) {
       auto name = p.first;
       auto structM = p.second;
-      globalState->getRegion(structM->regionId)->declareStruct(structM);
+      auto region = globalState->getRegion(structM->regionId);
+      region->declareStruct(structM);
       if (structM->mutability == Mutability::IMMUTABLE) {
         globalState->linearRegion->declareStruct(structM);
       }

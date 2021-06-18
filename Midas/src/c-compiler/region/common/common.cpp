@@ -668,7 +668,7 @@ Ref innerAllocate(
     case Mutability::IMMUTABLE: {
       if (desiredReference->location == Location::INLINE) {
         auto valStructL =
-            kindStructs->getInnerStruct(structKind);
+            kindStructs->getStructInnerStruct(structKind);
         auto innerStructLE =
             constructInnerStruct(
                 globalState, functionState, builder, structM, valStructL, memberRefs);

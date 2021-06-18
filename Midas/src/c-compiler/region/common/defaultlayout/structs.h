@@ -16,7 +16,7 @@ public:
 
 //  ControlBlock* getControlBlock();
   ControlBlock* getControlBlock(Kind* kind);
-  LLVMTypeRef getInnerStruct(StructKind* structKind);
+  LLVMTypeRef getStructInnerStruct(StructKind* structKind);
   LLVMTypeRef getWrapperStruct(Kind* kind);
   LLVMTypeRef getStructWrapperStruct(StructKind* structKind);
   LLVMTypeRef getStaticSizedArrayWrapperStruct(StaticSizedArrayT* ssaMT);

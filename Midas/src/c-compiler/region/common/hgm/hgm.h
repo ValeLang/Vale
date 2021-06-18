@@ -203,7 +203,7 @@ private:
   Prototype* cleanupIterPrototype = nullptr;
 
   GlobalState* globalState = nullptr;
-  ControlBlock* controlBlock = nullptr;
+//  ControlBlock* controlBlock = nullptr;
   FatWeaks fatWeaks;
   KindStructs* kindStructs;
 //  KindStructs* weakRefStructsSource;

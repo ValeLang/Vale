@@ -84,7 +84,7 @@ ControlBlock* KindStructs::getControlBlock(Kind* kind) {
     assert(false);
   }
 }
-LLVMTypeRef KindStructs::getInnerStruct(StructKind* structKind) {
+LLVMTypeRef KindStructs::getStructInnerStruct(StructKind* structKind) {
   auto structIter = structInnerStructs.find(structKind->fullName->name);
   assert(structIter != structInnerStructs.end());
   return structIter->second;
@@ -181,7 +181,7 @@ void KindStructs::defineStruct(
   assert(weakRefHeaderStructL);
   Weakability weakable = structIsWeakable(structKind);
 
-  LLVMTypeRef valStructL = getInnerStruct(structKind);
+  LLVMTypeRef valStructL = getStructInnerStruct(structKind);
   LLVMStructSetBody(
       valStructL, membersLT.data(), membersLT.size(), false);
 

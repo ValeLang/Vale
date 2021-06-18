@@ -15,7 +15,7 @@ constexpr uint32_t WRC_INITIAL_VALUE = WRC_ALIVE_BIT;
 
 static LLVMValueRef makeWrciHeader(
     LLVMBuilderRef builder,
-    IWeakRefStructsSource* weakRefStructs,
+    KindStructs* weakRefStructs,
     Kind* kind,
     LLVMValueRef wrciLE) {
   auto headerLE = LLVMGetUndef(weakRefStructs->getWeakRefHeaderStruct(kind));
@@ -79,7 +79,7 @@ void WrcWeaks::maybeReleaseWrc(
 static LLVMValueRef getWrciFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
 //  assert(globalState->opt->regionOverride != RegionOverride::RESILIENT_V1);
@@ -109,7 +109,7 @@ LLVMValueRef WrcWeaks::getWrcPtr(
   return ptrToWrcLE;
 }
 
-WrcWeaks::WrcWeaks(GlobalState *globalState_, IKindStructsSource* kindStructsSource_, IWeakRefStructsSource* weakRefStructsSource_)
+WrcWeaks::WrcWeaks(GlobalState *globalState_, KindStructs* kindStructsSource_, KindStructs* weakRefStructsSource_)
   : globalState(globalState_),
     fatWeaks_(globalState_, weakRefStructsSource_),
     kindStructsSource(kindStructsSource_),
@@ -518,7 +518,7 @@ Ref WrcWeaks::getIsAliveFromWeakRef(
 LLVMValueRef WrcWeaks::fillWeakableControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     Kind* kindM,
     LLVMValueRef controlBlockLE) {
   auto wrciLE = getNewWrci(functionState, builder);

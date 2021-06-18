@@ -16,30 +16,13 @@
 
 Unsafe::Unsafe(GlobalState* globalState_) :
     globalState(globalState_),
-    mutNonWeakableStructs(globalState, makeFastNonWeakableControlBlock(globalState)),
-    mutWeakableStructs(
-        globalState,
-        makeFastWeakableControlBlock(globalState),
-        WrcWeaks::makeWeakRefHeaderStruct(globalState)),
     kindStructs(
         globalState,
-        [this](Kind* kind) -> IKindStructsSource* {
-          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-            return &mutNonWeakableStructs;
-          } else {
-            return &mutWeakableStructs;
-          }
-        }),
-    weakRefStructs(
-        [this](Kind* kind) -> IWeakRefStructsSource* {
-            if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-              assert(false);
-            } else {
-              return &mutWeakableStructs;
-            }
-        }),
-    fatWeaks(globalState_, &weakRefStructs),
-    wrcWeaks(globalState_, &kindStructs, &weakRefStructs) {
+        makeFastNonWeakableControlBlock(globalState),
+        makeFastWeakableControlBlock(globalState),
+        WrcWeaks::makeWeakRefHeaderStruct(globalState)),
+    fatWeaks(globalState_, &kindStructs),
+    wrcWeaks(globalState_, &kindStructs, &kindStructs) {
   regionLT = LLVMStructCreateNamed(globalState->context, "__Unsafe_Region");
   LLVMStructSetBody(regionLT, nullptr, 0, false);
 }
@@ -188,7 +171,7 @@ WrapperPtrLE Unsafe::lockWeakRef(
       break;
     case Ownership::WEAK: {
       auto weakFatPtrLE =
-          weakRefStructs.makeWeakFatPtr(
+          kindStructs.makeWeakFatPtr(
               refM,
               checkValidReference(FL(), functionState, builder, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
@@ -222,7 +205,7 @@ Ref Unsafe::lockWeak(
   return regularInnerLockWeak(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM,
       constraintRefM, sourceWeakRefMT, sourceWeakRefLE, buildThen, buildElse,
-      isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
+      isAliveLE, resultOptTypeLE, &kindStructs, &fatWeaks);
 }
 
 
@@ -252,7 +235,7 @@ LLVMTypeRef Unsafe::translateType(Reference* referenceM) {
       return translateReferenceSimple(globalState, &kindStructs, referenceM->kind);
     case Ownership::WEAK:
       assert(referenceM->location != Location::INLINE);
-      return translateWeakReference(globalState, &weakRefStructs, referenceM->kind);
+      return translateWeakReference(globalState, &kindStructs, referenceM->kind);
     default:
       assert(false);
   }
@@ -277,14 +260,14 @@ void Unsafe::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
   globalState->regionIdByKind.emplace(staticSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareStaticSizedArray(staticSizedArrayMT);
+  kindStructs.declareStaticSizedArray(staticSizedArrayMT->kind, Weakability::NON_WEAKABLE);
 }
 
 void Unsafe::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   globalState->regionIdByKind.emplace(runtimeSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
+  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT->kind, Weakability::NON_WEAKABLE);
 }
 
 void Unsafe::defineRuntimeSizedArray(
@@ -307,7 +290,7 @@ void Unsafe::declareStruct(
     StructDefinition* structM) {
   globalState->regionIdByKind.emplace(structM->kind, getRegionId());
 
-  kindStructs.declareStruct(structM->kind);
+  kindStructs.declareStruct(structM->kind, structM->weakability);
 }
 
 void Unsafe::defineStruct(
@@ -337,7 +320,7 @@ void Unsafe::declareInterface(
     InterfaceDefinition* interfaceM) {
   globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
 
-  kindStructs.declareInterface(interfaceM);
+  kindStructs.declareInterface(interfaceM->kind, interfaceM->weakability);
 }
 
 void Unsafe::defineInterface(
@@ -437,7 +420,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Unsafe::explodeInterfaceRef(
     }
     case Ownership::WEAK: {
       return explodeWeakInterfaceRef(
-          globalState, functionState, builder, &kindStructs, &fatWeaks, &weakRefStructs,
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
           virtualParamMT, virtualArgRef,
           [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
             return wrcWeaks.weakInterfaceRefToWeakStructRef(
@@ -685,7 +668,7 @@ Ref Unsafe::upcast(
       return upcastStrong(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     case Ownership::WEAK: {
-      return ::upcastWeak(globalState, functionState, builder, &weakRefStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+      return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
       assert(false);
@@ -767,73 +750,32 @@ void Unsafe::checkInlineStructType(
 }
 
 
-//std::string Unsafe::getMemberArbitraryRefNameCSeeMMEDT(Reference* refMT) {
-//  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
-//  } else if (auto structRefMT = dynamic_cast<StructKind*>(refMT->kind)) {
-//    auto structMT = globalState->program->getStruct(structRefMT);
-//    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(structRefMT->fullName);
-//    if (structMT->mutability == Mutability::MUTABLE) {
-//      assert(refMT->location != Location::INLINE);
-//      return baseName + "Ref";
-//    } else {
-//      if (refMT->location == Location::INLINE) {
-//        return baseName + "Inl";
-//      } else {
-//        return baseName + "Ref";
-//      }
-//    }
-//  } else if (auto interfaceMT = dynamic_cast<InterfaceKind*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
-//  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(rsaMT->name) + "Ref";
-//  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ssaMT->name) + "Ref";
-//  } else {
-//    assert(false);
-//  }
-//}
-
-std::string Unsafe::generateStructDefsC(
-    Package* currentPackage,
-    StructDefinition* structDefM) {
-  if (structDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
-  }
-}
-
-std::string Unsafe::generateInterfaceDefsC(
-    Package* currentPackage,
-    InterfaceDefinition* interfaceDefM) {
-//      return "void* unused; void* unused;";
-  assert(false); // impl
-  return "";
-}
-
 std::string Unsafe::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
-  }
+  assert(rsaDefM->rawArray->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string Unsafe::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
-  }
+  assert(ssaDefM->rawArray->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
+
+std::string Unsafe::generateStructDefsC(
+    Package* currentPackage, StructDefinition* structDefM) {
+  assert(structDefM->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
+}
+
+std::string Unsafe::generateInterfaceDefsC(
+    Package* currentPackage, InterfaceDefinition* interfaceDefM) {
+  assert(interfaceDefM->mutability == Mutability::MUTABLE);
+  return generateMutableInterfaceHandleDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
+}
+
 
 LLVMTypeRef Unsafe::getExternalType(Reference* refMT) {
   if (dynamic_cast<StructKind*>(refMT->kind) ||
@@ -854,7 +796,7 @@ Ref Unsafe::receiveAndDecryptFamiliarReference(
     LLVMValueRef sourceRefLE) {
   assert(sourceRefMT->ownership != Ownership::SHARE);
   return regularReceiveAndDecryptFamiliarReference(
-      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRefLE);
+      globalState, functionState, builder, &kindStructs, sourceRefMT, sourceRefLE);
 }
 
 LLVMTypeRef Unsafe::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -864,7 +806,7 @@ LLVMTypeRef Unsafe::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
     case Ownership::SHARE:
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
     case Ownership::WEAK:
-      return mutWeakableStructs.getWeakVoidRefStruct(reference->kind);
+      return kindStructs.getWeakVoidRefStruct(reference->kind);
     default:
       assert(false);
   }
@@ -887,7 +829,7 @@ LLVMValueRef Unsafe::encryptAndSendFamiliarReference(
     Ref sourceRef) {
   assert(sourceRefMT->ownership != Ownership::SHARE);
   return regularEncryptAndSendFamiliarReference(
-      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRef);
+      globalState, functionState, builder, &kindStructs, sourceRefMT, sourceRef);
 }
 
 void Unsafe::initializeElementInRSA(

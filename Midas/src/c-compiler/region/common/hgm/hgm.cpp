@@ -12,19 +12,15 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN = 0;
 
 HybridGenerationalMemory::HybridGenerationalMemory(
     GlobalState* globalState_,
-    ControlBlock* controlBlock_,
-    IKindStructsSource* kindStructsSource_,
-    IWeakRefStructsSource* weakRefStructsSource_,
+    KindStructs* kindStructs_,
     bool elideChecksForKnownLive_,
-    bool limitMode_,
+    bool false_,
     StructKind* anyMT_)
   : globalState(globalState_),
-    controlBlock(controlBlock_),
-    fatWeaks(globalState_, weakRefStructsSource_),
-    kindStructsSource(kindStructsSource_),
-    weakRefStructsSource(weakRefStructsSource_),
+    fatWeaks(globalState_, kindStructs_),
+    kindStructs(kindStructs_),
     elideChecksForKnownLive(elideChecksForKnownLive_),
-    limitMode(limitMode_),
+//    false(false_),
     anyMT(anyMT_),
     globalNullPtrPtrByKind(0, globalState->makeAddressHasher<Kind*>()) {
 }
@@ -95,11 +91,11 @@ Prototype* HybridGenerationalMemory::makeMainSetupFunction() {
         buildFlare(FL(), globalState, functionState, builder);
 
         auto halfProtectedAnyObjWrapperPtrLE =
-            kindStructsSource->makeWrapperPtr(
+            kindStructs->makeWrapperPtr(
                 FL(), functionState, builder, anyRefMT,
                 LLVMBuildPointerCast(builder, halfProtectedI8PtrLE, anyRefLT, "halfProtectedAnyObjPtr"));
         auto halfProtectedObjControlBlockPtrLE =
-            kindStructsSource->getConcreteControlBlockPtr(
+            kindStructs->getConcreteControlBlockPtr(
                 FL(), functionState, builder, anyRefMT, halfProtectedAnyObjWrapperPtrLE);
 
         buildFlare(FL(), globalState, functionState, builder);
@@ -263,13 +259,13 @@ Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
 //            ptrToIntLE(globalState, builder, undeadCycleNextNodeObjPtrLE));
 
         auto nextNodeObjWrapperPtrLE =
-            kindStructsSource->makeWrapperPtr(FL(), functionState, builder, anyRefMT, undeadCycleNextNodeObjPtrLE);
+            kindStructs->makeWrapperPtr(FL(), functionState, builder, anyRefMT, undeadCycleNextNodeObjPtrLE);
         auto nextNodeObjRef = wrap(globalState->getRegion(anyMT), anyRefMT, nextNodeObjWrapperPtrLE);
 
-        auto controlBlock = kindStructsSource->getControlBlock(anyMT);
+        auto controlBlock = kindStructs->getControlBlock(anyMT);
         auto tetherMemberIndex = controlBlock->getMemberIndex(ControlBlockMember::TETHER_32B);
         auto controlBlockPtrLE =
-            kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, anyRefMT,
+            kindStructs->getConcreteControlBlockPtr(FL(), functionState, builder, anyRefMT,
                 nextNodeObjWrapperPtrLE);
         auto tetherPtrLE = LLVMBuildStructGEP(builder, controlBlockPtrLE.refLE, tetherMemberIndex, "tetherPtr");
         auto tetherI32LE = LLVMBuildLoad(builder, tetherPtrLE, "tetherI32");
@@ -294,9 +290,9 @@ Prototype* HybridGenerationalMemory::makeCleanupIterFunction() {
                 [this, functionState, nextNodeObjRef, nextNodeObjWrapperPtrLE, undeadCycleNextNodePtrLE,
                  undeadCycleNextNodeNextPtrLE, undeadCycleHeadNodeNextPtrPtrLE, anyRefMT](LLVMBuilderRef elseBuilder) {
                   // It's not tethered, so nuke it!
-//                  buildFlare(FL(), globalState, functionState, elseBuilder, "deallocating! ", ptrToIntLE(globalState, elseBuilder, nextNodeObjWrapperPtrLE.refLE));
-                  innerDeallocate(FL(), globalState, functionState, kindStructsSource, elseBuilder, anyRefMT, nextNodeObjRef);
-//                  buildFlare(FL(), globalState, functionState, elseBuilder);
+                  buildFlare(FL(), globalState, functionState, elseBuilder, "deallocating! ", ptrToIntLE(globalState, elseBuilder, nextNodeObjWrapperPtrLE.refLE));
+                  innerDeallocate(FL(), globalState, functionState, kindStructs, elseBuilder, anyRefMT, nextNodeObjRef);
+                  buildFlare(FL(), globalState, functionState, elseBuilder);
                   callFree(globalState, elseBuilder, undeadCycleNextNodePtrLE);
 //                  buildFlare(FL(), globalState, functionState, elseBuilder);
                   // Make the head node point somewhere else
@@ -366,7 +362,7 @@ Prototype* HybridGenerationalMemory::makeMainCleanupFunction() {
 //                  LLVMBuildLoad(bodyBuilder, undeadCycleNodeObjPtrPtrLE, "undeadCycleNodeObjPtr");
 //              auto undeadCycleNodeObjRef = wrap(globalState->getRegion(anyMT), anyRefMT, undeadCycleNodeObjPtrLE);
 //              buildFlare(FL(), globalState, functionState, bodyBuilder);
-//              innerDeallocate(FL(), globalState, functionState, kindStructsSource, bodyBuilder, anyRefMT,
+//              innerDeallocate(FL(), globalState, functionState, kindStructs, bodyBuilder, anyRefMT,
 //                  undeadCycleNodeObjRef);
 //              buildFlare(FL(), globalState, functionState, bodyBuilder);
 //            });
@@ -378,25 +374,25 @@ Prototype* HybridGenerationalMemory::makeMainCleanupFunction() {
 
 LLVMValueRef HybridGenerationalMemory::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
-    IWeakRefStructsSource* weakRefStructsSource,
+    KindStructs* kindStructs,
     Kind* kind,
     WeakFatPtrLE weakRefLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
              globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
   auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, weakRefLE);
-  assert(LLVMTypeOf(headerLE) == weakRefStructsSource->getWeakRefHeaderStruct(kind));
+  assert(LLVMTypeOf(headerLE) == kindStructs->getWeakRefHeaderStruct(kind));
   return LLVMBuildExtractValue(builder, headerLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "actualGeni");
 }
 
 static LLVMValueRef makeGenHeader(
     GlobalState* globalState,
-    IWeakRefStructsSource* weakRefStructsSource,
+    KindStructs* kindStructs,
     LLVMBuilderRef builder,
     Kind* kind,
     LLVMValueRef targetGenLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
          globalState->opt->regionOverride == RegionOverride::RESILIENT_V4);
-  auto headerLE = LLVMGetUndef(weakRefStructsSource->getWeakRefHeaderStruct(kind));
+  auto headerLE = LLVMGetUndef(kindStructs->getWeakRefHeaderStruct(kind));
   headerLE = LLVMBuildInsertValue(builder, headerLE, targetGenLE, WEAK_REF_HEADER_MEMBER_INDEX_FOR_TARGET_GEN, "header");
   return headerLE;
 }
@@ -404,7 +400,7 @@ static LLVMValueRef makeGenHeader(
 static LLVMValueRef getGenerationFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     Kind* kindM,
     ControlBlockPtrLE controlBlockPtr) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
@@ -446,21 +442,21 @@ WeakFatPtrLE HybridGenerationalMemory::weakStructPtrToGenWeakInterfacePtr(
 //  checkValidReference(
 //      FL(), globalState, functionState, builder, sourceStructTypeM, sourceRefLE);
   auto controlBlockPtr =
-      kindStructsSource->getConcreteControlBlockPtr(
+      kindStructs->getConcreteControlBlockPtr(
           FL(), functionState, builder, sourceStructTypeM,
-          kindStructsSource->makeWrapperPtr(
+          kindStructs->makeWrapperPtr(
               FL(), functionState, builder, sourceStructTypeM,
               fatWeaks.getInnerRefFromWeakRef(
                   functionState, builder, sourceStructTypeM, sourceRefLE)));
 
   auto interfaceRefLT =
-      weakRefStructsSource->getInterfaceWeakRefStruct(
+      kindStructs->getInterfaceWeakRefStruct(
           targetInterfaceKindM);
   auto headerLE = fatWeaks.getHeaderFromWeakRef(builder, sourceRefLE);
 
   auto objPtr =
       makeInterfaceRefStruct(
-          globalState, functionState, builder, kindStructsSource, sourceStructKindM, targetInterfaceKindM, controlBlockPtr);
+          globalState, functionState, builder, kindStructs, sourceStructKindM, targetInterfaceKindM, controlBlockPtr);
 
   return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetInterfaceTypeM, interfaceRefLT, headerLE, objPtr);
@@ -480,22 +476,31 @@ WeakFatPtrLE HybridGenerationalMemory::assembleInterfaceWeakRef(
   LLVMValueRef genLE = nullptr;
   if (sourceType->ownership == Ownership::OWN) {
     auto controlBlockPtrLE =
-        kindStructsSource->getControlBlockPtr(FL(), functionState, builder, interfaceKindM, sourceInterfaceFatPtrLE);
-    if (limitMode) {
-      genLE = constI64LE(globalState, 0);
-    } else {
-      genLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructsSource, sourceType->kind,
+        kindStructs->getControlBlockPtr(FL(), functionState, builder, interfaceKindM, sourceInterfaceFatPtrLE);
+//    if (false) {
+//      genLE = constI64LE(globalState, 0);
+//    } else {
+      genLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructs, sourceType->kind,
           controlBlockPtrLE);
-    }
+//    }
   } else if (sourceType->ownership == Ownership::BORROW) {
     assert(false); // impl
   } else {
     assert(false);
   }
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, interfaceKindM, genLE);
+  return assembleInterfaceWeakRef(functionState, builder, targetType, interfaceKindM, genLE, sourceInterfaceFatPtrLE);
+}
 
+WeakFatPtrLE HybridGenerationalMemory::assembleInterfaceWeakRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* targetType,
+    InterfaceKind* interfaceKindM,
+    LLVMValueRef currentGenLE,
+    InterfaceFatPtrLE sourceInterfaceFatPtrLE) {
+  auto headerLE = makeGenHeader(globalState, kindStructs, builder, interfaceKindM, currentGenLE);
   auto weakRefStructLT =
-      weakRefStructsSource->getInterfaceWeakRefStruct(interfaceKindM);
+      kindStructs->getInterfaceWeakRefStruct(interfaceKindM);
   return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetType, weakRefStructLT, headerLE, sourceInterfaceFatPtrLE.refLE);
 }
@@ -507,14 +512,10 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
     Reference* targetTypeM,
     StructKind* structKindM,
     WrapperPtrLE objPtrLE) {
-//  assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
-  // curious, if its a borrow, do we just return sourceRefLE?
-
-  auto controlBlockPtrLE = kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
-  auto currentGenLE = limitMode ? constI64LE(globalState, 0) : getGenerationFromControlBlockPtr(globalState, builder, kindStructsSource, structTypeM->kind, controlBlockPtrLE);
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, structKindM, currentGenLE);
-  auto weakRefStructLT =
-      weakRefStructsSource->getStructWeakRefStruct(structKindM);
+  auto controlBlockPtrLE = kindStructs->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
+  auto currentGenLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructs, structTypeM->kind, controlBlockPtrLE);
+  auto headerLE = makeGenHeader(globalState, kindStructs, builder, structKindM, currentGenLE);
+  auto weakRefStructLT = kindStructs->getStructWeakRefStruct(structKindM);
   return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
@@ -526,14 +527,8 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStructWeakRef(
     StructKind* structKindM,
     LLVMValueRef currentGenLE,
     WrapperPtrLE objPtrLE) {
-//  assert(structTypeM->ownership == Ownership::OWN || structTypeM->ownership == Ownership::SHARE);
-  // curious, if its a borrow, do we just return sourceRefLE?
-
-//  auto controlBlockPtrLE = kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, structTypeM, objPtrLE);
-//  auto currentGenLE = limitMode ? constI64LE(globalState, 0) : getGenerationFromControlBlockPtr(globalState, builder, kindStructsSource, structTypeM->kind, controlBlockPtrLE);
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, structKindM, currentGenLE);
-  auto weakRefStructLT =
-      weakRefStructsSource->getStructWeakRefStruct(structKindM);
+  auto headerLE = makeGenHeader(globalState, kindStructs, builder, structKindM, currentGenLE);
+  auto weakRefStructLT = kindStructs->getStructWeakRefStruct(structKindM);
   return fatWeaks.assembleWeakFatPtr(
       functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
@@ -547,53 +542,63 @@ WeakFatPtrLE HybridGenerationalMemory::assembleStaticSizedArrayWeakRef(
     WrapperPtrLE sourceRefLE) {
   LLVMValueRef genLE = nullptr;
   if (sourceSSAMT->ownership == Ownership::OWN) {
-    auto controlBlockPtrLE = kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceSSAMT, sourceRefLE);
-    if (limitMode) {
-      genLE = constI64LE(globalState, 0);
-    } else {
-      genLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructsSource, sourceSSAMT->kind,
-          controlBlockPtrLE);
-    }
+    auto controlBlockPtrLE = kindStructs->getConcreteControlBlockPtr(FL(), functionState, builder, sourceSSAMT, sourceRefLE);
+    genLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructs, sourceSSAMT->kind, controlBlockPtrLE);
   } else if (sourceSSAMT->ownership == Ownership::BORROW) {
     assert(false); // impl
   } else {
     assert(false);
   }
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, staticSizedArrayMT, genLE);
+  return assembleStaticSizedArrayWeakRef(
+      functionState, builder, targetSSAWeakRefMT, staticSizedArrayMT, genLE, sourceRefLE);
+}
 
-  auto weakRefStructLT =
-      weakRefStructsSource->getStaticSizedArrayWeakRefStruct(staticSizedArrayMT);
+
+WeakFatPtrLE HybridGenerationalMemory::assembleStaticSizedArrayWeakRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* targetTypeM,
+    StaticSizedArrayT* staticSizedArrayMT,
+    LLVMValueRef currentGenLE,
+    WrapperPtrLE objPtrLE) {
+  auto headerLE = makeGenHeader(globalState, kindStructs, builder, staticSizedArrayMT, currentGenLE);
+  auto weakRefStructLT = kindStructs->getStaticSizedArrayWeakRefStruct(staticSizedArrayMT);
   return fatWeaks.assembleWeakFatPtr(
-      functionState, builder, targetSSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
+      functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
 
 WeakFatPtrLE HybridGenerationalMemory::assembleRuntimeSizedArrayWeakRef(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    Reference* sourceType,
-    RuntimeSizedArrayT* runtimeSizedArrayMT,
-    Reference* targetRSAWeakRefMT,
+    Reference* sourceSSAMT,
+    RuntimeSizedArrayT* staticSizedArrayMT,
+    Reference* targetSSAWeakRefMT,
     WrapperPtrLE sourceRefLE) {
   LLVMValueRef genLE = nullptr;
-  if (sourceType->ownership == Ownership::OWN) {
-    auto controlBlockPtrLE = kindStructsSource->getConcreteControlBlockPtr(FL(), functionState, builder, sourceType, sourceRefLE);
-    if (limitMode) {
-      genLE = constI64LE(globalState, 0);
-    } else {
-      genLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructsSource, sourceType->kind,
-          controlBlockPtrLE);
-    }
-  } else if (sourceType->ownership == Ownership::BORROW) {
+  if (sourceSSAMT->ownership == Ownership::OWN) {
+    auto controlBlockPtrLE = kindStructs->getConcreteControlBlockPtr(FL(), functionState, builder, sourceSSAMT, sourceRefLE);
+    genLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructs, sourceSSAMT->kind, controlBlockPtrLE);
+  } else if (sourceSSAMT->ownership == Ownership::BORROW) {
     assert(false); // impl
   } else {
     assert(false);
   }
-  auto headerLE = makeGenHeader(globalState, weakRefStructsSource, builder, runtimeSizedArrayMT, genLE);
+  return assembleRuntimeSizedArrayWeakRef(
+      functionState, builder, targetSSAWeakRefMT, staticSizedArrayMT, genLE, sourceRefLE);
+}
 
-  auto weakRefStructLT =
-      weakRefStructsSource->getRuntimeSizedArrayWeakRefStruct(runtimeSizedArrayMT);
+
+WeakFatPtrLE HybridGenerationalMemory::assembleRuntimeSizedArrayWeakRef(
+    FunctionState* functionState,
+    LLVMBuilderRef builder,
+    Reference* targetTypeM,
+    RuntimeSizedArrayT* staticSizedArrayMT,
+    LLVMValueRef currentGenLE,
+    WrapperPtrLE objPtrLE) {
+  auto headerLE = makeGenHeader(globalState, kindStructs, builder, staticSizedArrayMT, currentGenLE);
+  auto weakRefStructLT = kindStructs->getRuntimeSizedArrayWeakRefStruct(staticSizedArrayMT);
   return fatWeaks.assembleWeakFatPtr(
-      functionState, builder, targetRSAWeakRefMT, weakRefStructLT, headerLE, sourceRefLE.refLE);
+      functionState, builder, targetTypeM, weakRefStructLT, headerLE, objPtrLE.refLE);
 }
 
 LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
@@ -606,7 +611,7 @@ LLVMValueRef HybridGenerationalMemory::lockGenFatPtr(
   auto fatPtrLE = weakRefLE;
   auto innerLE = fatWeaks.getInnerRefFromWeakRef(functionState, builder, refM, fatPtrLE);
 
-  if (limitMode || (knownLive && elideChecksForKnownLive)) {
+  if (knownLive && elideChecksForKnownLive) {
     // Do nothing
   } else {
     if (globalState->opt->printMemOverhead) {
@@ -667,22 +672,22 @@ LLVMValueRef HybridGenerationalMemory::getIsAliveFromWeakFatPtr(
     Reference* weakRefM,
     WeakFatPtrLE weakFatPtrLE,
     bool knownLive) {
-  if (limitMode) {
+  if (false) {
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else if (knownLive && elideChecksForKnownLive) {
     return LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
   } else {
     // Get target generation from the ref
-    auto targetGenLE = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->kind, weakFatPtrLE);
+    auto targetGenLE = getTargetGenFromWeakRef(builder, kindStructs, weakRefM->kind, weakFatPtrLE);
 
     // Get actual generation from the table
     auto innerRefLE =
         fatWeaks.getInnerRefFromWeakRefWithoutCheck(functionState, builder, weakRefM,
             weakFatPtrLE);
     auto controlBlockPtrLE =
-        kindStructsSource->getControlBlockPtrWithoutChecking(
+        kindStructs->getControlBlockPtrWithoutChecking(
             FL(), functionState, builder, innerRefLE, weakRefM);
-    auto actualGenLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructsSource, weakRefM->kind,
+    auto actualGenLE = getGenerationFromControlBlockPtr(globalState, builder, kindStructs, weakRefM->kind,
         controlBlockPtrLE);
 
     auto isLiveLE = LLVMBuildICmp(builder, LLVMIntEQ, actualGenLE, targetGenLE, "isLive");
@@ -701,7 +706,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
     Reference* weakRefM,
     Ref weakRef,
     bool knownLive) {
-  if (limitMode || (knownLive && elideChecksForKnownLive)) {
+  if (false || (knownLive && elideChecksForKnownLive)) {
     // Do nothing, just return a constant true
     auto isAliveLE = LLVMConstInt(LLVMInt1TypeInContext(globalState->context), 1, false);
     return wrap(globalState->getRegion(globalState->metalCache->boolRef), globalState->metalCache->boolRef, isAliveLE);
@@ -711,7 +716,7 @@ Ref HybridGenerationalMemory::getIsAliveFromWeakRef(
             weakRefM->ownership == Ownership::WEAK);
 
     auto weakFatPtrLE =
-        weakRefStructsSource->makeWeakFatPtr(
+        kindStructs->makeWeakFatPtr(
             weakRefM,
             globalState->getRegion(weakRefM)
                 ->checkValidReference(
@@ -740,16 +745,12 @@ WeakFatPtrLE HybridGenerationalMemory::weakInterfaceRefToWeakStructRef(
 
   // The object might not exist, so skip the check.
   auto interfaceFatPtrLE =
-      kindStructsSource->makeInterfaceFatPtrWithoutChecking(
+      kindStructs->makeInterfaceFatPtrWithoutChecking(
           FL(), functionState, builder,
           weakInterfaceRefMT, // It's still conceptually weak even though its not in a weak pointer.
-          fatWeaks.getInnerRefFromWeakRef(
-              functionState,
-              builder,
-              weakInterfaceRefMT,
-              weakInterfaceFatPtrLE));
+          fatWeaks.getInnerRefFromWeakRef(functionState, builder, weakInterfaceRefMT, weakInterfaceFatPtrLE));
   auto controlBlockPtrLE =
-      kindStructsSource->getControlBlockPtrWithoutChecking(
+      kindStructs->getControlBlockPtrWithoutChecking(
           FL(), functionState, builder, weakInterfaceRefMT->kind, interfaceFatPtrLE);
 
   // Now, reassemble a weak void* ref to the struct.
@@ -776,23 +777,23 @@ void HybridGenerationalMemory::buildCheckWeakRef(
     Reference *actualRefM = nullptr;
     LLVMValueRef refLE = nullptr;
     std::tie(actualRefM, refLE) = hgmGetRefInnardsForChecking(weakRef);
-    auto weakFatPtrLE = weakRefStructsSource->makeWeakFatPtr(weakRefM, refLE);
+    auto weakFatPtrLE = kindStructs->makeWeakFatPtr(weakRefM, refLE);
     auto innerLE =
         fatWeaks.getInnerRefFromWeakRefWithoutCheck(
             functionState, builder, weakRefM, weakFatPtrLE);
 
     auto controlBlockPtrLE =
-        kindStructsSource->getControlBlockPtrWithoutChecking(
+        kindStructs->getControlBlockPtrWithoutChecking(
             FL(), functionState, builder, innerLE, weakRefM);
     // We check that the generation is <= to what's in the actual object.
     auto actualGen =
         getGenerationFromControlBlockPtr(
-            globalState, builder, kindStructsSource, weakRefM->kind, controlBlockPtrLE);
-    auto targetGen = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->kind, weakFatPtrLE);
+            globalState, builder, kindStructs, weakRefM->kind, controlBlockPtrLE);
+    auto targetGen = getTargetGenFromWeakRef(builder, kindStructs, weakRefM->kind, weakFatPtrLE);
     buildCheckGen(globalState, functionState, builder, targetGen, actualGen);
 
     if (auto interfaceKindM = dynamic_cast<InterfaceKind *>(weakRefM->kind)) {
-      auto interfaceFatPtrLE = kindStructsSource->makeInterfaceFatPtrWithoutChecking(FL(),
+      auto interfaceFatPtrLE = kindStructs->makeInterfaceFatPtrWithoutChecking(FL(),
           functionState, builder, weakRefM, innerLE);
       auto itablePtrLE = getTablePtrFromInterfaceRef(builder, interfaceFatPtrLE);
       buildAssertCensusContains(FL(), globalState, functionState, builder, itablePtrLE);
@@ -811,28 +812,28 @@ Ref HybridGenerationalMemory::assembleWeakRef(
     auto sourceRefLE =
         globalState->getRegion(sourceType)
             ->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStructWeakRef(
             functionState, builder, sourceType, targetType, structKind, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto interfaceKindM = dynamic_cast<InterfaceKind*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceInterfaceFatPtrLE = kindStructsSource->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceInterfaceFatPtrLE = kindStructs->makeInterfaceFatPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleInterfaceWeakRef(
             functionState, builder, sourceType, targetType, interfaceKindM, sourceInterfaceFatPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto staticSizedArray = dynamic_cast<StaticSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleStaticSizedArrayWeakRef(
             functionState, builder, sourceType, staticSizedArray, targetType, sourceWrapperPtrLE);
     return wrap(globalState->getRegion(targetType), targetType, resultLE);
   } else if (auto runtimeSizedArray = dynamic_cast<RuntimeSizedArrayT*>(sourceType->kind)) {
     auto sourceRefLE = globalState->getRegion(sourceType)->checkValidReference(FL(), functionState, builder, sourceType, sourceRef);
-    auto sourceWrapperPtrLE = kindStructsSource->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
+    auto sourceWrapperPtrLE = kindStructs->makeWrapperPtr(FL(), functionState, builder, sourceType, sourceRefLE);
     auto resultLE =
         assembleRuntimeSizedArrayWeakRef(
             functionState, builder, sourceType, runtimeSizedArray, targetType, sourceWrapperPtrLE);
@@ -878,7 +879,7 @@ WrapperPtrLE HybridGenerationalMemory::getHalfProtectedPtr(
     iter = globalNullPtrPtrByKind.emplace(reference->kind, globalPtrLE).first;
   }
   auto halfProtectedPtrLE = LLVMBuildLoad(builder, iter->second, "halfProtectedPtr");
-  return kindStructsSource->makeWrapperPtr(FL(), functionState, builder, reference, halfProtectedPtrLE);
+  return kindStructs->makeWrapperPtr(FL(), functionState, builder, reference, halfProtectedPtrLE);
 }
 
 void HybridGenerationalMemory::addToUndeadCycle(
@@ -892,7 +893,7 @@ void HybridGenerationalMemory::addToUndeadCycle(
   auto anyRefLT = globalState->getRegion(anyMT)->translateType(anyRefMT);
 
   auto objAsAnyWrapperPtrLE =
-      kindStructsSource->makeWrapperPtr(
+      kindStructs->makeWrapperPtr(
           FL(), functionState, builder, anyRefMT,
           LLVMBuildPointerCast(builder, uncastedObjWrapperPtrLE.refLE, anyRefLT, "objAsAnyWrapperPtr"));
 
@@ -937,11 +938,11 @@ LLVMValueRef HybridGenerationalMemory::implodeConcreteHandle(
     Reference* weakRefM,
     Ref weakRef) {
   auto weakFatPtrLE =
-      weakRefStructsSource->makeWeakFatPtr(
+      kindStructs->makeWeakFatPtr(
           weakRefM,
           globalState->getRegion(weakRefM)->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
 
-  auto targetGenLE = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->kind, weakFatPtrLE);
+  auto targetGenLE = getTargetGenFromWeakRef(builder, kindStructs, weakRefM->kind, weakFatPtrLE);
 
   auto innerRefLE = fatWeaks.getInnerRefFromWeakRef(functionState, builder, weakRefM, weakFatPtrLE);
 
@@ -957,7 +958,7 @@ LLVMValueRef HybridGenerationalMemory::implodeConcreteHandle(
           builder,
           globalState->getConcreteHandleStruct(),
           constI64LE(globalState, externHandleRegionId),
-          LLVMBuildPtrToInt(builder, innerRefLE, LLVMInt64TypeInContext(globalState->context), "objPtr"),
+          LLVMBuildPtrToInt(builder, innerRefLE, LLVMInt64TypeInContext(globalState->context), "objPtrA"),
           targetGenLE,
           constI32LE(globalState, externHandleGenOffset));
 
@@ -970,20 +971,30 @@ LLVMValueRef HybridGenerationalMemory::implodeInterfaceHandle(
     Reference* weakRefM,
     Ref weakRef) {
   auto weakFatPtrLE =
-      weakRefStructsSource->makeWeakFatPtr(
+      kindStructs->makeWeakFatPtr(
           weakRefM,
           globalState->getRegion(weakRefM)->checkValidReference(FL(), functionState, builder, weakRefM, weakRef));
 
-  auto targetGenLE = getTargetGenFromWeakRef(builder, weakRefStructsSource, weakRefM->kind, weakFatPtrLE);
+  auto targetGenLE = getTargetGenFromWeakRef(builder, kindStructs, weakRefM->kind, weakFatPtrLE);
 
   LLVMValueRef itablePtrLE = nullptr, objPtrLE = nullptr;
   std::tie(itablePtrLE, objPtrLE) =
       explodeWeakInterfaceRef(
-          globalState, functionState, builder, kindStructsSource, &fatWeaks, weakRefStructsSource, weakRefM, weakRef,
+          globalState, functionState, builder, kindStructs, &fatWeaks, kindStructs, weakRefM, weakRef,
           [this, functionState, builder, weakRefM](WeakFatPtrLE weakFatPtrLE) {
             return weakInterfaceRefToWeakStructRef(
                 functionState, builder, weakRefM, weakFatPtrLE);
           });
+
+  // The object might not exist, so skip the check.
+  auto interfaceFatPtrLE =
+      kindStructs->makeInterfaceFatPtrWithoutChecking(
+          FL(), functionState, builder,
+          weakRefM, // It's still conceptually weak even though its not in a weak pointer.
+          fatWeaks.getInnerRefFromWeakRef(functionState, builder, weakRefM, weakFatPtrLE));
+  auto controlBlockPtrLE =
+      kindStructs->getControlBlockPtrWithoutChecking(
+          FL(), functionState, builder, weakRefM->kind, interfaceFatPtrLE);
 
   auto handleLE =
       ::implodeInterfaceHandle(
@@ -992,7 +1003,7 @@ LLVMValueRef HybridGenerationalMemory::implodeInterfaceHandle(
           globalState->getInterfaceHandleStruct(),
           constI64LE(globalState, externHandleRegionId),
           LLVMBuildPtrToInt(builder, itablePtrLE, LLVMInt64TypeInContext(globalState->context), "itablePtr"),
-          LLVMBuildPtrToInt(builder, objPtrLE, LLVMInt64TypeInContext(globalState->context), "objPtr"),
+          LLVMBuildPtrToInt(builder, controlBlockPtrLE.refLE, LLVMInt64TypeInContext(globalState->context), "objPtrB"),
           targetGenLE,
           constI32LE(globalState, externHandleGenOffset));
 

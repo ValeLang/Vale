@@ -992,7 +992,7 @@ void Linear::checkValidReference(
     AreaAndFileAndLine checkerAFL,
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IKindStructsSource* kindStructs,
+    KindStructs* kindStructs,
     Reference* refM,
     LLVMValueRef refLE) {
   regularCheckValidReference(checkerAFL, globalState, functionState, builder, kindStructs, refM, refLE);

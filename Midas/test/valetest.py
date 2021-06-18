@@ -108,8 +108,8 @@ class ValeTest(unittest.TestCase):
     # Tests for immutables in exports/externs
     def test_assist_strlenextern(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/strlenextern"], "assist", 11)
-    def test_assist_retvoidextern(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/retvoidextern"], "assist", 42)
+    def test_assist_voidreturnexport(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/voidreturnexport"], "assist", 42)
     def test_assist_structimmparamextern(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structimmparamextern"], "assist", 42)
     def test_assist_structimmparamexport(self) -> None:
@@ -151,10 +151,10 @@ class ValeTest(unittest.TestCase):
     def test_assist_ssaimmparamdeepexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssaimmparamdeepexport"], "assist", 42)
 
-    def test_assist_exportretvoid(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretvoid"], "assist", 42)
-    def test_assist_exportretstr(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/exportretstr"], "assist", 6)
+    def test_assist_voidreturnexport(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/voidreturnexport"], "assist", 42)
+    def test_assist_strreturnexport(self) -> None:
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/strreturnexport"], "assist", 6)
     def test_assist_structimmparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structimmparamexport"], "assist", 42)
     def test_assist_structimmparamdeepexport(self) -> None:
@@ -213,8 +213,8 @@ class ValeTest(unittest.TestCase):
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutreturnexport"], "resilient-v4", 42)
     def test_resilientv3_rsamutreturnexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutreturnexport"], "resilient-v3", 42)
-    def test_naiverc_rsamutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutreturnexport"], "naive-rc", 42)
+    # def test_naiverc_rsamutreturnexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutreturnexport"], "naive-rc", 42)
 
     def test_assist_ssamutreturnexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutreturnexport"], "assist", 42)
@@ -224,8 +224,8 @@ class ValeTest(unittest.TestCase):
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutreturnexport"], "resilient-v4", 42)
     def test_resilientv3_ssamutreturnexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutreturnexport"], "resilient-v3", 42)
-    def test_naiverc_ssamutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutreturnexport"], "naive-rc", 42)
+    # def test_naiverc_ssamutreturnexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutreturnexport"], "naive-rc", 42)
 
     def test_assist_structimm(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/structs/structimm.vale"], "assist", 5)
@@ -437,15 +437,15 @@ class ValeTest(unittest.TestCase):
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamut.vale"], "naive-rc", 3)
 
     def test_assist_interfacemutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "assist", 10)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "assist", 42)
     def test_unsafefast_interfacemutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "unsafe-fast", 10)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "unsafe-fast", 42)
     # def test_resilientv4_interfacemutreturnexport(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "resilient-v4", 10)
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "resilient-v4", 42)
     def test_resilientv3_interfacemutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "resilient-v3", 10)
-    def test_naiverc_interfacemutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "naive-rc", 10)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "resilient-v3", 42)
+    # def test_naiverc_interfacemutreturnexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutreturnexport"], "naive-rc", 42)
 
     def test_assist_interfacemutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutparamexport"], "assist", 42)
@@ -455,19 +455,19 @@ class ValeTest(unittest.TestCase):
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutparamexport"], "resilient-v4", 42)
     def test_resilientv3_interfacemutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutparamexport"], "resilient-v3", 42)
-    def test_naiverc_interfacemutparamexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutparamexport"], "naive-rc", 42)
+    # def test_naiverc_interfacemutparamexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/interfacemutparamexport"], "naive-rc", 42)
 
     def test_assist_structmutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "assist", 10)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "assist", 42)
     def test_unsafefast_structmutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "unsafe-fast", 10)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "unsafe-fast", 42)
     # def test_resilientv4_structmutreturnexport(self) -> None:
-    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "resilient-v4", 10)
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "resilient-v4", 42)
     def test_resilientv3_structmutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "resilient-v3", 10)
-    def test_naiverc_structmutreturnexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "naive-rc", 10)
+        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "resilient-v3", 42)
+    # def test_naiverc_structmutreturnexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutreturnexport"], "naive-rc", 42)
 
     def test_assist_structmutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutparamexport"], "assist", 42)
@@ -477,8 +477,8 @@ class ValeTest(unittest.TestCase):
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutparamexport"], "resilient-v4", 42)
     def test_resilientv3_structmutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutparamexport"], "resilient-v3", 42)
-    def test_naiverc_structmutparamexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutparamexport"], "naive-rc", 42)
+    # def test_naiverc_structmutparamexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/structmutparamexport"], "naive-rc", 42)
 
     def test_assist_rsamutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutparamexport"], "assist", 10)
@@ -488,8 +488,8 @@ class ValeTest(unittest.TestCase):
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutparamexport"], "resilient-v4", 10)
     def test_resilientv3_rsamutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutparamexport"], "resilient-v3", 10)
-    def test_naiverc_rsamutparamexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutparamexport"], "naive-rc", 10)
+    # def test_naiverc_rsamutparamexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/rsamutparamexport"], "naive-rc", 10)
 
     def test_assist_ssamutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutparamexport"], "assist", 10)
@@ -499,8 +499,8 @@ class ValeTest(unittest.TestCase):
     #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutparamexport"], "resilient-v4", 10)
     def test_resilientv3_ssamutparamexport(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutparamexport"], "resilient-v3", 10)
-    def test_naiverc_ssamutparamexport(self) -> None:
-        self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutparamexport"], "naive-rc", 10)
+    # def test_naiverc_ssamutparamexport(self) -> None:
+    #     self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/externs/ssamutparamexport"], "naive-rc", 10)
 
     def test_assist_rsamutlen(self) -> None:
         self.compile_and_execute_and_expect_return_code([PATH_TO_SAMPLES + "programs/arrays/rsamutlen.vale"], "assist", 5)

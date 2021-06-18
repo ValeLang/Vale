@@ -13,30 +13,31 @@
 
 Assist::Assist(GlobalState* globalState_) :
     globalState(globalState_),
-    mutNonWeakableStructs(globalState, makeAssistAndNaiveRCNonWeakableControlBlock(globalState)),
-    mutWeakableStructs(
-        globalState,
-        makeAssistAndNaiveRCWeakableControlBlock(globalState),
-        WrcWeaks::makeWeakRefHeaderStruct(globalState)),
+//    kindStructs(globalState, ),
     kindStructs(
         globalState,
-        [this](Kind* kind) -> IKindStructsSource* {
-          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-            return &mutNonWeakableStructs;
-          } else {
-            return &mutWeakableStructs;
-          }
-        }),
-    weakRefStructs(
-        [this](Kind* kind) -> IWeakRefStructsSource* {
-          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
-            assert(false);
-          } else {
-            return &mutWeakableStructs;
-          }
-        }),
-    fatWeaks(globalState_, &weakRefStructs),
-    wrcWeaks(globalState_, &kindStructs, &weakRefStructs) {
+        makeAssistAndNaiveRCNonWeakableControlBlock(globalState),
+        makeAssistAndNaiveRCWeakableControlBlock(globalState),
+        WrcWeaks::makeWeakRefHeaderStruct(globalState)),
+//    kindStructs(
+//        globalState,
+//        [this](Kind* kind) -> KindStructs* {
+//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
+//            return &kindStructs;
+//          } else {
+//            return &kindStructs;
+//          }
+//        }),
+//    kindStructs(
+//        [this](Kind* kind) -> KindStructs* {
+//          if (globalState->getKindWeakability(kind) == Weakability::NON_WEAKABLE) {
+//            assert(false);
+//          } else {
+//            return &kindStructs;
+//          }
+//        }),
+    fatWeaks(globalState_, &kindStructs),
+    wrcWeaks(globalState_, &kindStructs, &kindStructs) {
   regionLT = LLVMStructCreateNamed(globalState->context, "__Assist_Region");
   LLVMStructSetBody(regionLT, nullptr, 0, false);
 }
@@ -133,7 +134,7 @@ Ref Assist::lockWeak(
   return regularInnerLockWeak(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever, resultOptTypeM,
       constraintRefM, sourceWeakRefMT, sourceWeakRef, buildThen, buildElse,
-      isAliveLE, resultOptTypeLE, &weakRefStructs, &fatWeaks);
+      isAliveLE, resultOptTypeLE, &kindStructs, &fatWeaks);
 }
 
 Ref Assist::asSubtype(
@@ -161,7 +162,7 @@ LLVMTypeRef Assist::translateType(Reference* referenceM) {
       return translateReferenceSimple(globalState, &kindStructs, referenceM->kind);
     case Ownership::WEAK:
       assert(referenceM->location != Location::INLINE);
-      return translateWeakReference(globalState, &weakRefStructs, referenceM->kind);
+      return translateWeakReference(globalState, &kindStructs, referenceM->kind);
     default:
       assert(false);
   }
@@ -186,13 +187,13 @@ Ref Assist::upcastWeak(
 void Assist::declareStaticSizedArray(
     StaticSizedArrayDefinitionT* staticSizedArrayMT) {
   globalState->regionIdByKind.emplace(staticSizedArrayMT->kind, getRegionId());
-  kindStructs.declareStaticSizedArray(staticSizedArrayMT);
+  kindStructs.declareStaticSizedArray(staticSizedArrayMT->kind, Weakability::NON_WEAKABLE);
 }
 
 void Assist::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT* runtimeSizedArrayMT) {
   globalState->regionIdByKind.emplace(runtimeSizedArrayMT->kind, getRegionId());
-  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
+  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT->kind, Weakability::NON_WEAKABLE);
 }
 
 void Assist::defineRuntimeSizedArray(
@@ -214,7 +215,7 @@ void Assist::defineStaticSizedArray(
 void Assist::declareStruct(
     StructDefinition* structM) {
   globalState->regionIdByKind.emplace(structM->kind, getRegionId());
-  kindStructs.declareStruct(structM->kind);
+  kindStructs.declareStruct(structM->kind, structM->weakability);
 }
 
 void Assist::defineStruct(
@@ -244,7 +245,7 @@ void Assist::defineEdge(Edge* edge) {
 void Assist::declareInterface(
     InterfaceDefinition* interfaceM) {
   globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
-  kindStructs.declareInterface(interfaceM);
+  kindStructs.declareInterface(interfaceM->kind, interfaceM->weakability);
 }
 
 void Assist::defineInterface(
@@ -388,7 +389,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> Assist::explodeInterfaceRef(
     }
     case Ownership::WEAK: {
       return explodeWeakInterfaceRef(
-          globalState, functionState, builder, &kindStructs, &fatWeaks, &weakRefStructs,
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
           virtualParamMT, virtualArgRef,
           [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
             return wrcWeaks.weakInterfaceRefToWeakStructRef(
@@ -506,7 +507,7 @@ WrapperPtrLE Assist::lockWeakRef(
       break;
     case Ownership::WEAK: {
       auto weakFatPtrLE =
-          weakRefStructs.makeWeakFatPtr(
+          kindStructs.makeWeakFatPtr(
               refM,
               checkValidReference(FL(), functionState, builder, refM, weakRefLE));
       return kindStructs.makeWrapperPtr(
@@ -751,7 +752,7 @@ Ref Assist::upcast(
       return upcastStrong(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     case Ownership::WEAK: {
-      return ::upcastWeak(globalState, functionState, builder, &weakRefStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+      return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM, sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
       assert(false);
@@ -812,45 +813,28 @@ void Assist::checkInlineStructType(
 
 std::string Assist::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
-
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
-  }
+  assert(rsaDefM->rawArray->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string Assist::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { void* unused; } " + name + "Ref;\n";
-  }
+  assert(ssaDefM->rawArray->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
 
 std::string Assist::generateStructDefsC(
     Package* currentPackage, StructDefinition* structDefM) {
-  if (structDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint32_t unused2; uint32_t unused3; } " + name + "Ref;\n";
-  }
+  assert(structDefM->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
 }
 
 std::string Assist::generateInterfaceDefsC(
     Package* currentPackage, InterfaceDefinition* interfaceDefM) {
-  if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(interfaceDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; uint64_t unused1; uint64_t unused2; uint32_t unused3; uint32_t unused4; } " + name + "Ref;\n";
-  }
+  assert(interfaceDefM->mutability == Mutability::MUTABLE);
+  return generateMutableInterfaceHandleDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
 }
 
 LLVMTypeRef Assist::getExternalType(Reference* refMT) {
@@ -872,7 +856,7 @@ Ref Assist::receiveAndDecryptFamiliarReference(
     LLVMValueRef sourceRefLE) {
   assert(sourceRefMT->ownership != Ownership::SHARE);
   return regularReceiveAndDecryptFamiliarReference(
-      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRefLE);
+      globalState, functionState, builder, &kindStructs, sourceRefMT, sourceRefLE);
 }
 
 LLVMValueRef Assist::encryptAndSendFamiliarReference(
@@ -882,7 +866,7 @@ LLVMValueRef Assist::encryptAndSendFamiliarReference(
     Ref sourceRef) {
   assert(sourceRefMT->ownership != Ownership::SHARE);
   return regularEncryptAndSendFamiliarReference(
-      globalState, functionState, builder, &mutNonWeakableStructs, sourceRefMT, sourceRef);
+      globalState, functionState, builder, &kindStructs, sourceRefMT, sourceRef);
 }
 
 LLVMTypeRef Assist::getInterfaceMethodVirtualParamAnyType(Reference* reference) {
@@ -892,7 +876,7 @@ LLVMTypeRef Assist::getInterfaceMethodVirtualParamAnyType(Reference* reference) 
     case Ownership::SHARE:
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
     case Ownership::WEAK:
-      return mutWeakableStructs.getWeakVoidRefStruct(reference->kind);
+      return kindStructs.getWeakVoidRefStruct(reference->kind);
     default:
       assert(false);
   }

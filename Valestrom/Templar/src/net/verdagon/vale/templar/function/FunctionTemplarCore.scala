@@ -9,9 +9,11 @@ import net.verdagon.vale.templar.citizen.{AncestorHelper, StructTemplar}
 import net.verdagon.vale.templar.env._
 import net.verdagon.vale.templar.expression.CallTemplar
 import net.verdagon.vale.templar.templata.TemplataTemplar
-import net.verdagon.vale.{IProfiler, vassert, vassertSome, vcheck, vcurious, vfail, vimpl}
+import net.verdagon.vale.{Err, IProfiler, Ok, vassert, vassertSome, vcheck, vcurious, vfail, vimpl}
 
 import scala.collection.immutable.{List, Set}
+
+case class ResultTypeMismatchError(expectedType: CoordT, actualType: CoordT)
 
 class FunctionTemplarCore(
     opts: TemplarOptions,
@@ -42,7 +44,6 @@ class FunctionTemplarCore(
   (FunctionHeaderT) = {
     val fullEnv = FunctionEnvironmentBox(startingFullEnv)
 
-
     opts.debugOut("Evaluating function " + fullEnv.fullName)
 
     val isDestructor =
@@ -56,42 +57,8 @@ class FunctionTemplarCore(
     val header =
       startingFullEnv.function.body match {
         case CodeBodyA(body) => {
-          val (header, body2) =
-            bodyTemplar.declareAndEvaluateFunctionBody(
-              fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
-
-          // Funny story... let's say we're current instantiating a constructor,
-          // for example MySome<T>().
-          // The constructor returns a MySome<T>, which means when we do the above
-          // evaluating of the function body, we stamp the MySome<T> struct.
-          // That ends up stamping the entire struct, including the constructor.
-          // That's what we were originally here for, and evaluating the body above
-          // just did it for us O_o
-          // So, here we check to see if we accidentally already did it.
-
-          // Get the variables by diffing the function environment.
-          // Remember, the near env contains closure variables, which we
-          // don't care about here. So find the difference between the near
-          // env and our latest env.
-          vassert(fullEnv.locals.startsWith(startingFullEnv.locals))
-          val introducedLocals =
-            fullEnv.locals
-              .drop(startingFullEnv.locals.size)
-              .collect({
-                case x @ ReferenceLocalVariableT(_, _, _) => x
-                case x @ AddressibleLocalVariableT(_, _, _) => x
-              })
-
-          temputs.lookupFunction(header.toSignature) match {
-            case None => {
-              val function2 = FunctionT(header, introducedLocals, body2);
-              temputs.addFunction(function2)
-              (function2.header)
-            }
-            case Some(function2) => {
-              (function2.header)
-            }
-          }
+          declareAndEvaluateFunctionBodyAndAdd(
+              startingFullEnv, fullEnv, temputs, BFunctionA(startingFullEnv.function, body), params2, isDestructor)
         }
         case AbstractBodyA => {
           val maybeRetCoord =
@@ -187,6 +154,141 @@ class FunctionTemplarCore(
     header
   }
 
+  def declareAndEvaluateFunctionBodyAndAdd(
+    startingEnv: FunctionEnvironment,
+    funcOuterEnv: FunctionEnvironmentBox,
+    temputs: Temputs,
+    bfunction1: BFunctionA,
+    params2: List[ParameterT],
+    isDestructor: Boolean):
+  FunctionHeaderT = {
+    val BFunctionA(function1, _) = bfunction1;
+    val functionFullName = funcOuterEnv.fullName
+
+    profiler.childFrame("evaluate body", () => {
+      function1.maybeRetCoordRune match {
+        case None => {
+          val banner = FunctionBannerT(Some(function1), functionFullName, params2)
+          val (body2, returns) =
+            bodyTemplar.evaluateFunctionBody(
+              funcOuterEnv, temputs, bfunction1.origin.params, params2, bfunction1.body, isDestructor, None) match {
+              case Err(ResultTypeMismatchError(expectedType, actualType)) => {
+                throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, function1.name, expectedType, actualType))
+
+              }
+              case Ok((body, returns)) => (body, returns)
+            }
+
+          vassert(returns.nonEmpty)
+          if (returns.size > 1) {
+            throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "Can't infer return type because " + returns.size + " types are returned:" + returns.map("\n" + _)))
+          }
+          val returnType2 = returns.head
+
+          temputs.declareFunctionReturnType(banner.toSignature, returnType2)
+          val attributesA = translateAttributes(function1.attributes)
+          val header = FunctionHeaderT(functionFullName, attributesA, params2, returnType2, Some(function1));
+
+          vassert(funcOuterEnv.locals.startsWith(startingEnv.locals))
+
+          // Funny story... let's say we're current instantiating a constructor,
+          // for example MySome<T>().
+          // The constructor returns a MySome<T>, which means when we do the above
+          // evaluating of the function body, we stamp the MySome<T> struct.
+          // That ends up stamping the entire struct, including the constructor.
+          // That's what we were originally here for, and evaluating the body above
+          // just did it for us O_o
+          // So, here we check to see if we accidentally already did it.
+          temputs.lookupFunction(header.toSignature) match {
+            case None => {
+              val function2 = FunctionT(header, body2);
+              temputs.addFunction(function2)
+              (function2.header)
+            }
+            case Some(function2) => {
+              (function2.header)
+            }
+          }
+        }
+        case Some(expectedRetCoordRune) => {
+          val CoordTemplata(expectedRetCoord) =
+            vassertSome(
+              funcOuterEnv.getNearestTemplataWithAbsoluteName2(
+                NameTranslator.translateRune(expectedRetCoordRune),
+                Set(TemplataLookupContext)))
+          val header = FunctionHeaderT(functionFullName, translateAttributes(function1.attributes), params2, expectedRetCoord, Some(function1));
+          temputs.declareFunctionReturnType(header.toSignature, expectedRetCoord)
+
+          temputs.deferEvaluatingFunction(
+            DeferredEvaluatingFunction(
+              (temputs) => finishEvaluatingDeferredFunction(temputs, funcOuterEnv.snapshot, bfunction1, isDestructor, header)))
+
+          header
+        }
+      }
+    })
+  }
+
+  def finishEvaluatingDeferredFunction(
+      temputs: Temputs,
+      // This parameter might not actually be needed eventually; we could re-infer everything from what's present in
+      // the function header. Long term, might be best to not remember the entire environment.
+      funcOuterEnvSnapshot: FunctionEnvironment,
+      bfunction1: BFunctionA,
+      isDestructor: Boolean,
+      header: FunctionHeaderT) = {
+
+    val funcOuterEnv = FunctionEnvironmentBox(funcOuterEnvSnapshot)
+
+    funcOuterEnv.setReturnType(Some(header.returnType))
+
+    val (body2, returns) =
+      bodyTemplar.evaluateFunctionBody(
+        funcOuterEnv,
+        temputs,
+        bfunction1.origin.params,
+        header.params,
+        bfunction1.body,
+        isDestructor,
+        Some(header.returnType)) match {
+        case Err(ResultTypeMismatchError(expectedType, actualType)) => {
+          throw CompileErrorExceptionT(BodyResultDoesntMatch(bfunction1.origin.range, bfunction1.origin.name, expectedType, actualType))
+        }
+        case Ok((body, returns)) => (body, returns)
+      }
+
+    if (returns == Set(header.returnType)) {
+      // Let it through, it returns the expected type.
+    } else if (returns == Set(CoordT(ShareT, ReadonlyT, NeverT()))) {
+      // Let it through, it returns a never but we expect something else, that's fine
+    } else {
+      throw CompileErrorExceptionT(RangedInternalErrorT(bfunction1.body.range, "In function " + header + ":\nExpected return type " + header.returnType + " but was " + returns))
+    }
+
+//    vassert(funcOuterEnv.locals.startsWith(startingEnv.locals))
+
+    // Funny story... let's say we're current instantiating a constructor,
+    // for example MySome<T>().
+    // The constructor returns a MySome<T>, which means when we do the above
+    // evaluating of the function body, we stamp the MySome<T> struct.
+    // That ends up stamping the entire struct, including the constructor.
+    // That's what we were originally here for, and evaluating the body above
+    // just did it for us O_o
+    // So, here we check to see if we accidentally already did it.
+    temputs.lookupFunction(header.toSignature) match {
+      case None => temputs.addFunction(FunctionT(header, body2))
+      case Some(_) =>
+    }
+  }
+
+  def translateAttributes(attributesA: List[IFunctionAttributeA]) = {
+    attributesA.map({
+      case ExportA(packageCoord) => Export2(packageCoord)
+      case UserFunctionA => UserFunction2
+      case PureA => Pure2
+    })
+  }
+
   def makeExternFunction(
       temputs: Temputs,
       fullName: FullNameT[IFunctionNameT],
@@ -219,7 +321,6 @@ class FunctionTemplarCore(
         val function2 =
           FunctionT(
             header,
-            List(),
             ReturnTE(ExternFunctionCallTE(externPrototype, argLookups)))
 
         temputs.declareFunctionReturnType(header.toSignature, header.returnType)
@@ -257,7 +358,6 @@ class FunctionTemplarCore(
     val function2 =
       FunctionT(
         header,
-        List(),
         BlockTE(
           List(
             ReturnTE(
@@ -295,7 +395,6 @@ class FunctionTemplarCore(
           List(ParameterT(CodeVarNameT("this"), Some(OverrideT(interfaceRef2)), structType2)),
           CoordT(ShareT, ReadonlyT, VoidT()),
           maybeOriginFunction1),
-        List(),
         BlockTE(
           List(
             ReturnTE(

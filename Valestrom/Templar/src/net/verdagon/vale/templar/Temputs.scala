@@ -1,13 +1,22 @@
 package net.verdagon.vale.templar
 
+import net.verdagon.vale.astronomer.BFunctionA
 import net.verdagon.vale.scout.{CodeLocationS, RangeS}
 import net.verdagon.vale.templar.env.{FunctionEnvironment, PackageEnvironment}
-import net.verdagon.vale.templar.templata.{PrototypeT, SignatureT}
-import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceRefT, KindT, StaticSizedArrayTT, MutabilityT, NeverT, RawArrayTT, ShareT, StructDefinitionT, StructRefT, RuntimeSizedArrayTT}
+import net.verdagon.vale.templar.templata.{FunctionHeaderT, PrototypeT, SignatureT}
+import net.verdagon.vale.templar.types.{CitizenDefinitionT, CitizenRefT, CoordT, ImmutableT, InterfaceDefinitionT, InterfaceRefT, KindT, MutabilityT, NeverT, RawArrayTT, RuntimeSizedArrayTT, ShareT, StaticSizedArrayTT, StructDefinitionT, StructRefT}
 import net.verdagon.vale.{PackageCoordinate, vassert, vassertSome, vfail}
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
+
+
+case class DeferredEvaluatingFunction(call: (Temputs) => Unit)
+//  funcOuterEnvSnapshot: FunctionEnvironment,
+//  bfunction1: BFunctionA,
+//  isDestructor: Boolean,
+//  header: FunctionHeaderT)
+
 
 case class Temputs() {
   // Signatures that have already started to be compiled.
@@ -59,6 +68,10 @@ case class Temputs() {
   private val runtimeSizedArrayTypes: mutable.HashMap[RawArrayTT, RuntimeSizedArrayTT] = mutable.HashMap()
 
   private val kindToDestructor: mutable.HashMap[KindT, PrototypeT] = mutable.HashMap()
+
+  // A queue of functions that our code uses, but we don't need to compile them right away.
+  // We can compile them later. Perhaps in parallel, someday!
+  private val deferredEvaluatingFunction: mutable.LinkedHashMap[PrototypeT, DeferredEvaluatingFunction] = mutable.LinkedHashSet()
 
   def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
     functions.find(_.header.toSignature == signature2)
@@ -211,6 +224,10 @@ case class Temputs() {
     vassert(!kindToDestructor.contains(kind))
     vassert(prototypeDeclared(destructor.fullName).nonEmpty)
     kindToDestructor.put(kind, destructor)
+  }
+
+  def deferEvaluatingFunction(devf: DeferredEvaluatingFunction): Unit = {
+    deferredEvaluatingFunction.put(devf.header.toPrototype, devf)
   }
 
   def getDestructor(kind: KindT): PrototypeT = {

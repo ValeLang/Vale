@@ -338,7 +338,6 @@ class StructTemplar(
             List(),
             anonymousSubstructType,
             None),
-          List(),
           BlockTE(
             List(
               ReturnTE(

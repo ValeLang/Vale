@@ -86,7 +86,6 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
           temputs.addFunction(
             FunctionT(
               header,
-              List(),
               BlockTE(List(ReturnTE(IsSameInstanceTE(ArgLookupTE(0, paramCoords(0).tyype), ArgLookupTE(1, paramCoords(1).tyype)))))))
           header
         }
@@ -162,7 +161,7 @@ class Templar(debugOut: (String) => Unit, verbose: Boolean, profiler: IProfiler,
               }
             }
 
-          temputs.addFunction(FunctionT(header, List(), BlockTE(List(ReturnTE(asSubtypeExpr)))))
+          temputs.addFunction(FunctionT(header, BlockTE(List(ReturnTE(asSubtypeExpr)))))
           header
         }
       })

@@ -610,7 +610,7 @@ class ExpressionTemplar(
         }
         case TemplateSpecifiedLookupAE(range, name, templateArgs1, targetOwnership) => {
           // So far, we only allow these when they're immediately called like functions
-          vfail("unimplemented")
+          throw CompileErrorExceptionT(RangedInternalErrorT(range, "Raw template specified lookups unimplemented!"))
         }
         case IndexAE(range, containerExpr1, indexExpr1) => {
           val (unborrowedContainerExpr2, returnsFromContainerExpr) =

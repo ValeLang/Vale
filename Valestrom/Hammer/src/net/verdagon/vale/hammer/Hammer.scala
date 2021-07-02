@@ -156,7 +156,7 @@ object Hammer {
       edges) = hinputs
 
 
-    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Map(), List(), List(), List(), Map(), Map(), Map(), Map()))
+    val hamuts = HamutsBox(Hamuts(Map(), Map(), Map(), Map(), List.empty, List.empty, List.empty, Map(), Map(), Map(), Map()))
     val emptyPackStructRefH = StructHammer.translateStructRef(hinputs, hamuts, emptyPackStructRef)
     vassert(emptyPackStructRefH == ProgramH.emptyTupleStructRef)
 
@@ -199,8 +199,8 @@ object Hammer {
     val immDestructors2 =
       functions.filter(function => {
         function.header.fullName match {
-          case FullName2(List(), ImmConcreteDestructorName2(_)) => true
-          case FullName2(List(), ImmInterfaceDestructorName2(_, _)) => true
+          case FullName2(List.empty, ImmConcreteDestructorName2(_)) => true
+          case FullName2(List.empty, ImmInterfaceDestructorName2(_, _)) => true
           case _ => false
         }
       })
@@ -240,7 +240,7 @@ object Hammer {
       hamuts.inner.unknownSizeArrays,
       immDestructorPrototypesH,
       fullNameToExportedNames,
-      List())
+      List.empty)
   }
 
   def exportName(hamuts: HamutsBox, fullName2: FullName2[IName2], fullNameH: FullNameH) = {

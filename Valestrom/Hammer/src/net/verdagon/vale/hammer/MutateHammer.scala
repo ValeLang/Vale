@@ -240,7 +240,7 @@ object MutateHammer {
           StructHammer.BOX_MEMBER_INDEX,
           sourceExprResultLine,
           NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
-    (storeNode, List())
+    (storeNode, List.empty)
   }
 
   private def translateMundaneLocalMutate(
@@ -258,6 +258,6 @@ object MutateHammer {
           local,
           sourceExprResultLine,
           NameHammer.translateFullName(hinputs, hamuts, varId))
-    (newStoreNode, List())
+    (newStoreNode, List.empty)
   }
 }

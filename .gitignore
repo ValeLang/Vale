@@ -12,4 +12,5 @@ Catalyst/catalyst/.*
 Catalyst/.*
 Catalyst/catalyst/target/
 Catalyst/testing/test*/out/
-removeextra.sh
+removeextra.sh 
+.metals

@@ -75,7 +75,7 @@ object Spanner {
     makeSpan(
       Interface,
       range,
-      makeSpan(StructName, name.range, List()) ::
+      makeSpan(StructName, name.range, List.empty) ::
       members.map(forFunction))
   }
 
@@ -94,7 +94,7 @@ object Spanner {
     makeSpan(
       Struct,
       range,
-      makeSpan(StructName, nameRange, List()) ::
+      makeSpan(StructName, nameRange, List.empty) ::
       maybeIdentifyingRunesP.toList.map(forIdentifyingRunes) ++
       maybeTemplateRulesP.toList.map(forTemplateRules) ++
       List(
@@ -117,7 +117,7 @@ object Spanner {
       Memb,
       range,
       List(
-        makeSpan(MembName, nameRange, List()),
+        makeSpan(MembName, nameRange, List.empty),
         forTemplex(tyype)))
   }
 
@@ -135,7 +135,7 @@ object Spanner {
     makeSpan(
       Ret,
       range,
-      maybeInferRet.toList.map({ case UnitP(range) => makeSpan(Ret, range, List()) }) ++
+      maybeInferRet.toList.map({ case UnitP(range) => makeSpan(Ret, range, List.empty) }) ++
       maybeRetType.toList.map(forTemplex))
   }
 
@@ -161,15 +161,15 @@ object Spanner {
 
   def forExpression(e: IExpressionPE): Span = {
     e match {
-      case IntLiteralPE(range, _) => makeSpan(Num, range, List())
-      case StrLiteralPE(range, _) => makeSpan(Str, range, List())
-      case BoolLiteralPE(range, _) => makeSpan(Bool, range, List())
-      case VoidPE(range) => makeSpan(W, range, List())
+      case IntLiteralPE(range, _) => makeSpan(Num, range, List.empty)
+      case StrLiteralPE(range, _) => makeSpan(Str, range, List.empty)
+      case BoolLiteralPE(range, _) => makeSpan(Bool, range, List.empty)
+      case VoidPE(range) => makeSpan(W, range, List.empty)
       case MagicParamLookupPE(range) => {
         makeSpan(
           MagicParam,
           range,
-          List())
+          List.empty)
       }
       case LambdaPE(captures, FunctionP(range, FunctionHeaderP(_, None, _, _, _, params, _), body)) => {
         makeSpan(
@@ -184,7 +184,7 @@ object Spanner {
           List(forPattern(pattern), forExpression(expr)))
       }
       case LookupPE(NameP(range, _), templateArgs) => {
-        makeSpan(Lookup, range, List())
+        makeSpan(Lookup, range, List.empty)
       }
       case TuplePE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
@@ -196,7 +196,7 @@ object Spanner {
           mutability.map(forTemplex).toList ++
           variability.map(forTemplex).toList ++
           (size match {
-            case RuntimeSizedP => List()
+            case RuntimeSizedP => List.empty
             case StaticSizedP(sizePT) => {
               sizePT.map(forTemplex).toList
             }
@@ -213,7 +213,7 @@ object Spanner {
         makeSpan(
           MemberAccess,
           range,
-          List(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, List()))
+          List(forExpression(left), makeSpan(MemberAccess, operatorRange)) :+ makeSpan(Lookup, member.range, List.empty))
       }
       case LendPE(range, expr, targetOwnership) => {
         makeSpan(
@@ -229,16 +229,16 @@ object Spanner {
       }
       case MethodCallPE(range, inline, callableExpr, operatorRange, _, _, LookupPE(NameP(methodNameRange, _), maybeTemplateArgs), argExprs) => {
         val callableSpan = forExpression(callableExpr)
-        val methodSpan = makeSpan(CallLookup, methodNameRange, List())
+        val methodSpan = makeSpan(CallLookup, methodNameRange, List.empty)
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)
         val argSpans = argExprs.map(forExpression)
         val allSpans = (callableSpan :: makeSpan(MemberAccess, operatorRange) :: methodSpan :: (maybeTemplateArgsSpan ++ argSpans))
         makeSpan(Call, range, allSpans)
       }
       case FunctionCallPE(range, inlRange, operatorRange, _, LookupPE(NameP(nameRange, _), maybeTemplateArgs), argExprs, _) => {
-        val inlSpan = inlRange.toList.map(x => makeSpan(Inl, x.range, List()))
+        val inlSpan = inlRange.toList.map(x => makeSpan(Inl, x.range, List.empty))
         val opSpan = makeSpan(MemberAccess, operatorRange)
-        val callableSpan = makeSpan(CallLookup, nameRange, List())
+        val callableSpan = makeSpan(CallLookup, nameRange, List.empty)
         val maybeTemplateArgsSpan = maybeTemplateArgs.toList.map(forTemplateArgs)
         val argSpans = argExprs.map(forExpression)
         val allSpans =
@@ -298,7 +298,7 @@ object Spanner {
     makeSpan(
       Pat,
       range,
-      maybePreBorrow.toList.map(b => makeSpan(Lend, b.range, List())) ++
+      maybePreBorrow.toList.map(b => makeSpan(Lend, b.range, List.empty)) ++
       capture.toList.map(forCapture) ++
       templex.toList.map(forTemplex) ++
       maybeDestructure.toList.map(forDestructure))
@@ -317,10 +317,10 @@ object Spanner {
     val nameSpan =
       name match {
         case LocalNameP(NameP(nameRange, _)) => {
-          makeSpan(CaptureName, nameRange, List())
+          makeSpan(CaptureName, nameRange, List.empty)
         }
         case ConstructingMemberNameP(NameP(nameRange, _)) => {
-          makeSpan(CaptureName, nameRange, List())
+          makeSpan(CaptureName, nameRange, List.empty)
         }
       }
     makeSpan(
@@ -332,7 +332,7 @@ object Spanner {
   def forTemplex(t: ITemplexPT): Span = {
     t match {
       case NameOrRunePT(NameP(range, _)) => {
-        makeSpan(Typ, range, List())
+        makeSpan(Typ, range, List.empty)
       }
       case InlinePT(range, inner) => {
         makeSpan(Inl, range, List(forTemplex(inner)))
@@ -350,7 +350,7 @@ object Spanner {
         makeSpan(
           Num,
           range,
-          List())
+          List.empty)
       }
       case CallPT(range, template, args) => {
         makeSpan(
@@ -383,7 +383,7 @@ object Spanner {
     makeSpan(
       Rules,
       rulex.range,
-      List())
+      List.empty)
   }
 
   def forIdentifyingRunes(r: IdentifyingRunesP): Span = {
@@ -394,7 +394,7 @@ object Spanner {
       runes.map(rune => makeSpan(IdentRune, rune.range)))
   }
 
-  def makeSpan(classs: IClass, range: Range, children: List[Span] = List()) = {
+  def makeSpan(classs: IClass, range: Range, children: List[Span] = List.empty) = {
     val filteredAndSortedChildren =
       children
         .filter(s => s.range.begin != s.range.end)

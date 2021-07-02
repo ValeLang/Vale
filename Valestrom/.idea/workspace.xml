@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:dependabot" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:dependabot" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:maven" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:dependabot" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:maven" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:Catalyst" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:dependabot" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:maven" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:Catalyst" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:catalyst" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3f9766b6-03fa-4fdb-bfa5-7e965b0e9404" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/Astronomer/src/net/verdagon/vale/astronomer/builtins/refcounting.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Astronomer/src/net/verdagon/vale/astronomer/builtins/refcounting.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Astronomer/src/net/verdagon/vale/astronomer/ruletyper/RuleTyperMatcher.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Astronomer/src/net/verdagon/vale/astronomer/ruletyper/RuleTyperMatcher.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Driver/src/net/verdagon/vale/driver/Driver.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Driver/src/net/verdagon/vale/driver/Driver.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/CallHammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/CallHammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/ExpressionHammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/ExpressionHammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/FunctionHammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/FunctionHammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/Hammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/Hammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/LetHammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/LetHammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/LoadHammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/LoadHammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/MutateHammer.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/src/net/verdagon/vale/hammer/MutateHammer.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hammer/test/net/verdagon/vale/hammer/HammerTest.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Hammer/test/net/verdagon/vale/hammer/HammerTest.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Highlighter/src/net/verdagon/vale/highlighter/Spanner.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Highlighter/src/net/verdagon/vale/highlighter/Spanner.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Highlighter/test/net/verdagon/vale/highlighter/SpannerTests.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Highlighter/test/net/verdagon/vale/highlighter/SpannerTests.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/ExpressionParser.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/ExpressionParser.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/Parser.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/Parser.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/pattern.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/pattern.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/rules.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Parser/src/net/verdagon/vale/parser/rules.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scout/test/net/verdagon/vale/scout/RunePredictorTests.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Scout/test/net/verdagon/vale/scout/RunePredictorTests.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Templata/src/net/verdagon/vale/templar/templata/TemplataTemplarInner.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Templata/src/net/verdagon/vale/templar/templata/TemplataTemplarInner.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/src/net/verdagon/vale/CodeHierarchy.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Utils/src/net/verdagon/vale/CodeHierarchy.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/src/net/verdagon/vale/Profiler.scala" beforeDir="false" afterPath="$PROJECT_DIR$/Utils/src/net/verdagon/vale/Profiler.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Von/test/net/verdagon/von/VonTest.scala" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeStyleSettingsInfer">
+    <option name="done" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="1" />
+  </component>
+  <component name="ProjectId" id="1ulZRLedpWsX8GPJid3reXYUZ0p" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/build.sbt" />
+    <property name="project.structure.last.edited" value="Modules" />
+    <property name="project.structure.proportion" value="0.17" />
+    <property name="project.structure.side.proportion" value="0.50229883" />
+  </component>
+  <component name="ScalaProjectSettings">
+    <option name="ignorePerformance" value="true" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3f9766b6-03fa-4fdb-bfa5-7e965b0e9404" name="Default Changelist" comment="" />
+      <created>1625242126376</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1625242126376</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="2363" y="117" width="1024" height="852" key="SettingsEditor" timestamp="1625242259646">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2363" y="117" width="1024" height="852" key="SettingsEditor/72.27.1848.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1625242259646" />
+  </component>
+</project>

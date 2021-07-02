@@ -11,7 +11,7 @@ case class FileCoordinate(module: String, namespaces: List[String], filepath: St
 }
 
 object FileCoordinate extends Ordering[FileCoordinate] {
-  val test = FileCoordinate("test", List(), "test.vale")
+  val test = FileCoordinate("test", List.empty, "test.vale")
 
   override def compare(a: FileCoordinate, b: FileCoordinate):Int = {
     val diff = a.namespaceCoordinate.compareTo(b.namespaceCoordinate)
@@ -32,9 +32,9 @@ case class NamespaceCoordinate(module: String, namespaces: List[String]) {
 }
 
 object NamespaceCoordinate extends Ordering[NamespaceCoordinate] {
-  val test = NamespaceCoordinate("test", List())
+  val test = NamespaceCoordinate("test", List.empty)
 
-  val internal = NamespaceCoordinate("", List())
+  val internal = NamespaceCoordinate("", List.empty)
 
   override def compare(a: NamespaceCoordinate, b: NamespaceCoordinate):Int = {
     val lenDiff = a.namespaces.length - b.namespaces.length
@@ -56,14 +56,14 @@ object NamespaceCoordinate extends Ordering[NamespaceCoordinate] {
 object FileCoordinateMap {
   val TEST_MODULE = "test"
   def test[T](contents: T): FileCoordinateMap[T] = {
-    FileCoordinateMap(Map()).add(TEST_MODULE, List(), "test.vale", contents)
+    FileCoordinateMap(Map.empty).add(TEST_MODULE, List.empty, "test.vale", contents)
   }
   def test[T](contents: List[T]): FileCoordinateMap[T] = {
     test(contents.zipWithIndex.map({ case (code, index) => (index + ".vale", code) }).toMap)
   }
   def test[T](contents: Map[String, T]): FileCoordinateMap[T] = {
-    contents.foldLeft(FileCoordinateMap[T](Map()))({
-      case (prev, (filename, c)) => prev.add(TEST_MODULE, List(), filename, c)
+    contents.foldLeft(FileCoordinateMap[T](Map.empty))({
+      case (prev, (filename, c)) => prev.add(TEST_MODULE, List.empty, filename, c)
     })
   }
 }
@@ -82,8 +82,8 @@ extends INamespaceResolver[Map[String, Contents]] {
 
   def add(module: String, namespaces: List[String], filename: String, contents: Contents):
   FileCoordinateMap[Contents] = {
-    val namespacesToFilenameToContents = moduleToNamespacesToFilenameToContents.getOrElse(module, Map())
-    val filenameToContents = namespacesToFilenameToContents.getOrElse(namespaces, Map())
+    val namespacesToFilenameToContents = moduleToNamespacesToFilenameToContents.getOrElse(module, Map.empty)
+    val filenameToContents = namespacesToFilenameToContents.getOrElse(namespaces, Map.empty)
     vassert(!filenameToContents.contains(filename))
     val newFilenameToContents = filenameToContents + (filename -> contents)
     val newNamespacesToFilenameToContents = namespacesToFilenameToContents + (namespaces -> newFilenameToContents)
@@ -124,8 +124,8 @@ extends INamespaceResolver[Map[String, Contents]] {
     val thatMap = that.moduleToNamespacesToFilenameToContents
     FileCoordinateMap(
       (thisMap.keySet ++ thatMap.keySet).toList.map(module => {
-        val moduleContentsFromThis = thisMap.getOrElse(module, Map())
-        val moduleContentsFromThat = thatMap.getOrElse(module, Map())
+        val moduleContentsFromThis = thisMap.getOrElse(module, Map.empty)
+        val moduleContentsFromThat = thatMap.getOrElse(module, Map.empty)
         // Make sure there was no overlap
         vassert(moduleContentsFromThis.keySet.size + moduleContentsFromThat.keySet.size ==
           (moduleContentsFromThis.keySet ++ moduleContentsFromThat.keySet).size)
@@ -197,7 +197,7 @@ case class NamespaceCoordinateMap[Contents](
   moduleToNamespacesToFilenameToContents: Map[String, Map[List[String], Contents]]) {
   def add(module: String, namespaces: List[String], contents: Contents):
   NamespaceCoordinateMap[Contents] = {
-    val namespacesToContents = moduleToNamespacesToFilenameToContents.getOrElse(module, Map())
+    val namespacesToContents = moduleToNamespacesToFilenameToContents.getOrElse(module, Map.empty)
     vassert(!namespacesToContents.contains(namespaces))
     val newNamespacesToFilenameToContents = namespacesToContents + (namespaces -> contents)
     val newModuleToNamespacesToFilenameToContents = moduleToNamespacesToFilenameToContents + (module -> newNamespacesToFilenameToContents)
@@ -205,7 +205,7 @@ case class NamespaceCoordinateMap[Contents](
   }
 
   def test[T](contents: T): NamespaceCoordinateMap[T] = {
-    NamespaceCoordinateMap(Map()).add("test", List(), contents)
+    NamespaceCoordinateMap(Map.empty).add("test", List.empty, contents)
   }
 
   def expectOne(): Contents = {

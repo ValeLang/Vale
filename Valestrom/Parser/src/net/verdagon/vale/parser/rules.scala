@@ -71,16 +71,16 @@ object RulePUtils {
   def getOrderedRuneDeclarationsFromTemplexWithDuplicates(templex: ITemplexPT): List[String] = {
     templex match {
       case BorrowPT(_, inner) => getOrderedRuneDeclarationsFromTemplexWithDuplicates(inner)
-      case StringPT(_, value) => List()
-      case IntPT(_, value) => List()
-      case MutabilityPT(_, mutability) => List()
-      case PermissionPT(_, permission) => List()
-      case LocationPT(_, location) => List()
-      case OwnershipPT(_, ownership) => List()
-      case BoolPT(_, value) => List()
-      case NameOrRunePT(name) => List()
+      case StringPT(_, value) => List.empty
+      case IntPT(_, value) => List.empty
+      case MutabilityPT(_, mutability) => List.empty
+      case PermissionPT(_, permission) => List.empty
+      case LocationPT(_, location) => List.empty
+      case OwnershipPT(_, ownership) => List.empty
+      case BoolPT(_, value) => List.empty
+      case NameOrRunePT(name) => List.empty
       case TypedRunePT(_, name, tyype) => List(name.str)
-      case AnonymousRunePT(_) => List()
+      case AnonymousRunePT(_) => List.empty
       case CallPT(_, template, args) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates((template :: args))
       case FunctionPT(range, mutability, parameters, returnType) => {
         getOrderedRuneDeclarationsFromTemplexesWithDuplicates(mutability.toList) ++

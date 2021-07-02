@@ -79,43 +79,6 @@ trait ITemplataTemplarInnerDelegate[Env, State] {
 
 class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[Env, State]) {
 
-//  def coerceTemplataToKind(
-//    env: Env,
-//    state: State,
-//    templata: ITemplata,
-//    ownershipIfMutable: Ownership):
-//  (Kind) = {
-//    templata match {
-//      case CoordTemplata(Coord(_, kind)) => (kind)
-//      case KindTemplata(kind) => (kind)
-//      case st @ StructTemplata(_, _) => delegate.evaluateStructTemplata(state, st, List())
-//      case it @ InterfaceTemplata(_, _) => delegate.evaluateInterfaceTemplata(state, it, List())
-//      case _ => vfail("not yet")
-//    }
-//  }
-//  def coerceTemplataToReference(
-//    env: Env,
-//    state: State,
-//    templata: ITemplata,
-//    ownershipIfMutable: Ownership):
-//  (Coord) = {
-//    templata match {
-//      case CoordTemplata(reference) => (reference)
-//      case KindTemplata(kind) => {
-//        (pointifyKind(state, kind, ownershipIfMutable))
-//      }
-//      case st @ StructTemplata(_, _) => {
-//        val kind = delegate.evaluateStructTemplata(state, st, List())
-//        (pointifyKind(state, kind, ownershipIfMutable))
-//      }
-//      case it @ InterfaceTemplata(_, _) => {
-//        val kind = delegate.evaluateInterfaceTemplata(state, it, List())
-//        (pointifyKind(state, kind, ownershipIfMutable))
-//      }
-//      case _ => vfail("not yet")
-//    }
-//  }
-
   def evaluateTemplex(
     env: Env,
     state: State,
@@ -179,13 +142,6 @@ class TemplataTemplarInner[Env, State](delegate: ITemplataTemplarInnerDelegate[E
           }
         }
       }
-//      case PackAT(memberTypeTemplexesS, resultType) => {
-//        val memberTemplatas = evaluateTemplexes(env, state, memberTypeTemplexesS)
-//        vassert(memberTemplatas.forall(_.tyype == CoordTemplataType))
-//        val memberCoords = memberTemplatas.map({ case CoordTemplata(c) => c })
-//        val (packKind, _) = delegate.getPackKind(env, state, memberCoords)
-//        coerce(state, KindTemplata(packKind), resultType)
-//      }
       case x => {
         vfail("not yet " + x)
       }

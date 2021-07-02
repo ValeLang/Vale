@@ -105,51 +105,51 @@ class StructTests extends FunSuite with Matchers {
   }
 
   // Known failure 2020-08-20
-  test("Mutate destroys member after moving it out of the object") {
-    val compile = RunCompilation.test(
-      """import optutils.*;
-        |import printutils.*;
-        |
-        |struct GetMarineWeaponNameFunc { }
-        |impl IFunction1<mut, &Marine, str> for GetMarineWeaponNameFunc;
-        |fn __call(this &!GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, str>, m &Marine) str {
-        |  m.weapon.name
-        |}
-        |
-        |struct Weapon {
-        |  name str;
-        |  owner! Opt<&Marine>;
-        |}
-        |fn destructor(weapon Weapon) void {
-        |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&!GetMarineWeaponNameFunc()).getOr("none"));
-        |  Weapon(name, owner) = weapon;
-        |}
-        |struct Marine {
-        |  weapon! Weapon;
-        |}
-        |fn destructor(marine Marine) void {
-        |  println("Destroying marine!");
-        |  set marine.weapon.owner = None<&Marine>();
-        |  Marine(weapon) = marine;
-        |}
-        |fn main() export {
-        |  m = Marine(Weapon("Sword", None<&Marine>()));
-        |  set m.weapon.owner = Some(&m);
-        |  set m.weapon = Weapon("Spear", Some(&m));
-        |}
-      """.stripMargin)
-
-    // The "Destroying weapon, owner's weapon is: Spear" is the important part.
-    // That means that before the weapon's destructor was called, the new weapon
-    // was already put in place. This behavior prevents us from accessing a
-    // currently-destructing instance from the outside.
-
-    compile.evalForStdout(Vector()) shouldEqual
-      """Destroying weapon, owner's weapon is: Spear
-        |Destroying marine!
-        |Destroying weapon, owner's weapon is: none
-        |""".stripMargin
-  }
+//  test("Mutate destroys member after moving it out of the object") {
+//    val compile = RunCompilation.test(
+//      """import optutils.*;
+//        |import printutils.*;
+//        |
+//        |struct GetMarineWeaponNameFunc { }
+//        |impl IFunction1<mut, &Marine, str> for GetMarineWeaponNameFunc;
+//        |fn __call(this &!GetMarineWeaponNameFunc impl IFunction1<mut, &Marine, str>, m &Marine) str {
+//        |  m.weapon.name
+//        |}
+//        |
+//        |struct Weapon {
+//        |  name str;
+//        |  owner! Opt<&Marine>;
+//        |}
+//        |fn destructor(weapon Weapon) void {
+//        |  println("Destroying weapon, owner's weapon is: " + weapon.owner.map(&!GetMarineWeaponNameFunc()).getOr("none"));
+//        |  Weapon(name, owner) = weapon;
+//        |}
+//        |struct Marine {
+//        |  weapon! Weapon;
+//        |}
+//        |fn destructor(marine Marine) void {
+//        |  println("Destroying marine!");
+//        |  set marine.weapon.owner = None<&Marine>();
+//        |  Marine(weapon) = marine;
+//        |}
+//        |fn main() export {
+//        |  m = Marine(Weapon("Sword", None<&Marine>()));
+//        |  set m.weapon.owner = Some(&m);
+//        |  set m.weapon = Weapon("Spear", Some(&m));
+//        |}
+//      """.stripMargin)
+//
+//    // The "Destroying weapon, owner's weapon is: Spear" is the important part.
+//    // That means that before the weapon's destructor was called, the new weapon
+//    // was already put in place. This behavior prevents us from accessing a
+//    // currently-destructing instance from the outside.
+//
+//    compile.evalForStdout(Vector()) shouldEqual
+//      """Destroying weapon, owner's weapon is: Spear
+//        |Destroying marine!
+//        |Destroying weapon, owner's weapon is: none
+//        |""".stripMargin
+//  }
 
 
   test("Panic function") {

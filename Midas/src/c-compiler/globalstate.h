@@ -14,8 +14,8 @@
 #include "externs.h"
 
 class IRegion;
-class IKindStructsSource;
-class IWeakRefStructsSource;
+class KindStructs;
+class KindStructs;
 class ControlBlock;
 class Linear;
 class RCImm;
@@ -67,6 +67,9 @@ public:
 
   LLVMValueRef genMalloc = nullptr, genFree = nullptr;
 
+  LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
+  LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.
+
 
   // This is a global, we can return this when we want to return never. It should never actually be
   // used as an input to any expression in any function though.
@@ -107,6 +110,9 @@ public:
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
 
+  LLVMTypeRef getConcreteHandleStruct() { return concreteHandleLT; }
+  LLVMTypeRef getInterfaceHandleStruct() { return interfaceHandleLT; }
+
   void addInterfaceExtraMethod(InterfaceKind* interfaceKind, InterfaceMethod* method) {
     assert(interfacesOpen);
     interfaceExtraMethods[interfaceKind].push_back(method);
@@ -129,9 +135,6 @@ public:
     assert(interfaceExtraMethodsI->second[index] == interfaceMethod);
     iter->second[structMT].push_back(std::make_pair(interfaceMethod, function));
   }
-
-//  std::unordered_map<Name*, StructDefinition*> extraStructs;
-//  std::unordered_map<Name*, InterfaceDefinition*> extraInterfaces;
 
   StructDefinition* lookupStruct(StructKind* structMT) {
 //    auto structI = extraStructs.find(name);

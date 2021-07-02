@@ -98,78 +98,6 @@ class TemplataTemplar(
     makeInner().isTypeTriviallyConvertible(temputs, sourcePointerType, targetPointerType)
   }
 
-//
-//  def lookupTemplata(
-//    env: IEnvironmentBox,
-//    temputs: Temputs,
-//    name: String
-//  ): (Option[ITemplata]) = {
-//    env match {
-//      case IEnvironment(globalEnv, _, _, _, templatas) => {
-//        templatas.get(name) match {
-//          case Some(templata) => (Some(templata))
-//          case None => {
-//            lookupTemplataFromGlobalEnv(globalEnv, temputs, name)
-//          }
-//        }
-//      }
-//      case globalEnv @ IEnvironment(_, _, _, _, _, _, _, _, _) => {
-//        lookupTemplataFromGlobalEnv(globalEnv, temputs, name)
-//      }
-//    }
-//  }
-//
-//  private def lookupTemplataFromGlobalEnv(
-//    env: IEnvironmentBox,
-//    temputs: Temputs,
-//    name: String
-//  ): (Option[ITemplata]) = {
-//    val IEnvironment(
-//      ordinaryStructBanners,
-//      ordinaryInterfaceBanners,
-//      templatedStructBanners,
-//      templatedInterfaceBanners,
-//      _,
-//      _,
-//      _,
-//      _,
-//      templatas) = env
-//
-//    templatas.get(name) match {
-//      case Some(templata) => return (Some(templata))
-//      case None =>
-//    }
-//    ordinaryStructBanners.get(name) match {
-//      case Some(osb) => {
-//        val structRef =
-//          StructTemplar.getStructRef(env.globalEnv, temputs, osb)
-//        return (Some(KindTemplata(structRef)))
-//      }
-//      case None =>
-//    }
-//    ordinaryInterfaceBanners.get(name) match {
-//      case Some(oib) => {
-//        val structRef =
-//          StructTemplar.getInterfaceRef(env.globalEnv, temputs, oib)
-//        return (Some(KindTemplata(structRef)))
-//      }
-//      case None =>
-//    }
-//    templatedStructBanners.get(name) match {
-//      case Some(osb) => {
-//        return (Some(StructTerryTemplata(StructTerry(None, name, List()))))
-//      }
-//      case None =>
-//    }
-//    templatedInterfaceBanners.get(name) match {
-//      case Some(osb) => {
-//        return (Some(InterfaceTerryTemplata(InterfaceTerry(None, name, List()))))
-//      }
-//      case None =>
-//    }
-//    return (None)
-//  }
-
   def makeInner(): TemplataTemplarInner[IEnvironment, Temputs] = {
     new TemplataTemplarInner[IEnvironment, Temputs](
       new ITemplataTemplarInnerDelegate[IEnvironment, Temputs] {
@@ -191,11 +119,6 @@ class TemplataTemplar(
           Templar.getMutability(temputs, kind)
         }
 
-//        override def getPackKind(env: IEnvironment, temputs: Temputs, types2: List[Coord]):
-//        (PackT2, Mutability) = {
-//          PackTemplar.makePackType(env.globalEnv, temputs, types2)
-//        }
-
         override def evaluateInterfaceTemplata(state: Temputs, callRange: RangeS, templata: InterfaceTemplata, templateArgs: List[ITemplata]):
         (KindT) = {
           delegate.getInterfaceRef(state, callRange, templata, templateArgs)
@@ -205,19 +128,6 @@ class TemplataTemplar(
         (KindT) = {
           delegate.getStructRef(state, callRange, templata, templateArgs)
         }
-
-        //val elementCoord =
-        //  templateArgTemplatas match {
-        //    case List(ReferenceTemplata(ref)) => ref
-        //    // todo: coerce kind into reference here... or somehow reuse all the machinery we have for
-        //    // regular templates?
-        //  }
-        //val elementMutability = Templar.getMutability(state, elementCoord.kind)
-        //if (arrayMutability == Immutable && elementMutability == Mutable) {
-        //  throw new Exception("Can't have an immutable array of mutables")
-        //}
-        //val arrayType = RuntimeSizedArrayT2(RawArrayT2(elementCoord, arrayMutability))
-        //(state, KindTemplata(arrayType))
 
         override def getAncestorInterfaceDistance(
           temputs: Temputs,

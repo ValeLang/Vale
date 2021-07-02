@@ -29,19 +29,17 @@ ControlBlock makeResilientV3WeakableControlBlock(GlobalState* globalState) {
 ResilientV3::ResilientV3(GlobalState *globalState_, RegionId *regionId_) :
     globalState(globalState_),
     regionId(regionId_),
-    mutWeakableStructs(
+    kindStructs(
         globalState,
         makeResilientV3WeakableControlBlock(globalState),
+        makeResilientV3WeakableControlBlock(globalState),
         HybridGenerationalMemory::makeWeakRefHeaderStruct(globalState, regionId)),
-    kindStructs(
-        globalState, [this](Kind *kind) -> IKindStructsSource * { return &mutWeakableStructs; }),
-    weakRefStructs([this](Kind *kind) -> IWeakRefStructsSource * { return &mutWeakableStructs; }),
-    fatWeaks(globalState_, &weakRefStructs),
+    fatWeaks(globalState_, &kindStructs),
     hgmWeaks(
         globalState_,
-        mutWeakableStructs.getControlBlock(),
+//        kindStructs.getControlBlock(),
+//        &kindStructs,
         &kindStructs,
-        &weakRefStructs,
         globalState->opt->elideChecksForKnownLive,
         false,
         // V3 doesnt use the undead cycle, so any struct will do here
@@ -71,7 +69,7 @@ Ref ResilientV3::constructStaticSizedArray(
       ::constructStaticSizedArray(
           globalState, functionState, builder, referenceM, kindM, &kindStructs,
           [this, functionState, referenceM, kindM](LLVMBuilderRef innerBuilder,
-                                                       ControlBlockPtrLE controlBlockPtrLE) {
+                                                   ControlBlockPtrLE controlBlockPtrLE) {
             fillControlBlock(
                 FL(),
                 functionState,
@@ -180,7 +178,7 @@ Ref ResilientV3::weakAlias(FunctionState *functionState, LLVMBuilderRef builder,
                            Reference *targetRefMT, Ref sourceRef) {
   assert(sourceRefMT->ownership == Ownership::BORROW);
   return transmuteWeakRef(
-      globalState, functionState, builder, sourceRefMT, targetRefMT, &weakRefStructs, sourceRef);
+      globalState, functionState, builder, sourceRefMT, targetRefMT, &kindStructs, sourceRef);
 }
 
 // Doesn't return a constraint ref, returns a raw ref to the wrapper struct.
@@ -203,7 +201,7 @@ WrapperPtrLE ResilientV3::lockWeakRef(
     case Ownership::BORROW:
     case Ownership::WEAK: {
       auto weakFatPtrLE =
-          weakRefStructs.makeWeakFatPtr(
+          kindStructs.makeWeakFatPtr(
               refM,
               checkValidReference(
                   FL(), functionState, builder, refM, weakRefLE));
@@ -240,7 +238,7 @@ Ref ResilientV3::lockWeak(
   return resilientLockWeak(
       globalState, functionState, builder, thenResultIsNever, elseResultIsNever,
       resultOptTypeM, constraintRefM, sourceWeakRefMT, sourceWeakRefLE, weakRefKnownLive,
-      buildThen, buildElse, isAliveLE, resultOptTypeLE, &weakRefStructs);
+      buildThen, buildElse, isAliveLE, resultOptTypeLE, &kindStructs);
 }
 
 Ref ResilientV3::asSubtype(
@@ -259,7 +257,7 @@ Ref ResilientV3::asSubtype(
   assert(sourceInterfaceKind);
 
   return resilientDowncast(
-      globalState, functionState, builder, &kindStructs, &weakRefStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
+      globalState, functionState, builder, &kindStructs, &kindStructs, resultOptTypeM, sourceInterfaceRefMT, sourceInterfaceRef,
       targetKind, buildThen, buildElse, targetStructKind, sourceInterfaceKind);
 }
 
@@ -273,7 +271,7 @@ LLVMTypeRef ResilientV3::translateType(Reference *referenceM) {
     case Ownership::BORROW:
     case Ownership::WEAK:
       assert(referenceM->location != Location::INLINE);
-      return translateWeakReference(globalState, &weakRefStructs, referenceM->kind);
+      return translateWeakReference(globalState, &kindStructs, referenceM->kind);
     default:
       assert(false);
   }
@@ -298,14 +296,18 @@ void ResilientV3::declareStaticSizedArray(
     StaticSizedArrayDefinitionT *staticSizedArrayMT) {
   globalState->regionIdByKind.emplace(staticSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareStaticSizedArray(staticSizedArrayMT);
+  // All SSAs are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareStaticSizedArray(staticSizedArrayMT->kind, weakability);
 }
 
 void ResilientV3::declareRuntimeSizedArray(
     RuntimeSizedArrayDefinitionT *runtimeSizedArrayMT) {
   globalState->regionIdByKind.emplace(runtimeSizedArrayMT->kind, getRegionId());
 
-  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT);
+  // All SSAs are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareRuntimeSizedArray(runtimeSizedArrayMT->kind, weakability);
 }
 
 void ResilientV3::defineRuntimeSizedArray(
@@ -328,7 +330,11 @@ void ResilientV3::declareStruct(
     StructDefinition *structM) {
   globalState->regionIdByKind.emplace(structM->kind, getRegionId());
 
-  kindStructs.declareStruct(structM->kind);
+  // Note how it's not:
+  //   auto weakability = structM->weakability;
+  // This is because all structs are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareStruct(structM->kind, weakability);
 }
 
 void ResilientV3::defineStruct(StructDefinition *structM) {
@@ -353,7 +359,12 @@ void ResilientV3::defineEdge(Edge *edge) {
 
 void ResilientV3::declareInterface(InterfaceDefinition *interfaceM) {
   globalState->regionIdByKind.emplace(interfaceM->kind, getRegionId());
-  kindStructs.declareInterface(interfaceM);
+
+  // Note how it's not:
+  //   auto weakability = interfaceM->weakability;
+  // This is because all interfaces are weakable in resilient mode.
+  auto weakability = Weakability::WEAKABLE;
+  kindStructs.declareInterface(interfaceM->kind, weakability);
 }
 
 void ResilientV3::defineInterface(InterfaceDefinition *interfaceM) {
@@ -441,7 +452,7 @@ std::tuple<LLVMValueRef, LLVMValueRef> ResilientV3::explodeInterfaceRef(
     case Ownership::BORROW:
     case Ownership::WEAK: {
       return explodeWeakInterfaceRef(
-          globalState, functionState, builder, &kindStructs, &fatWeaks, &weakRefStructs,
+          globalState, functionState, builder, &kindStructs, &fatWeaks, &kindStructs,
           virtualParamMT, virtualArgRef,
           [this, functionState, builder, virtualParamMT](WeakFatPtrLE weakFatPtrLE) {
             return hgmWeaks.weakInterfaceRefToWeakStructRef(
@@ -667,12 +678,12 @@ Ref ResilientV3::upcast(
     case Ownership::SHARE:
     case Ownership::OWN: {
       return upcastStrong(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM,
-                          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     case Ownership::BORROW:
     case Ownership::WEAK: {
-      return ::upcastWeak(globalState, functionState, builder, &weakRefStructs, sourceStructMT, sourceStructKindM,
-                          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
+      return ::upcastWeak(globalState, functionState, builder, &kindStructs, sourceStructMT, sourceStructKindM,
+          sourceRefLE, targetInterfaceTypeM, targetInterfaceKindM);
     }
     default:
       assert(false);
@@ -733,10 +744,10 @@ Ref ResilientV3::loadMember(
   } else {
     if (structRefMT->location == Location::INLINE) {
       auto structRefLE = checkValidReference(FL(), functionState, builder,
-                                             structRefMT, structRef);
+          structRefMT, structRef);
       return wrap(globalState->getRegion(expectedMemberType), expectedMemberType,
-                  LLVMBuildExtractValue(
-                      builder, structRefLE, memberIndex, memberName.c_str()));
+          LLVMBuildExtractValue(
+              builder, structRefLE, memberIndex, memberName.c_str()));
     } else {
       switch (structRefMT->ownership) {
         case Ownership::OWN:
@@ -775,102 +786,56 @@ void ResilientV3::checkInlineStructType(
   auto argLE = checkValidReference(FL(), functionState, builder, refMT, ref);
   auto structKind = dynamic_cast<StructKind *>(refMT->kind);
   assert(structKind);
-  assert(LLVMTypeOf(argLE) == kindStructs.getInnerStruct(structKind));
+  assert(LLVMTypeOf(argLE) == kindStructs.getStructInnerStruct(structKind));
 }
 
-
-//std::string ResilientV3::getMemberArbitraryRefNameCSeeMMEDT(Reference *refMT) {
-//  if (refMT->ownership == Ownership::SHARE) {
-//    assert(false);
-//  } else if (auto structRefMT = dynamic_cast<StructKind *>(refMT->kind)) {
-//    auto structMT = globalState->program->getStruct(structRefMT);
-//    auto baseName = globalState->program->getMemberArbitraryExportNameSeeMMEDT(structRefMT->fullName);
-//    if (structMT->mutability == Mutability::MUTABLE) {
-//      assert(refMT->location != Location::INLINE);
-//      return baseName + "Ref";
-//    } else {
-//      if (refMT->location == Location::INLINE) {
-//        return baseName + "Inl";
-//      } else {
-//        return baseName + "Ref";
-//      }
-//    }
-//  } else if (auto interfaceMT = dynamic_cast<InterfaceKind *>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(interfaceMT->fullName) + "Ref";
-//  } else if (auto rsaMT = dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(rsaMT->name) + "Ref";
-//  } else if (auto ssaMT = dynamic_cast<StaticSizedArrayT*>(refMT->kind)) {
-//    return globalState->program->getMemberArbitraryExportNameSeeMMEDT(ssaMT->name) + "Ref";
-//  } else {
-//    assert(false);
-//  }
-//}
 
 std::string ResilientV3::generateRuntimeSizedArrayDefsC(
     Package* currentPackage,
     RuntimeSizedArrayDefinitionT* rsaDefM) {
-  if (rsaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(rsaDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused; } " + name + "Ref;\n";
-  }
+  assert(rsaDefM->rawArray->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(rsaDefM->kind, true));
 }
 
 std::string ResilientV3::generateStaticSizedArrayDefsC(
     Package* currentPackage,
     StaticSizedArrayDefinitionT* ssaDefM) {
-  if (ssaDefM->rawArray->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(ssaDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused; } " + name + "Ref;\n";
-  }
+  assert(ssaDefM->rawArray->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(ssaDefM->kind, true));
 }
 
 std::string ResilientV3::generateStructDefsC(
-    Package* currentPackage,
-    StructDefinition *structDefM) {
-
-  if (structDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(structDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused; } " + name + "Ref;\n";
-  }
+    Package* currentPackage, StructDefinition* structDefM) {
+  assert(structDefM->mutability == Mutability::MUTABLE);
+  return generateMutableConcreteHandleDefC(currentPackage, currentPackage->getKindExportName(structDefM->kind, true));
 }
 
 std::string ResilientV3::generateInterfaceDefsC(
-    Package* currentPackage,
-    InterfaceDefinition *interfaceDefM) {
-
-  if (interfaceDefM->mutability == Mutability::IMMUTABLE) {
-    assert(false);
-  } else {
-    auto name = currentPackage->getKindExportName(interfaceDefM->kind, true);
-    return std::string() + "typedef struct " + name + "Ref { uint64_t unused0; void* unused1; void* unused2; } " + name + "Ref;\n";
-  }
+    Package* currentPackage, InterfaceDefinition* interfaceDefM) {
+  assert(interfaceDefM->mutability == Mutability::MUTABLE);
+  return generateMutableInterfaceHandleDefC(currentPackage, currentPackage->getKindExportName(interfaceDefM->kind, true));
 }
 
-Reference *ResilientV3::getExternalType(Reference *refMT) {
-  return refMT;
+LLVMTypeRef ResilientV3::getExternalType(Reference *refMT) {
+  if (dynamic_cast<StructKind*>(refMT->kind) ||
+      dynamic_cast<StaticSizedArrayT*>(refMT->kind) ||
+      dynamic_cast<RuntimeSizedArrayT*>(refMT->kind)) {
+    return globalState->getConcreteHandleStruct();
+  } else if (dynamic_cast<InterfaceKind*>(refMT->kind)) {
+    return globalState->getInterfaceHandleStruct();
+  } else {
+    assert(false);
+  }
 }
 
 Ref ResilientV3::receiveAndDecryptFamiliarReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *sourceRefMT,
-    Ref sourceRef) {
-  switch (sourceRefMT->ownership) {
-    case Ownership::SHARE:
-      assert(false);
-    case Ownership::OWN:
-    case Ownership::BORROW:
-    case Ownership::WEAK:
-      // Someday we'll do some encryption stuff here
-      return sourceRef;
-  }
-  assert(false);
+    LLVMValueRef sourceRefLE) {
+  assert(sourceRefMT->ownership != Ownership::SHARE);
+  return resilientReceiveAndDecryptFamiliarReference(
+      globalState, functionState, builder, &kindStructs, &kindStructs, &hgmWeaks, sourceRefMT, sourceRefLE);
 }
 
 LLVMTypeRef ResilientV3::getInterfaceMethodVirtualParamAnyType(Reference *reference) {
@@ -880,7 +845,7 @@ LLVMTypeRef ResilientV3::getInterfaceMethodVirtualParamAnyType(Reference *refere
       return LLVMPointerType(LLVMInt8TypeInContext(globalState->context), 0);
     case Ownership::BORROW:
     case Ownership::WEAK:
-      return weakRefStructs.getWeakVoidRefStruct(reference->kind);
+      return kindStructs.getWeakVoidRefStruct(reference->kind);
   }
 }
 
@@ -894,13 +859,14 @@ Ref ResilientV3::receiveUnencryptedAlienReference(
   exit(1);
 }
 
-Ref ResilientV3::encryptAndSendFamiliarReference(
+LLVMValueRef ResilientV3::encryptAndSendFamiliarReference(
     FunctionState *functionState,
     LLVMBuilderRef builder,
     Reference *sourceRefMT,
     Ref sourceRef) {
-  // Someday we'll do some encryption stuff here
-  return sourceRef;
+  assert(sourceRefMT->ownership != Ownership::SHARE);
+  return resilientEncryptAndSendFamiliarReference(
+      globalState, functionState, builder, &kindStructs, &hgmWeaks, sourceRefMT, sourceRef);
 }
 
 void ResilientV3::initializeElementInRSA(
@@ -913,7 +879,7 @@ void ResilientV3::initializeElementInRSA(
     Ref indexRef,
     Ref elementRef) {
   ::initializeElementInRSA(globalState, functionState, builder, &kindStructs, rsaMT, rsaRefMT, rsaRef, indexRef,
-                           elementRef);
+      elementRef);
 }
 
 Ref ResilientV3::deinitializeElementFromRSA(

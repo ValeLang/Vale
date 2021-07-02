@@ -359,7 +359,7 @@ public:
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
-  Reference* getExternalType(
+  LLVMTypeRef getExternalType(
       Reference* refMT) override;
 
   Ref receiveUnencryptedAlienReference(
@@ -373,9 +373,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) override;
+      LLVMValueRef sourceRefLE) override;
 
-  Ref encryptAndSendFamiliarReference(
+  LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -393,9 +393,6 @@ public:
 
   LLVMTypeRef translateType(GlobalState* globalState, Reference* referenceM);
 
-  LLVMTypeRef getControlBlockStruct(Kind* kind);
-
-
   LoadResult loadMember(
       FunctionState* functionState,
       LLVMBuilderRef builder,
@@ -410,7 +407,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IKindStructsSource* kindStructs,
+      KindStructs* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);
 

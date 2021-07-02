@@ -1,0 +1,19 @@
+interface IShip export {
+  fn getFuel(virtual ship &IShip) int;
+}
+struct Firefly export {
+  fuel int;
+}
+impl IShip for Firefly;
+fn getFuel(ship &Firefly impl IShip) int { ship.fuel }
+
+fn makeFirefly(fuel int) IShip export {
+  Firefly(fuel)
+}
+
+fn runExtCommand() IShip extern;
+
+fn main() int export {
+  res = runExtCommand();
+  ret getFuel(&res);
+}

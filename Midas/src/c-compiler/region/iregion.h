@@ -348,7 +348,7 @@ public:
 
   // For instance regions, this will return the handle's type.
   // For value regions, we'll just be returning linear's translateType.
-  virtual Reference* getExternalType(Reference* refMT) = 0;
+  virtual LLVMTypeRef getExternalType(Reference* refMT) = 0;
 
   virtual LoadResult loadElementFromSSA(
       FunctionState* functionState,
@@ -373,10 +373,10 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) = 0;
+      LLVMValueRef sourceRefLE) = 0;
 
   // Encrypts and sends a reference to an object in this region.
-  virtual Ref encryptAndSendFamiliarReference(
+  virtual LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,

@@ -8,7 +8,7 @@
 
 class WrcWeaks {
 public:
-  WrcWeaks(GlobalState* globalState, IKindStructsSource* kindStructsSource, IWeakRefStructsSource* weakRefStructsSource);
+  WrcWeaks(GlobalState* globalState, KindStructs* kindStructsSource, KindStructs* weakRefStructsSource);
 
   WeakFatPtrLE weakStructPtrToWrciWeakInterfacePtr(
       GlobalState *globalState,
@@ -83,7 +83,7 @@ public:
   LLVMValueRef fillWeakableControlBlock(
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IKindStructsSource* structs,
+      KindStructs* structs,
       Kind* kindM,
       LLVMValueRef controlBlockLE);
 
@@ -158,8 +158,8 @@ private:
 
   GlobalState* globalState = nullptr;
   FatWeaks fatWeaks_;
-  IKindStructsSource* kindStructsSource;
-  IWeakRefStructsSource* weakRefStructsSource;
+  KindStructs* kindStructsSource;
+  KindStructs* weakRefStructsSource;
 
   LLVMValueRef wrcTablePtrLE = nullptr;
 };

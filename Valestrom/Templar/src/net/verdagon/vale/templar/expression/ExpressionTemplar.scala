@@ -60,21 +60,6 @@ class ExpressionTemplar(
     }
   })
 
-  private def evaluateList(
-      temputs: Temputs,
-      fate: FunctionEnvironmentBox,
-      expr1: List[IExpressionAE]):
-      (List[ExpressionT], Set[CoordT]) = {
-    expr1 match {
-      case Nil => (List(), Set())
-      case first1 :: rest1 => {
-        val (first2, returnsFromFirst) = evaluate(temputs, fate, first1);
-        val (rest2, returnsFromRest) = evaluateList(temputs, fate, rest1);
-        (first2 :: rest2, returnsFromFirst ++ returnsFromRest)
-      }
-    }
-  }
-
   def evaluateAndCoerceToReferenceExpressions(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,

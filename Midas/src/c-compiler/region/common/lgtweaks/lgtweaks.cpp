@@ -13,7 +13,7 @@ constexpr int WEAK_REF_HEADER_MEMBER_INDEX_FOR_LGTI = 1;
 
 LLVMValueRef LgtWeaks::getTargetGenFromWeakRef(
     LLVMBuilderRef builder,
-    IWeakRefStructsSource* weakRefStructsSource,
+    KindStructs* weakRefStructsSource,
     Kind* kind,
     WeakFatPtrLE weakRefLE) {
   assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V3 ||
@@ -51,7 +51,7 @@ void LgtWeaks::buildCheckLgti(
 
 static LLVMValueRef makeLgtiHeader(
     GlobalState* globalState,
-    IWeakRefStructsSource* weakRefStructsSource,
+    KindStructs* weakRefStructsSource,
     LLVMBuilderRef builder,
     Kind* kind,
     LLVMValueRef lgtiLE,
@@ -98,7 +98,7 @@ LLVMValueRef LgtWeaks::getActualGenFromLGT(
 static LLVMValueRef getLgtiFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
 //  assert(globalState->opt->regionOverride == RegionOverride::RESILIENT_V1);
@@ -120,8 +120,8 @@ static LLVMValueRef getLgtiFromControlBlockPtr(
 
 LgtWeaks::LgtWeaks(
     GlobalState* globalState_,
-    IKindStructsSource* kindStructsSource_,
-    IWeakRefStructsSource* weakRefStructsSource_,
+    KindStructs* kindStructsSource_,
+    KindStructs* weakRefStructsSource_,
     bool elideChecksForKnownLive_)
   : globalState(globalState_),
     fatWeaks_(globalState_, weakRefStructsSource_),
@@ -479,7 +479,7 @@ Ref LgtWeaks::getIsAliveFromWeakRef(
 LLVMValueRef LgtWeaks::fillWeakableControlBlock(
     FunctionState* functionState,
     LLVMBuilderRef builder,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     Kind* kindM,
     LLVMValueRef controlBlockLE) {
   auto geniLE = getNewLgti(functionState, builder);

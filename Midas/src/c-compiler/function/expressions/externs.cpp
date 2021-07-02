@@ -220,7 +220,9 @@ Ref buildExternCall(
     }
 
     auto hostArgsLE = std::vector<LLVMValueRef>{};
-    hostArgsLE.reserve(args.size());
+    hostArgsLE.reserve(args.size() + 1);
+
+
     for (int i = 0; i < args.size(); i++) {
       auto valeArgRefMT = prototype->params[i];
       auto hostArgRefMT =
@@ -232,7 +234,13 @@ Ref buildExternCall(
       auto hostArgRefLE =
           sendValeObjectIntoHost(
               globalState, functionState, builder, valeArgRefMT, hostArgRefMT, valeArg);
-      hostArgsLE.push_back(hostArgRefLE);
+      if (typeNeedsPointerParameter(globalState, valeArgRefMT)) {
+        auto hostArgRefLT = globalState->getRegion(valeArgRefMT)->getExternalType(valeArgRefMT);
+        assert(LLVMGetTypeKind(hostArgRefLT) != LLVMPointerTypeKind);
+        hostArgsLE.push_back(makeMidasLocal(functionState, builder, hostArgRefLT, "ptrParamLocal", hostArgRefLE));
+      } else {
+        hostArgsLE.push_back(hostArgRefLE);
+      }
     }
 
     auto externFuncIter = globalState->externFunctions.find(prototype->name->name);
@@ -242,24 +250,31 @@ Ref buildExternCall(
     buildFlare(FL(), globalState, functionState, builder, "Suspending function ", functionState->containingFuncName);
     buildFlare(FL(), globalState, functionState, builder, "Calling extern function ", prototype->name->name);
 
-    auto hostReturnLE = LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
-//    auto resultRef = wrap(globalState->getRegion(refHere), call->function->returnType, resultLE);
-//    globalState->getRegion(refHere)->checkValidReference(FL(), functionState, builder, call->function->returnType, resultRef);
+    LLVMValueRef hostReturnLE = nullptr;
+    if (typeNeedsPointerParameter(globalState, prototype->returnType)) {
+      auto hostReturnRefLT = globalState->getRegion(prototype->returnType)->getExternalType(prototype->returnType);
+      auto localPtrLE = makeMidasLocal(functionState, builder, hostReturnRefLT, "retOutParam", LLVMGetUndef(hostReturnRefLT));
+      buildFlare(FL(), globalState, functionState, builder, "Return ptr! ", ptrToIntLE(globalState, builder, localPtrLE));
+      hostArgsLE.insert(hostArgsLE.begin(), localPtrLE);
+      LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
+      hostReturnLE = LLVMBuildLoad(builder, localPtrLE, "hostReturn");
+      buildFlare(FL(), globalState, functionState, builder, "Loaded the return! ", LLVMABISizeOfType(globalState->dataLayout, LLVMTypeOf(hostReturnLE)));
+    } else {
+      hostReturnLE = LLVMBuildCall(builder, externFuncL, hostArgsLE.data(), hostArgsLE.size(), "");
+    }
 
-    buildFlare(FL(), globalState, functionState, builder);
+    buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
+    buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
 
     if (prototype->returnType->kind == globalState->metalCache->never) {
-      buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
       LLVMBuildRet(builder, LLVMGetUndef(functionState->returnTypeL));
       return wrap(globalState->getRegion(globalState->metalCache->neverRef), globalState->metalCache->neverRef, globalState->neverPtr);
     } else {
-      buildFlare(FL(), globalState, functionState, builder, "Done calling function ", prototype->name->name);
-      buildFlare(FL(), globalState, functionState, builder, "Resuming function ", functionState->containingFuncName);
-
       if (prototype->returnType == globalState->metalCache->emptyTupleStructRef) {
         return makeEmptyTupleRef(globalState);
       } else {
+        buildFlare(FL(), globalState, functionState, builder);
+
         auto valeReturnRefMT = prototype->returnType;
         auto hostReturnMT =
             (valeReturnRefMT->ownership == Ownership::SHARE ?
@@ -267,7 +282,7 @@ Ref buildExternCall(
                 valeReturnRefMT);
 
         auto valeReturnRef =
-            sendHostObjectIntoVale(
+            receiveHostObjectIntoVale(
                 globalState, functionState, builder, hostReturnMT, valeReturnRefMT, hostReturnLE);
 
         return valeReturnRef;

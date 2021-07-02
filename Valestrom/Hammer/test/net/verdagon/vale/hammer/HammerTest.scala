@@ -20,7 +20,7 @@ class HammerTest extends FunSuite with Matchers {
     }
     a match {
       case p : Product => p.productIterator.flatMap(x => recursiveCollect(x, partialFunction)).toList
-      case _ => List()
+      case _ => List.empty
     }
   }
 

@@ -301,7 +301,7 @@ object LoadHammer {
           localTypeH,
           loadResultType,
           NameHammer.addStep(hamuts, boxStructRefH.fullName, StructHammer.BOX_MEMBER_NAME))
-    (loadedNode, List())
+    (loadedNode, List.empty)
   }
 
   def translateMundaneLocalLoad(
@@ -336,7 +336,7 @@ object LoadHammer {
           targetOwnership,
           targetPermission,
           NameHammer.translateFullName(hinputs, hamuts, varId))
-    (loadedNode, List())
+    (loadedNode, List.empty)
   }
 
   def translateLocalAddress(

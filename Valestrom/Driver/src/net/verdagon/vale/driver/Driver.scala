@@ -128,7 +128,7 @@ object Driver {
 
     val sourceInputs =
       inputs.zipWithIndex.filter(_._1.moduleName == module).flatMap({
-        case (SourceInput(_, name, code), index) if (namespaces == List()) => {
+        case (SourceInput(_, name, code), index) if (namespaces == List.empty) => {
           // All .vpst and .vale direct inputs are considered part of the root namespace.
           List((index + "(" + name + ")" -> code))
         }
@@ -230,7 +230,7 @@ object Driver {
 //        val namespace = List[String]()
 //        val filepathToCode =
 //          loadedInputsInModule.groupBy(_.path).map({
-//            case (path, List()) => vfail("No files with path: " + path)
+//            case (path, List.empty) => vfail("No files with path: " + path)
 //            case (path, List(onlyCodeWithThisFilename)) => (path -> onlyCodeWithThisFilename.code)
 //            case (path, multipleCodeWithThisFilename) => vfail("Multiple files with path " + path + ": " + multipleCodeWithThisFilename.mkString(", "))
 //          })
@@ -257,7 +257,7 @@ object Driver {
 //            }
 //          }
 //        } else if (filepath.endsWith(".vpst")) {
-//          (contents, List())
+//          (contents, List.empty)
 //        } else {
 //          throw new InputException("Unknown input type: " + filepath)
 //        }
@@ -431,7 +431,7 @@ object Driver {
 
   def main(args: Array[String]): Unit = {
     try {
-      val opts = parseOpts(Options(List(), List(), None, false, true, true, false, true, None, false), args.toList)
+      val opts = parseOpts(Options(List.empty, List.empty, None, false, true, true, false, true, None, false), args.toList)
       vcheck(opts.mode.nonEmpty, "No mode!", InputException)
       vcheck(opts.inputs.nonEmpty, "No input files!", InputException)
 
@@ -441,7 +441,8 @@ object Driver {
           val List(inputFilePath) = opts.inputs
 
           val compilation =
-            new FullCompilation(
+            new FullCompilation
+(
               opts.modulesToBuild,
               Builtins.getCodeMap().or(nsCoord => resolveNamespaceContents(opts.inputs, nsCoord)),
               FullCompilationOptions(
@@ -461,7 +462,7 @@ object Driver {
 
           val code =
             valeCodeMap.moduleToNamespacesToFilenameToContents.values.flatMap(_.values.flatMap(_.values)).toList match {
-              case List() => throw InputException("No vale code given to highlight!")
+              case List.empty => throw InputException("No vale code given to highlight!")
               case List(x) => x
               case _ => throw InputException("No vale code given to highlight!")
             }

@@ -115,7 +115,7 @@ object LetHammer {
     val stackifyH =
       translateAddressibleLet(
         hinputs, hamuts, currentFunctionHeader, locals, sourceExprResultLine, sourceResultPointerTypeH, varId, variability, reference)
-    val (borrowAccess, List()) =
+    val (borrowAccess, List.empty) =
       LoadHammer.translateAddressibleLocalLoad(
         hinputs,
         hamuts,
@@ -173,7 +173,7 @@ object LetHammer {
           varId,
           variability)
 
-    val (borrowAccess, List()) =
+    val (borrowAccess, List.empty) =
       LoadHammer.translateMundaneLocalLoad(
         hinputs,
         hamuts,
@@ -301,10 +301,10 @@ object LetHammer {
     // However, the templar only supplied variables for the reference members,
     // so we need to introduce our own local variables here.
 
-    // We put List() here to make sure that we've consumed all the destination
+    // We put List.empty here to make sure that we've consumed all the destination
     // reference local variables.
-    val (List(), localTypes, localIndices) =
-      structDef2.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[ReferendH]](), List[Local]()))({
+    val (List.empty, localTypes, localIndices) =
+      structDef2.members.foldLeft((destinationReferenceLocalVariables, List[ReferenceH[ReferendH]].empty, List[Local].empty))({
         case ((remainingDestinationReferenceLocalVariables, previousLocalTypes, previousLocalIndices), member2) => {
           member2.tyype match {
             case ReferenceMemberType2(memberRefType2) => {
@@ -348,7 +348,7 @@ object LetHammer {
       structDef2.members.zip(localTypes.zip(localIndices)).flatMap({
         case (structMember2, (localType, local)) => {
           structMember2.tyype match {
-            case ReferenceMemberType2(_) => List()
+            case ReferenceMemberType2(_) => List.empty
             case AddressMemberType2(_) => {
               // localType is the box type.
               // First, unlet it, then discard the contents.

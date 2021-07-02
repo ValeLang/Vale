@@ -611,7 +611,7 @@ object Parser {
       if (werePreviousExprs) {
         return Some(Err(BadExpressionEnd(iter.getPos())))
       } else {
-        return Some(Ok(List()))
+        return Some(Ok(List.empty))
       }
     }
 
@@ -671,7 +671,7 @@ object ParserCompilation {
   (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
     vassert(neededModules.size == neededModules.distinct.size, "Duplicate modules in: " + neededModules.mkString(", "))
 
-    loadAndParseIteration(neededModules, FileCoordinateMap(Map()), FileCoordinateMap(Map()), resolver)
+    loadAndParseIteration(neededModules, FileCoordinateMap(Map.empty), FileCoordinateMap(Map.empty), resolver)
   }
 
   def loadAndParseIteration(
@@ -681,7 +681,7 @@ object ParserCompilation {
     resolver: INamespaceResolver[Map[String, String]]):
   (FileCoordinateMap[String], FileCoordinateMap[(FileP, List[(Int, Int)])]) = {
     val neededNamespaceCoords =
-      neededModules.map(module => NamespaceCoordinate(module, List())) ++
+      neededModules.map(module => NamespaceCoordinate(module, List.empty)) ++
         alreadyParsedProgramPMap.flatMap({ case (fileCoord, file) =>
           file._1.topLevelThings.collect({
             case TopLevelImportP(ImportP(_, moduleName, namespaceSteps, importeeName)) => {
@@ -690,7 +690,7 @@ object ParserCompilation {
           })
         }).toList.flatten.filter(namespaceCoord => {
           !alreadyParsedProgramPMap.moduleToNamespacesToFilenameToContents
-            .getOrElse(namespaceCoord.module, Map())
+            .getOrElse(namespaceCoord.module, Map.empty)
             .contains(namespaceCoord.namespaces)
         })
 
@@ -734,7 +734,7 @@ object ParserCompilation {
     val combinedCodeMap = alreadyFoundCodeMap.mergeNonOverlapping(neededCodeMap)
     val combinedProgramPMap = alreadyParsedProgramPMap.mergeNonOverlapping(newProgramPMap)
 
-    loadAndParseIteration(List(), combinedCodeMap, combinedProgramPMap, resolver)
+    loadAndParseIteration(List.empty, combinedCodeMap, combinedProgramPMap, resolver)
   }
 }
 
@@ -745,7 +745,7 @@ class ParserCompilation(
   var vpstMapCache: Option[FileCoordinateMap[String]] = None
   var parsedsCache: Option[FileCoordinateMap[(FileP, List[(Int, Int)])]] = None
 
-  def getCodeMap(): FileCoordinateMap[String] = {
+  def getCodeMap.empty: FileCoordinateMap[String] = {
     getParseds()
     codeMapCache.get
   }
@@ -763,7 +763,7 @@ class ParserCompilation(
     }
   }
 
-  def getVpstMap(): FileCoordinateMap[String] = {
+  def getVpstMap.empty: FileCoordinateMap[String] = {
     vpstMapCache match {
       case Some(vpst) => vpst
       case None => {

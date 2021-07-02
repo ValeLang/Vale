@@ -13,7 +13,7 @@ object FunctionHammer {
     hamuts: HamutsBox,
     functions2: List[Function2]):
   (List[FunctionRefH]) = {
-    functions2.foldLeft((List[FunctionRefH]()))({
+    functions2.foldLeft((List[FunctionRefH].empty))({
       case ((previousFunctionsH), function2) => {
         val (functionH) = translateFunction(hinputs, hamuts, function2)
         (functionH :: previousFunctionsH)
@@ -42,11 +42,11 @@ object FunctionHammer {
         val locals =
           LocalsBox(
             Locals(
-              Map[FullName2[IVarName2], VariableIdH](),
-              Set[VariableIdH](),
-              Map[VariableIdH,Local](),
+              Map[FullName2[IVarName2], VariableIdH].empty,
+              Set[VariableIdH].empty,
+              Map[VariableIdH,Local].empty,
               1));
-        val (bodyH, List()) =
+        val (bodyH, List.empty) =
           ExpressionHammer.translate(hinputs, hamuts, header, locals, body)
         vassert(locals.unstackifiedVars.size == locals.locals.size)
         val resultCoord = bodyH.resultType

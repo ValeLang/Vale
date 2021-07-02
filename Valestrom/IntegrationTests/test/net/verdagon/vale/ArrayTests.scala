@@ -61,7 +61,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable static array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immssafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssaimmfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -74,7 +74,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable static array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutssafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssamutfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -87,7 +87,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable static array from values") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/immssafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssaimmfromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -100,7 +100,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable static array from values") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutssafromvalues.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/ssamutfromvalues.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -133,7 +133,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Immutable runtime array from lambda") {
-    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/immrsafromcallable.vale"))
+    val compile = RunCompilation.test(Tests.loadExpected("programs/arrays/rsaimmfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({
@@ -146,7 +146,7 @@ class ArrayTests extends FunSuite with Matchers {
   }
 
   test("Mutable runtime array from lambda") {
-    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/mutrsafromcallable.vale"))
+    val compile = RunCompilation.test( Tests.loadExpected("programs/arrays/rsamutfromcallable.vale"))
 
     val temputs = compile.expectTemputs()
     temputs.lookupFunction("main").only({

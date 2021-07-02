@@ -368,7 +368,7 @@ public:
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
 
-  Reference* getExternalType(
+  LLVMTypeRef getExternalType(
       Reference* refMT) override;
 
   Ref receiveUnencryptedAlienReference(
@@ -382,9 +382,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) override;
+      LLVMValueRef sourceRefLE) override;
 
-  Ref encryptAndSendFamiliarReference(
+  LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -404,7 +404,7 @@ public:
       AreaAndFileAndLine checkerAFL,
       FunctionState* functionState,
       LLVMBuilderRef builder,
-      IKindStructsSource* kindStructs,
+      KindStructs* kindStructs,
       Reference* refM,
       LLVMValueRef refLE);
 
@@ -465,14 +465,15 @@ private:
       Reference* rsaMT,
       RuntimeSizedArrayT* runtimeSizedArrayT,
       Ref sizeRef,
-      const std::string& typeName,
       Ref dryRunBoolRef);
 
   Prototype* getSerializePrototype(Kind* valeKind);
   Prototype* getSerializeThunkPrototype(StructKind* structKind, InterfaceKind* interfaceKind);
 
   LLVMValueRef predictShallowSize(
+      FunctionState* functionState,
       LLVMBuilderRef builder,
+      bool includeHeader,
       Kind* kind,
       // Ignored if kind isn't an array or string.
       // If it's a string, this will be the length of the string.

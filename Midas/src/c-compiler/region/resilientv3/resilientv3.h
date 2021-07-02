@@ -360,32 +360,6 @@ public:
 
   Ref localStore(FunctionState* functionState, LLVMBuilderRef builder, Local* local, LLVMValueRef localAddr, Ref refToStore, bool knownLive) override;
 
-//  LLVMValueRef mallocKnownSize(
-//      FunctionState* functionState,
-//      LLVMBuilderRef builder,
-//      Location location,
-//      LLVMTypeRef kindLT) override;
-
-//  LLVMValueRef mallocRuntimeSizedArray(
-//      LLVMBuilderRef builder,
-//      LLVMTypeRef rsaWrapperLT,
-//      LLVMTypeRef rsaElementLT,
-//      LLVMValueRef lengthLE) override;
-
-  // TODO Make these private once refactor is done
-//  WeakFatPtrLE makeWeakFatPtr(Reference* referenceM_, LLVMValueRef ptrLE) override {
-//    return mutWeakableStructs.makeWeakFatPtr(referenceM_, ptrLE);
-//  }
-  // TODO get rid of these once refactor is done
-//  ControlBlock* getControlBlock(Kind* kind) override {
-//    return kindStructs.getControlBlock(kind);
-//  }
-//  IKindStructsSource* getKindStructsSource() override {
-//    return &kindStructs;
-//  }
-//  IWeakRefStructsSource* getWeakRefStructsSource() override {
-//    return &weakRefStructs;
-//  }
   LLVMValueRef getStringBytesPtr(FunctionState* functionState, LLVMBuilderRef builder, Ref ref) override {
     auto strWrapperPtrLE =
         kindStructs.makeWrapperPtr(
@@ -405,10 +379,10 @@ public:
     return kindStructs.getStringLen(functionState, builder, strWrapperPtrLE);
   }
 //  LLVMTypeRef getWeakRefHeaderStruct(Kind* kind) override {
-//    return mutWeakableStructs.getWeakRefHeaderStruct(kind);
+//    return kindStructs.getWeakRefHeaderStruct(kind);
 //  }
 //  LLVMTypeRef getWeakVoidRefStruct(Kind* kind) override {
-//    return mutWeakableStructs.getWeakVoidRefStruct(kind);
+//    return kindStructs.getWeakVoidRefStruct(kind);
 //  }
   void fillControlBlock(
       AreaAndFileAndLine from,
@@ -434,7 +408,7 @@ public:
     Package* currentPackage,
       RuntimeSizedArrayDefinitionT* rsaDefM) override;
 
-  Reference* getExternalType(Reference* refMT) override;
+  LLVMTypeRef getExternalType(Reference* refMT) override;
 
   Ref receiveUnencryptedAlienReference(
       FunctionState* functionState,
@@ -447,9 +421,9 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
-      Ref sourceRef) override;
+      LLVMValueRef sourceRefLE) override;
 
-  Ref encryptAndSendFamiliarReference(
+  LLVMValueRef encryptAndSendFamiliarReference(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       Reference* sourceRefMT,
@@ -487,19 +461,10 @@ protected:
 
   RegionId* regionId;
 
-  WeakableKindStructs mutWeakableStructs;
-
-  KindStructsRouter kindStructs;
-  WeakRefStructsRouter weakRefStructs;
+  KindStructs kindStructs;
 
   FatWeaks fatWeaks;
   HybridGenerationalMemory hgmWeaks;
-
-  // TODO see if we can just use kindStructs/weakRefStructs instead of having these?
-//  WeakFatPtrLEMaker weakFatPtrMaker;
-//  InterfaceFatPtrLEMaker interfaceFatPtrMaker;
-//  ControlBlockPtrLEMaker controlBlockPtrMaker;
-//  WrapperPtrLEMaker wrapperPtrMaker;
 };
 
 #endif

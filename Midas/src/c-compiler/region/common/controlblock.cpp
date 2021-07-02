@@ -5,7 +5,7 @@
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IKindStructsSource* structs,
+    KindStructs* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   return LLVMBuildLoad(

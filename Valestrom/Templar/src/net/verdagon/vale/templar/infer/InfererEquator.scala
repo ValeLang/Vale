@@ -39,6 +39,9 @@ class InfererEquator[Env, State](
       case (MutabilityTemplata(leftMutability), MutabilityTemplata(rightMutability)) => {
         (leftMutability == rightMutability)
       }
+      case (VariabilityTemplata(leftVariability), VariabilityTemplata(rightVariability)) => {
+        (leftVariability == rightVariability)
+      }
       case (StringTemplata(leftVal), StringTemplata(righVal)) => {
         (leftVal == righVal)
       }
@@ -89,11 +92,11 @@ class InfererEquator[Env, State](
       case LocationTemplata(_) =>
       case CoordTemplata(_) =>
       case KindTemplata(_) =>
-      case KindTemplata(StructRef2(_)) =>
-      case KindTemplata(InterfaceRef2(_)) =>
-      case KindTemplata(KnownSizeArrayT2(_, _)) =>
-      case KindTemplata(PackT2(_, _)) =>
-      case KindTemplata(UnknownSizeArrayT2(_)) =>
+      case KindTemplata(StructRefT(_)) =>
+      case KindTemplata(InterfaceRefT(_)) =>
+      case KindTemplata(StaticSizedArrayTT(_, _)) =>
+      case KindTemplata(PackTT(_, _)) =>
+      case KindTemplata(RuntimeSizedArrayTT(_)) =>
       case KindTemplata(_) =>
       case InterfaceTemplata(_, _) =>
       case StructTemplata(_, _) =>
@@ -127,8 +130,8 @@ class InfererEquator[Env, State](
           true
         }
       }
-//      case (ArrayTypeSR, KindTemplata(ArraySequenceT2(_, _))) => true
-//      case (ArrayTypeSR, KindTemplata(UnknownSizeArrayT2(_))) => true
+//      case (ArrayTypeSR, KindTemplata(StaticSizedArrayT2(_, _))) => true
+//      case (ArrayTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
 //      case (StructTypeSR, KindTemplata(StructRef2(_))) => true
 //      case (StructTypeSR, StructTemplata(_, structS)) => {
 //        if (PredictingEvaluator.structIsTemplate(structS)) {
@@ -147,9 +150,9 @@ class InfererEquator[Env, State](
 //          true
 //        }
 //      }
-//      case (SequenceTypeSR, KindTemplata(ArraySequenceT2(_, _))) => true
+//      case (SequenceTypeSR, KindTemplata(StaticSizedArrayT2(_, _))) => true
 //      case (PackTypeSR, KindTemplata(PackT2(_, _))) => true
-//      case (SequenceTypeSR, KindTemplata(UnknownSizeArrayT2(_))) => true
+//      case (SequenceTypeSR, KindTemplata(RuntimeSizedArrayT2(_))) => true
 //      case (CallableTypeSR, KindTemplata(FunctionT2(_, _))) => true
 //      case (CallableTypeSR, KindTemplata(StructRef2(_))) => {
 //        // do we want to consider closures here? i think so?
@@ -160,7 +163,7 @@ class InfererEquator[Env, State](
 //        vfail()
 //      }
 //      case (CallableTypeSR, KindTemplata(_)) => {
-//        // Gotta check if the referend is callable
+//        // Gotta check if the kind is callable
 //        vfail("unimplemented")
 //      }
 //      case _ => false

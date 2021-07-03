@@ -14,32 +14,32 @@ class LinearStructs {
 public:
   LinearStructs(GlobalState* globalState_);
 
-  LLVMTypeRef getStructStruct(StructReferend* structReferend);
-  LLVMTypeRef getKnownSizeArrayStruct(KnownSizeArrayT* ksaMT);
-  LLVMTypeRef getUnknownSizeArrayStruct(UnknownSizeArrayT* usaMT);
-  LLVMTypeRef getInterfaceRefStruct(InterfaceReferend* interfaceReferend);
+  LLVMTypeRef getStructStruct(StructKind* structKind);
+  LLVMTypeRef getStaticSizedArrayStruct(StaticSizedArrayT* ssaMT);
+  LLVMTypeRef getRuntimeSizedArrayStruct(RuntimeSizedArrayT* rsaMT);
+  LLVMTypeRef getInterfaceRefStruct(InterfaceKind* interfaceKind);
   LLVMTypeRef getStringStruct();
 
   void defineStruct(
-      StructReferend* struuct,
+      StructKind* struuct,
       std::vector<LLVMTypeRef> membersLT) ;
-  void declareStruct(StructReferend* structM);
-  void declareEdge(StructReferend* structReferend, InterfaceReferend* interfaceReferend);
+  void declareStruct(StructKind* structM);
+  void declareEdge(StructKind* structKind, InterfaceKind* interfaceKind);
   void defineEdge(
       Edge* edge,
       std::vector<LLVMTypeRef> interfaceFunctionsLT,
       std::vector<LLVMValueRef> functions);
-  void declareInterface(InterfaceReferend* interface);
-  void defineInterface(InterfaceReferend* interface);
-  void declareKnownSizeArray(
-      KnownSizeArrayT* knownSizeArrayMT);
-  void declareUnknownSizeArray(
-      UnknownSizeArrayT* unknownSizeArrayMT);
-  void defineUnknownSizeArray(
-      UnknownSizeArrayT* unknownSizeArrayMT,
+  void declareInterface(InterfaceKind* interface);
+  void defineInterface(InterfaceKind* interface);
+  void declareStaticSizedArray(
+      StaticSizedArrayT* staticSizedArrayMT);
+  void declareRuntimeSizedArray(
+      RuntimeSizedArrayT* runtimeSizedArrayMT);
+  void defineRuntimeSizedArray(
+      RuntimeSizedArrayT* runtimeSizedArrayMT,
       LLVMTypeRef elementLT);
-  void defineKnownSizeArray(
-      KnownSizeArrayT* knownSizeArrayMT,
+  void defineStaticSizedArray(
+      StaticSizedArrayT* staticSizedArrayMT,
       int size,
       LLVMTypeRef elementLT);
   InterfaceFatPtrLE makeInterfaceFatPtr(
@@ -53,11 +53,11 @@ public:
       FunctionState* functionState,
       LLVMBuilderRef builder,
       LLVMValueRef ptrLE);
-  LLVMValueRef getUnknownSizeArrayElementsPtr(
+  LLVMValueRef getRuntimeSizedArrayElementsPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       LLVMValueRef ptrLE);
-  LLVMValueRef getKnownSizeArrayElementsPtr(
+  LLVMValueRef getStaticSizedArrayElementsPtr(
       FunctionState* functionState,
       LLVMBuilderRef builder,
       LLVMValueRef ptrLE);
@@ -68,14 +68,14 @@ public:
       Reference* virtualParamMT,
       InterfaceFatPtrLE virtualArgLE);
 
-  int getEdgeNumber(InterfaceReferend* interfaceReferend, StructReferend* structReferend) {
-    auto structs = orderedStructsByInterface.find(interfaceReferend)->second;
-    auto index = std::find(structs.begin(), structs.end(), structReferend) - structs.begin();
+  int getEdgeNumber(InterfaceKind* interfaceKind, StructKind* structKind) {
+    auto structs = orderedStructsByInterface.find(interfaceKind)->second;
+    auto index = std::find(structs.begin(), structs.end(), structKind) - structs.begin();
     assert(index < structs.size());
     return index;
   }
-  std::vector<StructReferend*> getOrderedSubstructs(InterfaceReferend* interfaceReferend) {
-    auto iter = orderedStructsByInterface.find(interfaceReferend);
+  std::vector<StructKind*> getOrderedSubstructs(InterfaceKind* interfaceKind) {
+    auto iter = orderedStructsByInterface.find(interfaceKind);
     assert(iter != orderedStructsByInterface.end());
     return iter->second;
   }
@@ -84,13 +84,13 @@ private:
   GlobalState* globalState = nullptr;
 
   LLVMTypeRef stringStructLT = nullptr;
-  std::unordered_map<InterfaceReferend*, LLVMTypeRef, AddressHasher<InterfaceReferend*>> interfaceRefStructsL;
-  std::unordered_map<StructReferend*, LLVMTypeRef, AddressHasher<StructReferend*>> structStructsL;
-  std::unordered_map<KnownSizeArrayT*, LLVMTypeRef, AddressHasher<KnownSizeArrayT*>> knownSizeArrayStructsL;
-  std::unordered_map<UnknownSizeArrayT*, LLVMTypeRef, AddressHasher<UnknownSizeArrayT*>> unknownSizeArrayStructsL;
+  std::unordered_map<InterfaceKind*, LLVMTypeRef, AddressHasher<InterfaceKind*>> interfaceRefStructsL;
+  std::unordered_map<StructKind*, LLVMTypeRef, AddressHasher<StructKind*>> structStructsL;
+  std::unordered_map<StaticSizedArrayT*, LLVMTypeRef, AddressHasher<StaticSizedArrayT*>> staticSizedArrayStructsL;
+  std::unordered_map<RuntimeSizedArrayT*, LLVMTypeRef, AddressHasher<RuntimeSizedArrayT*>> runtimeSizedArrayStructsL;
 
   // The position in the vector is the integer that will be the tag for which actual substruct
   // is being pointed at by an interface ref.
-  std::unordered_map<InterfaceReferend*, std::vector<StructReferend*>, AddressHasher<InterfaceReferend*>> orderedStructsByInterface;
+  std::unordered_map<InterfaceKind*, std::vector<StructKind*>, AddressHasher<InterfaceKind*>> orderedStructsByInterface;
 };
 #endif

@@ -172,22 +172,22 @@ class KindRuleTests extends FunSuite with Matchers with Collector {
 
   test("Repeater sequence") {
     compile(repeaterSeqRulePR, "[_ * _]") shouldHave {
-      case RepeaterSequencePT(_,MutabilityPT(_,MutableP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
+      case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
     }
     compile(repeaterSeqRulePR, "[<imm> _ * _]") shouldHave {
-      case RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
+      case RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),AnonymousRunePT(_)) =>
     }
     compile(repeaterSeqRulePR, "[3 * int]") shouldHave {
-      case RepeaterSequencePT(_,MutabilityPT(_,MutableP), IntPT(_,3),NameOrRunePT(NameP(_, "int"))) =>
+      case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), IntPT(_,3),NameOrRunePT(NameP(_, "int"))) =>
     }
     compile(repeaterSeqRulePR, "[N * int]") shouldHave {
-        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "int"))) =>
+        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "int"))) =>
     }
     compile(repeaterSeqRulePR, "[_ * int]") shouldHave {
-        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), AnonymousRunePT(_),NameOrRunePT(NameP(_, "int"))) =>
+        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), AnonymousRunePT(_),NameOrRunePT(NameP(_, "int"))) =>
     }
     compile(repeaterSeqRulePR, "[N * T]") shouldHave {
-        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "T"))) =>
+        case RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")),NameOrRunePT(NameP(_, "T"))) =>
     }
   }
 

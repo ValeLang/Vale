@@ -40,7 +40,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     // The environment the function was defined in.
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
     temputs: Temputs):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
     val function = nearEnv.function
     checkClosureConcernsHandled(nearEnv)
 
@@ -58,7 +58,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
     temputs: Temputs,
       callRange: RangeS):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
     val function = nearEnv.function
     checkClosureConcernsHandled(nearEnv)
     vassert(!function.isTemplate)
@@ -123,7 +123,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     callRange: RangeS,
     explicitTemplateArgs: List[ITemplata],
     args: List[ParamFilter]):
-  (IEvaluateFunctionResult[Prototype2]) = {
+  (IEvaluateFunctionResult[PrototypeT]) = {
     val function = nearEnv.function
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
@@ -167,7 +167,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       callRange: RangeS,
       alreadySpecifiedTemplateArgs: List[ITemplata],
       paramFilters: List[ParamFilter]):
-  (IEvaluateFunctionResult[FunctionBanner2]) = {
+  (IEvaluateFunctionResult[FunctionBannerT]) = {
     val function = nearEnv.function
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
@@ -249,7 +249,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       nearEnv: BuildingFunctionEnvironmentWithClosureds,
       temputs: Temputs,
     callRange: RangeS):
-  (FunctionHeader2) = {
+  (FunctionHeaderT) = {
     val function = nearEnv.function
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
@@ -273,7 +273,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
     temputs: Temputs,
     callRange: RangeS):
-  (Prototype2) = {
+  (PrototypeT) = {
     val function = nearEnv.function
     // Check preconditions
     checkClosureConcernsHandled(nearEnv)
@@ -299,7 +299,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
     callRange: RangeS,
       explicitTemplateArgs: List[ITemplata],
       args: List[ParamFilter]):
-  (IEvaluateFunctionResult[FunctionBanner2]) = {
+  (IEvaluateFunctionResult[FunctionBannerT]) = {
     val function = nearEnv.function
     // Check preconditions
     function.body match {
@@ -322,7 +322,7 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
         explicitTemplateArgs,
         args) match {
       case (isc @ InferSolveFailure(_, _, _, _, _, _, _)) => {
-        return (EvaluateFunctionFailure[FunctionBanner2](InferFailure(isc)))
+        return (EvaluateFunctionFailure[FunctionBannerT](InferFailure(isc)))
       }
       case (InferSolveSuccess(inferredTemplatas)) => (inferredTemplatas.templatasByRune)
     }
@@ -356,15 +356,16 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
   private def addRunedDataToNearEnv(
     nearEnv: BuildingFunctionEnvironmentWithClosureds,
     identifyingRunes: List[IRuneA],
-    templatasByRune: Map[IRune2, ITemplata]
+    templatasByRune: Map[IRuneT, ITemplata]
   ): BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs = {
     val BuildingFunctionEnvironmentWithClosureds(parentEnv, fullName, function, variables, templatas) = nearEnv
 
     val identifyingTemplatas = identifyingRunes.map(NameTranslator.translateRune).map(templatasByRune)
     val newName =
-      FullName2(
+      FullNameT(
+        fullName.packageCoord,
         fullName.initSteps,
-        BuildingFunctionNameWithClosuredsAndTemplateArgs2(
+        BuildingFunctionNameWithClosuredsAndTemplateArgsT(
           fullName.last.templateName, identifyingTemplatas))
 
     BuildingFunctionEnvironmentWithClosuredsAndTemplateArgs(
@@ -375,6 +376,6 @@ class FunctionTemplarOrdinaryOrTemplatedLayer(
       templatas.addEntries(
         opts.useOptimization,
         templatasByRune.map({ case (k, v) => (k, List(TemplataEnvEntry(v))) })
-        .toMap[IName2, List[IEnvEntry]]))
+        .toMap[INameT, List[IEnvEntry]]))
   }
 }

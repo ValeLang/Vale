@@ -1,7 +1,7 @@
 package net.verdagon.vale.astronomer.builtins
 
 import net.verdagon.vale.astronomer._
-import net.verdagon.vale.parser.{ConstraintP, CaptureP, FinalP, LendConstraintP, OwnP, ReadonlyP, ShareP, UseP}
+import net.verdagon.vale.parser.{ConstraintP, CaptureP, LendConstraintP, OwnP, ReadonlyP, ShareP, UseP}
 import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
 import net.verdagon.vale.scout.patterns.AtomSP
 
@@ -22,8 +22,8 @@ object RefCounting {
         CodeRuneA("TK") -> KindTemplataType
       ),
       List(
-        ParameterA(AtomAP(RangeS.internal(-117), LocalVariableA(CodeVarNameA("obj"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(RangeS.internal(-118), LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-117), LocalA(CodeVarNameA("obj"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-118), LocalA(CodeVarNameA("num"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1418),TemplexAR(RuneAT(RangeS.internal(-5650),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5651),CodeTypeNameA("int"), CoordTemplataType))),
@@ -55,7 +55,7 @@ object RefCounting {
                   OutsideLoadAE(RangeS.internal(-38),"+", LendConstraintP(None)),
                   List(
                     LocalLoadAE(RangeS.internal(-35), CodeVarNameA("num"), UseP),
-                    IntLiteralAE(RangeS.internal(-35), 1)))),
+                    ConstantIntAE(RangeS.internal(-35), 1, 32)))),
               VoidAE(RangeS.internal(-35)))))))
 
   val checkMemberRcName = FunctionNameA("__checkmemberrc", CodeLocationS.internal(-5))
@@ -74,8 +74,8 @@ object RefCounting {
         CodeRuneA("V") -> CoordTemplataType,
         CodeRuneA("TK") -> KindTemplataType),
       List(
-        ParameterA(AtomAP(RangeS.internal(-115), LocalVariableA(CodeVarNameA("obj"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None)),
-        ParameterA(AtomAP(RangeS.internal(-116), LocalVariableA(CodeVarNameA("num"), FinalP, NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
+        ParameterA(AtomAP(RangeS.internal(-115), LocalA(CodeVarNameA("obj"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("T"), None)),
+        ParameterA(AtomAP(RangeS.internal(-116), LocalA(CodeVarNameA("num"), NotUsed, Used, NotUsed, NotUsed, NotUsed, NotUsed), None, CodeRuneA("I"), None))),
       Some(CodeRuneA("V")),
       List(
         EqualsAR(RangeS.internal(-1421),TemplexAR(RuneAT(RangeS.internal(-5658),CodeRuneA("I"), CoordTemplataType)), TemplexAR(NameAT(RangeS.internal(-5659),CodeTypeNameA("int"), CoordTemplataType))),

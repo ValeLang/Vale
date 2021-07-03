@@ -161,9 +161,9 @@ object Spanner {
 
   def forExpression(e: IExpressionPE): Span = {
     e match {
-      case IntLiteralPE(range, _) => makeSpan(Num, range, List())
-      case StrLiteralPE(range, _) => makeSpan(Str, range, List())
-      case BoolLiteralPE(range, _) => makeSpan(Bool, range, List())
+      case ConstantIntPE(range, _, _) => makeSpan(Num, range, List())
+      case ConstantStrPE(range, _) => makeSpan(Str, range, List())
+      case ConstantBoolPE(range, _) => makeSpan(Bool, range, List())
       case VoidPE(range) => makeSpan(W, range, List())
       case MagicParamLookupPE(range) => {
         makeSpan(
@@ -187,6 +187,9 @@ object Spanner {
         makeSpan(Lookup, range, List())
       }
       case TuplePE(range, elements) => {
+        makeSpan(Seq, range, elements.map(forExpression))
+      }
+      case PackPE(range, elements) => {
         makeSpan(Seq, range, elements.map(forExpression))
       }
       case ConstructArrayPE(range, mutability, variability, size, initializingIndividualElements, args) => {
@@ -313,7 +316,7 @@ object Spanner {
   }
 
   def forCapture(c: CaptureP): Span = {
-    val CaptureP(range, name, _) = c
+    val CaptureP(range, name) = c
     val nameSpan =
       name match {
         case LocalNameP(NameP(nameRange, _)) => {
@@ -340,7 +343,7 @@ object Spanner {
       case InterpretedPT(range, ownership, permission, inner) => {
         makeSpan(Ownership, range, List(forTemplex(inner)))
       }
-      case RepeaterSequencePT(range, mutability, size, element) => {
+      case RepeaterSequencePT(range, mutability, variability, size, element) => {
         makeSpan(
           Typ,
           range,

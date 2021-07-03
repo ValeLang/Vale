@@ -35,7 +35,7 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     function: FunctionA):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
     checkNotClosure(function);
     vassert(!function.isTemplate)
 
@@ -50,7 +50,7 @@ class FunctionTemplarClosureOrLightLayer(
       temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
     checkNotClosure(function);
     vassert(!function.isTemplate)
 
@@ -63,11 +63,11 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      closureStructRef: StructRef2,
+      closureStructRef: StructRefT,
     function: FunctionA,
     alreadySpecifiedTemplateArgs: List[ITemplata],
       argTypes2: List[ParamFilter]):
-  (IEvaluateFunctionResult[FunctionBanner2]) = {
+  (IEvaluateFunctionResult[FunctionBannerT]) = {
     vassert(function.isTemplate)
 
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
@@ -82,11 +82,11 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     callRange: RangeS,
-    closureStructRef: StructRef2,
+    closureStructRef: StructRefT,
     function: FunctionA,
     alreadySpecifiedTemplateArgs: List[ITemplata],
     argTypes2: List[ParamFilter]):
-  (IEvaluateFunctionResult[Prototype2]) = {
+  (IEvaluateFunctionResult[PrototypeT]) = {
     vassert(function.isTemplate)
 
     val (variables, entries) = makeClosureVariablesAndEntries(temputs, closureStructRef)
@@ -118,7 +118,7 @@ class FunctionTemplarClosureOrLightLayer(
     function: FunctionA,
       explicitTemplateArgs: List[ITemplata],
       args: List[ParamFilter]):
-  (IEvaluateFunctionResult[Prototype2]) = {
+  (IEvaluateFunctionResult[PrototypeT]) = {
     checkNotClosure(function);
     vassert(function.isTemplate)
 
@@ -132,7 +132,7 @@ class FunctionTemplarClosureOrLightLayer(
       temputs: Temputs,
     callRange: RangeS,
     function: FunctionA):
-  (FunctionHeader2) = {
+  (FunctionHeaderT) = {
     vassert(!function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(outerEnv, function)
@@ -148,7 +148,7 @@ class FunctionTemplarClosureOrLightLayer(
     temputs: Temputs,
     callRange: RangeS,
     function: FunctionA
-  ): Prototype2 = {
+  ): PrototypeT = {
     checkNotClosure(function)
     vassert(!function.isTemplate)
 
@@ -162,9 +162,9 @@ class FunctionTemplarClosureOrLightLayer(
     outerEnv: IEnvironment,
     temputs: Temputs,
     callRange: RangeS,
-    closureStructRef: StructRef2,
+    closureStructRef: StructRefT,
     function: FunctionA):
-  (FunctionBanner2) = {
+  (FunctionBannerT) = {
     vassert(!function.isTemplate)
 
     val name = makeNameWithClosureds(outerEnv, function.name)
@@ -178,9 +178,9 @@ class FunctionTemplarClosureOrLightLayer(
       outerEnv: IEnvironment,
       temputs: Temputs,
     callRange: RangeS,
-      closureStructRef: StructRef2,
+      closureStructRef: StructRefT,
     function: FunctionA):
-  (FunctionHeader2) = {
+  (FunctionHeaderT) = {
     // We dont here because it knows from how many variables
     // it closures... but even lambdas without closured vars are still closures and are still
     // backed by structs.
@@ -203,7 +203,7 @@ class FunctionTemplarClosureOrLightLayer(
       function: FunctionA,
       explicitTemplateArgs: List[ITemplata],
       args: List[ParamFilter]):
-  (IEvaluateFunctionResult[FunctionBanner2]) = {
+  (IEvaluateFunctionResult[FunctionBannerT]) = {
     checkNotClosure(function)
     vassert(function.isTemplate)
 
@@ -219,7 +219,7 @@ class FunctionTemplarClosureOrLightLayer(
     callRange: RangeS,
       alreadySpecifiedTemplateArgs: List[ITemplata],
       paramFilters: List[ParamFilter]):
-  (IEvaluateFunctionResult[FunctionBanner2]) = {
+  (IEvaluateFunctionResult[FunctionBannerT]) = {
     vassert(function.isTemplate)
 
     val newEnv = makeEnvWithoutClosureStuff(outerEnv, function)
@@ -249,9 +249,12 @@ class FunctionTemplarClosureOrLightLayer(
     BuildingFunctionEnvironmentWithClosureds(outerEnv, name, function, List(), newTemplataStore())
   }
 
-  private def makeNameWithClosureds(outerEnv: IEnvironment, functionName: IFunctionDeclarationNameA) = {
+  private def makeNameWithClosureds(
+    outerEnv: IEnvironment,
+    functionName: IFunctionDeclarationNameA
+  ): FullNameT[BuildingFunctionNameWithClosuredsT] = {
     outerEnv.fullName.addStep(
-      BuildingFunctionNameWithClosureds2(
+      BuildingFunctionNameWithClosuredsT(
         NameTranslator.translateFunctionNameToTemplateName(functionName)))
   }
 
@@ -265,23 +268,23 @@ class FunctionTemplarClosureOrLightLayer(
     }
   }
 
-  private def makeClosureVariablesAndEntries(temputs: Temputs, closureStructRef: StructRef2):
-  (List[IVariable2], Map[IName2, List[IEnvEntry]]) = {
+  private def makeClosureVariablesAndEntries(temputs: Temputs, closureStructRef: StructRefT):
+  (List[IVariableT], Map[INameT, List[IEnvEntry]]) = {
     val closureStructDef = temputs.lookupStruct(closureStructRef);
     val variables =
       closureStructDef.members.map(member => {
         val variableFullName = closureStructDef.fullName.addStep(member.name)
         member.tyype match {
-          case AddressMemberType2(reference) => {
-            AddressibleClosureVariable2(variableFullName, closureStructRef, member.variability, reference)
+          case AddressMemberTypeT(reference) => {
+            AddressibleClosureVariableT(variableFullName, closureStructRef, member.variability, reference)
           }
-          case ReferenceMemberType2(reference) => {
-            ReferenceClosureVariable2(variableFullName, closureStructRef, member.variability, reference)
+          case ReferenceMemberTypeT(reference) => {
+            ReferenceClosureVariableT(variableFullName, closureStructRef, member.variability, reference)
           }
         }
       })
     val entries =
-      Map[IName2, List[IEnvEntry]](
+      Map[INameT, List[IEnvEntry]](
         closureStructRef.fullName.last ->
           List(TemplataEnvEntry(KindTemplata(closureStructRef))))
     (variables, entries)

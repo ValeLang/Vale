@@ -54,6 +54,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case withType(
           RepeaterSequencePT(_,
               MutabilityPT(_,MutableP),
+              VariabilityPT(_,FinalP),
               IntPT(_,3),
               NameOrRunePT(NameP(_, "MutableStruct")))) =>
     }
@@ -64,8 +65,20 @@ class TypeTests extends FunSuite with Matchers with Collector {
       case withType(
         RepeaterSequencePT(_,
           MutabilityPT(_,ImmutableP),
+          VariabilityPT(_,FinalP),
           IntPT(_,3),
           NameOrRunePT(NameP(_, "MutableStruct")))) =>
+    }
+  }
+
+  test("15c") {
+    compile("_ [<imm, vary> 3 * MutableStruct]") shouldHave {
+      case withType(
+      RepeaterSequencePT(_,
+      MutabilityPT(_,ImmutableP),
+      VariabilityPT(_,VaryingP),
+      IntPT(_,3),
+      NameOrRunePT(NameP(_, "MutableStruct")))) =>
     }
   }
 
@@ -88,6 +101,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
             ReadonlyP,
             RepeaterSequencePT(_,
               MutabilityPT(_,MutableP),
+              VariabilityPT(_,FinalP),
               IntPT(_,3),
               NameOrRunePT(NameP(_, "MutableStruct"))))),
         None,
@@ -95,7 +109,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
     }
   }
   test("15m") {
-    compile("_ &&[<_> 3 * MutableStruct]") shouldHave {
+    compile("_ &&[<_, _> 3 * MutableStruct]") shouldHave {
       case PatternPP(_,_,
         None,
         Some(
@@ -103,6 +117,7 @@ class TypeTests extends FunSuite with Matchers with Collector {
             WeakP,
             ReadonlyP,
             RepeaterSequencePT(_,
+              AnonymousRunePT(_),
               AnonymousRunePT(_),
               IntPT(_,3),
               NameOrRunePT(NameP(_, "MutableStruct"))))),

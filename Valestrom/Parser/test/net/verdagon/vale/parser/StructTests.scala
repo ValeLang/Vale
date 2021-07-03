@@ -29,8 +29,8 @@ class StructTests extends FunSuite with Matchers with Collector {
   test("18") {
     compile(
       CombinatorParsers.structMember,
-      "a Array<imm, T>;") shouldHave {
-      case StructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), List(MutabilityPT(_,ImmutableP), NameOrRunePT(NameP(_, "T"))))) =>
+      "a Array<imm, final, T>;") shouldHave {
+      case StructMemberP(_, NameP(_, "a"), FinalP, CallPT(_,NameOrRunePT(NameP(_, "Array")), List(MutabilityPT(_,ImmutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "T"))))) =>
     }
   }
 
@@ -91,13 +91,13 @@ class StructTests extends FunSuite with Matchers with Collector {
         |
       """.stripMargin.strip()) shouldHave {
       case StructP(
-      _,
-      NameP(_, "Vecf"),
-      List(),
-      MutableP,
-      Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "N"), List())))),
-      Some(TemplateRulesP(_, List(TypedPR(_,Some(NameP(_, "N")), IntTypePR)))),
-      StructMembersP(_, List(StructMemberP(_,NameP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(_,MutableP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
+        _,
+        NameP(_, "Vecf"),
+        List(),
+        MutableP,
+        Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "N"), List())))),
+        Some(TemplateRulesP(_, List(TypedPR(_,Some(NameP(_, "N")), IntTypePR)))),
+        StructMembersP(_, List(StructMemberP(_,NameP(_, "values"), FinalP, RepeaterSequencePT(_,MutabilityPT(_,MutableP), VariabilityPT(_,FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
     }
   }
 
@@ -118,7 +118,7 @@ class StructTests extends FunSuite with Matchers with Collector {
           MutableP,
           Some(IdentifyingRunesP(_, List(IdentifyingRuneP(_, NameP(_, "N"), List())))),
           Some(TemplateRulesP(_, List(TypedPR(_,Some(NameP(_, "N")),IntTypePR)))),
-          StructMembersP(_, List(StructMemberP(_,NameP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
+          StructMembersP(_, List(StructMemberP(_,NameP(_, "values"),FinalP,RepeaterSequencePT(_,MutabilityPT(_,ImmutableP), VariabilityPT(_, FinalP), NameOrRunePT(NameP(_, "N")), NameOrRunePT(NameP(_, "float"))))))) =>
     }
   }
 }

@@ -14,8 +14,8 @@ import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Env
 trait IConvertHelperDelegate {
   def isAncestor(
     temputs: Temputs,
-    descendantCitizenRef: CitizenRef2,
-    ancestorInterfaceRef: InterfaceRef2):
+    descendantCitizenRef: CitizenRefT,
+    ancestorInterfaceRef: InterfaceRefT):
   Boolean
 }
 
@@ -26,13 +26,13 @@ class ConvertHelper(
       env: IEnvironment,
       temputs: Temputs,
       range: RangeS,
-      sourceExprs: List[ReferenceExpression2],
-      targetPointerTypes: List[Coord]):
-  (List[ReferenceExpression2]) = {
+      sourceExprs: List[ReferenceExpressionTE],
+      targetPointerTypes: List[CoordT]):
+  (List[ReferenceExpressionTE]) = {
     if (sourceExprs.size != targetPointerTypes.size) {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "num exprs mismatch, source:\n" + sourceExprs + "\ntarget:\n" + targetPointerTypes))
     }
-    (sourceExprs zip targetPointerTypes).foldLeft((List[ReferenceExpression2]()))({
+    (sourceExprs zip targetPointerTypes).foldLeft((List[ReferenceExpressionTE]()))({
       case ((previousRefExprs), (sourceExpr, targetPointerType)) => {
         val refExpr =
           convert(env, temputs, range, sourceExpr, targetPointerType)
@@ -45,23 +45,23 @@ class ConvertHelper(
       env: IEnvironment,
       temputs: Temputs,
       range: RangeS,
-      sourceExpr: ReferenceExpression2,
-      targetPointerType: Coord):
-  (ReferenceExpression2) = {
+      sourceExpr: ReferenceExpressionTE,
+      targetPointerType: CoordT):
+  (ReferenceExpressionTE) = {
     val sourcePointerType = sourceExpr.resultRegister.reference
 
     if (sourceExpr.resultRegister.reference == targetPointerType) {
       return sourceExpr
     }
 
-    if (sourceExpr.resultRegister.reference.referend == Never2()) {
+    if (sourceExpr.resultRegister.reference.kind == NeverT()) {
       return sourceExpr
     }
 
-    val Coord(targetOwnership, targetPermission, targetType) = targetPointerType;
-    val Coord(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
+    val CoordT(targetOwnership, targetPermission, targetType) = targetPointerType;
+    val CoordT(sourceOwnership, sourcePermission, sourceType) = sourcePointerType;
 
-    vcurious(targetPointerType.referend != Never2())
+    vcurious(targetPointerType.kind != NeverT())
 
     // We make the hammer aware of nevers.
 //    if (sourceType == Never2()) {
@@ -69,18 +69,18 @@ class ConvertHelper(
 //    }
 
     (sourceOwnership, targetOwnership) match {
-      case (Own, Own) =>
-      case (Constraint, Own) => {
+      case (OwnT, OwnT) =>
+      case (ConstraintT, OwnT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied a borrow but target wants to own the argument"))
       }
-      case (Own, Constraint) => {
+      case (OwnT, ConstraintT) => {
         throw CompileErrorExceptionT(RangedInternalErrorT(range, "Supplied an owning but target wants to only borrow"))
       }
-      case (Constraint, Constraint) =>
-      case (Share, Share) =>
-      case (Own, Share) => vwat();
-      case (Constraint, Share) => vwat();
-      case (Weak, Weak) =>
+      case (ConstraintT, ConstraintT) =>
+      case (ShareT, ShareT) =>
+      case (OwnT, ShareT) => vwat();
+      case (ConstraintT, ShareT) => vwat();
+      case (WeakT, WeakT) =>
     }
 
     (sourcePermission, targetPermission) match {
@@ -95,14 +95,14 @@ class ConvertHelper(
 //      case (ExclusiveReadwrite, Readwrite) => {
 ////        PermissionedSE(range, sourceExpr, Conversions.unevaluatePermission(targetPermission))
 //      }
-      case (Readwrite, Readwrite) =>
-      case (Readonly, Readwrite) => {
+      case (ReadwriteT, ReadwriteT) =>
+      case (ReadonlyT, ReadwriteT) => {
         throw CompileErrorExceptionT(CantUseReadonlyReferenceAsReadwrite(range))
       }
 
 //      case (ExclusiveReadwrite, Readonly) =>
-      case (Readwrite, Readonly) =>
-      case (Readonly, Readonly) =>
+      case (ReadwriteT, ReadonlyT) =>
+      case (ReadonlyT, ReadonlyT) =>
     }
 
     val sourceExprConverted =
@@ -110,7 +110,7 @@ class ConvertHelper(
         sourceExpr
       } else {
         (sourceType, targetType) match {
-          case (s @ StructRef2(_), i : InterfaceRef2) => {
+          case (s @ StructRefT(_), i : InterfaceRefT) => {
             convert(env.globalEnv, temputs, range, sourceExpr, s, i)
           }
           case _ => vfail()
@@ -124,12 +124,12 @@ class ConvertHelper(
     env: IEnvironment,
     temputs: Temputs,
     range: RangeS,
-    sourceExpr: ReferenceExpression2,
-    sourceStructRef: StructRef2,
-    targetInterfaceRef: InterfaceRef2):
-  (ReferenceExpression2) = {
+    sourceExpr: ReferenceExpressionTE,
+    sourceStructRef: StructRefT,
+    targetInterfaceRef: InterfaceRefT):
+  (ReferenceExpressionTE) = {
     if (delegate.isAncestor(temputs, sourceStructRef, targetInterfaceRef)) {
-      StructToInterfaceUpcast2(sourceExpr, targetInterfaceRef)
+      StructToInterfaceUpcastTE(sourceExpr, targetInterfaceRef)
     } else {
       throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can't upcast a " + sourceStructRef + " to a " + targetInterfaceRef))
     }

@@ -2,7 +2,7 @@ package net.verdagon.vale.vivem
 
 import java.io.PrintStream
 import net.verdagon.vale.metal.{InlineH, ProgramH, ReadonlyH, ShareH}
-import net.verdagon.vale.{FileCoordinateMap, INamespaceResolver, NamespaceCoordinateMap, Result, vassert, vfail, vimpl}
+import net.verdagon.vale.{FileCoordinateMap, IPackageResolver, PackageCoordinateMap, Result, vassert, vfail, vimpl}
 import net.verdagon.von.IVonData
 
 import scala.collection.immutable.List
@@ -13,14 +13,14 @@ case class ConstraintViolatedException(msg: String) extends Throwable
 object Vivem {
   def executeWithPrimitiveArgs(
       programH: ProgramH,
-      externalArgumentReferends: Vector[PrimitiveReferendV],
+      externalArgumentKinds: Vector[PrimitiveKindV],
       vivemDout: PrintStream,
       stdin: () => String,
       stdout: String => Unit): IVonData = {
     val heap = new Heap(vivemDout)
     val argReferences =
-      externalArgumentReferends.map(argReferend => {
-        heap.add(ShareH, InlineH, ReadonlyH, argReferend);
+      externalArgumentKinds.map(argKind => {
+        heap.add(ShareH, InlineH, ReadonlyH, argKind);
       });
     innerExecute(programH, argReferences, heap, vivemDout, stdin, stdout)
   }
@@ -71,7 +71,14 @@ object Vivem {
       vivemDout: PrintStream,
       stdin: () => String,
       stdout: String => Unit): IVonData = {
-    val main = programH.lookupFunction("main")
+    val main =
+      programH.packages.flatMap({ case (packageCoord, paackage) =>
+        paackage.exportNameToFunction.get("main").map(prototype => paackage.functions.find(_.prototype == prototype).get).toList
+      }).flatten match {
+        case List() => vfail()
+        case List(m) => m
+        case _ => vfail()
+      }
 
     val callId = CallId(0, main.prototype)
 

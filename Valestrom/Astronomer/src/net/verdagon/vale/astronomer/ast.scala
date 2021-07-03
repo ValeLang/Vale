@@ -1,8 +1,8 @@
 package net.verdagon.vale.astronomer
 
 import net.verdagon.vale.parser._
-import net.verdagon.vale.scout.{IEnvironment => _, FunctionEnvironment => _, Environment => _, _}
-import net.verdagon.vale.{vassert, vwat}
+import net.verdagon.vale.scout.{Environment => _, FunctionEnvironment => _, IEnvironment => _, _}
+import net.verdagon.vale.{PackageCoordinate, vassert, vwat}
 
 import scala.collection.immutable.List
 
@@ -167,8 +167,8 @@ object structName {
 
 sealed trait ICitizenAttributeA
 sealed trait IFunctionAttributeA
-case object ExternA extends IFunctionAttributeA with ICitizenAttributeA // For optimization later
-case object ExportA extends IFunctionAttributeA with ICitizenAttributeA
+case class ExternA(packageCoord: PackageCoordinate) extends IFunctionAttributeA with ICitizenAttributeA // For optimization later
+case class ExportA(packageCoord: PackageCoordinate) extends IFunctionAttributeA with ICitizenAttributeA
 case object PureA extends IFunctionAttributeA with ICitizenAttributeA
 case object UserFunctionA extends IFunctionAttributeA // Whether it was written by a human. Mostly for tests right now.
 
@@ -223,7 +223,7 @@ case class ParameterA(
 }
 
 case class CaptureA(
-  local: LocalVariableA,
+  local: LocalA,
   variability: VariabilityP)
 
 sealed trait IBodyA

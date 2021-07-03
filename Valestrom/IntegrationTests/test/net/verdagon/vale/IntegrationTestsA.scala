@@ -5,150 +5,145 @@ import net.verdagon.vale.astronomer.{ICompileErrorA, ProgramA}
 import java.io.FileNotFoundException
 import net.verdagon.vale.templar._
 import net.verdagon.vale.{metal => m}
-import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveReferendV, ReferenceV, StructInstanceV, Vivem}
+import net.verdagon.vale.vivem.{ConstraintViolatedException, Heap, IntV, PrimitiveKindV, ReferenceV, StructInstanceV, Vivem}
 import net.verdagon.von.{IVonData, VonBool, VonFloat, VonInt, VonObject}
 import org.scalatest.{FunSuite, Matchers}
 import net.verdagon.vale.driver.{FullCompilation, FullCompilationOptions}
 import net.verdagon.vale.hammer.VonHammer
 import net.verdagon.vale.hinputs.Hinputs
-import net.verdagon.vale.metal.{FullNameH, IntH, ProgramH, ReadonlyH, ReadwriteH, YonderH}
-import net.verdagon.vale.parser.FileP
+import net.verdagon.vale.metal.{FullNameH, IntH, ProgramH, PrototypeH, ReadonlyH, ReadwriteH, YonderH}
+import net.verdagon.vale.parser.{FailedParse, FileP}
 import net.verdagon.vale.scout.{ICompileErrorS, ProgramS}
-import net.verdagon.vale.templar.templata.Signature2
-import net.verdagon.vale.templar.types.{Coord, Int2, Readonly, Share, Str2}
+import net.verdagon.vale.templar.templata.SignatureT
+import net.verdagon.vale.templar.types.{CoordT, IntT, ReadonlyT, ShareT, StrT}
 
 import scala.collection.immutable.List
-import scala.io.Source
-import scala.util.Try
 
 
 object RunCompilation {
   def test(code: String*): RunCompilation = {
     new RunCompilation(
-      List("", FileCoordinateMap.TEST_MODULE),
+      List(
+        PackageCoordinate.BUILTIN,
+        PackageCoordinate.TEST_TLD),
       Builtins.getCodeMap()
         .or(FileCoordinateMap.test(code.toList))
-        .or(Tests.getNamespaceToResourceResolver),
+        .or(Tests.getPackageToResourceResolver),
       FullCompilationOptions())
   }
 }
 
 class RunCompilation(
-  modulesToBuild: List[String],
-  namespaceToContentsResolver: INamespaceResolver[Map[String, String]],
+  packagesToBuild: List[PackageCoordinate],
+  packageToContentsResolver: IPackageResolver[Map[String, String]],
   options: FullCompilationOptions = FullCompilationOptions()) {
-  var fullCompilation = new FullCompilation(modulesToBuild, namespaceToContentsResolver, options)
+  var fullCompilation = new FullCompilation(packagesToBuild, packageToContentsResolver, options)
 
-  def getCodeMap(): FileCoordinateMap[String] = fullCompilation.getCodeMap()
-  def getParseds(): FileCoordinateMap[(FileP, List[(Int, Int)])] = fullCompilation.getParseds()
-  def getVpstMap(): FileCoordinateMap[String] = fullCompilation.getVpstMap()
+  def getCodeMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getCodeMap()
+  def getParseds(): Result[FileCoordinateMap[(FileP, List[(Int, Int)])], FailedParse] = fullCompilation.getParseds()
+  def getVpstMap(): Result[FileCoordinateMap[String], FailedParse] = fullCompilation.getVpstMap()
   def getScoutput(): Result[FileCoordinateMap[ProgramS], ICompileErrorS] = fullCompilation.getScoutput()
-  def expectScoutput(): FileCoordinateMap[ProgramS] = fullCompilation.expectScoutput()
-
-  def getAstrouts(): Result[NamespaceCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
-  def expectAstrouts(): NamespaceCoordinateMap[ProgramA] = fullCompilation.expectAstrouts()
-
+  def getAstrouts(): Result[PackageCoordinateMap[ProgramA], ICompileErrorA] = fullCompilation.getAstrouts()
   def getTemputs(): Result[Hinputs, ICompileErrorT] = fullCompilation.getTemputs()
   def expectTemputs(): Hinputs = fullCompilation.expectTemputs()
-
   def getHamuts(): ProgramH = fullCompilation.getHamuts()
 
-  def evalForReferend(heap: Heap, args: Vector[ReferenceV]): IVonData = {
+  def evalForKind(heap: Heap, args: Vector[ReferenceV]): IVonData = {
     Vivem.executeWithHeap(getHamuts(), heap, args, System.out, Vivem.emptyStdin, Vivem.regularStdout)
   }
   def run(heap: Heap, args: Vector[ReferenceV]): Unit = {
     Vivem.executeWithHeap(getHamuts(), heap, args, System.out, Vivem.emptyStdin, Vivem.regularStdout)
   }
-  def run(args: Vector[PrimitiveReferendV]): Unit = {
+  def run(args: Vector[PrimitiveKindV]): Unit = {
     Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, Vivem.regularStdout)
   }
-  def evalForReferend(args: Vector[PrimitiveReferendV]): IVonData = {
+  def evalForKind(args: Vector[PrimitiveKindV]): IVonData = {
     Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, Vivem.regularStdout)
   }
-  def evalForReferend(
-    args: Vector[PrimitiveReferendV],
+  def evalForKind(
+    args: Vector[PrimitiveKindV],
     stdin: List[String]):
   IVonData = {
     Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.stdinFromList(stdin), Vivem.regularStdout)
   }
-  def evalForStdout(args: Vector[PrimitiveReferendV]): String = {
+  def evalForStdout(args: Vector[PrimitiveKindV]): String = {
     val (stdoutStringBuilder, stdoutFunc) = Vivem.stdoutCollector()
     Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, stdoutFunc)
     stdoutStringBuilder.mkString
   }
-  def evalForReferendAndStdout(args: Vector[PrimitiveReferendV]): (IVonData, String) = {
+  def evalForKindAndStdout(args: Vector[PrimitiveKindV]): (IVonData, String) = {
     val (stdoutStringBuilder, stdoutFunc) = Vivem.stdoutCollector()
-    val referend = Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, stdoutFunc)
-    (referend, stdoutStringBuilder.mkString)
+    val kind = Vivem.executeWithPrimitiveArgs(getHamuts(), args, System.out, Vivem.emptyStdin, stdoutFunc)
+    (kind, stdoutStringBuilder.mkString)
   }
 }
 
 class IntegrationTestsA extends FunSuite with Matchers {
   test("Simple program returning an int") {
     val compile = RunCompilation.test("fn main() int export {3}")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Hardcoding negative numbers") {
     val compile = RunCompilation.test("fn main() int export {-3}")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(-3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(-3)
   }
 
   test("Taking an argument and returning it") {
-    val compile = RunCompilation.test("fn main(a int) int {a}")
-    compile.evalForReferend(Vector(IntV(5))) shouldEqual VonInt(5)
+    val compile = RunCompilation.test("fn main(a int) export int {a}")
+    compile.evalForKind(Vector(IntV(5, 32))) shouldEqual VonInt(5)
   }
 
   test("Tests adding two numbers") {
     val compile = RunCompilation.test("fn main() int export { +(2, 3) }")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Tests adding two floats") {
-    val compile = RunCompilation.test("fn main() float { +(2.5, 3.5) }")
-    compile.evalForReferend(Vector()) shouldEqual VonFloat(6.0f)
+    val compile = RunCompilation.test("fn main() float export { +(2.5, 3.5) }")
+    compile.evalForKind(Vector()) shouldEqual VonFloat(6.0f)
   }
 
   test("Tests inline adding") {
     val compile = RunCompilation.test("fn main() int export { 2 + 3 }")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Test constraint ref") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/constraintRef.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests inline adding more") {
     val compile = RunCompilation.test("fn main() int export { 2 + 3 + 4 + 5 + 6 }")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(20)
+    compile.evalForKind(Vector()) shouldEqual VonInt(20)
   }
 
   test("Simple lambda") {
     val compile = RunCompilation.test("fn main() int export {{7}()}")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Lambda with one magic arg") {
     val compile = RunCompilation.test("fn main() int export {{_}(3)}")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
 
   // Test that the lambda's arg is the right type, and the name is right
   test("Lambda with a type specified param") {
     val compile = RunCompilation.test("fn main() int export {(a int){ +(a,a)}(3)}");
-    compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
   test("Test overloads") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/overloads.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(6)
+    compile.evalForKind(Vector()) shouldEqual VonInt(6)
   }
 
   test("Test block") {
     val compile = RunCompilation.test("fn main() int export {true; 200; = 300;}")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(300)
+    compile.evalForKind(Vector()) shouldEqual VonInt(300)
   }
 
   test("Test templates") {
@@ -157,17 +152,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn ~<T>(a T, b T) T { a }
         |fn main() int export {true ~ false; 2 ~ 2; = 3 ~ 3;}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Test mutating a local var") {
-    val compile = RunCompilation.test("fn main() {a! = 3; set a = 4; }")
+    val compile = RunCompilation.test("fn main() export {a! = 3; set a = 4; }")
     compile.run(Vector())
   }
 
   test("Test returning a local mutable var") {
     val compile = RunCompilation.test("fn main() int export {a! = 3; set a = 4; = a;}")
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Test taking a callable param") {
@@ -176,7 +171,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn do(callable) infer-ret {callable()}
         |fn main() int export {do({ 3 })}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Stamps an interface template via a function parameter") {
@@ -189,22 +184,22 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn doAThing<T>(s SomeStruct<T>) { }
         |impl<T> MyInterface<T> for SomeStruct<T>;
         |
-        |fn main(a SomeStruct<int>) {
+        |fn main(a SomeStruct<int>) export {
         |  doAThing<int>(a);
         |}
       """.stripMargin)
-    val hamuts = compile.getHamuts()
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate.TEST_TLD)
     val heap = new Heap(System.out)
     val ref =
       heap.add(m.OwnH, YonderH, ReadwriteH, StructInstanceV(
-        hamuts.lookupStruct("SomeStruct"),
+        packageH.lookupStruct("SomeStruct"),
         Some(Vector())))
     compile.run(heap, Vector(ref))
   }
 
   test("Tests unstackifying a variable multiple times in a function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/multiUnstackify.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Reads a struct member") {
@@ -213,7 +208,14 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |struct MyStruct { a int; }
         |fn main() int export { ms = MyStruct(7); = ms.a; }
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
+  }
+
+  test("Add two i64") {
+    val compile = RunCompilation.test(Tests.loadExpected("programs/add64ret.vale"))
+    val temputs = compile.getTemputs()
+    val hamuts = compile.getHamuts()
+    compile.evalForKind(Vector()) shouldEqual VonInt(42L)
   }
 
   test("=== true") {
@@ -225,7 +227,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  = &a === &a;
         |}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
   test("=== false") {
@@ -238,17 +240,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  = &a === &b;
         |}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonBool(false)
+    compile.evalForKind(Vector()) shouldEqual VonBool(false)
   }
 
   test("set swapping locals") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/mutswaplocals.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("imm tuple access") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/tuples/immtupleaccess.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   // Known failure 2020-08-20
@@ -257,52 +259,52 @@ class IntegrationTestsA extends FunSuite with Matchers {
   // (Yes, abstract functions have a body, specifically only containing an InterfaceCall2 on the param)
   // So, if there's *already* a body there, we won't be making the InterfaceCall2 instruction.
   // Short term, let's disallow default implementations.
-  test("Tests virtual doesn't get called if theres a better override") {
-    val compile = RunCompilation.test(
-      """
-        |interface MyOption { }
-        |
-        |struct MySome {
-        |  value MyList;
-        |}
-        |impl MyOption for MySome;
-        |
-        |struct MyNone { }
-        |impl MyOption for MyNone;
-        |
-        |
-        |struct MyList {
-        |  value int;
-        |  next MyOption;
-        |}
-        |
-        |fn sum(list &MyList) int {
-        |  list.value + sum(list.next)
-        |}
-        |
-        |fn sum(virtual opt &MyOption) int { panic("called virtual sum!") }
-        |fn sum(opt &MyNone impl MyOption) int { 0 }
-        |fn sum(opt &MySome impl MyOption) int {
-        |   sum(opt.value)
-        |}
-        |
-        |
-        |fn main() int export {
-        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
-        |  = sum(&list);
-        |}
-        |
-        |""".stripMargin)
-    val hamuts = compile.getHamuts();
-    compile.evalForReferend(Vector()) shouldEqual VonInt(60)
-  }
+//  test("Tests virtual doesn't get called if theres a better override") {
+//    val compile = RunCompilation.test(
+//      """
+//        |interface MyOption { }
+//        |
+//        |struct MySome {
+//        |  value MyList;
+//        |}
+//        |impl MyOption for MySome;
+//        |
+//        |struct MyNone { }
+//        |impl MyOption for MyNone;
+//        |
+//        |
+//        |struct MyList {
+//        |  value int;
+//        |  next MyOption;
+//        |}
+//        |
+//        |fn sum(list &MyList) int {
+//        |  list.value + sum(list.next)
+//        |}
+//        |
+//        |fn sum(virtual opt &MyOption) int { panic("called virtual sum!") }
+//        |fn sum(opt &MyNone impl MyOption) int { 0 }
+//        |fn sum(opt &MySome impl MyOption) int {
+//        |   sum(opt.value)
+//        |}
+//        |
+//        |
+//        |fn main() int export {
+//        |  list = MyList(10, MySome(MyList(20, MySome(MyList(30, MyNone())))));
+//        |  = sum(&list);
+//        |}
+//        |
+//        |""".stripMargin)
+//    val hamuts = compile.getHamuts();
+//    compile.evalForKind(Vector()) shouldEqual VonInt(60)
+//  }
 
   test("Tests single expression and single statement functions' returns") {
     val compile = RunCompilation.test(
       """
         |struct MyThing { value int; }
         |fn moo() MyThing { MyThing(4) }
-        |fn main() { moo(); }
+        |fn main() export { moo(); }
       """.stripMargin)
     compile.run(Vector())
   }
@@ -315,7 +317,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  MySome<int>(4).value
         |}
       """.stripMargin)
-    compile.evalForReferend(Vector())
+    compile.evalForKind(Vector())
   }
 
   test("Test int generic") {
@@ -332,7 +334,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  = v.values.2;
         |}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(5)
+    compile.evalForKind(Vector()) shouldEqual VonInt(5)
   }
 
   test("Tests upcasting from a struct to an interface") {
@@ -342,7 +344,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests upcasting from if") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/if/upcastif.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Tests from file") {
@@ -352,12 +354,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
 
   test("Tests from subdir file") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/round.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(8)
+    compile.evalForKind(Vector()) shouldEqual VonInt(8)
   }
 
   test("Tests calling a virtual function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/virtuals/calling.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("Tests making a variable with a pattern") {
@@ -378,31 +380,31 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |	= doSomething(x);
         |}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
 
   test("Tests a linked list") {
     val compile = RunCompilation.test(
       Tests.loadExpected("programs/virtuals/ordinarylinkedlist.vale"))
-    compile.evalForReferend(Vector())
+    compile.evalForKind(Vector())
   }
 
   test("Tests a templated linked list") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/genericvirtuals/templatedlinkedlist.vale"))
-    compile.evalForReferend(Vector())
+    compile.evalForKind(Vector())
   }
 
   test("Tests calling an abstract function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/callingAbstract.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Template overrides are stamped") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/genericvirtuals/templatedoption.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(1)
+    compile.evalForKind(Vector()) shouldEqual VonInt(1)
   }
 
   test("Tests a foreach for a linked list") {
@@ -420,12 +422,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Stamp multiple ancestors") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/stampMultipleAncestors.vale"))
     val temputs = compile.expectTemputs()
-    compile.evalForReferend(Vector())
+    compile.evalForKind(Vector())
   }
 
   test("Tests recursion") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/functions/recursion.vale"))
-    compile.evalForReferend(Vector()) shouldEqual VonInt(120)
+    compile.evalForKind(Vector()) shouldEqual VonInt(120)
   }
 
   test("Tests floats") {
@@ -438,13 +440,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  7
         |}
       """.stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(7)
+    compile.evalForKind(Vector()) shouldEqual VonInt(7)
   }
 
   test("getOr function") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/genericvirtuals/getOr.vale"))
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(9)
+    compile.evalForKind(Vector()) shouldEqual VonInt(9)
   }
 
   test("Function return without ret upcasts") {
@@ -467,10 +469,10 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
     doIt.only({
-      case StructToInterfaceUpcast2(_, _) =>
+      case StructToInterfaceUpcastTE(_, _) =>
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Function return with ret upcasts") {
@@ -479,17 +481,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
     val temputs = compile.expectTemputs()
     val doIt = temputs.lookupFunction("doIt")
     doIt.only({
-      case StructToInterfaceUpcast2(_, _) =>
+      case StructToInterfaceUpcastTE(_, _) =>
     })
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(3)
+    compile.evalForKind(Vector()) shouldEqual VonInt(3)
   }
 
   test("Map function") {
     val compile = RunCompilation.test(
         Tests.loadExpected("programs/genericvirtuals/mapFunc.vale"))
+    compile.expectTemputs()
 
-    compile.evalForReferend(Vector()) shouldEqual VonBool(true)
+    compile.evalForKind(Vector()) shouldEqual VonBool(true)
   }
 
   test("Test shaking") {
@@ -500,17 +503,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |fn bork(x str) { print(x); }
         |fn helperFunc(x int) { print(x); }
         |fn helperFunc(x str) { print(x); }
-        |fn main() {
+        |fn main() export {
         |  helperFunc(4);
         |}
         |""".stripMargin)
     val hinputs = compile.expectTemputs()
 
-    vassertSome(hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Int2())))))))
+    vassertSome(hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, IntT.i32)))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("bork", List(), List(Coord(Share, Readonly, Str2())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("bork", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
 
-    vassert(None == hinputs.lookupFunction(Signature2(FullName2(List(), FunctionName2("helperFunc", List(), List(Coord(Share, Readonly, Str2())))))))
+    vassert(None == hinputs.lookupFunction(SignatureT(FullNameT(PackageCoordinate.TEST_TLD, List(), FunctionNameT("helperFunc", List(), List(CoordT(ShareT, ReadonlyT, StrT())))))))
   }
 
 //  test("Test overloading between borrow and own") {
@@ -532,12 +535,12 @@ class IntegrationTestsA extends FunSuite with Matchers {
 //        |""".stripMargin)
 //    val temputs = compile.getTemputs()
 //
-//    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+//    compile.evalForKind(Vector()) shouldEqual VonInt(42)
 //  }
 
   test("Test returning empty seq") {
     val compile = RunCompilation.test(
-      """fn main() [] {
+      """fn main() [] export {
         |  []
         |}
         |""".stripMargin)
@@ -559,16 +562,18 @@ class IntegrationTestsA extends FunSuite with Matchers {
   test("Test extern functions") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/externs/extern.vale"))
 
-    val hamuts = compile.getHamuts()
+    val packageH = compile.getHamuts().lookupPackage(PackageCoordinate("math", List()))
 
     // The extern we make should have the name we expect
-    vassert(hamuts.externs.exists(_.fullName.readableName == "sqrt"))
+    vassertSome(packageH.externNameToFunction.get("sqrt")) match {
+      case PrototypeH(FullNameH("sqrt",_,PackageCoordinate("math",List()),_),_,_) =>
+    }
 
     // We also made an internal function that contains an extern call
-    val externSqrt = hamuts.lookupFunction("sqrt")
+    val externSqrt = packageH.lookupFunction("sqrt")
     vassert(externSqrt.isExtern)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(4)
+    compile.evalForKind(Vector()) shouldEqual VonInt(4)
   }
 
   test("Test narrowing between borrow and owning overloads") {
@@ -596,13 +601,13 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |}
         """.stripMargin)
 
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("Test catch deref after drop") {
     val compile = RunCompilation.test(Tests.loadExpected("programs/invalidaccess.vale"))
     try {
-      compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+      compile.evalForKind(Vector()) shouldEqual VonInt(42)
       vfail()
     } catch {
       case ConstraintViolatedException(_) => // good!
@@ -630,7 +635,7 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret bork(&Moo());
         |}
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
 
@@ -654,15 +659,17 @@ class IntegrationTestsA extends FunSuite with Matchers {
         |  ret bork(Moo());
         |}
         |""".stripMargin)
-    compile.evalForReferend(Vector()) shouldEqual VonInt(42)
+    compile.evalForKind(Vector()) shouldEqual VonInt(42)
   }
 
   test("exporting array") {
-    val compilation = RunCompilation.test("export Array<mut, int> as IntArray;")
+    val compilation = RunCompilation.test("export Array<mut, vary, int> as IntArray;")
     val hamuts = compilation.getHamuts()
-    val (fullNameH, exportedName) = hamuts.fullNameToExportedNames.head
-    exportedName shouldEqual List("IntArray")
-    val usa = hamuts.unknownSizeArrays.find(_.name == fullNameH).get
-    usa.rawArray.elementType.kind shouldEqual IntH()
+    val testPackage = hamuts.lookupPackage(PackageCoordinate.TEST_TLD)
+    val kindH = vassertSome(testPackage.exportNameToKind.get("IntArray"))
+
+    val builtinPackage = hamuts.lookupPackage(PackageCoordinate.BUILTIN)
+    val rsa = vassertSome(builtinPackage.runtimeSizedArrays.find(_.kind == kindH))
+    rsa.rawArray.elementType.kind shouldEqual IntH.i32
   }
 }

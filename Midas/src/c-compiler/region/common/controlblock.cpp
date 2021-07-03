@@ -5,7 +5,7 @@
 LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
     GlobalState* globalState,
     LLVMBuilderRef builder,
-    IReferendStructsSource* structs,
+    KindStructs* structs,
     Reference* refM,
     ControlBlockPtrLE controlBlockPtr) {
   return LLVMBuildLoad(
@@ -13,7 +13,7 @@ LLVMValueRef getTypeNameStrPtrFromControlBlockPtr(
       LLVMBuildStructGEP(
           builder,
           controlBlockPtr.refLE,
-          structs->getControlBlock(refM->referend)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
+          structs->getControlBlock(refM->kind)->getMemberIndex(ControlBlockMember::CENSUS_TYPE_STR),
           "typeNameStrPtrPtr"),
       "typeNameStrPtr");
 }
@@ -39,17 +39,17 @@ void ControlBlock::build() {
       case ControlBlockMember::TETHER_32B:
         membersL.push_back(int32LT);
         break;
-      case ControlBlockMember::GENERATION:
+      case ControlBlockMember::GENERATION_32B:
         assert(membersL.empty()); // Generation should be at the top of the object
         membersL.push_back(int32LT);
         break;
-      case ControlBlockMember::LGTI:
+      case ControlBlockMember::LGTI_32B:
         membersL.push_back(int32LT);
         break;
-      case ControlBlockMember::WRCI:
+      case ControlBlockMember::WRCI_32B:
         membersL.push_back(int32LT);
         break;
-      case ControlBlockMember::STRONG_RC:
+      case ControlBlockMember::STRONG_RC_32B:
         membersL.push_back(int32LT);
         break;
       case ControlBlockMember::CENSUS_OBJ_ID:

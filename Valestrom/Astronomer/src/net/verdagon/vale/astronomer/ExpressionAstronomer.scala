@@ -14,10 +14,10 @@ object ExpressionAstronomer {
     BlockAE(range, exprsA)
   }
 
-  def translateLocalVariable(varS: LocalVariable1): LocalVariableA = {
-    val LocalVariable1(varNameS, variability, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated) = varS
+  def translateLocalVariable(varS: LocalS): LocalA = {
+    val LocalS(varNameS, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated) = varS
     val varNameA = Astronomer.translateVarNameStep(varNameS)
-    LocalVariableA(varNameA, variability, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated)
+    LocalA(varNameA, selfBorrowed, selfMoved, selfMutated, childBorrowed, childMoved, childMutated)
   }
 
   def translateExpression(env: Environment, astrouts: AstroutsBox, iexprS: IExpressionSE): IExpressionAE = {
@@ -187,10 +187,10 @@ object ExpressionAstronomer {
         val tyype = env.lookupRune(runeA)
         RuneLookupAE(range, runeA, tyype)
       }
-      case IntLiteralSE(range, value) => IntLiteralAE(range, value)
-      case BoolLiteralSE(range, value) => BoolLiteralAE(range, value)
-      case StrLiteralSE(range, value) => StrLiteralAE(range, value)
-      case FloatLiteralSE(range, value) => FloatLiteralAE(range, value)
+      case ConstantIntSE(range, value, bits) => ConstantIntAE(range, value, bits)
+      case ConstantBoolSE(range, value) => ConstantBoolAE(range, value)
+      case ConstantStrSE(range, value) => ConstantStrAE(range, value)
+      case ConstantFloatSE(range, value) => ConstantFloatAE(range, value)
       case FunctionSE(functionS) => {
         val functionA = Astronomer.translateFunction(astrouts, env, functionS)
         val lambdaName = functionA.name match { case n @ LambdaNameA(_) => n }
@@ -203,7 +203,7 @@ object ExpressionAstronomer {
       case DotCallSE(range, leftS, indexExprS) => {
         val leftA = translateExpression(env, astrouts, leftS)
         val indexExprA = translateExpression(env, astrouts, indexExprS)
-        DotCallAE(range, leftA, indexExprA)
+        IndexAE(range, leftA, indexExprA)
       }
       case FunctionCallSE(rangeS, callableExprS, argsExprsS) => {
         val callableExprA = translateExpression(env, astrouts, callableExprS)

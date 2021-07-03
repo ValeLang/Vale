@@ -6,7 +6,7 @@ import org.scalatest.{FunSuite, Matchers}
 class StatementTests extends FunSuite with Matchers with Collector with TestParseUtils {
   test("Simple let") {
     compile(CombinatorParsers.statement, "x = 4;") shouldHave {
-      case LetPE(_,None, PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")), FinalP)), None, None, None), IntLiteralPE(_,4)) =>
+      case LetPE(_,None, PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")))), None, None, None), ConstantIntPE(_, 4, _)) =>
     }
   }
 
@@ -20,40 +20,40 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
             Some(
               DestructureP(_,
                 List(
-                  PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")),FinalP)),None,None,None),
-                  PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "y")),FinalP)),None,None,None)))),
+                  PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")))),None,None,None),
+                  PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "y")))),None,None,None)))),
             None),
-          TuplePE(_,List(IntLiteralPE(_,4), IntLiteralPE(_,5)))) =>
+          TuplePE(_,List(ConstantIntPE(_, 4, _), ConstantIntPE(_, 5, _)))) =>
     }
   }
 
   test("9") {
     compile(CombinatorParsers.statement, "set x.a = 5;") shouldHave {
-      case MutatePE(_, DotPE(_, LookupPE(NameP(_, "x"), None), _, false, NameP(_, "a")), IntLiteralPE(_,5)) =>
+      case MutatePE(_, DotPE(_, LookupPE(NameP(_, "x"), None), _, false, NameP(_, "a")), ConstantIntPE(_, 5, _)) =>
     }
   }
 
   test("1PE") {
     compile(CombinatorParsers.statement, """set board.PE.PE.symbol = "v";""") shouldHave {
-      case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(NameP(_, "board"), None), _, false, NameP(_, "PE")), _, false, NameP(_, "PE")), _, false, NameP(_, "symbol")), StrLiteralPE(_, "v")) =>
+      case MutatePE(_, DotPE(_, DotPE(_, DotPE(_, LookupPE(NameP(_, "board"), None), _, false, NameP(_, "PE")), _, false, NameP(_, "PE")), _, false, NameP(_, "symbol")), ConstantStrPE(_, "v")) =>
     }
   }
 
   test("Test simple let") {
     compile(CombinatorParsers.statement, "x = 3;") shouldHave {
-      case LetPE(_,None,PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")),FinalP)),None,None,None),IntLiteralPE(_,3)) =>
+      case LetPE(_,None,PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("Test varying let") {
     compile(CombinatorParsers.statement, "x! = 3;") shouldHave {
-      case LetPE(_,None,PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")),VaryingP)),None,None,None),IntLiteralPE(_,3)) =>
+      case LetPE(_,None,PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "x")))),None,None,None),ConstantIntPE(_, 3, _)) =>
     }
   }
 
   test("Test simple mut") {
     compile(CombinatorParsers.statement, "set x = 5;") shouldHave {
-      case MutatePE(_, LookupPE(NameP(_, "x"), None),IntLiteralPE(_,5)) =>
+      case MutatePE(_, LookupPE(NameP(_, "x"), None),ConstantIntPE(_, 5, _)) =>
     }
   }
 
@@ -76,8 +76,8 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
       case DotPE(_,
           FunctionCallPE(_,None,_, false,
             LookupPE(NameP(_, "Wizard"), None),
-            List(IntLiteralPE(_,8)),
-            LendConstraintP(None)),
+            List(ConstantIntPE(_, 8, _)),
+            LendConstraintP(Some(ReadonlyP))),
         _, false,
         NameP(_, "charges")) =>
     }
@@ -93,7 +93,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     compile(CombinatorParsers.statement, "a Moo = m;") shouldHave {
       case LetPE(_,
       None,
-          PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),Some(NameOrRunePT(NameP(_, "Moo"))),None,None),
+          PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "a")))),Some(NameOrRunePT(NameP(_, "Moo"))),None,None),
           LookupPE(NameP(_, "m"), None)) =>
     }
   }
@@ -105,7 +105,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
           PatternPP(_,_,
             None,
             None,
-            Some(DestructureP(_,List(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "a")),FinalP)),Some(NameOrRunePT(NameP(_, "Moo"))),None,None)))),
+            Some(DestructureP(_,List(PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "a")))),Some(NameOrRunePT(NameP(_, "Moo"))),None,None)))),
             None),
           LookupPE(NameP(_, "m"), None)) =>
     }
@@ -119,7 +119,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Ret") {
     compile(CombinatorParsers.statement, "ret 3;") shouldHave {
-      case ReturnPE(_,IntLiteralPE(_,3)) =>
+      case ReturnPE(_,ConstantIntPE(_, 3, _)) =>
     }
   }
 
@@ -137,10 +137,10 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                 Some(
                   ParamsP(_,
                     List(
-                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cellI")),FinalP)),None,None,None),
-                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cell")),FinalP)),None,None,None)))),
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cellI")))),None,None,None),
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cell")))),None,None,None)))),
                 FunctionReturnP(_, None, None)),
-              Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
+              Some(BlockPE(_,List(ConstantIntPE(_, 0, _))))))),
         LendConstraintP(None)) =>
     }
   }
@@ -158,21 +158,21 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
                 Some(
                   ParamsP(_,
                     List(
-                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cellI")),FinalP)),None,None,None),
-                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cell")),FinalP)),None,None,None)))),
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cellI")))),None,None,None),
+                      PatternPP(_,_,Some(CaptureP(_,LocalNameP(NameP(_, "cell")))),None,None,None)))),
                 FunctionReturnP(_, None, None)),
-              Some(BlockPE(_,List(IntLiteralPE(_,0))))))),
+              Some(BlockPE(_,List(ConstantIntPE(_, 0, _))))))),
       LendConstraintP(None)) =>
     }
   }
 
   test("Test block's trailing void presence") {
     compile(CombinatorParsers.filledBody, "{ moo() }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(None)))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(Some(ReadonlyP))))) =>
     }
 
     compile(CombinatorParsers.filledBody, "{ moo(); }") shouldHave {
-      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(None)), VoidPE(_))) =>
+      case BlockPE(_, List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "moo"), None), List(), LendConstraintP(Some(ReadonlyP))), VoidPE(_))) =>
     }
   }
 
@@ -181,7 +181,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
     compile(
       CombinatorParsers.blockExprs,
       "= doThings(a);") shouldHave {
-      case List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(None))) =>
+      case List(FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(Some(ReadonlyP)))) =>
     }
   }
 
@@ -200,7 +200,7 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
 
   test("Block with result") {
     compile(CombinatorParsers.blockExprs,"= 3;") shouldHave {
-      case List(IntLiteralPE(_, 3)) =>
+      case List(ConstantIntPE(_, 3, _)) =>
     }
   }
 
@@ -214,15 +214,15 @@ class StatementTests extends FunSuite with Matchers with Collector with TestPars
         |= doThings(a);
       """.stripMargin) shouldHave {
       case List(
-      LetPE(_,None, PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")), FinalP)), None, None, None), IntLiteralPE(_, 2)),
-      FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(None))) =>
+        LetPE(_,None, PatternPP(_, _,Some(CaptureP(_,LocalNameP(NameP(_, "a")))), None, None, None), ConstantIntPE(_, 2, _)),
+        FunctionCallPE(_, None, _, false, LookupPE(NameP(_, "doThings"), None), List(LookupPE(NameP(_, "a"), None)), LendConstraintP(Some(ReadonlyP)))) =>
     }
   }
 
   test("Mutating as statement") {
     val program = compile(CombinatorParsers.topLevelFunction, "fn main() int export { set x = 6; }")
     program shouldHave {
-      case MutatePE(_,LookupPE(NameP(_, "x"), None),IntLiteralPE(_, 6)) =>
+      case MutatePE(_,LookupPE(NameP(_, "x"), None),ConstantIntPE(_, 6, _)) =>
     }
   }
 

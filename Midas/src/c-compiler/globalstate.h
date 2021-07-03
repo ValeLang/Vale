@@ -14,8 +14,8 @@
 #include "externs.h"
 
 class IRegion;
-class IReferendStructsSource;
-class IWeakRefStructsSource;
+class KindStructs;
+class KindStructs;
 class ControlBlock;
 class Linear;
 class RCImm;
@@ -45,8 +45,6 @@ public:
 
   MetalCache* metalCache = nullptr;
 
-  LLVMTypeRef ram64Struct = nullptr;
-
   Program* program = nullptr;
 
   LLVMValueRef numMainArgs = nullptr;
@@ -57,13 +55,8 @@ public:
   LLVMValueRef derefCounter = nullptr;
   LLVMValueRef mutRcAdjustCounter = nullptr;
   LLVMValueRef livenessCheckCounter = nullptr;
-  // an i64 pointer to null.
-  LLVMValueRef ram64 = nullptr;
   LLVMValueRef writeOnlyGlobal = nullptr;
   LLVMValueRef crashGlobal = nullptr;
-  // Initialized to &writeOnlyGlobal / 8 in main.
-  // We can use this to easily write an i64 into NULL or the write only global at runtime.
-  LLVMValueRef ram64IndexToWriteOnlyGlobal = nullptr;
 
 
   LLVMTypeRef wrcTableStructLT = nullptr;
@@ -73,6 +66,9 @@ public:
   LLVMValueRef expandLgt = nullptr, checkLgti = nullptr, getNumLiveLgtEntries = nullptr;
 
   LLVMValueRef genMalloc = nullptr, genFree = nullptr;
+
+  LLVMTypeRef concreteHandleLT = nullptr; // 24 bytes, for SSA, RSA, and structs
+  LLVMTypeRef interfaceHandleLT = nullptr; // 32 bytes, for interfaces. concreteHandleLT plus 8b itable ptr.
 
 
   // This is a global, we can return this when we want to return never. It should never actually be
@@ -87,38 +83,41 @@ public:
   std::unordered_map<std::string, LLVMValueRef> functions;
   std::unordered_map<std::string, LLVMValueRef> externFunctions;
 
-  // This is temporary, Valestrom should soon embed mutability and region into the referend for us
+  // This is temporary, Valestrom should soon embed mutability and region into the kind for us
   // so we won't have to do this.
-  std::unordered_map<Referend*, RegionId*, AddressHasher<Referend*>> regionIdByReferend;
+  std::unordered_map<Kind*, RegionId*, AddressHasher<Kind*>> regionIdByKind;
 
   // These contain the extra interface methods that Midas adds to particular interfaces.
   // For example, for every immutable, Midas needs to add a serialize() method that
   // adds it to an outgoing linear buffer.
   std::unordered_map<Prototype*, LLVMValueRef, AddressHasher<Prototype*>> extraFunctions;
   std::unordered_map<
-      InterfaceReferend*,
+      InterfaceKind*,
       std::vector<InterfaceMethod*>,
-          AddressHasher<InterfaceReferend*>> interfaceExtraMethods;
+          AddressHasher<InterfaceKind*>> interfaceExtraMethods;
 
   using OverridesBySubstructMap =
       std::unordered_map<
-          StructReferend*,
+          StructKind*,
           std::vector<std::pair<InterfaceMethod*, Prototype*>>,
-          AddressHasher<StructReferend*>>;
+          AddressHasher<StructKind*>>;
   using OverridesBySubstructByInterfaceMap =
       std::unordered_map<
-          InterfaceReferend*,
+          InterfaceKind*,
           OverridesBySubstructMap,
-          AddressHasher<InterfaceReferend*>>;
+          AddressHasher<InterfaceKind*>>;
   OverridesBySubstructByInterfaceMap overridesBySubstructByInterface;
   // This keeps us from adding more edges or interfaces after we've already started compiling them.
   bool interfacesOpen = true;
 
-  void addInterfaceExtraMethod(InterfaceReferend* interfaceReferend, InterfaceMethod* method) {
+  LLVMTypeRef getConcreteHandleStruct() { return concreteHandleLT; }
+  LLVMTypeRef getInterfaceHandleStruct() { return interfaceHandleLT; }
+
+  void addInterfaceExtraMethod(InterfaceKind* interfaceKind, InterfaceMethod* method) {
     assert(interfacesOpen);
-    interfaceExtraMethods[interfaceReferend].push_back(method);
+    interfaceExtraMethods[interfaceKind].push_back(method);
   }
-  void addEdgeExtraMethod(InterfaceReferend* interfaceMT, StructReferend* structMT, InterfaceMethod* interfaceMethod, Prototype* function) {
+  void addEdgeExtraMethod(InterfaceKind* interfaceMT, StructKind* structMT, InterfaceMethod* interfaceMethod, Prototype* function) {
     auto interfaceExtraMethodsI = interfaceExtraMethods.find(interfaceMT);
     assert(interfaceExtraMethodsI != interfaceExtraMethods.end());
 
@@ -128,7 +127,7 @@ public:
       iter =
           overridesBySubstructByInterface.emplace(
               interfaceMT,
-              OverridesBySubstructMap{0, addressNumberer->makeHasher<StructReferend*>()})
+              OverridesBySubstructMap{0, addressNumberer->makeHasher<StructKind*>()})
               .first;
     }
     int index = iter->second[structMT].size();
@@ -137,23 +136,20 @@ public:
     iter->second[structMT].push_back(std::make_pair(interfaceMethod, function));
   }
 
-//  std::unordered_map<Name*, StructDefinition*> extraStructs;
-//  std::unordered_map<Name*, InterfaceDefinition*> extraInterfaces;
-
-  StructDefinition* lookupStruct(Name* name) {
+  StructDefinition* lookupStruct(StructKind* structMT) {
 //    auto structI = extraStructs.find(name);
 //    if (structI != extraStructs.end()) {
 //      return structI->second;
 //    }
-    return program->getStruct(name);
+    return program->getStruct(structMT);
   }
 
-  InterfaceDefinition* lookupInterface(Name* name) {
+  InterfaceDefinition* lookupInterface(InterfaceKind* interfaceMT) {
 //    auto interfaceI = extraInterfaces.find(name);
 //    if (interfaceI != extraInterfaces.end()) {
 //      return interfaceI->second;
 //    }
-    return program->getInterface(name);
+    return program->getInterface(interfaceMT);
   }
 
   LLVMValueRef lookupFunction(Prototype* prototype) {
@@ -166,11 +162,10 @@ public:
     return funcIter->second;
   }
 
-  int getInterfaceMethodIndex(InterfaceReferend* interfaceReferendM, Prototype* prototype) {
+  int getInterfaceMethodIndex(InterfaceKind* interfaceKindM, Prototype* prototype) {
     int numMetalMethods = 0;
-    auto interfaceDefMIter = program->interfaces.find(interfaceReferendM->fullName->name);
-    if (interfaceDefMIter != program->interfaces.end()) {
-      auto interfaceDefM = interfaceDefMIter->second;
+    if (auto maybeInterfaceDefM = program->getMaybeInterface(interfaceKindM)) {
+      auto interfaceDefM = *maybeInterfaceDefM;
       for (int i = 0; i < interfaceDefM->methods.size(); i++) {
         if (interfaceDefM->methods[i]->prototype == prototype) {
           return i;
@@ -178,7 +173,7 @@ public:
       }
       numMetalMethods = interfaceDefM->methods.size();
     }
-    auto iter = interfaceExtraMethods.find(interfaceReferendM);
+    auto iter = interfaceExtraMethods.find(interfaceKindM);
     assert(iter != interfaceExtraMethods.end());
     auto extraMethods = iter->second;
     for (int i = 0; i < extraMethods.size(); i++) {
@@ -190,16 +185,17 @@ public:
   }
 
 
-  Weakability getReferendWeakability(Referend* referend);
+  Weakability getKindWeakability(Kind* kind);
 
   Ref constI64(int64_t x);
+  Ref constI32(int32_t x);
   Ref constI1(bool b);
   Ref buildAdd(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
   Ref buildMod(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
   Ref buildMultiply(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
   Ref buildDivide(FunctionState* functionState, LLVMBuilderRef builder, Ref a, Ref b);
 
-  Name* getReferendName(Referend* referend);
+  Name* getKindName(Kind* kind);
 
   template<typename T>
   AddressHasher<T> makeAddressHasher() {
@@ -224,11 +220,11 @@ public:
 
   std::vector<LLVMValueRef> getEdgeFunctions(Edge* edge);
 
-  std::vector<LLVMTypeRef> getInterfaceFunctionTypes(InterfaceReferend* referend);
+  std::vector<LLVMTypeRef> getInterfaceFunctionTypes(InterfaceKind* kind);
 
 
   IRegion* getRegion(Reference* referenceM);
-  IRegion* getRegion(Referend* referendM);
+  IRegion* getRegion(Kind* kindM);
   IRegion* getRegion(RegionId* regionId);
   LLVMValueRef getFunction(Name* name);
   LLVMValueRef getInterfaceTablePtr(Edge* edge);

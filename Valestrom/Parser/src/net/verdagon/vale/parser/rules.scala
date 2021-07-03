@@ -74,6 +74,7 @@ object RulePUtils {
       case StringPT(_, value) => List()
       case IntPT(_, value) => List()
       case MutabilityPT(_, mutability) => List()
+      case VariabilityPT(_, mutability) => List()
       case PermissionPT(_, permission) => List()
       case LocationPT(_, location) => List()
       case OwnershipPT(_, ownership) => List()
@@ -89,7 +90,7 @@ object RulePUtils {
       }
       case PrototypePT(_, name, parameters, returnType) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates((parameters :+ returnType))
       case PackPT(_, members) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(members)
-      case RepeaterSequencePT(_, mutability, size, element) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(List(mutability, size, element))
+      case RepeaterSequencePT(_, mutability, variability, size, element) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(List(mutability, variability, size, element))
       case ManualSequencePT(_, elements) => getOrderedRuneDeclarationsFromTemplexesWithDuplicates(elements)
     }
   }

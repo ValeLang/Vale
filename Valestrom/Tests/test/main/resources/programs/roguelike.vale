@@ -27,10 +27,10 @@ struct Goblin {
   location Vec<2, int>;
 }
 
-fn makeBoard() Array<mut, Array<mut, str>> {
+fn makeBoard() Array<mut, final, Array<mut, vary, str>> {
   ret
     MakeArray(10, (row){
-      MakeArray(10, (col){
+      MakeVaryArray(10, (col){
         = if (row == 0) { "#" }
           else if (col == 0) { "#" }
           else if (row == 9) { "#" }
@@ -57,7 +57,7 @@ fn display(
       else {
         goblins.keys().each((key){
           goblin? = goblins.get(key);
-          goblin = goblin?^.get(); // TODO try getting rid of this ^, doesnt wanna find the get function
+          goblin = (goblin?).get(); // TODO try getting rid of this ^, doesnt wanna find the get function
 
           if (and(rowI == goblin.location.values.1, cellI == goblin.location.values.0)) {
             set charToPrint = "g";
@@ -102,7 +102,7 @@ fn goblinAt?(
   col int)
 bool {
   a = goblins.get(goblinKey);
-  b = a^.get();
+  b = (a).get();
   (goblinCol, goblinRow) = b.location.values;
   ret and(row == goblinRow, col == goblinCol);
 }

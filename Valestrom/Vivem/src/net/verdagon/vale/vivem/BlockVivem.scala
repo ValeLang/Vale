@@ -1,4 +1,4 @@
-//package net.verdagon.vale.vivem
+//paackage net.verdagon.vale.vivem
 //
 //import net.verdagon.vale.metal.{BlockH, ProgramH, ReferenceH, VoidH}
 //import net.verdagon.vale.{metal => m}

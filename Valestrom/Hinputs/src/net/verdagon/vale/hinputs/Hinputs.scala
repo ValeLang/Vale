@@ -1,41 +1,42 @@
 package net.verdagon.vale.hinputs
 
-import net.verdagon.vale.templar.{CitizenName2, Edge2, ExportAs2, FullName2, Function2, FunctionName2, IFunctionName2, Impl2, InterfaceEdgeBlueprint, LambdaCitizenName2, Program2, simpleName}
-import net.verdagon.vale.templar.templata.{FunctionBanner2, Prototype2, Signature2}
-import net.verdagon.vale.templar.types.{InterfaceDefinition2, InterfaceRef2, StructDefinition2, StructRef2}
-import net.verdagon.vale.vfail
+import net.verdagon.vale.templar.{CitizenNameT, EdgeT, FullNameT, FunctionT, FunctionExportT, FunctionExternT, FunctionNameT, IFunctionNameT, ImplT, InterfaceEdgeBlueprint, KindExportT, KindExternT, LambdaCitizenNameT, Program2, simpleName}
+import net.verdagon.vale.templar.templata.{FunctionBannerT, PrototypeT, SignatureT}
+import net.verdagon.vale.templar.types.{InterfaceDefinitionT, InterfaceRefT, KindT, StructDefinitionT, StructRefT}
+import net.verdagon.vale.{PackageCoordinate, vassertSome, vfail}
 
 import scala.collection.immutable.List
 
-case class ETable2(struct: StructRef2, table: TetrisTable[InterfaceRef2, InterfaceRef2])
-
 case class Hinputs(
-  interfaces: List[InterfaceDefinition2],
-  structs: List[StructDefinition2],
-  emptyPackStructRef: StructRef2,
-  functions: List[Function2],
-  exports: List[ExportAs2],
-  externPrototypes: List[Prototype2],
-  edgeBlueprintsByInterface: Map[InterfaceRef2, InterfaceEdgeBlueprint],
-  edges: List[Edge2]) {
+    interfaces: List[InterfaceDefinitionT],
+    structs: List[StructDefinitionT],
+    emptyPackStructRef: StructRefT,
+    functions: List[FunctionT],
+    kindToDestructor: Map[KindT, PrototypeT],
+    edgeBlueprintsByInterface: Map[InterfaceRefT, InterfaceEdgeBlueprint],
+    edges: List[EdgeT],
+    kindExports: List[KindExportT],
+    functionExports: List[FunctionExportT],
+    kindExterns: List[KindExternT],
+    functionExterns: List[FunctionExternT]) {
 
-  def lookupStruct(structRef: StructRef2): StructDefinition2 = {
+  def lookupStruct(structRef: StructRefT): StructDefinitionT = {
     structs.find(_.getRef == structRef) match {
       case None => vfail("Couldn't find struct: " + structRef)
       case Some(s) => s
     }
   }
-  def lookupInterface(interfaceRef: InterfaceRef2): InterfaceDefinition2 = {
-    interfaces.find(_.getRef == interfaceRef).get
+  def lookupInterface(interfaceRef: InterfaceRefT): InterfaceDefinitionT = {
+    vassertSome(interfaces.find(_.getRef == interfaceRef))
   }
-  def lookupFunction(signature2: Signature2): Option[Function2] = {
+  def lookupFunction(signature2: SignatureT): Option[FunctionT] = {
     functions.find(_.header.toSignature == signature2).headOption
   }
 
-  def lookupFunction(humanName: String): Function2 = {
+  def lookupFunction(humanName: String): FunctionT = {
     val matches = functions.filter(f => {
       f.header.fullName.last match {
-        case FunctionName2(n, _, _) if n == humanName => true
+        case FunctionNameT(n, _, _) if n == humanName => true
         case _ => false
       }
     })
@@ -47,10 +48,10 @@ case class Hinputs(
     matches.head
   }
 
-  def lookupStruct(humanName: String): StructDefinition2 = {
+  def lookupStruct(humanName: String): StructDefinitionT = {
     val matches = structs.filter(s => {
       s.fullName.last match {
-        case CitizenName2(n, _) if n == humanName => true
+        case CitizenNameT(n, _) if n == humanName => true
         case _ => false
       }
     })
@@ -62,14 +63,14 @@ case class Hinputs(
     matches.head
   }
 
-  def lookupImpl(structRef: StructRef2, interfaceRef: InterfaceRef2): Edge2 = {
+  def lookupImpl(structRef: StructRefT, interfaceRef: InterfaceRefT): EdgeT = {
     edges.find(impl => impl.struct == structRef && impl.interface == interfaceRef).get
   }
 
-  def lookupInterface(humanName: String): InterfaceDefinition2 = {
+  def lookupInterface(humanName: String): InterfaceDefinitionT = {
     val matches = interfaces.filter(s => {
       s.fullName.last match {
-        case CitizenName2(n, _) if n == humanName => true
+        case CitizenNameT(n, _) if n == humanName => true
         case _ => false
       }
     })
@@ -81,7 +82,7 @@ case class Hinputs(
     matches.head
   }
 
-  def lookupUserFunction(humanName: String): Function2 = {
+  def lookupUserFunction(humanName: String): FunctionT = {
     val matches =
       functions
         .filter(function => simpleName.unapply(function.header.fullName).contains(humanName))
@@ -94,18 +95,18 @@ case class Hinputs(
     matches.head
   }
 
-  def nameIsLambdaIn(name: FullName2[IFunctionName2], needleFunctionHumanName: String): Boolean = {
+  def nameIsLambdaIn(name: FullNameT[IFunctionNameT], needleFunctionHumanName: String): Boolean = {
     val lastThree = name.steps.slice(name.steps.size - 3, name.steps.size)
     lastThree match {
       case List(
-      FunctionName2(functionHumanName, _, _),
-      LambdaCitizenName2(_),
-      FunctionName2("__call", _, _)) if functionHumanName == needleFunctionHumanName => true
+      FunctionNameT(functionHumanName, _, _),
+      LambdaCitizenNameT(_),
+      FunctionNameT("__call", _, _)) if functionHumanName == needleFunctionHumanName => true
       case _ => false
     }
   }
 
-  def lookupLambdaIn(needleFunctionHumanName: String): Function2 = {
+  def lookupLambdaIn(needleFunctionHumanName: String): FunctionT = {
     val matches = functions.filter(f => nameIsLambdaIn(f.header.fullName, needleFunctionHumanName))
     if (matches.size == 0) {
       vfail("Lambda for \"" + needleFunctionHumanName + "\" not found!")
@@ -115,10 +116,10 @@ case class Hinputs(
     matches.head
   }
 
-  def getAllNonExternFunctions: Iterable[Function2] = {
+  def getAllNonExternFunctions: Iterable[FunctionT] = {
     functions.filter(!_.header.isExtern)
   }
-  def getAllUserFunctions: Iterable[Function2] = {
+  def getAllUserFunctions: Iterable[FunctionT] = {
     functions.filter(_.header.isUserFunction)
   }
 }

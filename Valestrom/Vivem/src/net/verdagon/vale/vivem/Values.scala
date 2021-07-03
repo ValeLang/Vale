@@ -8,12 +8,12 @@ import net.verdagon.vale.{vassert, vcheck, vfail}
 
 // RR = Runtime Result. Don't use these to determine behavior, just use
 // these to check that things are as we expect.
-case class RRReference(hamut: ReferenceH[ReferendH])
-case class RRReferend(hamut: ReferendH)
+case class RRReference(hamut: ReferenceH[KindH])
+case class RRKind(hamut: KindH)
 
 class Allocation(
     val reference: ReferenceV, // note that this cannot change
-    val referend: ReferendV // note that this cannot change
+    val kind: KindV // note that this cannot change
 ) {
   private var referrers = Map[IObjectReferrer, Int]()
 
@@ -89,7 +89,7 @@ class Allocation(
 //    if (referrers.size != expectedNum) {
 //      vfail(
 //        "o" + reference.allocId.num + " expected " + expectedNum + " but was " + referrers.size + ":\n" +
-//            referrers.mkString("\n") + "\nReferend:\n" + referend)
+//            referrers.mkString("\n") + "\nKind:\n" + kind)
 //    }
 //  }
 
@@ -111,39 +111,39 @@ class Allocation(
 //    vassert(referrers.isEmpty)
   }
 
-  def unapply(arg: Allocation): Option[ReferendV] = Some(referend)
+  def unapply(arg: Allocation): Option[KindV] = Some(kind)
 }
 
 object Allocation {
-  def unapply(arg: Allocation): Option[ReferendV] = {
-    Some(arg.referend)
+  def unapply(arg: Allocation): Option[KindV] = {
+    Some(arg.kind)
   }
 }
 
-sealed trait ReferendV {
-  def tyype: RRReferend
+sealed trait KindV {
+  def tyype: RRKind
 }
-sealed trait PrimitiveReferendV extends ReferendV
-case class IntV(value: Int) extends PrimitiveReferendV {
-  override def tyype = RRReferend(IntH())
+sealed trait PrimitiveKindV extends KindV
+case class IntV(value: Long, bits: Int) extends PrimitiveKindV {
+  override def tyype = RRKind(IntH(bits))
 }
-case class BoolV(value: Boolean) extends PrimitiveReferendV {
-  override def tyype = RRReferend(BoolH())
+case class BoolV(value: Boolean) extends PrimitiveKindV {
+  override def tyype = RRKind(BoolH())
 }
-case class FloatV(value: Double) extends PrimitiveReferendV {
-  override def tyype = RRReferend(FloatH())
+case class FloatV(value: Double) extends PrimitiveKindV {
+  override def tyype = RRKind(FloatH())
 }
-case class StrV(value: String) extends PrimitiveReferendV {
-  override def tyype = RRReferend(StrH())
+case class StrV(value: String) extends PrimitiveKindV {
+  override def tyype = RRKind(StrH())
 }
 
 case class StructInstanceV(
     structH: StructDefinitionH,
     private var members: Option[Vector[ReferenceV]]
-) extends ReferendV {
+) extends KindV {
   vassert(members.get.size == structH.members.size)
 
-  override def tyype = RRReferend(structH.getRef)
+  override def tyype = RRKind(structH.getRef)
 
   def getReferenceMember(index: Int) = {
     (structH.members(index).tyype, members.get(index)) match {
@@ -164,12 +164,12 @@ case class StructInstanceV(
 }
 
 case class ArrayInstanceV(
-    typeH: ReferenceH[ReferendH],
-    elementTypeH: ReferenceH[ReferendH],
+    typeH: ReferenceH[KindH],
+    elementTypeH: ReferenceH[KindH],
     private val size: Int,
     private var elements: Vector[ReferenceV]
-) extends ReferendV {
-  override def tyype = RRReferend(typeH.kind)
+) extends KindV {
+  override def tyype = RRKind(typeH.kind)
 
   def getElement(index: Int): ReferenceV = {
     // Make sure we're initialized
@@ -214,7 +214,7 @@ case class ArrayInstanceV(
   }
 }
 
-case class AllocationId(tyype: RRReferend, num: Int) {
+case class AllocationId(tyype: RRKind, num: Int) {
   override def hashCode(): Int = num
 }
 
@@ -224,9 +224,9 @@ case class ReferenceV(
 
   // What is the actual type of what we're pointing to (as opposed to an interface).
   // If we have a Car reference to a Civic, then this will be Civic.
-  actualKind: RRReferend,
+  actualKind: RRKind,
   // What do we see the type as. If we have a Car reference to a Civic, then this will be Car.
-  seenAsKind: RRReferend,
+  seenAsKind: RRKind,
 
   ownership: OwnershipH,
 
@@ -236,7 +236,7 @@ case class ReferenceV(
   // Negative number means it's an empty struct (like void).
   num: Int
 ) {
-  def allocId = AllocationId(RRReferend(actualKind.hamut), num)
+  def allocId = AllocationId(RRKind(actualKind.hamut), num)
   val actualCoord: RRReference = RRReference(ReferenceH(ownership, location, permission, actualKind.hamut))
   val seenAsCoord: RRReference = RRReference(ReferenceH(ownership, location, permission, seenAsKind.hamut))
 }
@@ -265,7 +265,7 @@ case class ElementAddressV(arrayId: AllocationId, elementIndex: Int) {
 
 // Used in tracking reference counts/maps.
 case class CallId(callDepth: Int, function: PrototypeH) {
-  override def toString: String = "ƒ" + callDepth + "/" + function.fullName.toReadableString()
+  override def toString: String = "ƒ" + callDepth + "/" + (function.fullName.readableName + "_" + function.fullName.id)
   override def hashCode(): Int = callDepth + function.fullName.id
 }
 //case class RegisterId(blockId: BlockId, lineInBlock: Int)
@@ -273,7 +273,7 @@ case class ArgumentId(callId: CallId, index: Int)
 case class VariableV(
     id: VariableAddressV,
     var reference: ReferenceV,
-    expectedType: ReferenceH[ReferendH]) {
+    expectedType: ReferenceH[KindH]) {
   vassert(reference != None)
 }
 

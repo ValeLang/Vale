@@ -32,19 +32,19 @@ class CallTemplar(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
       range: RangeS,
-      callableExpr: ReferenceExpression2,
+      callableExpr: ReferenceExpressionTE,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
-      givenArgsExprs2: List[ReferenceExpression2]):
-  (FunctionCall2) = {
-    callableExpr.resultRegister.reference.referend match {
-      case Never2() | Bool2() => {
-        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.resultRegister.reference.referend))
+      givenArgsExprs2: List[ReferenceExpressionTE]):
+  (FunctionCallTE) = {
+    callableExpr.resultRegister.reference.kind match {
+      case NeverT() | BoolT() => {
+        throw CompileErrorExceptionT(RangedInternalErrorT(range, "wot " + callableExpr.resultRegister.reference.kind))
       }
-      case structRef @ StructRef2(_) => {
+      case structRef @ StructRefT(_) => {
         evaluateClosureCall(
           fate, temputs, range, structRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
-      case interfaceRef @ InterfaceRef2(_) => {
+      case interfaceRef @ InterfaceRefT(_) => {
         evaluateClosureCall(
           fate, temputs, range, interfaceRef, explicitlySpecifiedTemplateArgTemplexesS, callableExpr, givenArgsExprs2)
       }
@@ -87,7 +87,7 @@ class CallTemplar(
           argsExprs2.map(a => a.resultRegister.reference),
           exact = true)
 
-        (FunctionCall2(prototype, argsExprs2))
+        (FunctionCallTE(prototype, argsExprs2))
       }
 //      case ft @ FunctionT2(_, _) => {
 //        vcurious() // do we ever use this? do we ever deal with function pointers?
@@ -98,7 +98,7 @@ class CallTemplar(
 //
 //        val argsPointerTypes2 = argsExprs2.map(_.resultRegister.expectReference().reference)
 //
-//        val callableType = callableExpr.resultRegister.reference.referend.asInstanceOf[FunctionT2]
+//        val callableType = callableExpr.resultRegister.reference.kind.asInstanceOf[FunctionT2]
 //
 //        checkTypes(temputs, callableType.paramTypes, argsPointerTypes2, exact = true);
 //
@@ -113,8 +113,8 @@ class CallTemplar(
     range: RangeS,
     functionName: GlobalFunctionFamilyNameA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
-    givenArgsExprs2: List[ReferenceExpression2]):
-  (FunctionCall2) = {
+    givenArgsExprs2: List[ReferenceExpressionTE]):
+  (FunctionCallTE) = {
     val unconvertedArgsPointerTypes2 =
       givenArgsExprs2.map(_.resultRegister.expectReference().reference)
 
@@ -152,7 +152,7 @@ class CallTemplar(
       argsExprs2.map(a => a.resultRegister.reference),
       exact = true)
 
-    (FunctionCall2(prototype, argsExprs2))
+    (FunctionCallTE(prototype, argsExprs2))
   }
 
 
@@ -173,30 +173,30 @@ class CallTemplar(
       fate: FunctionEnvironmentBox,
       temputs: Temputs,
       range: RangeS,
-      citizenRef: CitizenRef2,
+      citizenRef: CitizenRefT,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
-      givenCallableUnborrowedExpr2: ReferenceExpression2,
-      givenArgsExprs2: List[ReferenceExpression2]):
-      (FunctionCall2) = {
+      givenCallableUnborrowedExpr2: ReferenceExpressionTE,
+      givenArgsExprs2: List[ReferenceExpressionTE]):
+      (FunctionCallTE) = {
     // Whether we're given a borrow or an own, the call itself will be given a borrow.
     val givenCallableBorrowExpr2 =
       givenCallableUnborrowedExpr2.resultRegister.reference match {
-        case Coord(Constraint, _, _) => (givenCallableUnborrowedExpr2)
-        case Coord(Share, _, _) => (givenCallableUnborrowedExpr2)
-        case Coord(Own, _, _) => {
+        case CoordT(ConstraintT, _, _) => (givenCallableUnborrowedExpr2)
+        case CoordT(ShareT, _, _) => (givenCallableUnborrowedExpr2)
+        case CoordT(OwnT, _, _) => {
           localHelper.makeTemporaryLocal(temputs, fate, givenCallableUnborrowedExpr2)
         }
       }
 
     val env =
       citizenRef match {
-        case sr @ StructRef2(_) => temputs.getEnvForStructRef(sr) // temputs.envByStructRef(sr)
-        case ir @ InterfaceRef2(_) => temputs.getEnvForInterfaceRef(ir) // temputs.envByInterfaceRef(ir)
+        case sr @ StructRefT(_) => temputs.getEnvForStructRef(sr) // temputs.envByStructRef(sr)
+        case ir @ InterfaceRefT(_) => temputs.getEnvForInterfaceRef(ir) // temputs.envByInterfaceRef(ir)
       }
 
     val argsTypes2 = givenArgsExprs2.map(_.resultRegister.reference)
     val closureParamType =
-      Coord(
+      CoordT(
         givenCallableBorrowExpr2.resultRegister.reference.ownership,
         givenCallableUnborrowedExpr2.resultRegister.reference.permission,
         citizenRef)
@@ -213,7 +213,7 @@ class CallTemplar(
       }
 
     val mutability = Templar.getMutability(temputs, citizenRef)
-    val ownership = if (mutability == Mutable) Constraint else Share
+    val ownership = if (mutability == MutableT) ConstraintT else ShareT
 //    val permission = if (mutability == Mutable) Readwrite else Readonly // See LHRSP
 //    if (givenCallableBorrowExpr2.resultRegister.reference.permission != Readwrite) {
 //      throw CompileErrorExceptionT(RangedInternalErrorT(range, "Can only call readwrite callables! (LHRSP)"))
@@ -230,7 +230,7 @@ class CallTemplar(
 
     checkTypes(temputs, prototype2.paramTypes, argTypes, exact = true)
 
-    val resultingExpr2 = FunctionCall2(prototype2, actualArgsExprs2);
+    val resultingExpr2 = FunctionCallTE(prototype2, actualArgsExprs2);
 
     (resultingExpr2)
   }
@@ -238,8 +238,8 @@ class CallTemplar(
 
   def checkTypes(
     temputs: Temputs,
-    params: List[Coord],
-    args: List[Coord],
+    params: List[CoordT],
+    args: List[CoordT],
     exact: Boolean):
   Unit = {
     vassert(params.size == args.size)
@@ -281,10 +281,10 @@ class CallTemplar(
       temputs: Temputs,
       fate: FunctionEnvironmentBox,
     range: RangeS,
-      callableReferenceExpr2: ReferenceExpression2,
+      callableReferenceExpr2: ReferenceExpressionTE,
       explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
-      argsExprs2: List[ReferenceExpression2]):
-  (FunctionCall2) = {
+      argsExprs2: List[ReferenceExpressionTE]):
+  (FunctionCallTE) = {
     val callExpr =
       evaluateCall(temputs, fate, range, callableReferenceExpr2, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
     (callExpr)
@@ -296,8 +296,8 @@ class CallTemplar(
     rangeS: RangeS,
     functionName: GlobalFunctionFamilyNameA,
     explicitlySpecifiedTemplateArgTemplexesS: List[ITemplexS],
-    argsExprs2: List[ReferenceExpression2]):
-  (FunctionCall2) = {
+    argsExprs2: List[ReferenceExpressionTE]):
+  (FunctionCallTE) = {
     evaluateNamedCall(temputs, fate.snapshot, rangeS, functionName, explicitlySpecifiedTemplateArgTemplexesS, argsExprs2)
   }
 }
